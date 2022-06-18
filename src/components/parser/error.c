@@ -1,0 +1,111 @@
+#include <stdio.h>
+#include <stddef.h>
+#include <stdlib.h>
+
+#include <error.h>
+
+int errorCount = 0;
+int errorArrowFlag = 1;
+int errorArrowOffset = 8;
+
+static char *abortMsg[] = {
+    NULL,
+    "Invalid command line arguments",
+    "Failed to open source file",
+    "Failed to open intermediate form file",
+    "Failed to open assembly file",
+    "Too many syntax errors",
+    "Stack overflow",
+    "Code segment overflow",
+    "Nesting too deep",
+    "Runtime error",
+    "Unimplemented feature",
+    "Out of memory",
+    "Source file line too long",
+    "Source file read failed",
+};
+
+static char *errorMessages[] = {
+    "No error",
+    "Unrecognizable input",
+    "Too many syntax errors",
+    "Unexpected end of file",
+    "Invalid number",
+    "Too many digits",
+    "Integer literal out of range",
+    "Missing )",
+    "Invalid expression",
+    "Invalid assignment statement",
+    "Missing identifier",
+    "Missing :=",
+    "Undefined identifier",
+    "Stack overflow",
+    "Invalid statement",
+    "Unexpected token",
+    "Missing ;",
+    "Missing ,",
+    "Missing DO",
+    "Missing UNTIL",
+    "Missing THEN",
+    "Invalid FOR control variable",
+    "Missing OF",
+    "Invalid constant",
+    "Missing constant",
+    "Missing :",
+    "Missing END",
+    "Missing TO or DOWNTO",
+    "Redefined identifier",
+    "Missing =",
+    "Invalid type",
+    "Not a type identifier",
+    "Invalid subrange type",
+    "Not a constant identifier",
+    "Missing ..",
+    "Incompatible types",
+    "Invalid assignment target",
+    "Invalid identifier usage",
+    "Incompatible assignment",
+    "Min limit greater than max limit",
+    "Missing [",
+    "Missing ]",
+    "Invalid index type",
+    "Missing BEGIN",
+    "Missing .",
+    "Too many subscripts",
+    "Invalid field",
+    "Nesting too deep",
+    "Missing PROGRAM",
+    "Already specified in FORWARD",
+    "Wrong number of actual parameters",
+    "Invalid VAR parameter",
+    "Not a record variable",
+    "Missing variable",
+    "Code segment overflow",
+    "Unimplemented feature",
+};
+
+void abortTranslation(TAbortCode ac)
+{
+    printf("*** Fatal translation error: %s\n", abortMsg[-ac]);
+    exit(ac);
+}
+
+void Error(TErrorCode ec)
+{
+    const int maxSyntaxErrors = 25;
+    int errorPosition;
+    extern int inputPosition;
+
+    errorPosition = errorArrowOffset + inputPosition - 1;
+
+    if (errorArrowFlag) {
+        printf("%*s\n", errorPosition, " ");
+    }
+
+    printf("*** ERROR: %s", errorMessages[ec]);
+
+    if (++errorCount > maxSyntaxErrors) {
+        printf("Too many syntax errors.  Translation aborted.\n");
+        abortTranslation(abortTooManySyntaxErrors);
+    }
+}
