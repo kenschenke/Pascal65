@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <ovrlinterp.h>
 #include <ovrlcommon.h>
+#include <buffer.h>
+#include <scanner.h>
+#include <parser.h>
+#include <error.h>
 #include <cbm.h>
 #include <device.h>
 #include <conio.h>
@@ -10,6 +14,9 @@ unsigned char loadfile(const char *name);
 
 void main()
 {
+    TINBUF *tinBuf;
+    SCANNER scanner;
+
 #ifdef __C128__
     fast();
     videomode(VIDEOMODE_80x25);
@@ -19,7 +26,11 @@ void main()
     textcolor(COLOR_WHITE);
     printf("Loading interpreter overlay\n");
     if (loadfile("interpreter.1")) {
+        tinBuf = tin_open("hello.pas", abortSourceFileOpenFailed);
+        scanner.pTinBuf = tinBuf;
+        parse(&scanner);
         overlayInterpreter();
+        tin_close(tinBuf);
     }
 
     log("main", "back to main code");
@@ -38,4 +49,14 @@ unsigned char loadfile(const char *name)
 void log(const char *module, const char *message)
 {
     printf("%s: %s\n", module, message);
+}
+
+void logError(const char *message, int lineNumber)
+{
+    printf("*** ERROR: %s\n", message);
+}
+
+void logFatalError(const char *message)
+{
+    printf("*** Fatal translation error: %s\n", message);
 }

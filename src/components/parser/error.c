@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include <error.h>
+#include <ovrlcommon.h>
 
 int errorCount = 0;
 int errorArrowFlag = 1;
@@ -86,13 +87,15 @@ static char *errorMessages[] = {
 
 void abortTranslation(TAbortCode ac)
 {
-    printf("*** Fatal translation error: %s\n", abortMsg[-ac]);
-    exit(ac);
+    logFatalError(abortMsg[-ac]);
 }
 
 void Error(TErrorCode ec)
 {
     const int maxSyntaxErrors = 25;
+
+    logError(errorMessages[ec], 0);
+#if 0
     int errorPosition;
     extern int inputPosition;
 
@@ -103,9 +106,9 @@ void Error(TErrorCode ec)
     }
 
     printf("*** ERROR: %s", errorMessages[ec]);
+#endif
 
     if (++errorCount > maxSyntaxErrors) {
-        printf("Too many syntax errors.  Translation aborted.\n");
         abortTranslation(abortTooManySyntaxErrors);
     }
 }

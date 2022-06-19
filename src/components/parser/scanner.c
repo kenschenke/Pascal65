@@ -12,35 +12,23 @@ TOKEN *getNextToken(SCANNER *scanner)
 
     switch (charCodeMap[getCurrentChar(scanner->pTinBuf)]) {
         case ccLetter:
-            // printf("Getting word token\n");
             getWordToken(&scanner->token, scanner);
             break;
 
         case ccDigit:
-            // printf("Getting number token\n");
             getNumberToken(&scanner->token, scanner);
             break;
 
         case ccQuote:
-            // printf("Getting string token\n");
             getStringToken(&scanner->token, scanner);
             break;
 
         case ccSpecial:
-            // printf("Getting special token\n");
             getSpecialToken(&scanner->token, scanner);
             break;
 
         case ccEndOfFile:
-            // printf("Getting eof token\n");
             scanner->token.code = tcEndOfFile;
-            break;
-        
-        default:
-            // printf("currentChar = '%c' (%d)\n",
-            //     getCurrentChar(scanner->pTinBuf),
-            //     getCurrentChar(scanner->pTinBuf));
-            // printf("Getting ??? token\n");
             break;
     }
 
@@ -73,33 +61,9 @@ static void initCharCodeMap(void)
     charCodeMap[eofChar] = ccEndOfFile;
 }
 
-void printToken(TOKEN *token)
+char scanner_isFatalError(SCANNER *scanner)
 {
-    switch (token->code) {
-        case tcIdentifier:
-            if (token->code == tcIdentifier) {
-                printf("\t%-18s %-s\n", ">> identifier:", token->string);
-            } else {
-                printf("\t%-18s %-s\n", ">> reserved word:", token->string);
-            }
-            break;
-        
-        case tcNumber:
-            printf("\t%-18s %ld\n", ">> integer:", token->value.integer);
-            break;
-        
-        case tcString:
-            printf("\t%-18s %-s\n", ">> string:", token->string);
-            break;
-        
-        case tcEndOfFile:
-            printf("\t%-18s\n", ">> end of file");
-            break;
-
-        default:
-            printf("\t%-18s %-s\n", ">> other:", token->string);
-            break;
-    }
+    return tin_isFatalError(scanner->pTinBuf);
 }
 
 static void skipWhiteSpace(SCANNER *scanner)
@@ -121,7 +85,7 @@ static void skipWhiteSpace(SCANNER *scanner)
         } else if (ch == '(') {
             ch = getChar(scanner->pTinBuf);
             if (ch == '*') {
-                while (1) {
+                while (ch != eofChar) {
                     ch = getChar(scanner->pTinBuf);
                     if (ch == '*') {
                         ch = getChar(scanner->pTinBuf);

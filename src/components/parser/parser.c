@@ -31,6 +31,8 @@ void parse(SCANNER *scanner)
 
     do {
         token = getNextToken(scanner);
+        if (scanner_isFatalError(scanner))
+            break;
         // Enter each identifier into the symbol table
         if (token->code == tcIdentifier) {
             SYMTABNODE *pNode = searchSymtab(pGlobalSymtab, token->string);

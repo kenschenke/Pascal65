@@ -19,11 +19,12 @@ typedef struct {
 } SCANNER;
 
 TOKEN *getNextToken(SCANNER *scanner);
-void printToken(TOKEN *token);
 
 void getNumberToken(TOKEN *token, SCANNER *scanner);
 void getSpecialToken(TOKEN *token, SCANNER *scanner);
 void getStringToken(TOKEN *token, SCANNER *scanner);
 void getWordToken(TOKEN *token, SCANNER *scanner);
+
+char scanner_isFatalError(SCANNER *scanner);
 
 #endif // end of SCANNER_H

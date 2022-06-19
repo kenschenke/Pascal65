@@ -4,8 +4,7 @@ void getSpecialToken(TOKEN *token, SCANNER *scanner)
 {
     char ch = getCurrentChar(scanner->pTinBuf);
     char *ps = token->string;
-
-    // printf("%c ", ch);
+    
     *ps++ = ch;
 
     switch (ch) {

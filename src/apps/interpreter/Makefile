@@ -1,4 +1,6 @@
 SRCDIR := src
+PARSERSRCDIR := ../../components/parser
+ICODESRCDIR := ../../components/icode
 OBJDIR := obj
 BINDIR := bin
 INTERPOVRLSRC := ../../overlays/interpreter
@@ -21,6 +23,10 @@ SOURCES += $(wildcard $(SRCDIR)/*.s)
 
 INTERPOVRLSRCS := $(wildcard $(INTERPOVRLSRC)/*.c)
 INTERPOVRLSRCS += $(wildcard $(INTERPOVRLSRC)/*.s)
+INTERPOVRLSRCS += $(wildcard $(PARSERSRCDIR)/*.c)
+INTERPOVRLSRCS += $(wildcard $(PARSERSRCDIR)/*.s)
+INTERPOVRLSRCS += $(wildcard $(ICODESRCDIR)/*.c)
+INTERPOVRLSRCS += $(wildcard $(ICODESRCDIR)/*.s)
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -51,6 +57,22 @@ $(OBJDIR)/%.o: $(INTERPOVRLSRC)/%.c | $(OBJDIR)
 
 vpath $(INTERPOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(INTERPOVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(PARSERSRCDIR)/%.c
+$(OBJDIR)/%.o: $(PARSERSRCDIR)/%.c | $(OBJDIR)
+	cl65 -t $(TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(PARSERSRCDIR)/%.s
+$(OBJDIR)/%.o: $(PARSERSRCDIR)/%.s | $(OBJDIR)
+	cl65 -t $(TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(ICODESRCDIR)/%.c
+$(OBJDIR)/%.o: $(ICODESRCDIR)/%.c | $(OBJDIR)
+	cl65 -t $(TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(ICODESRCDIR)/%.s
+$(OBJDIR)/%.o: $(ICODESRCDIR)/%.s | $(OBJDIR)
 	cl65 -t $(TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
