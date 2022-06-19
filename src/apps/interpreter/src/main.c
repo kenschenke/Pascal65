@@ -51,7 +51,7 @@ void log(const char *module, const char *message)
     printf("%s: %s\n", module, message);
 }
 
-void logError(const char *message, int lineNumber)
+void logError(const char *message, unsigned lineNumber)
 {
     printf("*** ERROR: %s\n", message);
 }

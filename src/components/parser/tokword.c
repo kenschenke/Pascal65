@@ -62,7 +62,7 @@ static void checkForReservedWord(TOKEN *token)
     token->code = tcIdentifier;
 
     if (len >= minResWordLength && len <= maxResWordLength) {
-        for (prw = rwTable[len]; prw->pString; prw++) {
+        for (prw = rwTable[len]; prw->pString; ++prw) {
             if (strcmp(token->string, prw->pString) == 0) {
                 token->code = prw->code;
                 break;
@@ -88,7 +88,7 @@ void getWordToken(TOKEN *token, SCANNER *scanner)
 
     // If this file came from a PC, convert lower-case ASCII
     // to upper-case ASCII.
-    for (ps = token->string; *ps; ps++) {
+    for (ps = token->string; *ps; ++ps) {
         if (*ps >= 97 && *ps <= 122) {
             *ps -= 32;
         }

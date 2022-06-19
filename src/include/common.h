@@ -3,7 +3,7 @@
 
 #include <symtab.h>
 
-extern int cntSymtabs;
+extern unsigned cntSymtabs;
 extern SYMTAB *pSymtabList;
 extern SYMTAB **vpSymtabs;
 extern SYMTAB *pGlobalSymtab;

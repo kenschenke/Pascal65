@@ -27,7 +27,7 @@ void parse(SCANNER *scanner)
     TOKEN *token;
     int i;
 
-    for (i = 0;   i <= 127; i++) charCodeMap[i] = ccError;
+    for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
 
     do {
         token = getNextToken(scanner);

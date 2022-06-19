@@ -43,9 +43,9 @@ static void initCharCodeMap(void)
         return;  // already initialized
     }
 
-    for (i = 97; i <= 122; i++) charCodeMap[i] = ccLetter;
-    for (i = 65; i <= 90; i++) charCodeMap[i] = ccLetter;
-    for (i = 48; i <= 57; i++) charCodeMap[i] = ccDigit;
+    for (i = 97; i <= 122; ++i) charCodeMap[i] = ccLetter;
+    for (i = 65; i <= 90; ++i) charCodeMap[i] = ccLetter;
+    for (i = 48; i <= 57; ++i) charCodeMap[i] = ccDigit;
     charCodeMap['+' ] = charCodeMap['-' ] = ccSpecial;
     charCodeMap['*' ] = charCodeMap['/' ] = ccSpecial;
     charCodeMap['=' ] = charCodeMap['^' ] = ccSpecial;

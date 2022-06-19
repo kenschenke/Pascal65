@@ -1,9 +1,9 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-extern int errorCount;
-extern int errorArrowFlag;
-extern int errorArrowOffset;
+extern unsigned errorCount;
+extern unsigned errorArrowFlag;
+extern unsigned errorArrowOffset;
 
 typedef enum {
     abortInvalidCommandLineArgs = -1,

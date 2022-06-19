@@ -3,9 +3,9 @@
 
 #include <buffer.h>
 
-int currentLineNumber;
+unsigned currentLineNumber;
 char eofChar = 0x7f;
-int inputPosition;
+unsigned inputPosition;
 
 TINBUF *tin_open(const char *pFilename, TAbortCode ac)
 {
@@ -69,7 +69,7 @@ char getChar(TINBUF *tinBuf)
             return eofChar;
     } else {
         tinBuf->pChar++;
-        inputPosition++;
+        ++inputPosition;
         ch = *(tinBuf->pChar);
     }
 
@@ -101,10 +101,10 @@ char getLine(TINBUF *tinBuf)
             }
             if (tinBuf->buffer[i] == 13) {  // carriage return
                 tinBuf->buffer[i] = 0;
-                currentLineNumber++;
+                ++currentLineNumber;
                 break;
             }
-            i++;
+            ++i;
             if (i >= MAX_LINE_LEN) {
                 tinBuf->fatalError = 1;
                 abortTranslation(abortSourceLineTooLong);

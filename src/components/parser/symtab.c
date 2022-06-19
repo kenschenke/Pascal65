@@ -41,7 +41,7 @@ void convertSymtab(SYMTAB *symtab, SYMTAB *vpSymtabs[])
     vpSymtabs[symtab->xSymtab] = symtab;
 
     // Allocate the symbol table node pointer vector
-    for (i = 0, size = 0; i < symtab->cntNodes; i++, size += sizeof(SYMTAB *));
+    for (i = 0, size = 0; i < symtab->cntNodes; ++i, size += sizeof(SYMTAB *));
     symtab->vpNodes = malloc(size);
     convertSymtabNode(symtab->root, symtab->vpNodes);
 }
@@ -129,7 +129,7 @@ static void freeSymtabNode(SYMTABNODE *symtabNode)
     free(symtabNode);
 }
 
-SYMTABNODE *getSymtabNode(SYMTAB *symtab, short xCode)
+SYMTABNODE *getSymtabNode(SYMTAB *symtab, unsigned short xCode)
 {
     return symtab->vpNodes[xCode];
 }

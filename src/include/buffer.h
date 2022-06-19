@@ -6,9 +6,9 @@
 
 #define MAX_LINE_LEN 40
 
-extern int currentLineNumber;
+extern unsigned currentLineNumber;
 extern char eofChar;
-extern int inputPosition;
+extern unsigned inputPosition;
 
 typedef struct {
     FILE *fh;

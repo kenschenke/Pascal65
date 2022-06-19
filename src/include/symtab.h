@@ -3,7 +3,7 @@
 
 struct _SYMTABLINENODE {
     struct _SYMTABLINENODE *next;
-    int number;
+    unsigned number;
 };
 typedef struct _SYMTABLINENODE SYMTABLINENODE;
 
@@ -17,7 +17,7 @@ struct _SYMTABNODE {
     char *pString;
     short xSymtab;
     short xNode;
-    int value;  // temporary
+    unsigned value;  // temporary
     SYMTABLINELIST *lineNumList;
 };
 typedef struct _SYMTABNODE SYMTABNODE;
@@ -25,8 +25,8 @@ typedef struct _SYMTABNODE SYMTABNODE;
 struct _SYMTAB {
     SYMTABNODE *root;
     SYMTABNODE **vpNodes;
-    short cntNodes;
-    short xSymtab;
+    unsigned short cntNodes;
+    unsigned short xSymtab;
     struct _SYMTAB *next;
 };
 typedef struct _SYMTAB SYMTAB;
@@ -38,7 +38,7 @@ void addLineNumToSymtabList(SYMTABLINELIST *pLineList);
 void convertSymtab(SYMTAB *symtab, SYMTAB *vpSymtabs[]);
 void convertSymtabNode(SYMTABNODE *symtabNode, SYMTABNODE *vpNodes[]);
 SYMTABNODE *enterSymtab(SYMTAB *symtab, const char *pString);
-SYMTABNODE *getSymtabNode(SYMTAB *symtab, short xNode);
+SYMTABNODE *getSymtabNode(SYMTAB *symtab, unsigned short xNode);
 SYMTABNODE *searchSymtab(SYMTAB *symtab, const char *pString);
 void printSymtab(SYMTAB *symtab);
 

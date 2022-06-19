@@ -3,6 +3,6 @@
 
 void log(const char *module, const char *message);
 void logFatalError(const char *message);
-void logError(const char *message, int lineNumber);
+void logError(const char *message, unsigned lineNumber);
 
 #endif // end of OVRLCOMMON_H

@@ -5,9 +5,9 @@
 #include <error.h>
 #include <ovrlcommon.h>
 
-int errorCount = 0;
-int errorArrowFlag = 1;
-int errorArrowOffset = 8;
+unsigned errorCount = 0;
+unsigned errorArrowFlag = 1;
+unsigned errorArrowOffset = 8;
 
 static char *abortMsg[] = {
     NULL,
