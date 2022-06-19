@@ -2,12 +2,19 @@ BINDIR := bin
 
 PROGRAM := pascal65
 D81FILE := $(BINDIR)/$(PROGRAM).d81
+TARGET := c128
+c64_EMUCMD := x64sc -kernal kernal -VICIIdsize -autostart
+c128_EMUCMD := x128 -kernal kernal -VICIIdsize -autostart
+EMUCMD = $($(TARGET)_EMUCMD)
 
 BINFILES := $(wildcard src/apps/ide/bin/pascal65*)
 BINFILES += $(wildcard src/apps/compiler/bin/compiler*)
 BINFILES += $(wildcard src/apps/interpreter/bin/interpreter*)
 
-all: $(D81FILE)
+all: $(BINDIR) $(D81FILE)
+
+$(BINDIR):
+	mkdir -p $@
 
 $(D81FILE):
 	cd src/apps && $(MAKE) all
@@ -25,4 +32,4 @@ clean:
 	$(RM) $(D81FILE)
 
 run: $(D81FILE)
-	x64sc -autoload $(D81FILE)
+	$(EMUCMD) $<
