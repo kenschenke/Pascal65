@@ -84,4 +84,18 @@ typedef enum {
 
 void Error(TErrorCode ec);
 
+typedef enum {
+    rteNone,
+    rteStackOverflow,
+    rteValueOutOfRange,
+    rteInvalidCaseValue,
+    rteDivisionByZero,
+    rteInvalidFunctionArgument,
+    rteInvalidUserInput,
+    rteUnimplementedRuntimeFeature,
+    rteOutOfMemory,
+} TRuntimeErrorCode;
+
+void runtimeError(TRuntimeErrorCode ec);
+
 #endif // end of ERROR_H

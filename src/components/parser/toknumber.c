@@ -8,7 +8,7 @@ void getNumberToken(TOKEN *token, SCANNER *scanner)
     int digitCount = 0;
     int countErrorFlag = 0;
     const int maxDigitCount = 20;
-    long value = 0;
+    int value = 0;
 
     ch = getCurrentChar(scanner->pTinBuf);
     if (charCodeMap[ch] != ccDigit) {

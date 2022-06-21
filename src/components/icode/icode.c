@@ -40,6 +40,11 @@ void freeIcode(ICODE *Icode)
     free(Icode);
 }
 
+unsigned getCurrentIcodeLocation(ICODE *Icode)
+{
+    return Icode->cursor - Icode->pCode;
+}
+
 TOKEN *getNextTokenFromIcode(ICODE *Icode)
 {
     char code;
@@ -78,7 +83,13 @@ TOKEN *getNextTokenFromIcode(ICODE *Icode)
             break;
     }
 
+    Icode->token.code = tc;
     return &Icode->token;
+}
+
+void gotoIcodePosition(ICODE *Icode, unsigned position)
+{
+    Icode->cursor = Icode->pCode + position;
 }
 
 static SYMTABNODE *extractSymtabNode(ICODE *Icode)
@@ -127,7 +138,7 @@ ICODE *makeIcode(void)
         abortTranslation(abortOutOfMemory);
     }
 
-    Icode->pCode = malloc(sizeof(char) * codeSegmentSize);
+    Icode->pCode = malloc(codeSegmentSize);
     if (Icode->pCode == NULL) {
         abortTranslation(abortOutOfMemory);
     }
@@ -148,12 +159,12 @@ ICODE *makeIcodeFrom(ICODE *other)
         abortTranslation(abortOutOfMemory);
     }
 
-    Icode->pCode = malloc(sizeof(char) * length);
+    Icode->pCode = malloc(length);
     if (Icode->pCode == NULL) {
         abortTranslation(abortOutOfMemory);
     }
 
-    memcpy(Icode->pCode, other->pCode, sizeof(char) * length);
+    memcpy(Icode->pCode, other->pCode, length);
     Icode->cursor = Icode->pCode;
 
     return Icode;
@@ -189,5 +200,10 @@ void putTokenToIcode(ICODE *Icode, TTokenCode tc)
     checkIcodeBounds(Icode, sizeof(char));
     memcpy(Icode->cursor, &code, sizeof(char));
     Icode->cursor += sizeof(char);
+}
+
+void resetIcodePosition(ICODE *Icode)
+{
+    Icode->cursor = Icode->pCode;
 }
 

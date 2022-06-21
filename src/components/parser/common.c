@@ -1,13 +1,19 @@
 #include <stdio.h>
 #include <common.h>
 #include <symtab.h>
+#include <icode.h>
 
-unsigned cntSymtabs = 0;
-SYMTAB *pSymtabList = NULL;
+short cntSymtabs;
+SYMTAB *pSymtabList;
 SYMTAB **vpSymtabs;
 SYMTAB *pGlobalSymtab;
+ICODE *pGlobalIcode;
 
 void initCommon(void)
 {
+    cntSymtabs = 0;
+    pSymtabList = NULL;
+
     pGlobalSymtab = makeSymtab();
+    pGlobalIcode = makeIcode();
 }

@@ -85,6 +85,18 @@ static char *errorMessages[] = {
     "Unimplemented feature",
 };
 
+static const char *runtimeErrorMessages[] = {
+    "No runtime error",
+    "Runtime stack overflow",
+    "Value out of range",
+    "Invalid CASE expression value",
+    "Division by zero",
+    "Invalid standard function argument",
+    "Invalid user input",
+    "Unimplemented runtime feature",
+    "Out of memory",
+};
+
 void abortTranslation(TAbortCode ac)
 {
     logFatalError(abortMsg[-ac]);
@@ -95,20 +107,15 @@ void Error(TErrorCode ec)
     const int maxSyntaxErrors = 25;
 
     logError(errorMessages[ec], 0);
-#if 0
-    int errorPosition;
-    extern int inputPosition;
-
-    errorPosition = errorArrowOffset + inputPosition - 1;
-
-    if (errorArrowFlag) {
-        printf("%*s\n", errorPosition, " ");
-    }
-
-    printf("*** ERROR: %s", errorMessages[ec]);
-#endif
-
     if (++errorCount > maxSyntaxErrors) {
         abortTranslation(abortTooManySyntaxErrors);
     }
 }
+
+void runtimeError(TRuntimeErrorCode ec)
+{
+    extern unsigned currentLineNumber;
+
+    logRuntimeError(runtimeErrorMessages[ec], currentLineNumber);
+}
+

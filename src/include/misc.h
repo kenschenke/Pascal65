@@ -26,7 +26,7 @@ typedef enum {
 } TDataType;
 
 typedef union {
-    long integer;
+    int integer;
     char character;
     char *pString;
 } TDataValue;

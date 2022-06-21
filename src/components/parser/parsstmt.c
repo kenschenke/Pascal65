@@ -11,7 +11,7 @@ void parseAssignment(SCANNER *scanner, ICODE *Icode)
     // to the icode.
     pTargetNode = searchGlobalSymtab(scanner->token.string);
     if (!pTargetNode) {
-        enterGlobalSymtab(scanner->token.string);
+        pTargetNode = enterGlobalSymtab(scanner->token.string);
     }
 
     putSymtabNodeToIcode(Icode, pTargetNode);

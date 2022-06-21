@@ -6,7 +6,7 @@
 
 #define MAX_LINE_LEN 40
 
-extern unsigned currentLineNumber;
+extern short currentLineNumber;
 extern char eofChar;
 extern unsigned inputPosition;
 

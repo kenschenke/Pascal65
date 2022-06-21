@@ -3,7 +3,7 @@
 
 #include <buffer.h>
 
-unsigned currentLineNumber;
+short currentLineNumber;
 char eofChar = 0x7f;
 unsigned inputPosition;
 

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-extern int currentLineNumber;
+extern short currentLineNumber;
 
 static void freeSymtabLineList(SYMTABLINELIST *pLineList);
 static void freeSymtabNode(SYMTABNODE *symtabNode);
@@ -13,10 +13,6 @@ static void freeSymtabNode(SYMTABNODE *symtabNode);
 static SYMTABLINELIST *makeSymtabLineList(void);
 static SYMTABLINENODE *makeSymtabLineNode(void);
 static SYMTABNODE *makeSymtabNode(const char *pString);
-
-static void printSymtabLineList(SYMTABLINELIST *pLineList,
-    int newLineFlag, int indent);
-static void printSymtabNode(SYMTABNODE *pNode);
 
 void addLineNumToSymtabList(SYMTABLINELIST *pLineList)
 {
@@ -110,6 +106,7 @@ static void freeSymtabLineList(SYMTABLINELIST *pLineList)
     while (pNext) {
         pNext = pNode->next;
         free(pNode);
+        pNode = pNext;
     }
 }
 
@@ -129,9 +126,9 @@ static void freeSymtabNode(SYMTABNODE *symtabNode)
     free(symtabNode);
 }
 
-SYMTABNODE *getSymtabNode(SYMTAB *symtab, unsigned short xCode)
+SYMTABNODE *getSymtabNode(SYMTAB *symtab, short xNode)
 {
-    return symtab->vpNodes[xCode];
+    return symtab->vpNodes[xNode];
 }
 
 SYMTAB *makeSymtab(void)
@@ -145,7 +142,6 @@ SYMTAB *makeSymtab(void)
 
     symtab->cntNodes = 0;
     symtab->root = NULL;
-    symtab->xSymtab = 0;
     symtab->vpNodes = NULL;
     symtab->xSymtab = cntSymtabs++;
 
@@ -204,58 +200,6 @@ static SYMTABNODE *makeSymtabNode(const char *pString)
     strcpy(pNode->pString, pString);
 
     return pNode;
-}
-
-void printSymtab(SYMTAB *symtab)
-{
-    printSymtabNode(symtab->root);
-}
-
-static void printSymtabLineList(SYMTABLINELIST *pLineList,
-    int newLineFlag, int indent)
-{
-    const int maxLineNumberPrintWidth = 4;
-    const int maxLineNumbersPerLine = 10;
-
-    int n;
-    SYMTABLINENODE *pNode;
-
-    n = newLineFlag ? 0 : maxLineNumbersPerLine;
-
-    // Loop over line number nodes in the list
-    for (pNode = pLineList->head; pNode; pNode = pNode->next) {
-        // Start a new line if the current one is full
-        if (n == 0) {
-            printf("\n%*s", indent, " ");
-            n = maxLineNumbersPerLine;
-        }
-
-        printf("%*d", maxLineNumberPrintWidth, pNode->number);
-        --n;
-    }
-
-    printf("\n");
-}
-
-static void printSymtabNode(SYMTABNODE *pNode)
-{
-    const int maxNamePrintWidth = 16;
-
-    // First, print the left subtree
-    if (pNode->left) {
-        printSymtabNode(pNode->left);
-    }
-
-    // Print the node: first the name then the list of line numbers
-    printf("%*s\n", maxNamePrintWidth, pNode->pString);
-    if (pNode->lineNumList) {
-        printSymtabLineList(pNode->lineNumList, 1, maxNamePrintWidth);
-    }
-
-    // Finally, print the right subtree
-    if (pNode->right) {
-        printSymtabNode(pNode->right);
-    }
 }
 
 SYMTABNODE *searchSymtab(SYMTAB *symtab, const char *pString)
