@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ovrlinterp.h>
 #include <ovrlcommon.h>
 #include <buffer.h>
 #include <scanner.h>
@@ -30,6 +29,9 @@ void main()
 #endif
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
+
+    // load the parser
+    printf("Loading parser module\n");
     if (loadfile("interpreter.1")) {
         initCommon();
 
@@ -38,25 +40,30 @@ void main()
         printf("Parsing Source File\n");
         parse(&scanner);
         tin_close(tinBuf);
+    }
 
-        // If there were no syntax errors, convert the symbol tables.
-        // and create and invoke the backend executor.
-        if (errorCount == 0) {
-            vpSymtabs = malloc(sizeof(SYMTAB *) * cntSymtabs);
-            for (pSt = pSymtabList; pSt; pSt = pSt->next) {
-                convertSymtab(pSt, vpSymtabs);
-            }
-
-            pExec = executorInit();
-            executorGo(pExec);
-
-            for (i = 0; i < cntSymtabs; i++) {
-                freeSymtab(vpSymtabs[i]);
-            }
-            free(vpSymtabs);
-            free(pExec);
+    // If there were no syntax errors, convert the symbol tables.
+    // and create and invoke the backend executor.
+    if (errorCount > 0) {
+        printf("Errors!\n");
+        return;
+    }
+    
+    printf("Loading executor module\n");
+    if (loadfile("interpreter.2")) {
+        vpSymtabs = malloc(sizeof(SYMTAB *) * cntSymtabs);
+        for (pSt = pSymtabList; pSt; pSt = pSt->next) {
+            convertSymtab(pSt, vpSymtabs);
         }
-        overlayInterpreter();
+
+        pExec = executorInit();
+        executorGo(pExec);
+
+        for (i = 0; i < cntSymtabs; i++) {
+            freeSymtab(vpSymtabs[i]);
+        }
+        free(vpSymtabs);
+        free(pExec);
     }
 }
 
