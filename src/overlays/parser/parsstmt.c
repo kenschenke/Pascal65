@@ -1,3 +1,15 @@
+/**
+ * parsstmt.c
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Functions for parsing statements.
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #include <parser.h>
 #include <error.h>
 #include <icode.h>

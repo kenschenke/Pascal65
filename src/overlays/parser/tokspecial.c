@@ -1,3 +1,15 @@
+/**
+ * toknumber.c
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Code to tokenize a special character.
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #include <scanner.h>
 
 void getSpecialToken(TOKEN *token, SCANNER *scanner)

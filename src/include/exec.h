@@ -1,10 +1,21 @@
+/**
+ * exec.h
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Header for executor
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #ifndef EXEC_H
 #define EXEC_H
 
 #include <misc.h>
 #include <error.h>
 #include <symtab.h>
-#include <backend.h>
 
 #define RUNTIME_STACKSIZE 32
 

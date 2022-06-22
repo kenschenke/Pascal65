@@ -1,3 +1,15 @@
+/**
+ * icode.h
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Header for intermediate code
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #ifndef ICODE_H
 #define ICODE_H
 
