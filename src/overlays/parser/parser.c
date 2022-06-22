@@ -46,8 +46,10 @@ void parse(SCANNER *scanner)
 
     // Loop to parse statements until the end of the program.
     do {
-        if (scanner_isFatalError(scanner))
+        if (isFatalError || isStopKeyPressed()) {
+            isFatalError = 1;  // Force the main program to exit
             break;
+        }
 
         // Shouldn't see an end of file.
         if (scanner->token.code == tcEndOfFile) {

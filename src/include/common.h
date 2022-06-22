@@ -22,6 +22,9 @@ extern SYMTAB **vpSymtabs;
 extern SYMTAB *pGlobalSymtab;
 extern ICODE *pGlobalIcode;
 
+extern char isFatalError;       // non-zero if fatal parsing error encountered
+
 void initCommon(void);
+char isStopKeyPressed(void);
 
 #endif // end of COMMON_H

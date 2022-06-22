@@ -73,11 +73,6 @@ static void initCharCodeMap(void)
     charCodeMap[eofChar] = ccEndOfFile;
 }
 
-char scanner_isFatalError(SCANNER *scanner)
-{
-    return tin_isFatalError(scanner->pTinBuf);
-}
-
 static void skipWhiteSpace(SCANNER *scanner)
 {
     char ch;

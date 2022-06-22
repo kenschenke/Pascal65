@@ -14,6 +14,7 @@
 #define EXEC_H
 
 #include <misc.h>
+#include <icode.h>
 #include <error.h>
 #include <symtab.h>
 

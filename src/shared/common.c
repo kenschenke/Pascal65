@@ -14,18 +14,33 @@
 #include <common.h>
 #include <symtab.h>
 #include <icode.h>
+#include <cbm.h>
+#include <conio.h>
 
 short cntSymtabs;
 SYMTAB *pSymtabList;
 SYMTAB **vpSymtabs;
 SYMTAB *pGlobalSymtab;
 ICODE *pGlobalIcode;
+char isFatalError;
 
 void initCommon(void)
 {
     cntSymtabs = 0;
     pSymtabList = NULL;
+    isFatalError = 0;
 
     pGlobalSymtab = makeSymtab();
     pGlobalIcode = makeIcode();
+}
+
+char isStopKeyPressed()
+{
+    char ch = 0;
+
+    if (kbhit()) {
+        ch = cgetc();
+    }
+
+    return ch == CH_STOP;
 }

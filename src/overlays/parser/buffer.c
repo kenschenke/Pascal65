@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <common.h>
 
 #include <buffer.h>
 
@@ -32,14 +33,12 @@ TINBUF *tin_open(const char *pFilename, TAbortCode ac)
 
     fh = fopen(pFilename, "r");
     if (fh == NULL) {
-        tinBuf->fatalError = 1;
         abortTranslation(ac);
         return tinBuf;
     }
 
     if (tinBuf == NULL) {
         fclose(fh);
-        tinBuf->fatalError = 1;
         abortTranslation(abortOutOfMemory);
         return tinBuf;
     }
@@ -60,7 +59,7 @@ void tin_close(TINBUF *tinBuf)
 
 char getCurrentChar(TINBUF *tinBuf)
 {
-    if (tin_isFatalError(tinBuf))
+    if (isFatalError)
         return eofChar;
 
     return *(tinBuf->pChar);
@@ -70,14 +69,14 @@ char getChar(TINBUF *tinBuf)
 {
     char ch;
 
-    if (tin_isFatalError(tinBuf))
+    if (isFatalError)
         return eofChar;
         
     if (*(tinBuf->pChar) == eofChar) {
         return eofChar;
     } else if (*(tinBuf->pChar) == 0) {
         ch = getLine(tinBuf);
-        if (tin_isFatalError(tinBuf))
+        if (isFatalError)
             return eofChar;
     } else {
         tinBuf->pChar++;
@@ -93,7 +92,7 @@ char getLine(TINBUF *tinBuf)
     extern int currentNestingLevel;
     int i, n;
 
-    if (tin_isFatalError(tinBuf))
+    if (isFatalError)
         return eofChar;
         
     if (feof(tinBuf->fh)) {
@@ -104,7 +103,6 @@ char getLine(TINBUF *tinBuf)
             n = fread(tinBuf->buffer+i, sizeof(char), 1, tinBuf->fh);
             if (n != 1) {
                 if (!feof(tinBuf->fh)) {
-                    tinBuf->fatalError = 1;
                     abortTranslation(abortSourceFileReadFailed);
                     return eofChar;
                 }
@@ -118,7 +116,6 @@ char getLine(TINBUF *tinBuf)
             }
             ++i;
             if (i >= MAX_LINE_LEN) {
-                tinBuf->fatalError = 1;
                 abortTranslation(abortSourceLineTooLong);
                 return eofChar;
             }
@@ -129,14 +126,9 @@ char getLine(TINBUF *tinBuf)
     return *(tinBuf->pChar);
 }
 
-char tin_isFatalError(TINBUF *tinBuf)
-{
-    return tinBuf->fatalError;
-}
-
 char putBackChar(TINBUF *tinBuf)
 {
-    if (tin_isFatalError(tinBuf))
+    if (isFatalError)
         return eofChar;
 
     tinBuf->pChar--;

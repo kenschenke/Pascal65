@@ -17,6 +17,7 @@
 #include <error.h>
 #include <common.h>
 #include <symtab.h>
+#include <ovrlcommon.h>
 
 void getTokenForExecutor(EXECUTOR *pExec)
 {
@@ -97,6 +98,11 @@ void executorGo(EXECUTOR *pExec)
 
     // Loop to execute statements until the end of the program.
     do {
+        if (isStopKeyPressed()) {
+            outputLine("STOP key pressed -- exiting");
+            break;
+        }
+
         executeStatement(pExec);
 
         // Skip semicolons

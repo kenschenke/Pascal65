@@ -16,6 +16,7 @@
 
 #include <error.h>
 #include <ovrlcommon.h>
+#include <common.h>
 
 unsigned errorCount = 0;
 unsigned errorArrowFlag = 1;
@@ -112,6 +113,7 @@ static const char *runtimeErrorMessages[] = {
 void abortTranslation(TAbortCode ac)
 {
     logFatalError(abortMsg[-ac]);
+    isFatalError = 1;
 }
 
 void Error(TErrorCode ec)
@@ -126,8 +128,6 @@ void Error(TErrorCode ec)
 
 void runtimeError(TRuntimeErrorCode ec)
 {
-    extern unsigned currentLineNumber;
-
     logRuntimeError(runtimeErrorMessages[ec], currentLineNumber);
 }
 

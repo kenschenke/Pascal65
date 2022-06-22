@@ -56,8 +56,8 @@ void main()
 
     // If there were no syntax errors, convert the symbol tables.
     // and create and invoke the backend executor.
-    if (errorCount > 0) {
-        printf("Errors!\n");
+    if (errorCount > 0 || isFatalError) {
+        printf("Errors found in parsing -- exiting\n");
         return;
     }
     
