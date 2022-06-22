@@ -45,6 +45,7 @@ typedef struct {
 
 // Icode
 
+void executorFree(EXECUTOR *pExec);
 EXECUTOR *executorInit(void);
 void freeExecutor(EXECUTOR *pExec);
 void executorGoto(EXECUTOR *pExec, unsigned location);

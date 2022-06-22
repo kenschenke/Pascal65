@@ -106,6 +106,16 @@ SYMTABNODE *enterSymtab(SYMTAB *symtab, const char *pString)
     return pNode;
 }
 
+void freeAllSymtabs(void)
+{
+    int i;
+    
+    for (i = 0; i < cntSymtabs; i++) {
+        freeSymtab(vpSymtabs[i]);
+    }
+    free(vpSymtabs);
+}
+
 void freeSymtab(SYMTAB *symtab)
 {
     // First delete the nodes

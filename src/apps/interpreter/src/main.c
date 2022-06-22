@@ -31,7 +31,6 @@ void main()
     TINBUF *tinBuf;
     SCANNER scanner;
     EXECUTOR *pExec;
-    short i;
 
 #ifdef __C128__
     fast();
@@ -65,12 +64,9 @@ void main()
     if (loadfile("interpreter.2")) {
         pExec = executorInit();
         executorGo(pExec);
+        freeAllSymtabs();
 
-        for (i = 0; i < cntSymtabs; i++) {
-            freeSymtab(vpSymtabs[i]);
-        }
-        free(vpSymtabs);
-        free(pExec);
+        executorFree(pExec);
     }
 }
 

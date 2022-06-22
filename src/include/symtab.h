@@ -44,6 +44,7 @@ struct _SYMTAB {
 typedef struct _SYMTAB SYMTAB;
 
 void freeSymtab(SYMTAB *symtab);
+void freeAllSymtabs(void);
 SYMTAB *makeSymtab(void);
 
 void addLineNumToSymtabList(SYMTABLINELIST *pLineList);

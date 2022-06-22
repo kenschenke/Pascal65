@@ -89,6 +89,11 @@ unsigned executorCurrentLocation(EXECUTOR *pExec)
     return getCurrentIcodeLocation(pGlobalIcode);
 }
 
+void executorFree(EXECUTOR *pExec)
+{
+    free(pExec);
+}
+
 void executorGo(EXECUTOR *pExec)
 {
     // Reset the icode to the beginning
