@@ -98,6 +98,10 @@ void executorGo(EXECUTOR *pExec)
 
     // Loop to execute statements until the end of the program.
     do {
+        if (isFatalError) {
+            break;
+        }
+        
         if (isStopKeyPressed()) {
             outputLine("STOP key pressed -- exiting");
             break;

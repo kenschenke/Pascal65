@@ -129,5 +129,6 @@ void Error(TErrorCode ec)
 void runtimeError(TRuntimeErrorCode ec)
 {
     logRuntimeError(runtimeErrorMessages[ec], currentLineNumber);
+    isFatalError = 1;
 }
 
