@@ -12,6 +12,8 @@
 
 #include <exec.h>
 #include <misc.h>
+#include <common.h>
+#include <stdlib.h>
 
 void executeExpression(EXECUTOR *pExec)
 {
@@ -173,11 +175,15 @@ void executeTerm(EXECUTOR *pExec)
 
 void executeFactor(EXECUTOR *pExec)
 {
+    char buffer[5+1];
+
     switch (pExec->token) {
         case tcIdentifier:
             // If the variable is "input", prompt for its value.
             if (pExec->pNode == pExec->pInputNode) {
-                // TODO
+                printf(">> At %d: input ? ", currentLineNumber);
+                strInput(buffer, sizeof(buffer));
+                pExec->pNode->value = atoi(buffer);
             }
 
             // Push the variable's value onto the runtime stack
