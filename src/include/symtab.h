@@ -47,6 +47,7 @@ void freeSymtab(SYMTAB *symtab);
 SYMTAB *makeSymtab(void);
 
 void addLineNumToSymtabList(SYMTABLINELIST *pLineList);
+void convertAllSymtabs(void);
 void convertSymtab(SYMTAB *symtab, SYMTAB *vpSymtabs[]);
 void convertSymtabNode(SYMTABNODE *symtabNode, SYMTABNODE *vpNodes[]);
 SYMTABNODE *enterSymtab(SYMTAB *symtab, const char *pString);

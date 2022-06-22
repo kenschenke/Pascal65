@@ -30,7 +30,6 @@ void main()
 {
     TINBUF *tinBuf;
     SCANNER scanner;
-    SYMTAB *pSt;
     EXECUTOR *pExec;
     short i;
 
@@ -60,14 +59,10 @@ void main()
         printf("Errors found in parsing -- exiting\n");
         return;
     }
+    convertAllSymtabs();
     
     printf("Loading executor module\n");
     if (loadfile("interpreter.2")) {
-        vpSymtabs = malloc(sizeof(SYMTAB *) * cntSymtabs);
-        for (pSt = pSymtabList; pSt; pSt = pSt->next) {
-            convertSymtab(pSt, vpSymtabs);
-        }
-
         pExec = executorInit();
         executorGo(pExec);
 

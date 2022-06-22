@@ -41,6 +41,17 @@ void addLineNumToSymtabList(SYMTABLINELIST *pLineList)
     pLineList->tail = pNode;
 }
 
+void convertAllSymtabs(void)
+{
+    SYMTAB *pSt;
+
+    vpSymtabs = malloc(sizeof(SYMTAB *) * cntSymtabs);
+    for (pSt = pSymtabList; pSt; pSt = pSt->next) {
+        convertSymtab(pSt, vpSymtabs);
+    }
+
+}
+
 void convertSymtab(SYMTAB *symtab, SYMTAB *vpSymtabs[])
 {
     int size, i;
