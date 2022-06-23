@@ -107,7 +107,7 @@ void executorGo(EXECUTOR *pExec)
             break;
         }
         
-        if (isStopKeyPressed()) {
+        if (pExec->userStop || isStopKeyPressed()) {
             outputLine("STOP key pressed -- exiting");
             break;
         }

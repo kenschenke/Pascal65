@@ -32,6 +32,7 @@ void rtstack_push(RTSTACK *pStack, int value);
 typedef struct {
     unsigned stmtCount;
     RTSTACK *runStack;
+    char userStop;      // 1 if user requested stop execution
 
     TOKEN *pToken;      // ptr to the current token
     TTokenCode token;   // code of current token

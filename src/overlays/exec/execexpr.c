@@ -182,8 +182,12 @@ void executeFactor(EXECUTOR *pExec)
             // If the variable is "input", prompt for its value.
             if (pExec->pNode == pExec->pInputNode) {
                 printf(">> At %d: input ? ", currentLineNumber);
-                strInput(buffer, sizeof(buffer));
-                pExec->pNode->value = atoi(buffer);
+                if (strInput(buffer, sizeof(buffer))) {
+                    pExec->userStop = 1;
+                    pExec->pNode->value = 0;
+                } else {
+                    pExec->pNode->value = atoi(buffer);
+                }
             }
 
             // Push the variable's value onto the runtime stack
