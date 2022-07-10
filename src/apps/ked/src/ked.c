@@ -19,7 +19,6 @@
  * TODO:
  * 
  * Load and save files
- * Fix editorUpdateRow
  * Fix find + make case insensitive
  * Drop "Kilo" name
  * Support for 40/80 columns
@@ -446,7 +445,6 @@ void editorSelectSyntaxHighlight() {
 /*** row operations ***/
 
 void editorUpdateRow(erow *row) {
-#if 0
     int tabs = 0;
     int j, idx;
     char *buf;
@@ -472,7 +470,6 @@ void editorUpdateRow(erow *row) {
     memcpy(row->chars, buf, idx);
 
     editorUpdateSyntax(row);
-#endif
 }
 
 void editorDeleteToStartOfLine() {
