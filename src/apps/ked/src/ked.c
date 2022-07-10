@@ -20,9 +20,9 @@
  * 
  * Load and save files
  * Fix editorUpdateRow
+ * Fix find + make case insensitive
  * Drop Rx
  * Allow r->rev to be null in drawRow128
- * Organize and rethink shortcut keys
  * Drop "Kilo" name
  * Support for 40/80 columns
  * Help page
@@ -49,20 +49,21 @@ void __fastcall__ drawRow128(char row, char len,
 enum editorKey {
     BACKSPACE = 127,
     DEL_KEY = 1000,
-    HOME_KEY,           // Esc+J or Ctrl-J
-    END_KEY,            // Esc+K or Ctrl-K
+    HOME_KEY,
+    END_KEY,
     PAGE_UP,
     PAGE_DOWN,
-    DEL_SOL_KEY,        // Esc+P or Ctrl-P
-    DEL_EOL_KEY,        // Esc+Q or Ctrl-Q  --- CONFLICT
-    DEL_LINE_KEY,       // Esc+D or Ctrl-D
-    INS_LINE_KEY,       // Esc+I or Ctrl-I
-    SCROLL_UP_KEY,      // Esc+V or Ctrl-V
-    SCROLL_DOWN_KEY,    // Esc+W or Ctrl-W
-    SCROLL_TOP_KEY,     // Esc+T or Ctrl-T
-    SCROLL_BOTTOM_KEY,  // Esc+B or Ctrl-B
-    MARK_KEY,           // Esc+Y or Ctrl-Y
-    PASTE_KEY,          // Esc+O or Ctrl-O
+    DEL_SOL_KEY,
+    DEL_EOL_KEY,
+    DEL_LINE_KEY,
+    INS_LINE_KEY,
+    SCROLL_UP_KEY,
+    SCROLL_DOWN_KEY,
+    SCROLL_TOP_KEY,
+    SCROLL_BOTTOM_KEY,
+    MARK_KEY,
+    PASTE_KEY,
+    SELECT_ALL_KEY,
 };
 
 enum editorHighlight {
@@ -212,6 +213,10 @@ int editorReadKey() {
     if (E.last_key_esc) {
         E.last_key_esc = 0;
         switch (c) {
+            case 'a':
+            case 'A':
+                return SELECT_ALL_KEY;
+
             case 'j':
             case 'J':
                 return HOME_KEY;
@@ -244,12 +249,12 @@ int editorReadKey() {
             case 'W':
                 return SCROLL_DOWN_KEY;
 
-            case 't':
-            case 'T':
-                return SCROLL_TOP_KEY;
-
             case 'b':
             case 'B':
+                return SCROLL_TOP_KEY;
+
+            case 'e':
+            case 'E':
                 return SCROLL_BOTTOM_KEY;
 
             case 'y':
@@ -259,6 +264,12 @@ int editorReadKey() {
             case 'o':
             case 'O':
                 return PASTE_KEY;
+            
+            case CH_CURS_UP:
+                return PAGE_UP;
+            
+            case CH_CURS_DOWN:
+                return PAGE_DOWN;
         }
     }
 
@@ -1303,7 +1314,7 @@ void editorProcessKeypress() {
             E.cx--;
             break;
 
-        case CTRL_KEY('e'):
+        case CTRL_KEY('x'):
             if (E.dirty && quit_times > 0) {
                 editorSetStatusMessage("WARNING!!! File has unsaved changes. "
                 "Press Ctrl-E %d more times to quit.", quit_times);
@@ -1313,14 +1324,31 @@ void editorProcessKeypress() {
             E.quit = 1;
             break;
 
+#if 0
         case CTRL_KEY('s'):
             // editorSave();
             break;
+#endif
 
+        case CTRL_KEY('j'):
         case HOME_KEY:
             E.cx = 0;
             break;
 
+        case CH_HOME:
+            if (E.cx == 0 && E.cy == E.rowoff) {
+                if (E.rowoff != 0) {
+                    E.rowoff = 0;
+                    editorSetAllRowsDirty();
+                }
+                E.cy = 0;
+            } else {
+                E.cx = 0;
+                E.cy = E.rowoff;
+            }
+            break;
+
+        case CTRL_KEY('k'):
         case END_KEY:
             if (E.cy < E.numrows)
                 E.cx = E.row[E.cy].size;
@@ -1334,6 +1362,7 @@ void editorProcessKeypress() {
             editorDeleteToEndOfLine();
             break;
         
+        case CTRL_KEY('d'):
         case DEL_LINE_KEY:
             E.cx = 0;
             editorDelRow(E.cy);
@@ -1367,7 +1396,7 @@ void editorProcessKeypress() {
             }
             break;
         
-        case CTRL_KEY('c'):
+        case CTRL_KEY('b'):
         case SCROLL_TOP_KEY:
             if (E.rowoff != 0) {
                 E.rowoff = 0;
@@ -1376,7 +1405,7 @@ void editorProcessKeypress() {
             }
             break;
 
-        case CTRL_KEY('b'):
+        case CTRL_KEY('e'):
         case SCROLL_BOTTOM_KEY:
             {
                 int newoff = E.numrows - E.screenrows;
@@ -1411,9 +1440,13 @@ void editorProcessKeypress() {
         case '\x1b':
             break;
 
+        case CTRL_KEY('n'):
+        case CTRL_KEY('p'):
         case PAGE_UP:
         case PAGE_DOWN:
             {
+                if (c == CTRL_KEY('n')) c = PAGE_DOWN;
+                if (c == CTRL_KEY('p')) c = PAGE_UP;
                 if (c == PAGE_UP) {
                     E.cy = E.rowoff;
                 } else if (c == PAGE_DOWN) {
@@ -1438,6 +1471,15 @@ void editorProcessKeypress() {
         case CTRL_KEY('o'):
         case PASTE_KEY:
             editorPasteClipboard();
+            break;
+        
+        case CTRL_KEY('a'):
+        case SELECT_ALL_KEY:
+            E.in_selection = 1;
+            E.shx = E.shy = 0;
+            E.cy = E.numrows - 1;
+            E.cx = E.row[E.numrows-1].size;
+            editorCalcSelection();
             break;
 
         default:
