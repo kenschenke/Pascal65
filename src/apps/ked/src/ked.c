@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <conio.h>
-#ifdef _C128_H
+#ifdef __C128__
 #include <c128.h>
 #endif
 // #include <fcntl.h>
@@ -17,19 +17,20 @@
 #include <time.h>
 // #include <unistd.h>
 
+#ifndef __C128__
+#define SYNTAX_HIGHLIGHT
+#endif
+
 /**
  * TODO:
  * 
  * Load and save files
  * Fix find + make case insensitive
  * Drop "Kilo" name
- * Support for 40/80 columns
  * Change the unsaved exit procedure to ask a confirmation question
  * Help page
- * Disable syntax highlighting code on C128
  * Add function prototypes to top of file
- * Abstract the screen routines behind platform-agnostic functions
- *     and disable C128 code at compile time on Mega65
+ * Put C128 code inside #ifdefs
  * 
  */
 
@@ -75,6 +76,7 @@ enum editorKey {
     COL80_KEY,
 };
 
+#ifdef SYNTAX_HIGHLIGHT
 enum editorHighlight {
     HL_NORMAL = 0,
     HL_COMMENT,
@@ -88,9 +90,11 @@ enum editorHighlight {
 
 #define HL_HIGHLIGHT_NUMBERS (1<<0)
 #define HL_HIGHLIGHT_STRINGS (1<<1)
+#endif
 
 /*** data ***/
 
+#ifdef SYNTAX_HIGHLIGHT
 struct editorSyntax {
     char *filetype;
     char **filematch;
@@ -100,14 +104,17 @@ struct editorSyntax {
     char *multiline_comment_end;
     int flags;
 };
+#endif
 
 typedef struct erow {
     int idx;
     int size;
     char *chars;
+#ifndef SYNTAX_HIGHLIGHT
     unsigned char *hl;
-    unsigned char *rev;             // bit 7 is high for highlighted text
     int hl_open_comment;
+#endif
+    unsigned char *rev;             // bit 7 is high for highlighted text
 } erow;
 
 struct editorConfig {
@@ -136,14 +143,16 @@ struct editorConfig {
     unsigned char *statusbarrev;
     time_t statusmsg_time;
     char statusmsg_dirty;
+#ifdef SYNTAX_HIGHLIGHT
     struct editorSyntax *syntax;
-    // struct termios orig_termios;
+#endif
 };
 
 struct editorConfig E;
 
 /*** file types ***/
 
+#ifdef SYNTAX_HIGHLIGHT
 char *C_HL_extensions[] = {".c", ".h", ".cpp", NULL};
 char *C_HL_keywords[] = {
   "switch", "if", "while", "for", "break", "continue", "return", "else",
@@ -163,6 +172,7 @@ struct editorSyntax HLDB[] = {
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
+#endif
 
 /*** prototypes ***/
 
@@ -325,6 +335,7 @@ int editorReadKey() {
     return c;
 }
 
+#ifdef SYNTAX_HIGHLIGHT
 /*** syntax highlighting ***/
 
 int is_separator(int c) {
@@ -493,6 +504,7 @@ void editorSelectSyntaxHighlight() {
         }
     }
 }
+#endif // end of SYNTAX_HIGHLIGHT
 
 /*** row operations ***/
 
@@ -521,7 +533,9 @@ void editorUpdateRow(erow *row) {
     row->chars = realloc(row->chars, idx);
     memcpy(row->chars, buf, idx);
 
+#ifdef SYNTAX_HIGHLIGHT
     editorUpdateSyntax(row);
+#endif
 }
 
 void editorDeleteToStartOfLine() {
@@ -573,8 +587,10 @@ void editorInsertRow(int at, char *s, size_t len) {
 
     E.row[at].rev = NULL;
 
+#ifdef SYNTAX_HIGHLIGHT
     E.row[at].hl = NULL;
     E.row[at].hl_open_comment = 0;
+#endif
     editorSetRowDirty(&E.row[at]);
     editorUpdateRow(&E.row[at]);
 
@@ -585,7 +601,9 @@ void editorInsertRow(int at, char *s, size_t len) {
 void editorFreeRow(erow *row) {
     free(row->chars);
     free(row->rev);
+#ifdef SYNTAX_HIGHLIGHT
     free(row->hl);
+#endif
 }
 
 void editorDelRow(int at) {
@@ -999,17 +1017,18 @@ void editorFindCallback(char *query, int key) {
     static int last_match = -1;
     static int direction = 1;
 
-    static int saved_hl_line;
-    static char *saved_hl = NULL;
+    static int saved_rev_line;
+    static unsigned char *saved_rev = NULL;
 
     int current, i;
     erow *row;
     char *match;
 
-    if (saved_hl) {
-        memcpy(E.row[saved_hl_line].hl, saved_hl, E.row[saved_hl_line].size);
-        free(saved_hl);
-        saved_hl = NULL;
+    if (saved_rev) {
+        memcpy(E.row[saved_rev_line].rev, saved_rev, E.row[saved_rev_line].size);
+        free(saved_rev);
+        saved_rev = NULL;
+        editorSetAllRowsDirty();
     }
 
     if (key == '\r' || key == '\x1b') {
@@ -1040,10 +1059,15 @@ void editorFindCallback(char *query, int key) {
             E.cx = match - row->chars;
             E.rowoff = E.numrows;
 
-            saved_hl_line = current;
-            saved_hl = malloc(row->size);
-            memcpy(saved_hl, row->hl, row->size);
-            memset(&row->hl[match - row->chars], HL_MATCH, strlen(query));
+            if (!row->rev) {
+                row->rev = malloc(row->size);
+                memset(row->rev, 0, row->size);
+            }
+            saved_rev_line = current;
+            saved_rev = malloc(row->size);
+            memcpy(saved_rev, row->rev, row->size);
+            memset(&row->rev[match - row->chars], 128, strlen(query));
+            editorSetRowDirty(row);
             break;
         }
     }
@@ -1135,8 +1159,12 @@ void editorDrawStatusBar() {
     len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
         E.filename ? E.filename : "[No Name]", E.numrows,
         E.dirty ? "(modified)" : "");
+#ifdef SYNTAX_HIGHLIGHT
     rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
         E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows);
+#else
+    rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cy + 1, E.numrows);
+#endif
     if (len > E.screencols) len = E.screencols;
     memcpy(E.statusbar, status, len);
     memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
@@ -1547,7 +1575,9 @@ void initEditor() {
     E.statusmsg[0] = '\0';
     E.statusmsg_time = 0;
     E.statusmsg_dirty = 0;
+#ifdef SYNTAX_HIGHLIGHT
     E.syntax = NULL;
+#endif
 
     E.screenrows = 25;
     E.screencols = 80;
