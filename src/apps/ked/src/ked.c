@@ -21,9 +21,9 @@
  * Load and save files
  * Fix editorUpdateRow
  * Fix find + make case insensitive
- * Drop Rx
  * Drop "Kilo" name
  * Support for 40/80 columns
+ * Change the unsaved exit procedure to ask a confirmation question
  * Help page
  * Disable syntax highlighting code on C128
  * Abstract the screen routines behind platform-agnostic functions
@@ -102,7 +102,6 @@ typedef struct erow {
 
 struct editorConfig {
     int cx, cy;                     // cursor X and Y
-    int rx;
     int rowoff;                     // top row on screen
     int coloff;                     // left-most column on screen
     int screenrows;                 // # of rows on display
@@ -445,33 +444,6 @@ void editorSelectSyntaxHighlight() {
 }
 
 /*** row operations ***/
-
-int editorRowCxToRx(erow *row, int cx) {
-    int rx = 0;
-    int j;
-    for (j = 0; j < cx; ++j) {
-        if (row->chars[j] == '\t') {
-            rx += (KILO_TAB_STOP - 1) - (rx % KILO_TAB_STOP);
-        }
-        ++rx;
-    }
-
-    return rx;
-}
-
-int editorRowRxToCx(erow *row, int rx) {
-    int cur_rx = 0;
-    int cx;
-    for (cx = 0; cx < row->size; ++cx) {
-        if (row->chars[cx] == '\t')
-            cur_rx += (KILO_TAB_STOP - 1) - (cur_rx % KILO_TAB_STOP);
-        ++cur_rx;
-
-        if (cur_rx > rx) return cx;
-    }
-
-    return cx;
-}
 
 void editorUpdateRow(erow *row) {
 #if 0
@@ -1051,11 +1023,6 @@ void editorFind() {
 void editorScroll() {
     int willScroll = 0;
 
-    E.rx = 0;
-    if (E.cy < E.numrows) {
-        E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
-    }
-
     if (E.cy < E.rowoff) {
         E.rowoff = E.cy;
         willScroll = 1;
@@ -1064,12 +1031,12 @@ void editorScroll() {
         E.rowoff = E.cy - E.screenrows + 1;
         willScroll = 1;
     }
-    if (E.rx < E.coloff) {
-        E.coloff = E.rx;
+    if (E.cx < E.coloff) {
+        E.coloff = E.cx;
         willScroll = 1;
     }
-    if (E.rx >= E.coloff + E.screencols) {
-        E.coloff = E.rx - E.screencols + 1;
+    if (E.cx >= E.coloff + E.screencols) {
+        E.coloff = E.cx - E.screencols + 1;
         willScroll = 1;
     }
 
@@ -1162,7 +1129,7 @@ void editorRefreshScreen(void) {
     editorDrawMessageBar();
 
     cursor(1);  // turn the cursor back on
-    gotoxy(E.rx - E.coloff, E.cy - E.rowoff);
+    gotoxy(E.cx - E.coloff, E.cy - E.rowoff);
 }
 
 void editorSetStatusMessage(const char *fmt, ...) {
@@ -1491,7 +1458,6 @@ void editorProcessKeypress() {
 void initEditor() {
     E.cx = 0;
     E.cy = 0;
-    E.rx = 0;
     E.rowoff = 0;
     E.coloff = 0;
     E.numrows = 0;
