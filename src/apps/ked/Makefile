@@ -12,12 +12,16 @@ c64_EMUCMD := x64sc -kernal kernal -VICIIdsize -autostart
 c128_EMUCMD := x128 -kernal kernal -VICIIdsize -autostart
 EMUCMD = $($(TARGET)_EMUCMD)
 
+TARGETSRCDIR = $(SRCDIR)/$(TARGET)
+
 CFLAGS = -I ../../include
 ASFLAGS =
 LDFLAGS =
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
+SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
+SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -38,6 +42,14 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.c $(TARGETSRCDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(TARGETSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

@@ -3,7 +3,9 @@
 #include <ctype.h>
 #include <errno.h>
 #include <conio.h>
+#ifdef _C128_H
 #include <c128.h>
+#endif
 // #include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -25,15 +27,22 @@
  * Change the unsaved exit procedure to ask a confirmation question
  * Help page
  * Disable syntax highlighting code on C128
+ * Add function prototypes to top of file
  * Abstract the screen routines behind platform-agnostic functions
  *     and disable C128 code at compile time on Mega65
  * 
  */
 
-void __fastcall__ clearScreen128(void);
-void __fastcall__ initScreen128(void);
-void __fastcall__ setScreenBg128(char bg);
-void __fastcall__ drawRow128(char row, char len,
+void __fastcall__ clearScreen80(void);
+void __fastcall__ initScreen80(void);
+void __fastcall__ setScreenBg80(char bg);
+void __fastcall__ drawRow80(char row, char len,
+    char *buf, unsigned char *rev);
+
+void __fastcall__ clearScreen40(void);
+void __fastcall__ initScreen40(void);
+void __fastcall__ setScreenBg40(char bg);
+void __fastcall__ drawRow40(char row, char len,
     char *buf, unsigned char *rev);
 
 /*** defines ***/
@@ -62,6 +71,8 @@ enum editorKey {
     MARK_KEY,
     PASTE_KEY,
     SELECT_ALL_KEY,
+    COL40_KEY,
+    COL80_KEY,
 };
 
 enum editorHighlight {
@@ -155,10 +166,45 @@ struct editorSyntax HLDB[] = {
 
 /*** prototypes ***/
 
+void clearScreen(void);
+void drawRow(char row, char len, char *buf, unsigned char *rev);
 void editorSetRowDirty(erow *row);
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
+void setScreenBg(char bg);
+void initScreen(void);
+void setupScreenCols(void);
+
+/*** screen routines ***/
+
+void clearScreen(void) {
+    if (E.screencols == 40)
+        clearScreen40();
+    else
+        clearScreen80();
+}
+
+void drawRow(char row, char len, char *buf, unsigned char *rev) {
+    if (E.screencols == 40)
+        drawRow40(row, len, buf, rev);
+    else
+        drawRow80(row, len, buf, rev);
+}
+
+void initScreen(void) {
+    if (E.screencols == 40)
+        initScreen40();
+    else
+        initScreen80();
+}
+
+void setScreenBg(char bg) {
+    if (E.screencols == 40)
+        setScreenBg40(bg);
+    else
+        setScreenBg80(bg);
+}
 
 /*** terminal ***/
 
@@ -210,6 +256,12 @@ int editorReadKey() {
     if (E.last_key_esc) {
         E.last_key_esc = 0;
         switch (c) {
+            case '4':
+                return COL40_KEY;
+
+            case '8':
+                return COL80_KEY;
+
             case 'a':
             case 'A':
                 return SELECT_ALL_KEY;
@@ -1060,15 +1112,15 @@ void editorDrawRows(void) {
                 p = banner;
                 while (padding--) *p++ = ' ';
                 memcpy(p, welcome, welcomelen);
-                drawRow128(y, buflen, banner, NULL);
+                drawRow(y, buflen, banner, NULL);
                 free(banner);
             }
         } else if (E.dirtyScreenRows[y]) {
             int len = E.row[filerow].size - E.coloff;
             if (len < 0) len = 0;
             if (len > E.screencols) len = E.screencols;
-            drawRow128(y, len, &E.row[filerow].chars[E.coloff],
-                &E.row[filerow].rev[E.coloff]);
+            drawRow(y, len, &E.row[filerow].chars[E.coloff],
+                E.row[filerow].rev ? &E.row[filerow].rev[E.coloff] : NULL);
             E.dirtyScreenRows[y] = 0;
         }
     }
@@ -1089,7 +1141,7 @@ void editorDrawStatusBar() {
     memcpy(E.statusbar, status, len);
     memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
 
-    drawRow128(E.screenrows, E.screencols, E.statusbar, E.statusbarrev);
+    drawRow(E.screenrows, E.screencols, E.statusbar, E.statusbarrev);
 }
 
 void editorDrawMessageBar(void) {
@@ -1102,13 +1154,13 @@ void editorDrawMessageBar(void) {
     if (msglen && time(NULL) - E.statusmsg_time < 5) {
         rev = malloc(msglen);
         memset(rev, 0, msglen);
-        drawRow128(E.screenrows+1, msglen, E.statusmsg, rev);
+        drawRow(E.screenrows+1, msglen, E.statusmsg, rev);
         free(rev);
     } else {
         rev = malloc(E.screencols);
         memset(rev, 0, E.screencols);
         memset(E.statusmsg, ' ', E.screencols);
-        drawRow128(E.screenrows+1, E.screencols, E.statusmsg, rev);
+        drawRow(E.screenrows+1, E.screencols, E.statusmsg, rev);
         free(rev);
         E.statusmsg_time = 0;
     }
@@ -1263,6 +1315,28 @@ void editorProcessKeypress() {
                 while (row->chars[i] && row->chars[i] == ' ') ++i;
                 editorInsertNewLine(i);
             }
+            break;
+        
+        case COL40_KEY:
+            clearScreen();
+            E.screencols = 40;
+            setupScreenCols();
+            editorSetAllRowsDirty();
+            break;
+
+        case COL80_KEY:
+            clearScreen();
+            E.screencols = 80;
+            setupScreenCols();
+            editorSetAllRowsDirty();
+            break;
+
+        case CH_F1:
+            clearScreen();
+            E.screencols = E.screencols == 80 ? 40 : 80;
+            setupScreenCols();
+            editorSetAllRowsDirty();
+            break;
             break;
         
         case '\t':
@@ -1488,9 +1562,17 @@ void initEditor() {
     memset(E.statusbarrev, 128, E.screencols);
 
     fast();
-    videomode(VIDEOMODE_80x25);
-    initScreen128();
-    setScreenBg128(2);
+    setupScreenCols();
+}
+
+void setupScreenCols(void) {
+    if (E.screencols == 80)
+        videomode(VIDEOMODE_80x25);
+    else
+        videomode(VIDEOMODE_40x25);
+
+    initScreen();
+    setScreenBg(E.screencols == 40 ? COLOR_BLUE : 2);
 }
 
 int showKeyCodes(void) {
@@ -1503,7 +1585,7 @@ int showKeyCodes(void) {
 
     sprintf(buf, "%3d", c);
     memset(rev, 0, 3);
-    drawRow128(10, 3, buf, rev);
+    drawRow(10, 3, buf, rev);
     return 0;
 }
 
@@ -1537,7 +1619,7 @@ int main(int argc, char *argv[])
         editorProcessKeypress();
     }
 
-    clearScreen128();
+    clearScreen();
     gotoxy(0, 0);
 
     return 0;

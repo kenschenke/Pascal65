@@ -1,11 +1,11 @@
 
-; void __fastcall__ clearScreen128(void);
-; void __fastcall__ initScreen128(void);
-; void __fastcall__ setScreenBg128(char bg);
-; void __fastcall__ drawRow128(char row, char len, char *buf);
+; void __fastcall__ clearScreen80(void);
+; void __fastcall__ initScreen80(void);
+; void __fastcall__ setScreenBg80(char bg);
+; void __fastcall__ drawRow80(char row, char len, char *buf);
 
-    .export     _drawRow128, _initScreen128, _setScreenBg128, _clearScreen128
-    .import     popa, popax
+    .export     _drawRow80, _initScreen80, _setScreenBg80, _clearScreen80
+    .import     popa, popax, incRow, petscii2Screen
     .importzp   ptr1, ptr2, ptr3, tmp1, tmp2
 
     .include    "c128.inc"
@@ -17,29 +17,13 @@
     VDC_COLOR = 26
     NUM_COLS = 80
 
-; Increment the address in ptr2 by 80 bytes per row
-; row passed in .X
-incRow:
-    beq @Done       ; If .X is zero we're done
-    lda ptr2        ; Load low byte for address from ptr2
-    clc
-    adc #$50        ; 80 chars per row
-    sta ptr2        ; Store the low byte
-    lda ptr2+1      ; Load the high byte
-    adc #$0         ; Add the carry bit
-    sta ptr2+1      ; Store the high byte
-    dex
-    jmp incRow
-@Done:
-    rts
-
-; void drawRow128(char row, char len, char *buf, unsigned char *rev)
+; void drawRow80(char row, char len, char *buf, unsigned char *rev)
 ;       ptr1 - char buffer
 ;       ptr2 = screen RAM
 ;       ptr3 - reverse buffer (or'd with chars)
 ;       tmp1 - length of buffer
 ;       tmp2 - row number, then # of chars to pad later
-_drawRow128:
+_drawRow80:
     sta ptr3        ; Low byte of rev buffer passed in .A
     stx ptr3+1      ; High byte of rev buffer passed in .X
     jsr popax       ; Pull the character buffer pointer off the stack
@@ -54,6 +38,7 @@ _drawRow128:
     lda CHARMEM+1
     sta ptr2+1
     ldx tmp2
+    ldy #NUM_COLS
     jsr incRow      ; Move ptr2 down to the row
     ; How many spaces to pad out the line?
     lda #NUM_COLS
@@ -72,7 +57,7 @@ _drawRow128:
     lda tmp1
     beq @BeginFill
     lda (ptr1),y    ; Load the next byte
-    jsr convert     ; Convert from PETSCII to screen char
+    jsr petscii2Screen
     ; Check if ptr3 is null.
     ldx ptr3        ; Look at the low byte of ptr3
     bne @DoRev
@@ -99,7 +84,7 @@ _drawRow128:
 @Done:
     rts
 
-_clearScreen128:
+_clearScreen80:
     ; Set the starting address for attribute memory
     ldx #VDC_DATA_HI
     lda CHARMEM+1
@@ -124,7 +109,7 @@ _clearScreen128:
     bne @Loop
     rts
 
-_initScreen128:
+_initScreen80:
     ldx #VDC_SCREEN_ADDR
     jsr read80r
     sta CHARMEM+1
@@ -163,52 +148,9 @@ _initScreen128:
     bne @Loop
     rts
 
-_setScreenBg128:
+_setScreenBg80:
     ldx #VDC_COLOR
     jsr write80r
-    rts
-
-convert:
-    cmp #$20    ; if a < 32
-    bcc convRev
-
-    cmp #$60    ; if a < 96
-    bcc conv1
-
-    cmp #$80    ; if a < 128
-    bcc conv2
-
-    cmp #$a0    ; if a < 160
-    bcc conv3
-
-    cmp #$c0    ; if a < 192
-    bcc conv4
-
-    cmp #$ff    ; if a < 255
-    bcc convRev
-
-    lda #$7e
-    bne convEnd
-
-conv2:
-    and #$5f
-    bne convEnd
-
-conv3:
-    ora #$40
-    bne convEnd
-
-conv4:
-    eor #$c0
-    bne convEnd
-
-conv1:
-    and #$3f
-    bpl convEnd
-
-convRev:
-    eor #$80
-convEnd:
     rts
 
     ;; register # in X, value in A
