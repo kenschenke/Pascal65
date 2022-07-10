@@ -22,7 +22,6 @@
  * Fix editorUpdateRow
  * Fix find + make case insensitive
  * Drop Rx
- * Allow r->rev to be null in drawRow128
  * Drop "Kilo" name
  * Support for 40/80 columns
  * Help page
@@ -551,8 +550,7 @@ void editorInsertRow(int at, char *s, size_t len) {
     memcpy(E.row[at].chars, s, len);
     E.row[at].chars[len] = '\0';
 
-    E.row[at].rev = malloc(len + 1);
-    memset(E.row[at].rev, 0, len + 1);
+    E.row[at].rev = NULL;
 
     E.row[at].hl = NULL;
     E.row[at].hl_open_comment = 0;
@@ -726,13 +724,13 @@ void editorCalcSelection() {
     // after the ending row.
     if (E.last_shy != -1 && E.last_shy < E.shy) {
         for (y = E.last_shy; y < E.shy; ++y) {
-            memset(E.row[y].rev, 0, E.row[y].size);
+            if (E.row[y].rev) memset(E.row[y].rev, 0, E.row[y].size);
             editorSetRowDirty(&E.row[y]);
         }
     }
     if (E.last_ehy > E.ehy) {
         for (y = E.ehy + 1; y <= E.last_ehy; ++y) {
-            memset(E.row[y].rev, 0, E.row[y].size);
+            if (E.row[y].rev) memset(E.row[y].rev, 0, E.row[y].size);
             editorSetRowDirty(&E.row[y]);
         }
     }
@@ -740,6 +738,7 @@ void editorCalcSelection() {
     // Do the first selected row
 
     row = &E.row[E.shy];
+    if (row->rev == NULL) row->rev = malloc(row->size);
     memset(row->rev, 0, row->size);
     memset(row->rev + E.shx, 128,
         E.shy == E.ehy ? E.ehx - E.shx + 1 : row->size - E.shx);
@@ -748,6 +747,7 @@ void editorCalcSelection() {
     // Do the rows up through the last
 
     for (y = E.shy + 1; y <= E.ehy; ++y) {
+        if (E.row[y].rev == NULL) E.row[y].rev = malloc(E.row[y].size);
         memset(E.row[y].rev, 128, E.row[y].size);
         editorSetRowDirty(&E.row[y]);
     }
@@ -756,7 +756,7 @@ void editorCalcSelection() {
 
     row = &E.row[E.ehy];
     y = row->size - E.ehx - 1;
-    if (y > 0) memset(row->rev + E.ehx + 1, 0, y);
+    if (y > 0 && row->rev) memset(row->rev + E.ehx + 1, 0, y);
     editorSetRowDirty(&E.row[E.ehy]);
 
     // Finally, save this selection as the last selected
@@ -768,7 +768,7 @@ void editorCalcSelection() {
 void editorClearSelection() {
     int y;
     for (y = E.shy; y <= E.ehy; ++y) {
-        memset(E.row[y].rev, 0, E.row[y].size);
+        if (E.row[y].rev) memset(E.row[y].rev, 0, E.row[y].size);
         editorSetRowDirty(&E.row[y]);
     }
 
@@ -1086,7 +1086,6 @@ void editorDrawRows(void) {
         if (filerow >= E.numrows) {
             if (E.numrows == 0 && y == E.screenrows / 3) {
                 char welcome[80], *banner, *p;
-                unsigned char *rev;
                 int buflen;
                 int welcomelen = snprintf(welcome, sizeof(welcome),
                 "Kilo editor -- version %s", KILO_VERSION);
@@ -1094,14 +1093,11 @@ void editorDrawRows(void) {
                 padding = (E.screencols - welcomelen) / 2;
                 buflen = welcomelen + padding;
                 banner = malloc(buflen);
-                rev = malloc(buflen);
-                memset(rev, 0, buflen);
                 p = banner;
                 while (padding--) *p++ = ' ';
                 memcpy(p, welcome, welcomelen);
-                drawRow128(y, buflen, banner, rev);
+                drawRow128(y, buflen, banner, NULL);
                 free(banner);
-                free(rev);
             }
         } else if (E.dirtyScreenRows[y]) {
             int len = E.row[filerow].size - E.coloff;

@@ -73,7 +73,14 @@ _drawRow128:
     beq @BeginFill
     lda (ptr1),y    ; Load the next byte
     jsr convert     ; Convert from PETSCII to screen char
+    ; Check if ptr3 is null.
+    ldx ptr3        ; Look at the low byte of ptr3
+    bne @DoRev
+    ldx ptr3+1      ; Look at the high byte of ptr3
+    beq @WriteChar  ; Both bytes were zero
+@DoRev:
     ora (ptr3),y    ; "Or" the reverse bit (bit 7)
+@WriteChar:
     ldx #VDC_RAM_RW
     jsr write80r    ; Write the character to screen memory
     iny
