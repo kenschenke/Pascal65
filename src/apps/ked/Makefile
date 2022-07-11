@@ -29,7 +29,7 @@ OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES))
 
 DEPENDS := $(OBJECTS:.o=.d)
 
-all: $(BINDIR) $(OBJDIR) $(D81FILE)
+all: $(BINDIR) $(OBJDIR) $(D81FILE) help.petscii
 
 $(BINDIR):
 	mkdir -p $@
@@ -53,11 +53,14 @@ vpath %.s $(TARGETSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+help.petscii: help.txt
+	dos2unix < help.txt | petcat -text -o help.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
-$(D81FILE): $(BINDIR)/$(PROGRAM)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write $(BINDIR)/$(COMPOVRLFILE) $(COMPOVRLFILE) -write $(BINDIR)/$(INTERPOVRLFILE) $(INTERPOVRLFILE)
+$(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write $(BINDIR)/$(COMPOVRLFILE) $(COMPOVRLFILE) -write $(BINDIR)/$(INTERPOVRLFILE) $(INTERPOVRLFILE) -write help.petscii help.txt,seq
 
 clean:
 	$(RM) $(OBJECTS)

@@ -25,12 +25,11 @@
  * TODO:
  * 
  * Load and save files
- * Fix find + make case insensitive
+ * Make find case insensitive
  * Drop "Kilo" name
  * Change the unsaved exit procedure to ask a confirmation question
  * Help page
  * Add function prototypes to top of file
- * Put C128 code inside #ifdefs
  * 
  */
 
@@ -55,6 +54,7 @@ void __fastcall__ drawRow40(char row, char len,
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 enum editorKey {
+    BACKARROW = 95,
     BACKSPACE = 127,
     DEL_KEY = 1000,
     HOME_KEY,
@@ -225,35 +225,6 @@ void die(const char *s) {
     printf("%s\n", s);
     exit(1);
 }
-
-#if 0
-int showKeyCodes() {
-    int nread;
-    char c;
-    while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-        if (nread == -1 && errno != EAGAIN) die("read");
-    }
-
-    if (c == '\x1b') {
-        char seq[3];
-        seq[0] = seq[1] = seq[2] = 0;
-
-        if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
-        if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
-
-        if (seq[0] == '[') {
-            if (seq[1] >= '0' && seq[1] <= '9')
-                if (read(STDIN_FILENO, &seq[2], 1) != 1) printf("ESC\r\n");
-        }
-
-        printf("seq = %d %d %d\r\n", seq[0], seq[1], seq[2]);
-    } else {
-        printf("%d\r\n", c);
-    }
-
-    return c == 'q';
-}
-#endif
 
 int editorReadKey() {
     char c = cgetc();
@@ -953,32 +924,68 @@ char *editorRowsToString(int *buflen) {
     return buf;
 }
 
-# if 0
 void editorOpen(const char *filename) {
     FILE *fp;
-    char *line = NULL;
-    size_t linecap = 0;
-    ssize_t linelen;
+    char *buf, *line, *eol;
+    erow *row = NULL;
+    int buflen = 120;
 
     free(E.filename);
     E.filename = strdup(filename);
 
+#ifdef SYNTAX_HIGHLIGHT
     editorSelectSyntaxHighlight();
+#endif
 
     fp = fopen(filename, "r");
-    if (!fp) die("fopen");
-
-    while ((linelen = getline(&line, &linecap, fp)) != -1) {
-        while (linelen > 0 && (line[linelen -1] == '\n' ||
-                               line[linelen -1] == '\r'))
-            linelen--;
-        editorInsertRow(E.numrows, line, linelen);
+    if (!fp) {
+        editorSetStatusMessage("Cannot open file");
+        return;
     }
-    free(line);
+
+    buf = malloc(buflen);
+
+    while (!feof(fp)) {
+        if (!fgets(buf, buflen, fp)) {
+            fclose(fp);
+            free(buf);
+            editorSetStatusMessage("Cannot read file");
+        }
+
+        line = buf;
+        while (1) {
+            eol = strchr(line, '\r');
+            if (eol == NULL) {
+                if (line != NULL) {
+                    if (row) {
+                        editorRowAppendString(row, line, strlen(line));
+                    } else {
+                        editorInsertRow(E.numrows, line, strlen(line));
+                    }
+                    row = &E.row[E.numrows - 1];
+                }
+                break;
+            } else {
+                *eol = '\0';
+                if (line != NULL) {
+                    if (row) {
+                        editorRowAppendString(row, line, strlen(line));
+                    } else {
+                        editorInsertRow(E.numrows, line, strlen(line));
+                    }
+                    row = NULL;
+                }
+                line = eol + 1;
+            }
+        }
+    }
+
+    free(buf);
     fclose(fp);
     E.dirty = 0;
 }
 
+# if 0
 void editorSave() {
     if (E.filename == NULL) {
         E.filename = editorPrompt("Save as: %s", NULL);
@@ -1385,6 +1392,10 @@ void editorProcessKeypress() {
             }
             E.quit = 1;
             break;
+        
+        case BACKARROW:
+            editorSetStatusMessage("You pressed back arrow!");
+            break;
 
 #if 0
         case CTRL_KEY('s'):
@@ -1634,7 +1645,11 @@ int main(int argc, char *argv[])
     return 0;
 #endif
 
-#if 1
+#if 0
+    editorOpen("help.txt");
+#endif
+
+#if 0
     for (i = 1; i <= 46; ++i) {
         len = sprintf(buf, "%*sEditor Row %d", i % 50, " ", i);
         editorInsertRow(i-1, buf, len);

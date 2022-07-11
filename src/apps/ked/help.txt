@@ -1,0 +1,34 @@
+Welcome to Ked (Ken's Editor)
+-----------------------------
+Copyright 2022 by Ken Schenke
+kenschenke@gmail.com
+
+You are viewing the help page for Ked.
+Ctrl+N jumps to the next page and
+Ctrl+P jumps to the previous page.
+You can also use the cursor keys to
+move around in this file.
+
+Function             Escape  Ctrl Key
+-----------------    ------  --------
+Beginning of line    Esc+J    Ctrl+J
+End of line          Esc+K    Ctrl+K
+Page Up              Esc+Up   Ctrl+P
+Page Down            Esc+Dn   Ctrl+N
+Del. to start of ln  Esc+P
+Del. to end of line  Esc+Q
+Insert line          Esc+I
+Scroll Up            Esc+V    Ctrl+V
+Scroll Down          Esc+W    Ctrl+W
+Scroll to file top   Esc+B    Ctrl+B
+Scroll to file end   Esc+E    Ctrl+E
+Mark text            Esc+Y    Ctrl+Y
+Paste clipboard      Esc+O    Ctrl+O
+Exit                          Ctrl+X
+Find                          Ctrl+F
+Select all text      Esc+A    Ctrl+A
+40 column mode       Esc+4
+80 column mode       Esc+8
+
+Press F1 to toggle between 40 and 80
+columns.
