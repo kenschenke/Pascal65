@@ -13,6 +13,7 @@ c128_EMUCMD := x128 -kernal kernal -VICIIdsize -autostart
 EMUCMD = $($(TARGET)_EMUCMD)
 
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
+EDITORSRCDIR = ../../editor
 
 CFLAGS = -I ../../include
 ASFLAGS =
@@ -22,6 +23,8 @@ SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
 SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
+SOURCES += $(wildcard $(EDITORSRCDIR)/*.c)
+SOURCES += $(wildcard $(EDITORSRCDIR)/*.s)
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -50,6 +53,14 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(TARGETSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.c $(EDITORSRCDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(EDITORSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
