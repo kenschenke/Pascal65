@@ -36,23 +36,23 @@ void editorUpdateRow(erow *row) {
 }
 
 void editorDeleteToStartOfLine() {
-    erow *row = &E.row[E.cy];
-    int pos = E.cx;
+    erow *row = &E.cf->row[E.cf->cy];
+    int pos = E.cf->cx;
     if (pos < 0 || pos >= row->size) {
         pos = 0;
     }
 
     memmove(row->chars, &row->chars[pos], row->size - pos);
     row->size -= pos;
-    E.cx = 0;
+    E.cf->cx = 0;
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.dirty++;
+    E.cf->dirty++;
 }
 
 void editorDeleteToEndOfLine() {
-    erow *row = &E.row[E.cy];
-    int pos = E.cx;
+    erow *row = &E.cf->row[E.cf->cy];
+    int pos = E.cf->cx;
     if (pos < 0 || pos >= row->size) {
         pos = row->size - 1;
     }
@@ -60,45 +60,45 @@ void editorDeleteToEndOfLine() {
     row->size = pos;
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.dirty++;
+    E.cf->dirty++;
 }
 
 void editorInsertRow(int at, char *s, size_t len) {
     int j;
 
-    if (at < 0 || at > E.numrows) return;
+    if (at < 0 || at > E.cf->numrows) return;
     
-    E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
-    memmove(&E.row[at + 1], &E.row[at], sizeof(erow) * (E.numrows - at));
-    for (j = at + 1; j < E.numrows; ++j) {
-        E.row[j].idx++;
-        editorSetRowDirty(&E.row[j]);
+    E.cf->row = realloc(E.cf->row, sizeof(erow) * (E.cf->numrows + 1));
+    memmove(&E.cf->row[at + 1], &E.cf->row[at], sizeof(erow) * (E.cf->numrows - at));
+    for (j = at + 1; j < E.cf->numrows; ++j) {
+        E.cf->row[j].idx++;
+        editorSetRowDirty(&E.cf->row[j]);
     }
 
-    E.row[at].idx = at;
+    E.cf->row[at].idx = at;
 
-    E.row[at].size = len;
-    E.row[at].chars = malloc(len + 1);
-    memcpy(E.row[at].chars, s, len);
-    E.row[at].chars[len] = '\0';
+    E.cf->row[at].size = len;
+    E.cf->row[at].chars = malloc(len + 1);
+    memcpy(E.cf->row[at].chars, s, len);
+    E.cf->row[at].chars[len] = '\0';
 
-    E.row[at].rev = NULL;
+    E.cf->row[at].rev = NULL;
 
 #ifdef SYNTAX_HIGHLIGHT
-    E.row[at].hl = NULL;
-    E.row[at].hl_open_comment = 0;
+    E.cf->row[at].hl = NULL;
+    E.cf->row[at].hl_open_comment = 0;
 #endif
-    editorSetRowDirty(&E.row[at]);
-    editorUpdateRow(&E.row[at]);
+    editorSetRowDirty(&E.cf->row[at]);
+    editorUpdateRow(&E.cf->row[at]);
 
-    if (E.numrows == 0) {
+    if (E.cf->numrows == 0) {
         for (j = 0; j < E.screenrows; ++j) {
             drawRow(j, 0, "", NULL);
         }
     }
 
-    E.numrows++;
-    E.dirty++;
+    E.cf->numrows++;
+    E.cf->dirty++;
 }
 
 void editorFreeRow(erow *row) {
@@ -112,15 +112,15 @@ void editorFreeRow(erow *row) {
 void editorDelRow(int at) {
     int j;
 
-    if (at < 0 || at >= E.numrows) return;
-    editorFreeRow(&E.row[at]);
-    memmove(&E.row[at], &E.row[at + 1], sizeof(erow) * (E.numrows - at  - 1));
-    for (j = at; j < E.numrows - 1; j++) {
-        E.row[j].idx--;
-        editorSetRowDirty(&E.row[j]);
+    if (at < 0 || at >= E.cf->numrows) return;
+    editorFreeRow(&E.cf->row[at]);
+    memmove(&E.cf->row[at], &E.cf->row[at + 1], sizeof(erow) * (E.cf->numrows - at  - 1));
+    for (j = at; j < E.cf->numrows - 1; j++) {
+        E.cf->row[j].idx--;
+        editorSetRowDirty(&E.cf->row[j]);
     }
-    E.numrows--;
-    E.dirty++;
+    E.cf->numrows--;
+    E.cf->dirty++;
 }
 
 void editorRowInsertChar(erow *row, int at, int c) {
@@ -133,7 +133,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
     row->chars[at] = c;
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.dirty++;
+    E.cf->dirty++;
 }
 
 void editorRowInsertString(erow *row, int at, char *s, size_t len) {
@@ -145,7 +145,7 @@ void editorRowInsertString(erow *row, int at, char *s, size_t len) {
     row->size += len;
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.dirty++;
+    E.cf->dirty++;
 }
 
 void editorRowAppendString(erow *row, char *s, size_t len) {
@@ -157,7 +157,7 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
     row->chars[row->size] = '\0';
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.dirty++;
+    E.cf->dirty++;
 }
 
 void editorRowDelChars(erow *row, int at, int length) {
@@ -166,21 +166,21 @@ void editorRowDelChars(erow *row, int at, int length) {
     row->size -= length;
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.dirty++;
+    E.cf->dirty++;
 }
 
 void editorSetAllRowsDirty() {
     int i;
-    for (i = 0; i < E.screenrows; ++i) E.dirtyScreenRows[i] = 1;
+    for (i = 0; i < E.screenrows; ++i) E.cf->dirtyScreenRows[i] = 1;
 }
 
 void editorSetRowDirty(erow *row) {
-    int i = row->idx - E.rowoff;
+    int i = row->idx - E.cf->rowoff;
     if (i < 0 || i >= E.screenrows) {
         // row is not visible - ignore
         return;
     }
 
-    E.dirtyScreenRows[i] = 1;
+    E.cf->dirtyScreenRows[i] = 1;
 }
 

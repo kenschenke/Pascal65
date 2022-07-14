@@ -35,13 +35,10 @@ typedef struct erow {
     unsigned char *rev;             // bit 7 is high for highlighted text
 } erow;
 
-struct editorConfig {
+struct editorFile {
     int cx, cy;                     // cursor X and Y
     int rowoff;                     // top row on screen
     int coloff;                     // left-most column on screen
-    int screenrows;                 // # of rows on display
-    int screencols;                 // # of columns
-    int numrows;                    // # of lines in file
     int in_selection;               // non-zero if selection is on
     int sx, sy;                     // selection anchor point for cursor
                                     // (position of cursor when selection activated)
@@ -50,14 +47,23 @@ struct editorConfig {
     int last_shy, last_ehy;         // shy and ehy before cursor moved
                                     // (used to refresh highlighted rows)
     erow *row;                      // text data (array)
-    char *clipboard;
-    char *welcomePage;
+    int numrows;                    // # of lines in file
     char readOnly;                  // non-zero if file is read-only
     int dirty;                      // non-zero if file is modified
-    char quit;                      // non-zero when user selects quit command
     char *dirtyScreenRows;          // array: non-zero if screen row is dirty
-    int last_key_esc;               // non-zero if last key was ESC
     char *filename;
+};
+
+struct editorConfig {
+    int screenrows;                 // # of rows on display
+    int screencols;                 // # of columns
+    struct editorFile *files;       // array of open files
+    struct editorFile *cf;          // point to current file
+    int numfiles;                   // # of open files
+    char *clipboard;
+    char *welcomePage;
+    char quit;                      // non-zero when user selects quit command
+    int last_key_esc;               // non-zero if last key was ESC
     char statusmsg[80];
     char *statusbar;
     unsigned char *statusbarrev;

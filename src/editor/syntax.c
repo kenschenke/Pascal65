@@ -30,7 +30,7 @@ void editorUpdateSyntax(erow *row) {
 
     prev_sep = 1;
     in_string = 0;
-    in_comment = (row->idx > 0 && E.row[row->idx - 1].hl_open_comment);
+    in_comment = (row->idx > 0 && E.cf->row[row->idx - 1].hl_open_comment);
 
     i = 0;
     while (i < row->size) {
@@ -123,8 +123,8 @@ void editorUpdateSyntax(erow *row) {
 
     changed = (row->hl_open_comment != in_comment);
     row->hl_open_comment = in_comment;
-    if (changed && row->idx + 1 < E.numrows)
-        editorUpdateSyntax(&E.row[row->idx + 1]);
+    if (changed && row->idx + 1 < E.cf->numrows)
+        editorUpdateSyntax(&E.cf->row[row->idx + 1]);
 }
 
 int editorSyntaxToColor(int hl) {
@@ -146,9 +146,9 @@ void editorSelectSyntaxHighlight() {
     int filerow;
 
     E.syntax = NULL;
-    if (E.filename == NULL) return;
+    if (E.cf->filename == NULL) return;
 
-    ext = strrchr(E.filename, '.');
+    ext = strrchr(E.cf->filename, '.');
 
     for (j = 0; j < HLDB_ENTRIES; ++j) {
         struct editorSyntax *s = &HLDB[j];
@@ -156,11 +156,11 @@ void editorSelectSyntaxHighlight() {
         while (s->filematch[i]) {
             int is_ext = (s->filematch[i][0] == '.');
             if ((is_ext && ext && !strcmp(ext, s->filematch[i])) ||
-                (!is_ext && strstr(E.filename, s->filematch[i]))) {
+                (!is_ext && strstr(E.cf->filename, s->filematch[i]))) {
                     E.syntax = s;
 
-                    for (filerow = 0; filerow < E.numrows; ++filerow) {
-                        editorUpdateSyntax(&E.row[filerow]);
+                    for (filerow = 0; filerow < E.cf->numrows; ++filerow) {
+                        editorUpdateSyntax(&E.cf->row[filerow]);
                     }
 
                     return;

@@ -14,50 +14,50 @@ struct editorConfig E;
 /*** editor operations ***/
 
 void editorInsertChar(int c) {
-    if (E.cy == E.numrows) {
-        editorInsertRow(E.numrows, "", 0);
+    if (E.cf->cy == E.cf->numrows) {
+        editorInsertRow(E.cf->numrows, "", 0);
     }
-    editorRowInsertChar(&E.row[E.cy], E.cx, c);
-    E.cx++;
+    editorRowInsertChar(&E.cf->row[E.cf->cy], E.cf->cx, c);
+    E.cf->cx++;
 }
 
 void editorInsertTab() {
     editorInsertChar(' ');
-    while (E.cx % EDITOR_TAB_STOP) editorInsertChar(' ');
+    while (E.cf->cx % EDITOR_TAB_STOP) editorInsertChar(' ');
 }
 
 void editorInsertNewLine(int spaces) {
-    if (E.cx == 0) {
-        editorInsertRow(E.cy, "", 0);
+    if (E.cf->cx == 0) {
+        editorInsertRow(E.cf->cy, "", 0);
     } else {
-        erow *row = &E.row[E.cy];
-        editorInsertRow(E.cy + 1, &row->chars[E.cx], row->size - E.cx);
-        row = &E.row[E.cy];
-        row->size = E.cx;
+        erow *row = &E.cf->row[E.cf->cy];
+        editorInsertRow(E.cf->cy + 1, &row->chars[E.cf->cx], row->size - E.cf->cx);
+        row = &E.cf->row[E.cf->cy];
+        row->size = E.cf->cx;
         row->chars[row->size] = '\0';
         editorUpdateRow(row);
     }
-    E.cy++;
-    if (E.cx) {
-        E.cx = 0;
+    E.cf->cy++;
+    if (E.cf->cx) {
+        E.cf->cx = 0;
         while (spaces--) editorInsertChar(' ');
     }
 }
 
 void editorDelChar() {
     erow *row;
-    if (E.cy == E.numrows) return;
-    if (E.cx == 0 && E.cy == 0) return;
+    if (E.cf->cy == E.cf->numrows) return;
+    if (E.cf->cx == 0 && E.cf->cy == 0) return;
 
-    row = &E.row[E.cy];
-    if (E.cx > 0) {
-        editorRowDelChars(row, E.cx - 1, 1);
-        E.cx--;
+    row = &E.cf->row[E.cf->cy];
+    if (E.cf->cx > 0) {
+        editorRowDelChars(row, E.cf->cx - 1, 1);
+        E.cf->cx--;
     } else {
-        E.cx = E.row[E.cy - 1].size;
-        editorRowAppendString(&E.row[E.cy - 1], row->chars, row->size);
-        editorDelRow(E.cy);
-        E.cy--;
+        E.cf->cx = E.cf->row[E.cf->cy - 1].size;
+        editorRowAppendString(&E.cf->row[E.cf->cy - 1], row->chars, row->size);
+        editorDelRow(E.cf->cy);
+        E.cf->cy--;
     }
 }
 
@@ -104,44 +104,44 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
 
 void editorMoveCursor(int key) {
     int rowlen;
-    erow *row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+    erow *row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
 
     switch (key) {
         case CH_CURS_LEFT:
-            if (E.cx != 0) {
-                E.cx--;
-            } else if (E.cy > 0) {
-                E.cy--;
-                E.cx = E.row[E.cy].size;
+            if (E.cf->cx != 0) {
+                E.cf->cx--;
+            } else if (E.cf->cy > 0) {
+                E.cf->cy--;
+                E.cf->cx = E.cf->row[E.cf->cy].size;
             }
             break;
         case CH_CURS_RIGHT:
-            if (row && E.cx < row->size) {
-                E.cx++;
-            } else if (row && E.cx == row->size) {
-                E.cy++;
-                E.cx = 0;
+            if (row && E.cf->cx < row->size) {
+                E.cf->cx++;
+            } else if (row && E.cf->cx == row->size) {
+                E.cf->cy++;
+                E.cf->cx = 0;
             }
             break;
         case CH_CURS_UP:
-            if (E.cy != 0) {
-                E.cy--;
+            if (E.cf->cy != 0) {
+                E.cf->cy--;
             }
             break;
         case CH_CURS_DOWN:
-            if (E.cy < E.numrows - 1) {
-                E.cy++;
+            if (E.cf->cy < E.cf->numrows - 1) {
+                E.cf->cy++;
             }
             break;
     }
 
-    row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+    row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
     rowlen = row ? row->size : 0;
-    if (E.cx > rowlen) {
-        E.cx = rowlen;
+    if (E.cf->cx > rowlen) {
+        E.cf->cx = rowlen;
     }
 
-    if (E.in_selection) editorCalcSelection();
+    if (E.cf->in_selection) editorCalcSelection();
 }
 
 void editorProcessKeypress() {
@@ -151,7 +151,7 @@ void editorProcessKeypress() {
     int c = editorReadKey();
 
     // Some keys have special meaning if selection mode is on.
-    if (E.in_selection) {
+    if (E.cf && E.cf->in_selection) {
         switch (c) {
             case '\x1b':    // ESC
                 editorClearSelection();
@@ -177,11 +177,11 @@ void editorProcessKeypress() {
 
     switch (c) {
         case CH_ENTER:
-            {
+            if (E.cf) {
                 // Count the number of spaces at the beginning of this line
                 int i = 0;
-                erow *row = &E.row[E.cy];
-                if (E.cx < row->size) editorSetRowDirty(row);
+                erow *row = &E.cf->row[E.cf->cy];
+                if (E.cf->cx < row->size) editorSetRowDirty(row);
                 while (row->chars[i] && row->chars[i] == ' ') ++i;
                 editorInsertNewLine(i);
             }
@@ -210,16 +210,18 @@ void editorProcessKeypress() {
             break;
         
         case '\t':
-            editorInsertTab();
+            if (E.cf) editorInsertTab();
             break;
 
         case CH_INS:
-            editorInsertChar(' ');
-            E.cx--;
+            if (E.cf) {
+                editorInsertChar(' ');
+                E.cf->cx--;
+            }
             break;
 
         case CTRL_KEY('x'):
-            if (E.dirty && quit_times > 0) {
+            if (E.cf && E.cf->dirty && quit_times > 0) {
                 editorSetStatusMessage("WARNING!!! File has unsaved changes. "
                 "Press Ctrl-E %d more times to quit.", quit_times);
                 --quit_times;
@@ -240,54 +242,60 @@ void editorProcessKeypress() {
 
         case CTRL_KEY('j'):
         case HOME_KEY:
-            E.cx = 0;
+            if (E.cf) E.cf->cx = 0;
             break;
 
         case CH_HOME:
-            if (E.cx == 0 && E.cy == E.rowoff) {
-                if (E.rowoff != 0) {
-                    E.rowoff = 0;
-                    editorSetAllRowsDirty();
+            if (E.cf) {
+                if (E.cf->cx == 0 && E.cf->cy == E.cf->rowoff) {
+                    if (E.cf->rowoff != 0) {
+                        E.cf->rowoff = 0;
+                        editorSetAllRowsDirty();
+                    }
+                    E.cf->cy = 0;
+                } else {
+                    E.cf->cx = 0;
+                    E.cf->cy = E.cf->rowoff;
                 }
-                E.cy = 0;
-            } else {
-                E.cx = 0;
-                E.cy = E.rowoff;
             }
             break;
 
         case CTRL_KEY('k'):
         case END_KEY:
-            if (E.cy < E.numrows)
-                E.cx = E.row[E.cy].size;
+            if (E.cf && E.cf->cy < E.cf->numrows)
+                E.cf->cx = E.cf->row[E.cf->cy].size;
             break;
 
         case DEL_SOL_KEY:
-            editorDeleteToStartOfLine();
+            if (E.cf) editorDeleteToStartOfLine();
             break;
 
         case DEL_EOL_KEY:
-            editorDeleteToEndOfLine();
+            if (E.cf) editorDeleteToEndOfLine();
             break;
         
         case CTRL_KEY('d'):
         case DEL_LINE_KEY:
-            E.cx = 0;
-            editorDelRow(E.cy);
+            if (E.cf) {
+                E.cf->cx = 0;
+                editorDelRow(E.cf->cy);
+            }
             break;
 
         case INS_LINE_KEY:
-            E.cx = 0;
-            editorInsertNewLine(0);
-            E.cy--;
+            if (E.cf) {
+                E.cf->cx = 0;
+                editorInsertNewLine(0);
+                E.cf->cy--;
+            }
             break;
 
         case CTRL_KEY('v'):
         case SCROLL_UP_KEY:
-            if (E.rowoff > 0) {
-                --E.rowoff;
-                if (E.cy - E.rowoff > E.screenrows - 1) {
-                    E.cy = E.rowoff + E.screenrows - 1;
+            if (E.cf && E.cf->rowoff > 0) {
+                --E.cf->rowoff;
+                if (E.cf->cy - E.cf->rowoff > E.screenrows - 1) {
+                    E.cf->cy = E.cf->rowoff + E.screenrows - 1;
                 }
                 editorSetAllRowsDirty();
             }
@@ -295,10 +303,10 @@ void editorProcessKeypress() {
 
         case CTRL_KEY('w'):
         case SCROLL_DOWN_KEY:
-            if (E.rowoff + E.screenrows < E.numrows) {
-                ++E.rowoff;
-                if (E.cy < E.rowoff) {
-                    E.cy = E.rowoff;
+            if (E.cf && E.cf->rowoff + E.screenrows < E.cf->numrows) {
+                ++E.cf->rowoff;
+                if (E.cf->cy < E.cf->rowoff) {
+                    E.cf->cy = E.cf->rowoff;
                 }
                 editorSetAllRowsDirty();
             }
@@ -306,42 +314,44 @@ void editorProcessKeypress() {
         
         case CTRL_KEY('b'):
         case SCROLL_TOP_KEY:
-            if (E.rowoff != 0) {
-                E.rowoff = 0;
-                E.cy = 0;
+            if (E.cf && E.cf->rowoff != 0) {
+                E.cf->rowoff = 0;
+                E.cf->cy = 0;
                 editorSetAllRowsDirty();
             }
             break;
 
         case CTRL_KEY('e'):
         case SCROLL_BOTTOM_KEY:
-            {
-                int newoff = E.numrows - E.screenrows;
+            if (E.cf) {
+                int newoff = E.cf->numrows - E.screenrows;
                 if (newoff < 0) newoff = 0;
-                if (E.rowoff != newoff) {
-                    E.rowoff = newoff;
+                if (E.cf->rowoff != newoff) {
+                    E.cf->rowoff = newoff;
                     editorSetAllRowsDirty();
                 }
-                E.cy = E.numrows - 1;
+                E.cf->cy = E.cf->numrows - 1;
             }
             break;
 
         case CTRL_KEY('f'):
-            editorFind();
+            if (E.cf) editorFind();
             break;
 
         case CH_DEL:
         case CTRL_KEY('h'):
         case DEL_KEY:
-            if (c == DEL_KEY) editorMoveCursor(CH_CURS_RIGHT);
-            editorDelChar();
+            if (E.cf) {
+                if (c == DEL_KEY) editorMoveCursor(CH_CURS_RIGHT);
+                editorDelChar();
+            }
             break;
 
         case CH_CURS_UP:
         case CH_CURS_DOWN:
         case CH_CURS_LEFT:
         case CH_CURS_RIGHT:
-            editorMoveCursor(c);
+            if (E.cf) editorMoveCursor(c);
             break;
 
         case CTRL_KEY('l'):
@@ -352,14 +362,14 @@ void editorProcessKeypress() {
         case CTRL_KEY('p'):
         case PAGE_UP:
         case PAGE_DOWN:
-            {
+            if (E.cf) {
                 if (c == CTRL_KEY('n')) c = PAGE_DOWN;
                 if (c == CTRL_KEY('p')) c = PAGE_UP;
                 if (c == PAGE_UP) {
-                    E.cy = E.rowoff;
+                    E.cf->cy = E.cf->rowoff;
                 } else if (c == PAGE_DOWN) {
-                    E.cy = E.rowoff + E.screenrows - 1;
-                    if (E.cy > E.numrows) E.cy = E.numrows;
+                    E.cf->cy = E.cf->rowoff + E.screenrows - 1;
+                    if (E.cf->cy > E.cf->numrows) E.cf->cy = E.cf->numrows;
                 }
 
                 times = E.screenrows;
@@ -370,28 +380,32 @@ void editorProcessKeypress() {
 
         case CTRL_KEY('y'):
         case MARK_KEY:
-            E.in_selection = 1;
-            E.sx = E.cx;
-            E.sy = E.cy;
-            editorSetStatusMessage("'C' = copy, 'X' = cut, ESC = cancel");
+            if (E.cf) {
+                E.cf->in_selection = 1;
+                E.cf->sx = E.cf->cx;
+                E.cf->sy = E.cf->cy;
+                editorSetStatusMessage("'C' = copy, 'X' = cut, ESC = cancel");
+            }
             break;
 
         case CTRL_KEY('o'):
         case PASTE_KEY:
-            editorPasteClipboard();
+            if (E.cf) editorPasteClipboard();
             break;
         
         case CTRL_KEY('a'):
         case SELECT_ALL_KEY:
-            E.in_selection = 1;
-            E.shx = E.shy = 0;
-            E.cy = E.numrows - 1;
-            E.cx = E.row[E.numrows-1].size;
-            editorCalcSelection();
+            if (E.cf) {
+                E.cf->in_selection = 1;
+                E.cf->shx = E.cf->shy = 0;
+                E.cf->cy = E.cf->numrows - 1;
+                E.cf->cx = E.cf->row[E.cf->numrows-1].size;
+                editorCalcSelection();
+            }
             break;
 
         default:
-            editorInsertChar(c);
+            if (E.cf) editorInsertChar(c);
             break;
     }
 
@@ -411,38 +425,23 @@ void editorRun(void) {
 /*** init ***/
 
 void initEditor() {
-    E.cx = 0;
-    E.cy = 0;
-    E.rowoff = 0;
-    E.coloff = 0;
-    E.numrows = 0;
-    E.row = NULL;
-    E.dirty = 0;
     E.quit = 0;
     E.last_key_esc = 0;
-    E.in_selection = 0;
-    E.sx = 0;
-    E.sy = 0;
-    E.shx = E.shy = 0;
-    E.ehx = E.ehy = 0;
-    E.last_shy = E.last_ehy = -1;  // -1 means invalid value
-    E.filename = NULL;
     E.clipboard = NULL;
     E.welcomePage = NULL;
-    E.readOnly = 0;
     E.statusmsg[0] = '\0';
     E.statusmsg_time = 0;
     E.statusmsg_dirty = 0;
 #ifdef SYNTAX_HIGHLIGHT
-    E.syntax = NULL;
+    E.cf->syntax = NULL;
 #endif
+
+    E.files = NULL;
+    E.numfiles = 0;
 
     E.screenrows = 25;
     E.screencols = 80;
     E.screenrows -= 2;
-
-    E.dirtyScreenRows = malloc(E.screenrows);
-    memset(E.dirtyScreenRows, 1, E.screenrows);
 
     E.statusbar = malloc(E.screencols);
     memset(E.statusbar, ' ', E.screencols);
@@ -453,6 +452,27 @@ void initEditor() {
     setupScreenCols();
 
     editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
+}
+
+void initFile(struct editorFile *file) {
+    file->cx = 0;
+    file->cy = 0;
+    file->rowoff = 0;
+    file->coloff = 0;
+    file->numrows = 0;
+    file->row = NULL;
+    file->dirty = 0;
+    file->in_selection = 0;
+    file->sx = 0;
+    file->sy = 0;
+    file->shx = file->shy = 0;
+    file->ehx = file->ehy = 0;
+    file->last_shy = file->last_ehy = -1;  // -1 means invalid value
+    file->filename = NULL;
+    file->readOnly = 0;
+
+    file->dirtyScreenRows = malloc(E.screenrows);
+    memset(file->dirtyScreenRows, 1, E.screenrows);
 }
 
 void setupScreenCols(void) {

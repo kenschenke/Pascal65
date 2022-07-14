@@ -89,20 +89,20 @@ void setScreenBg(char bg) {
 void editorScroll() {
     int willScroll = 0;
 
-    if (E.cy < E.rowoff) {
-        E.rowoff = E.cy;
+    if (E.cf->cy < E.cf->rowoff) {
+        E.cf->rowoff = E.cf->cy;
         willScroll = 1;
     }
-    if (E.cy >= E.rowoff + E.screenrows) {
-        E.rowoff = E.cy - E.screenrows + 1;
+    if (E.cf->cy >= E.cf->rowoff + E.screenrows) {
+        E.cf->rowoff = E.cf->cy - E.screenrows + 1;
         willScroll = 1;
     }
-    if (E.cx < E.coloff) {
-        E.coloff = E.cx;
+    if (E.cf->cx < E.cf->coloff) {
+        E.cf->coloff = E.cf->cx;
         willScroll = 1;
     }
-    if (E.cx >= E.coloff + E.screencols) {
-        E.coloff = E.cx - E.screencols + 1;
+    if (E.cf->cx >= E.cf->coloff + E.screencols) {
+        E.cf->coloff = E.cf->cx - E.screencols + 1;
         willScroll = 1;
     }
 
@@ -114,8 +114,7 @@ void editorScroll() {
 void editorDrawRows(void) {
     int y, padding;
 
-#if 1
-    if (E.numrows == 0) {
+    if (E.cf == NULL) {
         char **rows, *buffer;
         int i, numRows, x, y;
 
@@ -138,12 +137,11 @@ void editorDrawRows(void) {
 
         return;
     }
-#endif
 
     for (y = 0; y < E.screenrows; y++) {
-        int filerow = y + E.rowoff;
-        if (filerow >= E.numrows) {
-            if (E.numrows == 0 && y == E.screenrows / 3) {
+        int filerow = y + E.cf->rowoff;
+        if (filerow >= E.cf->numrows) {
+            if (E.cf->numrows == 0 && y == E.screenrows / 3) {
                 char welcome[80], *banner, *p;
                 int buflen;
                 int welcomelen = snprintf(welcome, sizeof(welcome),
@@ -158,13 +156,13 @@ void editorDrawRows(void) {
                 drawRow(y, buflen, banner, NULL);
                 free(banner);
             }
-        } else if (E.dirtyScreenRows[y]) {
-            int len = E.row[filerow].size - E.coloff;
+        } else if (E.cf->dirtyScreenRows[y]) {
+            int len = E.cf->row[filerow].size - E.cf->coloff;
             if (len < 0) len = 0;
             if (len > E.screencols) len = E.screencols;
-            drawRow(y, len, &E.row[filerow].chars[E.coloff],
-                E.row[filerow].rev ? &E.row[filerow].rev[E.coloff] : NULL);
-            E.dirtyScreenRows[y] = 0;
+            drawRow(y, len, &E.cf->row[filerow].chars[E.cf->coloff],
+                E.cf->row[filerow].rev ? &E.cf->row[filerow].rev[E.cf->coloff] : NULL);
+            E.cf->dirtyScreenRows[y] = 0;
         }
     }
 }
@@ -175,17 +173,23 @@ void editorDrawStatusBar() {
 
     memset(E.statusbar, ' ', E.screencols);
 
-    len = snprintf(status, sizeof(status), "%.20s - %d lines%s%s",
-        E.filename ? E.filename : "[No Name]", E.numrows,
-        E.dirty ? " (modified)" : "",
-        E.readOnly ? " (read only)" : "");
+    if (E.cf == NULL) {
+        strcpy(status, "Welcome");
+        len = strlen(status);
+        rlen = 0;
+    } else {
+        len = snprintf(status, sizeof(status), "%.20s - %d lines%s%s",
+            E.cf->filename ? E.cf->filename : "[No Name]", E.cf->numrows,
+            E.cf->dirty ? " (modified)" : "",
+            E.cf->readOnly ? " (read only)" : "");
 #ifdef SYNTAX_HIGHLIGHT
-    rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
-        E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows);
+        rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
+            E.syntax ? E.syntax->filetype : "no ft", E.cf->cy + 1, E.cf->numrows);
 #else
-    rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cy + 1, E.numrows);
+        rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cf->cy + 1, E.cf->numrows);
 #endif
-    if (len > E.screencols) len = E.screencols;
+        if (len > E.screencols) len = E.screencols;
+    }
     memcpy(E.statusbar, status, len);
     memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
 
@@ -219,14 +223,19 @@ void editorDrawMessageBar(void) {
 void editorRefreshScreen(void) {
     cursor(0);  // turn cursor off during drawing
 
-    editorScroll();
+    if (E.cf)
+        editorScroll();
 
     editorDrawRows();
+#if 1
     editorDrawStatusBar();
+#endif
     editorDrawMessageBar();
 
-    cursor(1);  // turn the cursor back on
-    gotoxy(E.cx - E.coloff, E.cy - E.rowoff);
+    if (E.cf) {
+        cursor(1);  // turn the cursor back on
+        gotoxy(E.cf->cx - E.cf->coloff, E.cf->cy - E.cf->rowoff);
+    }
 }
 
 void editorSetStatusMessage(const char *fmt, ...) {

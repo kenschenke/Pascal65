@@ -7,85 +7,85 @@ void editorCalcSelection() {
     int y;
     erow *row;
 
-    if (!E.in_selection) return;
+    if (!E.cf->in_selection) return;
 
-    if (E.cy < E.sy || (E.cy == E.sy && E.cx < E.sx)) {
+    if (E.cf->cy < E.cf->sy || (E.cf->cy == E.cf->sy && E.cf->cx < E.cf->sx)) {
         // The cursor is before the anchor point.
         // The cursor is the starting point of highlight
         // and the anchor point is the end.
-        E.shx = E.cx;
-        E.shy = E.cy;
-        E.ehx = E.sx;
-        E.ehy = E.sy;
+        E.cf->shx = E.cf->cx;
+        E.cf->shy = E.cf->cy;
+        E.cf->ehx = E.cf->sx;
+        E.cf->ehy = E.cf->sy;
     } else {
         // The cursor is after the anchor point.
         // The anchor point is the starting point of highlight
         // and the cursor is the end.
-        E.shx = E.sx;
-        E.shy = E.sy;
-        E.ehx = E.cx;
-        E.ehy = E.cy;
+        E.cf->shx = E.cf->sx;
+        E.cf->shy = E.cf->sy;
+        E.cf->ehx = E.cf->cx;
+        E.cf->ehy = E.cf->cy;
     }
 
     // Mark the highlighted rows
 
     // Start by un-marking rows before the starting and
     // after the ending row.
-    if (E.last_shy != -1 && E.last_shy < E.shy) {
-        for (y = E.last_shy; y < E.shy; ++y) {
-            if (E.row[y].rev) memset(E.row[y].rev, 0, E.row[y].size);
-            editorSetRowDirty(&E.row[y]);
+    if (E.cf->last_shy != -1 && E.cf->last_shy < E.cf->shy) {
+        for (y = E.cf->last_shy; y < E.cf->shy; ++y) {
+            if (E.cf->row[y].rev) memset(E.cf->row[y].rev, 0, E.cf->row[y].size);
+            editorSetRowDirty(&E.cf->row[y]);
         }
     }
-    if (E.last_ehy > E.ehy) {
-        for (y = E.ehy + 1; y <= E.last_ehy; ++y) {
-            if (E.row[y].rev) memset(E.row[y].rev, 0, E.row[y].size);
-            editorSetRowDirty(&E.row[y]);
+    if (E.cf->last_ehy > E.cf->ehy) {
+        for (y = E.cf->ehy + 1; y <= E.cf->last_ehy; ++y) {
+            if (E.cf->row[y].rev) memset(E.cf->row[y].rev, 0, E.cf->row[y].size);
+            editorSetRowDirty(&E.cf->row[y]);
         }
     }
 
     // Do the first selected row
 
-    row = &E.row[E.shy];
+    row = &E.cf->row[E.cf->shy];
     if (row->rev == NULL) row->rev = malloc(row->size);
     memset(row->rev, 0, row->size);
-    memset(row->rev + E.shx, 128,
-        E.shy == E.ehy ? E.ehx - E.shx + 1 : row->size - E.shx);
-    editorSetRowDirty(&E.row[E.shy]);
+    memset(row->rev + E.cf->shx, 128,
+        E.cf->shy == E.cf->ehy ? E.cf->ehx - E.cf->shx + 1 : row->size - E.cf->shx);
+    editorSetRowDirty(&E.cf->row[E.cf->shy]);
 
     // Do the rows up through the last
 
-    for (y = E.shy + 1; y <= E.ehy; ++y) {
-        if (E.row[y].rev == NULL) E.row[y].rev = malloc(E.row[y].size);
-        memset(E.row[y].rev, 128, E.row[y].size);
-        editorSetRowDirty(&E.row[y]);
+    for (y = E.cf->shy + 1; y <= E.cf->ehy; ++y) {
+        if (E.cf->row[y].rev == NULL) E.cf->row[y].rev = malloc(E.cf->row[y].size);
+        memset(E.cf->row[y].rev, 128, E.cf->row[y].size);
+        editorSetRowDirty(&E.cf->row[y]);
     }
 
     // Clear the highlight after the last selected character on the last line
 
-    row = &E.row[E.ehy];
-    y = row->size - E.ehx - 1;
-    if (y > 0 && row->rev) memset(row->rev + E.ehx + 1, 0, y);
-    editorSetRowDirty(&E.row[E.ehy]);
+    row = &E.cf->row[E.cf->ehy];
+    y = row->size - E.cf->ehx - 1;
+    if (y > 0 && row->rev) memset(row->rev + E.cf->ehx + 1, 0, y);
+    editorSetRowDirty(&E.cf->row[E.cf->ehy]);
 
     // Finally, save this selection as the last selected
 
-    E.last_shy = E.shy;
-    E.last_ehy = E.ehy;
+    E.cf->last_shy = E.cf->shy;
+    E.cf->last_ehy = E.cf->ehy;
 }
 
 void editorClearSelection() {
     int y;
-    for (y = E.shy; y <= E.ehy; ++y) {
-        if (E.row[y].rev) memset(E.row[y].rev, 0, E.row[y].size);
-        editorSetRowDirty(&E.row[y]);
+    for (y = E.cf->shy; y <= E.cf->ehy; ++y) {
+        if (E.cf->row[y].rev) memset(E.cf->row[y].rev, 0, E.cf->row[y].size);
+        editorSetRowDirty(&E.cf->row[y]);
     }
 
-    E.in_selection = 0;
-    E.sx = E.sy = 0;
-    E.shx = E.shy = 0;
-    E.ehx = E.ehy = 0;
-    E.last_shy = E.last_ehy = -1;  // -1 means invalid value
+    E.cf->in_selection = 0;
+    E.cf->sx = E.cf->sy = 0;
+    E.cf->shx = E.cf->shy = 0;
+    E.cf->ehx = E.cf->ehy = 0;
+    E.cf->last_shy = E.cf->last_ehy = -1;  // -1 means invalid value
 }
 
 // Copies the contents of the selected text
@@ -94,20 +94,20 @@ void editorClearSelection() {
 // a newline is placed in the buffer.
 
 int editorCopyClipboard(char *buf) {
-    int len = 0, x1, x2, y = E.shy;
+    int len = 0, x1, x2, y = E.cf->shy;
     int boff = 0;  // buffer offset
     erow *row;
 
     do {
-        row = &E.row[y];
+        row = &E.cf->row[y];
         // If this is the first row of the selection
         // start counting at shx, otherwise start at
         // the first column.
-        x1 = y == E.shy ? E.shx : 0;
+        x1 = y == E.cf->shy ? E.cf->shx : 0;
         // If this is the last row of the selection
         // stop counting at ehx, otherwise stop at
         // the last column.
-        x2 = y == E.ehy ? E.ehx : row->size;
+        x2 = y == E.cf->ehy ? E.cf->ehx : row->size;
         len += x2 - x1;
         // If the caller supplied a buffer, copy
         // the contents of this row into the buffer.
@@ -116,13 +116,13 @@ int editorCopyClipboard(char *buf) {
             boff += x2 - x1;
             // Add a newline if this is not the last row
             // in the selection.
-            if (y != E.ehy) buf[boff++] = '\n';
+            if (y != E.cf->ehy) buf[boff++] = '\n';
         }
         // Account for the newline if the selection
         // continues to the next row.
-        len += y == E.ehy ? 0 : 1;
+        len += y == E.cf->ehy ? 0 : 1;
         y++;
-    } while (y <= E.ehy);
+    } while (y <= E.cf->ehy);
 
     if (buf) buf[boff] = 0; 
     return len + 1;     // add one for the NULL terminator
@@ -135,43 +135,43 @@ void editorCopySelection() {
 }
 
 void editorDeleteSelection() {
-    int y = E.ehy, x1, x2;
+    int y = E.cf->ehy, x1, x2;
     erow *row;
 
     do {
-        row = &E.row[y];
+        row = &E.cf->row[y];
         // If this is the starting or ending row of the selection,
         // see if all or only part of the row is being deleted.
-        if (y == E.shy || y == E.ehy) {
-            x1 = y == E.shy && E.shx > 0 ? E.shx : 0;
-            x2 = y == E.ehy && E.ehx < row->size ? E.ehx : row->size;
+        if (y == E.cf->shy || y == E.cf->ehy) {
+            x1 = y == E.cf->shy && E.cf->shx > 0 ? E.cf->shx : 0;
+            x2 = y == E.cf->ehy && E.cf->ehx < row->size ? E.cf->ehx : row->size;
             if (x1 == 0 && x2 == row->size) {
                 // delete the entire row
                 editorDelRow(y);
             } else {
                 editorRowDelChars(row, x1, x2 - x1);
-                E.cx = E.shx;
+                E.cf->cx = E.cf->shx;
             }
         } else {
             editorDelRow(y);
         }
         --y;
-    } while (y >= E.shy);
+    } while (y >= E.cf->shy);
 
-    E.cy = E.shy;
+    E.cf->cy = E.cf->shy;
 
     // If the last row was not completely deleted,
     // append the remainder to the row above.
-    if (y > 0 && E.shy != E.ehy && E.ehx > 0 && E.ehx != E.row[y].size) {
-        row = &E.row[E.shy+1];
-        editorRowAppendString(&E.row[E.shy], row->chars, row->size);
-        editorDelRow(E.shy+1);
+    if (y > 0 && E.cf->shy != E.cf->ehy && E.cf->ehx > 0 && E.cf->ehx != E.cf->row[y].size) {
+        row = &E.cf->row[E.cf->shy+1];
+        editorRowAppendString(&E.cf->row[E.cf->shy], row->chars, row->size);
+        editorDelRow(E.cf->shy+1);
     }
 }
 
 void editorPasteClipboard() {
     char *s = E.clipboard, *e;  // start and end of current line
-    int x = E.cx, y = E.cy;
+    int x = E.cf->cx, y = E.cf->cy;
     erow *row;
 
     if (E.clipboard == NULL) return;
@@ -182,19 +182,19 @@ void editorPasteClipboard() {
     // it inserts a new line into the file.
 
     while (*s) {
-        row = &E.row[y];
+        row = &E.cf->row[y];
         e = strchr(s, '\n');
         if (e == NULL) {
             // Last line in the clipboard.  Insert the remaining
             // characters and stop.
             editorRowInsertString(row, x-1, s, strlen(s));
-            E.cx += strlen(s);
+            E.cf->cx += strlen(s);
             break;
         }
 
         // editorRowInsertString(row, x, s, e-s);
         editorInsertRow(y++, s, e-s);
-        E.cy++;
+        E.cf->cy++;
         s = e + 1;
     }
 }

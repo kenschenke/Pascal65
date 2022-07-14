@@ -16,7 +16,7 @@ void editorFindCallback(char *query, int key) {
     char *match;
 
     if (saved_rev) {
-        memcpy(E.row[saved_rev_line].rev, saved_rev, E.row[saved_rev_line].size);
+        memcpy(E.cf->row[saved_rev_line].rev, saved_rev, E.cf->row[saved_rev_line].size);
         free(saved_rev);
         saved_rev = NULL;
         editorSetAllRowsDirty();
@@ -37,18 +37,18 @@ void editorFindCallback(char *query, int key) {
 
     if (last_match == -1) direction = 1;
     current = last_match;
-    for (i = 0; i < E.numrows; ++i) {
+    for (i = 0; i < E.cf->numrows; ++i) {
         current += direction;
-        if (current == -1) current = E.numrows - 1;
-        else if (current == E.numrows) current = 0;
+        if (current == -1) current = E.cf->numrows - 1;
+        else if (current == E.cf->numrows) current = 0;
 
-        row = &E.row[current];
+        row = &E.cf->row[current];
         match = strstr(row->chars, query);
         if (match) {
             last_match = current;
-            E.cy = current;
-            E.cx = match - row->chars;
-            E.rowoff = E.numrows;
+            E.cf->cy = current;
+            E.cf->cx = match - row->chars;
+            E.cf->rowoff = E.cf->numrows;
 
             if (!row->rev) {
                 row->rev = malloc(row->size);
@@ -65,20 +65,20 @@ void editorFindCallback(char *query, int key) {
 }
 
 void editorFind() {
-    int saved_cx = E.cx;
-    int saved_cy = E.cy;
-    int saved_coloff = E.coloff;
-    int saved_rowoff = E.rowoff;
+    int saved_cx = E.cf->cx;
+    int saved_cy = E.cf->cy;
+    int saved_coloff = E.cf->coloff;
+    int saved_rowoff = E.cf->rowoff;
 
     char *query = editorPrompt("Search: %s (Use ESC/Arrows/Enter)",
         editorFindCallback);
     if (query) {
         free(query);
     } else {
-        E.cx = saved_cx;
-        E.cy = saved_cy;
-        E.coloff = saved_coloff;
-        E.rowoff = saved_rowoff;
+        E.cf->cx = saved_cx;
+        E.cf->cy = saved_cy;
+        E.cf->coloff = saved_coloff;
+        E.cf->rowoff = saved_rowoff;
     }
 }
 

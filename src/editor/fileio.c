@@ -9,16 +9,16 @@ char *editorRowsToString(int *buflen) {
     int j;
     char *buf, *p;
 
-    for (j = 0; j < E.numrows; ++j) {
-        totlen += E.row[j].size + 1;
+    for (j = 0; j < E.cf->numrows; ++j) {
+        totlen += E.cf->row[j].size + 1;
     }
     *buflen = totlen;
 
     buf = malloc(totlen);
     p = buf;
-    for (j = 0; j < E.numrows; ++j) {
-        memcpy(p, E.row[j].chars, E.row[j].size);
-        p += E.row[j].size;
+    for (j = 0; j < E.cf->numrows; ++j) {
+        memcpy(p, E.cf->row[j].chars, E.cf->row[j].size);
+        p += E.cf->row[j].size;
         *p = '\n';
         p++;
     }
@@ -32,8 +32,8 @@ void editorOpen(const char *filename) {
     erow *row = NULL;
     int buflen = 120;
 
-    free(E.filename);
-    E.filename = strdup(filename);
+    free(E.cf->filename);
+    E.cf->filename = strdup(filename);
 
 #ifdef SYNTAX_HIGHLIGHT
     editorSelectSyntaxHighlight();
@@ -62,9 +62,9 @@ void editorOpen(const char *filename) {
                     if (row) {
                         editorRowAppendString(row, line, strlen(line));
                     } else {
-                        editorInsertRow(E.numrows, line, strlen(line));
+                        editorInsertRow(E.cf->numrows, line, strlen(line));
                     }
-                    row = &E.row[E.numrows - 1];
+                    row = &E.cf->row[E.cf->numrows - 1];
                 }
                 break;
             } else {
@@ -73,7 +73,7 @@ void editorOpen(const char *filename) {
                     if (row) {
                         editorRowAppendString(row, line, strlen(line));
                     } else {
-                        editorInsertRow(E.numrows, line, strlen(line));
+                        editorInsertRow(E.cf->numrows, line, strlen(line));
                     }
                     row = NULL;
                 }
@@ -84,14 +84,14 @@ void editorOpen(const char *filename) {
 
     free(buf);
     fclose(fp);
-    E.dirty = 0;
+    E.cf->dirty = 0;
 }
 
 # if 0
 void editorSave() {
-    if (E.filename == NULL) {
-        E.filename = editorPrompt("Save as: %s", NULL);
-        if (E.filename == NULL) {
+    if (E.cf->filename == NULL) {
+        E.cf->filename = editorPrompt("Save as: %s", NULL);
+        if (E.cf->filename == NULL) {
             editorSetStatusMessage("Save aborted");
             return;
         }
@@ -101,13 +101,13 @@ void editorSave() {
     int len;
     char *buf = editorRowsToString(&len);
 
-    int fd = open(E.filename, O_RDWR | O_CREAT, 0644);
+    int fd = open(E.cf->filename, O_RDWR | O_CREAT, 0644);
     if (fd != -1) {
         if (ftruncate(fd, len) != -1) {
             if (write(fd, buf, len) == len) {
                 close(fd);
                 free(buf);
-                E.dirty = 0;
+                E.cf->dirty = 0;
                 editorSetStatusMessage("%d bytes written to disk", len);
                 return;
             }
