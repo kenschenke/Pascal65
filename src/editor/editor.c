@@ -398,6 +398,16 @@ void editorProcessKeypress() {
     quit_times = EDITOR_QUIT_TIMES;
 }
 
+void editorRun(void) {
+    while (!E.quit) {
+        editorRefreshScreen();
+        editorProcessKeypress();
+    }
+
+    clearScreen();
+    gotoxy(0, 0);
+}
+
 /*** init ***/
 
 void initEditor() {
@@ -441,6 +451,8 @@ void initEditor() {
 
     fast();
     setupScreenCols();
+
+    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
 }
 
 void setupScreenCols(void) {

@@ -156,6 +156,7 @@ void editorRowInsertString(erow *row, int at, char *s, size_t len);
 void editorOpen(const char *filename);
 void editorProcessKeypress(void);
 int editorReadKey(void);
+void editorRun(void);
 void editorSetAllRowsDirty(void);
 void editorSetRowDirty(erow *row);
 void editorSetStatusMessage(const char *fmt, ...);
