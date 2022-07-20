@@ -1,7 +1,11 @@
 #include "editor.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static void editorFreeRow(erow *row);
+void editorUpdateRow(erow *row);
 
 /*** row operations ***/
 
@@ -101,7 +105,7 @@ void editorInsertRow(int at, char *s, size_t len) {
     E.cf->dirty++;
 }
 
-void editorFreeRow(erow *row) {
+static void editorFreeRow(erow *row) {
     free(row->chars);
     free(row->rev);
 #ifdef SYNTAX_HIGHLIGHT

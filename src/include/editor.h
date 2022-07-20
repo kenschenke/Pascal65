@@ -36,34 +36,34 @@ typedef struct erow {
 } erow;
 
 struct editorFile {
-    int cx, cy;                     // cursor X and Y
-    int rowoff;                     // top row on screen
-    int coloff;                     // left-most column on screen
-    int in_selection;               // non-zero if selection is on
-    int sx, sy;                     // selection anchor point for cursor
+    unsigned cx, cy;                // cursor X and Y
+    unsigned rowoff;                // top row on screen
+    unsigned coloff;                // left-most column on screen
+    char in_selection;              // non-zero if selection is on
+    unsigned sx, sy;                // selection anchor point for cursor
                                     // (position of cursor when selection activated)
-    int shx, shy;                   // start selection highlight X and Y
-    int ehx, ehy;                   // end selection highlight X and Y
-    int last_shy, last_ehy;         // shy and ehy before cursor moved
+    unsigned shx, shy;              // start selection highlight X and Y
+    unsigned ehx, ehy;              // end selection highlight X and Y
+    unsigned last_shy, last_ehy;    // shy and ehy before cursor moved
                                     // (used to refresh highlighted rows)
     erow *row;                      // text data (array)
-    int numrows;                    // # of lines in file
+    unsigned numrows;               // # of lines in file
     char readOnly;                  // non-zero if file is read-only
-    int dirty;                      // non-zero if file is modified
+    unsigned dirty;                 // non-zero if file is modified
     char *dirtyScreenRows;          // array: non-zero if screen row is dirty
     char *filename;
 };
 
 struct editorConfig {
-    int screenrows;                 // # of rows on display
-    int screencols;                 // # of columns
+    unsigned screenrows;            // # of rows on display
+    unsigned screencols;            // # of columns
     struct editorFile *files;       // array of open files
     struct editorFile *cf;          // point to current file
-    int numfiles;                   // # of open files
+    unsigned numfiles;              // # of open files
     char *clipboard;
     char *welcomePage;
     char quit;                      // non-zero when user selects quit command
-    int last_key_esc;               // non-zero if last key was ESC
+    char last_key_esc;              // non-zero if last key was ESC
     char statusmsg[80];
     char *statusbar;
     unsigned char *statusbarrev;
@@ -152,22 +152,23 @@ void editorDeleteSelection(void);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
+void initFile(struct editorFile *file);
 void editorFind(void);
 void editorInsertRow(int at, char *s, size_t len);
 void editorPasteClipboard(void);
+char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void editorRowAppendString(erow *row, char *s, size_t len);
 void editorRowDelChars(erow *row, int at, int length);
 void editorRowInsertChar(erow *row, int at, int c);
 void editorRowInsertString(erow *row, int at, char *s, size_t len);
 void editorOpen(const char *filename);
-void editorProcessKeypress(void);
 int editorReadKey(void);
 void editorRun(void);
+void editorSave(void);
 void editorSetAllRowsDirty(void);
 void editorSetRowDirty(erow *row);
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
-char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void editorUpdateRow(erow *row);
 void initEditor(void);
 void setScreenBg(char bg);

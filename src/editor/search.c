@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void editorFindCallback(char *query, int key) {
+static void editorFindCallback(char *query, int key);
+
+static void editorFindCallback(char *query, int key) {
     static int last_match = -1;
     static int direction = 1;
 
@@ -64,7 +66,7 @@ void editorFindCallback(char *query, int key) {
     }
 }
 
-void editorFind() {
+void editorFind(void) {
     int saved_cx = E.cf->cx;
     int saved_cy = E.cf->cy;
     int saved_coloff = E.cf->coloff;

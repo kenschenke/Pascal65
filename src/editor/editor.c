@@ -11,9 +11,33 @@
 
 struct editorConfig E;
 
+static void editorDelChar(void);
+static void editorInsertChar(int c);
+static void editorInsertTab(void);
+static void editorInsertNewLine(int spaces);
+static void editorMoveCursor(int key);
+static void editorProcessKeypress(void);
+
 /*** editor operations ***/
 
-void editorInsertChar(int c) {
+static void editorDelChar(void) {
+    erow *row;
+    if (E.cf->cy == E.cf->numrows) return;
+    if (E.cf->cx == 0 && E.cf->cy == 0) return;
+
+    row = &E.cf->row[E.cf->cy];
+    if (E.cf->cx > 0) {
+        editorRowDelChars(row, E.cf->cx - 1, 1);
+        E.cf->cx--;
+    } else {
+        E.cf->cx = E.cf->row[E.cf->cy - 1].size;
+        editorRowAppendString(&E.cf->row[E.cf->cy - 1], row->chars, row->size);
+        editorDelRow(E.cf->cy);
+        E.cf->cy--;
+    }
+}
+
+static void editorInsertChar(int c) {
     if (E.cf->cy == E.cf->numrows) {
         editorInsertRow(E.cf->numrows, "", 0);
     }
@@ -21,12 +45,12 @@ void editorInsertChar(int c) {
     E.cf->cx++;
 }
 
-void editorInsertTab() {
+static void editorInsertTab(void) {
     editorInsertChar(' ');
     while (E.cf->cx % EDITOR_TAB_STOP) editorInsertChar(' ');
 }
 
-void editorInsertNewLine(int spaces) {
+static void editorInsertNewLine(int spaces) {
     if (E.cf->cx == 0) {
         editorInsertRow(E.cf->cy, "", 0);
     } else {
@@ -41,23 +65,6 @@ void editorInsertNewLine(int spaces) {
     if (E.cf->cx) {
         E.cf->cx = 0;
         while (spaces--) editorInsertChar(' ');
-    }
-}
-
-void editorDelChar() {
-    erow *row;
-    if (E.cf->cy == E.cf->numrows) return;
-    if (E.cf->cx == 0 && E.cf->cy == 0) return;
-
-    row = &E.cf->row[E.cf->cy];
-    if (E.cf->cx > 0) {
-        editorRowDelChars(row, E.cf->cx - 1, 1);
-        E.cf->cx--;
-    } else {
-        E.cf->cx = E.cf->row[E.cf->cy - 1].size;
-        editorRowAppendString(&E.cf->row[E.cf->cy - 1], row->chars, row->size);
-        editorDelRow(E.cf->cy);
-        E.cf->cy--;
     }
 }
 
@@ -102,7 +109,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
     }
 }
 
-void editorMoveCursor(int key) {
+static void editorMoveCursor(int key) {
     int rowlen;
     erow *row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
 
@@ -144,7 +151,7 @@ void editorMoveCursor(int key) {
     if (E.cf->in_selection) editorCalcSelection();
 }
 
-void editorProcessKeypress() {
+static void editorProcessKeypress(void) {
     static int quit_times = EDITOR_QUIT_TIMES;
 
     int times;

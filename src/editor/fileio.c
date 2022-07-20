@@ -4,7 +4,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-char *editorRowsToString(int *buflen) {
+static char *editorRowsToString(int *buflen);
+
+static char *editorRowsToString(int *buflen) {
     int totlen = 0;
     int j;
     char *buf, *p;
@@ -32,6 +34,10 @@ void editorOpen(const char *filename) {
     erow *row = NULL;
     int buflen = 120;
 
+    if (E.cf == NULL) {
+        E.cf = malloc(sizeof(struct editorFile));
+        initFile(E.cf);
+    }
     free(E.cf->filename);
     E.cf->filename = strdup(filename);
 

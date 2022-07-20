@@ -19,6 +19,10 @@ void __fastcall__ setScreenBg40(char bg);
 void __fastcall__ drawRow40(char row, char len,
     char *buf, unsigned char *rev);
 
+static void editorDrawMessageBar(void);
+static void editorDrawRows(void);
+static void editorDrawStatusBar(void);
+static void editorScroll(void);
 static void freeWelcomePage(char **rows, int numRows);
 static void prepWelcomePage(char ***rows, int *numRows);
 
@@ -86,7 +90,7 @@ void setScreenBg(char bg) {
         setScreenBg80(bg);
 }
 
-void editorScroll() {
+static void editorScroll(void) {
     int willScroll = 0;
 
     if (E.cf->cy < E.cf->rowoff) {
@@ -111,7 +115,7 @@ void editorScroll() {
     }
 }
 
-void editorDrawRows(void) {
+static void editorDrawRows(void) {
     int y, padding;
 
     if (E.cf == NULL) {
@@ -140,23 +144,7 @@ void editorDrawRows(void) {
 
     for (y = 0; y < E.screenrows; y++) {
         int filerow = y + E.cf->rowoff;
-        if (filerow >= E.cf->numrows) {
-            if (E.cf->numrows == 0 && y == E.screenrows / 3) {
-                char welcome[80], *banner, *p;
-                int buflen;
-                int welcomelen = snprintf(welcome, sizeof(welcome),
-                "Kilo editor -- version %s", KILO_VERSION);
-                if (welcomelen > E.screencols) welcomelen = E.screencols;
-                padding = (E.screencols - welcomelen) / 2;
-                buflen = welcomelen + padding;
-                banner = malloc(buflen);
-                p = banner;
-                while (padding--) *p++ = ' ';
-                memcpy(p, welcome, welcomelen);
-                drawRow(y, buflen, banner, NULL);
-                free(banner);
-            }
-        } else if (E.cf->dirtyScreenRows[y]) {
+        if (E.cf->dirtyScreenRows[y]) {
             int len = E.cf->row[filerow].size - E.cf->coloff;
             if (len < 0) len = 0;
             if (len > E.screencols) len = E.screencols;
@@ -167,7 +155,7 @@ void editorDrawRows(void) {
     }
 }
 
-void editorDrawStatusBar() {
+static void editorDrawStatusBar(void) {
     char status[80], rstatus[80];
     int len, rlen;
 
@@ -182,6 +170,8 @@ void editorDrawStatusBar() {
             E.cf->filename ? E.cf->filename : "[No Name]", E.cf->numrows,
             E.cf->dirty ? " (modified)" : "",
             E.cf->readOnly ? " (read only)" : "");
+        len = snprintf(status, sizeof(status), "Free: %d, Lg Block: %d",
+            _heapmemavail(), _heapmaxavail());
 #ifdef SYNTAX_HIGHLIGHT
         rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
             E.syntax ? E.syntax->filetype : "no ft", E.cf->cy + 1, E.cf->numrows);
@@ -196,7 +186,7 @@ void editorDrawStatusBar() {
     drawRow(E.screenrows, E.screencols, E.statusbar, E.statusbarrev);
 }
 
-void editorDrawMessageBar(void) {
+static void editorDrawMessageBar(void) {
     unsigned char *rev;
     int msglen = strlen(E.statusmsg);
 

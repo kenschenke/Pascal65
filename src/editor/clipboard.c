@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int editorCopyClipboard(char *buf);
+
 void editorCalcSelection() {
     int y;
     erow *row;
@@ -93,7 +95,7 @@ void editorClearSelection() {
 // the selection continues to another line,
 // a newline is placed in the buffer.
 
-int editorCopyClipboard(char *buf) {
+static int editorCopyClipboard(char *buf) {
     int len = 0, x1, x2, y = E.cf->shy;
     int boff = 0;  // buffer offset
     erow *row;

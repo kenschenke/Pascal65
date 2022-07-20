@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void die(const char *s) {
+static void die(const char *s);
+
+static void die(const char *s) {
     clrscr();
     gotoxy(0, 0);
 
@@ -12,7 +14,7 @@ void die(const char *s) {
     exit(1);
 }
 
-int editorReadKey() {
+int editorReadKey(void) {
     char c = cgetc();
 
     if (c == CH_ESC) {
