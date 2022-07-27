@@ -1,10 +1,10 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include <time.h>
+#include <stddef.h>
 
 #ifndef __C128__
-#define SYNTAX_HIGHLIGHT
+// #define SYNTAX_HIGHLIGHT
 #endif
 
 #define EDITOR_TAB_STOP 4
@@ -40,11 +40,11 @@ struct editorFile {
     unsigned rowoff;                // top row on screen
     unsigned coloff;                // left-most column on screen
     char in_selection;              // non-zero if selection is on
-    unsigned sx, sy;                // selection anchor point for cursor
+    int sx, sy;                     // selection anchor point for cursor
                                     // (position of cursor when selection activated)
-    unsigned shx, shy;              // start selection highlight X and Y
-    unsigned ehx, ehy;              // end selection highlight X and Y
-    unsigned last_shy, last_ehy;    // shy and ehy before cursor moved
+    int shx, shy;                   // start selection highlight X and Y
+    int ehx, ehy;                   // end selection highlight X and Y
+    int last_shy, last_ehy;         // shy and ehy before cursor moved
                                     // (used to refresh highlighted rows)
     erow *row;                      // text data (array)
     unsigned numrows;               // # of lines in file
@@ -67,7 +67,6 @@ struct editorConfig {
     char statusmsg[80];
     char *statusbar;
     unsigned char *statusbarrev;
-    time_t statusmsg_time;
     char statusmsg_dirty;
 #ifdef SYNTAX_HIGHLIGHT
     struct editorSyntax *syntax;
@@ -81,6 +80,7 @@ extern struct editorConfig E;
 enum editorKey {
     BACKARROW = 95,
     BACKSPACE = 127,
+    F1_KEY = 241,
     DEL_KEY = 1000,
     HOME_KEY,
     END_KEY,
@@ -143,6 +143,7 @@ struct editorSyntax HLDB[] = {
 
 /*** prototypes ***/
 
+void clearCursor(void);
 void clearScreen(void);
 void drawRow(char row, char len, char *buf, unsigned char *rev);
 void editorCalcSelection(void);
@@ -171,8 +172,11 @@ void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 void editorUpdateRow(erow *row);
 void initEditor(void);
+#if __C128__
 void setScreenBg(char bg);
+#endif
 void initScreen(void);
+void renderCursor(void);
 void setupScreenCols(void);
 
 #if 0

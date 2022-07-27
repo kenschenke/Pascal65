@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __MEGA65__
+#include <cbm.h>
+#endif
+
 static void editorFindCallback(char *query, int key);
 
 static void editorFindCallback(char *query, int key) {

@@ -1,6 +1,6 @@
 ; Common Assembly Routines
 
-    .export     incRow, petscii2Screen
+    .export     incRow, petscii2Screen, strLen
     .importzp   ptr1, ptr2, ptr3, tmp1, tmp2
 
 ; Increment the address in ptr2 by .Y bytes per row
@@ -24,6 +24,18 @@ incRow:
 @Done:
     pla
     sta tmp1
+    rts
+
+; Calculate string length in ptr1
+; Length returned in .Y
+strLen:
+    ldy #0
+_Loop:
+    lda (ptr1),y
+    beq _Done
+    iny
+    jmp _Loop
+_Done:
     rts
 
 ; Convert the PETSCII character in .A

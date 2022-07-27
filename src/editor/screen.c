@@ -1,12 +1,18 @@
 #include "editor.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 #include <conio.h>
 
+#ifdef __MEGA65__
+#include <cbm.h>
+#endif
+
 #define KILO_VERSION "0.0.1"
 
+#ifdef __C128__
 void __fastcall__ clearScreen80(void);
 void __fastcall__ initScreen80(void);
 void __fastcall__ setScreenBg80(char bg);
@@ -18,6 +24,7 @@ void __fastcall__ initScreen40(void);
 void __fastcall__ setScreenBg40(char bg);
 void __fastcall__ drawRow40(char row, char len,
     char *buf, unsigned char *rev);
+#endif
 
 static void editorDrawMessageBar(void);
 static void editorDrawRows(void);
@@ -25,19 +32,70 @@ static void editorDrawStatusBar(void);
 static void editorScroll(void);
 static void freeWelcomePage(char **rows, int numRows);
 static void prepWelcomePage(char ***rows, int *numRows);
+static void setCursor(unsigned char value, unsigned char color);
+
+#ifdef __MEGA65__
+static void drawRow65(char row, char len, char *buf, unsigned char *rev);
+
+char * SCREEN = (char*)0x0800;
+char * COLORS = (char*)0xd800;
+#endif
 
 void clearScreen(void) {
+#ifdef __MEGA65__
+    clrscr();
+#else
     if (E.screencols == 40)
         clearScreen40();
     else
         clearScreen80();
+#endif
 }
 
+#ifdef __MEGA65__
+static void drawRow65(char row, char len, char *buf, unsigned char *rev) {
+    char i;
+    int offset = row * E.screencols;
+    for (i = 0; i < len; ++i) {
+        SCREEN[offset++] = petsciitoscreencode(buf[i]) | (rev && rev[i] ? 128 : 0);
+    }
+    memset(SCREEN+offset, ' ', E.screencols-len);
+}
+
+void clearCursor(void) {
+    unsigned char clear = E.cf->row[E.cf->cy].rev == NULL ||
+        E.cf->row[E.cf->cy].rev[E.cf->cx] == 0;
+    setCursor(clear, COLOUR_WHITE);
+}
+
+void renderCursor(void) {
+    setCursor(0, COLOUR_GREEN);
+}
+
+static void setCursor(unsigned char clear, unsigned char color) {
+    unsigned int offset;
+
+    offset = (E.cf->cy - E.cf->rowoff) * E.screencols + E.cf->cx - E.cf->coloff;
+    if (clear) {
+        SCREEN[offset] &= 0x7f;
+    } else {
+        SCREEN[offset] |= 0x80;
+    }
+    COLORS[offset] = color;
+}
+#else
+void clearCursor(void) {}
+#endif
+
 void drawRow(char row, char len, char *buf, unsigned char *rev) {
+#ifdef __MEGA65__
+    drawRow65(row, len, buf, rev);
+#else
     if (E.screencols == 40)
         drawRow40(row, len, buf, rev);
     else
         drawRow80(row, len, buf, rev);
+#endif
 }
 
 static void freeWelcomePage(char **rows, int numRows) {
@@ -77,18 +135,25 @@ static void prepWelcomePage(char ***rows, int *numRows) {
 }
 
 void initScreen(void) {
+#ifdef __MEGA65__
+    conioinit();
+    clearScreen();
+#else
     if (E.screencols == 40)
         initScreen40();
     else
         initScreen80();
+#endif
 }
 
+#ifdef __C128__
 void setScreenBg(char bg) {
     if (E.screencols == 40)
         setScreenBg40(bg);
     else
         setScreenBg80(bg);
 }
+#endif
 
 static void editorScroll(void) {
     int willScroll = 0;
@@ -170,14 +235,7 @@ static void editorDrawStatusBar(void) {
             E.cf->filename ? E.cf->filename : "[No Name]", E.cf->numrows,
             E.cf->dirty ? " (modified)" : "",
             E.cf->readOnly ? " (read only)" : "");
-        len = snprintf(status, sizeof(status), "Free: %d, Lg Block: %d",
-            _heapmemavail(), _heapmaxavail());
-#ifdef SYNTAX_HIGHLIGHT
-        rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
-            E.syntax ? E.syntax->filetype : "no ft", E.cf->cy + 1, E.cf->numrows);
-#else
         rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cf->cy + 1, E.cf->numrows);
-#endif
         if (len > E.screencols) len = E.screencols;
     }
     memcpy(E.statusbar, status, len);
@@ -187,45 +245,30 @@ static void editorDrawStatusBar(void) {
 }
 
 static void editorDrawMessageBar(void) {
-    unsigned char *rev;
     int msglen = strlen(E.statusmsg);
 
-    if (!E.statusmsg_dirty && E.statusmsg_time == 0) return;
+    if (!E.statusmsg_dirty) return;
 
     if (msglen > E.screencols) msglen = E.screencols;
-    if (msglen && time(NULL) - E.statusmsg_time < 5) {
-        rev = malloc(msglen);
-        memset(rev, 0, msglen);
-        drawRow(E.screenrows+1, msglen, E.statusmsg, rev);
-        free(rev);
+    if (msglen) {
+        drawRow(E.screenrows+1, msglen, E.statusmsg, NULL);
     } else {
-        rev = malloc(E.screencols);
-        memset(rev, 0, E.screencols);
         memset(E.statusmsg, ' ', E.screencols);
-        drawRow(E.screenrows+1, E.screencols, E.statusmsg, rev);
-        free(rev);
-        E.statusmsg_time = 0;
+        drawRow(E.screenrows+1, E.screencols, E.statusmsg, NULL);
     }
     
     E.statusmsg_dirty = 0;
 }
 
 void editorRefreshScreen(void) {
-    cursor(0);  // turn cursor off during drawing
-
     if (E.cf)
         editorScroll();
 
     editorDrawRows();
-#if 1
     editorDrawStatusBar();
-#endif
     editorDrawMessageBar();
 
-    if (E.cf) {
-        cursor(1);  // turn the cursor back on
-        gotoxy(E.cf->cx - E.cf->coloff, E.cf->cy - E.cf->rowoff);
-    }
+    renderCursor();
 }
 
 void editorSetStatusMessage(const char *fmt, ...) {
@@ -233,7 +276,6 @@ void editorSetStatusMessage(const char *fmt, ...) {
     va_start(ap, fmt);
     vsnprintf(E.statusmsg, sizeof(E.statusmsg), fmt, ap);
     va_end(ap);
-    E.statusmsg_time = time(NULL);
     E.statusmsg_dirty = 1;
 }
 

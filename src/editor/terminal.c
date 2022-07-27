@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __MEGA65__
+#include <cbm.h>
+#endif
+
 static void die(const char *s);
 
 static void die(const char *s) {
@@ -15,7 +19,11 @@ static void die(const char *s) {
 }
 
 int editorReadKey(void) {
-    char c = cgetc();
+    int c = cgetc();
+#ifdef __MEGA65__
+    if (c >= 97 && c <= 122) c -= 32;
+    else if (c >= 65 && c <= 90) c += 128;
+#endif
 
     if (c == CH_ESC) {
         E.last_key_esc = 1;

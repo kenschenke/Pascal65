@@ -3,6 +3,7 @@
 #include "editor.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define KED_VERSION "0.0.1"
 
@@ -29,7 +30,6 @@ int showKeyCodes(void) {
     }
 
     sprintf(buf, "%3d", c);
-    memset(rev, 0, 3);
     drawRow(10, 3, buf, NULL);
     return 0;
 }
@@ -37,6 +37,9 @@ int showKeyCodes(void) {
 
 int main(int argc, char *argv[])
 {
+    // On the Mega65, $1600 - $1fff is available to use in the heap
+    _heapadd((void *)0x1600, 0x1fff - 0x1600);
+
     initEditor();
     if (argc >= 2) {
         // editorOpen(argv[1]);
@@ -47,7 +50,7 @@ int main(int argc, char *argv[])
     return 0;
 #endif
 
-#if 0
+#if 1
     editorOpen("help.txt");
 #endif
 

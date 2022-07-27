@@ -9,14 +9,22 @@
 #endif
 #include <conio.h>
 
+#ifdef __MEGA65__
+#include <cbm.h>
+#endif
+
 struct editorConfig E;
 
 static void editorDelChar(void);
 static void editorInsertChar(int c);
 static void editorInsertTab(void);
 static void editorInsertNewLine(int spaces);
-static void editorMoveCursor(int key);
+static void editorMoveCursor(int key, char skipClear);
 static void editorProcessKeypress(void);
+
+#ifdef __MEGA65__
+void fastcall setscreensize(unsigned char width, unsigned char height);
+#endif
 
 /*** editor operations ***/
 
@@ -109,34 +117,40 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
     }
 }
 
-static void editorMoveCursor(int key) {
+static void editorMoveCursor(int key, char skipClear) {
     int rowlen;
     erow *row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
 
     switch (key) {
         case CH_CURS_LEFT:
             if (E.cf->cx != 0) {
+                if (!skipClear) clearCursor();
                 E.cf->cx--;
             } else if (E.cf->cy > 0) {
+                if (!skipClear) clearCursor();
                 E.cf->cy--;
                 E.cf->cx = E.cf->row[E.cf->cy].size;
             }
             break;
         case CH_CURS_RIGHT:
             if (row && E.cf->cx < row->size) {
+                if (!skipClear) clearCursor();
                 E.cf->cx++;
             } else if (row && E.cf->cx == row->size) {
+                if (!skipClear) clearCursor();
                 E.cf->cy++;
                 E.cf->cx = 0;
             }
             break;
         case CH_CURS_UP:
             if (E.cf->cy != 0) {
+                if (!skipClear) clearCursor();
                 E.cf->cy--;
             }
             break;
         case CH_CURS_DOWN:
             if (E.cf->cy < E.cf->numrows - 1) {
+                if (!skipClear) clearCursor();
                 E.cf->cy++;
             }
             break;
@@ -145,7 +159,7 @@ static void editorMoveCursor(int key) {
     row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
     rowlen = row ? row->size : 0;
     if (E.cf->cx > rowlen) {
-        E.cf->cx = rowlen;
+        E.cf->cx = rowlen - 1;
     }
 
     if (E.cf->in_selection) editorCalcSelection();
@@ -208,7 +222,7 @@ static void editorProcessKeypress(void) {
             editorSetAllRowsDirty();
             break;
 
-        case CH_F1:
+        case F1_KEY:
             clearScreen();
             E.screencols = E.screencols == 80 ? 40 : 80;
             setupScreenCols();
@@ -249,11 +263,15 @@ static void editorProcessKeypress(void) {
 
         case CTRL_KEY('j'):
         case HOME_KEY:
-            if (E.cf) E.cf->cx = 0;
+            if (E.cf) {
+                clearCursor();
+                E.cf->cx = 0;
+            }
             break;
 
         case CH_HOME:
             if (E.cf) {
+                clearCursor();
                 if (E.cf->cx == 0 && E.cf->cy == E.cf->rowoff) {
                     if (E.cf->rowoff != 0) {
                         E.cf->rowoff = 0;
@@ -270,20 +288,28 @@ static void editorProcessKeypress(void) {
         case CTRL_KEY('k'):
         case END_KEY:
             if (E.cf && E.cf->cy < E.cf->numrows)
+                clearCursor();
                 E.cf->cx = E.cf->row[E.cf->cy].size;
             break;
 
         case DEL_SOL_KEY:
-            if (E.cf) editorDeleteToStartOfLine();
+            if (E.cf) {
+                clearCursor();
+                editorDeleteToStartOfLine();
+            }
             break;
 
         case DEL_EOL_KEY:
-            if (E.cf) editorDeleteToEndOfLine();
+            if (E.cf) {
+                clearCursor();
+                editorDeleteToEndOfLine();
+            }
             break;
         
         case CTRL_KEY('d'):
         case DEL_LINE_KEY:
             if (E.cf) {
+                clearCursor();
                 E.cf->cx = 0;
                 editorDelRow(E.cf->cy);
             }
@@ -291,6 +317,7 @@ static void editorProcessKeypress(void) {
 
         case INS_LINE_KEY:
             if (E.cf) {
+                clearCursor();
                 E.cf->cx = 0;
                 editorInsertNewLine(0);
                 E.cf->cy--;
@@ -349,7 +376,8 @@ static void editorProcessKeypress(void) {
         case CTRL_KEY('h'):
         case DEL_KEY:
             if (E.cf) {
-                if (c == DEL_KEY) editorMoveCursor(CH_CURS_RIGHT);
+                clearCursor();
+                if (c == DEL_KEY) editorMoveCursor(CH_CURS_RIGHT, 0);
                 editorDelChar();
             }
             break;
@@ -358,7 +386,7 @@ static void editorProcessKeypress(void) {
         case CH_CURS_DOWN:
         case CH_CURS_LEFT:
         case CH_CURS_RIGHT:
-            if (E.cf) editorMoveCursor(c);
+            if (E.cf) editorMoveCursor(c, 0);
             break;
 
         case CTRL_KEY('l'):
@@ -370,18 +398,20 @@ static void editorProcessKeypress(void) {
         case PAGE_UP:
         case PAGE_DOWN:
             if (E.cf) {
+                clearCursor();
                 if (c == CTRL_KEY('n')) c = PAGE_DOWN;
                 if (c == CTRL_KEY('p')) c = PAGE_UP;
                 if (c == PAGE_UP) {
                     E.cf->cy = E.cf->rowoff;
                 } else if (c == PAGE_DOWN) {
-                    E.cf->cy = E.cf->rowoff + E.screenrows - 1;
+                    E.cf->cy = E.cf->rowoff + E.screenrows;
                     if (E.cf->cy > E.cf->numrows) E.cf->cy = E.cf->numrows;
                 }
 
                 times = E.screenrows;
+                clearCursor();
                 while (times--)
-                    editorMoveCursor(c == PAGE_UP ? CH_CURS_UP : CH_CURS_DOWN);
+                    editorMoveCursor(c == PAGE_UP ? CH_CURS_UP : CH_CURS_DOWN, 1);
             }
             break;
 
@@ -412,6 +442,7 @@ static void editorProcessKeypress(void) {
             break;
 
         default:
+            clearCursor();
             if (E.cf) editorInsertChar(c);
             break;
     }
@@ -437,7 +468,6 @@ void initEditor() {
     E.clipboard = NULL;
     E.welcomePage = NULL;
     E.statusmsg[0] = '\0';
-    E.statusmsg_time = 0;
     E.statusmsg_dirty = 0;
 #ifdef SYNTAX_HIGHLIGHT
     E.cf->syntax = NULL;
@@ -455,7 +485,9 @@ void initEditor() {
     E.statusbarrev = malloc(E.screencols);
     memset(E.statusbarrev, 128, E.screencols);
 
+#ifdef __C128__
     fast();
+#endif
     setupScreenCols();
 
     editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
@@ -483,12 +515,21 @@ void initFile(struct editorFile *file) {
 }
 
 void setupScreenCols(void) {
+#ifdef __C128__
     if (E.screencols == 80)
         videomode(VIDEOMODE_80x25);
     else
         videomode(VIDEOMODE_40x25);
+#else
+    if (E.screencols == 80)
+        setscreensize(80, 25);
+    else
+        setscreensize(40, 25);
+#endif
 
     initScreen();
+#ifdef __C128__
     setScreenBg(E.screencols == 40 ? COLOR_BLUE : 2);
+#endif
 }
 
