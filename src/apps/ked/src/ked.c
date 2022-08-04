@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <blocks.h>
 
 #define KED_VERSION "0.0.1"
 
@@ -40,6 +41,8 @@ int main(int argc, char *argv[])
     // On the Mega65, $1600 - $1fff is available to use in the heap
     _heapadd((void *)0x1600, 0x1fff - 0x1600);
 
+    initBlockStorage();
+
     initEditor();
     if (argc >= 2) {
         // editorOpen(argv[1]);
@@ -52,6 +55,7 @@ int main(int argc, char *argv[])
 
 #if 1
     editorOpen("help.txt");
+    // return 0;
 #endif
 
     E.welcomePage =

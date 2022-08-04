@@ -2,6 +2,9 @@
 #define EDITOR_H
 
 #include <stddef.h>
+#include <chunks.h>
+
+#define ECHUNK_LEN (CHUNK_LEN - 3)
 
 #ifndef __C128__
 // #define SYNTAX_HIGHLIGHT
@@ -24,19 +27,25 @@ struct editorSyntax {
 };
 #endif
 
+typedef unsigned char UCHAR;
+
 typedef struct erow {
+    CHUNKNUM rowChunk;          // Chunk address for this erow record
+    CHUNKNUM nextRowChunk;      // Chunk address for next erow record
     int idx;
     int size;
-    char *chars;
-#ifndef SYNTAX_HIGHLIGHT
-    unsigned char *hl;
-    int hl_open_comment;
-#endif
-    unsigned char *rev;             // bit 7 is high for highlighted text
+    CHUNKNUM firstTextChunk;    // Chunk address of first text data
+    char unused[CHUNK_LEN - 6]; // so it fills a chunk
 } erow;
 
+typedef struct echunk {
+    CHUNKNUM nextChunk;
+    UCHAR bytesUsed;
+    UCHAR bytes[ECHUNK_LEN];
+} echunk;
+
 struct editorFile {
-    unsigned cx, cy;                // cursor X and Y
+    int cx, cy;                     // cursor X and Y
     unsigned rowoff;                // top row on screen
     unsigned coloff;                // left-most column on screen
     char in_selection;              // non-zero if selection is on
@@ -46,7 +55,7 @@ struct editorFile {
     int ehx, ehy;                   // end selection highlight X and Y
     int last_shy, last_ehy;         // shy and ehy before cursor moved
                                     // (used to refresh highlighted rows)
-    erow *row;                      // text data (array)
+    CHUNKNUM firstRowChunk;         // Chunk for first erow record
     unsigned numrows;               // # of lines in file
     char readOnly;                  // non-zero if file is read-only
     unsigned dirty;                 // non-zero if file is modified
@@ -145,7 +154,7 @@ struct editorSyntax HLDB[] = {
 
 void clearCursor(void);
 void clearScreen(void);
-void drawRow(char row, char len, char *buf, unsigned char *rev);
+void drawRow(char row, char col, char len, char *buf, char isReversed);
 void editorCalcSelection(void);
 void editorClearSelection(void);
 void editorCopySelection(void);
@@ -159,9 +168,12 @@ void editorInsertRow(int at, char *s, size_t len);
 void editorPasteClipboard(void);
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void editorRowAppendString(erow *row, char *s, size_t len);
+char editorRowAt(int at, erow *row);
 void editorRowDelChars(erow *row, int at, int length);
 void editorRowInsertChar(erow *row, int at, int c);
 void editorRowInsertString(erow *row, int at, char *s, size_t len);
+char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
+char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
 void editorOpen(const char *filename);
 int editorReadKey(void);
 void editorRun(void);

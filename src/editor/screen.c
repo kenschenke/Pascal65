@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <conio.h>
+#include <chunks.h>
 
 #ifdef __MEGA65__
 #include <cbm.h>
@@ -35,10 +36,10 @@ static void prepWelcomePage(char ***rows, int *numRows);
 static void setCursor(unsigned char value, unsigned char color);
 
 #ifdef __MEGA65__
-static void drawRow65(char row, char len, char *buf, unsigned char *rev);
+static void clearRow(char row, char startingCol);
+static void drawRow65(char row, char col, char len, char *buf, char isReversed);
 
 char * SCREEN = (char*)0x0800;
-char * COLORS = (char*)0xd800;
 #endif
 
 void clearScreen(void) {
@@ -53,23 +54,25 @@ void clearScreen(void) {
 }
 
 #ifdef __MEGA65__
-static void drawRow65(char row, char len, char *buf, unsigned char *rev) {
+static void clearRow(char row, char startingCol) {
+    int offset = row * E.screencols + startingCol;
+    memset(SCREEN+offset, ' ', E.screencols-startingCol);
+}
+
+static void drawRow65(char row, char col, char len, char *buf, char isReversed) {
     char i;
-    int offset = row * E.screencols;
+    int offset = row * E.screencols + col;
     for (i = 0; i < len; ++i) {
-        SCREEN[offset++] = petsciitoscreencode(buf[i]) | (rev && rev[i] ? 128 : 0);
+        SCREEN[offset++] = petsciitoscreencode(buf[i]) | (isReversed ? 128 : 0);
     }
-    memset(SCREEN+offset, ' ', E.screencols-len);
 }
 
 void clearCursor(void) {
-    unsigned char clear = E.cf->row[E.cf->cy].rev == NULL ||
-        E.cf->row[E.cf->cy].rev[E.cf->cx] == 0;
-    setCursor(clear, COLOUR_WHITE);
+    setCursor(1, COLOUR_WHITE);
 }
 
 void renderCursor(void) {
-    setCursor(0, COLOUR_GREEN);
+    setCursor(0, COLOUR_ORANGE);
 }
 
 static void setCursor(unsigned char clear, unsigned char color) {
@@ -81,20 +84,20 @@ static void setCursor(unsigned char clear, unsigned char color) {
     } else {
         SCREEN[offset] |= 0x80;
     }
-    COLORS[offset] = color;
+    cellcolor(E.cf->cx - E.cf->coloff, E.cf->cy - E.cf->rowoff, color);
 }
 #else
 void clearCursor(void) {}
 #endif
 
-void drawRow(char row, char len, char *buf, unsigned char *rev) {
+void drawRow(char row, char col, char len, char *buf, char isReversed) {
 #ifdef __MEGA65__
-    drawRow65(row, len, buf, rev);
+    drawRow65(row, col, len, buf, isReversed);
 #else
     if (E.screencols == 40)
-        drawRow40(row, len, buf, rev);
+        drawRow40(row, len, buf, NULL);
     else
-        drawRow80(row, len, buf, rev);
+        drawRow80(row, len, buf, NULL);
 #endif
 }
 
@@ -181,7 +184,11 @@ static void editorScroll(void) {
 }
 
 static void editorDrawRows(void) {
-    int y, padding;
+    int y, padding, len, startAt;
+    erow row;
+    char col;
+    CHUNKNUM c, nextRowChunk;
+    echunk chunk;
 
     if (E.cf == NULL) {
         char **rows, *buffer;
@@ -190,7 +197,7 @@ static void editorDrawRows(void) {
         prepWelcomePage(&rows, &numRows);
         y = (E.screenrows - numRows) / 2;
         for (i = 0; i < y; ++i) {
-            drawRow(i, 0, "", NULL);
+            drawRow(i, 0, 0, "", 0);
         }
         buffer = malloc(E.screencols + 1);
         for (i = 0; i < numRows; ++i, ++y) {
@@ -198,7 +205,7 @@ static void editorDrawRows(void) {
             if (x < 0) x = 0;
             if (x > 0) memset(buffer, ' ', x);
             strcpy(buffer + x, rows[i]);
-            drawRow(y, strlen(buffer), buffer, NULL);
+            drawRow(y, 0, strlen(buffer), buffer, 0);
         }
 
         free(buffer);
@@ -207,16 +214,37 @@ static void editorDrawRows(void) {
         return;
     }
 
+    editorRowAt(E.cf->rowoff, &row);
+    nextRowChunk = row.nextRowChunk;
     for (y = 0; y < E.screenrows; y++) {
-        int filerow = y + E.cf->rowoff;
         if (E.cf->dirtyScreenRows[y]) {
-            int len = E.cf->row[filerow].size - E.cf->coloff;
-            if (len < 0) len = 0;
-            if (len > E.screencols) len = E.screencols;
-            drawRow(y, len, &E.cf->row[filerow].chars[E.cf->coloff],
-                E.cf->row[filerow].rev ? &E.cf->row[filerow].rev[E.cf->coloff] : NULL);
+            c = row.firstTextChunk;
+            len = row.size - E.cf->coloff;
+            startAt = E.cf->coloff;
+            col = 0;
+            while (len && c) {
+                retrieveChunk(c, (unsigned char *)&chunk);
+                c = chunk.nextChunk;
+                if (startAt < chunk.bytesUsed) {
+                    drawRow(y, col, chunk.bytesUsed, (char *)chunk.bytes + startAt, 0);
+                    len -= chunk.bytesUsed;
+                    startAt = 0;
+                } else {
+                    startAt -= chunk.bytesUsed;
+                }
+                col += chunk.bytesUsed;
+            }
+
             E.cf->dirtyScreenRows[y] = 0;
+            clearRow(y, col);
         }
+
+        if (nextRowChunk == 0) {
+            break;
+        }
+
+        retrieveChunk(nextRowChunk, (unsigned char *)&row);
+        nextRowChunk = row.nextRowChunk;
     }
 }
 
@@ -241,7 +269,7 @@ static void editorDrawStatusBar(void) {
     memcpy(E.statusbar, status, len);
     memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
 
-    drawRow(E.screenrows, E.screencols, E.statusbar, E.statusbarrev);
+    drawRow(E.screenrows, 0, E.screencols, E.statusbar, 1);
 }
 
 static void editorDrawMessageBar(void) {
@@ -251,10 +279,10 @@ static void editorDrawMessageBar(void) {
 
     if (msglen > E.screencols) msglen = E.screencols;
     if (msglen) {
-        drawRow(E.screenrows+1, msglen, E.statusmsg, NULL);
+        drawRow(E.screenrows+1, 0, msglen, E.statusmsg, 0);
     } else {
         memset(E.statusmsg, ' ', E.screencols);
-        drawRow(E.screenrows+1, E.screencols, E.statusmsg, NULL);
+        drawRow(E.screenrows+1, 0, E.screencols, E.statusmsg, 0);
     }
     
     E.statusmsg_dirty = 0;

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if 0
 static char *editorRowsToString(int *buflen);
 
 static char *editorRowsToString(int *buflen) {
@@ -27,12 +28,13 @@ static char *editorRowsToString(int *buflen) {
 
     return buf;
 }
+#endif
 
 void editorOpen(const char *filename) {
     FILE *fp;
+    erow row;
     char *buf, *line, *eol;
-    erow *row = NULL;
-    int buflen = 120;
+    int buflen = 120, lastRow = -1;
 
     if (E.cf == NULL) {
         E.cf = malloc(sizeof(struct editorFile));
@@ -65,23 +67,25 @@ void editorOpen(const char *filename) {
             eol = strchr(line, '\r');
             if (eol == NULL) {
                 if (line != NULL) {
-                    if (row) {
-                        editorRowAppendString(row, line, strlen(line));
+                    if (lastRow >= 0) {
+                        editorRowAt(lastRow, &row);
+                        editorRowAppendString(&row, line, strlen(line));
                     } else {
                         editorInsertRow(E.cf->numrows, line, strlen(line));
                     }
-                    row = &E.cf->row[E.cf->numrows - 1];
+                    lastRow = E.cf->numrows - 1;
                 }
                 break;
             } else {
                 *eol = '\0';
                 if (line != NULL) {
-                    if (row) {
-                        editorRowAppendString(row, line, strlen(line));
+                    if (lastRow >= 0) {
+                        editorRowAt(lastRow, &row);
+                        editorRowAppendString(&row, line, strlen(line));
                     } else {
                         editorInsertRow(E.cf->numrows, line, strlen(line));
                     }
-                    row = NULL;
+                    lastRow = -1;
                 }
                 line = eol + 1;
             }

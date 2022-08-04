@@ -29,27 +29,48 @@ void fastcall setscreensize(unsigned char width, unsigned char height);
 /*** editor operations ***/
 
 static void editorDelChar(void) {
-    erow *row;
+    erow row;
+    echunk chunk;
+    CHUNKNUM chunkNum;
+    int beforeSize;
+
     if (E.cf->cy == E.cf->numrows) return;
     if (E.cf->cx == 0 && E.cf->cy == 0) return;
 
-    row = &E.cf->row[E.cf->cy];
+    if (editorRowAt(E.cf->cy, &row) == 0) {
+        return;
+    }
+
     if (E.cf->cx > 0) {
-        editorRowDelChars(row, E.cf->cx - 1, 1);
+        editorRowDelChars(&row, E.cf->cx - 1, 1);
         E.cf->cx--;
     } else {
-        E.cf->cx = E.cf->row[E.cf->cy - 1].size;
-        editorRowAppendString(&E.cf->row[E.cf->cy - 1], row->chars, row->size);
+        chunkNum = row.firstTextChunk;
+        if (editorRowAt(E.cf->cy - 1, &row) == 0) {
+            return;
+        }
+        beforeSize = row.size;
+        while (chunkNum) {
+            retrieveChunk(chunkNum, (unsigned char *)&chunk);
+            chunkNum = chunk.nextChunk;
+            editorRowAppendString(&row, chunk.bytes, chunk.bytesUsed);
+        }
+        E.cf->cx = beforeSize;
         editorDelRow(E.cf->cy);
         E.cf->cy--;
     }
 }
 
 static void editorInsertChar(int c) {
+    erow row;
+
     if (E.cf->cy == E.cf->numrows) {
         editorInsertRow(E.cf->numrows, "", 0);
     }
-    editorRowInsertChar(&E.cf->row[E.cf->cy], E.cf->cx, c);
+    if (editorRowAt(E.cf->cy, &row) == 0) {
+        return;
+    }
+    editorRowInsertChar(&row, E.cf->cx, c);
     E.cf->cx++;
 }
 
@@ -59,15 +80,35 @@ static void editorInsertTab(void) {
 }
 
 static void editorInsertNewLine(int spaces) {
+    erow currentRow, newRow;
+    int firstCol, startAt, toCopy;
+    CHUNKNUM chunkNum, nextChunk;
+    echunk chunk;
+
     if (E.cf->cx == 0) {
         editorInsertRow(E.cf->cy, "", 0);
     } else {
-        erow *row = &E.cf->row[E.cf->cy];
-        editorInsertRow(E.cf->cy + 1, &row->chars[E.cf->cx], row->size - E.cf->cx);
-        row = &E.cf->row[E.cf->cy];
-        row->size = E.cf->cx;
-        row->chars[row->size] = '\0';
-        editorUpdateRow(row);
+        clearCursor();
+        editorRowAt(E.cf->cy, &currentRow);
+        editorChunkAtX(&currentRow, E.cf->cx, &firstCol, &chunkNum, &chunk);
+        startAt = E.cf->cx - firstCol;
+        toCopy = chunk.bytesUsed - startAt;
+        editorInsertRow(E.cf->cy + 1, chunk.bytes + startAt, toCopy);
+        editorRowAt(E.cf->cy, &currentRow);
+        editorRowAt(E.cf->cy + 1, &newRow);
+        nextChunk = chunk.nextChunk;
+        chunk.nextChunk = 0;
+        chunk.bytesUsed -= toCopy;
+        storeChunk(chunkNum, (unsigned char *)&chunk);
+        newRow.size = currentRow.size - E.cf->cx;
+        currentRow.size = E.cf->cx;
+        storeChunk(currentRow.rowChunk, (unsigned char *)&currentRow);
+        storeChunk(newRow.rowChunk, (unsigned char *)&newRow);
+        retrieveChunk(newRow.firstTextChunk, (unsigned char *)&chunk);
+        chunk.nextChunk = nextChunk;
+        storeChunk(newRow.firstTextChunk, (unsigned char *)&chunk);
+        editorSetRowDirty(&currentRow);
+        editorSetRowDirty(&newRow);
     }
     E.cf->cy++;
     if (E.cf->cx) {
@@ -119,7 +160,14 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
 
 static void editorMoveCursor(int key, char skipClear) {
     int rowlen;
-    erow *row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
+    erow rowBuf, *row = NULL;
+    
+    if (E.cf->cy < E.cf->numrows) {
+        if (editorRowAt(E.cf->cy, &rowBuf) == 0) {
+            return;
+        }
+        row = &rowBuf;
+    }
 
     switch (key) {
         case CH_CURS_LEFT:
@@ -129,7 +177,8 @@ static void editorMoveCursor(int key, char skipClear) {
             } else if (E.cf->cy > 0) {
                 if (!skipClear) clearCursor();
                 E.cf->cy--;
-                E.cf->cx = E.cf->row[E.cf->cy].size;
+                editorRowAt(E.cf->cy, &rowBuf);
+                E.cf->cx = rowBuf.size;
             }
             break;
         case CH_CURS_RIGHT:
@@ -156,10 +205,14 @@ static void editorMoveCursor(int key, char skipClear) {
             break;
     }
 
-    row = (E.cf->cy >= E.cf->numrows) ? NULL : &E.cf->row[E.cf->cy];
+    if (E.cf->cy < E.cf->numrows) {
+        editorRowAt(E.cf->cy, &rowBuf);
+        row = &rowBuf;
+    }
     rowlen = row ? row->size : 0;
     if (E.cf->cx > rowlen) {
-        E.cf->cx = rowlen - 1;
+        E.cf->cx = rowlen;
+        if (E.cf->cx < 0) E.cf->cx = 0;
     }
 
     if (E.cf->in_selection) editorCalcSelection();
@@ -200,11 +253,28 @@ static void editorProcessKeypress(void) {
         case CH_ENTER:
             if (E.cf) {
                 // Count the number of spaces at the beginning of this line
-                int i = 0;
-                erow *row = &E.cf->row[E.cf->cy];
-                if (E.cf->cx < row->size) editorSetRowDirty(row);
-                while (row->chars[i] && row->chars[i] == ' ') ++i;
-                editorInsertNewLine(i);
+                erow row;
+                int i, spaces = 0;
+                echunk chunk;
+                CHUNKNUM chunkNum;
+                editorRowAt(E.cf->cy, &row);
+                if (E.cf->cx < row.size) editorSetRowDirty(&row);
+                chunkNum = row.firstTextChunk;
+                while (chunkNum) {
+                    retrieveChunk(chunkNum, (unsigned char *)&chunk);
+                    for (i = 0; i < chunk.bytesUsed; ++i) {
+                        if (chunk.bytes[i] == ' ') {
+                            ++spaces;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (i < chunk.bytesUsed) {
+                        break;
+                    }
+                    chunkNum = chunk.nextChunk;
+                }
+                editorInsertNewLine(spaces);
             }
             break;
         
@@ -287,9 +357,11 @@ static void editorProcessKeypress(void) {
 
         case CTRL_KEY('k'):
         case END_KEY:
+#if 0
             if (E.cf && E.cf->cy < E.cf->numrows)
                 clearCursor();
                 E.cf->cx = E.cf->row[E.cf->cy].size;
+#endif
             break;
 
         case DEL_SOL_KEY:
@@ -405,7 +477,7 @@ static void editorProcessKeypress(void) {
                     E.cf->cy = E.cf->rowoff;
                 } else if (c == PAGE_DOWN) {
                     E.cf->cy = E.cf->rowoff + E.screenrows;
-                    if (E.cf->cy > E.cf->numrows) E.cf->cy = E.cf->numrows;
+                    if (E.cf->cy >= E.cf->numrows) E.cf->cy = E.cf->numrows - 1;
                 }
 
                 times = E.screenrows;
@@ -432,6 +504,7 @@ static void editorProcessKeypress(void) {
         
         case CTRL_KEY('a'):
         case SELECT_ALL_KEY:
+#if 0
             if (E.cf) {
                 E.cf->in_selection = 1;
                 E.cf->shx = E.cf->shy = 0;
@@ -439,6 +512,7 @@ static void editorProcessKeypress(void) {
                 E.cf->cx = E.cf->row[E.cf->numrows-1].size;
                 editorCalcSelection();
             }
+#endif
             break;
 
         default:
@@ -499,7 +573,7 @@ void initFile(struct editorFile *file) {
     file->rowoff = 0;
     file->coloff = 0;
     file->numrows = 0;
-    file->row = NULL;
+    file->firstRowChunk = 0;
     file->dirty = 0;
     file->in_selection = 0;
     file->sx = 0;
