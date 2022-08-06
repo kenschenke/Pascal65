@@ -21,6 +21,26 @@ void assertEqualByteX(unsigned char expected, unsigned char actual,
 	}
 }
 
+void assertEqualChunkNumX(CHUNKNUM expected, CHUNKNUM actual,
+	const char *file, const char *test, int line)
+{
+	if (expected != actual) {
+		errorHeader(file, test, line);
+		printf("Expected %d -- got %d\n", expected, actual);
+		exit(5);
+	}
+}
+
+void assertEqualIntX(int expected, int actual,
+	const char *file, const char *test, int line)
+{
+	if (expected != actual) {
+		errorHeader(file, test, line);
+		printf("Expected %d -- got %d\n", expected, actual);
+		exit(5);
+	}
+}
+
 void assertEqualPointerX(unsigned char *expected, unsigned char *actual,
 	const char *file, const char *test, int line)
 {
