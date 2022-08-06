@@ -15,7 +15,9 @@ char editorRowAt(int at, erow *row) {
     c = E.cf->firstRowChunk;
     j = 0;
     while (c) {
-        retrieveChunk(c, (unsigned char *)row);
+        if (retrieveChunk(c, (unsigned char *)row) == 0) {
+            return 0;
+        }
         if (j == at) {
             return 1;
         }
@@ -30,7 +32,7 @@ char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, e
     *chunkNum = row->firstTextChunk;
     *chunkFirstCol = 0;
 
-    if (*chunkNum == 0 || at > row->size) {
+    if (*chunkNum == 0 || at < 0 || at > row->size) {
         return 0;
     }
 
@@ -342,7 +344,7 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
     editorRowLastChunk(row, &curChunk, &chunk);
 
     // If enough room left in the last chunk stuff the bytes there.
-    if (curChunk && chunk.bytesUsed + len < ECHUNK_LEN) {
+    if (curChunk && chunk.bytesUsed + len <= ECHUNK_LEN) {
         memcpy(chunk.bytes + chunk.bytesUsed, s, len);
         chunk.bytesUsed += len;
         storeChunk(curChunk, (unsigned char *)&chunk);
