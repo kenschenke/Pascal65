@@ -189,6 +189,11 @@ char retrieveChunk(CHUNKNUM chunkNum, unsigned char *bytes)
 		currentBlock = blockNum;
 	}
 
+	// Make sure the chunk is allocated
+	if (blockData[c - 1] == 0) {
+		return 0;
+	}
+
 	memcpy(bytes, blockData + CHUNKS_PER_BLOCK + (c - 1) * CHUNK_LEN, CHUNK_LEN);
 	return 1;
 }

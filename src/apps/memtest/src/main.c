@@ -24,6 +24,9 @@ int main()
     testRetrieveChunk();
 
     initBlockStorage();
+    testFreeChunk();
+
+    initBlockStorage();
     testReusingFreedChunks();
 
     if (wasBankMemoryCorrupted()) {

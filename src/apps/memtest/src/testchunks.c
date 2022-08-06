@@ -59,6 +59,28 @@ void testAllocateAllChunks(void)
 	}
 }
 
+void testFreeChunk(void)
+{
+	CHUNKNUM chunkNum;
+	unsigned char chunk[CHUNK_LEN];
+
+	DECLARE_TEST("testFreeChunk");
+
+	printf("Running test: Free Chunk\n");
+
+	// Allocate a chunk
+	assertNonZero(allocChunk(&chunkNum));
+
+	// Retrieve the chunk
+	assertNonZero(retrieveChunk(chunkNum, chunk));
+
+	// Free it
+	freeChunk(chunkNum);
+
+	// Attempt to retrieve it again
+	assertZero(retrieveChunk(chunkNum, &chunk));
+}
+
 void testRetrieveChunk(void)
 {
 	CHUNKNUM chunkNum;
@@ -76,9 +98,6 @@ void testRetrieveChunk(void)
 	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, 0), chunk));
 	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, CHUNKS_PER_BLOCK + 1), chunk));
 
-	// Try to retrieve an unallocated chunk
-	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, 1), chunk));
-
 	// Allocate a chunk and verify it can be retrieved
 	assertNonZero(allocChunk(&chunkNum));
 	assertEqualByte(1, GET_BLOCKNUM(chunkNum));
@@ -89,6 +108,12 @@ void testRetrieveChunk(void)
 	// Retrieve the same chunk
 	assertNonZero(retrieveChunk(chunkNum, chunk2));
 	assertZero(memcmp(chunk, chunk2, CHUNK_LEN));
+
+	// Try to retrieve a chunk that was never allocated
+	assertZero(retrieveChunk(
+		TO_BLOCK_AND_CHUNK(GET_BLOCKNUM(chunkNum), GET_CHUNKNUM(chunkNum) + 1),
+		chunk
+	));
 }
 
 void testReusingFreedChunks(void)
