@@ -129,7 +129,6 @@ void editorDeleteToEndOfLine() {
 
 void editorInsertRow(int at, char *s, size_t len) {
     int j;
-    size_t to_copy;
     erow newRow, curRow;
     CHUNKNUM newRowChunk, curChunk;
 
@@ -266,7 +265,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
     if (chunkNum == 0) {
         buf[0] = (unsigned char ) c;
         editorRowAt(rowIdx, row);
-        editorRowAppendString(row, buf, 1);
+        editorRowAppendString(row, (char *)buf, 1);
         editorUpdateRow(row);
         editorSetRowDirty(row);
         E.cf->dirty++;
