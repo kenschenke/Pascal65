@@ -9,12 +9,14 @@ static void testCharPosOutOfRange(void);
 static void testInsertCharIntoLastChunk(void);
 static void testInsertCharIntoMiddleChunk(void);
 static void testInsertCharWithRoom(void);
+static void testInsertCharWithNoRoom(void);
 
 void testEditorRowInsertChar(void) {
     testCharPosOutOfRange();
     testInsertCharWithRoom();
     testInsertCharIntoMiddleChunk();
     testInsertCharIntoLastChunk();
+    testInsertCharWithNoRoom();
 }
 
 static void testCharPosOutOfRange(void) {
@@ -93,6 +95,30 @@ static void testInsertCharIntoMiddleChunk(void) {
     assertEqualChunkNum(textChunkNums[0][2], chunk.nextChunk);
     assertEqualInt(15, chunk.bytesUsed);
     assertZero(memcmp(chunk.bytes, "FGHIJKLMNOPQRST", 15));
+}
+
+static void testInsertCharWithNoRoom(void) {
+    erow row;
+    echunk chunk;
+    char bytes[ECHUNK_LEN];
+
+    DECLARE_TEST("testInsertCharWithNoRoom");
+
+    setupTestData();
+
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
+    assertNonZero(retrieveChunk(textChunkNums[0][TEST_CHUNKS_PER_ROW - 1], (unsigned char *)&chunk));
+    memset(chunk.bytes, 'X', ECHUNK_LEN);
+    chunk.bytesUsed = ECHUNK_LEN;
+    assertNonZero(storeChunk(textChunkNums[0][TEST_CHUNKS_PER_ROW - 1], (unsigned char *)&chunk));
+    row.size = TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1) + ECHUNK_LEN;
+    assertNonZero(storeChunk(rowChunkNums[0], (unsigned char *)&row));
+    editorRowInsertChar(&row, row.size, 'X');
+    assertEqualInt(TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1) + ECHUNK_LEN + 1, row.size);
+    assertNonZero(retrieveChunk(textChunkNums[0][TEST_CHUNKS_PER_ROW - 1], (unsigned char *)&chunk));
+    assertNonZero(retrieveChunk(chunk.nextChunk, (unsigned char *)&chunk));
+    assertEqualByte(1, chunk.bytesUsed);
+    assertEqualByte('X', chunk.bytes[0]);
 }
 
 static void testInsertCharWithRoom(void) {

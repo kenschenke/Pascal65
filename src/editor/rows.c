@@ -293,13 +293,20 @@ void editorRowInsertChar(erow *row, int at, int c) {
     // Create a new chunk and copy the bytes after "at"
     // into that new chunk
 
-    memcpy(buf, chunk.bytes + startAt, toCopy);
-    chunk.bytes[startAt] = (unsigned char) c;
-    chunk.bytesUsed = startAt + 1;
+    if (toCopy) {
+        memcpy(buf, chunk.bytes + startAt, toCopy);
+        chunk.bytes[startAt] = (unsigned char) c;
+        chunk.bytesUsed = startAt + 1;
+    }
     nextChunkNum = chunk.nextChunk;
     allocChunk(&newChunkNum);
-    memcpy(newChunk.bytes, buf, toCopy);
-    newChunk.bytesUsed = toCopy;
+    if (toCopy) {
+        memcpy(newChunk.bytes, buf, toCopy);
+        newChunk.bytesUsed = toCopy;
+    } else {
+        newChunk.bytes[0] = (unsigned char) c;
+        newChunk.bytesUsed = 1;
+    }
     newChunk.nextChunk = nextChunkNum;
     storeChunk(newChunkNum, (unsigned char *)&newChunk);
     chunk.nextChunk = newChunkNum;
