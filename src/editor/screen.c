@@ -259,10 +259,11 @@ static void editorDrawStatusBar(void) {
         len = strlen(status);
         rlen = 0;
     } else {
-        len = snprintf(status, sizeof(status), "%.20s - %d lines%s%s",
+        len = snprintf(status, sizeof(status), "%.20s - %d lines%s%s (%ldk free mem)",
             E.cf->filename ? E.cf->filename : "[No Name]", E.cf->numrows,
             E.cf->dirty ? " (modified)" : "",
-            E.cf->readOnly ? " (read only)" : "");
+            E.cf->readOnly ? " (read only)" : "",
+            ((long)getAvailChunks() * CHUNK_LEN) / 1024);
         rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cf->cy + 1, E.cf->numrows);
         if (len > E.screencols) len = E.screencols;
     }
