@@ -12,6 +12,8 @@ void testStoreBlock(void);
 // Chunks
 void testAllocateAllChunks(void);
 void testFreeChunk(void);
+void testGetAvailChunks(void);
+void testGetTotalChunks(void);
 void testRetrieveChunk(void);
 void testReusingFreedChunks(void);
 

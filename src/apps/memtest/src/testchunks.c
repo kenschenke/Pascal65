@@ -81,6 +81,31 @@ void testFreeChunk(void)
 	assertZero(retrieveChunk(chunkNum, &chunk));
 }
 
+void testGetAvailChunks(void)
+{
+	CHUNKNUM chunkNum;
+	int i, toAlloc = CHUNKS_PER_BLOCK - 5;
+
+	DECLARE_TEST("testGetAvailChunks");
+
+	printf("Running test: Get Avail Chunks\n");
+
+	for (i = 0; i < toAlloc; ++i) {
+		assertNonZero(allocChunk(&chunkNum));
+	}
+
+	assertEqualInt(toAlloc, getTotalChunks() - getAvailChunks());
+}
+
+void testGetTotalChunks(void)
+{
+	DECLARE_TEST("testGetTotalChunks");
+
+	printf("Running test: Get Total Chunks\n");
+
+	assertEqualInt(BANKS * BLOCKS_PER_BANK * CHUNKS_PER_BLOCK, getTotalChunks());
+}
+
 void testRetrieveChunk(void)
 {
 	CHUNKNUM chunkNum;

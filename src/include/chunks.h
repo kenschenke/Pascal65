@@ -27,6 +27,13 @@ char allocChunk(CHUNKNUM *chunkNum);
 // loses currency.
 void freeChunk(CHUNKNUM chunkNum);
 
+// Returns the number of available chunks.
+int getAvailChunks(void);
+
+// Returns the total number of chunks in memory,
+// allocated and unallocated.
+int getTotalChunks(void);
+
 // Retrieves the data in the chunk and copies into
 // callers buffer.  Buffer must be at least CHUNK_LEN long.
 // Zero is returned on failure.  Non-zero on success.

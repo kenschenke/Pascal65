@@ -153,6 +153,52 @@ void freeChunk(CHUNKNUM chunkNum)
 	}
 }
 
+int getAvailChunks(void) {
+	BLOCKNUM b;
+	int avail = 0;
+	unsigned char c;
+
+	// Do we have a block allocated?
+	if (currentBlock) {
+		// Yes.  Store the block before we start.
+		if (storeBlock(currentBlock) == 0) {
+			return 0;
+		}
+		currentBlock = 0;
+	}
+
+	for (b = 0; b < TOTAL_BLOCKS; ++b) {
+		if (FullBlocks[b]) {
+			// this block is full - no need to check it.
+			continue;
+		}
+
+		if (!AllocatedBlocks[b]) {
+			// this block has not been allocated yet.
+			// All chunks are available so no need to check it either.
+			avail += CHUNKS_PER_BLOCK;
+			continue;
+		}
+
+		blockData = retrieveBlock(b + 1);
+		if (blockData == NULL) {
+			return 0;
+		}
+
+		for (c = 0; c < CHUNKS_PER_BLOCK; ++c) {
+			if (!blockData[c]) {
+				++avail;
+			}
+		}
+	}
+
+	return avail;
+}
+
+int getTotalChunks(void) {
+	return CHUNKS_PER_BLOCK * BLOCKS_PER_BANK * BANKS;
+}
+
 char retrieveChunk(CHUNKNUM chunkNum, unsigned char *bytes)
 {
 	BLOCKNUM blockNum;
