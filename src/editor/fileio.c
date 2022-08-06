@@ -43,10 +43,6 @@ void editorOpen(const char *filename) {
     free(E.cf->filename);
     E.cf->filename = strdup(filename);
 
-#ifdef SYNTAX_HIGHLIGHT
-    editorSelectSyntaxHighlight();
-#endif
-
     fp = fopen(filename, "r");
     if (!fp) {
         editorSetStatusMessage("Cannot open file");
@@ -105,7 +101,6 @@ void editorSave() {
             editorSetStatusMessage("Save aborted");
             return;
         }
-        editorSelectSyntaxHighlight();
     }
 
     int len;

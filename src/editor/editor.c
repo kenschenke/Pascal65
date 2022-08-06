@@ -543,9 +543,6 @@ void initEditor() {
     E.welcomePage = NULL;
     E.statusmsg[0] = '\0';
     E.statusmsg_dirty = 0;
-#ifdef SYNTAX_HIGHLIGHT
-    E.cf->syntax = NULL;
-#endif
 
     E.files = NULL;
     E.numfiles = 0;

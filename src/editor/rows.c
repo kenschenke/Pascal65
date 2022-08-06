@@ -106,10 +106,6 @@ void editorUpdateRow(erow *row) {
 
     row->chars = realloc(row->chars, idx);
     memcpy(row->chars, buf, idx);
-
-#ifdef SYNTAX_HIGHLIGHT
-    editorUpdateSyntax(row);
-#endif
 #endif
 }
 
