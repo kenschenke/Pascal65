@@ -22,11 +22,7 @@ Scroll Up            Esc+V    Ctrl+V
 Scroll Down          Esc+W    Ctrl+W
 Scroll to file top   Esc+B    Ctrl+B
 Scroll to file end   Esc+E    Ctrl+E
-Mark text            Esc+Y    Ctrl+Y
-Paste clipboard      Esc+O    Ctrl+O
 Exit                          Ctrl+X
-Find                          Ctrl+F
-Select all text      Esc+A    Ctrl+A
 40 column mode       Esc+4
 80 column mode       Esc+8
 

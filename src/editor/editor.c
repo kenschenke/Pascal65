@@ -413,10 +413,6 @@ static void editorProcessKeypress(void) {
             }
             break;
 
-        case CTRL_KEY('f'):
-            if (E.cf.fileChunk) editorFind();
-            break;
-
         case CH_DEL:
         case CTRL_KEY('h'):
         case DEL_KEY:
@@ -484,7 +480,6 @@ void editorRun(void) {
 void initEditor() {
     E.quit = 0;
     E.last_key_esc = 0;
-    E.clipboard = NULL;
     E.welcomePage = NULL;
     E.statusmsg[0] = '\0';
     E.statusmsg_dirty = 0;

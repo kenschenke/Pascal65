@@ -50,7 +50,6 @@ struct editorConfig {
     char numOpenFiles;
     struct efile cf;                // point to current file
     unsigned numfiles;              // # of open files
-    char *clipboard;
     char *welcomePage;
     char quit;                      // non-zero when user selects quit command
     char last_key_esc;              // non-zero if last key was ESC
@@ -95,17 +94,11 @@ enum editorKey {
 void clearCursor(void);
 void clearScreen(void);
 void drawRow(char row, char col, char len, char *buf, char isReversed);
-void editorCalcSelection(void);
-void editorClearSelection(void);
-void editorCopySelection(void);
-void editorDeleteSelection(void);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
 void initFile(efile *file);
-void editorFind(void);
 void editorInsertRow(int at, char *s, size_t len);
-void editorPasteClipboard(void);
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void editorRowAppendString(erow *row, char *s, size_t len);
 char editorRowAt(int at, erow *row);
