@@ -19,7 +19,8 @@ typedef struct erow {
     int idx;
     int size;
     CHUNKNUM firstTextChunk;    // Chunk address of first text data
-    char unused[CHUNK_LEN - 6]; // so it fills a chunk
+    char dirty;                 // Non-zero if row is dirty
+    char unused[CHUNK_LEN - 11]; // so it fills a chunk
 } erow;
 
 typedef struct echunk {
@@ -28,30 +29,26 @@ typedef struct echunk {
     UCHAR bytes[ECHUNK_LEN];
 } echunk;
 
-struct editorFile {
-    int cx, cy;                     // cursor X and Y
-    unsigned rowoff;                // top row on screen
-    unsigned coloff;                // left-most column on screen
-    char in_selection;              // non-zero if selection is on
-    int sx, sy;                     // selection anchor point for cursor
-                                    // (position of cursor when selection activated)
-    int shx, shy;                   // start selection highlight X and Y
-    int ehx, ehy;                   // end selection highlight X and Y
-    int last_shy, last_ehy;         // shy and ehy before cursor moved
-                                    // (used to refresh highlighted rows)
-    CHUNKNUM firstRowChunk;         // Chunk for first erow record
-    unsigned numrows;               // # of lines in file
-    char readOnly;                  // non-zero if file is read-only
-    unsigned dirty;                 // non-zero if file is modified
-    char *dirtyScreenRows;          // array: non-zero if screen row is dirty
-    char *filename;
-};
+typedef struct efile {
+    CHUNKNUM fileChunk;             // Chunk address for this efile record (2)
+    CHUNKNUM nextFileChunk;         // Chunk address for next efile record (2)
+    int cx, cy;                     // cursor X and Y (4)
+    unsigned rowoff;                // top row on screen (2)
+    unsigned coloff;                // left-most column on screen (2)
+    CHUNKNUM firstRowChunk;         // Chunk for first erow record (2)
+    unsigned numrows;               // # of lines in file (2)
+    char readOnly;                  // non-zero if file is read-only (1)
+    char dirty;                     // non-zero if file is modified (1)
+    CHUNKNUM filenameChunk;         // (2)
+    char unused[CHUNK_LEN - 20];    // so it fills a chunk
+} efile;
 
 struct editorConfig {
     unsigned screenrows;            // # of rows on display
     unsigned screencols;            // # of columns
-    struct editorFile *files;       // array of open files
-    struct editorFile *cf;          // point to current file
+    CHUNKNUM firstFileChunk;
+    char numOpenFiles;
+    struct efile cf;                // point to current file
     unsigned numfiles;              // # of open files
     char *clipboard;
     char *welcomePage;
@@ -105,7 +102,7 @@ void editorDeleteSelection(void);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
-void initFile(struct editorFile *file);
+void initFile(efile *file);
 void editorFind(void);
 void editorInsertRow(int at, char *s, size_t len);
 void editorPasteClipboard(void);
@@ -119,11 +116,13 @@ char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
 char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
 void editorOpen(const char *filename);
 int editorReadKey(void);
+void editorRetrieveFilename(efile *file, char *buffer);
 void editorRun(void);
 void editorSave(void);
 void editorSetAllRowsDirty(void);
 void editorSetRowDirty(erow *row);
 void editorSetStatusMessage(const char *fmt, ...);
+void editorStoreFilename(efile *file, const char *filename);
 void editorRefreshScreen();
 void editorUpdateRow(erow *row);
 void initEditor(void);

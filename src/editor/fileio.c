@@ -36,12 +36,8 @@ void editorOpen(const char *filename) {
     char *buf, *line, *eol;
     int buflen = 120, lastRow = -1;
 
-    if (E.cf == NULL) {
-        E.cf = malloc(sizeof(struct editorFile));
-        initFile(E.cf);
-    }
-    free(E.cf->filename);
-    E.cf->filename = strdup(filename);
+    initFile(&E.cf);
+    editorStoreFilename(&E.cf, filename);
 
     fp = fopen(filename, "r");
     if (!fp) {
@@ -67,9 +63,9 @@ void editorOpen(const char *filename) {
                         editorRowAt(lastRow, &row);
                         editorRowAppendString(&row, line, strlen(line));
                     } else {
-                        editorInsertRow(E.cf->numrows, line, strlen(line));
+                        editorInsertRow(E.cf.numrows, line, strlen(line));
                     }
-                    lastRow = E.cf->numrows - 1;
+                    lastRow = E.cf.numrows - 1;
                 }
                 break;
             } else {
@@ -79,7 +75,7 @@ void editorOpen(const char *filename) {
                         editorRowAt(lastRow, &row);
                         editorRowAppendString(&row, line, strlen(line));
                     } else {
-                        editorInsertRow(E.cf->numrows, line, strlen(line));
+                        editorInsertRow(E.cf.numrows, line, strlen(line));
                     }
                     lastRow = -1;
                 }
@@ -90,7 +86,7 @@ void editorOpen(const char *filename) {
 
     free(buf);
     fclose(fp);
-    E.cf->dirty = 0;
+    E.cf.dirty = 0;
 }
 
 # if 0

@@ -78,13 +78,13 @@ void renderCursor(void) {
 static void setCursor(unsigned char clear, unsigned char color) {
     unsigned int offset;
 
-    offset = (E.cf->cy - E.cf->rowoff) * E.screencols + E.cf->cx - E.cf->coloff;
+    offset = (E.cf.cy - E.cf.rowoff) * E.screencols + E.cf.cx - E.cf.coloff;
     if (clear) {
         SCREEN[offset] &= 0x7f;
     } else {
         SCREEN[offset] |= 0x80;
     }
-    cellcolor(E.cf->cx - E.cf->coloff, E.cf->cy - E.cf->rowoff, color);
+    cellcolor(E.cf.cx - E.cf.coloff, E.cf.cy - E.cf.rowoff, color);
 }
 #else
 void clearCursor(void) {}
@@ -161,20 +161,20 @@ void setScreenBg(char bg) {
 static void editorScroll(void) {
     int willScroll = 0;
 
-    if (E.cf->cy < E.cf->rowoff) {
-        E.cf->rowoff = E.cf->cy;
+    if (E.cf.cy < E.cf.rowoff) {
+        E.cf.rowoff = E.cf.cy;
         willScroll = 1;
     }
-    if (E.cf->cy >= E.cf->rowoff + E.screenrows) {
-        E.cf->rowoff = E.cf->cy - E.screenrows + 1;
+    if (E.cf.cy >= E.cf.rowoff + E.screenrows) {
+        E.cf.rowoff = E.cf.cy - E.screenrows + 1;
         willScroll = 1;
     }
-    if (E.cf->cx < E.cf->coloff) {
-        E.cf->coloff = E.cf->cx;
+    if (E.cf.cx < E.cf.coloff) {
+        E.cf.coloff = E.cf.cx;
         willScroll = 1;
     }
-    if (E.cf->cx >= E.cf->coloff + E.screencols) {
-        E.cf->coloff = E.cf->cx - E.screencols + 1;
+    if (E.cf.cx >= E.cf.coloff + E.screencols) {
+        E.cf.coloff = E.cf.cx - E.screencols + 1;
         willScroll = 1;
     }
 
@@ -190,7 +190,7 @@ static void editorDrawRows(void) {
     CHUNKNUM c, nextRowChunk;
     echunk chunk;
 
-    if (E.cf == NULL) {
+    if (E.cf.fileChunk == 0) {
         char **rows, *buffer;
         int i, numRows, x, y;
 
@@ -214,13 +214,13 @@ static void editorDrawRows(void) {
         return;
     }
 
-    editorRowAt(E.cf->rowoff, &row);
+    editorRowAt(E.cf.rowoff, &row);
     nextRowChunk = row.nextRowChunk;
     for (y = 0; y < E.screenrows; y++) {
-        if (E.cf->dirtyScreenRows[y]) {
+        if (row.dirty) {
             c = row.firstTextChunk;
-            len = row.size - E.cf->coloff;
-            startAt = E.cf->coloff;
+            len = row.size - E.cf.coloff;
+            startAt = E.cf.coloff;
             col = 0;
             while (len && c) {
                 retrieveChunk(c, (unsigned char *)&chunk);
@@ -235,7 +235,8 @@ static void editorDrawRows(void) {
                 col += chunk.bytesUsed;
             }
 
-            E.cf->dirtyScreenRows[y] = 0;
+            row.dirty = 0;
+            storeChunk(row.rowChunk, (unsigned char *)&row);
             clearRow(y, col);
         }
 
@@ -249,22 +250,26 @@ static void editorDrawRows(void) {
 }
 
 static void editorDrawStatusBar(void) {
-    char status[80], rstatus[80];
+    char status[80], rstatus[80], filename[CHUNK_LEN];
     int len, rlen;
 
     memset(E.statusbar, ' ', E.screencols);
 
-    if (E.cf == NULL) {
+    if (E.cf.fileChunk == 0) {
         strcpy(status, "Welcome");
         len = strlen(status);
         rlen = 0;
     } else {
+        editorRetrieveFilename(&E.cf, filename);
+        if (filename[0] == 0) {
+            strcpy(filename, "[No Name]");
+        }
         len = snprintf(status, sizeof(status), "%.20s - %d lines%s%s (%ldk free mem)",
-            E.cf->filename ? E.cf->filename : "[No Name]", E.cf->numrows,
-            E.cf->dirty ? " (modified)" : "",
-            E.cf->readOnly ? " (read only)" : "",
+            filename, E.cf.numrows,
+            E.cf.dirty ? " (modified)" : "",
+            E.cf.readOnly ? " (read only)" : "",
             ((long)getAvailChunks() * CHUNK_LEN) / 1024);
-        rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cf->cy + 1, E.cf->numrows);
+        rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cf.cy + 1, E.cf.numrows);
         if (len > E.screencols) len = E.screencols;
     }
     memcpy(E.statusbar, status, len);
@@ -290,7 +295,7 @@ static void editorDrawMessageBar(void) {
 }
 
 void editorRefreshScreen(void) {
-    if (E.cf)
+    if (E.cf.fileChunk)
         editorScroll();
 
     editorDrawRows();

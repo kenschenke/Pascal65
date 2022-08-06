@@ -12,7 +12,7 @@ char editorRowAt(int at, erow *row) {
     CHUNKNUM c;
     int j;
 
-    c = E.cf->firstRowChunk;
+    c = E.cf.firstRowChunk;
     j = 0;
     while (c) {
         if (retrieveChunk(c, (unsigned char *)row) == 0) {
@@ -110,20 +110,20 @@ void editorUpdateRow(erow *row) {
 }
 
 void editorDeleteToStartOfLine() {
-    if (E.cf->cx > 0) {
+    if (E.cf.cx > 0) {
         erow row;
-        editorRowAt(E.cf->cy, &row);
-        editorRowDelChars(&row, 0, E.cf->cx);
-        E.cf->cx = 0;
+        editorRowAt(E.cf.cy, &row);
+        editorRowDelChars(&row, 0, E.cf.cx);
+        E.cf.cx = 0;
     }
 }
 
 void editorDeleteToEndOfLine() {
     erow row;
-    editorRowAt(E.cf->cy, &row);
+    editorRowAt(E.cf.cy, &row);
 
-    if (E.cf->cx < row.size) {
-        editorRowDelChars(&row, E.cf->cx, row.size - E.cf->cx);
+    if (E.cf.cx < row.size) {
+        editorRowDelChars(&row, E.cf.cx, row.size - E.cf.cx);
     }
 }
 
@@ -132,7 +132,7 @@ void editorInsertRow(int at, char *s, size_t len) {
     erow newRow, curRow;
     CHUNKNUM newRowChunk, curChunk;
 
-    if (at < 0 || at > E.cf->numrows) return;
+    if (at < 0 || at > E.cf.numrows) return;
 
     if (allocChunk(&newRowChunk) == 0) {
         return;
@@ -146,12 +146,12 @@ void editorInsertRow(int at, char *s, size_t len) {
     // If the new row will be the first row, that's handled differently.
 
     if (at == 0) {
-        newRow.nextRowChunk = E.cf->firstRowChunk;
-        E.cf->firstRowChunk = newRowChunk;
+        newRow.nextRowChunk = E.cf.firstRowChunk;
+        E.cf.firstRowChunk = newRowChunk;
     } else {
         // Iterate through the rows until we get to the point of insertion.
 
-        curChunk = E.cf->firstRowChunk;
+        curChunk = E.cf.firstRowChunk;
         j = 0;
         while (1) {
             retrieveChunk(curChunk, (unsigned char *)&curRow);
@@ -178,15 +178,15 @@ void editorInsertRow(int at, char *s, size_t len) {
     }
 
 #if 0
-    if (E.cf->numrows == 0) {
+    if (E.cf.numrows == 0) {
         for (j = 0; j < E.screenrows; ++j) {
             drawRow(j, 0, "", NULL);
         }
     }
 #endif
 
-    E.cf->numrows++;
-    E.cf->dirty++;
+    E.cf.numrows++;
+    E.cf.dirty = 1;
 
     editorRowAppendString(&newRow, s, len);
     storeChunk(newRowChunk, (unsigned char *)&newRow);
@@ -210,15 +210,15 @@ void editorDelRow(int at) {
     erow row, prevRow;
     CHUNKNUM rowChunk, firstTextChunk;
 
-    if (at < 0 || at >= E.cf->numrows) return;
+    if (at < 0 || at >= E.cf.numrows) return;
 
     // Find the row
     if (at == 0) {
         // First row
-        rowChunk = E.cf->firstRowChunk;
+        rowChunk = E.cf.firstRowChunk;
         retrieveChunk(rowChunk, (unsigned char *)&row);  // retrieve the row
         firstTextChunk = row.firstTextChunk;    // save for later
-        E.cf->firstRowChunk = row.nextRowChunk; // set the new first row
+        E.cf.firstRowChunk = row.nextRowChunk; // set the new first row
     } else {
         editorRowAt(at - 1, &prevRow);          // look up the previous row
         rowChunk = prevRow.nextRowChunk;        // save the chunknum for later
@@ -232,7 +232,7 @@ void editorDelRow(int at) {
     freeChunk(rowChunk);
 
     // Make rows dirty
-    rowChunk = E.cf->firstRowChunk;
+    rowChunk = E.cf.firstRowChunk;
     j = 0;
     while (rowChunk) {
         retrieveChunk(rowChunk, (unsigned char *)&row);
@@ -245,8 +245,8 @@ void editorDelRow(int at) {
         ++j;
     }
 
-    E.cf->numrows--;
-    E.cf->dirty++;
+    E.cf.numrows--;
+    E.cf.dirty = 1;
 }
 
 void editorRowInsertChar(erow *row, int at, int c) {
@@ -268,7 +268,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
         editorRowAppendString(row, (char *)buf, 1);
         editorUpdateRow(row);
         editorSetRowDirty(row);
-        E.cf->dirty++;
+        E.cf.dirty = 1;
         return;
     }
 
@@ -285,7 +285,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
         editorSetRowDirty(row);
         storeChunk(chunkNum, (unsigned char *)&chunk);
         storeChunk(row->rowChunk, (unsigned char *)row);
-        E.cf->dirty++;
+        E.cf.dirty = 1;
         return;
     }
 
@@ -316,7 +316,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
     editorUpdateRow(row);
     editorSetRowDirty(row);
     storeChunk(row->rowChunk, (unsigned char *)row);
-    E.cf->dirty++;
+    E.cf.dirty = 1;
 }
 
 void editorRowInsertString(erow *row, int at, char *s, size_t len) {
@@ -329,7 +329,7 @@ void editorRowInsertString(erow *row, int at, char *s, size_t len) {
     row->size += len;
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    E.cf->dirty++;
+    E.cf.dirty = 1;
 #endif
 }
 
@@ -379,7 +379,7 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
     }
 
     // editorUpdateRow(row);
-    E.cf->dirty++;
+    E.cf.dirty = 1;
 }
 
 void editorRowDelChars(erow *row, int at, int length) {
@@ -431,17 +431,19 @@ void editorRowDelChars(erow *row, int at, int length) {
 }
 
 void editorSetAllRowsDirty() {
-    int i;
-    for (i = 0; i < E.screenrows; ++i) E.cf->dirtyScreenRows[i] = 1;
+    erow row;
+    CHUNKNUM chunkNum = E.cf.firstRowChunk;
+
+    while (chunkNum) {
+        retrieveChunk(chunkNum, (unsigned char *)&row);
+        row.dirty = 1;
+        storeChunk(chunkNum, (unsigned char *)&row);
+        chunkNum = row.nextRowChunk;
+    }
 }
 
 void editorSetRowDirty(erow *row) {
-    int i = row->idx - E.cf->rowoff;
-    if (i < 0 || i >= E.screenrows) {
-        // row is not visible - ignore
-        return;
-    }
-
-    E.cf->dirtyScreenRows[i] = 1;
+    row->dirty = 1;
+    storeChunk(row->rowChunk, (unsigned char *)row);
 }
 
