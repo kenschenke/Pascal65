@@ -275,16 +275,18 @@ static void editorDrawStatusBar(void) {
         if (filename[0] == 0) {
             strcpy(filename, "[No Name]");
         }
-        len = snprintf(status, sizeof(status), "%.20s - %d line%s%s%s (%ldk free mem)",
-            filename, E.cf.numrows, E.cf.numrows == 1 ? "" : "s",
-            E.cf.dirty ? " (modified)" : "",
-            E.cf.readOnly ? " (read only)" : "",
+        len = snprintf(status, sizeof(status), "%.16s%s %d line%s%s (%ldk free)",
+            filename, E.cf.dirty ? "*": "",
+            E.cf.numrows, E.cf.numrows == 1 ? "" : "s",
+            E.cf.readOnly ? " R/O" : "",
             ((long)getAvailChunks() * CHUNK_LEN) / 1024);
-        rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cf.cy + 1, E.cf.numrows);
+        rlen = snprintf(rstatus, sizeof(rstatus), "C:%d R:%d", E.cf.cx + 1, E.cf.cy + 1);
         if (len > E.screencols) len = E.screencols;
     }
     memcpy(E.statusbar, status, len);
-    memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
+    if (E.screencols >= 80) {
+        memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
+    }
 
     drawRow(E.screenrows, 0, E.screencols, E.statusbar, 1);
 }
