@@ -115,7 +115,6 @@ void editorRowAppendString(erow *row, char *s, size_t len);
 char editorRowAt(int at, erow *row);
 void editorRowDelChars(erow *row, int at, int length);
 void editorRowInsertChar(erow *row, int at, int c);
-void editorRowInsertString(erow *row, int at, char *s, size_t len);
 char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
 char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
 void editorNewFile(void);

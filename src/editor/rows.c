@@ -319,20 +319,6 @@ void editorRowInsertChar(erow *row, int at, int c) {
     E.cf.dirty = 1;
 }
 
-void editorRowInsertString(erow *row, int at, char *s, size_t len) {
-#if 0
-    row->chars = realloc(row->chars, row->size + len + 1);
-    row->rev = realloc(row->rev, row->size + len);
-    memset(row->rev, 0, row->size + len);
-    memmove(&row->chars[at + len], &row->chars[at], row->size - at + 1);
-    memcpy(&row->chars[at + 1], s, len);
-    row->size += len;
-    editorUpdateRow(row);
-    editorSetRowDirty(row);
-    E.cf.dirty = 1;
-#endif
-}
-
 void editorRowAppendString(erow *row, char *s, size_t len) {
     CHUNKNUM curChunk, newChunkNum;
     echunk chunk, newChunk;

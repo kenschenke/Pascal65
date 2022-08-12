@@ -8,16 +8,6 @@
 #include <cbm.h>
 #endif
 
-static void die(const char *s);
-
-static void die(const char *s) {
-    clrscr();
-    gotoxy(0, 0);
-
-    printf("%s\n", s);
-    exit(1);
-}
-
 int editorReadKey(void) {
     int c = cgetc();
 #ifdef __MEGA65__

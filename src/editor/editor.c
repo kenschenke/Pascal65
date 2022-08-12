@@ -53,7 +53,7 @@ static void editorDelChar(void) {
         while (chunkNum) {
             retrieveChunk(chunkNum, (unsigned char *)&chunk);
             chunkNum = chunk.nextChunk;
-            editorRowAppendString(&row, chunk.bytes, chunk.bytesUsed);
+            editorRowAppendString(&row, (char *)chunk.bytes, chunk.bytesUsed);
         }
         E.cf.cx = beforeSize;
         editorDelRow(E.cf.cy);
@@ -93,7 +93,7 @@ static void editorInsertNewLine(int spaces) {
         editorChunkAtX(&currentRow, E.cf.cx, &firstCol, &chunkNum, &chunk);
         startAt = E.cf.cx - firstCol;
         toCopy = chunk.bytesUsed - startAt;
-        editorInsertRow(E.cf.cy + 1, chunk.bytes + startAt, toCopy);
+        editorInsertRow(E.cf.cy + 1, (char *)chunk.bytes + startAt, toCopy);
         editorRowAt(E.cf.cy, &currentRow);
         editorRowAt(E.cf.cy + 1, &newRow);
         nextChunk = chunk.nextChunk;
@@ -491,14 +491,14 @@ void editorStoreFilename(efile *file, const char *filename) {
     }
 
     strcpy(bytes, filename);
-    storeChunk(file->filenameChunk, bytes);
+    storeChunk(file->filenameChunk, (unsigned char *)bytes);
 }
 
 void editorRetrieveFilename(efile *file, char *buffer) {
     if (file->filenameChunk == 0) {
         memset(buffer, 0, CHUNK_LEN);
     } else {
-        retrieveChunk(file->filenameChunk, buffer);
+        retrieveChunk(file->filenameChunk, (unsigned char *)buffer);
     }
 }
 
