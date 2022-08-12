@@ -7,7 +7,14 @@
 #define ECHUNK_LEN (CHUNK_LEN - 3)
 
 #define EDITOR_TAB_STOP 4
-#define EDITOR_QUIT_TIMES 3
+
+/*** callbacks ***/
+
+typedef void (*f_showHelpPage)(void);
+typedef void (*f_showWelcomePage)(void);
+typedef void (*f_updateStatusBar)(void);
+typedef char (*f_keyPressed)(int key);  // Return non-zero if key was handled
+typedef char (*f_exitRequested)(void);  // Return non-zero if okay to exit
 
 /*** data ***/
 
@@ -57,6 +64,11 @@ struct editorConfig {
     char *statusbar;
     unsigned char *statusbarrev;
     char statusmsg_dirty;
+    f_showHelpPage cbShowHelpPage;
+    f_showWelcomePage cbShowWelcomePage;
+    f_updateStatusBar cbUpdateStatusBar;
+    f_keyPressed cbKeyPressed;
+    f_exitRequested cbExitRequested;
 };
 
 extern struct editorConfig E;
@@ -64,6 +76,7 @@ extern struct editorConfig E;
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 enum editorKey {
+    HELP_KEY = 31,
     BACKARROW = 95,
     BACKSPACE = 127,
     F1_KEY = 241,
@@ -80,9 +93,6 @@ enum editorKey {
     SCROLL_DOWN_KEY,
     SCROLL_TOP_KEY,
     SCROLL_BOTTOM_KEY,
-    MARK_KEY,
-    PASTE_KEY,
-    SELECT_ALL_KEY,
     COL40_KEY,
     COL80_KEY,
 };
@@ -93,13 +103,14 @@ enum editorKey {
 
 void clearCursor(void);
 void clearScreen(void);
+void clearRow(char row, char startingCol);
 void drawRow(char row, char col, char len, char *buf, char isReversed);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
 void initFile(efile *file);
+void editorFreeRow(CHUNKNUM firstTextChunk);
 void editorInsertRow(int at, char *s, size_t len);
-char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void editorRowAppendString(erow *row, char *s, size_t len);
 char editorRowAt(int at, erow *row);
 void editorRowDelChars(erow *row, int at, int length);
@@ -107,11 +118,14 @@ void editorRowInsertChar(erow *row, int at, int c);
 void editorRowInsertString(erow *row, int at, char *s, size_t len);
 char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
 char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
-void editorOpen(const char *filename);
+void editorNewFile(void);
+void editorOpen(const char *filename, char readOnly);
+void editorSwitchToOpenFile(CHUNKNUM fileChunkNum);
+void editorClose(void);  // close current file
 int editorReadKey(void);
 void editorRetrieveFilename(efile *file, char *buffer);
 void editorRun(void);
-void editorSave(void);
+char editorSave(char *filename);
 void editorSetAllRowsDirty(void);
 void editorSetRowDirty(erow *row);
 void editorSetStatusMessage(const char *fmt, ...);

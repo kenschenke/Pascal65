@@ -5,7 +5,7 @@
 #include <string.h>
 #include <chunks.h>
 
-static void editorFreeRow(CHUNKNUM firstTextChunk);
+void editorFreeRow(CHUNKNUM firstTextChunk);
 void editorUpdateRow(erow *row);
 
 char editorRowAt(int at, erow *row) {
@@ -192,7 +192,7 @@ void editorInsertRow(int at, char *s, size_t len) {
     storeChunk(newRowChunk, (unsigned char *)&newRow);
 }
 
-static void editorFreeRow(CHUNKNUM firstTextChunk) {
+void editorFreeRow(CHUNKNUM firstTextChunk) {
     CHUNKNUM currChunk, nextChunk;
     echunk chunk;
 

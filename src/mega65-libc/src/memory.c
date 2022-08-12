@@ -21,6 +21,7 @@ void do_dma(void)
   POKE(0xd705U, ((unsigned int)&dmalist) & 0xff); // triggers enhanced DMA
 }
 
+#if 0
 unsigned char lpeek(long address)
 {
   // Read the byte at <address> in 28-bit address space
@@ -49,9 +50,11 @@ unsigned char lpeek(long address)
 
   return dma_byte;
 }
+#endif
 
 unsigned char db1, db2, db3;
 
+#if 0
 unsigned char lpeek_debounced(long address)
 {
   db1 = 0;
@@ -64,6 +67,7 @@ unsigned char lpeek_debounced(long address)
   }
   return db1;
 }
+#endif
 
 void lpoke(long address, unsigned char value)
 {
@@ -150,6 +154,7 @@ void lfill(long destination_address, unsigned char value,
   return;
 }
 
+#if 0
 void lfill_skip(long destination_address, unsigned char value,
                 unsigned int count, unsigned char skip)
 {
@@ -172,6 +177,7 @@ void lfill_skip(long destination_address, unsigned char value,
   do_dma();
   return;
 }
+#endif
 
 void mega65_io_enable(void)
 {

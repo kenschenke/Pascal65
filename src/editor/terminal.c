@@ -39,10 +39,6 @@ int editorReadKey(void) {
             case '8':
                 return COL80_KEY;
 
-            case 'a':
-            case 'A':
-                return SELECT_ALL_KEY;
-
             case 'j':
             case 'J':
                 return HOME_KEY;
@@ -83,14 +79,6 @@ int editorReadKey(void) {
             case 'E':
                 return SCROLL_BOTTOM_KEY;
 
-            case 'y':
-            case 'Y':
-                return MARK_KEY;
-
-            case 'o':
-            case 'O':
-                return PASTE_KEY;
-            
             case CH_CURS_UP:
                 return PAGE_UP;
             

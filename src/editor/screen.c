@@ -36,7 +36,6 @@ static void prepWelcomePage(char ***rows, int *numRows);
 static void setCursor(unsigned char value, unsigned char color);
 
 #ifdef __MEGA65__
-static void clearRow(char row, char startingCol);
 static void drawRow65(char row, char col, char len, char *buf, char isReversed);
 
 char * SCREEN = (char*)0x0800;
@@ -54,7 +53,7 @@ void clearScreen(void) {
 }
 
 #ifdef __MEGA65__
-static void clearRow(char row, char startingCol) {
+ void clearRow(char row, char startingCol) {
     int offset = row * E.screencols + startingCol;
     memset(SCREEN+offset, ' ', E.screencols-startingCol);
 }
@@ -184,7 +183,7 @@ static void editorScroll(void) {
 }
 
 static void editorDrawRows(void) {
-    int y, padding, len, startAt;
+    int y, len, startAt;
     erow row;
     char col;
     CHUNKNUM c, nextRowChunk;
@@ -211,6 +210,10 @@ static void editorDrawRows(void) {
         free(buffer);
         freeWelcomePage(rows, numRows);
 
+        return;
+    }
+
+    if (E.cf.firstRowChunk == 0) {
         return;
     }
 
@@ -264,8 +267,8 @@ static void editorDrawStatusBar(void) {
         if (filename[0] == 0) {
             strcpy(filename, "[No Name]");
         }
-        len = snprintf(status, sizeof(status), "%.20s - %d lines%s%s (%ldk free mem)",
-            filename, E.cf.numrows,
+        len = snprintf(status, sizeof(status), "%.20s - %d line%s%s%s (%ldk free mem)",
+            filename, E.cf.numrows, E.cf.numrows == 1 ? "" : "s",
             E.cf.dirty ? " (modified)" : "",
             E.cf.readOnly ? " (read only)" : "",
             ((long)getAvailChunks() * CHUNK_LEN) / 1024);
@@ -286,6 +289,7 @@ static void editorDrawMessageBar(void) {
     if (msglen > E.screencols) msglen = E.screencols;
     if (msglen) {
         drawRow(E.screenrows+1, 0, msglen, E.statusmsg, 0);
+        clearRow(E.screenrows+1, msglen);
     } else {
         memset(E.statusmsg, ' ', E.screencols);
         drawRow(E.screenrows+1, 0, E.screencols, E.statusmsg, 0);

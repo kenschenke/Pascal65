@@ -26,11 +26,11 @@ static void testInsertFirstRow(void) {
     setupTestData();
 
     editorInsertRow(0, "", 0);
-    assertEqualInt(TEST_ROWS + 1, E.cf->numrows);
-    assertNonZero(retrieveChunk(E.cf->firstRowChunk, (unsigned char *)&row));
+    assertEqualInt(TEST_ROWS + 1, E.cf.numrows);
+    assertNonZero(retrieveChunk(E.cf.firstRowChunk, (unsigned char *)&row));
     assertZero(row.size);
 
-    chunkNum = E.cf->firstRowChunk;
+    chunkNum = E.cf.firstRowChunk;
     i = 0;
     while (chunkNum) {
         assertNonZero(retrieveChunk(chunkNum, (unsigned char *)&row));
@@ -49,13 +49,13 @@ static void testInsertLastRow(void) {
 
     setupTestData();
 
-    editorInsertRow(TEST_ROWS, "", 0);
-    assertEqualInt(TEST_ROWS + 1, E.cf->numrows);
+    editorInsertRow(TEST_ROWS, "ABCDEFGHIJ", 10);
+    assertEqualInt(TEST_ROWS + 1, E.cf.numrows);
     assertNonZero(retrieveChunk(rowChunkNums[4], (unsigned char *)&row));
     assertNonZero(retrieveChunk(row.nextRowChunk, (unsigned char *)&row));
-    assertZero(row.size);
+    assertEqualInt(10, row.size);
 
-    chunkNum = E.cf->firstRowChunk;
+    chunkNum = E.cf.firstRowChunk;
     i = 0;
     while (chunkNum) {
         assertNonZero(retrieveChunk(chunkNum, (unsigned char *)&row));
@@ -63,6 +63,9 @@ static void testInsertLastRow(void) {
         ++i;
         chunkNum = row.nextRowChunk;
     }
+
+    assertEqualInt(TEST_ROWS + 1, i);
+    assertEqualInt(0, chunkNum);
 }
 
 static void testInsertMiddleRow(void) {
@@ -75,12 +78,12 @@ static void testInsertMiddleRow(void) {
     setupTestData();
 
     editorInsertRow(2, "", 0);
-    assertEqualInt(TEST_ROWS + 1, E.cf->numrows);
+    assertEqualInt(TEST_ROWS + 1, E.cf.numrows);
     assertNonZero(retrieveChunk(rowChunkNums[1], (unsigned char *)&row));
     assertNonZero(retrieveChunk(row.nextRowChunk, (unsigned char *)&row));
     assertZero(row.size);
 
-    chunkNum = E.cf->firstRowChunk;
+    chunkNum = E.cf.firstRowChunk;
     i = 0;
     while (chunkNum) {
         assertNonZero(retrieveChunk(chunkNum, (unsigned char *)&row));
@@ -96,8 +99,8 @@ static void testRowNumberOutOfRange(void) {
     setupTestData();
 
     editorInsertRow(-1, "", 0);
-    assertEqualInt(TEST_ROWS, E.cf->numrows);
+    assertEqualInt(TEST_ROWS, E.cf.numrows);
 
-    editorInsertRow(E.cf->numrows + 1, "", 0);
-    assertEqualInt(TEST_ROWS, E.cf->numrows);
+    editorInsertRow(E.cf.numrows + 1, "", 0);
+    assertEqualInt(TEST_ROWS, E.cf.numrows);
 }

@@ -5,8 +5,6 @@
 #include <string.h>
 #include <chunks.h>
 
-static struct editorFile ef;
-
 CHUNKNUM rowChunkNums[TEST_ROWS];
 CHUNKNUM textChunkNums[TEST_ROWS][TEST_CHUNKS_PER_ROW];
 
@@ -17,8 +15,7 @@ void setupTestData(void) {
     CHUNKNUM rowChunk, textChunk;
     char buf[15];
 
-    E.cf = &ef;
-    initFile(&ef);
+    initFile(&E.cf);
 
     initBlockStorage();
 
@@ -44,9 +41,9 @@ void setupTestData(void) {
             storeChunk(textChunk, (unsigned char *)&chunk);
         }
 
-        row.nextRowChunk = ef.firstRowChunk;
-        ef.firstRowChunk = rowChunk;
-        ef.numrows++;
+        row.nextRowChunk = E.cf.firstRowChunk;
+        E.cf.firstRowChunk = rowChunk;
+        E.cf.numrows++;
         storeChunk(rowChunk, (unsigned char *)&row);
     }
 }

@@ -238,3 +238,38 @@ void testReusingFreedChunks(void)
 
 	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(2, testChunks + 2), chunk));
 }
+
+void testFreeingAllChunksInABlock(void)
+{
+	int b, c;
+	CHUNKNUM chunkNum;
+	unsigned char chunk[CHUNK_LEN];
+
+	DECLARE_TEST("testFreeingAllChunksInABlock");
+
+	// Allocate enough chunks to go into a second block
+
+	for (b = 1; b <= 2; ++b) {
+		for (c = 1; c <= CHUNKS_PER_BLOCK; ++c) {
+			if (b == 2 && c > 5) {
+				break;
+			}
+			assertNonZero(allocChunk(&chunkNum));
+			assertEqualByte(b, GET_BLOCKNUM(chunkNum));
+			assertEqualByte(c, GET_CHUNKNUM(chunkNum));
+		}
+	}
+
+	// Free all chunk in the second block
+
+	for (c = 1; c <= 5; ++c) {
+		freeChunk(TO_BLOCK_AND_CHUNK(2, c));
+		assertZero(isChunkAllocated(TO_BLOCK_AND_CHUNK(2, c)));
+	}
+
+	assertZero(isBlockAllocated(2));
+
+	// Make sure we can retrieve a chunk in the first block
+
+	assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, 5), chunk));
+}

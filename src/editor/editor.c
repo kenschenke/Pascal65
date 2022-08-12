@@ -119,45 +119,6 @@ static void editorInsertNewLine(int spaces) {
 
 /*** input ***/
 
-char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
-    size_t bufsize = 128;
-    char *buf = malloc(bufsize);
-
-    size_t buflen = 0;
-    int c;
-
-    buf[0] = '\0';
-
-    while (1) {
-        editorSetStatusMessage(prompt, buf);
-        editorRefreshScreen();
-        c = editorReadKey();
-        if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
-            if (buflen != 0) buf[--buflen] = '\0';
-        } else if (c == '\x1b') {
-            editorSetStatusMessage("");
-            if (callback) callback(buf, c);
-            free(buf);
-            return NULL;
-        } else if (c == '\r') {
-            if (buflen != 0) {
-                editorSetStatusMessage("");
-                if (callback) callback(buf, c);
-                return buf;
-            }
-        } else if (!iscntrl(c) && c < 128) {
-            if (buflen == bufsize - 1) {
-                bufsize *= 2;
-                buf = realloc(buf, bufsize);
-            }
-            buf[buflen++] = c;
-            buf[buflen] = '\0';
-        }
-
-        if (callback) callback(buf, c);
-    }
-}
-
 static void editorMoveCursor(int key, char skipClear) {
     int rowlen;
     erow rowBuf, *row = NULL;
@@ -217,14 +178,16 @@ static void editorMoveCursor(int key, char skipClear) {
 }
 
 static void editorProcessKeypress(void) {
-    static int quit_times = EDITOR_QUIT_TIMES;
-
     int times;
     int c = editorReadKey();
 
+    if (E.cbKeyPressed && E.cbKeyPressed(c)) {
+        return;
+    }
+
     switch (c) {
         case CH_ENTER:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 // Count the number of spaces at the beginning of this line
                 erow row;
                 int i, spaces = 0;
@@ -274,36 +237,23 @@ static void editorProcessKeypress(void) {
             break;
         
         case '\t':
-            if (E.cf.fileChunk) editorInsertTab();
+            if (E.cf.fileChunk && !E.cf.readOnly) editorInsertTab();
             break;
 
         case CH_INS:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 editorInsertChar(' ');
                 E.cf.cx--;
             }
             break;
 
         case CTRL_KEY('x'):
-            if (E.cf.fileChunk && E.cf.dirty && quit_times > 0) {
-                editorSetStatusMessage("WARNING!!! File has unsaved changes. "
-                "Press Ctrl-E %d more times to quit.", quit_times);
-                --quit_times;
-                return;
+            if (E.cbExitRequested && !E.cbExitRequested()) {
+                break;
             }
             E.quit = 1;
             break;
         
-        case BACKARROW:
-            editorSetStatusMessage("You pressed back arrow!");
-            break;
-
-#if 0
-        case CTRL_KEY('s'):
-            // editorSave();
-            break;
-#endif
-
         case CTRL_KEY('j'):
         case HOME_KEY:
             if (E.cf.fileChunk) {
@@ -330,22 +280,23 @@ static void editorProcessKeypress(void) {
 
         case CTRL_KEY('k'):
         case END_KEY:
-#if 0
-            if (E.cf && E.cf.cy < E.cf.numrows)
+            if (E.cf.fileChunk && E.cf.cy < E.cf.numrows) {
+                erow row;
                 clearCursor();
-                E.cf.cx = E.cf.row[E.cf.cy].size;
-#endif
+                editorRowAt(E.cf.cy, &row);
+                E.cf.cx = row.size;
+            }
             break;
 
         case DEL_SOL_KEY:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 clearCursor();
                 editorDeleteToStartOfLine();
             }
             break;
 
         case DEL_EOL_KEY:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 clearCursor();
                 editorDeleteToEndOfLine();
             }
@@ -353,7 +304,7 @@ static void editorProcessKeypress(void) {
         
         case CTRL_KEY('d'):
         case DEL_LINE_KEY:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 clearCursor();
                 E.cf.cx = 0;
                 editorDelRow(E.cf.cy);
@@ -361,7 +312,7 @@ static void editorProcessKeypress(void) {
             break;
 
         case INS_LINE_KEY:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 clearCursor();
                 E.cf.cx = 0;
                 editorInsertNewLine(0);
@@ -416,7 +367,7 @@ static void editorProcessKeypress(void) {
         case CH_DEL:
         case CTRL_KEY('h'):
         case DEL_KEY:
-            if (E.cf.fileChunk) {
+            if (E.cf.fileChunk && !E.cf.readOnly) {
                 clearCursor();
                 if (c == DEL_KEY) editorMoveCursor(CH_CURS_RIGHT, 0);
                 editorDelChar();
@@ -457,12 +408,12 @@ static void editorProcessKeypress(void) {
             break;
 
         default:
-            clearCursor();
-            if (E.cf.fileChunk) editorInsertChar(c);
+            if (!E.cf.readOnly) {
+                clearCursor();
+                if (E.cf.fileChunk) editorInsertChar(c);
+            }
             break;
     }
-
-    quit_times = EDITOR_QUIT_TIMES;
 }
 
 void editorRun(void) {
@@ -492,6 +443,12 @@ void initEditor() {
     E.screencols = 80;
     E.screenrows -= 2;
 
+    E.cbKeyPressed = NULL;
+    E.cbShowHelpPage = NULL;
+    E.cbShowWelcomePage = NULL;
+    E.cbUpdateStatusBar = NULL;
+    E.cbExitRequested = NULL;
+
     E.statusbar = malloc(E.screencols);
     memset(E.statusbar, ' ', E.screencols);
     E.statusbarrev = malloc(E.screencols);
@@ -501,13 +458,12 @@ void initEditor() {
     fast();
 #endif
     setupScreenCols();
-
-    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
 }
 
 void initFile(efile *file) {
     allocChunk(&file->fileChunk);
-    file->nextFileChunk = 0;
+    file->nextFileChunk = E.firstFileChunk;
+    E.firstFileChunk = file->fileChunk;
     file->cx = 0;
     file->cy = 0;
     file->rowoff = 0;
@@ -517,6 +473,14 @@ void initFile(efile *file) {
     file->dirty = 0;
     file->filenameChunk = 0;
     file->readOnly = 0;
+}
+
+void editorNewFile(void) {
+    if (E.cf.fileChunk) {
+        storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+    }
+
+    initFile(&E.cf);
 }
 
 void editorStoreFilename(efile *file, const char *filename) {

@@ -4,46 +4,98 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if 0
-static char *editorRowsToString(int *buflen);
+void editorClose(void) {
+    CHUNKNUM chunkNum;
+    erow row;
+    efile file;
 
-static char *editorRowsToString(int *buflen) {
-    int totlen = 0;
-    int j;
-    char *buf, *p;
-
-    for (j = 0; j < E.cf->numrows; ++j) {
-        totlen += E.cf->row[j].size + 1;
-    }
-    *buflen = totlen;
-
-    buf = malloc(totlen);
-    p = buf;
-    for (j = 0; j < E.cf->numrows; ++j) {
-        memcpy(p, E.cf->row[j].chars, E.cf->row[j].size);
-        p += E.cf->row[j].size;
-        *p = '\n';
-        p++;
+    if (!E.cf.fileChunk) {
+        return;  // no file currently open
     }
 
-    return buf;
+    // Free the rows
+    chunkNum = E.cf.firstRowChunk;
+    while (chunkNum) {
+        if (retrieveChunk(chunkNum, (unsigned char *)&row) == 0) {
+            break;
+        }
+        chunkNum = row.nextRowChunk;
+        editorFreeRow(row.firstTextChunk);
+        freeChunk(row.rowChunk);
+    }
+
+    // Remove the file from the list
+    if (E.firstFileChunk == E.cf.fileChunk) {
+        E.firstFileChunk = E.cf.nextFileChunk;
+    } else {
+        chunkNum = E.firstFileChunk;
+        while (chunkNum) {
+            retrieveChunk(chunkNum, (unsigned char *)&file);
+            if (file.nextFileChunk == E.cf.fileChunk) {
+                file.nextFileChunk = E.cf.nextFileChunk;
+                storeChunk(chunkNum, (unsigned char *)&file);
+                break;
+            }
+            chunkNum = file.nextFileChunk;
+        }
+    }
+
+    freeChunk(E.cf.filenameChunk);
+    freeChunk(E.cf.fileChunk);
+    E.cf.fileChunk = 0;
+    E.cf.firstRowChunk = 0;
+    clearScreen();
+    
+    if (E.firstFileChunk) {
+        retrieveChunk(E.firstFileChunk, (unsigned char *)&E.cf);
+        editorSetAllRowsDirty();
+    }
 }
-#endif
 
-void editorOpen(const char *filename) {
+void editorSwitchToOpenFile(CHUNKNUM fileChunkNum) {
+    CHUNKNUM chunkNum;
+
+    // First, store the current file chunk
+    if (E.cf.fileChunk) {
+        storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+    }
+
+    // Find the other file in the list
+    chunkNum = E.firstFileChunk;
+    while (chunkNum) {
+        retrieveChunk(chunkNum, (unsigned char *)&E.cf);
+        if (chunkNum == fileChunkNum) {
+            break;
+        }
+        chunkNum = E.cf.nextFileChunk;
+    }
+
+    if (!chunkNum) {
+        E.cf.fileChunk = 0;
+    }
+
+    editorSetAllRowsDirty();
+}
+
+void editorOpen(const char *filename, char readOnly) {
     FILE *fp;
     erow row;
     char *buf, *line, *eol;
     int buflen = 120, lastRow = -1;
 
-    initFile(&E.cf);
-    editorStoreFilename(&E.cf, filename);
+    if (E.cf.fileChunk) {
+        storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+    }
 
     fp = fopen(filename, "r");
     if (!fp) {
         editorSetStatusMessage("Cannot open file");
         return;
     }
+
+    initFile(&E.cf);
+    E.cf.readOnly = readOnly;
+    editorStoreFilename(&E.cf, filename);
 
     buf = malloc(buflen);
 
@@ -89,35 +141,40 @@ void editorOpen(const char *filename) {
     E.cf.dirty = 0;
 }
 
-# if 0
-void editorSave() {
-    if (E.cf->filename == NULL) {
-        E.cf->filename = editorPrompt("Save as: %s", NULL);
-        if (E.cf->filename == NULL) {
-            editorSetStatusMessage("Save aborted");
-            return;
-        }
+char editorSave(char *filename) {
+    FILE *fp;
+    char newFile = 0;
+    CHUNKNUM rowChunkNum, textChunkNum;
+    erow row;
+    echunk chunk;
+
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
+        return 0;
+
     }
-
-    int len;
-    char *buf = editorRowsToString(&len);
-
-    int fd = open(E.cf->filename, O_RDWR | O_CREAT, 0644);
-    if (fd != -1) {
-        if (ftruncate(fd, len) != -1) {
-            if (write(fd, buf, len) == len) {
-                close(fd);
-                free(buf);
-                E.cf->dirty = 0;
-                editorSetStatusMessage("%d bytes written to disk", len);
-                return;
+    rowChunkNum = E.cf.firstRowChunk;
+    while (rowChunkNum) {
+        retrieveChunk(rowChunkNum, (unsigned char *)&row);
+        textChunkNum = row.firstTextChunk;
+        while (textChunkNum) {
+            retrieveChunk(textChunkNum, (unsigned char *)&chunk);
+            if (chunk.bytesUsed) {
+                if (fwrite(chunk.bytes, 1, chunk.bytesUsed, fp) != chunk.bytesUsed) {
+                    return 0;
+                }
             }
+            textChunkNum = chunk.nextChunk;
         }
-        close(fd);
+        fputc('\r', fp);
+        rowChunkNum = row.nextRowChunk;
+    }
+    if (fclose(fp)) {
+        return 0;
     }
 
-    free(buf);
-    editorSetStatusMessage("Can't save! I/O error %s", strerror(errno));
+    E.cf.dirty = 0;
+
+    return 1;
 }
-#endif
 

@@ -27,6 +27,7 @@ char allocChunk(CHUNKNUM *chunkNum)
 		// No we don't.  Allocate a new block.
 		blockData = allocBlock(&currentBlock);
 		if (blockData == NULL || currentBlock == 0) {
+			currentBlock = 0;
 			return 0;
 		}
 		memset(blockData, 0, CHUNKS_PER_BLOCK);  // clear the used chunks part.
@@ -89,6 +90,7 @@ char allocChunk(CHUNKNUM *chunkNum)
 	// No currently allocated blocks have a free chunk.  Allocate a new block.
 	blockData = allocBlock(&currentBlock);
 	if (blockData == NULL || currentBlock == 0) {
+		currentBlock = 0;
 		return 0;
 	}
 	memset(blockData, 0, CHUNKS_PER_BLOCK);  // clear the used chunks part.
@@ -150,6 +152,7 @@ void freeChunk(CHUNKNUM chunkNum)
 		// All the chunks are free.  The block can be freed too.
 		freeBlock(blockNum);
 		AllocatedBlocks[blockNum - 1] = 0;
+		currentBlock = 0;
 	}
 }
 

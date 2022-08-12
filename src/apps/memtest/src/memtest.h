@@ -16,5 +16,6 @@ void testGetAvailChunks(void);
 void testGetTotalChunks(void);
 void testRetrieveChunk(void);
 void testReusingFreedChunks(void);
+void testFreeingAllChunksInABlock(void);
 
 #endif // end of MEMTEST_H

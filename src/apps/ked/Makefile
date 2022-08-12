@@ -37,6 +37,8 @@ SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)
 SOURCES += $(SHAREDSRCDIR)/blocks.c
 SOURCES += $(SHAREDSRCDIR)/chunks.c
+SOURCES += $(SHAREDSRCDIR)/doscmd.s
+SOURCES += $(SHAREDSRCDIR)/sendDosCmd.c
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -89,6 +91,12 @@ $(OBJDIR)/blocks.o: $(SHAREDSRCDIR)/blocks.c | $(OBJDIR)
 
 $(OBJDIR)/chunks.o: $(SHAREDSRCDIR)/chunks.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+$(OBJDIR)/sendDosCmd.o: $(SHAREDSRCDIR)/sendDosCmd.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+$(OBJDIR)/doscmd.o: $(SHAREDSRCDIR)/doscmd.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 help.petscii: help.txt
 	dos2unix < help.txt | petcat -text -o help.petscii
