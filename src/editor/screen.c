@@ -183,7 +183,7 @@ static void editorScroll(void) {
 }
 
 static void editorDrawRows(void) {
-    int y, len, startAt;
+    int y, len, startAt, toDraw;
     erow row;
     char col;
     CHUNKNUM c, nextRowChunk;
@@ -225,17 +225,25 @@ static void editorDrawRows(void) {
             len = row.size - E.cf.coloff;
             startAt = E.cf.coloff;
             col = 0;
+            // Draw the text chunks for this row
             while (len && c) {
                 retrieveChunk(c, (unsigned char *)&chunk);
                 c = chunk.nextChunk;
+                // If the screen is scrolled to the right (coloff > 0)
+                // and any part of the chunk is visible, draw the visible part.
                 if (startAt < chunk.bytesUsed) {
-                    drawRow(y, col, chunk.bytesUsed, (char *)chunk.bytes + startAt, 0);
-                    len -= chunk.bytesUsed;
+                    toDraw = chunk.bytesUsed - startAt;
+                    if (col + chunk.bytesUsed > E.screencols) {
+                        toDraw = E.screencols - col;
+                    }
+                    drawRow(y, col, toDraw, (char *)chunk.bytes + startAt, 0);
+                    len -= toDraw;
                     startAt = 0;
+                    col += toDraw;
                 } else {
+                    // None of the chunk is visible - skip it.
                     startAt -= chunk.bytesUsed;
                 }
-                col += chunk.bytesUsed;
             }
 
             row.dirty = 0;

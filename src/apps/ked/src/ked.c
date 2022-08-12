@@ -534,7 +534,7 @@ int main(int argc, char *argv[])
         "Copyright 2022 by Ken Schenke\r"
         "kenschenke@gmail.com";
     
-#if 1
+#if 0
     {  
         // Create 20 files
         char buf[20];
@@ -548,6 +548,22 @@ int main(int argc, char *argv[])
             editorInsertRow(0, buf, n);
             storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
         }
+    }
+#endif
+
+#if 0
+    {
+        int i;
+        erow row;
+        // Create a file with long lines
+        initFile(&E.cf);
+        editorInsertRow(0, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque luctus sodales finibus. Mauris ultrices quam nunc, non consectetur dui convallis eget. In sed neque rhoncus.", 178);
+        editorInsertRow(1, "", 0);
+        editorRowAt(1, &row);
+        for (i = 0; i < 19; ++i) {
+            editorRowAppendString(&row, "123456789 ", 10);
+        }
+        editorInsertRow(2, "", 0);
     }
 #endif
 
