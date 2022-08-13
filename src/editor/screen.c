@@ -1,3 +1,15 @@
+/**
+ * screen.c
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Render screen.
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #include "editor.h"
 
 #include <stdio.h>

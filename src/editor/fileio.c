@@ -1,3 +1,15 @@
+/**
+ * fileio.c
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * File input / output.
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #include "editor.h"
 
 #include <stdio.h>

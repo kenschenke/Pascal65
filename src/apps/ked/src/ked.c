@@ -1,3 +1,15 @@
+/**
+ * ked.c
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Entry point and file screen for Ked.
+ * 
+ * Copyright (c) 2022
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #include "editor.h"
 #include <stdio.h>
 #include <errno.h>
@@ -11,23 +23,7 @@
 #include <doscmd.h>
 #include <unistd.h>
 
-/*** defines ***/
-
 #define KED_VERSION "0.0.1"
-
-#if 0
-int showKeyCodes(void) {
-    char buf[3+1];
-    char c = editorReadKey();
-    if (c == 'q') {
-        return 1;
-    }
-
-    sprintf(buf, "%3d", c);
-    drawRow(10, 0, 3, buf, 0);  // 31: Help
-    return 0;
-}
-#endif
 
 static CHUNKNUM selectedFile;
 
@@ -507,63 +503,28 @@ int main(int argc, char *argv[])
     E.cbKeyPressed = handleKeyPressed;
     E.cbExitRequested = handleExitRequested;
     if (argc >= 2) {
-        // editorOpen(argv[1]);
+        int i;
+        for (i = 1; i < argc; ++i)
+            editorOpen(argv[i], 0);
     }
-
-#if 0
-    printf("avail = %d\n", _heapmemavail());
-    return 0;
-#endif
-
-#if 0
-    while (!showKeyCodes());
-    return 0;
-#endif
-
-#if 0
-    editorOpen("help.txt", 1);
-    // return 0;
-#endif
 
     E.welcomePage =
         "Welcome To Ked Version " KED_VERSION "\r"
         "\r"
         "Copyright 2022 by Ken Schenke\r"
-        "kenschenke@gmail.com";
+        "kenschenke@gmail.com\r"
+        "github.com/kenschenke/Pascal65\r"
+        "\r"
+        "Based on\r"
+        "\r"
+        "\"Build Your Own Text Editor\"\r"
+        "viewsourcecode.org/snaptoken/kilo/\r"
+        "\r"
+        "And\r"
+        "\r"
+        "antirez's Kilo editor\r"
+        "antirez.com/news/108\r";
     
-#if 0
-    {  
-        // Create 20 files
-        char buf[20];
-        int i, n;
-
-        for (i = 20; i >= 1; --i) {
-            initFile(&E.cf);
-            n = snprintf(buf, sizeof(buf), "Filename %d", i);
-            editorStoreFilename(&E.cf, buf);
-            n = snprintf(buf, sizeof(buf), "Text for file %d", i);
-            editorInsertRow(0, buf, n);
-            storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
-        }
-    }
-#endif
-
-#if 0
-    {
-        int i;
-        erow row;
-        // Create a file with long lines
-        initFile(&E.cf);
-        editorInsertRow(0, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque luctus sodales finibus. Mauris ultrices quam nunc, non consectetur dui convallis eget. In sed neque rhoncus.", 178);
-        editorInsertRow(1, "", 0);
-        editorRowAt(1, &row);
-        for (i = 0; i < 19; ++i) {
-            editorRowAppendString(&row, "123456789 ", 10);
-        }
-        editorInsertRow(2, "", 0);
-    }
-#endif
-
     editorRun();
 
     return 0;
