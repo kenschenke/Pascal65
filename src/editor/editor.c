@@ -214,28 +214,6 @@ static void editorProcessKeypress(void) {
             }
             break;
         
-        case COL40_KEY:
-            clearScreen();
-            E.screencols = 40;
-            setupScreenCols();
-            editorSetAllRowsDirty();
-            break;
-
-        case COL80_KEY:
-            clearScreen();
-            E.screencols = 80;
-            setupScreenCols();
-            editorSetAllRowsDirty();
-            break;
-
-        case F1_KEY:
-            clearScreen();
-            E.screencols = E.screencols == 80 ? 40 : 80;
-            setupScreenCols();
-            editorSetAllRowsDirty();
-            break;
-            break;
-        
         case '\t':
             if (E.cf.fileChunk && !E.cf.readOnly) editorInsertTab();
             break;

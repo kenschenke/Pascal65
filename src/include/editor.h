@@ -79,7 +79,6 @@ enum editorKey {
     HELP_KEY = 31,
     BACKARROW = 95,
     BACKSPACE = 127,
-    F1_KEY = 241,
     DEL_KEY = 1000,
     HOME_KEY,
     END_KEY,
@@ -93,8 +92,6 @@ enum editorKey {
     SCROLL_DOWN_KEY,
     SCROLL_TOP_KEY,
     SCROLL_BOTTOM_KEY,
-    COL40_KEY,
-    COL80_KEY,
 };
 
 /*** file types ***/

@@ -54,13 +54,13 @@ void clearScreen(void) {
 
 #ifdef __MEGA65__
  void clearRow(char row, char startingCol) {
-    int offset = row * E.screencols + startingCol;
-    memset(SCREEN+offset, ' ', E.screencols-startingCol);
+    int offset = row * 80 + startingCol;
+    memset(SCREEN+offset, ' ', 80-startingCol);
 }
 
 static void drawRow65(char row, char col, char len, char *buf, char isReversed) {
     char i;
-    int offset = row * E.screencols + col;
+    int offset = row * 80 + col;
     for (i = 0; i < len; ++i) {
         SCREEN[offset++] = petsciitoscreencode(buf[i]) | (isReversed ? 128 : 0);
     }
@@ -77,7 +77,7 @@ void renderCursor(void) {
 static void setCursor(unsigned char clear, unsigned char color) {
     unsigned int offset;
 
-    offset = (E.cf.cy - E.cf.rowoff) * E.screencols + E.cf.cx - E.cf.coloff;
+    offset = (E.cf.cy - E.cf.rowoff) * 80 + E.cf.cx - E.cf.coloff;
     if (clear) {
         SCREEN[offset] &= 0x7f;
     } else {

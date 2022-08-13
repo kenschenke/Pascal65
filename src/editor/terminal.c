@@ -23,12 +23,6 @@ int editorReadKey(void) {
     if (E.last_key_esc) {
         E.last_key_esc = 0;
         switch (c) {
-            case '4':
-                return COL40_KEY;
-
-            case '8':
-                return COL80_KEY;
-
             case 'j':
             case 'J':
                 return HOME_KEY;

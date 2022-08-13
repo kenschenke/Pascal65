@@ -42,6 +42,7 @@ static void drawStatusRow(char color, char center, const char *fmt, ...);
 static char editorPrompt(char *prompt, char *buf, size_t bufsize);
 static char handleExitRequested(void);
 static void handleFiles(void);
+char handleKeyPressed(int key);
 static void openFile(void);
 static void openHelpFile(void);
 static char saveAs(void);
@@ -251,6 +252,7 @@ char handleKeyPressed(int key) {
     char ret = 0;
 
     if (key == HELP_KEY) {
+        clearCursor();
         openHelpFile();
         ret = 1;
     } else if (key == BACKARROW) {
@@ -397,11 +399,6 @@ static void showFileScreen(void) {
 
     if (E.cf.fileChunk) {
         storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
-    }
-
-    for (y = 0; y < E.screenrows; ++y) {
-        n = snprintf(buf, sizeof(buf), "%02d", y + 1);
-        drawRow(y, 0, n, buf, 0);
     }
 
     drawRow(1, 3, 29, "Open Files (* = Current File)", 0);

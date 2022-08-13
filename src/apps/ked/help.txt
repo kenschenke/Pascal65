@@ -26,8 +26,3 @@ Open File                     Ctrl+O
 Save File                     Ctrl+S
 Other File Functions      Back arrow
 Exit                          Ctrl+X
-40 column mode       Esc+4
-80 column mode       Esc+8
-
-Press F1 to toggle between 40 and 80
-columns.
