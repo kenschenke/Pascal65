@@ -10,7 +10,7 @@
  * https://opensource.org/licenses/MIT
  */
 
-##ifndef DOSCMD_H
+#ifndef DOSCMD_H
 #define DOSCMD_H
 
 char getCurrentDrive(void);
