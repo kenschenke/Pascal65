@@ -43,7 +43,7 @@ typedef struct efile {
     unsigned rowoff;                // top row on screen (2)
     unsigned coloff;                // left-most column on screen (2)
     CHUNKNUM firstRowChunk;         // Chunk for first erow record (2)
-    unsigned numrows;               // # of lines in file (2)
+    int numrows;                    // # of lines in file (2)
     char readOnly;                  // non-zero if file is read-only (1)
     char dirty;                     // non-zero if file is modified (1)
     CHUNKNUM filenameChunk;         // (2)

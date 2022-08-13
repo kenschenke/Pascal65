@@ -146,7 +146,7 @@ static void editorMoveCursor(int key, char skipClear) {
             if (row && E.cf.cx < row->size) {
                 if (!skipClear) clearCursor();
                 E.cf.cx++;
-            } else if (row && E.cf.cx == row->size) {
+            } else if (row && row->size && E.cf.cx == row->size) {
                 if (!skipClear) clearCursor();
                 E.cf.cy++;
                 E.cf.cx = 0;
