@@ -101,11 +101,14 @@ $(OBJDIR)/doscmd.o: $(SHAREDSRCDIR)/doscmd.s | $(OBJDIR)
 help.petscii: help.txt
 	dos2unix < help.txt | petcat -text -o help.petscii
 
+license.petscii: ../../../LICENSE
+	dos2unix < $< | petcat -text -o license.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
-$(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write help.petscii help.txt,seq
+$(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii license.petscii
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write help.petscii help.txt,seq -write license.petscii license
 
 clean:
 	$(RM) $(OBJECTS)
