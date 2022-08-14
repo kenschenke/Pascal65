@@ -68,7 +68,6 @@ struct editorConfig {
     CHUNKNUM firstFileChunk;
     char numOpenFiles;
     struct efile cf;                // point to current file
-    unsigned numfiles;              // # of open files
     char *welcomePage;
     char quit;                      // non-zero when user selects quit command
     char last_key_esc;              // non-zero if last key was ESC

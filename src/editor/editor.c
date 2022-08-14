@@ -427,7 +427,6 @@ void initEditor() {
 
     E.firstFileChunk = 0;
     memset(&E.cf, 0, sizeof(efile));
-    E.numfiles = 0;
 
     E.screenrows = 25;
     E.screencols = 80;
