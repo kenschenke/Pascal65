@@ -66,7 +66,6 @@ struct editorConfig {
     unsigned screenrows;            // # of rows on display
     unsigned screencols;            // # of columns
     CHUNKNUM firstFileChunk;
-    char numOpenFiles;
     struct efile cf;                // point to current file
     char *welcomePage;
     char quit;                      // non-zero when user selects quit command
