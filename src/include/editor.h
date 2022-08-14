@@ -103,8 +103,6 @@ enum editorKey {
     SCROLL_BOTTOM_KEY,
 };
 
-/*** file types ***/
-
 /*** prototypes ***/
 
 void clearCursor(void);
@@ -153,25 +151,5 @@ void initScreen(void);
 void openFile(void);
 void renderCursor(void);
 void setupScreenCols(void);
-
-#if 0
-typedef void (*f_updateStatusBar)(edstate *state);
-typedef void (*f_keyPressed)(edstate *state, int key);
-typedef void (*f_newFile)(edstate *state);
-typedef void (*f_closeFile)(edstate *state, int file);
-typedef void (*f_openFile)(edstate *state, char *filename);
-
-typedef struct edstate {
-    int mLeft, mRight, mTop, mBottom;   // margins
-    int cx, cy;     // cursor X and Y (zero based)
-    f_updateStatusBar updateStatusBar;
-    f_keyPressed keyPressed;
-    char *leftStatusMsg;
-    char *rightStatusMsg;
-    char *centerStatusMsg;
-} edstate;
-
-void initEditor(edstate *state);
-#endif
 
 #endif // end of EDITOR_H
