@@ -313,6 +313,7 @@ static void editorProcessKeypress(void) {
         case CTRL_KEY('v'):
         case SCROLL_UP_KEY:
             if (E.cf.fileChunk && E.cf.rowoff > 0) {
+                clearCursor();
                 --E.cf.rowoff;
                 if (E.cf.cy - E.cf.rowoff > E.screenrows - 1) {
                     E.cf.cy = E.cf.rowoff + E.screenrows - 1;
@@ -324,6 +325,7 @@ static void editorProcessKeypress(void) {
         case CTRL_KEY('w'):
         case SCROLL_DOWN_KEY:
             if (E.cf.fileChunk && E.cf.rowoff + E.screenrows < E.cf.numrows) {
+                clearCursor();
                 ++E.cf.rowoff;
                 if (E.cf.cy < E.cf.rowoff) {
                     E.cf.cy = E.cf.rowoff;
@@ -335,6 +337,7 @@ static void editorProcessKeypress(void) {
         case CTRL_KEY('b'):
         case SCROLL_TOP_KEY:
             if (E.cf.fileChunk && E.cf.rowoff != 0) {
+                clearCursor();
                 E.cf.rowoff = 0;
                 E.cf.cy = 0;
                 editorSetAllRowsDirty();
@@ -347,6 +350,7 @@ static void editorProcessKeypress(void) {
                 int newoff = E.cf.numrows - E.screenrows;
                 if (newoff < 0) newoff = 0;
                 if (E.cf.rowoff != newoff) {
+                    clearCursor();
                     E.cf.rowoff = newoff;
                     editorSetAllRowsDirty();
                 }
