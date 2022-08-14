@@ -73,8 +73,7 @@ struct editorConfig {
     char quit;                      // non-zero when user selects quit command
     char last_key_esc;              // non-zero if last key was ESC
     char statusmsg[80];
-    char *statusbar;
-    unsigned char *statusbarrev;
+    char statusbar[80];
     char statusmsg_dirty;
     f_showHelpPage cbShowHelpPage;
     f_showWelcomePage cbShowWelcomePage;

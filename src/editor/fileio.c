@@ -92,8 +92,8 @@ void editorSwitchToOpenFile(CHUNKNUM fileChunkNum) {
 void editorOpen(const char *filename, char readOnly) {
     FILE *fp;
     erow row;
-    char *buf, *line, *eol;
-    int buflen = 120, lastRow = -1;
+    char buf[40], *line, *eol;
+    int buflen = 40, lastRow = -1;
 
     if (E.cf.fileChunk) {
         storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
@@ -109,12 +109,9 @@ void editorOpen(const char *filename, char readOnly) {
     E.cf.readOnly = readOnly;
     editorStoreFilename(&E.cf, filename);
 
-    buf = malloc(buflen);
-
     while (!feof(fp)) {
         if (!fgets(buf, buflen, fp)) {
             fclose(fp);
-            free(buf);
             editorSetStatusMessage("Cannot read file");
         }
 
@@ -148,7 +145,6 @@ void editorOpen(const char *filename, char readOnly) {
         }
     }
 
-    free(buf);
     fclose(fp);
     E.cf.dirty = 0;
 }

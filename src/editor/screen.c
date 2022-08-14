@@ -43,8 +43,6 @@ static void editorDrawMessageBar(void);
 static void editorDrawRows(void);
 static void editorDrawStatusBar(void);
 static void editorScroll(void);
-static void freeWelcomePage(char **rows, int numRows);
-static void prepWelcomePage(char ***rows, int *numRows);
 static void setCursor(unsigned char value, unsigned char color);
 
 #ifdef __MEGA65__
@@ -112,42 +110,6 @@ void drawRow(char row, char col, char len, char *buf, char isReversed) {
 #endif
 }
 
-static void freeWelcomePage(char **rows, int numRows) {
-    int i;
-
-    for (i = 0; i < numRows; ++i) {
-        free(rows[i]);
-    }
-    free(rows);
-}
-
-static void prepWelcomePage(char ***rows, int *numRows) {
-    char **r;
-    char *p = E.welcomePage, *n;
-    int len, num;
-
-    r = NULL;
-    num = 0;
-
-    while (1) {
-        n = strchr(p, '\r');
-        len = n == NULL ? strlen(p) : n - p;
-        if (len > E.screencols) len = E.screencols;
-        r = realloc(r, sizeof(char *) * (num+1));
-        r[num] = malloc(len + 1);
-        memcpy(r[num], p, len);
-        r[num][len] = '\0';
-        ++num;
-        if (n == NULL) {
-            break;
-        }
-        p = n + 1;
-    }
-
-    *rows = r;
-    *numRows = num;
-}
-
 void initScreen(void) {
 #ifdef __MEGA65__
     conioinit();
@@ -202,25 +164,31 @@ static void editorDrawRows(void) {
     echunk chunk;
 
     if (E.cf.fileChunk == 0) {
-        char **rows, *buffer;
-        int i, numRows, x, y;
-
-        prepWelcomePage(&rows, &numRows);
-        y = (E.screenrows - numRows) / 2;
-        for (i = 0; i < y; ++i) {
-            drawRow(i, 0, 0, "", 0);
+        char *n, *p;
+        int rows = 0, x;
+        // First, count the rows for the welcome screen.
+        p = E.welcomePage;
+        while (1) {
+            n = strchr(p, '\r');
+            ++rows;
+            if (n == NULL) {
+                break;
+            }
+            p = n + 1;
         }
-        buffer = malloc(E.screencols + 1);
-        for (i = 0; i < numRows; ++i, ++y) {
-            x = (E.screencols - strlen(rows[i])) / 2;
-            if (x < 0) x = 0;
-            if (x > 0) memset(buffer, ' ', x);
-            strcpy(buffer + x, rows[i]);
-            drawRow(y, 0, strlen(buffer), buffer, 0);
+        p = E.welcomePage;
+        // Center the rows vertically
+        y = E.screenrows / 2 - rows / 2;
+        while (1) {
+            n = strchr(p, '\r');
+            len = n == NULL ? strlen(p) : n - p;
+            x = E.screencols / 2 - len / 2;
+            drawRow(y++, x, len, p, 0);
+            if (n == NULL) {
+                break;
+            }
+            p = n + 1;
         }
-
-        free(buffer);
-        freeWelcomePage(rows, numRows);
 
         return;
     }

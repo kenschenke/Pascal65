@@ -439,10 +439,7 @@ void initEditor() {
     E.cbUpdateStatusBar = NULL;
     E.cbExitRequested = NULL;
 
-    E.statusbar = malloc(E.screencols);
     memset(E.statusbar, ' ', E.screencols);
-    E.statusbarrev = malloc(E.screencols);
-    memset(E.statusbarrev, 128, E.screencols);
 
 #ifdef __C128__
     fast();
