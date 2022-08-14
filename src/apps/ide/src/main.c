@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <ovrlcommon.h>
-#include <ovrlinterp.h>
-#include <ovrlcomp.h>
 #include <cbm.h>
 #include <device.h>
-#include <conio.h>
+#include <editor.h>
+#include <stdlib.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
+extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
 unsigned char loadfile(const char *name);
+
+void parserOverlay(void);
 
 void main()
 {
@@ -17,17 +19,58 @@ void main()
     videomode(VIDEOMODE_80x25);
     printf("Is fast mode: %s\n", isfast() ? "yes" : "no");
 #endif
-    bgcolor(COLOR_BLUE);
-    textcolor(COLOR_WHITE);
+    // bgcolor(COLOR_BLUE);
+    // textcolor(COLOR_WHITE);
+    printf("Loading editor overlay\n");
+    // On the Mega65, $1600 - $1fff is available to use in the heap
+    _heapadd((void *)0x1600, 0x1fff - 0x1600);
+
+    initBlockStorage();
+
+#if 1
+    if (loadfile("pascal65.3")) {
+        initEditor();
+        editorSetStatusMessage("Ctrl-O: open  Ctrl-X: quit  Press HELP");
+        // E.cbKeyPressed = handleKeyPressed;
+        // E.cbExitRequested = handleExitRequested;
+        // if (argc >= 2) {
+        //     int i;
+        //     for (i = 1; i < argc; ++i)
+        //         editorOpen(argv[i], 0);
+        // }
+
+        E.welcomePage =
+            "Welcome To Ked Version " "XXX" "\r"
+            "\r"
+            "Copyright 2022 by Ken Schenke\r"
+            "kenschenke@gmail.com\r"
+            "github.com/kenschenke/Pascal65\r"
+            "\r"
+            "Based on\r"
+            "\r"
+            "\"Build Your Own Text Editor\"\r"
+            "viewsourcecode.org/snaptoken/kilo/\r"
+            "\r"
+            "And\r"
+            "\r"
+            "antirez's Kilo editor\r"
+            "antirez.com/news/108\r";
+        
+        editorRun();
+    }
+#endif
+
+#if 0
     printf("Loading compiler overlay\n");
     if (loadfile("pascal65.1")) {
-        overlayCompiler();
+        parserOverlay();
     }
+#endif
 
     printf("Loading interpreter overlay\n");
-    if (loadfile("pascal65.2")) {
-        overlayInterpreter();
-    }
+    // if (loadfile("pascal65.2")) {
+    //     overlayInterpreter();
+    // }
 
     log("main", "back to main code");
 }
