@@ -110,15 +110,19 @@ enum editorKey {
 /*** prototypes ***/
 
 void clearCursor(void);
-void clearScreen(void);
 void clearRow(char row, char startingCol);
+void clearScreen(void);
+void clearStatusRow(void);
+void closeFile(void);
+char doesFileExist(char *filename);
 void drawRow(char row, char col, char len, char *buf, char isReversed);
+void drawStatusRow(char color, char center, const char *fmt, ...);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
-void initFile(efile *file);
 void editorFreeRow(CHUNKNUM firstTextChunk);
 void editorInsertRow(int at, char *s, size_t len);
+char editorPrompt(char *prompt, char *buf, size_t bufsize);
 void editorRowAppendString(erow *row, char *s, size_t len);
 char editorRowAt(int at, erow *row);
 void editorRowDelChars(erow *row, int at, int length);
@@ -140,10 +144,15 @@ void editorStoreFilename(efile *file, const char *filename);
 void editorRefreshScreen();
 void editorUpdateRow(erow *row);
 void initEditor(void);
+void initFile(efile *file);
+char saveAs(void);
+char saveFile(void);
+char saveToExisting(void);
 #if __C128__
 void setScreenBg(char bg);
 #endif
 void initScreen(void);
+void openFile(void);
 void renderCursor(void);
 void setupScreenCols(void);
 

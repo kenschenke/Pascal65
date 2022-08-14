@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <conio.h>
 #include <chunks.h>
+#include <ctype.h>
 
 #ifdef __MEGA65__
 #include <cbm.h>
@@ -99,6 +100,15 @@ static void setCursor(unsigned char clear, unsigned char color) {
 void clearCursor(void) {}
 #endif
 
+void clearStatusRow(void) {
+    int x;
+
+    for (x = 0; x < E.screencols; ++x) {
+        cellcolor(x, E.screenrows + 1, COLOUR_WHITE);
+    }
+    clearRow(E.screenrows + 1, 0);
+}
+
 void drawRow(char row, char col, char len, char *buf, char isReversed) {
 #ifdef __MEGA65__
     drawRow65(row, col, len, buf, isReversed);
@@ -108,6 +118,52 @@ void drawRow(char row, char col, char len, char *buf, char isReversed) {
     else
         drawRow80(row, len, buf, NULL);
 #endif
+}
+
+void drawStatusRow(char color, char center, const char *fmt, ...) {
+    int x;
+    char buf[80 + 1];
+
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+
+    for (x = 0; x < E.screencols; ++x) {
+        cellcolor(x, E.screenrows + 1, color);
+    }
+
+    x = center ? E.screencols / 2 - strlen(buf) / 2 : 0;
+    drawRow(E.screenrows + 1, x, strlen(buf), buf, 0);
+    clearRow(E.screenrows + 1, x + strlen(buf));
+}
+
+char editorPrompt(char *prompt, char *buf, size_t bufsize) {
+    size_t buflen = 0;
+    int c;
+
+    buf[0] = '\0';
+
+    while (1) {
+        drawStatusRow(COLOUR_WHITE, 0, prompt, buf);
+        c = editorReadKey();
+        if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
+            if (buflen != 0) buf[--buflen] = '\0';
+        } else if (c == '\x1b') {
+            clearStatusRow();
+            return 0;
+        } else if (c == CH_ENTER) {
+            if (buflen != 0) {
+                clearStatusRow();
+                return 1;
+            }
+        } else if (buflen + 1 < bufsize && !iscntrl(c) && c < 128) {
+            buf[buflen++] = c;
+            buf[buflen] = '\0';
+        }
+    }
+
+    return 0;
 }
 
 void initScreen(void) {

@@ -12,14 +12,12 @@
 
 #include "editor.h"
 #include <stdio.h>
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <blocks.h>
 #include <conio.h>
 #include <cbm.h>
-#include <ctype.h>
 #include <doscmd.h>
 #include <unistd.h>
 
@@ -30,54 +28,13 @@ static CHUNKNUM selectedFile;
 static char filePage;
 static int openFiles;
 
-static void clearStatusRow(void);
-static void closeFile(void);
 static void cycleCurrentDevice(void);
-static char doesFileExist(char *filename);
-static void drawStatusRow(char color, char center, const char *fmt, ...);
-static char editorPrompt(char *prompt, char *buf, size_t bufsize);
 static char handleExitRequested(void);
 static void handleFiles(void);
 char handleKeyPressed(int key);
-static void openFile(void);
 static void openHelpFile(void);
-static char saveAs(void);
-static char saveFile(void);
-static char saveToExisting(void);
 static void showFileScreen(void);
 static void switchToFile(char num);
-
-static void clearStatusRow(void) {
-    int x;
-
-    for (x = 0; x < E.screencols; ++x) {
-        cellcolor(x, E.screenrows + 1, COLOUR_WHITE);
-    }
-    clearRow(E.screenrows + 1, 0);
-}
-
-static void closeFile(void) {
-    if (E.cf.dirty && E.cf.fileChunk) {
-        int ch;
-
-        while (1) {
-            drawStatusRow(COLOUR_RED, 0, "Unsaved changes will be lost. Close Y/N?");
-            ch = editorReadKey();
-            if (ch == 'y' || ch == 'Y') {
-                break;
-            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
-                clearStatusRow();
-                return;
-            }
-        }
-
-        if (saveFile() == 0) {
-            return;
-        }
-    }
-
-    editorClose();
-}
 
 static void cycleCurrentDevice(void) {
     int dev = getCurrentDrive() + 1;
@@ -88,64 +45,6 @@ static void cycleCurrentDevice(void) {
 
     sprintf(buf, "%d", dev);
     chdir(buf);
-}
-
-static char doesFileExist(char *filename) {
-    FILE *fp;
-
-    fp = fopen(filename, "r");
-    if (fp) {
-        fclose(fp);
-        return 1;
-    }
-
-    return 0;
-}
-
-static void drawStatusRow(char color, char center, const char *fmt, ...) {
-    int x;
-    char buf[80 + 1];
-
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-
-    for (x = 0; x < E.screencols; ++x) {
-        cellcolor(x, E.screenrows + 1, color);
-    }
-
-    x = center ? E.screencols / 2 - strlen(buf) / 2 : 0;
-    drawRow(E.screenrows + 1, x, strlen(buf), buf, 0);
-    clearRow(E.screenrows + 1, x + strlen(buf));
-}
-
-static char editorPrompt(char *prompt, char *buf, size_t bufsize) {
-    size_t buflen = 0;
-    int c;
-
-    buf[0] = '\0';
-
-    while (1) {
-        drawStatusRow(COLOUR_WHITE, 0, prompt, buf);
-        c = editorReadKey();
-        if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
-            if (buflen != 0) buf[--buflen] = '\0';
-        } else if (c == '\x1b') {
-            clearStatusRow();
-            return 0;
-        } else if (c == CH_ENTER) {
-            if (buflen != 0) {
-                clearStatusRow();
-                return 1;
-            }
-        } else if (buflen + 1 < bufsize && !iscntrl(c) && c < 128) {
-            buf[buflen++] = c;
-            buf[buflen] = '\0';
-        }
-    }
-
-    return 0;
 }
 
 static char handleExitRequested(void) {
@@ -268,19 +167,6 @@ char handleKeyPressed(int key) {
     return ret;
 }
 
-static void openFile(void) {
-    char filename[16+1];
-
-    clearStatusRow();
-
-    if (editorPrompt("Open file: %s", filename, sizeof(filename)) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Open aborted");
-        return;
-    }
-
-    editorOpen(filename, 0);
-}
-
 static void openHelpFile(void) {
     char buf[CHUNK_LEN];
 
@@ -289,97 +175,6 @@ static void openHelpFile(void) {
     allocChunk(&E.cf.filenameChunk);
     storeChunk(E.cf.filenameChunk, (unsigned char *)buf);
     storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
-}
-
-static char saveAs(void) {
-    char filename[16+1], prompt[80];
-    int ch;
-
-    clearStatusRow();
-
-    if (editorPrompt("Save as: %s", filename, sizeof(filename)) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Save aborted");
-        return 0;
-    }
-
-    if (doesFileExist(filename)) {
-        sprintf(prompt, "%s already exists. Overwrite Y/N?", filename);
-        while (1) {
-            drawStatusRow(COLOUR_RED, 0, prompt);
-            ch = editorReadKey();
-            if (ch == 'y' || ch == 'Y') {
-                break;
-            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
-                clearStatusRow();
-                drawStatusRow(COLOUR_RED, 1, "Save aborted");
-                return 0;
-            }
-        }
-        
-        removeFile(filename);
-    }
-
-    if (!E.cf.filenameChunk) {
-        allocChunk(&E.cf.filenameChunk);
-    }
-    storeChunk(E.cf.filenameChunk, (unsigned char *)filename);
-
-    return editorSave(filename);
-}
-
-static char saveFile(void) {
-    if (E.cf.fileChunk == 0) {
-        // no file is open - welcome screen?
-        return 0;
-    }
-
-    if (E.cf.readOnly) {
-        drawStatusRow(COLOUR_RED, 1, "File is read-only");
-        return 0;
-    }
-
-    if (!E.cf.dirty) {
-        // nothing to do
-        return 1;
-    }
-
-    if (E.cf.filenameChunk) {
-        if (saveToExisting()) {
-            clearScreen();
-            editorSetAllRowsDirty();
-            return 1;
-        }
-    } else {
-        if (saveAs()) {
-            clearScreen();
-            editorSetAllRowsDirty();
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static char saveToExisting(void) {
-    char filename[CHUNK_LEN], tempFilename[16 + 1];
-
-    clearStatusRow();
-
-    sprintf(tempFilename, "tmp%d.txt", E.cf.fileChunk);
-    if (editorSave(tempFilename) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Save failed: %s", strerror(errno));
-        return 0;
-    }
-
-    if (retrieveChunk(E.cf.filenameChunk, (unsigned char *)filename) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Invalid filename");
-        return 0;
-    }
-
-    removeFile(filename);
-    renameFile(tempFilename, filename);
-
-    return 1;
 }
 
 static void showFileScreen(void) {
