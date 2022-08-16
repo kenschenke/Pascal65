@@ -17,102 +17,30 @@
 #include <error.h>
 #include <ovrlcommon.h>
 #include <common.h>
+#include <string.h>
+#include <chunks.h>
 
 unsigned errorCount = 0;
 unsigned errorArrowFlag = 1;
 unsigned errorArrowOffset = 8;
 
-static char *abortMsg[] = {
-    NULL,
-    "Invalid command line arguments",
-    "Failed to open source file",
-    "Failed to open intermediate form file",
-    "Failed to open assembly file",
-    "Too many syntax errors",
-    "Stack overflow",
-    "Code segment overflow",
-    "Nesting too deep",
-    "Runtime error",
-    "Unimplemented feature",
-    "Out of memory",
-    "Source file line too long",
-    "Source file read failed",
-};
+static CHUNKNUM abortMsg[numAbortErrors];
+static CHUNKNUM errorMessages[numParserErrors];
+static CHUNKNUM runtimeErrorMessages[numRuntimeErrors];
 
-static char *errorMessages[] = {
-    "No error",
-    "Unrecognizable input",
-    "Too many syntax errors",
-    "Unexpected end of file",
-    "Invalid number",
-    "Too many digits",
-    "Integer literal out of range",
-    "Missing )",
-    "Invalid expression",
-    "Invalid assignment statement",
-    "Missing identifier",
-    "Missing :=",
-    "Undefined identifier",
-    "Stack overflow",
-    "Invalid statement",
-    "Unexpected token",
-    "Missing ;",
-    "Missing ,",
-    "Missing DO",
-    "Missing UNTIL",
-    "Missing THEN",
-    "Invalid FOR control variable",
-    "Missing OF",
-    "Invalid constant",
-    "Missing constant",
-    "Missing :",
-    "Missing END",
-    "Missing TO or DOWNTO",
-    "Redefined identifier",
-    "Missing =",
-    "Invalid type",
-    "Not a type identifier",
-    "Invalid subrange type",
-    "Not a constant identifier",
-    "Missing ..",
-    "Incompatible types",
-    "Invalid assignment target",
-    "Invalid identifier usage",
-    "Incompatible assignment",
-    "Min limit greater than max limit",
-    "Missing [",
-    "Missing ]",
-    "Invalid index type",
-    "Missing BEGIN",
-    "Missing .",
-    "Too many subscripts",
-    "Invalid field",
-    "Nesting too deep",
-    "Missing PROGRAM",
-    "Already specified in FORWARD",
-    "Wrong number of actual parameters",
-    "Invalid VAR parameter",
-    "Not a record variable",
-    "Missing variable",
-    "Code segment overflow",
-    "Unimplemented feature",
-};
+static char msgbuf[CHUNK_LEN + 1];
 
-static const char *runtimeErrorMessages[] = {
-    "No runtime error",
-    "Runtime stack overflow",
-    "Value out of range",
-    "Invalid CASE expression value",
-    "Division by zero",
-    "Invalid standard function argument",
-    "Invalid user input",
-    "Unimplemented runtime feature",
-    "Out of memory",
-};
+static void getMessage(CHUNKNUM chunkNum);
+static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs);
 
 void abortTranslation(TAbortCode ac)
 {
-    logFatalError(abortMsg[-ac]);
+    if (abortMsg[0] == 0) {
+        readErrorFile("abortmsgs", abortMsg, numAbortErrors);
+    }
+
+    getMessage(abortMsg[-ac]);
+    logFatalError(msgbuf);
     isFatalError = 1;
 }
 
@@ -120,15 +48,77 @@ void Error(TErrorCode ec)
 {
     const int maxSyntaxErrors = 25;
 
-    logError(errorMessages[ec], 0);
+    if (errorMessages[0] == 0) {
+        readErrorFile("errormsgs", errorMessages, numParserErrors);
+    }
+
+    getMessage(errorMessages[ec]);
+    logError(msgbuf, 0);
     if (++errorCount > maxSyntaxErrors) {
         abortTranslation(abortTooManySyntaxErrors);
     }
 }
 
+static void getMessage(CHUNKNUM chunkNum)
+{
+    char chunk[CHUNK_LEN];
+
+    retrieveChunk(chunkNum, (unsigned char *)chunk);
+    sprintf(msgbuf, "%.*s", CHUNK_LEN, chunk);
+}
+
+static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs) {
+    FILE *fp;
+    int i, x;
+
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        logFatalError("Error message file missing");
+        isFatalError = 1;
+        return;
+    }
+
+    for (i = 0; i < numMsgs; ++i) {
+        x = 0;
+        memset(msgbuf, 0, CHUNK_LEN);
+        while (1) {
+            if (x >= CHUNK_LEN) {
+                logFatalError("Error message too long");
+                isFatalError = 1;
+                fclose(fp);
+                return;
+            }
+
+            if (fread(msgbuf + x, 1, 1, fp) != 1) {
+                logFatalError("Error reading from error message file");
+                isFatalError = 1;
+                fclose(fp);
+                return;
+            }
+
+            if (msgbuf[x] == '\r') {
+                msgbuf[x] = 0;
+                break;
+            }
+
+            ++x;
+        }
+
+        allocChunk(msgs + i);
+        storeChunk(msgs[i], (unsigned char *)msgbuf);
+    }
+
+    fclose(fp);
+}
+
 void runtimeError(TRuntimeErrorCode ec)
 {
-    logRuntimeError(runtimeErrorMessages[ec], currentLineNumber);
+    if (runtimeErrorMessages[0] == 0) {
+        readErrorFile("runtimemsgs", runtimeErrorMessages, numRuntimeErrors);
+    }
+
+    getMessage(runtimeErrorMessages[ec]);
+    logRuntimeError(msgbuf, currentLineNumber);
     isFatalError = 1;
 }
 

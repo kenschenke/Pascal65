@@ -1,0 +1,13 @@
+Invalid cmd line args
+Fail to open src file
+Fail to open icode file
+Fail to open asm file
+Too many syntax errors
+Stack overflow
+Code segment overflow
+Nesting too deep
+Runtime error
+Unimplemented feature
+Out of memory
+Source line too long
+Source file read fail

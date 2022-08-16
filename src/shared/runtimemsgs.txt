@@ -1,0 +1,9 @@
+No runtime error
+Runtime stack overflow
+Value out of range
+Invalid CASE expr value
+Division by zero
+Invalid function arg
+Invalid user input
+Unimplemented feature
+Out of memory

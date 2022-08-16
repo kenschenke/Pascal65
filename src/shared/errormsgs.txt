@@ -1,0 +1,56 @@
+No error
+Unrecognizable input
+Too many syntax errors
+Unexpected end of file
+Invalid number
+Too many digits
+Int literal out of rng
+Missing )
+Invalid expression
+Invalid assignment stmt
+Missing identifier
+Missing :=
+Undefined identifier
+Stack overflow
+Invalid statement
+Unexpected token
+Missing ;
+Missing ,
+Missing DO
+Missing UNTIL
+Missing THEN
+Invalid FOR control var
+Missing OF
+Invalid constant
+Missing constant
+Missing :
+Missing END
+Missing TO or DOWNTO
+Redefined identifier
+Missing =
+Invalid type
+Not a type identifier
+Invalid subrange type
+Not a const identifier
+Missing ..
+Incompatible types
+Invalid assgnmnt target
+Invalid ident usage
+Incompatible assignment
+Min limit > max limit
+Missing [
+Missing ]
+Invalid index type
+Missing BEGIN
+Missing .
+Too many subscripts
+Invalid field
+Nesting too deep
+Missing PROGRAM
+Already  in FORWARD
+Wrong nmbr of params
+Invalid VAR parameter
+Not a record variable
+Missing variable
+Code segment overflow
+Unimplemented feature

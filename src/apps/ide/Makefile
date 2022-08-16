@@ -30,10 +30,8 @@ SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
 SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
-SOURCES += $(SHAREDSRCDIR)/blocks.c
-SOURCES += $(SHAREDSRCDIR)/chunks.c
-SOURCES += $(SHAREDSRCDIR)/doscmd.s
-SOURCES += $(SHAREDSRCDIR)/sendDosCmd.c
+SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
 
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
 PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
@@ -105,29 +103,41 @@ $(OBJDIR)/%.o: $(EDITOROVRLSRC)/%.s | $(OBJDIR)
 
 vpath $(LIBCSRCDIR)/%.c
 $(OBJDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(LIBCSRCDIR)/%.s
 $(OBJDIR)/%.o: $(LIBCSRCDIR)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/blocks.o: $(SHAREDSRCDIR)/blocks.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-$(OBJDIR)/chunks.o: $(SHAREDSRCDIR)/chunks.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-$(OBJDIR)/sendDosCmd.o: $(SHAREDSRCDIR)/sendDosCmd.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-$(OBJDIR)/doscmd.o: $(SHAREDSRCDIR)/doscmd.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(SHAREDSRCDIR)/%.c
+$(OBJDIR)/%.o: $(SHAREDSRCDIR)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(SHAREDSRCDIR)/%.s
+$(OBJDIR)/%.o: $(SHAREDSRCDIR)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+abortmsgs.petscii: $(SHAREDSRCDIR)/abortmsgs.txt
+	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -text -o abortmsgs.petscii
+
+errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
+	dos2unix < $(SHAREDSRCDIR)/errormsgs.txt | petcat -text -o errormsgs.petscii
+
+runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
+	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
 
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
-$(D81FILE): $(BINDIR)/$(PROGRAM)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) -write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) -write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE)
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
+	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
+	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
+	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \
+	-write abortmsgs.petscii abortmsgs \
+	-write errormsgs.petscii errormsgs \
+	-write runtimemsgs.petscii runtimemsgs
 
 clean:
 	$(RM) $(OBJECTS)

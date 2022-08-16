@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <tests.h>
 
+#ifdef __TEST__
 static void errorHeader(const char *file, const char *test, int line);
 
 static void errorHeader(const char *file, const char *test, int line) {
@@ -102,4 +103,4 @@ void assertZeroX(unsigned char value,
 		exit(5);
 	}
 }
-
+#endif  // end of __TEST__

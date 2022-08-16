@@ -10,7 +10,7 @@ char strInput(char *buffer, int buflen)
     char i = 0;
     char ch;
 
-    cursor(1);
+    // cursor(1);
     while (1)
     {
         ch = cgetc();
@@ -27,7 +27,7 @@ char strInput(char *buffer, int buflen)
         if (ch == CH_ENTER) {
             buffer[i] = 0;
             putc(ch, stdout);
-            cursor(0);
+            // cursor(0);
             return 0;
         }
         

@@ -31,6 +31,7 @@ typedef enum {
     abortOutOfMemory            = -11,
     abortSourceLineTooLong      = -12,
     abortSourceFileReadFailed   = -13,
+    numAbortErrors              =  14,
 } TAbortCode;
 
 void abortTranslation(TAbortCode ac);
@@ -92,6 +93,7 @@ typedef enum {
     errMissingVariable,
     errCodeSegmentOverflow,
     errUnimplementedFeature,
+    numParserErrors,
 } TErrorCode;
 
 void Error(TErrorCode ec);
@@ -106,6 +108,7 @@ typedef enum {
     rteInvalidUserInput,
     rteUnimplementedRuntimeFeature,
     rteOutOfMemory,
+    numRuntimeErrors,
 } TRuntimeErrorCode;
 
 void runtimeError(TRuntimeErrorCode ec);
