@@ -22,21 +22,43 @@
 ;    cmd would be something like "s0:filename" or "r0:oldname=0:newname"
 
 .proc _sendDosCmd
+    ; Store parameters
+
     sta tmp1        ; device number
     jsr popax       ; get cmd
     sta ptr1        ; low byte of cmd
     stx ptr1+1      ; high byte of cmd
+
+    ; Call SETLFS
+
     lda #1          ; logical file number
     ldx tmp1        ; device number for disk drive
     ldy #15         ; command channel 15
     jsr SETLFS      ; prepare to open it
-    lda ptr1        ; low byte of cmd
-    ldx ptr1+1      ; high byte of cmd
-    jsr _strlen     ; length of cmd returned in .A
-    ldx ptr1        ; .X and .Y hold
-    ldy ptr1+1      ; address of the cmd
+
+    ; Calculate length of command string
+
+    ldy #0
+@Loop:
+    lda (ptr1),y
+    beq @DoneLoop
+    iny
+    jmp @Loop
+@DoneLoop:
+    tya             ; length of command in .A
+
+    ; Call SETNAM
+
+    ldx ptr1        ; low byte of command in .X
+    ldy ptr1+1      ; high byte in .Y
     jsr SETNAM      ; set name
+
+    ; Call OPEN
+
     jsr OPEN        ; open it
+
+    ; and immediately call CLOSE
+
     lda #1          ; and immediately
     jsr CLOSE       ; close the command channel
     jsr CLRCHN      ; clear the channels
