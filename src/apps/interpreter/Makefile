@@ -20,7 +20,7 @@ mega65_EMUCMD := xmega65 -besure -8
 EMUCMD = $($(TARGET)_EMUCMD)
 
 mega65_CFLAGS = -D __MEGA65__ -I ../../include
-CFLAGS = $($(TARGET)_CFLAGS) -I ../../mega65-libc/include
+CFLAGS = $($(TARGET)_CFLAGS) -O -I ../../mega65-libc/include
 ASFLAGS =
 LDFLAGS =
 
@@ -103,11 +103,26 @@ vpath $(SHAREDSRCDIR)/%.s
 $(OBJDIR)/%.o: $(SHAREDSRCDIR)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+abortmsgs.petscii: $(SHAREDSRCDIR)/abortmsgs.txt
+	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -text -o abortmsgs.petscii
+
+errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
+	dos2unix < $(SHAREDSRCDIR)/errormsgs.txt | petcat -text -o errormsgs.petscii
+
+runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
+	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
-$(D81FILE): $(BINDIR)/$(PROGRAM)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) -write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE)
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
+	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
+	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
+	-write abortmsgs.petscii abortmsgs,seq \
+	-write errormsgs.petscii errormsgs,seq \
+	-write runtimemsgs.petscii runtimemsgs,seq
 
 clean:
 	$(RM) $(OBJECTS)

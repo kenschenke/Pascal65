@@ -35,11 +35,11 @@ static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs);
 
 void abortTranslation(TAbortCode ac)
 {
-    if (abortMsg[0] == 0) {
+    if (!abortMsg[0]) {
         readErrorFile("abortmsgs", abortMsg, numAbortErrors);
     }
 
-    getMessage(abortMsg[-ac]);
+    getMessage(abortMsg[-ac - 1]);
     logFatalError(msgbuf);
     isFatalError = 1;
 }
@@ -48,7 +48,7 @@ void Error(TErrorCode ec)
 {
     const int maxSyntaxErrors = 25;
 
-    if (errorMessages[0] == 0) {
+    if (!errorMessages[0]) {
         readErrorFile("errormsgs", errorMessages, numParserErrors);
     }
 
@@ -82,7 +82,7 @@ static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs) {
         x = 0;
         memset(msgbuf, 0, CHUNK_LEN);
         while (1) {
-            if (x >= CHUNK_LEN) {
+            if (x > CHUNK_LEN) {
                 logFatalError("Error message too long");
                 isFatalError = 1;
                 fclose(fp);
@@ -113,7 +113,7 @@ static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs) {
 
 void runtimeError(TRuntimeErrorCode ec)
 {
-    if (runtimeErrorMessages[0] == 0) {
+    if (!runtimeErrorMessages[0]) {
         readErrorFile("runtimemsgs", runtimeErrorMessages, numRuntimeErrors);
     }
 

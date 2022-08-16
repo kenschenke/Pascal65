@@ -31,7 +31,7 @@ typedef enum {
     abortOutOfMemory            = -11,
     abortSourceLineTooLong      = -12,
     abortSourceFileReadFailed   = -13,
-    numAbortErrors              =  14,
+    numAbortErrors              =  13,
 } TAbortCode;
 
 void abortTranslation(TAbortCode ac);

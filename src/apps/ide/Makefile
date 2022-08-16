@@ -135,9 +135,9 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
 	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \
-	-write abortmsgs.petscii abortmsgs \
-	-write errormsgs.petscii errormsgs \
-	-write runtimemsgs.petscii runtimemsgs
+	-write abortmsgs.petscii abortmsgs,seq \
+	-write errormsgs.petscii errormsgs,seq \
+	-write runtimemsgs.petscii runtimemsgs,seq
 
 clean:
 	$(RM) $(OBJECTS)

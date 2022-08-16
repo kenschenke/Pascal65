@@ -21,6 +21,7 @@
 #include <cbm.h>
 #include <device.h>
 #include <common.h>
+#include <blocks.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
@@ -39,14 +40,17 @@ void main()
     // bgcolor(COLOR_BLUE);
     // textcolor(COLOR_WHITE);
 
+    // On the Mega65, $1600 - $1fff is available to use in the heap
+    _heapadd((void *)0x1600, 0x1fff - 0x1600);
+
+    initBlockStorage();
+
     // load the parser
-    printf("Loading parser module\n");
     if (loadfile("interpreter.1")) {
         initCommon();
 
         tinBuf = tin_open("expr1.in", abortSourceFileOpenFailed);
         scanner.pTinBuf = tinBuf;
-        printf("Parsing Source File\n");
         parse(&scanner);
         tin_close(tinBuf);
     }
