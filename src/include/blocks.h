@@ -42,9 +42,12 @@ unsigned char *retrieveBlock(BLOCKNUM blockNum);
 // 0 is returned on failure, non-zero on success.
 unsigned char storeBlock(BLOCKNUM blockNum);
 
+// Returns non-zero if block is allocated.
+// Block number is 1-based.
+unsigned char isBlockAllocated(BLOCKNUM blockNum);
+
 // Functions used during unit testing
 #ifdef __TEST__
-unsigned char isBlockAllocated(BLOCKNUM blockNum);
 unsigned char wasBankMemoryCorrupted(void);
 #endif
 

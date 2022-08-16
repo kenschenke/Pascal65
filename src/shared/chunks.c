@@ -18,14 +18,12 @@
 static	BLOCKNUM		currentBlock;
 static	unsigned char	*blockData;
 
-static unsigned char AllocatedBlocks[TOTAL_BLOCKS];
 static unsigned char FullBlocks[TOTAL_BLOCKS];
 
 void initChunkStorage(void)
 {
 	currentBlock = 0;
 	blockData = NULL;
-	memset(AllocatedBlocks, 0, TOTAL_BLOCKS);
 	memset(FullBlocks, 0, TOTAL_BLOCKS);
 }
 
@@ -43,7 +41,6 @@ char allocChunk(CHUNKNUM *chunkNum)
 			return 0;
 		}
 		memset(blockData, 0, CHUNKS_PER_BLOCK);  // clear the used chunks part.
-		AllocatedBlocks[currentBlock - 1] = 1;
 		FullBlocks[currentBlock - 1] = 0;
 	}
 
@@ -58,7 +55,7 @@ char allocChunk(CHUNKNUM *chunkNum)
 
 		// Look for other blocks that might have free chunks.
 		for (i = 0; i < TOTAL_BLOCKS; ++i) {
-			if (AllocatedBlocks[i] && FullBlocks[i] == 0) {
+			if (isBlockAllocated(i + 1) && FullBlocks[i] == 0) {
 				// This block has at least one spare chunk.
 				blockData = retrieveBlock(i + 1);
 				if (blockData == NULL) {
@@ -106,7 +103,6 @@ char allocChunk(CHUNKNUM *chunkNum)
 		return 0;
 	}
 	memset(blockData, 0, CHUNKS_PER_BLOCK);  // clear the used chunks part.
-	AllocatedBlocks[currentBlock - 1] = 1;
 	FullBlocks[currentBlock - 1] = 0;
 	blockData[0] = 1;	// mark the first chunk as allocated
 
@@ -130,7 +126,7 @@ void freeChunk(CHUNKNUM chunkNum)
 	}
 
 	// Make sure the block is actually allocated
-	if (AllocatedBlocks[blockNum - 1] == 0) {
+	if (!isBlockAllocated(blockNum)) {
 		return;
 	}
 
@@ -163,7 +159,6 @@ void freeChunk(CHUNKNUM chunkNum)
 	if (i == CHUNKS_PER_BLOCK) {
 		// All the chunks are free.  The block can be freed too.
 		freeBlock(blockNum);
-		AllocatedBlocks[blockNum - 1] = 0;
 		currentBlock = 0;
 	}
 }
@@ -188,7 +183,7 @@ int getAvailChunks(void) {
 			continue;
 		}
 
-		if (!AllocatedBlocks[b]) {
+		if (!isBlockAllocated(b + 1)) {
 			// this block has not been allocated yet.
 			// All chunks are available so no need to check it either.
 			avail += CHUNKS_PER_BLOCK;
@@ -230,7 +225,7 @@ char retrieveChunk(CHUNKNUM chunkNum, unsigned char *bytes)
 	}
 
 	// Make sure the block is actually allocated
-	if (AllocatedBlocks[blockNum - 1] == 0) {
+	if (!isBlockAllocated(blockNum)) {
 		return 0;
 	}
 
@@ -274,7 +269,7 @@ char storeChunk(CHUNKNUM chunkNum, unsigned char *bytes) {
 	}
 
 	// Make sure the block is actually allocated
-	if (AllocatedBlocks[blockNum - 1] == 0) {
+	if (!isBlockAllocated(blockNum)) {
 		return 0;
 	}
 
@@ -306,7 +301,7 @@ unsigned char isChunkAllocated(CHUNKNUM chunkNum)
 
 	blockNum = GET_BLOCKNUM(chunkNum);
 	c = GET_CHUNKNUM(chunkNum);
-	if (AllocatedBlocks[blockNum - 1] == 0) {
+	if (!isBlockAllocated(blockNum)) {
 		return 0;
 	}
 

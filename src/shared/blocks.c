@@ -127,12 +127,12 @@ unsigned char storeBlock(BLOCKNUM blockNum)
 	return 1;
 }
 
-#ifdef __TEST__
 unsigned char isBlockAllocated(BLOCKNUM blockNum)
 {
 	return BlocksUsed[blockNum - 1];
 }
 
+#ifdef __TEST__
 unsigned char wasBankMemoryCorrupted(void)
 {
 	char testbytes[TEST_OFFSET];
