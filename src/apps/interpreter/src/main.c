@@ -20,7 +20,6 @@
 #include <error.h>
 #include <cbm.h>
 #include <device.h>
-#include <conio.h>
 #include <common.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
@@ -37,8 +36,8 @@ void main()
     videomode(VIDEOMODE_80x25);
     printf("Is fast mode: %s\n", isfast() ? "yes" : "no");
 #endif
-    bgcolor(COLOR_BLUE);
-    textcolor(COLOR_WHITE);
+    // bgcolor(COLOR_BLUE);
+    // textcolor(COLOR_WHITE);
 
     // load the parser
     printf("Loading parser module\n");

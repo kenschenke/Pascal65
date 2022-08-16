@@ -25,6 +25,11 @@ void logRuntimeError(const char *message, unsigned lineNumber)
     printf("*** Runtime error: %s\n", message);
 }
 
+void outputLine(const char *message)
+{
+    printf("%s\n", message);
+}
+
 void parserOverlay(void);
 
 void main()
