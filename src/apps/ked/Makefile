@@ -108,7 +108,9 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
 $(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii license.petscii
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) -write help.petscii help.txt,seq -write license.petscii license
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write help.petscii help.txt,seq \
+	-write license.petscii license,seq
 
 clean:
 	$(RM) $(OBJECTS)
