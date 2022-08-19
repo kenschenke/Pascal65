@@ -1,5 +1,5 @@
 ;;;
- ; blocks.s
+ ; doscmd.s
  ; Ken Schenke (kenschenke@gmail.com)
  ; 
  ; Sending DOS commands.
