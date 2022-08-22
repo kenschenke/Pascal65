@@ -17,9 +17,8 @@
 #include <icode.h>
 
 extern short cntSymtabs;
-extern SYMTAB *pSymtabList;
-extern SYMTAB **vpSymtabs;
-extern SYMTAB *pGlobalSymtab;
+extern CHUNKNUM firstSymtabChunk;
+extern CHUNKNUM globalSymtab;
 extern ICODE *pGlobalIcode;
 
 extern char isFatalError;       // non-zero if fatal parsing error encountered

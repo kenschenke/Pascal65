@@ -93,6 +93,7 @@ typedef enum {
     errMissingVariable,
     errCodeSegmentOverflow,
     errUnimplementedFeature,
+    errIdentifierTooLong,
     numParserErrors,
 } TErrorCode;
 

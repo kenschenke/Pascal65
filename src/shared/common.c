@@ -18,19 +18,21 @@
 #include <conio.h>
 
 short cntSymtabs;
-SYMTAB *pSymtabList;
-SYMTAB **vpSymtabs;
-SYMTAB *pGlobalSymtab;
+CHUNKNUM firstSymtabChunk;
+CHUNKNUM globalSymtab;
 ICODE *pGlobalIcode;
 char isFatalError;
 
 void initCommon(void)
 {
+    SYMTAB symtab;
+
     cntSymtabs = 0;
-    pSymtabList = NULL;
+    firstSymtabChunk = 0;
     isFatalError = 0;
 
-    pGlobalSymtab = makeSymtab();
+    makeSymtab(&symtab);
+    globalSymtab = symtab.symtabChunkNum;
     pGlobalIcode = makeIcode();
 }
 

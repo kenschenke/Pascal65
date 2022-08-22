@@ -13,46 +13,49 @@
 #ifndef SYMTAB_H
 #define SYMTAB_H
 
-struct _SYMTABLINENODE {
-    struct _SYMTABLINENODE *next;
-    short number;
+#include <chunks.h>
+
+typedef struct STRVALCHUNK {
+    CHUNKNUM nextChunkNum;
+    char value[CHUNK_LEN - 2];
+} STRVALCHUNK;
+
+enum TSymtabValue {
+    valInteger,
+    valString,
+    valLong,
 };
-typedef struct _SYMTABLINENODE SYMTABLINENODE;
 
-typedef struct {
-    SYMTABLINENODE *head;
-    SYMTABLINENODE *tail;
-} SYMTABLINELIST;
-
-struct _SYMTABNODE {
-    struct _SYMTABNODE *left, *right;
-    char *pString;
+typedef struct SYMTABNODE {
+    CHUNKNUM nodeChunkNum;
+    CHUNKNUM leftChunkNum, rightChunkNum;
+    CHUNKNUM nameChunkNum;
     short xSymtab;
     short xNode;
-    int value;  // temporary
-    SYMTABLINELIST *lineNumList;
-};
-typedef struct _SYMTABNODE SYMTABNODE;
+    char valueType;  // TSymtabValue
+    // Value:
+    //    Int: first two bytes are value, last two bytes ignored
+    //    String: first two bytes are strlen, last two bytes are chunkNum of value
+    //    Long: All four bytes are 32-bit integer
+    unsigned char value[4];
+    char unused[CHUNK_LEN - 17];
+} SYMTABNODE;
 
-struct _SYMTAB {
-    SYMTABNODE *root;
-    SYMTABNODE **vpNodes;
+typedef struct SYMTAB {
+    CHUNKNUM symtabChunkNum;
+    CHUNKNUM rootChunkNum;      // binary tree used at parse time
     short cntNodes;
     short xSymtab;
-    struct _SYMTAB *next;
-};
-typedef struct _SYMTAB SYMTAB;
+    CHUNKNUM nextSymtabChunk;
+    char unused[CHUNK_LEN - 10];
+} SYMTAB;
 
-void freeSymtab(SYMTAB *symtab);
-void freeAllSymtabs(void);
-SYMTAB *makeSymtab(void);
+void freeSymtab(CHUNKNUM symtabChunkNum);
+char makeSymtab(SYMTAB *pSymtab);
 
-void addLineNumToSymtabList(SYMTABLINELIST *pLineList);
-void convertAllSymtabs(void);
-void convertSymtab(SYMTAB *symtab, SYMTAB *vpSymtabs[]);
-void convertSymtabNode(SYMTABNODE *symtabNode, SYMTABNODE *vpNodes[]);
-SYMTABNODE *enterSymtab(SYMTAB *symtab, const char *pString);
-SYMTABNODE *getSymtabNode(SYMTAB *symtab, short xNode);
-SYMTABNODE *searchSymtab(SYMTAB *symtab, const char *pString);
+char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
+char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
+char setSymtabInt(SYMTABNODE *pNode, int value);
+char setSymtabString(SYMTABNODE *pNode, const char *value);
 
 #endif // end of SYMTAB_H

@@ -19,241 +19,340 @@
 
 extern short currentLineNumber;
 
-static void freeSymtabLineList(SYMTABLINELIST *pLineList);
-static void freeSymtabNode(SYMTABNODE *symtabNode);
+static int compNodeIdentifier(const char *identifier, CHUNKNUM other);
+// buffer is caller-supplied and is at least CHUNK_LEN in length
+static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer);
 
-static SYMTABLINELIST *makeSymtabLineList(void);
-static SYMTABLINENODE *makeSymtabLineNode(void);
-static SYMTABNODE *makeSymtabNode(const char *pString);
+static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier);
 
-void addLineNumToSymtabList(SYMTABLINELIST *pLineList)
-{
-    SYMTABLINENODE *pNode;
+static int compNodeIdentifier(const char *identifier, CHUNKNUM other) {
+    char otherIdent[CHUNK_LEN];
 
-    // If the line number is already there, it'll be at the tail
-    if (pLineList->tail && pLineList->tail->number == currentLineNumber) {
-        return;
+    if (retrieveChunk(other, (unsigned char *)otherIdent) == 0) {
+        abortTranslation(abortOutOfMemory);
     }
 
-    // Append the new node
-    pNode = makeSymtabLineNode();
-    pLineList->tail->next = pNode;
-    pLineList->tail = pNode;
+    return strncmp(identifier, otherIdent, CHUNK_LEN);
 }
 
-void convertAllSymtabs(void)
-{
-    SYMTAB *pSt;
-
-    vpSymtabs = malloc(sizeof(SYMTAB *) * cntSymtabs);
-    for (pSt = pSymtabList; pSt; pSt = pSt->next) {
-        convertSymtab(pSt, vpSymtabs);
-    }
-
-}
-
-void convertSymtab(SYMTAB *symtab, SYMTAB *vpSymtabs[])
-{
-    int size, i;
-    // Point the appropriate entry of the symbol table point vector
-    // to this symbol table.
-    vpSymtabs[symtab->xSymtab] = symtab;
-
-    // Allocate the symbol table node pointer vector
-    for (i = 0, size = 0; i < symtab->cntNodes; ++i, size += sizeof(SYMTAB *));
-    symtab->vpNodes = malloc(size);
-    convertSymtabNode(symtab->root, symtab->vpNodes);
-}
-
-void convertSymtabNode(SYMTABNODE *symtabNode, SYMTABNODE *vpNodes[])
-{
-    // First convert the left subtree
-    if (symtabNode->left) {
-        convertSymtabNode(symtabNode->left, vpNodes);
-    }
-
-    // Convert the node
-    vpNodes[symtabNode->xNode] = symtabNode;
-
-    // Finally, convert the right subtree
-    if (symtabNode->right) {
-        convertSymtabNode(symtabNode->right, vpNodes);
-    }
-}
-
-SYMTABNODE *enterSymtab(SYMTAB *symtab, const char *pString)
-{
+char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier) {
     int comp;
-    SYMTABNODE *pNode;
-    SYMTABNODE **ppNode = &symtab->root;
+    CHUNKNUM chunkNum = symtab->rootChunkNum;
+    SYMTABNODE node;
 
     // Loop to search table for insertion point
-    while ((pNode = *ppNode) != NULL) {
-        comp = strcmp(pString, pNode->pString);
+    node.nodeChunkNum = 0;
+    while (chunkNum != 0) {
+        if (retrieveChunk(chunkNum, (unsigned char *)&node) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
+        comp = compNodeIdentifier(identifier, node.nameChunkNum);
         if (comp == 0) {
-            break;
+            memcpy(pNode, &node, sizeof(SYMTABNODE));
+            return 1;
         }
 
         // Not yet found: next search left or right subtree
-        ppNode = comp < 0 ? &(pNode->left) : &(pNode->right);
+        chunkNum = comp < 0 ? node.leftChunkNum : node.rightChunkNum;
     }
 
     // Create and insert a new node
-    pNode = makeSymtabNode(pString);
+    if (makeSymtabNode(pNode, identifier) == 0) {
+        return 0;
+    }
     pNode->xSymtab = symtab->xSymtab;
     pNode->xNode = symtab->cntNodes++;
-    *ppNode = pNode;
-    return pNode;
-}
 
-void freeAllSymtabs(void)
-{
-    int i;
-    
-    for (i = 0; i < cntSymtabs; i++) {
-        freeSymtab(vpSymtabs[i]);
-    }
-    free(vpSymtabs);
-}
-
-void freeSymtab(SYMTAB *symtab)
-{
-    // First delete the nodes
-    if (symtab->root) {
-        freeSymtabNode(symtab->root);
+    // Update the parent chunk to point to this one
+    if (node.nodeChunkNum == 0) {
+        symtab->rootChunkNum = pNode->nodeChunkNum;
+    } else {
+        // Don't need to retrieve node since it is still
+        // populated from the loop.
+        if (comp < 0)
+            node.leftChunkNum = pNode->nodeChunkNum;
+        else
+            node.rightChunkNum = pNode->nodeChunkNum;
+        if (storeChunk(node.nodeChunkNum, (unsigned char *)&node) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
     }
 
-    if (symtab->vpNodes) {
-        free(symtab->vpNodes);
+    if (storeChunk(symtab->symtabChunkNum, (unsigned char *)symtab) == 0) {
+        abortTranslation(abortOutOfMemory);
+        return 0;
     }
 
-    // Then delete the table
-    free(symtab);
+    if (storeChunk(pNode->nodeChunkNum, (unsigned char *)pNode) == 0) {
+        abortTranslation(abortOutOfMemory);
+        return 0;
+    }
+
+    return 1;
 }
 
-static void freeSymtabLineList(SYMTABLINELIST *pLineList)
-{
-    SYMTABLINENODE *pNode, *pNext;
+void freeSymtab(CHUNKNUM symtabChunkNum) {
+    CHUNKNUM chunkNum = firstSymtabChunk, lastChunkNum = 0;
+    CHUNKNUM nextChunkNum, rootNodeChunkNum;
+    SYMTAB symtab;
 
-    pNode = pNext = pLineList->head;
-    while (pNext) {
-        pNext = pNode->next;
-        free(pNode);
-        pNode = pNext;
+    while (chunkNum) {
+        if (retrieveChunk(chunkNum, (unsigned char *)&symtab) == 0) {
+            return;
+        }
+
+        nextChunkNum = symtab.nextSymtabChunk;
+        rootNodeChunkNum = symtab.rootChunkNum;
+        if (chunkNum == symtabChunkNum) {
+            if (lastChunkNum) {
+                if (retrieveChunk(lastChunkNum, (unsigned char *)&symtab) == 0) {
+                    return;
+                }
+                symtab.nextSymtabChunk = nextChunkNum;
+                if (storeChunk(symtab.symtabChunkNum, (unsigned char *)&symtab) == 0) {
+                    return;
+                }
+            } else {
+                firstSymtabChunk = nextChunkNum;
+            }
+
+            freeSymtabNode(rootNodeChunkNum, (unsigned char *)&symtab);
+            freeChunk(chunkNum);
+
+            break;
+        }
+
+        lastChunkNum = chunkNum;
+        chunkNum = nextChunkNum;
     }
 }
 
-static void freeSymtabNode(SYMTABNODE *symtabNode)
+// Buffer is caller-supplied and at least CHUNK_LEN in length
+static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer)
 {
+    CHUNKNUM leftChunkNum, rightChunkNum, stringChunkNum, nameChunkNum;
+    SYMTABNODE *pNode = (SYMTABNODE *)buffer;
+    STRVALCHUNK *pStrVal;
+
+    if (retrieveChunk(nodeChunkNum, buffer) == 0) {
+        return;
+    }
+
+    leftChunkNum = pNode->leftChunkNum;
+    rightChunkNum = pNode->rightChunkNum;
+    nameChunkNum = pNode->nameChunkNum;
+
+    if (pNode->valueType == valString) {
+        memcpy(&stringChunkNum, pNode->value + 2, sizeof(CHUNKNUM));
+        pStrVal = (STRVALCHUNK *)buffer;
+        while (stringChunkNum) {
+            if (retrieveChunk(stringChunkNum, buffer) == 0) {
+                return;
+            }
+            freeChunk(stringChunkNum);
+            stringChunkNum = pStrVal->nextChunkNum;
+        }
+    }
+
     // First the subtrees (if any)
-    if (symtabNode->left) {
-        freeSymtabNode(symtabNode->left);
+    if (leftChunkNum) {
+        freeSymtabNode(leftChunkNum, buffer);
     }
-    if (symtabNode->right) {
-        freeSymtabNode(symtabNode->right);
+    if (rightChunkNum) {
+        freeSymtabNode(rightChunkNum, buffer);
     }
 
-    // Then delete this node's components
-    freeSymtabLineList(symtabNode->lineNumList);
-    free(symtabNode->pString);
-    free(symtabNode);
+    freeChunk(nameChunkNum);
+    freeChunk(nodeChunkNum);
 }
 
-SYMTABNODE *getSymtabNode(SYMTAB *symtab, short xNode)
+char makeSymtab(SYMTAB *pSymtab)
 {
-    return symtab->vpNodes[xNode];
-}
+    CHUNKNUM chunkNum;
 
-SYMTAB *makeSymtab(void)
-{
-    SYMTAB *symtab;
-
-    symtab = malloc(sizeof(SYMTAB));
-    if (symtab == NULL) {
+    if (allocChunk(&chunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
     }
 
-    symtab->cntNodes = 0;
-    symtab->root = NULL;
-    symtab->vpNodes = NULL;
-    symtab->xSymtab = cntSymtabs++;
+    pSymtab->symtabChunkNum = chunkNum;
+    pSymtab->cntNodes = 0;
+    pSymtab->cntNodes = 0;
+    pSymtab->xSymtab = cntSymtabs++;
 
-    symtab->next = pSymtabList;
-    pSymtabList = symtab;
+    pSymtab->nextSymtabChunk = firstSymtabChunk;
+    firstSymtabChunk = chunkNum;
 
-    return symtab;
-}
-
-static SYMTABLINELIST *makeSymtabLineList(void)
-{
-    SYMTABLINELIST *pLineNumList;
-    
-    pLineNumList = malloc(sizeof(SYMTABLINELIST));
-    if (pLineNumList == NULL) {
-        abortTranslation(abortOutOfMemory);
+    if (storeChunk(chunkNum, (unsigned char *)pSymtab) == 0) {
+        return 0;
     }
 
-    pLineNumList->head = pLineNumList->tail = makeSymtabLineNode();
-
-    return pLineNumList;
+    return 1;
 }
 
-static SYMTABLINENODE *makeSymtabLineNode(void)
+static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier)
 {
-    SYMTABLINENODE *pNode;
+    unsigned char identChunk[CHUNK_LEN];
 
-    pNode = malloc(sizeof(SYMTABLINENODE));
-    if (pNode == NULL) {
-        abortTranslation(abortOutOfMemory);
+    // Make sure the identifier isn't too long
+    if (strlen(identifier) > CHUNK_LEN) {
+        Error(errIdentifierTooLong);
+        return 0;
     }
 
-    pNode->next = NULL;
-    pNode->number = currentLineNumber;
-
-    return pNode;
-}
-
-static SYMTABNODE *makeSymtabNode(const char *pString)
-{
-    SYMTABNODE *pNode;
-
-    pNode = malloc(sizeof(SYMTABNODE));
-    if (pNode == NULL) {
+    // Allocate a chunk for the node
+    if (allocChunk(&pNode->nodeChunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
+        return 0;
     }
 
-    pNode->left = pNode->right = NULL;
+    // Allocate a chunk to store the node's identifier (variable name)
+    if (allocChunk(&pNode->nameChunkNum) == 0) {
+        abortTranslation(abortOutOfMemory);
+        return 0;
+    }
+
+    // Store the identifier
+    memset(identChunk, 0, sizeof(identChunk));
+    memcpy(identChunk, identifier, strlen(identifier));
+    if (storeChunk(pNode->nameChunkNum, identChunk) == 0) {
+        abortTranslation(abortOutOfMemory);
+        return 0;
+    }
+
+    pNode->leftChunkNum = pNode->rightChunkNum = 0;
     pNode->xNode = 0;
-    pNode->lineNumList = makeSymtabLineList();
+    memset(pNode->value, 0, sizeof(pNode->value));
 
-    pNode->pString = malloc(strlen(pString) + 1);
-    if (pNode->pString == NULL) {
-        abortTranslation(abortOutOfMemory);
-    }
-    strcpy(pNode->pString, pString);
-
-    return pNode;
+    return 1;
 }
 
-SYMTABNODE *searchSymtab(SYMTAB *symtab, const char *pString)
-{
+char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier) {
     int comp;
-    SYMTABNODE *pNode = symtab->root;
+    CHUNKNUM chunkNum = symtab->rootChunkNum;
 
-    while (pNode) {
-        comp = strcmp(pString, pNode->pString);
+    while (chunkNum) {
+        if (retrieveChunk(chunkNum, (unsigned char *)pNode) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
+
+        comp = compNodeIdentifier(identifier, pNode->nameChunkNum);
         if (comp == 0) {
             break;
         }
 
-        // Not yet found: next search left or right substree
-        pNode = comp < 0 ? pNode->left : pNode->right;
+        // Not found yet: next search left or right subtree
+        chunkNum = comp < 0 ? pNode->leftChunkNum : pNode->rightChunkNum;
     }
 
-    if (pNode) {
-        addLineNumToSymtabList(pNode->lineNumList);
+    if (chunkNum) {
+        // Add line number to symbol list
     }
 
-    return pNode;
+    return chunkNum ? 1 : 0;
+}
+
+char setSymtabInt(SYMTABNODE *pNode, int value) {
+    pNode->valueType = (char) valInteger;
+    memcpy(pNode->value, &value, sizeof(value));
+
+    if (storeChunk(pNode->nodeChunkNum, (unsigned char *)pNode) == 0) {
+        abortTranslation(abortOutOfMemory);
+        return 0;
+    }
+
+    return 1;
+}
+
+char setSymtabString(SYMTABNODE *pNode, const char *value) {
+    CHUNKNUM chunkNum, nextChunkNum;
+    const char *p = value;
+    char isAlloc;  // non-zero if the next chunk is new
+    STRVALCHUNK chunk;
+    int toCopy, len = strlen(value);
+
+    pNode->valueType = (char) valString;
+    memcpy(pNode->value, &len, sizeof(len));
+
+    // Store the string as one or more chunks
+
+    // If there is already a string value for this node, replace it.
+    memcpy(&chunkNum, pNode->value + 2, sizeof(CHUNKNUM));
+    if (chunkNum) {
+        // There's already a chunk - retrieve it
+        if (retrieveChunk(chunkNum, (unsigned char *)&chunk) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
+    } else {
+        // No value assigned yet - allocate a new chunk
+        if (allocChunk(&chunkNum) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
+        // Store the chunkNum in the node as the first value chunk
+        memcpy(pNode->value + 2, &chunkNum, sizeof(CHUNKNUM));
+        chunk.nextChunkNum = 0;
+    }
+
+    while (len) {
+        memset(chunk.value, 0, sizeof(chunk.value));
+        toCopy = len > sizeof(chunk.value) ? sizeof(chunk.value) : len;
+        memcpy(chunk.value, p, toCopy);
+        len -= toCopy;
+        p += toCopy;
+
+        nextChunkNum = chunk.nextChunkNum;
+        if (len) {
+            if (nextChunkNum == 0) {
+                if (allocChunk(&nextChunkNum) == 0) {
+                    abortTranslation(abortOutOfMemory);
+                    return 0;
+                }
+                isAlloc = 1;
+                chunk.nextChunkNum = nextChunkNum;
+            } else {
+                isAlloc = 0;
+            }
+        } else {
+            chunk.nextChunkNum = 0;
+        }
+
+        if (storeChunk(chunkNum, (unsigned char *)&chunk) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
+
+        chunkNum = nextChunkNum;
+        if (chunkNum) {
+            if (isAlloc) {
+                memset(&chunk, 0, sizeof(chunk));
+            } else {
+                if (retrieveChunk(chunkNum, (unsigned char *)&chunk) == 0) {
+                    abortTranslation(abortOutOfMemory);
+                    return 0;
+                }
+            }
+        }
+    }
+
+    while (nextChunkNum) {
+        if (retrieveChunk(nextChunkNum, (unsigned char *)&chunk) == 0) {
+            abortTranslation(abortOutOfMemory);
+            return 0;
+        }
+
+        freeChunk(nextChunkNum);
+        nextChunkNum = chunk.nextChunkNum;
+    }
+
+    if (storeChunk(pNode->nodeChunkNum, (unsigned char *)pNode) == 0) {
+        abortTranslation(abortOutOfMemory);
+        return 0;
+    }
+
+    return 1;
 }
 

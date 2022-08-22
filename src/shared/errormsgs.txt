@@ -54,3 +54,4 @@ Not a record variable
 Missing variable
 Code segment overflow
 Unimplemented feature
+Identifier too long
