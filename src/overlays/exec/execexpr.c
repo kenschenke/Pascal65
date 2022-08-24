@@ -180,24 +180,24 @@ void executeFactor(EXECUTOR *pExec)
     switch (pExec->token) {
         case tcIdentifier:
             // If the variable is "input", prompt for its value.
-            if (pExec->pNode == pExec->pInputNode) {
+            if (pExec->pNode->nodeChunkNum == pExec->inputNode) {
                 printf(">> At %d: input ? ", currentLineNumber);
                 if (strInput(buffer, sizeof(buffer))) {
                     pExec->userStop = 1;
-                    pExec->pNode->value = 0;
+                    setSymtabInt(pExec->pNode, 0);
                 } else {
-                    pExec->pNode->value = atoi(buffer);
+                    setSymtabInt(pExec->pNode, atoi(buffer));
                 }
             }
 
             // Push the variable's value onto the runtime stack
-            rtstack_push(pExec->runStack, pExec->pNode->value);
+            rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
             getTokenForExecutor(pExec);
             break;
 
         case tcNumber:
             // Push the number's value onto the runtime stack
-            rtstack_push(pExec->runStack, pExec->pNode->value);
+            rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
             getTokenForExecutor(pExec);
             break;
 

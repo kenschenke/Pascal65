@@ -54,6 +54,7 @@ void freeSymtab(CHUNKNUM symtabChunkNum);
 char makeSymtab(SYMTAB *pSymtab);
 
 char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
+int getSymtabInt(SYMTABNODE *pNode);
 char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
 char setSymtabInt(SYMTABNODE *pNode, int value);
 char setSymtabString(SYMTABNODE *pNode, const char *value);

@@ -34,7 +34,7 @@ static const char *symbolStrings[] = {
     "then", "to", "type", "until", "var", "while", "with",
 };
 
-static SYMTABNODE *extractSymtabNode(ICODE *Icode);
+static char extractSymtabNode(ICODE *Icode);
 
 const TTokenCode mcLineMarker = ((TTokenCode) 127);
 
@@ -84,13 +84,14 @@ TOKEN *getNextTokenFromIcode(ICODE *Icode)
         case tcNumber:
         case tcIdentifier:
         case tcString:
-            Icode->pNode = extractSymtabNode(Icode);
-            strcpy(Icode->token.string, Icode->pNode->pString);
+            extractSymtabNode(Icode);
+            memset(Icode->token.string, 0, sizeof(Icode->token.string));
+            retrieveChunk(Icode->symtabNode.nameChunkNum, (unsigned char *)Icode->token.string);
             break;
 
         default:
             // Special token or reserved word
-            Icode->pNode = NULL;
+            // Icode->pNode = NULL;
             strcpy(Icode->token.string, symbolStrings[code]);
             break;
     }
@@ -104,16 +105,14 @@ void gotoIcodePosition(ICODE *Icode, unsigned position)
     Icode->cursor = Icode->pCode + position;
 }
 
-static SYMTABNODE *extractSymtabNode(ICODE *Icode)
+static char extractSymtabNode(ICODE *Icode)
 {
-    extern SYMTAB **vpSymtabs;
-    short xSymtab, xNode;
+    CHUNKNUM chunkNum;
 
-    memcpy(&xSymtab, Icode->cursor, sizeof(short));
-    memcpy(&xNode, Icode->cursor + sizeof(short), sizeof(short));
-    Icode->cursor += sizeof(short) + sizeof(short);
+    memcpy(&chunkNum, Icode->cursor, sizeof(CHUNKNUM));
+    Icode->cursor += sizeof(CHUNKNUM);
 
-    return getSymtabNode(vpSymtabs[xSymtab], xNode);
+    return retrieveChunk(chunkNum, (unsigned char *)&Icode->symtabNode);
 }
 
 void insertLineMarker(ICODE *Icode)
@@ -184,20 +183,13 @@ ICODE *makeIcodeFrom(ICODE *other)
 
 void putSymtabNodeToIcode(ICODE *Icode, SYMTABNODE *pNode)
 {
-    short xSymtab;
-    short xNode;
-
     if (errorCount > 0) {
         return;
     }
 
-    xSymtab = pNode->xSymtab;
-    xNode = pNode->xNode;
-
-    checkIcodeBounds(Icode, sizeof(short) + sizeof(short));
-    memcpy(Icode->cursor, &xSymtab, sizeof(short));
-    memcpy(Icode->cursor + sizeof(short), &xNode, sizeof(short));
-    Icode->cursor += sizeof(short) + sizeof(short);
+    checkIcodeBounds(Icode, sizeof(CHUNKNUM));
+    memcpy(Icode->cursor, &pNode->nodeChunkNum, sizeof(CHUNKNUM));
+    Icode->cursor += sizeof(CHUNKNUM);
 }
 
 void putTokenToIcode(ICODE *Icode, TTokenCode tc)

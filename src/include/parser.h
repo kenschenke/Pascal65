@@ -28,8 +28,8 @@ void parseSimpleExpression(SCANNER *scanner, ICODE *Icode);
 void parseTerm(SCANNER *scanner, ICODE *Icode);
 void parseFactor(SCANNER *scanner, ICODE *Icode);
 
-SYMTABNODE *enterGlobalSymtab(const char *pString);
+char enterGlobalSymtab(const char *pString, SYMTABNODE *node);
 void getTokenAppend(SCANNER *scanner, ICODE *Icode);
-SYMTABNODE *searchGlobalSymtab(const char *pString);
+char searchGlobalSymtab(const char *pString, SYMTABNODE *node);
 
 #endif // end of PARSER_H

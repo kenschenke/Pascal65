@@ -23,7 +23,7 @@ void getTokenForExecutor(EXECUTOR *pExec)
 {
     pExec->pToken = getNextTokenFromIcode(pGlobalIcode);
     pExec->token = pExec->pToken->code;
-    pExec->pNode = pGlobalIcode->pNode;
+    pExec->pNode = &pGlobalIcode->symtabNode;
 }
 
 RTSTACK *rtstack_init(void)
@@ -54,6 +54,9 @@ void rtstack_push(RTSTACK *pStack, int value)
 
 EXECUTOR *executorInit(void)
 {
+    SYMTAB symtab;
+    SYMTABNODE node;
+
     EXECUTOR *pExec = malloc(sizeof(EXECUTOR));
     if (pExec == NULL) {
         runtimeError(rteOutOfMemory);
@@ -67,8 +70,13 @@ EXECUTOR *executorInit(void)
         return NULL;
     }
 
-    pExec->pInputNode = searchSymtab(pGlobalSymtab, "input");
-    pExec->pOutputNode = searchSymtab(pGlobalSymtab, "output");
+    retrieveChunk(globalSymtab, (unsigned char *)&symtab);
+
+    searchSymtab(&symtab, &node, "input");
+    pExec->inputNode = node.nodeChunkNum;
+
+    searchSymtab(&symtab, &node, "output");
+    pExec->outputNode = node.nodeChunkNum;
 
     return pExec;
 }

@@ -65,19 +65,18 @@ void parseTerm(SCANNER *scanner, ICODE *Icode)
 
 void parseFactor(SCANNER *scanner, ICODE *Icode)
 {
-    SYMTABNODE *pNode;
+    SYMTABNODE node;
 
     switch (scanner->token.code) {
         case tcIdentifier:
             // Search for the identifier.  If found, append the
             // symbol table node handle to the icode.  If not
             // found, enter it and flag an undefined identifier error.
-            pNode = searchGlobalSymtab(scanner->token.string);
-            if (pNode) {
-                putSymtabNodeToIcode(Icode, pNode);
+            if (searchGlobalSymtab(scanner->token.string, &node) == 1) {
+                putSymtabNodeToIcode(Icode, &node);
             } else {
                 Error(errUndefinedIdentifier);
-                enterGlobalSymtab(scanner->token.string);
+                enterGlobalSymtab(scanner->token.string, &node);
             }
 
             getTokenAppend(scanner, Icode);
@@ -87,12 +86,11 @@ void parseFactor(SCANNER *scanner, ICODE *Icode)
             // Search for the number and enter it if necessary.
             // See the number's value in the symbol table node.
             // Append the symbol table node handle to the icode.
-            pNode = searchGlobalSymtab(scanner->token.string);
-            if (!pNode) {
-                pNode = enterGlobalSymtab(scanner->token.string);
-                pNode->value = scanner->token.value.integer;
+            if (searchGlobalSymtab(scanner->token.string, &node) == 0) {
+                enterGlobalSymtab(scanner->token.string, &node);
+                setSymtabInt(&node, scanner->token.value.integer);
             }
-            putSymtabNodeToIcode(Icode, pNode);
+            putSymtabNodeToIcode(Icode, &node);
 
             getTokenAppend(scanner, Icode);
             break;

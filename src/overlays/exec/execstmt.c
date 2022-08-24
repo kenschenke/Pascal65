@@ -12,6 +12,7 @@
 
 #include <exec.h>
 #include <ovrlcommon.h>
+#include <string.h>
 
 void executeStatement(EXECUTOR *pExec)
 {
@@ -26,7 +27,9 @@ void executeStatement(EXECUTOR *pExec)
 void executeAssignment(EXECUTOR *pExec)
 {
     char message[MAX_LINE_LEN+1];
-    SYMTABNODE *pTargetNode = pExec->pNode;
+    SYMTABNODE targetNode;
+
+    memcpy(&targetNode, pExec->pNode, sizeof(SYMTABNODE));
 
     getTokenForExecutor(pExec);     // :=
     getTokenForExecutor(pExec);     // first token of expression
@@ -34,13 +37,13 @@ void executeAssignment(EXECUTOR *pExec)
     // Execute the expression and pop its value into the
     // target variable's symbol table node
     executeExpression(pExec);
-    pTargetNode->value = rtstack_pop(pExec->runStack);
+    setSymtabInt(&targetNode, rtstack_pop(pExec->runStack));
 
     // If the target variable is "output", print its value
     // preceded by the current source line number
-    if (pTargetNode == pExec->pOutputNode) {
+    if (targetNode.nodeChunkNum == pExec->outputNode) {
         sprintf(message, ">> At %d: output = %d", currentLineNumber,
-            pTargetNode->value);
+            getSymtabInt(&targetNode));
         outputLine(message);
     }
 }

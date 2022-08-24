@@ -17,6 +17,7 @@
 #include <icode.h>
 #include <error.h>
 #include <symtab.h>
+#include <chunks.h>
 
 #define RUNTIME_STACKSIZE 32
 
@@ -38,10 +39,10 @@ typedef struct {
     TTokenCode token;   // code of current token
     SYMTABNODE *pNode;  // ptr to symtab node
 
-    // Pointers to the special "input" and "output"
+    // Chunk numbers for the special "input" and "output"
     // symbol table nodes entered by the parser.
-    SYMTABNODE *pInputNode;
-    SYMTABNODE *pOutputNode;
+    CHUNKNUM inputNode;
+    CHUNKNUM outputNode;
 } EXECUTOR;
 
 // Icode

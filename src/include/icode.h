@@ -23,7 +23,7 @@ extern const TTokenCode mcLineMarker;
 typedef struct {
     char *pCode;
     char *cursor;
-    SYMTABNODE *pNode;
+    SYMTABNODE symtabNode;
     TOKEN token;
 } ICODE;
 

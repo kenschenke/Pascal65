@@ -16,17 +16,16 @@
 
 void parseAssignment(SCANNER *scanner, ICODE *Icode)
 {
-    SYMTABNODE *pTargetNode;
+    SYMTABNODE targetNode;
     
     // Search for the target variable's identifier and enter it
     // if necessary.  Append the symbol table node handle
     // to the icode.
-    pTargetNode = searchGlobalSymtab(scanner->token.string);
-    if (!pTargetNode) {
-        pTargetNode = enterGlobalSymtab(scanner->token.string);
+    if (searchGlobalSymtab(scanner->token.string, &targetNode) == 0) {
+        enterGlobalSymtab(scanner->token.string, &targetNode);
     }
 
-    putSymtabNodeToIcode(Icode, pTargetNode);
+    putSymtabNodeToIcode(Icode, &targetNode);
     getTokenAppend(scanner, Icode);
 
     // :=

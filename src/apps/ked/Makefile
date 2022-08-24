@@ -23,7 +23,7 @@ SHAREDSRCDIR = ../../shared
 c64_CFLAGS =
 c128_CFLAGS =
 mega65_CFLAGS = -D __MEGA65__ -I ../../include
-CFLAGS = $($(TARGET)_CFLAGS) -I ../../mega65-libc/include
+CFLAGS = $($(TARGET)_CFLAGS) -O -I ../../mega65-libc/include
 ASFLAGS = --asm-include-dir ../../asminc
 LDFLAGS =
 

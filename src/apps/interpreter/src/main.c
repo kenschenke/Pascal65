@@ -46,6 +46,7 @@ void main()
     initBlockStorage();
 
     // load the parser
+    printf("Loading parser module\n");
     if (loadfile("interpreter.1")) {
         initCommon();
 
@@ -61,13 +62,13 @@ void main()
         printf("Errors found in parsing -- exiting\n");
         return;
     }
-    convertAllSymtabs();
+    // convertAllSymtabs();
     
     printf("Loading executor module\n");
     if (loadfile("interpreter.2")) {
         pExec = executorInit();
         executorGo(pExec);
-        freeAllSymtabs();
+        // freeAllSymtabs();
 
         executorFree(pExec);
     }

@@ -168,6 +168,17 @@ static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer)
     freeChunk(nodeChunkNum);
 }
 
+int getSymtabInt(SYMTABNODE *pNode) {
+    int value;
+
+    if (pNode->valueType != valInteger) {
+        return 0;
+    }
+
+    memcpy(&value, pNode->value, sizeof(int));
+    return value;
+}
+
 char makeSymtab(SYMTAB *pSymtab)
 {
     CHUNKNUM chunkNum;
@@ -179,6 +190,7 @@ char makeSymtab(SYMTAB *pSymtab)
     pSymtab->symtabChunkNum = chunkNum;
     pSymtab->cntNodes = 0;
     pSymtab->cntNodes = 0;
+    pSymtab->rootChunkNum = 0;
     pSymtab->xSymtab = cntSymtabs++;
 
     pSymtab->nextSymtabChunk = firstSymtabChunk;

@@ -18,9 +18,15 @@
 
 static void getToken(SCANNER *scanner);
 
-SYMTABNODE *enterGlobalSymtab(const char *pString)
+char enterGlobalSymtab(const char *pString, SYMTABNODE *node)
 {
-    return enterSymtab(pGlobalSymtab, pString);
+    SYMTAB symtab;
+
+    if (retrieveChunk(globalSymtab, (unsigned char *)&symtab) == 0) {
+        return 0;
+    }
+
+    return enterSymtab(&symtab, node, pString);
 }
 
 static void getToken(SCANNER *scanner)
@@ -37,10 +43,11 @@ void getTokenAppend(SCANNER *scanner, ICODE *Icode)
 void parse(SCANNER *scanner)
 {
     int i;
+    SYMTABNODE inputNode, outputNode;
 
     for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
-    enterGlobalSymtab("input");
-    enterGlobalSymtab("output");
+    enterGlobalSymtab("input", &inputNode);
+    enterGlobalSymtab("output", &outputNode);
 
     getTokenAppend(scanner, pGlobalIcode);
 
@@ -97,7 +104,13 @@ void parse(SCANNER *scanner)
     // printf("%20d syntax errors.\n", errorCount);
 }
 
-SYMTABNODE *searchGlobalSymtab(const char *pString)
+char searchGlobalSymtab(const char *pString, SYMTABNODE *node)
 {
-    return searchSymtab(pGlobalSymtab, pString);
+    SYMTAB symtab;
+
+    if (retrieveChunk(globalSymtab, (unsigned char *)&symtab) == 0) {
+        return 0;
+    }
+
+    return searchSymtab(&symtab, node, pString);
 }
