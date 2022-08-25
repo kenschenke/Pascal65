@@ -4,6 +4,7 @@
 #include <icode.h>
 #include <tests.h>
 
+void testIcodeGotoPosition(void);
 void testIcodePosition(void);
 void testIcodeSymtabNode(void);
 void testIcodeToken(void);

@@ -27,6 +27,9 @@ int main()
     testIcodePosition();
 
     initBlockStorage();
+    testIcodeGotoPosition();
+
+    initBlockStorage();
     testIcodeToken();
 
     initBlockStorage();
