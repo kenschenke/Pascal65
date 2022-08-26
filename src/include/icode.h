@@ -17,12 +17,23 @@
 #include <scanner.h>
 #include <symtab.h>
 #include <misc.h>
+#include <chunks.h>
 
 extern const TTokenCode mcLineMarker;
 
+#define ICODE_CHUNK_LEN (CHUNK_LEN - sizeof(CHUNKNUM))
+
 typedef struct {
-    char *pCode;
-    char *cursor;
+    CHUNKNUM nextChunk;
+    unsigned char data[ICODE_CHUNK_LEN];
+} ICODE_CHUNK;
+
+typedef struct {
+    CHUNKNUM firstChunkNum;
+    CHUNKNUM currentChunkNum;
+    unsigned posGlobal;
+    unsigned posChunk;
+    ICODE_CHUNK chunk;
     SYMTABNODE symtabNode;
     TOKEN token;
 } ICODE;
