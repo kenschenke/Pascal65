@@ -50,7 +50,7 @@ void main()
     if (loadfile("interpreter.1")) {
         initCommon();
 
-        tinBuf = tin_open("expr1.in", abortSourceFileOpenFailed);
+        tinBuf = tin_open("input.pas", abortSourceFileOpenFailed);
         scanner.pTinBuf = tinBuf;
         parse(&scanner);
         tin_close(tinBuf);

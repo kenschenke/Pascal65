@@ -17,10 +17,25 @@
 #include <icode.h>
 
 void parse(SCANNER *scanner);
+void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
+void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
+void resync(SCANNER *scanner, const TTokenCode *pList1,
+    const TTokenCode *pList2,
+    const TTokenCode *pList3);
 
 // Statements
 void parseAssignment(SCANNER *scanner, ICODE *Icode);
 void parseStatement(SCANNER *scanner, ICODE *Icode);
+void parseStatementList(SCANNER *scanner, ICODE *Icode, TTokenCode terminator);
+
+void parseREPEAT(SCANNER *scanner, ICODE *Icode);
+void parseWHILE(SCANNER *scanner, ICODE *Icode);
+void parseIF(SCANNER *scanner, ICODE *Icode);
+void parseFOR(SCANNER *scanner, ICODE *Icode);
+void parseCASE(SCANNER *scanner, ICODE *Icode);
+void parseCaseBranch(SCANNER *scanner, ICODE *Icode);
+void parseCaseLabel(SCANNER *scanner, ICODE *Icode);
+void parseCompound(SCANNER *scanner, ICODE *Icode);
 
 // Expressions
 void parseExpression(SCANNER *scanner, ICODE *Icode);

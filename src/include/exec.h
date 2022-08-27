@@ -54,7 +54,10 @@ void executorGoto(EXECUTOR *pExec, unsigned location);
 unsigned executorCurrentLocation(EXECUTOR *pExec);
 
 // Statements
+void executeCompound(EXECUTOR *pExec);
+void executeREPEAT(EXECUTOR *pExec);
 void executeStatement(EXECUTOR *pExec);
+void executeStatementList(EXECUTOR *pExec, TTokenCode terminator);
 void executeAssignment(EXECUTOR *pExec);
 
 // Expressions

@@ -15,8 +15,27 @@
 #include <error.h>
 #include <common.h>
 #include <symtab.h>
+#include <parscommon.h>
 
 static void getToken(SCANNER *scanner);
+
+void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
+    // Get another token only if the current one matches tc
+    if (tc == scanner->token.code) {
+        getToken(scanner);
+    } else {
+        Error(ec);
+    }
+}
+
+void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
+    // Get another token only if the current one matches tc.
+    if (tc == scanner->token.code) {
+        getTokenAppend(scanner, pGlobalIcode);
+    } else {
+        Error(ec);
+    }
+}
 
 char enterGlobalSymtab(const char *pString, SYMTABNODE *node)
 {
@@ -102,6 +121,40 @@ void parse(SCANNER *scanner)
 
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);
+}
+
+void resync(SCANNER *scanner,
+                    const TTokenCode *pList1,
+                    const TTokenCode *pList2,
+                    const TTokenCode *pList3) {
+    TErrorCode errorCode;
+
+    // Is the current token in one of the lists?
+    char errorFlag = !tokenIn(scanner->token.code, pList1) &&
+                    !tokenIn(scanner->token.code, pList2) &&
+                    !tokenIn(scanner->token.code, pList3);
+    
+    if (errorFlag) {
+        // Nope.  Flag it as an error.
+        errorCode = scanner->token.code == tcEndOfFile ?
+            errUnexpectedEndOfFile : errUnexpectedToken;
+        Error(errorCode);
+    }
+
+    // Skip tokens
+    while (!tokenIn(scanner->token.code, pList1) &&
+        !tokenIn(scanner->token.code, pList2) &&
+        !tokenIn(scanner->token.code, pList3) &&
+        scanner->token.code != tcPeriod &&
+        scanner->token.code != tcEndOfFile) {
+        getToken(scanner);
+    }
+
+    // Flag an unexpected end of file (if haven't already)
+    if ((scanner->token.code == tcEndOfFile) &&
+        (errorCode != errUnexpectedEndOfFile)) {
+        Error(errUnexpectedEndOfFile);
+    }
 }
 
 char searchGlobalSymtab(const char *pString, SYMTABNODE *node)

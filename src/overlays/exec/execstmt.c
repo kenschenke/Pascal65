@@ -20,8 +20,26 @@ void executeStatement(EXECUTOR *pExec)
         ++pExec->stmtCount;
     }
 
-    // Only assignment statements for now.
-    executeAssignment(pExec);
+    switch (pExec->token) {
+        case tcIdentifier: executeAssignment(pExec); break;
+        case tcREPEAT: executeREPEAT(pExec); break;
+        case tcBEGIN: executeCompound(pExec); break;
+
+        case tcWHILE:
+        case tcIF:
+        case tcFOR:
+        case tcCASE:
+            runtimeError(rteUnimplementedRuntimeFeature);
+            break;
+    }
+}
+
+void executeStatementList(EXECUTOR *pExec, TTokenCode terminator) {
+    // Look to execute statements and skip semicolons
+    do {
+        executeStatement(pExec);
+        while (pExec->token == tcSemicolon) getTokenForExecutor(pExec);
+    } while (pExec->token != terminator);
 }
 
 void executeAssignment(EXECUTOR *pExec)
@@ -46,5 +64,34 @@ void executeAssignment(EXECUTOR *pExec)
             getSymtabInt(&targetNode));
         outputLine(message);
     }
+}
+
+void executeREPEAT(EXECUTOR *pExec) {
+    unsigned atLoopStart = executorCurrentLocation(pExec);
+
+    do {
+        getTokenForExecutor(pExec);
+
+        // <stmt-list> UNTIL
+        executeStatementList(pExec, tcUNTIL);
+
+        // <expr>
+        getTokenForExecutor(pExec);
+        executeExpression(pExec);
+
+        // Decide whether or not to branch back to the loop start.
+        if (rtstack_pop(pExec->runStack) == 0) {
+            executorGoto(pExec, atLoopStart);
+        }
+    } while (executorCurrentLocation(pExec) == atLoopStart);
+}
+
+void executeCompound(EXECUTOR *pExec) {
+    getTokenForExecutor(pExec);
+
+    // <stmt-list> END
+    executeStatementList(pExec, tcEND);
+
+    getTokenForExecutor(pExec);
 }
 

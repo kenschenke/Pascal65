@@ -13,25 +13,28 @@
 #include <parser.h>
 #include <error.h>
 #include <icode.h>
+#include <parscommon.h>
 
 void parseExpression(SCANNER *scanner, ICODE *Icode)
 {
+    // Parse the first simple expression
     parseSimpleExpression(scanner, Icode);
 
     // If we now see a relational operator,
     // parse a second simple expression.
-    if (scanner->token.code == tcEqual || scanner->token.code == tcNe ||
-        scanner->token.code == tcLt    || scanner->token.code == tcGt ||
-        scanner->token.code == tcLe    || scanner->token.code == tcGe) {
+    if (tokenIn(scanner->token.code, tlRelOps)) {
         getTokenAppend(scanner, Icode);
         parseSimpleExpression(scanner, Icode);
     }
+
+    // Make sure the expression ended properly.
+    resync(scanner, tlExpressionFollow, tlStatementFollow, tlStatementStart);
 }
 
 void parseSimpleExpression(SCANNER *scanner, ICODE *Icode)
 {
     // Unary + or -
-    if (scanner->token.code == tcPlus || scanner->token.code == tcMinus) {
+    if (tokenIn(scanner->token.code, tlUnaryOps)) {
         getTokenAppend(scanner, Icode);
     }
 
@@ -39,9 +42,7 @@ void parseSimpleExpression(SCANNER *scanner, ICODE *Icode)
     parseTerm(scanner, Icode);
 
     // Loop to parse subsequent additive operators and terms
-    while (scanner->token.code == tcPlus ||
-            scanner->token.code == tcMinus ||
-            scanner->token.code == tcOR) {
+    while (tokenIn(scanner->token.code, tlAddOps)) {
         getTokenAppend(scanner, Icode);
         parseTerm(scanner, Icode);
     }
@@ -53,11 +54,7 @@ void parseTerm(SCANNER *scanner, ICODE *Icode)
     parseFactor(scanner, Icode);
 
     // Loop to parse subsequent multiplicative operators and factors
-    while (scanner->token.code == tcStar ||
-            scanner->token.code == tcSlash ||
-            scanner->token.code == tcDIV ||
-            scanner->token.code == tcMOD ||
-            scanner->token.code == tcAND) {
+    while (tokenIn(scanner->token.code, tlMulOps)) {
         getTokenAppend(scanner, Icode);
         parseFactor(scanner, Icode);
     }
