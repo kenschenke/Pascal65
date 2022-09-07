@@ -85,7 +85,7 @@ void parseFactor(SCANNER *scanner, ICODE *Icode)
             // Append the symbol table node handle to the icode.
             if (searchGlobalSymtab(scanner->token.string, &node) == 0) {
                 enterGlobalSymtab(scanner->token.string, &node);
-                setSymtabInt(&node, scanner->token.value.integer);
+                // setSymtabInt(&node, scanner->token.value.integer);
             }
             putSymtabNodeToIcode(Icode, &node);
 

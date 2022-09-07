@@ -14,31 +14,87 @@
 #define SYMTAB_H
 
 #include <chunks.h>
+#include <misc.h>
 
 typedef struct STRVALCHUNK {
     CHUNKNUM nextChunkNum;
     char value[CHUNK_LEN - 2];
 } STRVALCHUNK;
 
-enum TSymtabValue {
-    valInteger,
-    valString,
-    valLong,
-};
+// How an identifier is defined
+
+typedef enum {
+    dcUndefined,
+    dcConstant, dcType, dcVariable, dcField,
+    dcValueParm, dcVarParm,
+    dcProgram, dcProcedure, dcFunction,
+} TDefnCode;
+
+// For procedures, functions, and standard routines
+
+typedef enum {
+    rcDeclared, rcForward,
+    rcRead, rcReadln, rcWrite, rcWriteln,
+    rcAbs, rcArctan, rcChr, rcCos, rcEof, rcEoln,
+    rcExp, rcLn, rcOdd, rcOrd, rcPred, rcRound,
+    rcSin, rcSqr, rcSqrt, rcSucc, rcTrunc,
+} TRoutineCode;
+
+// Local identifier lists structure.
+
+typedef struct {
+    CHUNKNUM parmIds;
+    CHUNKNUM constantIds;
+    CHUNKNUM typeIds;
+    CHUNKNUM variableIds;
+    CHUNKNUM routineIds;
+} LOCALIDS;
+
+// Definition structure
+
+typedef struct {
+    TDefnCode how;  // the identifier was defined
+
+    union {
+
+        // Constant
+        struct {
+            TDataValue value;
+        } constant;
+
+        // Procedure, function, or standard routine
+        struct {
+            TRoutineCode which;             // routine code
+            int          parmCount;         // count of parameters
+            int          totalParmSize;     // total byte size of parms
+            int          totalLocalSize;    // total byte size of locals
+            LOCALIDS     locals;            // local identifiers
+            CHUNKNUM     symtab;            // chunk number of local symtab
+            CHUNKNUM     Icode;             // chunknum of routine's icode
+        } routine;
+
+        // Variable, record field, or parameter
+        struct {
+            int offset;     // vars and params: sequence count
+                            // fields: byte offset in record
+        } data;
+    };
+
+    char unused;  // pad to 23 bytes
+} DEFN;
 
 typedef struct SYMTABNODE {
     CHUNKNUM nodeChunkNum;
     CHUNKNUM leftChunkNum, rightChunkNum;
     CHUNKNUM nameChunkNum;
-    short xSymtab;
-    short xNode;
-    char valueType;  // TSymtabValue
-    // Value:
-    //    Int: first two bytes are value, last two bytes ignored
-    //    String: first two bytes are strlen, last two bytes are chunkNum of value
-    //    Long: All four bytes are 32-bit integer
-    unsigned char value[4];
-    char unused[CHUNK_LEN - 17];
+
+    CHUNKNUM nextNode;   // next sibling node in chain
+    CHUNKNUM defnChunk;  // definition info
+    CHUNKNUM typeChunk;  // type info
+    int level;   // nesting level
+    int labelIndex;  // index for code label
+
+    char unused[CHUNK_LEN - 16];
 } SYMTABNODE;
 
 typedef struct SYMTAB {
@@ -53,10 +109,10 @@ typedef struct SYMTAB {
 void freeSymtab(CHUNKNUM symtabChunkNum);
 char makeSymtab(SYMTAB *pSymtab);
 
-char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
-int getSymtabInt(SYMTABNODE *pNode);
+void freeDefn(DEFN *pDefn);
+
+char enterNew(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
+char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
 char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
-char setSymtabInt(SYMTABNODE *pNode, int value);
-char setSymtabString(SYMTABNODE *pNode, const char *value);
 
 #endif // end of SYMTAB_H

@@ -55,13 +55,13 @@ void executeAssignment(EXECUTOR *pExec)
     // Execute the expression and pop its value into the
     // target variable's symbol table node
     executeExpression(pExec);
-    setSymtabInt(&targetNode, rtstack_pop(pExec->runStack));
+    // setSymtabInt(&targetNode, rtstack_pop(pExec->runStack));
 
     // If the target variable is "output", print its value
     // preceded by the current source line number
     if (targetNode.nodeChunkNum == pExec->outputNode) {
-        sprintf(message, ">> At %d: output = %d", currentLineNumber,
-            getSymtabInt(&targetNode));
+        // sprintf(message, ">> At %d: output = %d", currentLineNumber,
+        //     getSymtabInt(&targetNode));
         outputLine(message);
     }
 }

@@ -45,4 +45,6 @@ void getStringToken(TOKEN *token, SCANNER *scanner)
     
     *ps++ = '\'';
     *ps = 0;
+
+    token->code = tcString;
 }

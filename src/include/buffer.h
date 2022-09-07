@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <error.h>
 
-#define MAX_LINE_LEN 40
+#define MAX_LINE_LEN 80
 
 extern short currentLineNumber;
 extern char eofChar;

@@ -45,5 +45,6 @@ void getNumberToken(TOKEN *token, SCANNER *scanner)
 
     *ps = 0;
     token->value.integer = value;
+    token->type = tyInteger;
     token->code = countErrorFlag ? tcError : tcNumber;
 }

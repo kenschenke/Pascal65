@@ -184,20 +184,20 @@ void executeFactor(EXECUTOR *pExec)
                 printf(">> At %d: input ? ", currentLineNumber);
                 if (strInput(buffer, sizeof(buffer))) {
                     pExec->userStop = 1;
-                    setSymtabInt(pExec->pNode, 0);
+                    // setSymtabInt(pExec->pNode, 0);
                 } else {
-                    setSymtabInt(pExec->pNode, atoi(buffer));
+                    // setSymtabInt(pExec->pNode, atoi(buffer));
                 }
             }
 
             // Push the variable's value onto the runtime stack
-            rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
+            // rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
             getTokenForExecutor(pExec);
             break;
 
         case tcNumber:
             // Push the number's value onto the runtime stack
-            rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
+            // rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
             getTokenForExecutor(pExec);
             break;
 

@@ -15,13 +15,35 @@
 
 #include <scanner.h>
 #include <icode.h>
+#include <types.h>
 
 void parse(SCANNER *scanner);
+char findSymtabNode(SYMTABNODE *pNode, const char *identifier);
 void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
 void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
 void resync(SCANNER *scanner, const TTokenCode *pList1,
     const TTokenCode *pList2,
     const TTokenCode *pList3);
+
+// Declarations
+int arraySize(TTYPE *pArrayType);
+void parseArrayType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum);
+void parseDeclarations(SCANNER *scanner, SYMTABNODE *routineSymtab);
+void parseConstant(SCANNER *scanner, SYMTABNODE *constId);
+void parseConstantDefinitions(SCANNER *scanner, SYMTABNODE *routineSymtab);
+void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum);
+void parseFieldDeclarations(SCANNER *scanner, TTYPE *pRecordType, int offset);
+CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLastId);
+void parseIdentifierConstant(SCANNER *scanner, SYMTABNODE *id1, TTokenCode sign);
+void parseIdentifierType(SCANNER *scanner);
+void parseIndexType(SCANNER *scanner, TTYPE *pArrayType);
+void parseRecordType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum);
+void parseSubrangeLimit(SCANNER *scanner, SYMTABNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum);
+void parseSubrangeType(SCANNER *scanner, SYMTABNODE *pMinId, CHUNKNUM *newTypeChunkNum);
+void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId);
+void parseTypeSpec(SCANNER *scanner, CHUNKNUM *newTypeChunkNum);
+void parseVariableDeclarations(SCANNER *scanner, SYMTABNODE *routineSymtab);
+void parseVarOrFieldDecls(SCANNER *scanner, SYMTABNODE *routineSymtab, TTYPE *pRecordType, int offset);
 
 // Statements
 void parseAssignment(SCANNER *scanner, ICODE *Icode);
@@ -44,6 +66,7 @@ void parseTerm(SCANNER *scanner, ICODE *Icode);
 void parseFactor(SCANNER *scanner, ICODE *Icode);
 
 char enterGlobalSymtab(const char *pString, SYMTABNODE *node);
+void getToken(SCANNER *scanner);
 void getTokenAppend(SCANNER *scanner, ICODE *Icode);
 char searchGlobalSymtab(const char *pString, SYMTABNODE *node);
 

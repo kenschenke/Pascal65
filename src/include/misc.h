@@ -13,6 +13,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include <chunks.h>
+
 typedef enum {
     ccLetter, ccDigit, ccSpecial, ccQuote, ccWhiteSpace,
     ccEndOfFile, ccError,
@@ -40,7 +42,7 @@ typedef enum {
 typedef union {
     int integer;
     char character;
-    char *pString;
+    CHUNKNUM stringChunkNum;
 } TDataValue;
 
 #endif // end of MISC_H

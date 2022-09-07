@@ -15,11 +15,24 @@
 
 #include <symtab.h>
 #include <icode.h>
+#include <misc.h>
 
 extern short cntSymtabs;
 extern CHUNKNUM firstSymtabChunk;
 extern CHUNKNUM globalSymtab;
 extern ICODE *pGlobalIcode;
+
+extern const TTokenCode tlDeclarationStart[], tlDeclarationFollow[],
+    tlIdentifierStart[], tlIdentifierFollow[],
+    tlSublistFollow[], tlFieldDeclFollow[];
+
+extern const TTokenCode tlEnumConstStart[], tlEnumConstFollow[],
+    tlSubrangeLimitFollow[];
+
+extern const TTokenCode tlIndexStart[], tlIndexFollow[],
+    tlIndexListFollow[];
+
+extern const TTokenCode tlSubscriptOrFieldStart[];
 
 extern char isFatalError;       // non-zero if fatal parsing error encountered
 

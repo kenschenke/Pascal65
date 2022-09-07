@@ -16,8 +16,9 @@
 #include <common.h>
 #include <symtab.h>
 #include <parscommon.h>
+#include <string.h>
 
-static void getToken(SCANNER *scanner);
+void getToken(SCANNER *scanner);
 
 void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
     // Get another token only if the current one matches tc
@@ -45,10 +46,21 @@ char enterGlobalSymtab(const char *pString, SYMTABNODE *node)
         return 0;
     }
 
-    return enterSymtab(&symtab, node, pString);
+    return enterSymtab(&symtab, node, pString, dcUndefined);
 }
 
-static void getToken(SCANNER *scanner)
+char findSymtabNode(SYMTABNODE *pNode, const char *identifier) {
+    if (searchGlobalSymtab(identifier, pNode) == 0) {
+        Error(errUndefinedIdentifier);                         // error not found
+        if (enterGlobalSymtab(identifier, pNode) == 0) {       // but enter it anyway
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+void getToken(SCANNER *scanner)
 {
     getNextToken(scanner);
 }
@@ -61,6 +73,26 @@ void getTokenAppend(SCANNER *scanner, ICODE *Icode)
 
 void parse(SCANNER *scanner)
 {
+#if 1
+    int i;
+    SYMTABNODE dummyProgram;
+    DEFN defn;
+    char nameChunk[CHUNK_LEN];
+
+    for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
+    memset(&dummyProgram, 0, sizeof(SYMTABNODE));
+    memset(&defn, 0, sizeof(DEFN));
+    memset(nameChunk, 0, sizeof(nameChunk));
+    memcpy(nameChunk, "DummyProgram", 12);
+    allocChunk(&dummyProgram.defnChunk);
+    allocChunk(&dummyProgram.nameChunkNum);
+    defn.how = dcProgram;
+    storeChunk(dummyProgram.defnChunk, (unsigned char *)&defn);
+    storeChunk(dummyProgram.nameChunkNum, (unsigned char *)nameChunk);
+
+    getToken(scanner);
+    parseDeclarations(scanner, &dummyProgram);
+#else
     int i;
     SYMTABNODE inputNode, outputNode;
 
@@ -107,17 +139,8 @@ void parse(SCANNER *scanner)
         while (scanner->token.code == tcSemicolon) {
             getTokenAppend(scanner, pGlobalIcode);
         }
-
-#if 0
-        // Enter each identifier into the symbol table
-        if (token->code == tcIdentifier) {
-            SYMTABNODE *pNode = searchSymtab(pGlobalSymtab, token->string);
-            if (pNode == NULL) {
-                enterSymtab(pGlobalSymtab, token->string);
-            }
-        }
-#endif
     } while (scanner->token.code != tcPeriod);
+#endif
 
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);
