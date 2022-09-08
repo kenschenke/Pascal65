@@ -53,7 +53,7 @@ void Error(TErrorCode ec)
     }
 
     getMessage(errorMessages[ec]);
-    logError(msgbuf, 0);
+    logError(msgbuf, currentLineNumber);
     if (++errorCount > maxSyntaxErrors) {
         abortTranslation(abortTooManySyntaxErrors);
     }

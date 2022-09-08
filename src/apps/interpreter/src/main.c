@@ -50,7 +50,7 @@ void main()
     if (loadfile("interpreter.1")) {
         initCommon();
 
-        tinBuf = tin_open("input.pas", abortSourceFileOpenFailed);
+        tinBuf = tin_open("declerrs.pas", abortSourceFileOpenFailed);
         scanner.pTinBuf = tinBuf;
         parse(&scanner);
         tin_close(tinBuf);
@@ -90,7 +90,7 @@ void log(const char *module, const char *message)
 
 void logError(const char *message, unsigned lineNumber)
 {
-    printf("*** ERROR: %s\n", message);
+    printf("*** ERROR: %s -- line %d\n", message, lineNumber);
 }
 
 void logFatalError(const char *message)

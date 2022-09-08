@@ -115,7 +115,7 @@ runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii expr1.in input.pas decl.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii expr1.in input.pas decl.pas declerrs.pas
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -125,7 +125,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write expr1.in expr1.in,seq \
 	-write input.pas input.pas,seq \
-	-write decl.pas decl.pas,seq
+	-write decl.pas decl.pas,seq \
+	-write declerrs.pas declerrs.pas,seq
 
 clean:
 	$(RM) $(OBJECTS)
