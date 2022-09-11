@@ -7,9 +7,7 @@
 #include <string.h>
 #include <types.h>
 
-static void copyQuotedString(const char *pString, CHUNKNUM *firstChunk);
-
-static void copyQuotedString(const char *pString, CHUNKNUM *firstChunk) {
+void copyQuotedString(const char *pString, CHUNKNUM *firstChunk) {
     CHUNKNUM chunkNum, nextChunkNum;
     const char *p = pString + 1;
     char isAlloc;  // non-zero if the next chunk is new
@@ -321,10 +319,10 @@ CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordT
                     return 0;
                 }
                 lastId.nextNode = pId.nodeChunkNum;
-                *pLastId = pId.nodeChunkNum;
                 if (storeChunk(*pLastId, (unsigned char *)&lastId) == 0) {
                     return 0;
                 }
+                *pLastId = pId.nodeChunkNum;
             }
         }
 
@@ -337,11 +335,17 @@ CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordT
             do {
                 getToken(scanner);
                 resync(scanner, tlIdentifierStart, tlIdentifierFollow, NULL);
-                if (scanner->token.code == tcComma) Error(errMissingIdentifier);
+                if (scanner->token.code == tcComma) {
+                    Error(errMissingIdentifier);
+                }
             } while (scanner->token.code == tcComma);
-            if (scanner->token.code != tcIdentifier) Error(errMissingIdentifier);
+            if (scanner->token.code != tcIdentifier) {
+                Error(errMissingIdentifier);
+            }
         }
-        else if (scanner->token.code == tcIdentifier) Error(errMissingComma);
+        else if (scanner->token.code == tcIdentifier) {
+            Error(errMissingComma);
+        }
     }
 
     return firstId;

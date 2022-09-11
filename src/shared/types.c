@@ -10,47 +10,32 @@ CHUNKNUM integerType;
 
 static char getType(CHUNKNUM chunkNum, TTYPE *pType);
 
-void checkAssignmentCompatible(CHUNKNUM targetChunk, CHUNKNUM valueChunk, TErrorCode ec) {
-    TTYPE targetType, valueType;
-
-    if (targetChunk == valueChunk) {
+void checkAssignmentCompatible(TTYPE *targetType, TTYPE *valueType, TErrorCode ec) {
+    if (targetType->form == valueType->form &&
+        targetType->typeId == valueType->typeId) {
         return;
-    }
-
-    if (getType(targetChunk, &targetType) == 0 ||
-        getType(valueChunk, &valueType) == 0) {
-        Error(ec);
     }
 
     // Two strings of the same length
 
-    if (targetType.form == fcArray &&
-        valueType.form == fcArray &&
-        targetType.array.elemType == charType &&
-        valueType.array.elemType == charType &&
-        targetType.array.elemCount == valueType.array.elemCount) {
+    if (targetType->form == fcArray &&
+        valueType->form == fcArray &&
+        targetType->array.elemType == charType &&
+        valueType->array.elemType == charType &&
+        targetType->array.elemCount == valueType->array.elemCount) {
         return;
     }
 
     Error(ec);
 }
 
-void checkBoolean(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
-    TTYPE type;
-
-    if (getType(type1Chunk, &type) == 0) {
+void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum) {
+    if (type1ChunkNum != booleanType) {
         Error(errIncompatibleTypes);
     }
 
-    if (type.form != booleanType) {
+    if (type2ChunkNum && type2ChunkNum != booleanType) {
         Error(errIncompatibleTypes);
-    }
-
-    if (type2Chunk) {
-        if (getType(type1Chunk, &type) == 0 ||
-            type.form != booleanType) {
-            Error(errIncompatibleTypes);
-        }
     }
 }
 
@@ -228,6 +213,7 @@ CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId) {
     if (allocChunk(&chunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
     }
+    typeObj.nodeChunkNum = chunkNum;
     if (storeChunk(chunkNum, (unsigned char *)&typeObj) == 0) {
         abortTranslation(abortOutOfMemory);
     }

@@ -92,6 +92,7 @@ void parse(SCANNER *scanner)
 
     getToken(scanner);
     parseDeclarations(scanner, &dummyProgram);
+    parseCompound(scanner, pGlobalIcode);
 #else
     int i;
     SYMTABNODE inputNode, outputNode;

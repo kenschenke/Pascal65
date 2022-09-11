@@ -11,17 +11,8 @@ typedef enum {
 
 extern CHUNKNUM integerType, booleanType, charType, dummyType;
 
-void checkAssignmentCompatible(CHUNKNUM targetChunk, CHUNKNUM valueChunk, TErrorCode ec);
-void checkBoolean(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
-void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
-char initPredefinedTypes(SYMTAB *symtab);
-char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
-CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId);
-CHUNKNUM makeStringType(int length);
-char setType(CHUNKNUM *targetType, CHUNKNUM sourceType);
-void removeType(CHUNKNUM typeChunk);
-
-typedef struct {
+typedef struct TTYPE {
+    CHUNKNUM nodeChunkNum;
     int refCount;
 
     TFormCode form;
@@ -55,8 +46,22 @@ typedef struct {
         } record;
     };
 
-    char unused[CHUNK_LEN - 16];
+    char unused[CHUNK_LEN - 19];
 
 } TTYPE;
+
+#if sizeof(struct TTYPE) != CHUNK_LEN
+#error TTYPE should be CHUNK_LEN bytes in size
+#endif
+
+void checkAssignmentCompatible(TTYPE *targetType, TTYPE *valueType, TErrorCode ec);
+void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum);
+void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
+char initPredefinedTypes(SYMTAB *symtab);
+char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
+CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId);
+CHUNKNUM makeStringType(int length);
+char setType(CHUNKNUM *targetType, CHUNKNUM sourceType);
+void removeType(CHUNKNUM typeChunk);
 
 #endif // end of TYPES_H

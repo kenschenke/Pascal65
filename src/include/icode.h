@@ -23,10 +23,14 @@ extern const TTokenCode mcLineMarker;
 
 #define ICODE_CHUNK_LEN (CHUNK_LEN - sizeof(CHUNKNUM))
 
-typedef struct {
+typedef struct ICODE_CHUNK {
     CHUNKNUM nextChunk;
     unsigned char data[ICODE_CHUNK_LEN];
 } ICODE_CHUNK;
+
+#if sizeof(struct ICODE_CHUNK) != CHUNK_LEN
+#error ICODE_CHUNK should be CHUNK_LEN bytes in size
+#endif
 
 typedef struct {
     CHUNKNUM firstChunkNum;

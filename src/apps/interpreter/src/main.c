@@ -50,7 +50,7 @@ void main()
     if (loadfile("interpreter.1")) {
         initCommon();
 
-        tinBuf = tin_open("declerrs.pas", abortSourceFileOpenFailed);
+        tinBuf = tin_open("synchek2.pas", abortSourceFileOpenFailed);
         scanner.pTinBuf = tinBuf;
         parse(&scanner);
         tin_close(tinBuf);

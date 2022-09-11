@@ -23,7 +23,7 @@ typedef struct {
 } TResWord;
 
 static TResWord rw2[] = {
-    {"do", tcTO}, {"if", tcIF}, {"in", tcIN}, {"of", tcOF},
+    {"do", tcDO}, {"if", tcIF}, {"in", tcIN}, {"of", tcOF},
     {"or", tcOR}, {"to", tcTO}, {NULL},
 };
 

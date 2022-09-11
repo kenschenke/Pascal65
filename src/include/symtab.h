@@ -21,6 +21,10 @@ typedef struct STRVALCHUNK {
     char value[CHUNK_LEN - 2];
 } STRVALCHUNK;
 
+#if sizeof(struct STRVALCHUNK) != CHUNK_LEN
+#error STRVALCHUNK should be CHUNK_LEN bytes in size
+#endif
+
 // How an identifier is defined
 
 typedef enum {
@@ -52,7 +56,7 @@ typedef struct {
 
 // Definition structure
 
-typedef struct {
+typedef struct DEFN {
     TDefnCode how;  // the identifier was defined
 
     union {
@@ -83,6 +87,10 @@ typedef struct {
     char unused;  // pad to 23 bytes
 } DEFN;
 
+#if sizeof(struct DEFN) != CHUNK_LEN
+#error DEFN should be CHUNK_LEN bytes in size
+#endif
+
 typedef struct SYMTABNODE {
     CHUNKNUM nodeChunkNum;
     CHUNKNUM leftChunkNum, rightChunkNum;
@@ -94,8 +102,12 @@ typedef struct SYMTABNODE {
     int level;   // nesting level
     int labelIndex;  // index for code label
 
-    char unused[CHUNK_LEN - 16];
+    char unused[CHUNK_LEN - 18];
 } SYMTABNODE;
+
+#if sizeof(struct SYMTABNODE) != CHUNK_LEN
+#error SYMTABNODE should be CHUNK_LEN bytes in size
+#endif
 
 typedef struct SYMTAB {
     CHUNKNUM symtabChunkNum;
@@ -105,6 +117,10 @@ typedef struct SYMTAB {
     CHUNKNUM nextSymtabChunk;
     char unused[CHUNK_LEN - 10];
 } SYMTAB;
+
+#if sizeof(struct SYMTAB) != CHUNK_LEN
+#error SYMTAB should be CHUNK_LEN bytes in size
+#endif
 
 void freeSymtab(CHUNKNUM symtabChunkNum);
 char makeSymtab(SYMTAB *pSymtab);
