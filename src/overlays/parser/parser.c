@@ -32,7 +32,7 @@ void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
 void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
     // Get another token only if the current one matches tc.
     if (tc == scanner->token.code) {
-        getTokenAppend(scanner, pGlobalIcode);
+        // getTokenAppend(scanner, pGlobalIcode);
     } else {
         Error(ec);
     }
@@ -40,13 +40,7 @@ void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
 
 char enterGlobalSymtab(const char *pString, SYMTABNODE *node)
 {
-    SYMTAB symtab;
-
-    if (retrieveChunk(globalSymtab, (unsigned char *)&symtab) == 0) {
-        return 0;
-    }
-
-    return enterSymtab(&symtab, node, pString, dcUndefined);
+    return enterSymtab(globalSymtab, node, pString, dcUndefined);
 }
 
 char findSymtabNode(SYMTABNODE *pNode, const char *identifier) {
@@ -74,7 +68,7 @@ void getTokenAppend(SCANNER *scanner, ICODE *Icode)
 void parse(SCANNER *scanner)
 {
 #if 1
-    int i;
+#if 0
     SYMTABNODE dummyProgram;
     DEFN defn;
     char nameChunk[CHUNK_LEN];
@@ -89,10 +83,14 @@ void parse(SCANNER *scanner)
     defn.how = dcProgram;
     storeChunk(dummyProgram.defnChunk, (unsigned char *)&defn);
     storeChunk(dummyProgram.nameChunkNum, (unsigned char *)nameChunk);
+#endif
+
+    SYMTABNODE programId;
 
     getToken(scanner);
-    parseDeclarations(scanner, &dummyProgram);
-    parseCompound(scanner, pGlobalIcode);
+    parseProgram(scanner, &programId);
+    // parseDeclarations(scanner, &dummyProgram);
+    // parseCompound(scanner, pGlobalIcode);
 #else
     int i;
     SYMTABNODE inputNode, outputNode;
@@ -183,11 +181,5 @@ void resync(SCANNER *scanner,
 
 char searchGlobalSymtab(const char *pString, SYMTABNODE *node)
 {
-    SYMTAB symtab;
-
-    if (retrieveChunk(globalSymtab, (unsigned char *)&symtab) == 0) {
-        return 0;
-    }
-
-    return searchSymtab(&symtab, node, pString);
+    return searchSymtab(globalSymtab, node, pString);
 }

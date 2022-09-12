@@ -16,14 +16,22 @@
 #include <common.h>
 #include <string.h>
 #include <stdlib.h>
+#include <types.h>
+
+#define MAX_NESTING_LEVEL 8
 
 extern short currentLineNumber;
+
+int currentNestingLevel;
+
+static CHUNKNUM symtabStack[MAX_NESTING_LEVEL];
 
 static int compNodeIdentifier(const char *identifier, CHUNKNUM other);
 // buffer is caller-supplied and is at least CHUNK_LEN in length
 static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer);
 
 static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
+static void setCurrentSymtab(CHUNKNUM symtabChunkNum);
 
 static int compNodeIdentifier(const char *identifier, CHUNKNUM other) {
     char otherIdent[CHUNK_LEN];
@@ -35,18 +43,23 @@ static int compNodeIdentifier(const char *identifier, CHUNKNUM other) {
     return strncmp(identifier, otherIdent, CHUNK_LEN);
 }
 
-char enterNew(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDefnCode dc) {
-    if (searchSymtab(symtab, pNode, identifier)) {
+char enterNew(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc) {
+    if (searchSymtab(symtabChunkNum, pNode, identifier)) {
         Error(errRedefinedIdentifier);
     }
 
-    return enterSymtab(symtab, pNode, identifier, dc);
+    return enterSymtab(symtabChunkNum, pNode, identifier, dc);
 }
 
-char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDefnCode dc) {
+char enterSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc) {
     int comp;
-    CHUNKNUM chunkNum = symtab->rootChunkNum;
+    SYMTAB symtab;
+    CHUNKNUM chunkNum;
     SYMTABNODE node;
+
+    retrieveChunk(symtabChunkNum, (unsigned char *)&symtab);
+
+    chunkNum = symtab.rootChunkNum;
 
     // Loop to search table for insertion point
     node.nodeChunkNum = 0;
@@ -72,7 +85,7 @@ char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDef
 
     // Update the parent chunk to point to this one
     if (node.nodeChunkNum == 0) {
-        symtab->rootChunkNum = pNode->nodeChunkNum;
+        symtab.rootChunkNum = pNode->nodeChunkNum;
     } else {
         // Don't need to retrieve node since it is still
         // populated from the loop.
@@ -88,7 +101,7 @@ char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDef
         }
     }
 
-    if (storeChunk(symtab->symtabChunkNum, (unsigned char *)symtab) == 0) {
+    if (storeChunk(symtab.symtabChunkNum, (unsigned char *)&symtab) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
@@ -156,9 +169,8 @@ void freeSymtab(CHUNKNUM symtabChunkNum) {
 // Buffer is caller-supplied and at least CHUNK_LEN in length
 static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer)
 {
-    CHUNKNUM leftChunkNum, rightChunkNum, stringChunkNum, nameChunkNum, defnChunkNum;
+    CHUNKNUM leftChunkNum, rightChunkNum, nameChunkNum, defnChunkNum;
     SYMTABNODE *pNode = (SYMTABNODE *)buffer;
-    STRVALCHUNK *pStrVal;
     DEFN defn;
 
     if (retrieveChunk(nodeChunkNum, buffer) == 0) {
@@ -187,23 +199,23 @@ static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer)
     freeChunk(nodeChunkNum);
 }
 
-char makeSymtab(SYMTAB *pSymtab)
+char makeSymtab(CHUNKNUM *symtabChunkNum)
 {
-    CHUNKNUM chunkNum;
+    SYMTAB symtab;
 
-    if (allocChunk(&chunkNum) == 0) {
+    if (allocChunk(symtabChunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
     }
 
-    pSymtab->symtabChunkNum = chunkNum;
-    pSymtab->cntNodes = 0;
-    pSymtab->rootChunkNum = 0;
-    pSymtab->xSymtab = cntSymtabs++;
+    symtab.symtabChunkNum = *symtabChunkNum;
+    symtab.cntNodes = 0;
+    symtab.rootChunkNum = 0;
+    symtab.xSymtab = cntSymtabs++;
 
-    pSymtab->nextSymtabChunk = firstSymtabChunk;
-    firstSymtabChunk = chunkNum;
+    symtab.nextSymtabChunk = firstSymtabChunk;
+    firstSymtabChunk = *symtabChunkNum;
 
-    if (storeChunk(chunkNum, (unsigned char *)pSymtab) == 0) {
+    if (storeChunk(*symtabChunkNum, (unsigned char *)&symtab) == 0) {
         return 0;
     }
 
@@ -259,9 +271,14 @@ static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier, TDefnCode 
     return 1;
 }
 
-char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier) {
+char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier) {
     int comp;
-    CHUNKNUM chunkNum = symtab->rootChunkNum;
+    SYMTAB symtab;
+    CHUNKNUM chunkNum;
+
+    retrieveChunk(symtabChunkNum, (unsigned char *)&symtab);
+    
+    chunkNum = symtab.rootChunkNum;
 
     while (chunkNum) {
         if (retrieveChunk(chunkNum, (unsigned char *)pNode) == 0) {
@@ -283,4 +300,73 @@ char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier) {
     }
 
     return chunkNum ? 1 : 0;
+}
+
+void initSymtabs(void) {
+    int i;
+
+    currentNestingLevel = 0;
+    for (i = 1; i < MAX_NESTING_LEVEL; ++i) symtabStack[i] = 0;
+
+    makeSymtab(&globalSymtab);
+
+    symtabStack[0] = globalSymtab;
+
+    initPredefinedTypes(&symtabStack[0]);
+    // initStandardRoutines(&symtabStack[0]);
+}
+
+static void setCurrentSymtab(CHUNKNUM symtabChunkNum) {
+    symtabStack[currentNestingLevel] = symtabChunkNum;
+}
+
+void symtabStackEnterScope(void) {
+    CHUNKNUM chunkNum;
+
+    if (++currentNestingLevel > MAX_NESTING_LEVEL) {
+        Error(errNestingTooDeep);
+        abortTranslation(abortNestingTooDeep);
+    }
+
+    makeSymtab(&chunkNum);
+    setCurrentSymtab(chunkNum);
+}
+
+void symtabExitScope(CHUNKNUM *symtabChunkNum) {
+    *symtabChunkNum = symtabStack[currentNestingLevel--];
+}
+
+void symtabStackFind(const char *pString, SYMTABNODE *pNode) {
+    if (symtabStackSearchAll(pString, pNode) == 0) {
+        Error(errUndefinedIdentifier);
+        enterSymtab(symtabStack[currentNestingLevel], pNode, pString, dcUndefined);
+    }
+}
+
+char symtabStackSearchAll(const char *pString, SYMTABNODE *pNode) {
+    int i;
+
+    for (i = currentNestingLevel; i >= 0; --i) {
+        if (searchSymtab(symtabStack[i], pNode, pString)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+char symtabSearchLocal(SYMTABNODE *pNode, const char *pString) {
+    return searchSymtab(symtabStack[currentNestingLevel], pNode, pString);
+}
+
+char symtabEnterLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc) {
+    return enterSymtab(symtabStack[currentNestingLevel], pNode, pString, dc);
+}
+
+char symtabEnterNewLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc) {
+    return enterNew(symtabStack[currentNestingLevel], pNode, pString, dc);
+}
+
+CHUNKNUM getCurrentSymtab(void) {
+    return symtabStack[currentNestingLevel];
 }

@@ -112,13 +112,11 @@ void parseIndexType(SCANNER *scanner, TTYPE *pArrayType) {
 }
 
 void parseRecordType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
-    SYMTAB recordSymtab;
     TTYPE newType;
 
     *newTypeChunkNum = makeType(fcRecord, 0, 0);
     retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
-    makeSymtab(&recordSymtab);
-    newType.record.symtab = recordSymtab.symtabChunkNum;
+    makeSymtab(&newType.record.symtab);
 
     // Parse field declarations
     getToken(scanner);

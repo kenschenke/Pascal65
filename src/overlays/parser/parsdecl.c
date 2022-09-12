@@ -168,17 +168,12 @@ void parseConstant(SCANNER *scanner, SYMTABNODE *constId) {
 
 void parseConstantDefinitions(SCANNER *scanner, SYMTABNODE *routineSymtab) {
     DEFN defn;
-    SYMTAB global;
     SYMTABNODE constId, lastId;
-
-    if (retrieveChunk(globalSymtab, (unsigned char *)&global) == 0) {
-        return;
-    }
 
     // Loop to parse a list of constant definitions
     // separated by semicolons
     while (scanner->token.code == tcIdentifier) {
-        if (enterNew(&global, &constId, scanner->token.string, dcUndefined) == 0) {
+        if (enterNew(globalSymtab, &constId, scanner->token.string, dcUndefined) == 0) {
             return;
         }
 
@@ -288,7 +283,6 @@ void parseIdentifierConstant(SCANNER *scanner, SYMTABNODE *id1, TTokenCode sign)
 
 CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLastId) {
     DEFN defn;
-    SYMTAB symtab;
     CHUNKNUM firstId = 0;
     SYMTABNODE pId, lastId;
     *pLastId = 0;
@@ -300,10 +294,7 @@ CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordT
         if (routineId != NULL) {
             enterGlobalSymtab(scanner->token.string, &pId);
         } else {
-            if (retrieveChunk(pRecordType->record.symtab, (unsigned char *)&symtab) == 0) {
-                return 0;
-            }
-            enterNew(&symtab, &pId, scanner->token.string, dcUndefined);
+            enterNew(pRecordType->record.symtab, &pId, scanner->token.string, dcUndefined);
         }
 
         // Link newly-declared identifier nodes together

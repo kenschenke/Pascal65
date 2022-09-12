@@ -152,14 +152,12 @@ void parseFactor(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
 }
 
 void parseField(SCANNER *scanner, ICODE *Icode, TTYPE *pType) {
-    SYMTAB symtab;
     SYMTABNODE fieldId;
 
     getTokenAppend(scanner, Icode);
 
     if (scanner->token.code == tcIdentifier && pType->form == fcRecord) {
-        retrieveChunk(pType->record.symtab, (unsigned char *)&symtab);
-        if (!searchSymtab(&symtab, &fieldId, scanner->token.string)) {
+        if (!searchSymtab(pType->record.symtab, &fieldId, scanner->token.string)) {
             fieldId.nodeChunkNum = 0;
             Error(errInvalidField);
         }

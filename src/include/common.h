@@ -17,10 +17,10 @@
 #include <icode.h>
 #include <misc.h>
 
+extern int currentNestingLevel;
 extern short cntSymtabs;
 extern CHUNKNUM firstSymtabChunk;
 extern CHUNKNUM globalSymtab;
-extern ICODE *pGlobalIcode;
 
 extern const TTokenCode tlDeclarationStart[], tlDeclarationFollow[],
     tlIdentifierStart[], tlIdentifierFollow[],
@@ -33,6 +33,12 @@ extern const TTokenCode tlIndexStart[], tlIndexFollow[],
     tlIndexListFollow[];
 
 extern const TTokenCode tlSubscriptOrFieldStart[];
+
+extern const TTokenCode tlProcFuncStart[], tlProcFuncFollow[],
+    tlHeaderFollow[];
+
+extern const TTokenCode tlProgProcIdFollow[], tlFuncIdFollow[],
+    tlActualVarParmFollow[], tlFormalParmsFollow[];
 
 extern char isFatalError;       // non-zero if fatal parsing error encountered
 

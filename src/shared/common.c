@@ -21,7 +21,6 @@
 short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
 CHUNKNUM globalSymtab;
-ICODE *pGlobalIcode;
 char isFatalError;
 
 // Tokens that can start a declaration
@@ -87,22 +86,52 @@ const TTokenCode tlIndexListFollow[] = {
     tcPlus, tcMinus, tcNumber, tcString, tcSemicolon, tcDummy
 };
 
+// Tokens that can start a procedure or function definition
+const TTokenCode tlProcFuncStart[] = {
+    tcPROCEDURE, tcFUNCTION, tcDummy
+};
+
+// Tokens that can follow a procedure or function definition
+const TTokenCode tlProcFuncFollow[] = {
+    tcSemicolon, tcDummy
+};
+
+// Tokens that can follow a routine header
+const TTokenCode tlHeaderFollow[] = {
+    tcSemicolon, tcDummy
+};
+
+// Tokens that can follow a function id in a header
+const TTokenCode tlProgProcIdFollow[] = {
+    tcLParen, tcColon, tcSemicolon, tcDummy
+};
+
+// Tokens that can follow a function id in a header
+const TTokenCode tlFuncIdFollow[] = {
+    tcLParen, tcColon, tcSemicolon, tcDummy
+};
+
+// Tokens than can follow an actual variable parameter
+const TTokenCode tlActualVarParmFollow[] = {
+    tcComma, tcRParen, tcDummy
+};
+
+// Tokens that can follow a formal parameter list
+const TTokenCode tlFormalParmsFollow[] = {
+    tcRParen, tcSemicolon, tcDummy
+};
+
 const TTokenCode tlSubscriptOrFieldStart[] = {
     tcLBracket, tcPeriod, tcDummy
 };
 
 void initCommon(void)
 {
-    SYMTAB symtab;
-
     cntSymtabs = 0;
     firstSymtabChunk = 0;
     isFatalError = 0;
 
-    makeSymtab(&symtab);
-    globalSymtab = symtab.symtabChunkNum;
-    initPredefinedTypes(&symtab);
-    pGlobalIcode = makeIcode();
+    initSymtabs();
 }
 
 char isStopKeyPressed()

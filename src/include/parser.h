@@ -25,6 +25,14 @@ void resync(SCANNER *scanner, const TTokenCode *pList1,
     const TTokenCode *pList2,
     const TTokenCode *pList3);
 
+// Routines
+void parseBlock(SCANNER *scanner, SYMTABNODE *pRoutineId);
+void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize);
+void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc);
+void parseProgram(SCANNER *scanner, SYMTABNODE *pProgramId);
+void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId);
+void parseSubroutine(SCANNER *scanner, SYMTABNODE *pRoutineId);
+
 // Declarations
 int arraySize(TTYPE *pArrayType);
 void copyQuotedString(const char *pString, CHUNKNUM *firstChunk);

@@ -16,6 +16,8 @@
 #include <chunks.h>
 #include <misc.h>
 
+struct ICODE;
+
 typedef struct STRVALCHUNK {
     CHUNKNUM nextChunkNum;
     char value[CHUNK_LEN - 2];
@@ -74,7 +76,7 @@ typedef struct DEFN {
             int          totalLocalSize;    // total byte size of locals
             LOCALIDS     locals;            // local identifiers
             CHUNKNUM     symtab;            // chunk number of local symtab
-            CHUNKNUM     Icode;             // chunknum of routine's icode
+            struct ICODE *Icode;            // chunknum of routine's icode
         } routine;
 
         // Variable, record field, or parameter
@@ -123,12 +125,22 @@ typedef struct SYMTAB {
 #endif
 
 void freeSymtab(CHUNKNUM symtabChunkNum);
-char makeSymtab(SYMTAB *pSymtab);
+char makeSymtab(CHUNKNUM *symtabChunkNum);
 
 void freeDefn(DEFN *pDefn);
 
-char enterNew(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
-char enterSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
-char searchSymtab(SYMTAB *symtab, SYMTABNODE *pNode, const char *identifier);
+char enterNew(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
+char enterSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
+char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier);
+
+CHUNKNUM getCurrentSymtab(void);
+void initSymtabs(void);
+char symtabEnterLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc);
+char symtabEnterNewLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc);
+char symtabSearchLocal(SYMTABNODE *pNode, const char *pString);
+void symtabStackEnterScope(void);
+void symtabExitScope(CHUNKNUM *symtabChunkNum);
+void symtabStackFind(const char *pString, SYMTABNODE *pNode);
+char symtabStackSearchAll(const char *pString, SYMTABNODE *pNode);
 
 #endif // end of SYMTAB_H

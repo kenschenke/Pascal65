@@ -79,30 +79,35 @@ static char getType(CHUNKNUM chunkNum, TTYPE *pType) {
     return 1;
 }
 
-char initPredefinedTypes(SYMTAB *symtab) {
+char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     TTYPE typeNode;
     DEFN defn;
+    SYMTAB symtab;
     SYMTABNODE node;
     CHUNKNUM integerId, booleanId, charId;
     CHUNKNUM falseId, trueId;
 
+    retrieveChunk(symtabChunkNum, (unsigned char *)&symtab);
+
     // Enter the names of the predefined types and of "false"
     // and "true" into the symbol table.
 
-    enterSymtab(symtab, &node, "integer", dcType);
+    enterSymtab(symtab.symtabChunkNum, &node, "integer", dcType);
     integerId = node.nodeChunkNum;
 
-    enterSymtab(symtab, &node, "boolean", dcType);
+    enterSymtab(symtab.symtabChunkNum, &node, "boolean", dcType);
     booleanId = node.nodeChunkNum;
 
-    enterSymtab(symtab, &node, "char", dcType);
+    enterSymtab(symtab.symtabChunkNum, &node, "char", dcType);
     charId = node.nodeChunkNum;
 
-    enterSymtab(symtab, &node, "false", dcConstant);
+    enterSymtab(symtab.symtabChunkNum, &node, "false", dcConstant);
     falseId = node.nodeChunkNum;
 
-    enterSymtab(symtab, &node, "true", dcConstant);
+    enterSymtab(symtab.symtabChunkNum, &node, "true", dcConstant);
     trueId = node.nodeChunkNum;
+
+    storeChunk(symtabChunkNum, (unsigned char *)&symtab);
 
     // Create the predefined type objects
 

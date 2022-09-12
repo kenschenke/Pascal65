@@ -32,7 +32,7 @@ typedef struct ICODE_CHUNK {
 #error ICODE_CHUNK should be CHUNK_LEN bytes in size
 #endif
 
-typedef struct {
+typedef struct ICODE {
     CHUNKNUM firstChunkNum;
     CHUNKNUM currentChunkNum;
     unsigned posGlobal;

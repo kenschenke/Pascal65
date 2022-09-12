@@ -10,7 +10,6 @@
 void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
     DEFN defn;
     TTYPE newType;
-    SYMTAB gSymtab;
     CHUNKNUM lastChunk = 0, newChunkNum;
     SYMTABNODE newNode;
     int constValue = -1;
@@ -21,11 +20,9 @@ void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
     *newTypeChunkNum = makeType(fcEnum, sizeof(int), 0);
     retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
 
-    retrieveChunk(globalSymtab, (unsigned char *)&gSymtab);
-
     // Loop to parse list of constant identifiers separated by commas.
     while (scanner->token.code == tcIdentifier) {
-        enterNew(&gSymtab, &newNode, scanner->token.string, dcUndefined);
+        enterNew(globalSymtab, &newNode, scanner->token.string, dcUndefined);
         ++constValue;
 
         retrieveChunk(newNode.defnChunk, (unsigned char *)&defn);
@@ -220,20 +217,15 @@ void parseSubrangeType(SCANNER *scanner, SYMTABNODE *pMinId, CHUNKNUM *newTypeCh
 
 void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     DEFN defn;
-    SYMTAB gSymtab;
     TTYPE typeNode;
     SYMTABNODE lastNode, idNode;
     CHUNKNUM newTypeChunkNum, lastId = 0;  // last type id node in local list
-
-    if (retrieveChunk(globalSymtab, (unsigned char *)&gSymtab) == 0) {
-        return;
-    }
 
     // Loop to parse a list of type definitions
     // separated by semicolons.
     while (scanner->token.code == tcIdentifier) {
         // <id>
-        if (enterNew(&gSymtab, &idNode, scanner->token.string, dcUndefined) == 0) {
+        if (enterNew(globalSymtab, &idNode, scanner->token.string, dcUndefined) == 0) {
             return;
         }
 
