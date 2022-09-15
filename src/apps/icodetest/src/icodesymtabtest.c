@@ -1,17 +1,20 @@
 #include "icodetest.h"
 
+#include <string.h>
+
 void testIcodeSymtabNode(void) {
-    ICODE *Icode;
+    CHUNKNUM Icode;
     unsigned myPos = 0;
-    SYMTAB symtab;
+    CHUNKNUM symtab;
     CHUNKNUM chunkNum;
     SYMTABNODE symtabNode;
-    TOKEN *token;
+    ICODE hdrChunk;
+    TOKEN token;
 
     DECLARE_TEST("testIcodeSymtabNode");
 
-    Icode = makeIcode();
-    assertNotNull(Icode);
+    makeIcode(&Icode);
+    assertNonZero(Icode);
     assertEqualInt(0, getCurrentIcodeLocation(Icode));
 
     // Write an identifier token
@@ -27,9 +30,8 @@ void testIcodeSymtabNode(void) {
 
     // Add a symbol table node
     assertNonZero(makeSymtab(&symtab));
-    assertNonZero(enterSymtab(&symtab, &symtabNode, "mynode"));
+    assertNonZero(enterSymtab(symtab, &symtabNode, "mynode", dcUndefined));
     chunkNum = symtabNode.nodeChunkNum;
-    assertNonZero(setSymtabInt(&symtabNode, 5));
     putSymtabNodeToIcode(Icode, &symtabNode);
     myPos += sizeof(CHUNKNUM);
     assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
@@ -37,12 +39,14 @@ void testIcodeSymtabNode(void) {
     // Reset the position and read the node back
 
     resetIcodePosition(Icode);
+    assertEqualInt(0, getCurrentIcodeLocation(Icode));
     currentLineNumber = 100;
 
     // Read the symbol table node back in
-    token = getNextTokenFromIcode(Icode);
+    memset(&symtabNode, 0, sizeof(SYMTABNODE));
+    getNextTokenFromIcode(Icode, &token, &symtabNode);
     assertEqualInt(1, currentLineNumber);
-    assertEqualChunkNum(chunkNum, Icode->symtabNode.nodeChunkNum);
+    assertEqualChunkNum(chunkNum, symtabNode.nodeChunkNum);
 
     freeIcode(Icode);
 }

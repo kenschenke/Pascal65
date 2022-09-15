@@ -24,15 +24,19 @@ void logRuntimeError(const char *message, unsigned lineNumber)
 int main()
 {
     initBlockStorage();
+    initIcodeCache();
     testIcodePosition();
 
     initBlockStorage();
+    initIcodeCache();
     testIcodeGotoPosition();
 
     initBlockStorage();
+    initIcodeCache();
     testIcodeToken();
 
     initBlockStorage();
+    initIcodeCache();
     testIcodeSymtabNode();
 
     printf("Done with tests\n");

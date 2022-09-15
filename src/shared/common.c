@@ -17,6 +17,7 @@
 #include <cbm.h>
 #include <conio.h>
 #include <types.h>
+#include <icode.h>
 
 short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
@@ -132,6 +133,7 @@ void initCommon(void)
     isFatalError = 0;
 
     initSymtabs();
+    initIcodeCache();
 }
 
 char isStopKeyPressed()

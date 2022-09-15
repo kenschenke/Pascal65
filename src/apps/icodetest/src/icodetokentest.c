@@ -3,14 +3,14 @@
 #include <string.h>
 
 void testIcodeToken(void) {
-    ICODE *Icode;
-    TOKEN *token;
+    CHUNKNUM Icode;
+    TOKEN token;
     unsigned myPos = 0;
 
     DECLARE_TEST("testIcodeToken");
 
-    Icode = makeIcode();
-    assertNotNull(Icode);
+    makeIcode(&Icode);
+    assertNonZero(Icode);
     assertEqualInt(0, getCurrentIcodeLocation(Icode));
 
     putTokenToIcode(Icode, tcColonEqual);
@@ -36,17 +36,17 @@ void testIcodeToken(void) {
     assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
 
     currentLineNumber = 100;
-    token = getNextTokenFromIcode(Icode);
-    assertEqualByte(tcColonEqual, token->code);
-    assertEqualInt(0, strcmp(":=", token->string));
+    getNextTokenFromIcode(Icode, &token, NULL);
+    assertEqualByte(tcColonEqual, token.code);
+    assertEqualInt(0, strcmp(":=", token.string));
     myPos += 4;
     assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
     assertEqualInt(1, currentLineNumber);
 
     currentLineNumber = 100;
-    token = getNextTokenFromIcode(Icode);
-    assertEqualByte(tcDotDot, token->code);
-    assertEqualInt(0, strcmp("..", token->string));
+    getNextTokenFromIcode(Icode, &token, NULL);
+    assertEqualByte(tcDotDot, token.code);
+    assertEqualInt(0, strcmp("..", token.string));
     myPos += 4;
     assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
     assertEqualInt(2, currentLineNumber);

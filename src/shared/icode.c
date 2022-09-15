@@ -34,58 +34,96 @@ static const char *symbolStrings[] = {
     "then", "to", "type", "until", "var", "while", "with",
 };
 
-static char extractSymtabNode(ICODE *Icode);
-static void initIcodeChunk(ICODE *Icode);
-static void pullDataFromIcode(ICODE *Icode, unsigned char *data, unsigned len);
-static void putDataToIcode(ICODE *Icode, unsigned char *data, unsigned len);
-static void retrieveIcodeChunk(ICODE *Icode, CHUNKNUM chunkNum);
+static ICODE cachedIcodeHdr;
+static CHUNKNUM cachedIcodeHdrChunkNum;
+
+static ICODE_CHUNK cachedIcodeData;
+static CHUNKNUM cachedIcodeDataChunkNum;
+
+static char extractSymtabNode(CHUNKNUM chunkNum, SYMTABNODE *pNode);
+static void flushIcodeCache(void);
+static void initIcodeChunk(CHUNKNUM chunkNum);
+static void loadDataCache(CHUNKNUM chunkNum);
+static void loadHeaderCache(CHUNKNUM chunkNum);
+static void pullDataFromIcode(CHUNKNUM chunkNum, unsigned char *data, unsigned len);
+static void putDataToIcode(CHUNKNUM chunkNum, unsigned char *data, unsigned len);
 
 const TTokenCode mcLineMarker = ((TTokenCode) 127);
 
-void checkIcodeBounds(ICODE *Icode, int size)
+void checkIcodeBounds(CHUNKNUM chunkNum, int size)
 {
-    if (Icode->posGlobal + size > codeSegmentSize) {
+    loadHeaderCache(chunkNum);
+    if (cachedIcodeHdr.posGlobal + size > codeSegmentSize) {
         Error(errCodeSegmentOverflow);
         abortTranslation(abortCodeSegmentOverflow);
     }
 }
 
-void freeIcode(ICODE *Icode)
+static char extractSymtabNode(CHUNKNUM hdrChunkNum, SYMTABNODE *pNode)
 {
-    Icode->currentChunkNum = Icode->firstChunkNum;
+    CHUNKNUM chunkNum;
 
-    while (Icode->currentChunkNum) {
-        if (retrieveChunk(Icode->currentChunkNum, (unsigned char *)&Icode->chunk) == 0) {
+    pullDataFromIcode(hdrChunkNum, (unsigned char *)&chunkNum, sizeof(CHUNKNUM));
+
+    return retrieveChunk(chunkNum, (unsigned char *)pNode);
+}
+
+void freeIcode(CHUNKNUM chunkNum)
+{
+    ICODE_CHUNK dataChunk;
+
+    flushIcodeCache();
+    loadHeaderCache(chunkNum);
+    cachedIcodeHdr.currentChunkNum = cachedIcodeHdr.firstChunkNum;
+
+    while (cachedIcodeHdr.currentChunkNum) {
+        if (retrieveChunk(cachedIcodeHdr.currentChunkNum, (unsigned char *)&dataChunk) == 0) {
             return;
         }
-        freeChunk(Icode->currentChunkNum);
-        Icode->currentChunkNum = Icode->chunk.nextChunk;
+        freeChunk(cachedIcodeHdr.currentChunkNum);
+        cachedIcodeHdr.currentChunkNum = dataChunk.nextChunk;
     }
 
-    free(Icode);
+    freeChunk(chunkNum);
+    cachedIcodeHdrChunkNum = 0;
+    cachedIcodeDataChunkNum = 0;
 }
 
-unsigned getCurrentIcodeLocation(ICODE *Icode)
+static void flushIcodeCache(void) {
+    if (cachedIcodeHdrChunkNum) {
+        storeChunk(cachedIcodeHdrChunkNum, (unsigned char *)&cachedIcodeHdr);
+        cachedIcodeHdrChunkNum = 0;
+    }
+
+    if (cachedIcodeDataChunkNum) {
+        storeChunk(cachedIcodeDataChunkNum, (unsigned char *)&cachedIcodeData);
+        cachedIcodeDataChunkNum = 0;
+    }
+}
+
+unsigned getCurrentIcodeLocation(CHUNKNUM chunkNum)
 {
-    return Icode->posGlobal;
+    loadHeaderCache(chunkNum);
+    return cachedIcodeHdr.posGlobal;
 }
 
-TOKEN *getNextTokenFromIcode(ICODE *Icode)
+void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, SYMTABNODE *pNode)
 {
     char code;
+    SYMTABNODE symtabNode;
     TTokenCode tc;
 
     // Loop to process any line markers
     // and extract the next token code.
     do {
         // First read the token
-        pullDataFromIcode(Icode, (unsigned char *)&code, sizeof(char));
+        pullDataFromIcode(chunkNum, (unsigned char *)&code, sizeof(char));
         tc = (TTokenCode) code;
 
         // If it's a line marker, extract the line number.
         if (tc == mcLineMarker) {
             short number;
-            pullDataFromIcode(Icode, (unsigned char *)&number, sizeof(short));
+            pullDataFromIcode(chunkNum, (unsigned char *)&number, sizeof(short));
             currentLineNumber = number;
         }
     } while (tc == mcLineMarker);
@@ -95,62 +133,55 @@ TOKEN *getNextTokenFromIcode(ICODE *Icode)
         case tcNumber:
         case tcIdentifier:
         case tcString:
-            extractSymtabNode(Icode);
-            memset(Icode->token.string, 0, sizeof(Icode->token.string));
-            retrieveChunk(Icode->symtabNode.nameChunkNum, (unsigned char *)Icode->token.string);
+            extractSymtabNode(chunkNum, &symtabNode);
+            memset(pToken->string, 0, sizeof(pToken->string));
+            retrieveChunk(symtabNode.nameChunkNum, (unsigned char *)pToken->string);
+            if (pNode) {
+                memcpy(pNode, &symtabNode, sizeof(SYMTABNODE));
+            }
             break;
 
         default:
             // Special token or reserved word
-            // Icode->pNode = NULL;
-            strcpy(Icode->token.string, symbolStrings[code]);
+            strcpy(pToken->string, symbolStrings[code]);
             break;
     }
 
-    Icode->token.code = tc;
-    return &Icode->token;
+    pToken->code = tc;
 }
 
-void gotoIcodePosition(ICODE *Icode, unsigned position)
+void gotoIcodePosition(CHUNKNUM chunkNum, unsigned position)
 {
-    if (Icode->currentChunkNum) {
-        if (storeChunk(Icode->currentChunkNum, (unsigned char *)&Icode->chunk) == 0) {
-            return;
-        }
-    }
+    loadHeaderCache(chunkNum);
 
-    Icode->posGlobal = 0;
-    Icode->posChunk = 0;
-    Icode->currentChunkNum = Icode->firstChunkNum;
+    cachedIcodeHdr.posGlobal = 0;
+    cachedIcodeHdr.posChunk = 0;
+    cachedIcodeHdr.currentChunkNum = cachedIcodeHdr.firstChunkNum;
 
     while (1) {
-        if (retrieveChunk(Icode->currentChunkNum, (unsigned char *)&Icode->chunk) == 0) {
-            return;
-        }
+        loadDataCache(cachedIcodeHdr.currentChunkNum);
 
         if (position < ICODE_CHUNK_LEN) {
-            Icode->posGlobal += position;
-            Icode->posChunk = position;
+            cachedIcodeHdr.posGlobal += position;
+            cachedIcodeHdr.posChunk = position;
             break;
         }
 
-        Icode->posGlobal += ICODE_CHUNK_LEN;
+        cachedIcodeHdr.posGlobal += ICODE_CHUNK_LEN;
         position -= ICODE_CHUNK_LEN;
-        Icode->currentChunkNum = Icode->chunk.nextChunk;
+        cachedIcodeHdr.currentChunkNum = cachedIcodeData.nextChunk;
     }
 }
 
-static char extractSymtabNode(ICODE *Icode)
-{
-    CHUNKNUM chunkNum;
-
-    pullDataFromIcode(Icode, (unsigned char *)&chunkNum, sizeof(CHUNKNUM));
-
-    return retrieveChunk(chunkNum, (unsigned char *)&Icode->symtabNode);
+void initIcodeCache(void) {
+    cachedIcodeHdrChunkNum = cachedIcodeDataChunkNum = 0;
 }
 
-static void initIcodeChunk(ICODE *Icode) {
+static void initIcodeChunk(CHUNKNUM hdrChunkNum) {
     CHUNKNUM chunkNum;
+
+    flushIcodeCache();
+    loadHeaderCache(hdrChunkNum);
 
     if (allocChunk(&chunkNum) == 0) {
         Error(errCodeSegmentOverflow);
@@ -158,23 +189,25 @@ static void initIcodeChunk(ICODE *Icode) {
         return;
     }
 
-    if (Icode->firstChunkNum == 0) {
-        Icode->firstChunkNum = chunkNum;
-    } else if (Icode->currentChunkNum) {
-        Icode->chunk.nextChunk = chunkNum;
-        if (storeChunk(Icode->currentChunkNum, (unsigned char *)&Icode->chunk) == 0) {
+    if (cachedIcodeHdr.firstChunkNum == 0) {
+        cachedIcodeHdr.firstChunkNum = chunkNum;
+    } else if (cachedIcodeHdr.currentChunkNum) {
+        retrieveChunk(cachedIcodeHdr.currentChunkNum, (unsigned char *)&cachedIcodeData);
+        cachedIcodeData.nextChunk = chunkNum;
+        if (storeChunk(cachedIcodeHdr.currentChunkNum, (unsigned char *)&cachedIcodeData) == 0) {
             Error(errCodeSegmentOverflow);
             abortTranslation(abortCodeSegmentOverflow);
             return;
         }
     }
 
-    memset(&Icode->chunk, 0, sizeof(ICODE_CHUNK));
-    Icode->currentChunkNum = chunkNum;
-    Icode->posChunk = 0;
+    memset(&cachedIcodeData, 0, sizeof(ICODE_CHUNK));
+    cachedIcodeHdr.currentChunkNum = chunkNum;
+    cachedIcodeHdr.posChunk = 0;
+    loadDataCache(chunkNum);
 }
 
-void insertLineMarker(ICODE *Icode)
+void insertLineMarker(CHUNKNUM chunkNum)
 {
     char code, lastCode;
     short number;
@@ -183,142 +216,153 @@ void insertLineMarker(ICODE *Icode)
         return;
     }
 
+    loadHeaderCache(chunkNum);
+
     // Remember the last appended token code
-    if (Icode->posChunk == 0) {
-        if (Icode->posGlobal == 0) {
+    if (cachedIcodeHdr.posChunk == 0) {
+        if (cachedIcodeHdr.posGlobal == 0) {
             // Already at the start.
             return;
         }
         // We're already at the starting byte of this chunk.
         // We have to back up the previous chunk's last position.
-        gotoIcodePosition(Icode, Icode->posGlobal - 1);
+        gotoIcodePosition(chunkNum, cachedIcodeHdr.posGlobal - 1);
     } else {
-        Icode->posChunk--;
-        Icode->posGlobal--;
+        cachedIcodeHdr.posChunk--;
+        cachedIcodeHdr.posGlobal--;
     }
-    memcpy(&lastCode, Icode->chunk.data + Icode->posChunk, sizeof(char));
+    loadDataCache(cachedIcodeHdr.currentChunkNum);
+    memcpy(&lastCode, cachedIcodeData.data + cachedIcodeHdr.posChunk, sizeof(char));
 
     // Insert a line marker code
     code = mcLineMarker;
     number = currentLineNumber;
-    checkIcodeBounds(Icode, sizeof(char) + sizeof(short));
-    putDataToIcode(Icode, (unsigned char *)&code, sizeof(char));
-    putDataToIcode(Icode, (unsigned char *)&number, sizeof(short));
+    checkIcodeBounds(chunkNum, sizeof(char) + sizeof(short));
+    putDataToIcode(chunkNum, (unsigned char *)&code, sizeof(char));
+    putDataToIcode(chunkNum, (unsigned char *)&number, sizeof(short));
 
     // Re-append the last token code
-    putDataToIcode(Icode, (unsigned char *)&lastCode, sizeof(char));
+    putDataToIcode(chunkNum, (unsigned char *)&lastCode, sizeof(char));
 }
 
-ICODE *makeIcode(void)
-{
-    ICODE *Icode = malloc(sizeof(ICODE));
-    if (Icode == NULL) {
-        abortTranslation(abortOutOfMemory);
-    }
-
-    Icode->currentChunkNum = 0;
-    Icode->firstChunkNum = 0;
-    Icode->posGlobal = 0;
-    Icode->posChunk = 0;
-
-    return Icode;
-}
-
-#if 0
-ICODE *makeIcodeFrom(ICODE *other)
-{
-    int length;
-    ICODE *Icode;
-
-    length = (int)(other->cursor - other->pCode);
-
-    Icode = malloc(sizeof(ICODE));
-    if (Icode == NULL) {
-        abortTranslation(abortOutOfMemory);
-    }
-
-    Icode->pCode = malloc(length);
-    if (Icode->pCode == NULL) {
-        abortTranslation(abortOutOfMemory);
-    }
-
-    memcpy(Icode->pCode, other->pCode, length);
-    Icode->cursor = Icode->pCode;
-
-    return Icode;
-}
-#endif
-
-static void pullDataFromIcode(ICODE *Icode, unsigned char *data, unsigned len) {
-    unsigned toCopy;
-
-    if (Icode->currentChunkNum == 0) {
-        if (Icode->firstChunkNum == 0) {
-            return;
+static void loadDataCache(CHUNKNUM chunkNum) {
+    if (cachedIcodeDataChunkNum != chunkNum) {
+        if (cachedIcodeDataChunkNum) {
+            storeChunk(cachedIcodeDataChunkNum, (unsigned char *)&cachedIcodeData);
         }
 
-        retrieveIcodeChunk(Icode, Icode->firstChunkNum);
-        Icode->posGlobal = 0;
+        retrieveChunk(chunkNum, (unsigned char *)&cachedIcodeData);
+        cachedIcodeDataChunkNum = chunkNum;
+    }
+}
+
+static void loadHeaderCache(CHUNKNUM chunkNum) {
+    if (cachedIcodeHdrChunkNum != chunkNum) {
+        if (cachedIcodeHdrChunkNum) {
+            storeChunk(cachedIcodeHdrChunkNum, (unsigned char *)&cachedIcodeHdr);
+        }
+
+        retrieveChunk(chunkNum, (unsigned char *)&cachedIcodeHdr);
+        cachedIcodeHdrChunkNum = chunkNum;
+    }
+}
+
+void makeIcode(CHUNKNUM *newChunkNum)
+{
+    ICODE hdrChunk;
+
+    hdrChunk.currentChunkNum = 0;
+    hdrChunk.firstChunkNum = 0;
+    hdrChunk.posGlobal = 0;
+    hdrChunk.posChunk = 0;
+
+    allocChunk(newChunkNum);
+    storeChunk(*newChunkNum, (unsigned char *)&hdrChunk);
+}
+
+static void pullDataFromIcode(CHUNKNUM chunkNum, unsigned char *data, unsigned len) {
+    unsigned toCopy;
+
+    loadHeaderCache(chunkNum);
+
+    if (cachedIcodeHdr.currentChunkNum == 0 && cachedIcodeHdr.firstChunkNum == 0) {
+        return;
     }
 
+    if (cachedIcodeHdr.currentChunkNum == 0) {
+        cachedIcodeHdr.currentChunkNum = cachedIcodeHdr.firstChunkNum;
+    }
+
+    loadDataCache(cachedIcodeHdr.currentChunkNum);
+
     while (len) {
-        toCopy = len > ICODE_CHUNK_LEN - Icode->posChunk
-            ? ICODE_CHUNK_LEN - Icode->posChunk : len;
+        toCopy = len > ICODE_CHUNK_LEN - cachedIcodeHdr.posChunk
+            ? ICODE_CHUNK_LEN - cachedIcodeHdr.posChunk : len;
 
         if (toCopy) {
-            memcpy(data, Icode->chunk.data + Icode->posChunk, toCopy);
-            Icode->posChunk += toCopy;
-            Icode->posGlobal += toCopy;
+            memcpy(data, cachedIcodeData.data + cachedIcodeHdr.posChunk, toCopy);
+            cachedIcodeHdr.posChunk += toCopy;
+            cachedIcodeHdr.posGlobal += toCopy;
             data += toCopy;
             len -= toCopy;
         }
 
         if (len) {
-            if (Icode->chunk.nextChunk == 0) {
-                return;
+            if (cachedIcodeData.nextChunk == 0) {
+                break;
             }
 
-            retrieveIcodeChunk(Icode, Icode->chunk.nextChunk);
+            cachedIcodeHdr.posChunk = 0;
+            cachedIcodeHdr.currentChunkNum = cachedIcodeData.nextChunk;
+
+            loadDataCache(cachedIcodeData.nextChunk);
         }
     }
 }
 
-static void putDataToIcode(ICODE *Icode, unsigned char *data, unsigned len) {
+static void putDataToIcode(CHUNKNUM chunkNum, unsigned char *data, unsigned len) {
     unsigned toCopy;
 
-    if (Icode->firstChunkNum == 0) {
-        initIcodeChunk(Icode);
-    }
+    loadHeaderCache(chunkNum);
 
+    if (cachedIcodeHdr.firstChunkNum == 0) {
+        initIcodeChunk(chunkNum);
+    } else {
+        if (cachedIcodeHdr.currentChunkNum == 0) {
+            cachedIcodeHdr.currentChunkNum = cachedIcodeHdr.firstChunkNum;
+        }
+        loadDataCache(cachedIcodeHdr.currentChunkNum);
+    }
+    
     while (len) {
-        toCopy = len > ICODE_CHUNK_LEN - Icode->posChunk
-            ? ICODE_CHUNK_LEN - Icode->posChunk : len;
+        toCopy = len > ICODE_CHUNK_LEN - cachedIcodeHdr.posChunk
+            ? ICODE_CHUNK_LEN - cachedIcodeHdr.posChunk : len;
         
         if (toCopy) {
-            memcpy(Icode->chunk.data + Icode->posChunk, data, toCopy);
-            Icode->posChunk += toCopy;
-            Icode->posGlobal += toCopy;
+            memcpy(cachedIcodeData.data + cachedIcodeHdr.posChunk, data, toCopy);
+            cachedIcodeHdr.posChunk += toCopy;
+            cachedIcodeHdr.posGlobal += toCopy;
             data += toCopy;
             len -= toCopy;
         }
 
         if (len) {
-            initIcodeChunk(Icode);
+            initIcodeChunk(chunkNum);
         }
     }
 }
 
-void putSymtabNodeToIcode(ICODE *Icode, SYMTABNODE *pNode)
+void putSymtabNodeToIcode(CHUNKNUM chunkNum, SYMTABNODE *pNode)
 {
     if (errorCount > 0) {
         return;
     }
 
-    checkIcodeBounds(Icode, sizeof(CHUNKNUM));
-    putDataToIcode(Icode, (unsigned char *)&pNode->nodeChunkNum, sizeof(CHUNKNUM));
+    checkIcodeBounds(chunkNum, sizeof(CHUNKNUM));
+    putDataToIcode(chunkNum, (unsigned char *)&pNode->nodeChunkNum, sizeof(CHUNKNUM));
 }
 
-void putTokenToIcode(ICODE *Icode, TTokenCode tc)
+void putTokenToIcode(CHUNKNUM chunkNum, TTokenCode tc)
 {
     char code;
 
@@ -327,26 +371,15 @@ void putTokenToIcode(ICODE *Icode, TTokenCode tc)
     }
 
     code = tc;
-    checkIcodeBounds(Icode, sizeof(char));
-    putDataToIcode(Icode, (unsigned char *)&code, sizeof(char));
+    checkIcodeBounds(chunkNum, sizeof(char));
+    putDataToIcode(chunkNum, (unsigned char *)&code, sizeof(char));
 }
 
-void resetIcodePosition(ICODE *Icode)
+void resetIcodePosition(CHUNKNUM chunkNum)
 {
-    if (Icode->currentChunkNum) {
-        storeChunk(Icode->currentChunkNum, (unsigned char *)&Icode->chunk);
-    }
+    loadHeaderCache(chunkNum);
 
-    Icode->currentChunkNum = 0;
-    Icode->posGlobal = 0;
-    Icode->posChunk = 0;
-}
-
-static void retrieveIcodeChunk(ICODE *Icode, CHUNKNUM chunkNum) {
-    if (retrieveChunk(chunkNum, (unsigned char *)&Icode->chunk) == 0) {
-        return;
-    }
-
-    Icode->posChunk = 0;
-    Icode->currentChunkNum = chunkNum;
+    cachedIcodeHdr.currentChunkNum = 0;
+    cachedIcodeHdr.posGlobal = 0;
+    cachedIcodeHdr.posChunk = 0;
 }

@@ -37,6 +37,7 @@ SOURCES += $(SHAREDSRCDIR)/error.c
 SOURCES += $(SHAREDSRCDIR)/icode.c
 SOURCES += $(SHAREDSRCDIR)/symtab.c
 SOURCES += $(SHAREDSRCDIR)/tests.c
+SOURCES += $(SHAREDSRCDIR)/types.c
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)
 

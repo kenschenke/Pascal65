@@ -37,21 +37,23 @@ typedef struct ICODE {
     CHUNKNUM currentChunkNum;
     unsigned posGlobal;
     unsigned posChunk;
-    ICODE_CHUNK chunk;
-    SYMTABNODE symtabNode;
-    TOKEN token;
+    char unused[CHUNK_LEN - 8];
 } ICODE;
 
-void checkIcodeBounds(ICODE *Icode, int size);
-void freeIcode(ICODE *Icode);
-unsigned getCurrentIcodeLocation(ICODE *Icode);
-TOKEN *getNextTokenFromIcode(ICODE *Icode);
-void gotoIcodePosition(ICODE *Icode, unsigned position);
-void insertLineMarker(ICODE *Icode);
-ICODE *makeIcode(void);
-ICODE *makeIcodeFrom(ICODE *Icode);
-void putSymtabNodeToIcode(ICODE *Icode, SYMTABNODE *pNode);
-void putTokenToIcode(ICODE *Icode, TTokenCode tc);
-void resetIcodePosition(ICODE *Icode);
+#if sizeof(struct ICODE) != CHUNK_LEN
+#error ICODE should be CHUNK_LEN bytes in size
+#endif
+
+void checkIcodeBounds(CHUNKNUM chunkNum, int size);
+void freeIcode(CHUNKNUM chunkNum);
+unsigned getCurrentIcodeLocation(CHUNKNUM chunkNum);
+void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, SYMTABNODE *pNode);
+void gotoIcodePosition(CHUNKNUM chunkNum, unsigned position);
+void initIcodeCache(void);
+void insertLineMarker(CHUNKNUM chunkNum);
+void makeIcode(CHUNKNUM *newChunkNum);
+void putSymtabNodeToIcode(CHUNKNUM chunkNum, SYMTABNODE *pNode);
+void putTokenToIcode(CHUNKNUM chunkNum, TTokenCode tc);
+void resetIcodePosition(CHUNKNUM chunkNum);
 
 #endif // end of ICODE_H

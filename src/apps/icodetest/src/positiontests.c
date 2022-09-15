@@ -3,19 +3,19 @@
 #include <string.h>
 
 void testIcodeGotoPosition(void) {
-    ICODE *Icode;
+    CHUNKNUM Icode;
     int i;
     char ident[10];
     unsigned myPos = 0, testPos;
-    TOKEN *token;
+    TOKEN token;
     CHUNKNUM testChunkNum;
-    SYMTAB symtab;
+    CHUNKNUM symtab;
     SYMTABNODE symtabNode;
 
     DECLARE_TEST("testIcodeGotoPosition");
 
-    Icode = makeIcode();
-    assertNotNull(Icode);
+    makeIcode(&Icode);
+    assertNonZero(Icode);
     assertEqualInt(0, getCurrentIcodeLocation(Icode));
     assertNonZero(makeSymtab(&symtab));
 
@@ -30,8 +30,7 @@ void testIcodeGotoPosition(void) {
         assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
 
         sprintf(ident, "ident%02d", i+1);
-        assertNonZero(enterSymtab(&symtab, &symtabNode, ident));
-        assertNonZero(setSymtabInt(&symtabNode, i + 1));
+        assertNonZero(enterSymtab(symtab, &symtabNode, ident, dcUndefined));
         putSymtabNodeToIcode(Icode, &symtabNode);
         myPos += sizeof(CHUNKNUM);
         assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
@@ -41,31 +40,31 @@ void testIcodeGotoPosition(void) {
         }
     }
 
+    memset(&symtabNode, 0, sizeof(SYMTABNODE));
     gotoIcodePosition(Icode, testPos);
     assertEqualInt(testPos, getCurrentIcodeLocation(Icode));
-    token = getNextTokenFromIcode(Icode);
-    assertEqualInt(tcIdentifier, token->code);
-    assertEqualChunkNum(testChunkNum, Icode->symtabNode.nodeChunkNum);
-    assertEqualInt(0, strcmp("ident05", token->string));
+    getNextTokenFromIcode(Icode, &token, &symtabNode);
+    assertEqualInt(tcIdentifier, token.code);
+    assertEqualChunkNum(testChunkNum, symtabNode.nodeChunkNum);
+    assertEqualInt(0, strcmp("ident05", token.string));
     
 }
 
 void testIcodePosition(void) {
-    ICODE *Icode;
+    CHUNKNUM Icode;
     unsigned myPos = 0;
-    SYMTAB symtab;
+    CHUNKNUM symtab;
     SYMTABNODE symtabNode;
 
     DECLARE_TEST("testIcodePosition");
 
-    Icode = makeIcode();
-    assertNotNull(Icode);
+    makeIcode(&Icode);
+    assertNonZero(Icode);
     assertEqualInt(0, getCurrentIcodeLocation(Icode));
 
     // Add a symbol table node
     assertNonZero(makeSymtab(&symtab));
-    assertNonZero(enterSymtab(&symtab, &symtabNode, "mynode"));
-    assertNonZero(setSymtabInt(&symtabNode, 5));
+    assertNonZero(enterSymtab(symtab, &symtabNode, "mynode", dcUndefined));
     putSymtabNodeToIcode(Icode, &symtabNode);
     myPos += sizeof(CHUNKNUM);
     assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
