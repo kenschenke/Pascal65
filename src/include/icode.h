@@ -45,6 +45,7 @@ typedef struct ICODE {
 #endif
 
 void checkIcodeBounds(CHUNKNUM chunkNum, int size);
+void flushIcodeCache(void);
 void freeIcode(CHUNKNUM chunkNum);
 unsigned getCurrentIcodeLocation(CHUNKNUM chunkNum);
 void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, SYMTABNODE *pNode);

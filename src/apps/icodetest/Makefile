@@ -13,28 +13,24 @@ mega65_EMUCMD := xmega65 -besure -8
 EMUCMD = $($(TARGET)_EMUCMD)
 
 SHAREDSRCDIR = ../../shared
+SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
+SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
 
 c64_CFLAGS =
 c128_CFLAGS =
 mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../include
 CFLAGS = $($(TARGET)_CFLAGS) -I ../../mega65-libc/include
 ASFLAGS = --asm-include-dir ../../asminc
-LDFLAGS =
+LDFLAGS = 
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
-SOURCES += $(SHAREDSRCDIR)/allocChunk.s
-SOURCES += $(SHAREDSRCDIR)/chunkGetBlock.s
-SOURCES += $(SHAREDSRCDIR)/freeChunk.s
-SOURCES += $(SHAREDSRCDIR)/getAvailChunks.s
-SOURCES += $(SHAREDSRCDIR)/initChunkStorage.s
-SOURCES += $(SHAREDSRCDIR)/retrieveChunk.s
-SOURCES += $(SHAREDSRCDIR)/storeChunk.s
-SOURCES += $(SHAREDSRCDIR)/blocks.c
-SOURCES += $(SHAREDSRCDIR)/chunks.c
+SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
 SOURCES += $(SHAREDSRCDIR)/common.c
 SOURCES += $(SHAREDSRCDIR)/error.c
-SOURCES += $(SHAREDSRCDIR)/icode.c
 SOURCES += $(SHAREDSRCDIR)/symtab.c
 SOURCES += $(SHAREDSRCDIR)/tests.c
 SOURCES += $(SHAREDSRCDIR)/types.c
@@ -68,6 +64,22 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SHAREDSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.c $(SHAREDCHUNKSDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(SHAREDCHUNKSDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.c $(SHAREDICODEDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(SHAREDICODEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
