@@ -16,34 +16,16 @@
 #include <parscommon.h>
 #include <string.h>
 
-void parseAssignment(SCANNER *scanner, ICODE *Icode)
+void parseAssignment(SCANNER *scanner, SYMTABNODE *pTargetNode, CHUNKNUM Icode)
 {
     DEFN defn;
     TTYPE exprType, targetType;
-    SYMTABNODE idNode, targetNode;
 
-    // Search for the target variable's identifier and enter it
-    // if necessary.  Append the symbol table node handle
-    // to the icode.
-    if (!searchGlobalSymtab(scanner->token.string, &targetNode)) {
-        enterGlobalSymtab(scanner->token.string, &targetNode);
-    }
-
-    retrieveChunk(targetNode.defnChunk, (unsigned char *)&defn);
-    if (defn.how != dcUndefined) {
-        putSymtabNodeToIcode(Icode, &targetNode);
-    } else {
-        defn.how = dcVariable;
-        storeChunk(targetNode.defnChunk, (unsigned char *)&defn);
-        setType(&targetNode.typeChunk, dummyType);
-        storeChunk(targetNode.nodeChunkNum, (unsigned char *)&targetNode);
-    }
-
-    parseVariable(scanner, Icode, &targetNode, &targetType);
+    parseVariable(scanner, Icode, pTargetNode, &targetType);
 
     // :=
     resync(scanner, tlColonEqual, tlExpressionStart, NULL);
-    condGetTokenAppend(scanner, tcColonEqual, errMissingColonEqual);
+    condGetTokenAppend(scanner, Icode, tcColonEqual, errMissingColonEqual);
 
     // <expr>
     parseExpression(scanner, Icode, &exprType);
@@ -52,7 +34,7 @@ void parseAssignment(SCANNER *scanner, ICODE *Icode)
     checkAssignmentCompatible(&targetType, &exprType, errIncompatibleAssignment);
 }
 
-void parseCASE(SCANNER *scanner, ICODE *Icode) {
+void parseCASE(SCANNER *scanner, CHUNKNUM Icode) {
     TTYPE exprType;
     char caseBranchFlag;  // true if another CASE branch, else false
 
@@ -72,7 +54,7 @@ void parseCASE(SCANNER *scanner, ICODE *Icode) {
 
     // OF
     resync(scanner, tlOF, tlCaseLabelStart, NULL);
-    condGetTokenAppend(scanner, tcOF, errMissingOF);
+    condGetTokenAppend(scanner, Icode, tcOF, errMissingOF);
 
     // Loop to parse CASE branches
     caseBranchFlag = tokenIn(scanner->token.code, tlCaseLabelStart);
@@ -92,10 +74,10 @@ void parseCASE(SCANNER *scanner, ICODE *Icode) {
 
     // END
     resync(scanner, tlEND, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, tcEND, errMissingEND);
+    condGetTokenAppend(scanner, Icode, tcEND, errMissingEND);
 }
 
-void parseCaseBranch(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
+void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pExprType) {
     char caseLabelFlag;  // true if another CASE label, else false
 
     // <case-label-list>
@@ -116,13 +98,13 @@ void parseCaseBranch(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
 
     // :
     resync(scanner, tlColon, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, tcColon, errMissingColon);
+    condGetTokenAppend(scanner, Icode, tcColon, errMissingColon);
 
     // <stmt>
     parseStatement(scanner, Icode);
 }
 
-void parseCaseLabel(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
+void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pExprType) {
     char signFlag = 0;  // true if unary sign, else false
     DEFN defn;
     TTYPE labelType;
@@ -137,7 +119,7 @@ void parseCaseLabel(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
     switch (scanner->token.code) {
         // Identifier
         case tcIdentifier:
-            if (!searchGlobalSymtab(scanner->token.string, &node)) {
+            if (!symtabStackSearchAll(scanner->token.string, &node)) {
                 Error(errUndefinedIdentifier);
             }
             retrieveChunk(node.typeChunk, (unsigned char *)&labelType);
@@ -172,10 +154,10 @@ void parseCaseLabel(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
             if (scanner->token.type != tyInteger) Error(errInvalidConstant);
             if (pExprType->nodeChunkNum != integerType) Error(errIncompatibleTypes);
 
-            if (!searchGlobalSymtab(scanner->token.string, &node)) {
-                enterGlobalSymtab(scanner->token.string, &node);
+            if (!symtabStackSearchAll(scanner->token.string, &node)) {
+                symtabEnterLocal(&node, scanner->token.string, dcUndefined);
                 setType(&node.typeChunk, integerType);
-                storeChunk(node.typeChunk, (unsigned char *)&node);
+                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
                 retrieveChunk(node.defnChunk, (unsigned char *)&defn);
                 defn.constant.value.integer = scanner->token.value.integer;
                 storeChunk(node.defnChunk, (unsigned char *)&defn);
@@ -192,8 +174,8 @@ void parseCaseLabel(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
             }
             if (pExprType->nodeChunkNum != charType) Error(errIncompatibleTypes);
 
-            if (!searchGlobalSymtab(scanner->token.string, &node)) {
-                enterGlobalSymtab(scanner->token.string, &node);
+            if (!symtabStackSearchAll(scanner->token.string, &node)) {
+                symtabEnterNewLocal(&node, scanner->token.string, dcUndefined);
                 setType(&node.typeChunk, charType);
                 storeChunk(node.nodeChunkNum, (unsigned char *)&node);
                 retrieveChunk(node.defnChunk, (unsigned char *)&defn);
@@ -207,17 +189,16 @@ void parseCaseLabel(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType) {
     }
 }
 
-void parseCompound(SCANNER *scanner, ICODE *Icode) {
+void parseCompound(SCANNER *scanner, CHUNKNUM Icode) {
     getTokenAppend(scanner, Icode);
 
     // <stmt-list>
     parseStatementList(scanner, Icode, tcEND);
 
-    // END
-    condGetTokenAppend(scanner, tcEND, errMissingEND);
+    condGetTokenAppend(scanner, Icode, tcEND, errMissingEND);
 }
 
-void parseFOR(SCANNER *scanner, ICODE *Icode) {
+void parseFOR(SCANNER *scanner, CHUNKNUM Icode) {
     DEFN defn;
     TTYPE controlType, exprType, expr2Type;
     SYMTABNODE node, typeNode;
@@ -226,7 +207,7 @@ void parseFOR(SCANNER *scanner, ICODE *Icode) {
     getTokenAppend(scanner, Icode);
     if (scanner->token.code == tcIdentifier) {
         // Verify the definition and type of the control id
-        searchGlobalSymtab(scanner->token.string, &node);
+        symtabStackFind(scanner->token.string, &node);
         retrieveChunk(node.defnChunk, (unsigned char *)&defn);
         retrieveChunk(node.typeChunk, (unsigned char *)&controlType);
         if (defn.how != dcUndefined) {
@@ -255,7 +236,7 @@ void parseFOR(SCANNER *scanner, ICODE *Icode) {
 
     // :=
     resync(scanner, tlColonEqual, tlExpressionStart, NULL);
-    condGetTokenAppend(scanner, tcColonEqual, errMissingColonEqual);
+    condGetTokenAppend(scanner, Icode, tcColonEqual, errMissingColonEqual);
 
     // <expr-1>
     parseExpression(scanner, Icode, &exprType);
@@ -272,13 +253,13 @@ void parseFOR(SCANNER *scanner, ICODE *Icode) {
 
     // DO
     resync(scanner, tlDO, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, tcDO, errMissingDO);
+    condGetTokenAppend(scanner, Icode, tcDO, errMissingDO);
 
     // <stmt>
     parseStatement(scanner, Icode);
 }
 
-void parseIF(SCANNER *scanner, ICODE *Icode) {
+void parseIF(SCANNER *scanner, CHUNKNUM Icode) {
     TTYPE resultType;
 
     // <expr>
@@ -288,7 +269,7 @@ void parseIF(SCANNER *scanner, ICODE *Icode) {
 
     // THEN
     resync(scanner, tlTHEN, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, tcTHEN, errMissingTHEN);
+    condGetTokenAppend(scanner, Icode, tcTHEN, errMissingTHEN);
 
     // <stmt-1>
     parseStatement(scanner, Icode);
@@ -298,9 +279,10 @@ void parseIF(SCANNER *scanner, ICODE *Icode) {
         getTokenAppend(scanner, Icode);
         parseStatement(scanner, Icode);
     }
+    // exit(0);
 }
 
-void parseREPEAT(SCANNER *scanner, ICODE *Icode) {
+void parseREPEAT(SCANNER *scanner, CHUNKNUM Icode) {
     TTYPE resultType;
 
     getTokenAppend(scanner, Icode);
@@ -309,7 +291,7 @@ void parseREPEAT(SCANNER *scanner, ICODE *Icode) {
     parseStatementList(scanner, Icode, tcUNTIL);
 
     // UNTIL
-    condGetTokenAppend(scanner, tcUNTIL, errMissingUNTIL);
+    condGetTokenAppend(scanner, Icode, tcUNTIL, errMissingUNTIL);
 
     // <expr>
     insertLineMarker(Icode);
@@ -317,14 +299,39 @@ void parseREPEAT(SCANNER *scanner, ICODE *Icode) {
     checkBoolean(resultType.nodeChunkNum, 0);
 }
 
-void parseStatement(SCANNER *scanner, ICODE *Icode)
+void parseStatement(SCANNER *scanner, CHUNKNUM Icode)
 {
+    DEFN defn;
+    SYMTABNODE node;
+
     insertLineMarker(Icode);
 
     // Call the appropriate parsing function based on
     // the statement's first token.
     switch (scanner->token.code) {
-        case tcIdentifier: parseAssignment(scanner, Icode); break;
+        case tcIdentifier:
+            // Search for the identifier and enter it if
+            // necessary.  Append the symbol table node handle
+            // to the icode.
+            findSymtabNode(&node, scanner->token.string);
+            putSymtabNodeToIcode(Icode, &node);
+
+            // Based on how the identifier is defined,
+            // parse an assignment statement or procedure call.
+            retrieveChunk(node.defnChunk, (unsigned char *)&defn);
+            if (defn.how == dcUndefined) {
+                defn.how = dcVariable;
+                storeChunk(node.defnChunk, (unsigned char *)&defn);
+                setType(&node.typeChunk, dummyType);
+                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+                parseAssignment(scanner, &node, Icode);
+            } else if (defn.how == dcProcedure) {
+                parseSubroutineCall(scanner, &node, 1, Icode);
+            } else {
+                parseAssignment(scanner, &node, Icode);
+            }
+            break;
+
         case tcREPEAT: parseREPEAT(scanner, Icode); break;
         case tcWHILE: parseWHILE(scanner, Icode); break;
         case tcIF: parseIF(scanner, Icode); break;
@@ -339,7 +346,7 @@ void parseStatement(SCANNER *scanner, ICODE *Icode)
     }
 }
 
-void parseStatementList(SCANNER *scanner, ICODE *Icode, TTokenCode terminator) {
+void parseStatementList(SCANNER *scanner, CHUNKNUM Icode, TTokenCode terminator) {
     // Loop to parse statements and to check for and skip semicolons
 
     do {
@@ -347,13 +354,15 @@ void parseStatementList(SCANNER *scanner, ICODE *Icode, TTokenCode terminator) {
 
         if (tokenIn(scanner->token.code, tlStatementStart)) {
             Error(errMissingSemicolon);
+        } else if (tokenIn(scanner->token.code, tlStatementListNotAllowed)) {
+            Error(errUnexpectedToken);
         } else while (scanner->token.code == tcSemicolon) {
             getTokenAppend(scanner, Icode);
         }
     } while (scanner->token.code != terminator && scanner->token.code != tcEndOfFile);
 }
 
-void parseWHILE(SCANNER *scanner, ICODE *Icode) {
+void parseWHILE(SCANNER *scanner, CHUNKNUM Icode) {
     TTYPE resultType;
 
     // <expr>
@@ -363,7 +372,7 @@ void parseWHILE(SCANNER *scanner, ICODE *Icode) {
 
     // DO
     resync(scanner, tlDO, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, tcDO, errMissingDO);
+    condGetTokenAppend(scanner, Icode, tcDO, errMissingDO);
 
     // <stmt>
     parseStatement(scanner, Icode);

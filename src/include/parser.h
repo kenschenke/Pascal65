@@ -17,21 +17,40 @@
 #include <icode.h>
 #include <types.h>
 
+void initParser(void);
 void parse(SCANNER *scanner);
 char findSymtabNode(SYMTABNODE *pNode, const char *identifier);
 void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
-void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
+void condGetTokenAppend(SCANNER *scanner, CHUNKNUM Icode, TTokenCode tc, TErrorCode ec);
 void resync(SCANNER *scanner, const TTokenCode *pList1,
     const TTokenCode *pList2,
     const TTokenCode *pList3);
 
 // Routines
+void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode);
+void parseActualParmList(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
 void parseBlock(SCANNER *scanner, SYMTABNODE *pRoutineId);
-void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize);
+CHUNKNUM parseDeclaredSubroutineCall(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
+void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, int *totalParmSize);
 void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc);
 void parseProgram(SCANNER *scanner, SYMTABNODE *pProgramId);
 void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId);
+CHUNKNUM parseStandardSubroutineCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRoutineId);
 void parseSubroutine(SCANNER *scanner, SYMTABNODE *pRoutineId);
+CHUNKNUM parseSubroutineCall(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
+void parseSubroutineDeclarations(SCANNER *scanner, SYMTABNODE *pRoutineId);
+
+// Standard Routines
+void initStandardRoutines(CHUNKNUM symtabChunkNum);
+CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRoutineId);
+CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRoutineId);
+CHUNKNUM parseEofEolnCall(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseAbsSqrCall(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parsePredSuccCall(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseChrCall(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseOddCall(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseOrdCall(SCANNER *scanner, CHUNKNUM Icode);
+void skipExtraParms(SCANNER *scanner, CHUNKNUM Icode);
 
 // Declarations
 int arraySize(TTYPE *pArrayType);
@@ -55,31 +74,30 @@ void parseVariableDeclarations(SCANNER *scanner, SYMTABNODE *routineSymtab);
 void parseVarOrFieldDecls(SCANNER *scanner, SYMTABNODE *routineSymtab, TTYPE *pRecordType, int offset);
 
 // Statements
-void parseAssignment(SCANNER *scanner, ICODE *Icode);
-void parseStatement(SCANNER *scanner, ICODE *Icode);
-void parseStatementList(SCANNER *scanner, ICODE *Icode, TTokenCode terminator);
+void parseAssignment(SCANNER *scanner, SYMTABNODE *pNode, CHUNKNUM Icode);
+void parseStatement(SCANNER *scanner, CHUNKNUM Icode);
+void parseStatementList(SCANNER *scanner, CHUNKNUM Icode, TTokenCode terminator);
 
-void parseREPEAT(SCANNER *scanner, ICODE *Icode);
-void parseWHILE(SCANNER *scanner, ICODE *Icode);
-void parseIF(SCANNER *scanner, ICODE *Icode);
-void parseFOR(SCANNER *scanner, ICODE *Icode);
-void parseCASE(SCANNER *scanner, ICODE *Icode);
-void parseCaseBranch(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType);
-void parseCaseLabel(SCANNER *scanner, ICODE *Icode, TTYPE *pExprType);
-void parseCompound(SCANNER *scanner, ICODE *Icode);
+void parseREPEAT(SCANNER *scanner, CHUNKNUM Icode);
+void parseWHILE(SCANNER *scanner, CHUNKNUM Icode);
+void parseIF(SCANNER *scanner, CHUNKNUM Icode);
+void parseFOR(SCANNER *scanner, CHUNKNUM Icode);
+void parseCASE(SCANNER *scanner, CHUNKNUM Icode);
+void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pExprType);
+void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pExprType);
+void parseCompound(SCANNER *scanner, CHUNKNUM Icode);
 
 // Expressions
-void parseExpression(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType);
-void parseField(SCANNER *scanner, ICODE *Icode, TTYPE *pType);
-void parseSimpleExpression(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType);
-void parseTerm(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType);
-void parseFactor(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType);
-void parseSubscripts(SCANNER *scanner, ICODE *Icode, TTYPE *pType);
-void parseVariable(SCANNER *scanner, ICODE *Icode, SYMTABNODE *pId, TTYPE *pResultType);
+void parseExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
+void parseField(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType);
+void parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
+void parseTerm(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
+void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
+void parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType);
+void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pId, TTYPE *pResultType);
 
 char enterGlobalSymtab(const char *pString, SYMTABNODE *node);
 void getToken(SCANNER *scanner);
-void getTokenAppend(SCANNER *scanner, ICODE *Icode);
-char searchGlobalSymtab(const char *pString, SYMTABNODE *node);
+void getTokenAppend(SCANNER *scanner, CHUNKNUM Icode);
 
 #endif // end of PARSER_H

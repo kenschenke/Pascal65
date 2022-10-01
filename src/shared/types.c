@@ -1,7 +1,6 @@
 #include <types.h>
 #include <error.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 CHUNKNUM booleanType;
 CHUNKNUM charType;
@@ -11,8 +10,17 @@ CHUNKNUM integerType;
 static char getType(CHUNKNUM chunkNum, TTYPE *pType);
 
 void checkAssignmentCompatible(TTYPE *targetType, TTYPE *valueType, TErrorCode ec) {
-    if (targetType->form == valueType->form &&
-        targetType->typeId == valueType->typeId) {
+    CHUNKNUM targetTypeId = targetType->nodeChunkNum;
+    CHUNKNUM valueTypeId = valueType->nodeChunkNum;
+
+    if (targetType->form == fcSubrange) {
+        targetTypeId = targetType->subrange.baseType;
+    }
+    if (valueType->form == fcSubrange) {
+        valueTypeId = valueType->subrange.baseType;
+    }
+
+    if (targetTypeId == valueTypeId) {
         return;
     }
 
@@ -82,32 +90,27 @@ static char getType(CHUNKNUM chunkNum, TTYPE *pType) {
 char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     TTYPE typeNode;
     DEFN defn;
-    SYMTAB symtab;
     SYMTABNODE node;
     CHUNKNUM integerId, booleanId, charId;
     CHUNKNUM falseId, trueId;
 
-    retrieveChunk(symtabChunkNum, (unsigned char *)&symtab);
-
     // Enter the names of the predefined types and of "false"
     // and "true" into the symbol table.
 
-    enterSymtab(symtab.symtabChunkNum, &node, "integer", dcType);
+    enterSymtab(symtabChunkNum, &node, "integer", dcType);
     integerId = node.nodeChunkNum;
 
-    enterSymtab(symtab.symtabChunkNum, &node, "boolean", dcType);
+    enterSymtab(symtabChunkNum, &node, "boolean", dcType);
     booleanId = node.nodeChunkNum;
 
-    enterSymtab(symtab.symtabChunkNum, &node, "char", dcType);
+    enterSymtab(symtabChunkNum, &node, "char", dcType);
     charId = node.nodeChunkNum;
 
-    enterSymtab(symtab.symtabChunkNum, &node, "false", dcConstant);
+    enterSymtab(symtabChunkNum, &node, "false", dcConstant);
     falseId = node.nodeChunkNum;
 
-    enterSymtab(symtab.symtabChunkNum, &node, "true", dcConstant);
+    enterSymtab(symtabChunkNum, &node, "true", dcConstant);
     trueId = node.nodeChunkNum;
-
-    storeChunk(symtabChunkNum, (unsigned char *)&symtab);
 
     // Create the predefined type objects
 

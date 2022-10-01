@@ -11,6 +11,11 @@ extern const TTokenCode tlStatementFollow[] = {
     tcSemicolon, tcPeriod, tcEND, tcELSE, tcUNTIL, tcDummy
 };
 
+// Tokens that cannot occur outside a statement such as IF
+extern const TTokenCode tlStatementListNotAllowed[] = {
+    tcELSE, tcDummy
+};
+
 // Tokens that can start a CASE label
 extern const TTokenCode tlCaseLabelStart[] = {
     tcIdentifier, tcNumber, tcPlus, tcMinus, tcString, tcDummy

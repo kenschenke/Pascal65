@@ -42,6 +42,9 @@ void abortTranslation(TAbortCode ac)
     getMessage(abortMsg[-ac - 1]);
     logFatalError(msgbuf);
     isFatalError = 1;
+#if 1
+    exit(0);
+#endif
 }
 
 void Error(TErrorCode ec)
@@ -53,7 +56,7 @@ void Error(TErrorCode ec)
     }
 
     getMessage(errorMessages[ec]);
-    logError(msgbuf, currentLineNumber);
+    logError(msgbuf, currentLineNumber, ec);
     if (++errorCount > maxSyntaxErrors) {
         abortTranslation(abortTooManySyntaxErrors);
     }

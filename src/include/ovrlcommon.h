@@ -15,7 +15,7 @@
 
 void log(const char *module, const char *message);
 void logFatalError(const char *message);
-void logError(const char *message, unsigned lineNumber);
+void logError(const char *message, unsigned lineNumber, TErrorCode code);
 void logRuntimeError(const char *message, unsigned lineNumber);
 void outputLine(const char *str);
 

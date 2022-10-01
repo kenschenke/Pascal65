@@ -4,6 +4,7 @@
 // Token Lists
 
 extern const TTokenCode tlStatementStart[], tlStatementFollow[];
+extern const TTokenCode tlStatementListNotAllowed[];
 extern const TTokenCode tlCaseLabelStart[];
 
 extern const TTokenCode tlExpressionStart[], tlExpressionFollow[];

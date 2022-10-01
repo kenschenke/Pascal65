@@ -76,7 +76,7 @@ typedef struct DEFN {
             int          totalLocalSize;    // total byte size of locals
             LOCALIDS     locals;            // local identifiers
             CHUNKNUM     symtab;            // chunk number of local symtab
-            struct ICODE *Icode;            // chunknum of routine's icode
+            CHUNKNUM     Icode;            // chunknum of routine's icode
         } routine;
 
         // Variable, record field, or parameter
@@ -135,6 +135,7 @@ char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identi
 
 CHUNKNUM getCurrentSymtab(void);
 void initSymtabs(void);
+void initSymtabsForParser(void);
 char symtabEnterLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc);
 char symtabEnterNewLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc);
 char symtabSearchLocal(SYMTABNODE *pNode, const char *pString);

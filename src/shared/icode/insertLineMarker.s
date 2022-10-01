@@ -128,6 +128,7 @@ pos: .res 2
     ldx hdrChunkNum + 1
     jsr pushax
     lda #3
+    ldx #0
     jsr _checkIcodeBounds
 
     ; Insert the line marker token

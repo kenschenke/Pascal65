@@ -17,6 +17,7 @@
 
 .import _checkIcodeBounds, putDataToIcode, _errorCount
 .import popax, pushax
+.importzp ptr1
 
 .bss
 
@@ -51,15 +52,22 @@ chunkNum: .res 2
     jsr _checkIcodeBounds
 
     ; write node to icode
-    ; first parameter to _putSymtaNodeToIcode
+    ; first parameter to _putDataToIcode
     lda chunkNum
     ldx chunkNum + 1
     jsr pushax
-    ; second parameter to _putSymtabNodeToIcode
+    ; second parameter to _putDataToIcode
     lda pNode
-    ldx pNode + 1
+    sta ptr1
+    lda pNode + 1
+    sta ptr1 + 1
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
     jsr pushax
-    ; third parameter to _putSymtabNodeToIcode
+    ; third parameter to _putDataToIcode
     lda #2
     ldx #0
     jsr putDataToIcode

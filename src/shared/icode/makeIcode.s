@@ -14,8 +14,9 @@
 
 .export _makeIcode
 
-.import _allocChunk, _cachedIcodeHdrChunkNum, _flushIcodeCache, _storeChunk
+.import _allocChunk, _cachedIcodeHdr, _flushIcodeCache, _storeChunk
 .import pushax
+.importzp ptr1
 
 .bss
 
@@ -33,15 +34,16 @@ chunkNum: .res 2
     jsr _flushIcodeCache
 
     ; Clear the header values
+    lda #<_cachedIcodeHdr
+    sta ptr1
+    lda #>_cachedIcodeHdr
+    sta ptr1 + 1
     lda #0
-    sta _cachedIcodeHdrChunkNum + ICODE::currentChunkNum
-    sta _cachedIcodeHdrChunkNum + ICODE::currentChunkNum + 1
-    sta _cachedIcodeHdrChunkNum + ICODE::firstChunkNum
-    sta _cachedIcodeHdrChunkNum + ICODE::firstChunkNum + 1
-    sta _cachedIcodeHdrChunkNum + ICODE::posGlobal
-    sta _cachedIcodeHdrChunkNum + ICODE::posGlobal + 1
-    sta _cachedIcodeHdrChunkNum + ICODE::posChunk
-    sta _cachedIcodeHdrChunkNum + ICODE::posChunk + 1
+    ldy #.sizeof(ICODE) - 1
+@Loop:
+    sta (ptr1),y
+    dey
+    bpl @Loop
     
     ; Allocate a new chunk for the header
     lda chunkNum
@@ -49,12 +51,19 @@ chunkNum: .res 2
     jsr _allocChunk
 
     ; Call _storeChunk(chunkNum, ICODE *)
-    lda #<_cachedIcodeHdrChunkNum
-    ldx #>_cachedIcodeHdrChunkNum
+    lda chunkNum
+    sta ptr1
+    lda chunkNum + 1
+    sta ptr1 + 1
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
     jsr pushax
 
-    lda chunkNum
-    ldx chunkNum + 1
+    lda #<_cachedIcodeHdr
+    ldx #>_cachedIcodeHdr
 
     jmp _storeChunk
 

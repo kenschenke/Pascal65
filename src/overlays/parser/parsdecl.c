@@ -102,6 +102,10 @@ void parseDeclarations(SCANNER *scanner, SYMTABNODE *routineSymtab) {
         getToken(scanner);
         parseVariableDeclarations(scanner, routineSymtab);
     }
+
+    if (tokenIn(scanner->token.code, tlProcFuncStart)) {
+        parseSubroutineDeclarations(scanner, routineSymtab);
+    }
 }
 
 void parseConstant(SCANNER *scanner, SYMTABNODE *constId) {
@@ -173,7 +177,7 @@ void parseConstantDefinitions(SCANNER *scanner, SYMTABNODE *routineSymtab) {
     // Loop to parse a list of constant definitions
     // separated by semicolons
     while (scanner->token.code == tcIdentifier) {
-        if (enterNew(globalSymtab, &constId, scanner->token.string, dcUndefined) == 0) {
+        if (symtabEnterNewLocal(&constId, scanner->token.string, dcUndefined) == 0) {
             return;
         }
 
@@ -292,7 +296,7 @@ CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordT
         // variable: enter into local symbol table
         // field:    enter into record symbol table
         if (routineId != NULL) {
-            enterGlobalSymtab(scanner->token.string, &pId);
+            symtabEnterNewLocal(&pId, scanner->token.string, dcUndefined);
         } else {
             enterNew(pRecordType->record.symtab, &pId, scanner->token.string, dcUndefined);
         }
@@ -304,6 +308,7 @@ CHUNKNUM parseIdSublist(SCANNER *scanner, SYMTABNODE *routineId, TTYPE *pRecordT
         }
         if (defn.how == dcUndefined) {
             defn.how = routineId != NULL ? dcVariable : dcField;
+            storeChunk(pId.defnChunk, (unsigned char *)&defn);
             if (!firstId) firstId = *pLastId = pId.nodeChunkNum;
             else {
                 if (retrieveChunk(*pLastId, (unsigned char *)&lastId) == 0) {

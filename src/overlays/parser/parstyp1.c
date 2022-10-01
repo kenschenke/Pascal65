@@ -6,7 +6,6 @@
 #include <types.h>
 #include <string.h>
 
-
 void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
     DEFN defn;
     TTYPE newType;
@@ -22,7 +21,7 @@ void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
 
     // Loop to parse list of constant identifiers separated by commas.
     while (scanner->token.code == tcIdentifier) {
-        enterNew(globalSymtab, &newNode, scanner->token.string, dcUndefined);
+        symtabEnterNewLocal(&newNode, scanner->token.string, dcUndefined);
         ++constValue;
 
         retrieveChunk(newNode.defnChunk, (unsigned char *)&defn);
@@ -44,6 +43,8 @@ void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
                 lastChunk = newChunkNum;
             }
         }
+
+        memset(&newNode, 0, sizeof(SYMTABNODE));
 
         // ,
         getToken(scanner);
@@ -225,7 +226,7 @@ void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     // separated by semicolons.
     while (scanner->token.code == tcIdentifier) {
         // <id>
-        if (enterNew(globalSymtab, &idNode, scanner->token.string, dcUndefined) == 0) {
+        if (symtabEnterNewLocal(&idNode, scanner->token.string, dcUndefined) == 0) {
             return;
         }
 
@@ -253,6 +254,9 @@ void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
 
         // <type>
         parseTypeSpec(scanner, &newTypeChunkNum);
+        // Retrieve the idNode again because it might have changed
+        // while parsing the enumeration types
+        retrieveChunk(idNode.nodeChunkNum, (unsigned char *)&idNode);
         retrieveChunk(newTypeChunkNum, (unsigned char *)&typeNode);
         setType(&idNode.typeChunk, newTypeChunkNum);
         storeChunk(idNode.nodeChunkNum, (unsigned char *)&idNode);
@@ -286,7 +290,7 @@ void parseTypeSpec(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
     switch (scanner->token.code) {
         // type identifier
         case tcIdentifier:
-            if (findSymtabNode(&node, scanner->token.string) == 0) {
+            if (symtabStackSearchAll(scanner->token.string, &node) == 0) {
                 break;
             }
             if (retrieveChunk(node.defnChunk, (unsigned char *)&defn) == 0) {

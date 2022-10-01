@@ -10,7 +10,6 @@
  * https://opensource.org/licenses/MIT
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include <icode.h>
 #include <error.h>
@@ -37,6 +36,8 @@ const char *symbolStrings[] = {
     "packed", "procedure", "program", "record", "repeat", "set",
     "then", "to", "type", "until", "var", "while", "with",
 };
+
+const TTokenCode mcLineMarker = ((TTokenCode) 127);
 
 ICODE cachedIcodeHdr;
 CHUNKNUM cachedIcodeHdrChunkNum;

@@ -15,8 +15,8 @@
 #include <error.h>
 #include <common.h>
 #include <string.h>
-#include <stdlib.h>
 #include <types.h>
+#include <parser.h>
 
 #define MAX_NESTING_LEVEL 8
 
@@ -35,7 +35,6 @@ static void setCurrentSymtab(CHUNKNUM symtabChunkNum);
 
 static int compNodeIdentifier(const char *identifier, CHUNKNUM other) {
     char otherIdent[CHUNK_LEN];
-
     if (retrieveChunk(other, (unsigned char *)otherIdent) == 0) {
         abortTranslation(abortOutOfMemory);
     }
@@ -295,10 +294,6 @@ char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identi
         chunkNum = comp < 0 ? pNode->leftChunkNum : pNode->rightChunkNum;
     }
 
-    if (chunkNum) {
-        // Add line number to symbol list
-    }
-
     return chunkNum ? 1 : 0;
 }
 
@@ -312,8 +307,11 @@ void initSymtabs(void) {
 
     symtabStack[0] = globalSymtab;
 
-    initPredefinedTypes(&symtabStack[0]);
-    // initStandardRoutines(&symtabStack[0]);
+    initPredefinedTypes(symtabStack[0]);
+}
+
+void initSymtabsForParser(void) {
+    initStandardRoutines(symtabStack[0]);
 }
 
 static void setCurrentSymtab(CHUNKNUM symtabChunkNum) {

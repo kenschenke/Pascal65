@@ -29,10 +29,10 @@ void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
     }
 }
 
-void condGetTokenAppend(SCANNER *scanner, TTokenCode tc, TErrorCode ec) {
+void condGetTokenAppend(SCANNER *scanner, CHUNKNUM Icode, TTokenCode tc, TErrorCode ec) {
     // Get another token only if the current one matches tc.
     if (tc == scanner->token.code) {
-        // getTokenAppend(scanner, pGlobalIcode);
+        getTokenAppend(scanner, Icode);
     } else {
         Error(ec);
     }
@@ -44,7 +44,7 @@ char enterGlobalSymtab(const char *pString, SYMTABNODE *node)
 }
 
 char findSymtabNode(SYMTABNODE *pNode, const char *identifier) {
-    if (searchGlobalSymtab(identifier, pNode) == 0) {
+    if (symtabStackSearchAll(identifier, pNode) == 0) {
         Error(errUndefinedIdentifier);                         // error not found
         if (enterGlobalSymtab(identifier, pNode) == 0) {       // but enter it anyway
             return 0;
@@ -59,14 +59,21 @@ void getToken(SCANNER *scanner)
     getNextToken(scanner);
 }
 
-void getTokenAppend(SCANNER *scanner, ICODE *Icode)
+void getTokenAppend(SCANNER *scanner, CHUNKNUM Icode)
 {
     getToken(scanner);
     putTokenToIcode(Icode, scanner->token.code);
 }
 
+void initParser(void) {
+    initSymtabsForParser();
+}
+
 void parse(SCANNER *scanner)
 {
+    int i;
+    SYMTABNODE programId;
+
 #if 1
 #if 0
     SYMTABNODE dummyProgram;
@@ -85,7 +92,7 @@ void parse(SCANNER *scanner)
     storeChunk(dummyProgram.nameChunkNum, (unsigned char *)nameChunk);
 #endif
 
-    SYMTABNODE programId;
+    for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
 
     getToken(scanner);
     parseProgram(scanner, &programId);
@@ -161,25 +168,20 @@ void resync(SCANNER *scanner,
         errorCode = scanner->token.code == tcEndOfFile ?
             errUnexpectedEndOfFile : errUnexpectedToken;
         Error(errorCode);
-    }
 
-    // Skip tokens
-    while (!tokenIn(scanner->token.code, pList1) &&
-        !tokenIn(scanner->token.code, pList2) &&
-        !tokenIn(scanner->token.code, pList3) &&
-        scanner->token.code != tcPeriod &&
-        scanner->token.code != tcEndOfFile) {
-        getToken(scanner);
-    }
+        // Skip tokens
+        while (!tokenIn(scanner->token.code, pList1) &&
+            !tokenIn(scanner->token.code, pList2) &&
+            !tokenIn(scanner->token.code, pList3) &&
+            scanner->token.code != tcPeriod &&
+            scanner->token.code != tcEndOfFile) {
+            getToken(scanner);
+        }
 
-    // Flag an unexpected end of file (if haven't already)
-    if ((scanner->token.code == tcEndOfFile) &&
-        (errorCode != errUnexpectedEndOfFile)) {
-        Error(errUnexpectedEndOfFile);
+        // Flag an unexpected end of file (if haven't already)
+        if ((scanner->token.code == tcEndOfFile) &&
+            (errorCode != errUnexpectedEndOfFile)) {
+            Error(errUnexpectedEndOfFile);
+        }
     }
-}
-
-char searchGlobalSymtab(const char *pString, SYMTABNODE *node)
-{
-    return searchSymtab(globalSymtab, node, pString);
 }

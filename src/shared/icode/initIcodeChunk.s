@@ -70,18 +70,35 @@ hdrChunkNum: .res 2
     jmp @SetupDataChunk
 
 @SetNextChunk:
+    ; Is cachedIcodeHdr currentChunkNum zero?
+    lda _cachedIcodeHdr + 2 ; ICODE::currentChunkNum
+    ora _cachedIcodeHdr + 3 ; ICODE::currentChunkNum + 1
+    beq @SetupDataChunk ; It's zero - skip to setting up the new data chunk
+
     ; Set the previous chunk's nextChunk to point to this new node
 
     ; Retrieve the current chunk
     ; First parameter to retrieveChunk
-    lda _cachedIcodeHdr + ICODE::currentChunkNum
-    ldx _cachedIcodeHdr + ICODE::currentChunkNum + 1
+    lda _cachedIcodeHdr + 2 ; ICODE::currentChunkNum
+    ldx _cachedIcodeHdr + 3 ; ICODE::currentChunkNum + 1
     jsr pushax
     ; Second parameter
     lda #<_cachedIcodeData
     ldx #>_cachedIcodeData
     jsr _retrieveChunk
+    cmp #0
+    bne @SetChunkNum
 
+    ; Failed to retrieve the chunk
+    lda #errCodeSegmentOverflow
+    ldx #0
+    jsr _Error
+    lda #abortCodeSegmentOverflow
+    ldx #0
+    jsr _abortTranslation
+    jmp @Done
+
+@SetChunkNum:
     ; Set the next chunk number
     lda chunkNum
     sta _cachedIcodeData + ICODE_CHUNK::nextChunk

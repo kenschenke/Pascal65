@@ -16,7 +16,7 @@ void parseBlock(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     if (scanner->token.code != tcBEGIN) Error(errMissingBEGIN);
 
     retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-    defn.routine.Icode = makeIcode();
+    makeIcode(&defn.routine.Icode);
     storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
     parseCompound(scanner, defn.routine.Icode);
 }
@@ -27,7 +27,7 @@ void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc
     int totalParmSize;  // total byte size of all parameters
     char forwardFlag = 0;
     SYMTABNODE typeId;
-    CHUNKNUM *pParmList;
+    CHUNKNUM parmList;
 
     getToken(scanner);
 
@@ -65,14 +65,14 @@ void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc
     //                        must not be a parameter list, but if there
     //                        is, parse it anyway for error recovery.
     if (scanner->token.code == tcLParen) {
-        parseFormalParmList(pParmList, &parmCount, &totalParmSize);
+        parseFormalParmList(scanner, &parmList, &parmCount, &totalParmSize);
         if (forwardFlag) {
             Error(errAlreadyForwarded);
         } else {
             // Not forwarded
             defn.routine.parmCount = parmCount;
             defn.routine.totalParmSize = totalParmSize;
-            defn.routine.locals.parmIds = *pParmList;
+            defn.routine.locals.parmIds = parmList;
         }
     } else if (!forwardFlag) {
         // No parameters and no forward declaration
@@ -137,10 +137,11 @@ void parseProgram(SCANNER *scanner, SYMTABNODE *pProgramId) {
     parseBlock(scanner, pProgramId);
     retrieveChunk(pProgramId->defnChunk, (unsigned char *)&defn);
     symtabExitScope(&defn.routine.symtab);
+    storeChunk(pProgramId->defnChunk, (unsigned char *)&defn);
 
     // .
     resync(scanner, tlProgramEnd, NULL, NULL);
-    condGetTokenAppend(scanner, tcPeriod, errMissingPeriod);
+    condGetTokenAppend(scanner, defn.routine.Icode, tcPeriod, errMissingPeriod);
 }
 
 void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
@@ -208,6 +209,39 @@ void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
         // )
         resync(scanner, tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
         condGetToken(scanner, tcRParen, errMissingRightParen);
+    }
+}
+
+void parseSubroutineDeclarations(SCANNER *scanner, SYMTABNODE *pRoutineId) {
+    DEFN defn;
+    SYMTABNODE node;
+    CHUNKNUM rtnId, lastId = 0;
+
+    // Loop to parse procedure and function definitions
+    while (tokenIn(scanner->token.code, tlProcFuncStart)) {
+        parseSubroutine(scanner, &node);
+        rtnId = node.nodeChunkNum;
+
+        // Link the routine's local (nested) routine id nodes together.
+        retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+        if (!defn.routine.locals.routineIds) {
+            defn.routine.locals.routineIds = rtnId;
+            storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+        } else {
+            retrieveChunk(lastId, (unsigned char *)&node);
+            node.nextNode = rtnId;
+            storeChunk(lastId, (unsigned char *)&node);
+        }
+        lastId = rtnId;
+
+        // semicolon
+        resync(scanner, tlDeclarationFollow, tlProcFuncStart, tlStatementStart);
+        if (scanner->token.code == tcSemicolon) {
+            getToken(scanner);
+        } else if (tokenIn(scanner->token.code, tlProcFuncStart) ||
+            tokenIn(scanner->token.code, tlStatementStart)) {
+            Error(errMissingSemicolon);
+        }
     }
 }
 

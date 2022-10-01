@@ -17,7 +17,7 @@
 #include <parscommon.h>
 #include <common.h>
 
-void parseExpression(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
+void parseExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 {
     TTYPE operandType;
 
@@ -39,40 +39,58 @@ void parseExpression(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
     resync(scanner, tlExpressionFollow, tlStatementFollow, tlStatementStart);
 }
 
-void parseFactor(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
+void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 {
     DEFN defn;
     int length;
-    CHUNKNUM newChunk;
+    CHUNKNUM newChunk, resultTypeChunk;
     SYMTABNODE node;
 
     switch (scanner->token.code) {
         case tcIdentifier:
-            // Search for the identifier.  If found, append the
-            // symbol table node handle to the icode.  If not
-            // found, enter it and flag an undefined identifier error.
-            findSymtabNode(&node, scanner->token.string);
+            // Search for the identifier and enter if necessary.
+            // Append the symbol table node handle to the icode.
+            symtabStackFind(scanner->token.string, &node);
+            putSymtabNodeToIcode(Icode, &node);
             retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-            if (defn.how != dcUndefined) {
-                putSymtabNodeToIcode(Icode, &node);
-            } else {
+            if (defn.how == dcUndefined) {
                 defn.how = dcVariable;
+                storeChunk(node.defnChunk, (unsigned char *)&defn);
                 setType(&node.typeChunk, dummyType);
                 storeChunk(node.nodeChunkNum, (unsigned char *)&node);
             }
-            // Is it a constant or variable identifier?
-            if (defn.how == dcConstant) {
-                retrieveChunk(node.typeChunk, (unsigned char *)pResultType);
-                getTokenAppend(scanner, Icode);
-            } else {
-                parseVariable(scanner, Icode, &node, pResultType);
+
+            // Based on how the identifier is defined,
+            // parse a constant, function call, or variable.
+            switch (defn.how) {
+                case dcFunction:
+                    resultTypeChunk = parseSubroutineCall(scanner, &node, 1, Icode);
+                    retrieveChunk(resultTypeChunk, (unsigned char *)pResultType);
+                    break;
+
+                case dcProcedure:
+                    Error(errInvalidIdentifierUsage);
+                    resultTypeChunk = parseSubroutineCall(scanner, &node, 0, Icode);
+                    retrieveChunk(resultTypeChunk, (unsigned char *)pResultType);
+                    break;
+
+                case dcConstant:
+                    getTokenAppend(scanner, Icode);
+                    resultTypeChunk = node.typeChunk;
+                    retrieveChunk(resultTypeChunk, (unsigned char *)pResultType);
+                    break;
+
+                default:
+                    parseVariable(scanner, Icode, &node, pResultType);
+                    break;
             }
+
             break;
 
         case tcNumber:
             // Search for the number and enter it if necessary.
-            if (!searchGlobalSymtab(scanner->token.string, &node)) {
-                enterGlobalSymtab(scanner->token.string, &node);
+            if (!symtabStackSearchAll(scanner->token.string, &node)) {
+                symtabEnterLocal(&node, scanner->token.string, dcUndefined);
 
                 // Determine the number's type and set its value into
                 // the symbol table node.
@@ -94,8 +112,8 @@ void parseFactor(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
 
         case tcString:
             // Search for the string and enter it if necessary.
-            if (!searchGlobalSymtab(scanner->token.string, &node)) {
-                enterGlobalSymtab(scanner->token.string, &node);
+            if (!symtabStackSearchAll(scanner->token.string, &node)) {
+                symtabEnterLocal(&node, scanner->token.string, dcUndefined);
 
                 // compute the string length (without the quotes).
                 // if the length is 1, the result type is character,
@@ -118,6 +136,8 @@ void parseFactor(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
                     copyQuotedString(scanner->token.string, &defn.constant.value.stringChunkNum);
                 }
                 storeChunk(node.defnChunk, (unsigned char *)&defn);
+            } else {
+                retrieveChunk(node.typeChunk, (unsigned char *)pResultType);
             }
 
             // Append the symbol table node to the icode
@@ -151,7 +171,7 @@ void parseFactor(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
     }
 }
 
-void parseField(SCANNER *scanner, ICODE *Icode, TTYPE *pType) {
+void parseField(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType) {
     SYMTABNODE fieldId;
 
     getTokenAppend(scanner, Icode);
@@ -164,7 +184,7 @@ void parseField(SCANNER *scanner, ICODE *Icode, TTYPE *pType) {
         putSymtabNodeToIcode(Icode, &fieldId);
 
         getTokenAppend(scanner, Icode);
-        retrieveChunk(fieldId.nodeChunkNum == 0 ? fieldId.typeChunk : dummyType,
+        retrieveChunk(fieldId.nodeChunkNum ? fieldId.typeChunk : dummyType,
             (unsigned char *)pType);
     } else {
         Error(errInvalidField);
@@ -173,7 +193,7 @@ void parseField(SCANNER *scanner, ICODE *Icode, TTYPE *pType) {
     }
 }
 
-void parseSimpleExpression(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
+void parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 {
     TTYPE operandType;
     TTokenCode op;
@@ -222,7 +242,7 @@ void parseSimpleExpression(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
     }
 }
 
-void parseSubscripts(SCANNER *scanner, ICODE *Icode, TTYPE *pType) {
+void parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType) {
     TTYPE indexType, targetType;
 
     // Loop to parse a list of subscripts separated by commas.
@@ -251,10 +271,10 @@ void parseSubscripts(SCANNER *scanner, ICODE *Icode, TTYPE *pType) {
     } while (scanner->token.code == tcComma);
 
     // ]
-    condGetTokenAppend(scanner, tcRBracket, errMissingRightBracket);
+    condGetTokenAppend(scanner, Icode, tcRBracket, errMissingRightBracket);
 }
 
-void parseTerm(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
+void parseTerm(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 {
     TTYPE operandType;
     TTokenCode op;
@@ -294,8 +314,9 @@ void parseTerm(SCANNER *scanner, ICODE *Icode, TTYPE *pResultType)
     }
 }
 
-void parseVariable(SCANNER *scanner, ICODE *Icode, SYMTABNODE *pNode, TTYPE *pResultType) {
+void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode, TTYPE *pResultType) {
     DEFN defn;
+    char doneFlag = 0;
 
     retrieveChunk(pNode->typeChunk, (unsigned char *)pResultType);
     retrieveChunk(pNode->defnChunk, (unsigned char *)&defn);
@@ -318,11 +339,19 @@ void parseVariable(SCANNER *scanner, ICODE *Icode, SYMTABNODE *pNode, TTYPE *pRe
     getTokenAppend(scanner, Icode);
 
     // [ or . : Loop to parse any subscripts and fields.
-    while (tokenIn(scanner->token.code, tlSubscriptOrFieldStart)) {
-        if (scanner->token.code == tcLBracket) {
-            parseSubscripts(scanner, Icode, pResultType);
-        } else {
-            parseField(scanner, Icode, pResultType);
+    do {
+        switch (scanner->token.code) {
+            case tcLBracket:
+                parseSubscripts(scanner, Icode, pResultType);
+                break;
+
+            case tcPeriod:
+                parseField(scanner, Icode, pResultType);
+                break;
+
+            default:
+                doneFlag = 1;
+                break;
         }
-    }
+    } while (!doneFlag);
 }
