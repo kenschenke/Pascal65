@@ -18,7 +18,7 @@
 #include <types.h>
 
 void initParser(void);
-void parse(SCANNER *scanner);
+CHUNKNUM parse(SCANNER *scanner);  // returns programId
 char findSymtabNode(SYMTABNODE *pNode, const char *identifier);
 void condGetToken(SCANNER *scanner, TTokenCode tc, TErrorCode ec);
 void condGetTokenAppend(SCANNER *scanner, CHUNKNUM Icode, TTokenCode tc, TErrorCode ec);

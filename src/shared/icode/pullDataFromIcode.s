@@ -124,7 +124,8 @@ toCopy: .res 1
     adc #0
     sta ptr2 + 1
     ldy toCopy
-    beq @Done
+    ; If toCopy is zero, the next chunk is needed
+    beq @LoadNextChunk
     dey
 @CopyLoop:
     lda (ptr2),y
@@ -173,6 +174,7 @@ toCopy: .res 1
     ora length + 1
     beq @Done
 
+@LoadNextChunk:
     ; If there's no nextChunk, we're done
     lda _cachedIcodeData + ICODE_CHUNK::nextChunk
     ora _cachedIcodeData + ICODE_CHUNK::nextChunk + 1

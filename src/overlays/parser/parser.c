@@ -69,7 +69,7 @@ void initParser(void) {
     initSymtabsForParser();
 }
 
-void parse(SCANNER *scanner)
+CHUNKNUM parse(SCANNER *scanner)
 {
     int i;
     SYMTABNODE programId;
@@ -150,6 +150,8 @@ void parse(SCANNER *scanner)
 
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);
+
+    return programId.nodeChunkNum;
 }
 
 void resync(SCANNER *scanner,

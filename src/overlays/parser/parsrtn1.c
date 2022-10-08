@@ -166,7 +166,7 @@ void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
         defn.routine.locals.variableIds = 0;
         defn.routine.locals.routineIds = 0;
         defn.routine.symtab = 0;
-        defn.routine.Icode = NULL;
+        defn.routine.Icode = 0;
         storeChunk(pProgramId->defnChunk, (unsigned char *)&defn);
         setType(&pProgramId->typeChunk, dummyType);
         storeChunk(pProgramId->nodeChunkNum, (unsigned char *)pProgramId);
@@ -205,6 +205,8 @@ void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
                 Error(errMissingIdentifier);
             }
         } while (scanner->token.code == tcComma);
+
+        storeChunk(pProgramId->defnChunk, (unsigned char *)&defn);
 
         // )
         resync(scanner, tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
@@ -264,12 +266,13 @@ void parseSubroutine(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
     if (stricmp(scanner->token.string, "forward")) {
         defn.routine.which = rcDeclared;
+        storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
         parseBlock(scanner, pRoutineId);
     } else {
         getToken(scanner);
         defn.routine.which = rcForward;
+        storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
     }
 
     symtabExitScope(&defn.routine.symtab);
-    storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
 }

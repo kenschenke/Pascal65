@@ -23,8 +23,11 @@
 
     lda #0
     sta _cachedIcodeHdr + ICODE::currentChunkNum
+    sta _cachedIcodeHdr + ICODE::currentChunkNum + 1
     sta _cachedIcodeHdr + ICODE::posGlobal
+    sta _cachedIcodeHdr + ICODE::posGlobal + 1
     sta _cachedIcodeHdr + ICODE::posChunk
+    sta _cachedIcodeHdr + ICODE::posChunk + 1
 
     rts
 .endproc
