@@ -16,98 +16,110 @@
 .export _freeChunk
 
 .import _isBlockAllocated, _currentBlock, _storeBlock, _blockData, _FullBlocks, _freeBlock, _retrieveBlock
-.import __chunkGetBlock
+.import __chunkGetBlock, clearChunkAlloc, clearBlockFull, isChunkAlloc, extractBlockAndChunkNum
+.import incAvailChunks
 .importzp ptr1
 
-blockNum:
-    .byte 0
-chunkNum:
-    .byte 0
+.bss
+
+blockNum: .res 2
+chunkNum: .res 1
+
+.code
 
 ; void freeChunk(CHUNKNUM chunkNum)
 .proc _freeChunk
-    sta chunkNum
-    stx blockNum
-
-    ; is chunkNum < 1 or > CHUNKS_PER_BLOCK
-    cmp #1
-    bmi Done
-    cmp #CHUNKS_PER_BLOCK + 1
-    bpl Done
-
-    ; is blockNum < 1 or > TOTAL_BLOCKS 
-    cpx #1
-    bmi Done
-    cpx #TOTAL_BLOCKS + 1
-    bpl Done
+    jsr extractBlockAndChunkNum
+    sta blockNum
+    stx blockNum + 1
+    dey
+    sty chunkNum
 
     ; is blockNum allocated?
-    lda blockNum
     jsr _isBlockAllocated
     cmp #0
-    beq Done
+    beq JmpDone
 
     ; Do we have a current block?
-    lda _currentBlock
+    lda _blockData
+    ora _blockData + 1
     beq GetBlock            ; no
 
     ; Is the chunk in a different block?
+    lda _currentBlock
     cmp blockNum
+    bne @StoreCurrentBlock  ; yes
+    lda _currentBlock + 1
+    cmp blockNum + 1
     beq FreeChunk           ; no
 
+@StoreCurrentBlock:
     ; Store the current block
+    lda _currentBlock
+    ldx _currentBlock + 1
     jsr _storeBlock
     cmp #0
     beq Failure
     lda #0
     sta _currentBlock
+    sta _currentBlock + 1
+    sta _blockData
+    sta _blockData + 1
 
 GetBlock:
     ; Retrieve the block we need
     lda blockNum
+    ldx blockNum + 1
     jsr __chunkGetBlock
+    cmp #0
     bne FreeChunk
     jmp Failure             ; retrieveBlock returned NULL
+
+JmpDone:
+    jmp Done
 
 FreeChunk:
     ; Set the chunk to show free in the chunk allocation table
     ; at the beginning of the block
-    lda _blockData
-    sta ptr1
-    lda _blockData+1
-    sta ptr1+1
-    ldy chunkNum
-    dey
-    lda #0
-    sta (ptr1),y
+    lda chunkNum
+    jsr clearChunkAlloc
     ; The block is no longer full either
-    ldy blockNum
-    dey
-    sta _FullBlocks,y
+    lda blockNum
+    ldx blockNum + 1
+    jsr clearBlockFull
 
     ; Check if all other chunks in this block are also freed
-    ldy #0
-    ldx #CHUNKS_PER_BLOCK
+    lda #0
+    sta chunkNum
 Loop:
-    lda (ptr1),y
-    bne Done                ; There's another chunk still allocated
-    iny
-    dex
+    jsr isChunkAlloc
+    cmp #0
+    bne Done
+    inc chunkNum
+    lda chunkNum
+    cmp #CHUNKS_PER_BLOCK
     bne Loop
 
     ; All chunks in this block are freed.
     ; The block can be freed as well.
     lda blockNum
+    ldx blockNum + 1
     jsr _freeBlock
     lda #0
     sta _currentBlock
+    sta _currentBlock + 1
+    sta _blockData
+    sta _blockData + 1
     jmp Done
 
 Failure:
     lda #0
     sta _currentBlock
+    sta _currentBlock + 1
+    sta _blockData
+    sta _blockData + 1
 
 Done:
-    rts
+    jmp incAvailChunks
 
 .endproc

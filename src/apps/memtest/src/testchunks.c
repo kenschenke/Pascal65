@@ -2,12 +2,16 @@
 #include <blocks.h>
 #include <chunks.h>
 #include "memtest.h"
+#ifdef __MEGA65__
 #include <memory.h>
+#endif
 #include <string.h>
 
 void testAllocateAllChunks(void)
 {
 	int i, b, c;
+	char ret;
+	unsigned totalBlocks;
 	CHUNKNUM chunkNum;
 	unsigned char chunk[CHUNK_LEN];
 
@@ -15,15 +19,17 @@ void testAllocateAllChunks(void)
 
 	printf("Running test: Allocate All Chunks\n");
 
+	totalBlocks = getTotalBlocks();
+
 	// Allocate each chunk and set its contents to unique values
-	for (b = 0; b < TOTAL_BLOCKS; ++b) {
+	for (b = 0; b < totalBlocks; ++b) {
 		for (c = 0; c < CHUNKS_PER_BLOCK; ++c) {
 			assertNonZero(allocChunk(&chunkNum));
-			assertEqualByte(b + 1, GET_BLOCKNUM(chunkNum));
+			assertEqualByte(b, GET_BLOCKNUM(chunkNum));
 			assertEqualByte(c + 1, GET_CHUNKNUM(chunkNum));
 
 			for (i = 0; i < CHUNK_LEN - (CHUNK_LEN % 2); i += 2) {
-				chunk[i] = b + 1;
+				chunk[i] = (b + 1) % 256;
 				chunk[i + 1] = c + 1;
 			}
 
@@ -32,30 +38,27 @@ void testAllocateAllChunks(void)
 	}
 
 	// Retrieve each chunk and verify its contents
-	for (b = 0; b < TOTAL_BLOCKS; ++b) {
+	for (b = 0; b < totalBlocks; ++b) {
 		for (c = 0; c < CHUNKS_PER_BLOCK; ++c) {
-			assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(b + 1, c + 1), chunk));
+			assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(b, c + 1), chunk));
 
 			for (i = 0; i < CHUNK_LEN - (CHUNK_LEN % 2); i += 2) {
-				assertEqualByte(chunk[i], b + 1);
+				assertEqualByte(chunk[i], (b + 1) % 256);
 				assertEqualByte(chunk[i + 1], c + 1);
 			}
 		}
 	}
 
-	// Attempt to allocate one more chunk
-	assertZero(allocChunk(&chunkNum));
-
 	// Verify each chunk is allocated, free each chunk,
 	// then verify each chunk is freed.
-	for (b = 0; b < TOTAL_BLOCKS; ++b) {
-		assertNonZero(isBlockAllocated(b + 1));
+	for (b = 0; b < totalBlocks; ++b) {
+		assertNonZero(isBlockAllocated(b));
 		for (c = 0; c < CHUNKS_PER_BLOCK; ++c) {
-			assertNonZero(isChunkAllocated(TO_BLOCK_AND_CHUNK(b + 1, c + 1)));
-			freeChunk(TO_BLOCK_AND_CHUNK(b + 1, c + 1));
-			assertZero(isChunkAllocated(TO_BLOCK_AND_CHUNK(b + 1, c + 1)));
+			assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(b, c + 1), chunk));
+			freeChunk(TO_BLOCK_AND_CHUNK(b, c + 1));
+			assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(b, c + 1), chunk));
 		}
-		assertZero(isBlockAllocated(b + 1));
+		assertZero(isBlockAllocated(b));
 	}
 }
 
@@ -78,7 +81,7 @@ void testFreeChunk(void)
 	freeChunk(chunkNum);
 
 	// Attempt to retrieve it again
-	assertZero(retrieveChunk(chunkNum, &chunk));
+	assertZero(retrieveChunk(chunkNum, chunk));
 }
 
 void testGetAvailChunks(void)
@@ -103,7 +106,7 @@ void testGetTotalChunks(void)
 
 	printf("Running test: Get Total Chunks\n");
 
-	assertEqualInt(BANKS * BLOCKS_PER_BANK * CHUNKS_PER_BLOCK, getTotalChunks());
+	assertEqualInt(getTotalBlocks() * CHUNKS_PER_BLOCK, getTotalChunks());
 }
 
 void testRetrieveChunk(void)
@@ -116,8 +119,7 @@ void testRetrieveChunk(void)
 	printf("Running test: Retrieve Chunk\n");
 
 	// Test blockNum out of range
-	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(0, 1), chunk));
-	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(TOTAL_BLOCKS + 1, 1), chunk));
+	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(getTotalBlocks(), 1), chunk));
 
 	// Test chunkNum out of range
 	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, 0), chunk));
@@ -125,7 +127,7 @@ void testRetrieveChunk(void)
 
 	// Allocate a chunk and verify it can be retrieved
 	assertNonZero(allocChunk(&chunkNum));
-	assertEqualByte(1, GET_BLOCKNUM(chunkNum));
+	assertEqualByte(0, GET_BLOCKNUM(chunkNum));
 	assertEqualByte(1, GET_CHUNKNUM(chunkNum));
 	memset(chunk, 1, CHUNK_LEN);
 	assertNonZero(storeChunk(chunkNum, chunk));
@@ -164,29 +166,29 @@ void testReusingFreedChunks(void)
 
 	// Free a couple chunks in the first block
 
-	freeChunk(TO_BLOCK_AND_CHUNK(1, 5));
-	freeChunk(TO_BLOCK_AND_CHUNK(1, 10));
+	freeChunk(TO_BLOCK_AND_CHUNK(0, 5));
+	freeChunk(TO_BLOCK_AND_CHUNK(0, 10));
 
 	// And free one in the second block
 
-	freeChunk(TO_BLOCK_AND_CHUNK(2, 5));
+	freeChunk(TO_BLOCK_AND_CHUNK(1, 5));
 
 	// Retrieve a chunk from the first block to make it the
 	// current block.  Allocations are always attempted in
 	// the current block first.
 
-	assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, 15), chunk));
+	assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(0, 8), chunk));
 
 	// Reallocate two chunks
 
 	assertNonZero(allocChunk(&chunkNum));
-	assertEqualByte(1, GET_BLOCKNUM(chunkNum));
+	assertEqualByte(0, GET_BLOCKNUM(chunkNum));
 	assertEqualByte(5, GET_CHUNKNUM(chunkNum));
 	memset(chunk, 50, CHUNK_LEN);
 	assertNonZero(storeChunk(chunkNum, chunk));
 
 	assertNonZero(allocChunk(&chunkNum));
-	assertEqualByte(1, GET_BLOCKNUM(chunkNum));
+	assertEqualByte(0, GET_BLOCKNUM(chunkNum));
 	assertEqualByte(10, GET_CHUNKNUM(chunkNum));
 	memset(chunk, 100, CHUNK_LEN);
 	assertNonZero(storeChunk(chunkNum, chunk));
@@ -194,7 +196,7 @@ void testReusingFreedChunks(void)
 	// Reallocate a third chunk, which should come from the second block
 
 	assertNonZero(allocChunk(&chunkNum));
-	assertEqualByte(2, GET_BLOCKNUM(chunkNum));
+	assertEqualByte(1, GET_BLOCKNUM(chunkNum));
 	assertEqualByte(5, GET_CHUNKNUM(chunkNum));
 	memset(chunk, 55, CHUNK_LEN);
 	assertNonZero(storeChunk(chunkNum, chunk));
@@ -204,24 +206,24 @@ void testReusingFreedChunks(void)
 	// previously allocated.
 
 	assertNonZero(allocChunk(&chunkNum));
-	assertEqualByte(2, GET_BLOCKNUM(chunkNum));
+	assertEqualByte(1, GET_BLOCKNUM(chunkNum));
 	assertEqualByte(testChunks + 1 - CHUNKS_PER_BLOCK, GET_CHUNKNUM(chunkNum));
 	memset(chunk, testChunks + 1, CHUNK_LEN);
 	assertNonZero(storeChunk(chunkNum, chunk));
 
 	// Verify each of the chunks
 
-	b = 1;
+	b = 0;
 	c = 1;
 	for (i = 0; i <= testChunks; ++i) {
 		assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(b, c), chunk));
 		value = i + 1;
-		if (b == 1 && c == 5) {
+		if (b == 0 && c == 5) {
 			value = 50;
-		} else if (b == 1 && c == 10) {
+		} else if (b == 0 && c == 10) {
 			value = 100;
 		}
-		else if (b == 2 && c == 5) {
+		else if (b == 1 && c == 5) {
 			value = 55;
 		}
 		for (j = 0; j < CHUNK_LEN; ++j) {
@@ -236,7 +238,7 @@ void testReusingFreedChunks(void)
 
 	// Finally, try to retrieve a chunk after the last allocated one
 
-	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(2, testChunks + 2), chunk));
+	assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, (testChunks/2) + 2), chunk));
 }
 
 void testFreeingAllChunksInABlock(void)
@@ -249,9 +251,9 @@ void testFreeingAllChunksInABlock(void)
 
 	// Allocate enough chunks to go into a second block
 
-	for (b = 1; b <= 2; ++b) {
+	for (b = 0; b < 2; ++b) {
 		for (c = 1; c <= CHUNKS_PER_BLOCK; ++c) {
-			if (b == 2 && c > 5) {
+			if (b == 1 && c > 5) {
 				break;
 			}
 			assertNonZero(allocChunk(&chunkNum));
@@ -263,13 +265,13 @@ void testFreeingAllChunksInABlock(void)
 	// Free all chunk in the second block
 
 	for (c = 1; c <= 5; ++c) {
-		freeChunk(TO_BLOCK_AND_CHUNK(2, c));
-		assertZero(isChunkAllocated(TO_BLOCK_AND_CHUNK(2, c)));
+		freeChunk(TO_BLOCK_AND_CHUNK(1, c));
+		assertZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, c), chunk));
 	}
 
-	assertZero(isBlockAllocated(2));
+	assertZero(isBlockAllocated(1));
 
 	// Make sure we can retrieve a chunk in the first block
 
-	assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(1, 5), chunk));
+	assertNonZero(retrieveChunk(TO_BLOCK_AND_CHUNK(0, 5), chunk));
 }

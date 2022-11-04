@@ -11,76 +11,146 @@
  */
 
 #include <stdio.h>
-#include <memory.h>
 #include <blocks.h>
 #include <chunks.h>
 #include <string.h>
+#include <stdlib.h>
 
-#ifdef __TEST__
-#define TEST_OFFSET 10
+#ifdef __MEGA65__
+#include <memory.h>
+#include <blocks_mega65.h>
 #else
-#define TEST_OFFSET 0
+#include <em.h>
 #endif
 
+#define BLOCK_ALLOC_INDEX(BLOCK) (BLOCK / 8)
+#define BLOCK_ALLOC_MASK(BLOCK) (1 << (BLOCK % 8))
+
+#ifdef __MEGA65__
+// nothing to do
+#elif defined(__C128__)
+#define EM_DRIVER "c128-reu.emd"
+#define USE_EMD
+#elif defined(__C64__)
+#define EM_DRIVER "c64-reu.emd"
+#define USE_EMD
+#else
+#error Platform not implemented
+#endif
+
+static unsigned pages;	// max pages per REU
+
+static unsigned char BlocksUsed[MAX_BLOCKS / 8];
+
+#ifdef __MEGA65__
+unsigned char sharedBlock[BLOCK_LEN];
+#elif defined(USE_EMD)
+unsigned char *sharedBlock;
+#endif
+
+#ifdef __MEGA65__
 // Mega65 banks 4 and 5
 static long banks[] = {
     0x40000,
     0x50000
 };	// bank memory addresses
 
-static unsigned char BlocksUsed[TOTAL_BLOCKS];
-
-static unsigned char SharedBlock[BLOCK_LEN + TEST_OFFSET * 2];
-
 static void transferFromBank(BLOCKNUM blockNum);
 static void transferToBank(BLOCKNUM blockNum);
 
-static void transferFromBank(unsigned char blockNum)
+static void transferFromBank(BLOCKNUM blockNum)
 {
-	unsigned char bank = (blockNum - 1) / BLOCKS_PER_BANK;
-	unsigned char block = (blockNum - 1) % BLOCKS_PER_BANK;
+	unsigned char bank = blockNum / BLOCKS_PER_BANK;
+	unsigned char block = blockNum % BLOCKS_PER_BANK;
     lcopy(
         banks[bank] + (long)block * BLOCK_LEN,  // source
-        (long)SharedBlock + TEST_OFFSET,        // destination
+        (long)sharedBlock,				        // destination
         BLOCK_LEN                               // bytes to copy
     );
 }
 
 static void transferToBank(BLOCKNUM blockNum)
 {
-	unsigned char bank = (blockNum - 1) / BLOCKS_PER_BANK;
-	unsigned char block = (blockNum - 1) % BLOCKS_PER_BANK;
+	unsigned char bank = blockNum / BLOCKS_PER_BANK;
+	unsigned char block = blockNum % BLOCKS_PER_BANK;
     lcopy(
-        (long)SharedBlock + TEST_OFFSET,        // source
+        (long)sharedBlock,				        // source
         banks[bank] + (long)block * BLOCK_LEN,  // destination
         BLOCK_LEN                               // bytes to copy
     );
 }
+#endif
+
+unsigned getTotalBlocks(void) {
+	return pages;
+}
 
 void initBlockStorage(void)
 {
-    int i;
-    for (i = 0; i < TOTAL_BLOCKS; ++i) {
+	char ret;
+	unsigned i, b;
+
+#ifdef __MEGA65__
+	pages = TOTAL_BLOCKS;
+	// memset(sharedBlock, 0, BLOCK_LEN);
+#elif defined(USE_EMD)
+	static char emLoaded = 0;
+
+	if (!emLoaded) {
+		ret = em_load_driver(EM_DRIVER);
+		if (ret == EM_ERR_NO_DEVICE) {
+			printf("Expanded memory hardware not detected.\n");
+			exit(0);
+		}
+		if (ret != EM_ERR_OK) {
+			printf("Failed to load extended memory driver - code %d\n", ret);
+			exit(0);
+		}
+
+		pages = em_pagecount();
+		if (pages > MAX_BLOCKS) {
+			pages = MAX_BLOCKS;
+		}
+		emLoaded = 1;
+	}
+#endif
+
+    b = MAX_BLOCKS / 8;
+    for (i = 0; i < b; ++i) {
         BlocksUsed[i] = 0;
     }
-	initChunkStorage();
-
-#ifdef __TEST__
-	memset(SharedBlock, 'X', TEST_OFFSET);
-	memset(SharedBlock + TEST_OFFSET, 0, BLOCK_LEN);
-	memset(SharedBlock + TEST_OFFSET + BLOCK_LEN, 'X', TEST_OFFSET);
+#ifdef USE_EMD
+	sharedBlock = NULL;
 #endif
+	initChunkStorage();
+}
+
+char isBlockAllocated(BLOCKNUM blockNum) {
+	return (BlocksUsed[BLOCK_ALLOC_INDEX(blockNum)] & BLOCK_ALLOC_MASK(blockNum)) ? 1 : 0;
 }
 
 unsigned char *allocBlock(BLOCKNUM *blockNum)
 {
-	int i;
+	unsigned i;
 
-	for (i = 0; i < TOTAL_BLOCKS; ++i) {
-		if (BlocksUsed[i] == 0) {
-			BlocksUsed[i] = 1;
-			*blockNum = i + 1;
-			return SharedBlock + TEST_OFFSET;
+#ifdef USE_EMD
+	if (sharedBlock) {
+		em_commit();
+	}
+#endif
+
+	for (i = 0; i < pages; ++i) {
+		if (!isBlockAllocated(i)) {
+			// printf("blockNum = %d\n", i);
+			BlocksUsed[BLOCK_ALLOC_INDEX(i)] |= BLOCK_ALLOC_MASK(i);
+			*blockNum = i;
+#ifdef USE_EMD
+			sharedBlock = em_map(i);
+#endif
+#ifdef __MEGA65__
+			memset(sharedBlock, 0, BLOCK_LEN);
+#endif
+			return sharedBlock;
 		}
 	}
 
@@ -89,49 +159,52 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 
 void freeBlock(BLOCKNUM blockNum)
 {
-	if (blockNum > 0 && blockNum <= TOTAL_BLOCKS)
-		BlocksUsed[blockNum - 1] = 0;
+	unsigned index = BLOCK_ALLOC_INDEX(blockNum);
+
+	BlocksUsed[index] &= ~BLOCK_ALLOC_MASK(blockNum);
 }
 
 unsigned char *retrieveBlock(BLOCKNUM blockNum)
 {
-	// Block numbers are 1-based
-	if (blockNum < 1 || blockNum > TOTAL_BLOCKS) {
-		return NULL;
-	}
-
 	// Make sure the block is allocated
-	if (BlocksUsed[blockNum - 1] == 0) {
+	if (!isBlockAllocated(blockNum)) {
 		return NULL;
 	}
 
+#ifdef __MEGA65__
 	transferFromBank(blockNum);
+#elif defined(USE_EMD)
+	if (sharedBlock) {
+		em_commit();
+	}
+	sharedBlock = em_map(blockNum);
+#endif
 
-	return SharedBlock + TEST_OFFSET;
+	return sharedBlock;
 }
 
 unsigned char storeBlock(BLOCKNUM blockNum)
 {
-	// Block numbers are 1-based
-	if (blockNum < 1 || blockNum > TOTAL_BLOCKS) {
-		return 0;
-	}
-
 	// Make sure the block is allocated
-	if (BlocksUsed[blockNum - 1] == 0) {
+	if (!isBlockAllocated(blockNum)) {
 		return 0;
 	}
 
+#ifdef __MEGA65__
 	transferToBank(blockNum);
+#elif defined(USE_EMD)
+	if (sharedBlock == NULL) {
+		return 0;
+	}
+
+	em_commit();
+	sharedBlock = NULL;
+#endif
 
 	return 1;
 }
 
-unsigned char isBlockAllocated(BLOCKNUM blockNum)
-{
-	return BlocksUsed[blockNum - 1];
-}
-
+#if 0
 #ifdef __TEST__
 unsigned char wasBankMemoryCorrupted(void)
 {
@@ -145,4 +218,5 @@ unsigned char wasBankMemoryCorrupted(void)
 
 	return 0;
 }
+#endif
 #endif

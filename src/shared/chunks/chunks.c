@@ -17,11 +17,16 @@
 
 BLOCKNUM		currentBlock;
 unsigned char	*blockData;
+unsigned		availChunks;
 
-unsigned char FullBlocks[TOTAL_BLOCKS];
+unsigned char FullBlocks[MAX_BLOCKS / 8];
 
-int getTotalChunks(void) {
+unsigned getTotalChunks(void) {
+#ifdef __MEGA65__
 	return CHUNKS_PER_BLOCK * BLOCKS_PER_BANK * BANKS;
+#else
+	return CHUNKS_PER_BLOCK * getTotalBlocks();
+#endif
 }
 
 #ifdef __TEST__

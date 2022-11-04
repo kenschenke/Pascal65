@@ -38,9 +38,9 @@ int main()
     initBlockStorage();
     testFreeingAllChunksInABlock();
 
-    if (wasBankMemoryCorrupted()) {
-        printf("*********** Bank memory got corrupted ************\n");
-    }
+    // if (wasBankMemoryCorrupted()) {
+    //     printf("*********** Bank memory got corrupted ************\n");
+    // }
 
     printf("Done with tests\n");
 

@@ -16,11 +16,11 @@
 #include "blocks.h"
 
 #define CHUNK_LEN 23
-#define CHUNKS_PER_BLOCK 42
+#define CHUNKS_PER_BLOCK 11
 
-#define TO_BLOCK_AND_CHUNK(b, c) (c | (b << 8))
-#define GET_BLOCKNUM(x) (x >> 8 & 0xff)
-#define GET_CHUNKNUM(x) (x & 0xff)
+#define TO_BLOCK_AND_CHUNK(b, c) (c | (b << 4))
+#define GET_BLOCKNUM(x) (x >> 4)
+#define GET_CHUNKNUM(x) (x & 0x0f)
 
 typedef unsigned short CHUNKNUM;
 
@@ -44,7 +44,7 @@ int getAvailChunks(void);
 
 // Returns the total number of chunks in memory,
 // allocated and unallocated.
-int getTotalChunks(void);
+unsigned getTotalChunks(void);
 
 // Retrieves the data in the chunk and copies into
 // callers buffer.  Buffer must be at least CHUNK_LEN long.

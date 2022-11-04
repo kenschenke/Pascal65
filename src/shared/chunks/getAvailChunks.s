@@ -15,52 +15,80 @@
 
 .export _getAvailChunks
 .import _currentBlock, _storeBlock, _FullBlocks, _isBlockAllocated, __chunkGetBlock, _blockData
+.import _getTotalBlocks, isBlockFull, isChunkAlloc, _availChunks
 .importzp ptr1
 
-avail:
-    .byte 0, 0
-blockNum:
-    .byte 0
+.bss
+
+avail: .res 2
+blockNum: .res 2
+chunkNum: .res 1
+totalBlocks: .res 2
+
+.code
 
 ; int getAvailChunks(void)
 .proc _getAvailChunks
 
+    lda _availChunks
+    ldx _availChunks + 1
+    rts
+
     lda #0
     sta avail
-    sta avail+1
+    sta avail + 1
 
     ; Do we have a current block?
-    lda _currentBlock
+    lda _blockData
+    ora _blockData + 1
     beq CheckBlocks              ; no - get on with it
     ; Store the block before we start.
+    lda _currentBlock
+    ldx _currentBlock + 1
     jsr _storeBlock
     cmp #0
-    beq Done
+    beq @D1
     lda #0
     sta _currentBlock
+    sta _currentBlock + 1
+    jmp CheckBlocks
+
+@D1:
+    jmp Done
 
 CheckBlocks:
+    jsr _getTotalBlocks
+    sta totalBlocks
+    stx totalBlocks + 1
     lda #0
     sta blockNum
+    sta blockNum + 1
 @LoopBlocks:
-    ldy blockNum
-    cpy #TOTAL_BLOCKS
+    lda blockNum
+    cmp totalBlocks
+    bne @IsBlockFull
+    lda blockNum + 1
+    cmp totalBlocks + 1
     beq Done
+@IsBlockFull:
     ; If the block is full there is no need to check it
-    lda _FullBlocks,y
+    lda blockNum
+    ldx blockNum + 1
+    jsr isBlockFull
+    cmp #0
     bne @IncBlockLoop
     ; If the block has not been allocated yet,
     ; all chunks are available.
-    iny
-    tya
+    lda blockNum
+    ldx blockNum + 1
     jsr _isBlockAllocated
     cmp #0
     beq @AddEmptyBlock
     ; Retrieve the block
-    ldy blockNum
-    iny
-    tya
+    lda blockNum
+    ldx blockNum + 1
     jsr __chunkGetBlock
+    cmp #0
     beq @FailGetBlock
     jsr AddBlockChunks
     jmp @IncBlockLoop
@@ -68,26 +96,32 @@ CheckBlocks:
 @FailGetBlock:
     lda #0
     sta avail
-    sta avail+1
+    sta avail + 1
     jmp Done
 
 @AddEmptyBlock:
-    lda avail
     clc
+    lda avail
     adc #CHUNKS_PER_BLOCK
     sta avail
-    lda avail+1
+    lda avail + 1
     adc #0
-    sta avail+1
+    sta avail + 1
     ; Fall through to @IncBlockLoop
 
 @IncBlockLoop:
-    inc blockNum
+    clc
+    lda blockNum
+    adc #1
+    sta blockNum
+    lda blockNum + 1
+    adc #0
+    sta blockNum + 1
     jmp @LoopBlocks
 
 Done:
     lda avail
-    ldx avail+1
+    ldx avail + 1
     rts
 
 .endproc
@@ -95,22 +129,24 @@ Done:
 AddBlockChunks:
     lda _blockData
     sta ptr1
-    lda _blockData+1
-    sta ptr1+1
-    ldy #0
-    ldx #CHUNKS_PER_BLOCK
+    lda _blockData + 1
+    sta ptr1 + 1
+    lda #0
+    sta chunkNum
 @Loop:
-    lda (ptr1),y
+    jsr isChunkAlloc
+    cmp #0
     bne @Inc
-    lda avail
     clc
+    lda avail
     adc #1
     sta avail
-    lda avail+1
+    lda avail + 1
     adc #0
-    sta avail+1
+    sta avail + 1
 @Inc:
-    iny
-    dex
+    inc chunkNum
+    lda chunkNum
+    cmp #CHUNKS_PER_BLOCK
     bne @Loop
     rts

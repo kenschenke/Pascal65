@@ -13,38 +13,43 @@
 #ifndef BLOCKS_H
 #define BLOCKS_H
 
-#define BLOCK_LEN 1024
-#define BANKS 2
-#define BLOCKS_PER_BANK 64
-#define TOTAL_BLOCKS (BANKS * BLOCKS_PER_BANK)
+#define BLOCK_LEN 256
 
-typedef unsigned char BLOCKNUM;
+#ifdef __MEGA65__
+#include <blocks_mega65.h>
+#endif
+
+#define MAX_BLOCKS 4096		// 1 megabyte memory (256 bytes per block)
+
+typedef unsigned BLOCKNUM;
 
 /*
-	This is a simple, stateless interface.  Block numbers are 1-based.
+	This is a simple, stateless interface.  Block numbers are zero-based.
 */
 
 void initBlockStorage(void);
 
 // Allocates a new block.  Pointer to the buffer returned or NULL
-// if allocation failed.  1-based block number returned by ref.
+// if allocation failed.  Zero-based block number returned by ref.
 unsigned char *allocBlock(BLOCKNUM *blockNum);
 
-// Frees the block.  Block number is 1-based.
+// Frees the block.  Block number is zero-based.
 void freeBlock(BLOCKNUM blockNum);
+
+unsigned getTotalBlocks(void);
 
 // Retrieves a block from storage and returns a pointer to the
 // buffer or NULL if the block could not be retrieved.
-// Block number is 1-based.
+// Block number is zero-based.
 unsigned char *retrieveBlock(BLOCKNUM blockNum);
 
-// Stores the block.  Block number is 1-based.
+// Stores the block.  Block number is zero-based.
 // 0 is returned on failure, non-zero on success.
 unsigned char storeBlock(BLOCKNUM blockNum);
 
 // Returns non-zero if block is allocated.
-// Block number is 1-based.
-unsigned char isBlockAllocated(BLOCKNUM blockNum);
+// Block number is zero-based.
+char isBlockAllocated(BLOCKNUM blockNum);
 
 // Functions used during unit testing
 #ifdef __TEST__

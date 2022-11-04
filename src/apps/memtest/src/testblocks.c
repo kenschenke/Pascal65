@@ -1,6 +1,8 @@
 #include <blocks.h>
 #include "memtest.h"
+#ifdef __MEGA65__
 #include <memory.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 
@@ -15,20 +17,20 @@ void testAllocateAllBlocks(void)
 	printf("Running test: Allocate All Blocks\n");
 
 	// Allocate each block and set its contents to a unique value
-	for (i = 0; i < TOTAL_BLOCKS; ++i) {
+	for (i = 0; i < getTotalBlocks(); ++i) {
 		p = allocBlock(&blockNum);
 		assertNotNull(p);
-		assertEqualByte(i + 1, blockNum);
-		memset(p, i + 1, BLOCK_LEN);
+		assertEqualByte(i, blockNum);
+		memset(p, i % 256, BLOCK_LEN);
 		assertNonZero(storeBlock(blockNum));
 	}
 
 	// Retrieve each block and verify its contents
-	for (i = 0; i < TOTAL_BLOCKS; ++i) {
-		p = retrieveBlock(i + 1);
+	for (i = 0; i < getTotalBlocks(); ++i) {
+		p = retrieveBlock(i);
 		assertNotNull(p);
 		for (j = 0; j < BLOCK_LEN; ++j) {
-			assertEqualByte(i + 1, p[j]);
+			assertEqualByte(i % 256, p[j]);
 		}
 	}
 
@@ -38,10 +40,10 @@ void testAllocateAllBlocks(void)
 
 	// Verify each block is allocated, free each block,
 	// then verify each block is freed.
-	for (i = 0; i < TOTAL_BLOCKS; ++i) {
-		assertNonZero(isBlockAllocated(i + 1));
-		freeBlock(i + 1);
-		assertZero(isBlockAllocated(i + 1));
+	for (i = 0; i < getTotalBlocks(); ++i) {
+		assertNonZero(isBlockAllocated(i));
+		freeBlock(i);
+		assertZero(isBlockAllocated(i));
 	}
 }
 
@@ -56,7 +58,7 @@ void testRetrieveBlock(void)
 
 	// Test blockNum out of range
 	assertNull(retrieveBlock(0));
-	assertNull(retrieveBlock(TOTAL_BLOCKS + 1));
+	assertNull(retrieveBlock(getTotalBlocks()));
 
 	// Try to retrieve an unallocated block
 	assertNull(retrieveBlock(1));
@@ -64,7 +66,7 @@ void testRetrieveBlock(void)
 	// Allocate a block and verify it can be retrieved
 	p1 = allocBlock(&blockNum);
 	assertNotNull(p1);
-	assertEqualByte(1, blockNum);
+	assertEqualInt(0, blockNum);
 	
 	// Retrieve the same block
 	p2 = retrieveBlock(blockNum);
@@ -75,7 +77,7 @@ void testRetrieveBlock(void)
 void testReusingFreedBlocks(void)
 {
 	int i, j;
-	BLOCKNUM blockNum;
+	BLOCKNUM blockNums[6];
 	unsigned char value;
 	unsigned char *p;
 
@@ -85,49 +87,45 @@ void testReusingFreedBlocks(void)
 
 	// Set the first five blocks to a unique value
 	for (i = 0; i < 5; ++i) {
-		p = allocBlock(&blockNum);
+		p = allocBlock(&blockNums[i]);
 		assertNotNull(p);
-		assertEqualByte(i + 1, blockNum);
 		memset(p, i + 1, BLOCK_LEN);
-		assertNonZero(storeBlock(blockNum));
+		assertNonZero(storeBlock(blockNums[i]));
 	}
 
 	// Free two of those blocks
-	freeBlock(2);
-	assertZero(isBlockAllocated(2));
-	freeBlock(4);
-	assertZero(isBlockAllocated(4));
+	freeBlock(blockNums[2]);
+	assertZero(isBlockAllocated(blockNums[2]));
+	freeBlock(blockNums[4]);
+	assertZero(isBlockAllocated(blockNums[4]));
 
 	// Reallocate two blocks
-	p = allocBlock(&blockNum);
+	p = allocBlock(&blockNums[2]);
 	assertNotNull(p);
-	assertEqualByte(2, blockNum);
-	assertNonZero(isBlockAllocated(2));
+	assertNonZero(isBlockAllocated(blockNums[2]));
 	memset(p, 20, BLOCK_LEN);
-	assertNonZero(storeBlock(2));
+	assertNonZero(storeBlock(blockNums[2]));
 
-	p = allocBlock(&blockNum);
+	p = allocBlock(&blockNums[4]);
 	assertNotNull(p);
-	assertEqualByte(4, blockNum);
-	assertNonZero(isBlockAllocated(4));
+	assertNonZero(isBlockAllocated(blockNums[4]));
 	memset(p, 40, BLOCK_LEN);
-	assertNonZero(storeBlock(4));
+	assertNonZero(storeBlock(blockNums[4]));
 
 	// Allocate one more block
-	p = allocBlock(&blockNum);
+	p = allocBlock(&blockNums[5]);
 	assertNotNull(p);
-	assertEqualByte(6, blockNum);
 	memset(p, 6, BLOCK_LEN);
-	assertNonZero(storeBlock(6));
+	assertNonZero(storeBlock(blockNums[5]));
 
 	// Verify each of the blocks
 	for (i = 0; i < 6; ++i) {
-		p = retrieveBlock(i + 1);
+		p = retrieveBlock(blockNums[i]);
 		assertNotNull(p);
 
 		value = i + 1;
-		if (i == 1) value = 20;
-		if (i == 3) value = 40;
+		if (i == 2) value = 20;
+		if (i == 4) value = 40;
 		for (j = 0; j < BLOCK_LEN; ++j) {
 			assertEqualByte(value, p[j]);
 		}
@@ -145,7 +143,7 @@ void testStoreBlock(void)
 
 	// Test blockNum out of range
 	assertZero(storeBlock(0));
-	assertZero(storeBlock(TOTAL_BLOCKS + 1));
+	assertZero(storeBlock(getTotalBlocks()));
 
 	// Try to store an unallocated block
 	assertZero(storeBlock(1));
@@ -153,7 +151,6 @@ void testStoreBlock(void)
 	// Allocate a block and verify it can be stored
 	p = allocBlock(&blockNum);
 	assertNotNull(p);
-	assertEqualByte(1, blockNum);
 
 	// Store the same block
 	assertNonZero(storeBlock(blockNum));

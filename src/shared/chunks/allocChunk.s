@@ -15,31 +15,38 @@
 
 .importzp ptr1
 .import _allocBlock, _storeBlock, _isBlockAllocated, _retrieveBlock, _FullBlocks, _currentBlock, _blockData
-.import __chunkGetBlock
+.import __chunkGetBlock, isChunkAlloc, isBlockFull, _getTotalBlocks, setChunkAlloc, packBlockAndChunkNum
+.import setBlockFull, clearChunkAlloc, clearBlockFull, packBlockAndChunkNum, decAvailChunks
 
 .export _allocChunk
 
-chunkNum:
-    .byte 0, 0
-idx:
-    .byte 0
+.bss
+
+pChunkNum: .res 2
+idx: .res 2
+totalBlocks: .res 2
+
+.code
 
 ; char __fastcall__ allocChunk(CHUNKNUM *chunkNum)
 .proc _allocChunk
 
     ; Save argument
 
-    sta chunkNum
-    stx chunkNum+1
+    sta pChunkNum
+    stx pChunkNum + 1
 
     ; Do we have a current block allocated?
 
-    lda _currentBlock
+    lda _blockData
+    ora _blockData + 1
     bne @HasFreeChunk
     ; No we don't.  Allocate a new block
     jsr allocNewBlock
+    cmp #0
     beq @F1
-    ldy #0
+    lda #0
+    sta idx
     jmp @FoundFreeChunk
 
 @F1:
@@ -48,56 +55,86 @@ idx:
     ; See if the current block has a free chunk
 
 @HasFreeChunk:
-    ldy _currentBlock
-    dey
-    lda _FullBlocks,y
-    beq @FindFreeChunk      ; it has a free chunk
+    lda _currentBlock
+    ldx _currentBlock + 1
+    jsr isBlockFull
+    cmp #0
+    beq @J3                 ; it has a free chunk
 
     ; Current block is full.  Store it and
     ; look at other blocks that might have free chunks.
     lda _currentBlock
+    ldx _currentBlock + 1
     jsr _storeBlock
     cmp #0
-    beq @F2
+    beq @F2                 ; Failed to store the block
     lda #0
-    sta _currentBlock
+    sta _blockData
+    sta _blockData + 1
     jmp @LookForOtherBlocks
 
 @F2:
     jmp @Failure
-    
+
+@J3:
+    jmp @FindFreeChunk
+
 @LookForOtherBlocks:
     ; Look for other blocks that have free chunks
+    jsr _getTotalBlocks
+    sta totalBlocks
+    stx totalBlocks + 1
+    ; Keep a counter of blocknum
     lda #0
     sta idx
+    sta idx + 1
 @L1:
-    ldy idx
-    cpy #TOTAL_BLOCKS
-    beq @NoAvailBlocks      ; been through all the blocks
-    iny
-    tya
-    jsr _isBlockAllocated   ; is the block allocated?
+    lda idx
+    ldx idx + 1
+    jsr _isBlockAllocated       ; is the block allocated?
     cmp #0
-    beq @IncL1              ; block is not allocated
-    ldy idx
-    lda _FullBlocks,y       ; is the block full?
-    beq @NotFull            ; no, it's not full
+    beq @IncL1                  ; it's not.  check the next block
+    lda idx
+    ldx idx + 1
+    jsr isBlockFull             ; block is allocated.  is it full?
+    cmp #0
+    beq @NotFull                ; it's not.  we'll use this one.
 @IncL1:
-    inc idx
+    ; Increment the block number
+    clc
+    lda idx
+    adc #1
+    sta idx
+    lda idx + 1
+    adc #0
+    sta idx + 1
+    ; Have we checked all the blocks?
+    lda idx
+    cmp totalBlocks
+    bne @L1                     ; nope
+    lda idx + 1
+    cmp totalBlocks + 1
+    beq @NoAvailBlocks          ; yes
     jmp @L1
 
 @NotFull:
     ; This currently-allocated block has at least one spare chunk.
-    iny
-    tya
+    ; block number in idx
+    lda idx
+    ldx idx + 1
     jsr __chunkGetBlock
-    beq @Failure
+    cmp #0
+    beq @FailNotFull
     jmp @FindFreeChunk
+
+@FailNotFull:
+    jmp @Failure
 
 @NoAvailBlocks:
     ; We looked through all the blocks and there were
     ; no allocated blocks with available chunks.
     jsr allocNewBlock
+    cmp #0
     beq @Failure
     ldy #0
     jmp @FoundFreeChunk
@@ -105,75 +142,73 @@ idx:
 @FindFreeChunk:
     ; Loop through the chunk table at the beginning of
     ; the block looking for an available chunk.
-    lda _blockData
-    sta ptr1
-    lda _blockData+1
-    sta ptr1+1
-    ldy #0
-    ldx #CHUNKS_PER_BLOCK
+    lda #0
+    sta idx
 @L2:
-    lda (ptr1),y
+    lda idx
+    jsr isChunkAlloc
+    cmp #0
     beq @FoundFreeChunk
-    iny
-    dex
+    inc idx
+    lda idx
+    cmp #CHUNKS_PER_BLOCK
     beq @Failure
     jmp @L2
 
-@FoundFreeChunk:    ; Chunk num (zero-based) in .Y
+@FoundFreeChunk:    ; Chunk num (zero-based) in idx
     ; First, mark the chunk as allocated in the block's
     ; chunk table
-    lda _blockData
-    sta ptr1
-    lda _blockData+1
-    sta ptr1+1
-    lda #1
-    sta (ptr1),y
+    lda idx
+    jsr setChunkAlloc
+
     ; Next, store the chunk number and block number
-    ; in chunkNum for return to the caller.
-    iny             ; The chunknum is returned as 1-based
-    lda chunkNum
+    ; in pChunkNum for return to the caller.
+    lda pChunkNum
     sta ptr1
-    lda chunkNum+1
-    sta ptr1+1
-    tya
-    ldy #0          ; Chunk number in low byte
-    sta (ptr1),y
-    ldy #1
+    lda pChunkNum + 1
+    sta ptr1 + 1
     lda _currentBlock
-    sta (ptr1),y    ; Block number in high byte
+    ldx _currentBlock + 1
+    ldy idx
+    iny             ; The chunknum is returned as 1-based
+    jsr packBlockAndChunkNum
+    ldy #0
+    sta (ptr1),y
+    iny
+    txa
+    sta (ptr1),y
 
     ; Need to look through the chunk allocation table at the
     ; beginning of the block and if all chunks are now allocated
     ; mark the block as full.
 
-    lda _blockData
-    sta ptr1
-    lda _blockData+1
-    sta ptr1+1
-    ldx #CHUNKS_PER_BLOCK
-    ldy #0
+    ldy #CHUNKS_PER_BLOCK
+    dey
+    sty idx
 @L3:
-    lda (ptr1),y
+    lda idx
+    jsr isChunkAlloc
+    cmp #0
     beq @Done       ; This chunk isn't allocated yet
-    iny
-    dex
-    bne @L3
+    dec idx
+    bpl @L3
 
     ; Block is now full
 
-    ldy _currentBlock
-    dey
-    lda #1
-    sta _FullBlocks,y
+    lda _currentBlock
+    ldx _currentBlock + 1
+    jsr setBlockFull
 
 @Done:
+    jsr decAvailChunks
     lda #1
     ldx #0
     rts
 
 @Failure:
     lda #0
-    sta _currentBlock
+    sta _blockData
+    sta _blockData + 1
     rts
 
 .endproc
@@ -186,38 +221,27 @@ idx:
     ldx #>_currentBlock     ; to _allocBlock
     jsr _allocBlock         ; allocate new block
     sta _blockData          ; store low byte of block address
-    stx _blockData+1        ; store high byte of block address
-    bne @IsBlockNumZero     ; high byte is non-zero
-    lda _blockData          ; check low byte
-    bne @IsBlockNumZero     ; low byte is non-zero
+    stx _blockData + 1      ; store high byte of block address
+    ora _blockData + 1      ; is _blockData NULL?
+    bne @ZeroOutUsedChunks  ; it's non-NULL
     lda #0                  ; _allocBlock retured NULL
     rts                     ; that's an error - we're done
 
-@IsBlockNumZero:
-    lda _currentBlock       ; check currentBlock number
-    bne @ZeroOutUsedChunks  ; non-zero
-    lda #0                  ; currentBlock is zero - that's an error
-    rts
-
 @ZeroOutUsedChunks:
-    ldx #CHUNKS_PER_BLOCK
     lda _blockData
     sta ptr1
-    lda _blockData+1
-    sta ptr1+1
+    lda _blockData + 1
+    sta ptr1 + 1
     lda #0
     ldy #0
-@Loop:
     sta (ptr1),y
     iny
-    dex
-    bne @Loop
+    sta (ptr1),y
 
     ; Make sure the new block is not marked as full
-    ldy _currentBlock
-    dey
-    lda #0
-    sta _FullBlocks,y
+    lda _currentBlock
+    ldx _currentBlock + 1
+    jsr clearBlockFull
 
     lda #1                  ; Success
     rts

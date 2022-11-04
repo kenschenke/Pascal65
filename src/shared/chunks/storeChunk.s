@@ -15,42 +15,33 @@
 
 .export _storeChunk
 .import popax, _currentBlock, _isBlockAllocated, _storeBlock, _blockData, _retrieveBlock
-.import __chunkGetBlock
+.import __chunkGetBlock, extractBlockAndChunkNum
 .importzp ptr1, ptr2, tmp1
 
-blockNum:
-    .byte 0
-chunkNum:
-    .byte 0
-buffer:
-    .byte 0, 0
+.bss
+
+blockNum: .res 2
+chunkNum: .res 1
+buffer: .res 2
+
+.code
 
 ; char storeChunk(CHUNKNUM chunkNum, unsigned char *bytes)
 .proc _storeChunk
 
     ; caller's buffer
     sta buffer
-    stx buffer+1
+    stx buffer + 1
 
     ; chunkNum
     jsr popax
-    sta chunkNum
-    stx blockNum
-
-    ; is chunkNum < 1 or > CHUNKS_PER_BLOCK
-    cmp #1
-    bmi @F1
-    cmp #CHUNKS_PER_BLOCK + 1
-    bpl @F1
-
-    ; is blockNum < 1 or > TOTAL_BLOCKS 
-    cpx #1
-    bmi @F1
-    cpx #TOTAL_BLOCKS + 1
-    bpl @F1
+    jsr extractBlockAndChunkNum
+    sta blockNum
+    stx blockNum + 1
+    dey
+    sty chunkNum
 
     ; is blockNum allocated?
-    lda blockNum
     jsr _isBlockAllocated
     cmp #0
     bne CheckBlock
@@ -60,24 +51,35 @@ buffer:
 
 CheckBlock:
     ; Do we have a current block?
-    lda _currentBlock
+    lda _blockData
+    ora _blockData + 1
     beq GetBlock            ; no
 
     ; Is the chunk in a different block?
+    lda _currentBlock
     cmp blockNum
+    bne @StoreCurrentBlock  ; yes
+    lda _currentBlock + 1
+    cmp blockNum + 1
     beq StoreChunk          ; no
 
+@StoreCurrentBlock:
     ; Store the current block
+    lda _currentBlock
+    ldx _currentBlock + 1
     jsr _storeBlock
     cmp #0
     beq Failure
     lda #0
     sta _currentBlock
+    sta _currentBlock + 1
 
 GetBlock:
     ; Retrieve the block we need
     lda blockNum
+    ldx blockNum + 1
     jsr __chunkGetBlock
+    cmp #0
     bne StoreChunk
     jmp Failure             ; retrieveBlock returned NULL
 
@@ -85,10 +87,10 @@ StoreChunk:
     ; Start off with the pointer to the block data
     lda _blockData
     sta ptr1
-    lda _blockData+1
+    lda _blockData + 1
     sta ptr1+1
     ; Move past the chunk allocation table at the beginning of the block
-    lda #CHUNKS_PER_BLOCK
+    lda #2
     sta tmp1
     jsr AddTmp1
     ; Now move past the other chunks in this block
@@ -96,17 +98,17 @@ StoreChunk:
     sta tmp1
     ldx chunkNum
 @Loop:
-    dex
     beq @Cpy
     jsr AddTmp1
-    jmp @Loop
+    dex
+    bne @Loop
 @Cpy:
     ldx #CHUNK_LEN
     ldy #0
     lda buffer
     sta ptr2
-    lda buffer+1
-    sta ptr2+1
+    lda buffer + 1
+    sta ptr2 + 1
 @CpyLoop:
     lda (ptr2),y
     sta (ptr1),y

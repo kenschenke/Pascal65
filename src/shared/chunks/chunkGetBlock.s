@@ -14,16 +14,16 @@
 
 .import _currentBlock, _retrieveBlock, _blockData
 
-; BlockNum pass in .A
+; BlockNum pass in .A (LB) and .X (HB)
 ; Non-zero returned in .A on success, zero on failure
 __chunkGetBlock:
     sta _currentBlock
+    stx _currentBlock + 1
     jsr _retrieveBlock
     sta _blockData          ; store the block data pointer
-    stx _blockData+1
-    bne @Done               ; is the low byte 0?
-    lda _blockData
-    bne @Done               ; is the high byte 0 too?
+    stx _blockData + 1
+    ora _blockData + 1
+    bne @Done               ; is _blockData NULL?
     
     ; retrieveBlock returned NULL
     lda #0
