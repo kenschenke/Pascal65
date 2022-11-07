@@ -9,16 +9,32 @@ CHUNKNUM integerType;
 
 static char getType(CHUNKNUM chunkNum, TTYPE *pType);
 
-void checkAssignmentCompatible(TTYPE *targetType, TTYPE *valueType, TErrorCode ec) {
-    CHUNKNUM targetTypeId = targetType->nodeChunkNum;
-    CHUNKNUM valueTypeId = valueType->nodeChunkNum;
+void checkAssignmentCompatible(CHUNKNUM targetTypeId, CHUNKNUM valueTypeId, TErrorCode ec) {
+    TTYPE targetType, valueType;
+#if 0
+    extern int currentLineNumber;
+#endif
 
-    if (targetType->form == fcSubrange) {
-        targetTypeId = targetType->subrange.baseType;
+#if 0
+    getType(targetTypeId, &targetType);
+    getType(valueTypeId, &valueType);
+#else
+    retrieveChunk(targetTypeId, (unsigned char *)&targetType);
+    retrieveChunk(valueTypeId, (unsigned char *)&valueType);
+#endif
+
+    if (targetType.form == fcSubrange) {
+        targetTypeId = targetType.subrange.baseType;
     }
-    if (valueType->form == fcSubrange) {
-        valueTypeId = valueType->subrange.baseType;
+    if (valueType.form == fcSubrange) {
+        valueTypeId = valueType.subrange.baseType;
     }
+
+#if 0
+    if (currentLineNumber == 49) {
+        printf("targetType! = %04X\n", targetTypeId);
+    }
+#endif
 
     if (targetTypeId == valueTypeId) {
         return;
@@ -26,11 +42,11 @@ void checkAssignmentCompatible(TTYPE *targetType, TTYPE *valueType, TErrorCode e
 
     // Two strings of the same length
 
-    if (targetType->form == fcArray &&
-        valueType->form == fcArray &&
-        targetType->array.elemType == charType &&
-        valueType->array.elemType == charType &&
-        targetType->array.elemCount == valueType->array.elemCount) {
+    if (targetType.form == fcArray &&
+        valueType.form == fcArray &&
+        targetType.array.elemType == charType &&
+        valueType.array.elemType == charType &&
+        targetType.array.elemCount == valueType.array.elemCount) {
         return;
     }
 
@@ -264,6 +280,7 @@ CHUNKNUM makeStringType(int length) {
 }
 
 char setType(CHUNKNUM *targetType, CHUNKNUM sourceType) {
+#if 0
     TTYPE typeNode;
 
     if (targetType) {
@@ -279,6 +296,7 @@ char setType(CHUNKNUM *targetType, CHUNKNUM sourceType) {
     if (storeChunk(sourceType, (unsigned char *)&typeNode) == 0) {
         return 0;
     }
+#endif
     *targetType = sourceType;
 
     return 1;
