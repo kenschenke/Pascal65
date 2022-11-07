@@ -115,7 +115,7 @@ void parseSubrangeLimit(SCANNER *scanner, SYMTABNODE *pLimit, int *limit, CHUNKN
             }
             if (defn.how == dcUndefined) {
                 defn.how = dcConstant;
-                storeChunk(node.defnChunk, (unsigned char *)&defn);
+                storeChunk(pLimit->defnChunk, (unsigned char *)&defn);
                 *limitTypeChunkNum = dummyType;
                 break;
             }

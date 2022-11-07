@@ -17,33 +17,35 @@
 #include <parscommon.h>
 #include <common.h>
 
-void parseExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
+CHUNKNUM parseExpression(SCANNER *scanner, CHUNKNUM Icode)
 {
-    TTYPE operandType;
+    CHUNKNUM resultTypeChunk, operandTypeChunk;
 
     // Parse the first simple expression
-    parseSimpleExpression(scanner, Icode, pResultType);
+    resultTypeChunk = parseSimpleExpression(scanner, Icode);
 
     // If we now see a relational operator,
     // parse a second simple expression.
     if (tokenIn(scanner->token.code, tlRelOps)) {
         getTokenAppend(scanner, Icode);
-        parseSimpleExpression(scanner, Icode, &operandType);
+        operandTypeChunk = parseSimpleExpression(scanner, Icode);
 
         // Check the operand types and return the boolean type.
-        checkRelOpOperands(pResultType->nodeChunkNum, operandType.nodeChunkNum);
-        retrieveChunk(booleanType, (unsigned char *)pResultType);
+        checkRelOpOperands(resultTypeChunk, operandTypeChunk);
+        resultTypeChunk = booleanType;
     }
 
     // Make sure the expression ended properly.
     resync(scanner, tlExpressionFollow, tlStatementFollow, tlStatementStart);
+
+    return resultTypeChunk;
 }
 
-void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
+CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode)
 {
     DEFN defn;
     int length;
-    CHUNKNUM newChunk, resultTypeChunk;
+    CHUNKNUM resultTypeChunk;
     SYMTABNODE node;
 
     switch (scanner->token.code) {
@@ -65,23 +67,20 @@ void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
             switch (defn.how) {
                 case dcFunction:
                     resultTypeChunk = parseSubroutineCall(scanner, &node, 1, Icode);
-                    retrieveChunk(resultTypeChunk, (unsigned char *)pResultType);
                     break;
 
                 case dcProcedure:
                     Error(errInvalidIdentifierUsage);
                     resultTypeChunk = parseSubroutineCall(scanner, &node, 0, Icode);
-                    retrieveChunk(resultTypeChunk, (unsigned char *)pResultType);
                     break;
 
                 case dcConstant:
                     getTokenAppend(scanner, Icode);
                     resultTypeChunk = node.typeChunk;
-                    retrieveChunk(resultTypeChunk, (unsigned char *)pResultType);
                     break;
 
                 default:
-                    parseVariable(scanner, Icode, &node, pResultType);
+                    resultTypeChunk = parseVariable(scanner, Icode, &node);
                     break;
             }
 
@@ -95,18 +94,18 @@ void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
                 // Determine the number's type and set its value into
                 // the symbol table node.
                 if (scanner->token.type == tyInteger) {
-                    retrieveChunk(integerType, (unsigned char *)pResultType);
+                    resultTypeChunk = integerType;
                     retrieveChunk(node.defnChunk, (unsigned char *)&defn);
                     defn.constant.value.integer = scanner->token.value.integer;
                     storeChunk(node.defnChunk, (unsigned char *)&defn);
                 }
-                setType(&node.typeChunk, pResultType->nodeChunkNum);
+                setType(&node.typeChunk, resultTypeChunk);
                 storeChunk(node.nodeChunkNum, (unsigned char *)&node);
             }
 
             // Append the symbol table node handle to the icode.
             putSymtabNodeToIcode(Icode, &node);
-            retrieveChunk(node.typeChunk, (unsigned char *)pResultType);
+            resultTypeChunk = node.typeChunk;
             getTokenAppend(scanner, Icode);
             break;
 
@@ -120,12 +119,11 @@ void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
                 // else create a new string type.
                 length = strlen(scanner->token.string) - 2;
                 if (length == 1) {
-                    retrieveChunk(charType, (unsigned char *)pResultType);
+                    resultTypeChunk = charType;
                 } else {
-                    newChunk = makeStringType(length);
-                    setType(&node.typeChunk, newChunk);
+                    resultTypeChunk = makeStringType(length);
+                    setType(&node.typeChunk, resultTypeChunk);
                     storeChunk(node.nodeChunkNum, (unsigned char *)&node);
-                    retrieveChunk(newChunk, (unsigned char *)pResultType);
                 }
 
                 // Set the character value or string value into the symbol table.
@@ -137,7 +135,7 @@ void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
                 }
                 storeChunk(node.defnChunk, (unsigned char *)&defn);
             } else {
-                retrieveChunk(node.typeChunk, (unsigned char *)pResultType);
+                resultTypeChunk = node.typeChunk;
             }
 
             // Append the symbol table node to the icode
@@ -147,14 +145,14 @@ void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 
         case tcNOT:
             getTokenAppend(scanner, Icode);
-            parseFactor(scanner, Icode, pResultType);
-            checkBoolean(pResultType->nodeChunkNum, 0);
+            resultTypeChunk = parseFactor(scanner, Icode);
+            checkBoolean(resultTypeChunk, 0);
             break;
 
         case tcLParen:
             // Parenthesized subexpression: call parseExpression recursively
             getTokenAppend(scanner, Icode);
-            parseExpression(scanner, Icode, pResultType);
+            resultTypeChunk = parseExpression(scanner, Icode);
 
             // and check for the closing right parenthesis
             if (scanner->token.code == tcRParen) {
@@ -166,36 +164,42 @@ void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 
         default:
             Error(errInvalidExpression);
-            retrieveChunk(dummyType, (unsigned char *)pResultType);
+            resultTypeChunk = dummyType;
             break;
     }
+
+    return resultTypeChunk;
 }
 
-void parseField(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType) {
+CHUNKNUM parseField(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM recordTypeChunkNum) {
+    TTYPE recordType;
+    CHUNKNUM varType;
     SYMTABNODE fieldId;
 
     getTokenAppend(scanner, Icode);
+    retrieveChunk(recordTypeChunkNum, (unsigned char *)&recordType);
 
-    if (scanner->token.code == tcIdentifier && pType->form == fcRecord) {
-        if (!searchSymtab(pType->record.symtab, &fieldId, scanner->token.string)) {
+    if (scanner->token.code == tcIdentifier && recordType.form == fcRecord) {
+        if (!searchSymtab(recordType.record.symtab, &fieldId, scanner->token.string)) {
             fieldId.nodeChunkNum = 0;
             Error(errInvalidField);
         }
         putSymtabNodeToIcode(Icode, &fieldId);
 
         getTokenAppend(scanner, Icode);
-        retrieveChunk(fieldId.nodeChunkNum ? fieldId.typeChunk : dummyType,
-            (unsigned char *)pType);
+        varType = fieldId.nodeChunkNum ? fieldId.typeChunk : dummyType;
     } else {
         Error(errInvalidField);
         getTokenAppend(scanner, Icode);
-        retrieveChunk(dummyType, (unsigned char *)pType);
+        varType = dummyType;
     }
+
+    return varType;
 }
 
-void parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
+CHUNKNUM parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode)
 {
-    TTYPE operandType;
+    CHUNKNUM resultTypeChunk, operandTypeChunk;
     TTokenCode op;
     char unaryOpFlag = 0;  // non-zero if unary op
 
@@ -206,28 +210,28 @@ void parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
     }
 
     // Parse the first term
-    parseTerm(scanner, Icode, pResultType);
+    resultTypeChunk = parseTerm(scanner, Icode);
 
     // If there was a unary sign, check the term's type
     if (unaryOpFlag) {
-        if (pResultType->nodeChunkNum != integerType) {
+        if (resultTypeChunk != integerType) {
             Error(errIncompatibleTypes);
         }
     }
 
     // Loop to parse subsequent additive operators and terms
     while (tokenIn(scanner->token.code, tlAddOps)) {
-        // Remember the operator and pae the subsequent term.
+        // Remember the operator and parse the subsequent term.
         op = scanner->token.code;
         getTokenAppend(scanner, Icode);
-        parseTerm(scanner, Icode, &operandType);
+        operandTypeChunk = parseTerm(scanner, Icode);
 
         switch (op) {
             case tcPlus:
             case tcMinus:
                 // integer <op> integer => integer
-                if (integerOperands(pResultType->nodeChunkNum, operandType.nodeChunkNum)) {
-                    retrieveChunk(integerType, (unsigned char *)pResultType);
+                if (integerOperands(resultTypeChunk, operandTypeChunk)) {
+                    resultTypeChunk = integerType;
                 } else {
                     Error(errIncompatibleTypes);
                 }
@@ -235,15 +239,20 @@ void parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 
             case tcOR:
                 // boolean OR boolean => boolean
-                checkBoolean(pResultType->nodeChunkNum, operandType.nodeChunkNum);
-                retrieveChunk(booleanType, (unsigned char *)pResultType);
+                checkBoolean(resultTypeChunk, operandTypeChunk);
+                resultTypeChunk = booleanType;
                 break;
         }
     }
+
+    return resultTypeChunk;
 }
 
-void parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType) {
-    TTYPE indexType, targetType;
+CHUNKNUM parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
+    CHUNKNUM resultTypeChunk, targetTypeChunk;
+    TTYPE arrayType;
+
+    retrieveChunk(arrayTypeChunk, (unsigned char *)&arrayType);
 
     // Loop to parse a list of subscripts separated by commas.
     do {
@@ -251,43 +260,48 @@ void parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType) {
         getTokenAppend(scanner, Icode);
 
         // The current variable is an array type.
-        if (pType->form == fcArray) {
+        if (arrayType.form == fcArray) {
             // The subscript expression must be an assignment type
             // compatible with the corresponding subscript type.
-            parseExpression(scanner, Icode, &targetType);
-            retrieveChunk(pType->array.indexType, (unsigned char *)&indexType);
-            checkAssignmentCompatible(&indexType, &targetType, errIncompatibleTypes);
+            targetTypeChunk = parseExpression(scanner, Icode);
+            // retrieveChunk(targetTypeChunk, (unsigned char *)&targetType);
+            // retrieveChunk(arrayType.array.indexType, (unsigned char *)&indexType);
+            checkAssignmentCompatible(arrayType.array.indexType, targetTypeChunk, errIncompatibleTypes);
 
             // Update the variable's type
-            retrieveChunk(pType->array.elemType, (unsigned char *)pType);
+            resultTypeChunk = arrayType.array.elemType;
+            // retrieveChunk(pType->array.elemType, (unsigned char *)pType);
         }
 
         // No longer an array type, so too many subscripts.
         // Parse the extra subscripts anyway for error recovery.
         else {
             Error(errTooManySubscripts);
-            parseExpression(scanner, Icode, &targetType);
+            parseExpression(scanner, Icode);
         }
     } while (scanner->token.code == tcComma);
 
     // ]
     condGetTokenAppend(scanner, Icode, tcRBracket, errMissingRightBracket);
+
+    return resultTypeChunk;
 }
 
-void parseTerm(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
+CHUNKNUM parseTerm(SCANNER *scanner, CHUNKNUM Icode)
 {
-    TTYPE operandType;
+    CHUNKNUM resultChunkNum, operandTypeChunk;
+    // TTYPE operandType;
     TTokenCode op;
 
     // Parse the first factor
-    parseFactor(scanner, Icode, pResultType);
+    resultChunkNum = parseFactor(scanner, Icode);
 
     // Loop to parse subsequent multiplicative operators and factors
     while (tokenIn(scanner->token.code, tlMulOps)) {
         // Remember the operator and parse subsequent factor
         op = scanner->token.code;
         getTokenAppend(scanner, Icode);
-        parseFactor(scanner, Icode, &operandType);
+        operandTypeChunk = parseFactor(scanner, Icode);
 
         // Check the operand types to determine the result type.
         switch (op) {
@@ -298,8 +312,8 @@ void parseTerm(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
             case tcDIV:
             case tcMOD:
                 // integer <op> integer => integer
-                if (integerOperands(pResultType->nodeChunkNum, operandType.nodeChunkNum)) {
-                    retrieveChunk(integerType, (unsigned char *)pResultType);
+                if (integerOperands(resultChunkNum, operandTypeChunk)) {
+                    resultChunkNum = integerType;
                 } else {
                     Error(errIncompatibleTypes);
                 }
@@ -307,18 +321,21 @@ void parseTerm(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType)
 
             case tcAND:
                 // boolean AND boolean => boolean
-                checkBoolean(pResultType->nodeChunkNum, operandType.nodeChunkNum);
-                retrieveChunk(booleanType, (unsigned char *)pResultType);
+                checkBoolean(resultChunkNum, operandTypeChunk);
+                resultChunkNum = booleanType;
                 break;
         }
     }
+
+    return resultChunkNum;
 }
 
-void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode, TTYPE *pResultType) {
+CHUNKNUM parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode) {
     DEFN defn;
+    CHUNKNUM resultTypeChunk;
     char doneFlag = 0;
 
-    retrieveChunk(pNode->typeChunk, (unsigned char *)pResultType);
+    resultTypeChunk = pNode->typeChunk;
     retrieveChunk(pNode->defnChunk, (unsigned char *)&defn);
 
     // Check how the variable identifier was defined.
@@ -331,7 +348,7 @@ void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode, TTYPE *p
             break;          // OK
         
         default:
-            retrieveChunk(dummyType, (unsigned char *)&pResultType);
+            resultTypeChunk = dummyType;
             Error(errInvalidIdentifierUsage);
             break;
     }
@@ -342,11 +359,11 @@ void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode, TTYPE *p
     do {
         switch (scanner->token.code) {
             case tcLBracket:
-                parseSubscripts(scanner, Icode, pResultType);
+                resultTypeChunk = parseSubscripts(scanner, Icode, resultTypeChunk);
                 break;
 
             case tcPeriod:
-                parseField(scanner, Icode, pResultType);
+                resultTypeChunk = parseField(scanner, Icode, resultTypeChunk);
                 break;
 
             default:
@@ -354,4 +371,6 @@ void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode, TTYPE *p
                 break;
         }
     } while (!doneFlag);
+
+    return resultTypeChunk;
 }

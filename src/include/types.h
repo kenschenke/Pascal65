@@ -54,7 +54,7 @@ typedef struct TTYPE {
 #error TTYPE should be CHUNK_LEN bytes in size
 #endif
 
-void checkAssignmentCompatible(TTYPE *targetType, TTYPE *valueType, TErrorCode ec);
+void checkAssignmentCompatible(CHUNKNUM targetTypeChunk, CHUNKNUM valueTypeChunk, TErrorCode ec);
 void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum);
 void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 char initPredefinedTypes(CHUNKNUM symtabChunkNum);

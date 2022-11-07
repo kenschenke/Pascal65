@@ -189,13 +189,13 @@ void parseActualParmList(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmChec
 
 void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode) {
     DEFN defn;
-    TTYPE targetType, exprType;
+    CHUNKNUM exprTypeChunk;
     SYMTABNODE node, actualNode;
 
     // If we're not checking the actual parameters against the corresponding formal
     // parameters (as during error recovery), just parse the actual parameter.
     if (!parmCheckFlag) {
-        parseExpression(scanner, Icode, &exprType);
+        exprTypeChunk = parseExpression(scanner, Icode);
         return;
     }
 
@@ -203,7 +203,7 @@ void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CH
     // Go into error recovery mode and parse the actual parameter anyway.
     if (!formalId) {
         Error(errWrongNumberOfParams);
-        parseExpression(scanner, Icode, &exprType);
+        exprTypeChunk = parseExpression(scanner, Icode);
         return;
     }
 
@@ -213,9 +213,8 @@ void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CH
     retrieveChunk(formalId, (unsigned char *)&node);
     retrieveChunk(node.defnChunk, (unsigned char *)&defn);
     if (defn.how == dcValueParm) {
-        parseExpression(scanner, Icode, &exprType);
-        retrieveChunk(node.typeChunk, (unsigned char *)&targetType);
-        checkAssignmentCompatible(&targetType, &exprType, errIncompatibleTypes);
+        exprTypeChunk = parseExpression(scanner, Icode);
+        checkAssignmentCompatible(node.typeChunk, exprTypeChunk, errIncompatibleTypes);
     }
 
     // Formal VAR parameter: The actual parameter must be a variable of
@@ -224,9 +223,8 @@ void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CH
         findSymtabNode(&actualNode, scanner->token.string);
         putSymtabNodeToIcode(Icode, &actualNode);
         
-        retrieveChunk(node.typeChunk, (unsigned char *)&targetType);
-        parseVariable(scanner, Icode, &actualNode, &exprType);
-        if (targetType.typeId != exprType.typeId) {
+        exprTypeChunk = parseVariable(scanner, Icode, &actualNode);
+        if (node.typeChunk != exprTypeChunk) {
             Error(errIncompatibleTypes);
         }
         resync(scanner, tlExpressionFollow, tlStatementFollow, tlStatementStart);
@@ -234,7 +232,7 @@ void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CH
 
     // Error: Parse the actual parameter anyway for error recovery.
     else {
-        parseExpression(scanner, Icode, &exprType);
+        parseExpression(scanner, Icode);
         Error(errInvalidVarParm);
     }
 }

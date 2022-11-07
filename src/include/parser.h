@@ -83,18 +83,18 @@ void parseWHILE(SCANNER *scanner, CHUNKNUM Icode);
 void parseIF(SCANNER *scanner, CHUNKNUM Icode);
 void parseFOR(SCANNER *scanner, CHUNKNUM Icode);
 void parseCASE(SCANNER *scanner, CHUNKNUM Icode);
-void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pExprType);
-void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pExprType);
+void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk);
+void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk);
 void parseCompound(SCANNER *scanner, CHUNKNUM Icode);
 
 // Expressions
-void parseExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
-void parseField(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType);
-void parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
-void parseTerm(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
-void parseFactor(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pResultType);
-void parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, TTYPE *pType);
-void parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pId, TTYPE *pResultType);
+CHUNKNUM parseExpression(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseField(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM recordTypeChunk);
+CHUNKNUM parseSimpleExpression(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseTerm(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode);
+CHUNKNUM parseSubscripts(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM arrayTypeChunk);
+CHUNKNUM parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pId);
 
 char enterGlobalSymtab(const char *pString, SYMTABNODE *node);
 void getToken(SCANNER *scanner);
