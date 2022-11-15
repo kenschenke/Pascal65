@@ -1,6 +1,7 @@
 #ifndef FORMATTER_H
 #define FORMATTER_H
 
+#include <symtab.h>
 #include <chunks.h>
 #include <types.h>
 #include <scanner.h>
@@ -16,6 +17,7 @@ void fmtIndent(void);
 void fmtPut(const char *pString);
 void fmtPutLine(const char *pString);
 void fmtPutName(CHUNKNUM nameChunkNum);
+void fmtPutStringArray(CHUNKNUM stringChunkNum);
 int fmtSetMargin(void);
 void fmtResetMargin(int m);
 

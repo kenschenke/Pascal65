@@ -16,7 +16,7 @@
 #include <parscommon.h>
 #include <string.h>
 
-void parseAssignment(SCANNER *scanner, SYMTABNODE *pTargetNode, CHUNKNUM Icode)
+void parseAssignment(SCANNER *scanner, SYMBNODE *pTargetNode, CHUNKNUM Icode)
 {
     CHUNKNUM exprTypeChunk, targetTypeChunk;
 
@@ -107,9 +107,8 @@ void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
 
 void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
     char signFlag = 0;  // true if unary sign, else false
-    DEFN defn;
     TTYPE labelType;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     // Unary + or -
     if (tokenIn(scanner->token.code, tlUnaryOps)) {
@@ -123,18 +122,17 @@ void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
             if (!symtabStackSearchAll(scanner->token.string, &node)) {
                 Error(errUndefinedIdentifier);
             }
-            retrieveChunk(node.typeChunk, (unsigned char *)&labelType);
-            putSymtabNodeToIcode(Icode, &node);
+            retrieveChunk(node.node.typeChunk, (unsigned char *)&labelType);
+            putSymtabNodeToIcode(Icode, &node.node);
 
-            retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-            if (defn.how != dcUndefined) {
+            if (node.defn.how != dcUndefined) {
                 if (labelType.form == fcSubrange && labelType.subrange.baseType) {
                     retrieveChunk(labelType.subrange.baseType, (unsigned char *)&labelType);
                 }
             } else {
-                defn.how = dcConstant;
-                setType(&node.typeChunk, dummyType);
-                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+                node.defn.how = dcConstant;
+                setType(&node.node.typeChunk, dummyType);
+                saveSymbNode(&node);
                 retrieveChunk(dummyType, (unsigned char *)&labelType);
             }
 
@@ -157,13 +155,11 @@ void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
 
             if (!symtabStackSearchAll(scanner->token.string, &node)) {
                 symtabEnterLocal(&node, scanner->token.string, dcUndefined);
-                setType(&node.typeChunk, integerType);
-                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
-                retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-                defn.constant.value.integer = scanner->token.value.integer;
-                storeChunk(node.defnChunk, (unsigned char *)&defn);
+                setType(&node.node.typeChunk, integerType);
+                node.defn.constant.value.integer = scanner->token.value.integer;
+                saveSymbNode(&node);
             }
-            putSymtabNodeToIcode(Icode, &node);
+            putSymtabNodeToIcode(Icode, &node.node);
 
             getTokenAppend(scanner, Icode);
             break;
@@ -177,13 +173,11 @@ void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
 
             if (!symtabStackSearchAll(scanner->token.string, &node)) {
                 symtabEnterNewLocal(&node, scanner->token.string, dcUndefined);
-                setType(&node.typeChunk, charType);
-                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
-                retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-                defn.constant.value.character = scanner->token.string[1];
-                storeChunk(node.defnChunk, (unsigned char *)&defn);
+                setType(&node.node.typeChunk, charType);
+                node.defn.constant.value.character = scanner->token.string[1];
+                saveSymbNode(&node);
             }
-            putSymtabNodeToIcode(Icode, &node);
+            putSymtabNodeToIcode(Icode, &node.node);
 
             getTokenAppend(scanner, Icode);
             break;
@@ -200,28 +194,25 @@ void parseCompound(SCANNER *scanner, CHUNKNUM Icode) {
 }
 
 void parseFOR(SCANNER *scanner, CHUNKNUM Icode) {
-    DEFN defn;
     CHUNKNUM exprTypeChunk, expr2TypeChunk;
     TTYPE controlType;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     // <id>
     getTokenAppend(scanner, Icode);
     if (scanner->token.code == tcIdentifier) {
         // Verify the definition and type of the control id
         symtabStackFind(scanner->token.string, &node);
-        retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-        retrieveChunk(node.typeChunk, (unsigned char *)&controlType);
-        if (defn.how != dcUndefined) {
+        memcpy(&controlType, &node.type, sizeof(TTYPE));
+        if (node.defn.how != dcUndefined) {
             if (controlType.form == fcSubrange && controlType.subrange.baseType) {
                 retrieveChunk(controlType.subrange.baseType, (unsigned char *)&controlType);
             }
         } else {
-            defn.how = dcVariable;
-            storeChunk(node.defnChunk, (unsigned char *)&defn);
+            node.defn.how = dcVariable;
             retrieveChunk(integerType, (unsigned char *)&controlType);
-            node.typeChunk = integerType;
-            storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+            node.node.typeChunk = integerType;
+            saveSymbNode(&node);
         }
         if (controlType.nodeChunkNum != integerType &&
             controlType.nodeChunkNum != charType &&
@@ -230,7 +221,7 @@ void parseFOR(SCANNER *scanner, CHUNKNUM Icode) {
             retrieveChunk(integerType, (unsigned char *)&controlType);
         }
 
-        putSymtabNodeToIcode(Icode, &node);
+        putSymtabNodeToIcode(Icode, &node.node);
         getTokenAppend(scanner, Icode);
     } else {
         Error(errMissingIdentifier);
@@ -242,7 +233,7 @@ void parseFOR(SCANNER *scanner, CHUNKNUM Icode) {
 
     // <expr-1>
     exprTypeChunk = parseExpression(scanner, Icode);
-    checkAssignmentCompatible(node.typeChunk, exprTypeChunk, errIncompatibleTypes);
+    checkAssignmentCompatible(node.node.typeChunk, exprTypeChunk, errIncompatibleTypes);
 
     // TO or DOWNTO
     resync(scanner, tlTODOWNTO, tlExpressionStart, NULL);
@@ -302,8 +293,7 @@ void parseREPEAT(SCANNER *scanner, CHUNKNUM Icode) {
 
 void parseStatement(SCANNER *scanner, CHUNKNUM Icode)
 {
-    DEFN defn;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     insertLineMarker(Icode);
 
@@ -315,18 +305,16 @@ void parseStatement(SCANNER *scanner, CHUNKNUM Icode)
             // necessary.  Append the symbol table node handle
             // to the icode.
             findSymtabNode(&node, scanner->token.string);
-            putSymtabNodeToIcode(Icode, &node);
+            putSymtabNodeToIcode(Icode, &node.node);
 
             // Based on how the identifier is defined,
             // parse an assignment statement or procedure call.
-            retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-            if (defn.how == dcUndefined) {
-                defn.how = dcVariable;
-                storeChunk(node.defnChunk, (unsigned char *)&defn);
-                setType(&node.typeChunk, dummyType);
-                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+            if (node.defn.how == dcUndefined) {
+                node.defn.how = dcVariable;
+                setType(&node.node.typeChunk, dummyType);
+                saveSymbNode(&node);
                 parseAssignment(scanner, &node, Icode);
-            } else if (defn.how == dcProcedure) {
+            } else if (node.defn.how == dcProcedure) {
                 parseSubroutineCall(scanner, &node, 1, Icode);
             } else {
                 parseAssignment(scanner, &node, Icode);

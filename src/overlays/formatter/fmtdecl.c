@@ -49,7 +49,7 @@ void fmtPrintConstantDefinitions(CHUNKNUM constId) {
         // Print the constant value
         if (type.form == fcArray) {  // string
             fmtPut("'");
-            fmtPutName(defn.constant.value.stringChunkNum);
+            fmtPutStringArray(defn.constant.value.stringChunkNum);
             fmtPut("'");
         } else if (type.nodeChunkNum == integerType) {
             sprintf(buf, "%d", defn.constant.value.integer);

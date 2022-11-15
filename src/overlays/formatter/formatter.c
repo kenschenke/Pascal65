@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <formatter.h>
+#include <string.h>
 
 #define INDENT_SIZE 4
 #define MAX_MARGIN 60
@@ -58,11 +59,27 @@ void fmtPutLine(const char *pString) {
 void fmtPutName(CHUNKNUM chunkNum) {
     char chunk[CHUNK_LEN + 1];
 
-    if (retrieveChunk(chunkNum, chunk) == 0) {
+    if (retrieveChunk(chunkNum, (unsigned char *)chunk) == 0) {
         fmtPut("<unknown>");
     } else {
         chunk[CHUNK_LEN] = 0;
         fmtPut(chunk);
+    }
+}
+
+void fmtPutStringArray(CHUNKNUM chunkNum) {
+    char buf[CHUNK_LEN];
+    STRVALCHUNK chunk;
+
+    chunk.nextChunkNum = chunkNum;
+    while (chunk.nextChunkNum) {
+        if (retrieveChunk(chunk.nextChunkNum, (unsigned char *)&chunk) == 0) {
+            fmtPut("<unknown>");
+        } else {
+            memset(buf, 0, sizeof(buf));
+            memcpy(buf, chunk.value, sizeof(chunk.value));
+            fmtPut(buf);
+        }
     }
 }
 

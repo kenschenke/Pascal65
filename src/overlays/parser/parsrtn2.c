@@ -5,12 +5,11 @@
 #include <parscommon.h>
 
 void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, int *totalParmSize) {
-    SYMTABNODE node;
+    SYMBNODE node;
     CHUNKNUM firstId, lastId, parmId;
     CHUNKNUM prevSublistLastId = 0;
     CHUNKNUM parmType;
     TDefnCode parmDefn;
-    DEFN defn;
 
     *pParmList = 0;
     *parmCount = *totalParmSize = 0;
@@ -32,7 +31,7 @@ void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, 
         // Loop to parse the comma-separated sublist of parameter ids.
         while (scanner->token.code == tcIdentifier) {
             symtabEnterNewLocal(&node, scanner->token.string, parmDefn);
-            parmId = node.nodeChunkNum;
+            parmId = node.node.nodeChunkNum;
             ++(*parmCount);
             if (!(*pParmList)) {
                 *pParmList = parmId;
@@ -42,9 +41,9 @@ void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, 
             if (!firstId) {
                 firstId = lastId = parmId;
             } else {
-                retrieveChunk(lastId, (unsigned char *)&node);
-                node.nextNode = parmId;
-                storeChunk(lastId, (unsigned char *)&node);
+                loadSymbNode(lastId, &node);
+                node.node.nextNode = parmId;
+                saveSymbNodeOnly(&node);
                 lastId = parmId;
             }
 
@@ -76,11 +75,10 @@ void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, 
         // <type-id>
         if (scanner->token.code == tcIdentifier) {
             findSymtabNode(&node, scanner->token.string);
-            retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-            if (defn.how != dcType) {
+            if (node.defn.how != dcType) {
                 Error(errInvalidType);
             }
-            parmType = node.typeChunk;
+            parmType = node.node.typeChunk;
             getToken(scanner);
         } else {
             Error(errMissingIdentifier);
@@ -89,20 +87,18 @@ void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, 
 
         // Loop to assign the offset and type to each
         // parm id in the sublist.
-        for (parmId = firstId; parmId; parmId = node.nextNode) {
-            retrieveChunk(parmId, (unsigned char *)&node);
-            retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-            defn.data.offset = (*totalParmSize)++;
-            storeChunk(node.defnChunk, (unsigned char *)&defn);
-            setType(&node.typeChunk, parmType);
-            storeChunk(parmId, (unsigned char *)&node);
+        for (parmId = firstId; parmId; parmId = node.node.nextNode) {
+            loadSymbNode(parmId, &node);
+            node.defn.data.offset = (*totalParmSize)++;
+            setType(&node.node.typeChunk, parmType);
+            saveSymbNode(&node);
         }
 
         // Link this sublist to the previous sublist.
         if (prevSublistLastId) {
-            retrieveChunk(prevSublistLastId, (unsigned char *)&node);
-            node.nextNode = firstId;
-            storeChunk(prevSublistLastId, (unsigned char *)&node);
+            loadSymbNode(prevSublistLastId, &node);
+            node.node.nextNode = firstId;
+            saveSymbNodeOnly(&node);
         }
         prevSublistLastId = lastId;
 
@@ -121,33 +117,27 @@ void parseFormalParmList(SCANNER *scanner, CHUNKNUM *pParmList, int *parmCount, 
     condGetToken(scanner, tcRParen, errMissingRightParen);
 }
 
-CHUNKNUM parseSubroutineCall(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
-    DEFN defn;
-
+CHUNKNUM parseSubroutineCall(SCANNER *scanner, SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
     getTokenAppend(scanner, Icode);
 
-    retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-
-    if (defn.routine.which == rcDeclared || defn.routine.which == rcForward || !parmCheckFlag) {
+    if (pRoutineId->defn.routine.which == rcDeclared || pRoutineId->defn.routine.which == rcForward || !parmCheckFlag) {
         return parseDeclaredSubroutineCall(scanner, pRoutineId, parmCheckFlag, Icode);
     } else {
         return parseStandardSubroutineCall(scanner, Icode, pRoutineId);
     }
 }
 
-CHUNKNUM parseDeclaredSubroutineCall(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
+CHUNKNUM parseDeclaredSubroutineCall(SCANNER *scanner, SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
     parseActualParmList(scanner, pRoutineId, parmCheckFlag, Icode);
-    return pRoutineId->typeChunk;
+    return pRoutineId->node.typeChunk;
 }
 
-void parseActualParmList(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
-    DEFN defn;
-    SYMTABNODE node;
+void parseActualParmList(SCANNER *scanner, SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
+    SYMBNODE node;
     CHUNKNUM formalId = 0;
 
     if (pRoutineId) {
-        retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-        formalId = defn.routine.locals.parmIds;
+        formalId = pRoutineId->defn.routine.locals.parmIds;
     }
 
     // If there are no actual parameters, there better not be any
@@ -173,8 +163,8 @@ void parseActualParmList(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmChec
 
         parseActualParm(scanner, formalId, parmCheckFlag, Icode);
         if (formalId) {
-            retrieveChunk(formalId, (unsigned char *)&node);
-            formalId = node.nextNode;
+            loadSymbNode(formalId, &node);
+            formalId = node.node.nextNode;
         }
     } while (scanner->token.code == tcComma);
 
@@ -188,9 +178,8 @@ void parseActualParmList(SCANNER *scanner, SYMTABNODE *pRoutineId, char parmChec
 }
 
 void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode) {
-    DEFN defn;
     CHUNKNUM exprTypeChunk;
-    SYMTABNODE node, actualNode;
+    SYMBNODE node, actualNode;
 
     // If we're not checking the actual parameters against the corresponding formal
     // parameters (as during error recovery), just parse the actual parameter.
@@ -210,21 +199,20 @@ void parseActualParm(SCANNER *scanner, CHUNKNUM formalId, char parmCheckFlag, CH
     // Formal value parameter: The actual parameter can be an arbitrary
     //                         expression that is an assignment type
     //                         compatible with the formal parameter.
-    retrieveChunk(formalId, (unsigned char *)&node);
-    retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-    if (defn.how == dcValueParm) {
+    loadSymbNode(formalId, &node);
+    if (node.defn.how == dcValueParm) {
         exprTypeChunk = parseExpression(scanner, Icode);
-        checkAssignmentCompatible(node.typeChunk, exprTypeChunk, errIncompatibleTypes);
+        checkAssignmentCompatible(node.node.typeChunk, exprTypeChunk, errIncompatibleTypes);
     }
 
     // Formal VAR parameter: The actual parameter must be a variable of
     //                       the same type as the formal parameter.
     else if (scanner->token.code == tcIdentifier) {
         findSymtabNode(&actualNode, scanner->token.string);
-        putSymtabNodeToIcode(Icode, &actualNode);
+        putSymtabNodeToIcode(Icode, &actualNode.node);
         
         exprTypeChunk = parseVariable(scanner, Icode, &actualNode);
-        if (node.typeChunk != exprTypeChunk) {
+        if (node.node.typeChunk != exprTypeChunk) {
             Error(errIncompatibleTypes);
         }
         resync(scanner, tlExpressionFollow, tlStatementFollow, tlStatementStart);

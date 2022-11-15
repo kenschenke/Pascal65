@@ -4,9 +4,7 @@
 #include <parser.h>
 #include <parscommon.h>
 
-void parseBlock(SCANNER *scanner, SYMTABNODE *pRoutineId) {
-    DEFN defn;
-
+void parseBlock(SCANNER *scanner, SYMBNODE *pRoutineId) {
     // declarations
     parseDeclarations(scanner, pRoutineId);
 
@@ -15,18 +13,16 @@ void parseBlock(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     resync(scanner, tlStatementStart, NULL, NULL);
     if (scanner->token.code != tcBEGIN) Error(errMissingBEGIN);
 
-    retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-    makeIcode(&defn.routine.Icode);
-    storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-    parseCompound(scanner, defn.routine.Icode);
+    makeIcode(&pRoutineId->defn.routine.Icode);
+    saveSymbNodeDefn(pRoutineId);
+    parseCompound(scanner, pRoutineId->defn.routine.Icode);
 }
 
-void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc) {
-    DEFN defn;
+void parseFuncOrProcHeader(SCANNER *scanner, SYMBNODE *pRoutineId, char isFunc) {
     int parmCount;  // count of formal params
     int totalParmSize;  // total byte size of all parameters
     char forwardFlag = 0;
-    SYMTABNODE typeId;
+    SYMBNODE typeId;
     CHUNKNUM parmList;
 
     getToken(scanner);
@@ -38,11 +34,9 @@ void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc
             // Not already declared
             symtabEnterLocal(pRoutineId, scanner->token.string,
                 isFunc ? dcFunction : dcProcedure);
-            retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-            defn.routine.totalLocalSize = 0;
+            pRoutineId->defn.routine.totalLocalSize = 0;
         } else {
-            retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-            if (defn.how == isFunc ? dcFunction : dcProcedure && defn.routine.which == rcForward) {
+            if (pRoutineId->defn.how == isFunc ? dcFunction : dcProcedure && pRoutineId->defn.routine.which == rcForward) {
                 forwardFlag = 1;
             } else {
                 Error(errRedefinedIdentifier);
@@ -70,23 +64,23 @@ void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc
             Error(errAlreadyForwarded);
         } else {
             // Not forwarded
-            defn.routine.parmCount = parmCount;
-            defn.routine.totalParmSize = totalParmSize;
-            defn.routine.locals.parmIds = parmList;
+            pRoutineId->defn.routine.parmCount = parmCount;
+            pRoutineId->defn.routine.totalParmSize = totalParmSize;
+            pRoutineId->defn.routine.locals.parmIds = parmList;
         }
     } else if (!forwardFlag) {
         // No parameters and no forward declaration
-        defn.routine.parmCount = 0;
-        defn.routine.totalParmSize = 0;
-        defn.routine.locals.parmIds = 0;
+        pRoutineId->defn.routine.parmCount = 0;
+        pRoutineId->defn.routine.totalParmSize = 0;
+        pRoutineId->defn.routine.locals.parmIds = 0;
     }
 
-    defn.routine.locals.constantIds = 0;
-    defn.routine.locals.typeIds = 0;
-    defn.routine.locals.variableIds = 0;
-    defn.routine.locals.routineIds = 0;
+    pRoutineId->defn.routine.locals.constantIds = 0;
+    pRoutineId->defn.routine.locals.typeIds = 0;
+    pRoutineId->defn.routine.locals.variableIds = 0;
+    pRoutineId->defn.routine.locals.routineIds = 0;
 
-    storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+    saveSymbNodeDefn(pRoutineId);
 
     if (isFunc) {
         // Optional <type-id> : If there was a forward declaration, there must
@@ -96,31 +90,27 @@ void parseFuncOrProcHeader(SCANNER *scanner, SYMTABNODE *pRoutineId, char isFunc
             condGetToken(scanner, tcColon, errMissingColon);
             if (scanner->token.code == tcIdentifier) {
                 symtabStackFind(scanner->token.string, &typeId);
-                retrieveChunk(typeId.defnChunk, (unsigned char *)&defn);
-                if (defn.how != dcType) Error(errInvalidType);
+                if (typeId.defn.how != dcType) Error(errInvalidType);
                 if (forwardFlag) {
                     Error(errAlreadyForwarded);
                 } else {
-                    setType(&pRoutineId->typeChunk, typeId.typeChunk);
-                    storeChunk(pRoutineId->nodeChunkNum, (unsigned char *)pRoutineId);
+                    setType(&pRoutineId->node.typeChunk, typeId.node.typeChunk);
                 }
 
                 getToken(scanner);
             } else {
                 Error(errMissingIdentifier);
-                setType(&pRoutineId->typeChunk, dummyType);
-                storeChunk(pRoutineId->nodeChunkNum, (unsigned char *)pRoutineId);
+                setType(&pRoutineId->node.typeChunk, dummyType);
             }
         }
     } else {
-        setType(&pRoutineId->typeChunk, dummyType);
-        storeChunk(pRoutineId->nodeChunkNum, (unsigned char *)pRoutineId);
+        setType(&pRoutineId->node.typeChunk, dummyType);
     }
+
+    saveSymbNodeOnly(pRoutineId);
 }
 
-void parseProgram(SCANNER *scanner, SYMTABNODE *pProgramId) {
-    DEFN defn;
-
+void parseProgram(SCANNER *scanner, SYMBNODE *pProgramId) {
     // <program-header>
     parseProgramHeader(scanner, pProgramId);
 
@@ -135,18 +125,16 @@ void parseProgram(SCANNER *scanner, SYMTABNODE *pProgramId) {
 
     // <block>
     parseBlock(scanner, pProgramId);
-    retrieveChunk(pProgramId->defnChunk, (unsigned char *)&defn);
-    symtabExitScope(&defn.routine.symtab);
-    storeChunk(pProgramId->defnChunk, (unsigned char *)&defn);
+    symtabExitScope(&pProgramId->defn.routine.symtab);
+    saveSymbNodeDefn(pProgramId);
 
     // .
     resync(scanner, tlProgramEnd, NULL, NULL);
-    condGetTokenAppend(scanner, defn.routine.Icode, tcPeriod, errMissingPeriod);
+    condGetTokenAppend(scanner, pProgramId->defn.routine.Icode, tcPeriod, errMissingPeriod);
 }
 
-void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
-    DEFN defn;
-    SYMTABNODE parmId, prevParmId;
+void parseProgramHeader(SCANNER *scanner, SYMBNODE *pProgramId) {
+    SYMBNODE parmId, prevParmId;
 
     // PROGRAM
     condGetToken(scanner, tcPROGRAM, errMissingPROGRAM);
@@ -155,21 +143,19 @@ void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
     if (scanner->token.code == tcIdentifier) {
         symtabEnterNewLocal(pProgramId, scanner->token.string, dcProgram);
 
-        retrieveChunk(pProgramId->defnChunk, (unsigned char *)&defn);
-        defn.routine.which = rcDeclared;
-        defn.routine.parmCount = 0;
-        defn.routine.totalParmSize = 0;
-        defn.routine.totalLocalSize = 0;
-        defn.routine.locals.parmIds = 0;
-        defn.routine.locals.constantIds = 0;
-        defn.routine.locals.typeIds = 0;
-        defn.routine.locals.variableIds = 0;
-        defn.routine.locals.routineIds = 0;
-        defn.routine.symtab = 0;
-        defn.routine.Icode = 0;
-        storeChunk(pProgramId->defnChunk, (unsigned char *)&defn);
-        setType(&pProgramId->typeChunk, dummyType);
-        storeChunk(pProgramId->nodeChunkNum, (unsigned char *)pProgramId);
+        pProgramId->defn.routine.which = rcDeclared;
+        pProgramId->defn.routine.parmCount = 0;
+        pProgramId->defn.routine.totalParmSize = 0;
+        pProgramId->defn.routine.totalLocalSize = 0;
+        pProgramId->defn.routine.locals.parmIds = 0;
+        pProgramId->defn.routine.locals.constantIds = 0;
+        pProgramId->defn.routine.locals.typeIds = 0;
+        pProgramId->defn.routine.locals.variableIds = 0;
+        pProgramId->defn.routine.locals.routineIds = 0;
+        pProgramId->defn.routine.symtab = 0;
+        pProgramId->defn.routine.Icode = 0;
+        setType(&pProgramId->node.typeChunk, dummyType);
+        saveSymbNode(pProgramId);
         getToken(scanner);
     } else {
         Error(errMissingIdentifier);
@@ -188,25 +174,24 @@ void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
             getToken(scanner);
             if (scanner->token.code == tcIdentifier) {
                 symtabEnterNewLocal(&parmId, scanner->token.string, dcVarParm);
-                setType(&parmId.typeChunk, dummyType);
-                storeChunk(parmId.nodeChunkNum, (unsigned char *)&parmId);
+                setType(&parmId.node.typeChunk, dummyType);
+                saveSymbNodeOnly(&parmId);
                 getToken(scanner);
 
                 // Link program parm id nodes together
-                if (!defn.routine.locals.parmIds) {
-                    defn.routine.locals.parmIds = parmId.nodeChunkNum;
-                    storeChunk(parmId.defnChunk, (unsigned char *)&defn);
+                if (!pProgramId->defn.routine.locals.parmIds) {
+                    pProgramId->defn.routine.locals.parmIds = parmId.node.nodeChunkNum;
                 } else {
-                    prevParmId.nextNode = parmId.nodeChunkNum;
-                    storeChunk(prevParmId.nodeChunkNum, (unsigned char *)&prevParmId);
+                    prevParmId.node.nextNode = parmId.node.nodeChunkNum;
+                    saveSymbNodeOnly(&prevParmId);
                 }
-                memcpy(&prevParmId, &parmId, sizeof(SYMTABNODE));
+                memcpy(&prevParmId, &parmId, sizeof(SYMBNODE));
             } else {
                 Error(errMissingIdentifier);
             }
         } while (scanner->token.code == tcComma);
 
-        storeChunk(pProgramId->defnChunk, (unsigned char *)&defn);
+        saveSymbNode(pProgramId);
 
         // )
         resync(scanner, tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
@@ -214,24 +199,22 @@ void parseProgramHeader(SCANNER *scanner, SYMTABNODE *pProgramId) {
     }
 }
 
-void parseSubroutineDeclarations(SCANNER *scanner, SYMTABNODE *pRoutineId) {
-    DEFN defn;
-    SYMTABNODE node;
+void parseSubroutineDeclarations(SCANNER *scanner, SYMBNODE *pRoutineId) {
+    SYMBNODE node;
     CHUNKNUM rtnId, lastId = 0;
 
     // Loop to parse procedure and function definitions
     while (tokenIn(scanner->token.code, tlProcFuncStart)) {
         parseSubroutine(scanner, &node);
-        rtnId = node.nodeChunkNum;
+        rtnId = node.node.nodeChunkNum;
 
         // Link the routine's local (nested) routine id nodes together.
-        retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-        if (!defn.routine.locals.routineIds) {
-            defn.routine.locals.routineIds = rtnId;
-            storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+        if (!pRoutineId->defn.routine.locals.routineIds) {
+            pRoutineId->defn.routine.locals.routineIds = rtnId;
+            saveSymbNode(pRoutineId);
         } else {
             retrieveChunk(lastId, (unsigned char *)&node);
-            node.nextNode = rtnId;
+            node.node.nextNode = rtnId;
             storeChunk(lastId, (unsigned char *)&node);
         }
         lastId = rtnId;
@@ -247,9 +230,7 @@ void parseSubroutineDeclarations(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     }
 }
 
-void parseSubroutine(SCANNER *scanner, SYMTABNODE *pRoutineId) {
-    DEFN defn;
-
+void parseSubroutine(SCANNER *scanner, SYMBNODE *pRoutineId) {
     // <routine-header>
     parseFuncOrProcHeader(scanner, pRoutineId, scanner->token.code == tcFUNCTION);
 
@@ -263,16 +244,15 @@ void parseSubroutine(SCANNER *scanner, SYMTABNODE *pRoutineId) {
     }
 
     // <block> or forward
-    retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
     if (stricmp(scanner->token.string, "forward")) {
-        defn.routine.which = rcDeclared;
-        storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+        pRoutineId->defn.routine.which = rcDeclared;
+        saveSymbNode(pRoutineId);
         parseBlock(scanner, pRoutineId);
     } else {
         getToken(scanner);
-        defn.routine.which = rcForward;
-        storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+        pRoutineId->defn.routine.which = rcForward;
+        saveSymbNode(pRoutineId);
     }
 
-    symtabExitScope(&defn.routine.symtab);
+    symtabExitScope(&pRoutineId->defn.routine.symtab);
 }

@@ -2,7 +2,6 @@
 #define TYPES_H
 
 #include <chunks.h>
-#include <symtab.h>
 #include <error.h>
 
 typedef enum {

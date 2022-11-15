@@ -38,12 +38,12 @@ void condGetTokenAppend(SCANNER *scanner, CHUNKNUM Icode, TTokenCode tc, TErrorC
     }
 }
 
-char enterGlobalSymtab(const char *pString, SYMTABNODE *node)
+char enterGlobalSymtab(const char *pString, SYMBNODE *node)
 {
     return enterSymtab(globalSymtab, node, pString, dcUndefined);
 }
 
-char findSymtabNode(SYMTABNODE *pNode, const char *identifier) {
+char findSymtabNode(SYMBNODE *pNode, const char *identifier) {
     if (symtabStackSearchAll(identifier, pNode) == 0) {
         Error(errUndefinedIdentifier);                         // error not found
         if (enterGlobalSymtab(identifier, pNode) == 0) {       // but enter it anyway
@@ -72,7 +72,7 @@ void initParser(void) {
 CHUNKNUM parse(SCANNER *scanner)
 {
     int i;
-    SYMTABNODE programId;
+    SYMBNODE programId;
 
 #if 1
 #if 0
@@ -151,7 +151,7 @@ CHUNKNUM parse(SCANNER *scanner)
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);
 
-    return programId.nodeChunkNum;
+    return programId.node.nodeChunkNum;
 }
 
 void resync(SCANNER *scanner,

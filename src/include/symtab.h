@@ -15,6 +15,7 @@
 
 #include <chunks.h>
 #include <misc.h>
+#include <types.h>
 
 struct ICODE;
 
@@ -107,6 +108,12 @@ typedef struct SYMTABNODE {
     char unused[CHUNK_LEN - 18];
 } SYMTABNODE;
 
+typedef struct SYMBNODE {
+    SYMTABNODE node;
+    DEFN defn;
+    struct TTYPE type;
+} SYMBNODE;
+
 #if sizeof(struct SYMTABNODE) != CHUNK_LEN
 #error SYMTABNODE should be CHUNK_LEN bytes in size
 #endif
@@ -129,19 +136,24 @@ char makeSymtab(CHUNKNUM *symtabChunkNum);
 
 void freeDefn(DEFN *pDefn);
 
-char enterNew(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
-char enterSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
-char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier);
+char enterNew(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifier, TDefnCode dc);
+char enterSymtab(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifier, TDefnCode dc);
+char searchSymtab(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifier);
+
+char loadSymbNode(CHUNKNUM nodeChunk, SYMBNODE *pNode);
+char saveSymbNode(SYMBNODE *pNode);
+char saveSymbNodeDefn(SYMBNODE *pNode);
+char saveSymbNodeOnly(SYMBNODE *pNode);
 
 CHUNKNUM getCurrentSymtab(void);
 void initSymtabs(void);
 void initSymtabsForParser(void);
-char symtabEnterLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc);
-char symtabEnterNewLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc);
-char symtabSearchLocal(SYMTABNODE *pNode, const char *pString);
+char symtabEnterLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc);
+char symtabEnterNewLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc);
+char symtabSearchLocal(SYMBNODE *pNode, const char *pString);
 void symtabStackEnterScope(void);
 void symtabExitScope(CHUNKNUM *symtabChunkNum);
-void symtabStackFind(const char *pString, SYMTABNODE *pNode);
-char symtabStackSearchAll(const char *pString, SYMTABNODE *pNode);
+void symtabStackFind(const char *pString, SYMBNODE *pNode);
+char symtabStackSearchAll(const char *pString, SYMBNODE *pNode);
 
 #endif // end of SYMTAB_H

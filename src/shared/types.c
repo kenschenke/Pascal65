@@ -1,3 +1,4 @@
+#include <symtab.h>
 #include <types.h>
 #include <error.h>
 #include <stdio.h>
@@ -105,8 +106,7 @@ static char getType(CHUNKNUM chunkNum, TTYPE *pType) {
 
 char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     TTYPE typeNode;
-    DEFN defn;
-    SYMTABNODE node;
+    SYMBNODE node;
     CHUNKNUM integerId, booleanId, charId;
     CHUNKNUM falseId, trueId;
 
@@ -114,19 +114,19 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     // and "true" into the symbol table.
 
     enterSymtab(symtabChunkNum, &node, "integer", dcType);
-    integerId = node.nodeChunkNum;
+    integerId = node.node.nodeChunkNum;
 
     enterSymtab(symtabChunkNum, &node, "boolean", dcType);
-    booleanId = node.nodeChunkNum;
+    booleanId = node.node.nodeChunkNum;
 
     enterSymtab(symtabChunkNum, &node, "char", dcType);
-    charId = node.nodeChunkNum;
+    charId = node.node.nodeChunkNum;
 
     enterSymtab(symtabChunkNum, &node, "false", dcConstant);
-    falseId = node.nodeChunkNum;
+    falseId = node.node.nodeChunkNum;
 
     enterSymtab(symtabChunkNum, &node, "true", dcConstant);
-    trueId = node.nodeChunkNum;
+    trueId = node.node.nodeChunkNum;
 
     // Create the predefined type objects
 
@@ -135,27 +135,27 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     charType = makeType(fcScalar, sizeof(char), charId);
     dummyType = makeType(fcNone, 1, 0);
 
-    if (retrieveChunk(integerId, (unsigned char *)&node) == 0) {
+    if (loadSymbNode(integerId, &node) == 0) {
         return 0;
     }
-    setType(&node.typeChunk, integerType);
-    if (storeChunk(integerId, (unsigned char *)&node) == 0) {
-        return 0;
-    }
-
-    if (retrieveChunk(booleanId, (unsigned char *)&node) == 0) {
-        return 0;
-    }
-    setType(&node.typeChunk, booleanType);
-    if (storeChunk(booleanId, (unsigned char *)&node) == 0) {
+    setType(&node.node.typeChunk, integerType);
+    if (storeChunk(integerId, (unsigned char *)&node.node) == 0) {
         return 0;
     }
 
-    if (retrieveChunk(charId, (unsigned char *)&node) == 0) {
+    if (loadSymbNode(booleanId, &node) == 0) {
         return 0;
     }
-    setType(&node.typeChunk, charType);
-    if (storeChunk(charId, (unsigned char *)&node) == 0) {
+    setType(&node.node.typeChunk, booleanType);
+    if (storeChunk(booleanId, (unsigned char *)&node.node) == 0) {
+        return 0;
+    }
+
+    if (loadSymbNode(charId, &node) == 0) {
+        return 0;
+    }
+    setType(&node.node.typeChunk, charType);
+    if (storeChunk(charId, (unsigned char *)&node.node) == 0) {
         return 0;
     }
 
@@ -169,34 +169,28 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     }
 
     // More initialization for the "false" and "true" id nodes.
-    if (retrieveChunk(falseId, (unsigned char *)&node) == 0) {
+    if (loadSymbNode(falseId, &node) == 0) {
         return 0;
     }
-    node.nextNode = trueId;
-    setType(&node.typeChunk, booleanType);
-    if (storeChunk(falseId, (unsigned char *)&node) == 0) {
+    node.node.nextNode = trueId;
+    setType(&node.node.typeChunk, booleanType);
+    if (storeChunk(falseId, (unsigned char *)&node.node) == 0) {
         return 0;
     }
-    if (retrieveChunk(node.defnChunk, (unsigned char *)&defn) == 0) {
-        return 0;
-    }
-    defn.constant.value.integer = 0;
-    if (storeChunk(node.defnChunk, (unsigned char *)&defn) == 0) {
+    node.defn.constant.value.integer = 0;
+    if (storeChunk(node.node.defnChunk, (unsigned char *)&node.defn) == 0) {
         return 0;
     }
 
-    if (retrieveChunk(trueId, (unsigned char *)&node) == 0) {
+    if (loadSymbNode(trueId, &node) == 0) {
         return 0;
     }
-    setType(&node.typeChunk, booleanType);
-    if (storeChunk(trueId, (unsigned char *)&node) == 0) {
+    setType(&node.node.typeChunk, booleanType);
+    if (storeChunk(trueId, (unsigned char *)&node.node) == 0) {
         return 0;
     }
-    if (retrieveChunk(node.defnChunk, (unsigned char *)&defn) == 0) {
-        return 0;
-    }
-    defn.constant.value.integer = 1;
-    if (storeChunk(node.defnChunk, (unsigned char *)&defn) == 0) {
+    node.defn.constant.value.integer = 1;
+    if (storeChunk(node.node.defnChunk, (unsigned char *)&node.defn) == 0) {
         return 0;
     }
 

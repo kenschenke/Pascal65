@@ -43,28 +43,25 @@ CHUNKNUM parseExpression(SCANNER *scanner, CHUNKNUM Icode)
 
 CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode)
 {
-    DEFN defn;
     int length;
     CHUNKNUM resultTypeChunk;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     switch (scanner->token.code) {
         case tcIdentifier:
             // Search for the identifier and enter if necessary.
             // Append the symbol table node handle to the icode.
             symtabStackFind(scanner->token.string, &node);
-            putSymtabNodeToIcode(Icode, &node);
-            retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-            if (defn.how == dcUndefined) {
-                defn.how = dcVariable;
-                storeChunk(node.defnChunk, (unsigned char *)&defn);
-                setType(&node.typeChunk, dummyType);
-                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+            putSymtabNodeToIcode(Icode, &node.node);
+            if (node.defn.how == dcUndefined) {
+                node.defn.how = dcVariable;
+                setType(&node.node.typeChunk, dummyType);
+                saveSymbNode(&node);
             }
 
             // Based on how the identifier is defined,
             // parse a constant, function call, or variable.
-            switch (defn.how) {
+            switch (node.defn.how) {
                 case dcFunction:
                     resultTypeChunk = parseSubroutineCall(scanner, &node, 1, Icode);
                     break;
@@ -76,7 +73,7 @@ CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode)
 
                 case dcConstant:
                     getTokenAppend(scanner, Icode);
-                    resultTypeChunk = node.typeChunk;
+                    resultTypeChunk = node.node.typeChunk;
                     break;
 
                 default:
@@ -95,17 +92,15 @@ CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode)
                 // the symbol table node.
                 if (scanner->token.type == tyInteger) {
                     resultTypeChunk = integerType;
-                    retrieveChunk(node.defnChunk, (unsigned char *)&defn);
-                    defn.constant.value.integer = scanner->token.value.integer;
-                    storeChunk(node.defnChunk, (unsigned char *)&defn);
+                    node.defn.constant.value.integer = scanner->token.value.integer;
                 }
-                setType(&node.typeChunk, resultTypeChunk);
-                storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+                setType(&node.node.typeChunk, resultTypeChunk);
+                saveSymbNode(&node);
             }
 
             // Append the symbol table node handle to the icode.
-            putSymtabNodeToIcode(Icode, &node);
-            resultTypeChunk = node.typeChunk;
+            putSymtabNodeToIcode(Icode, &node.node);
+            resultTypeChunk = node.node.typeChunk;
             getTokenAppend(scanner, Icode);
             break;
 
@@ -122,24 +117,23 @@ CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode)
                     resultTypeChunk = charType;
                 } else {
                     resultTypeChunk = makeStringType(length);
-                    setType(&node.typeChunk, resultTypeChunk);
-                    storeChunk(node.nodeChunkNum, (unsigned char *)&node);
+                    setType(&node.node.typeChunk, resultTypeChunk);
+                    saveSymbNode(&node);
                 }
 
                 // Set the character value or string value into the symbol table.
-                retrieveChunk(node.defnChunk, (unsigned char *)&defn);
                 if (length == 1) {
-                    defn.constant.value.character = scanner->token.string[1];
+                    node.defn.constant.value.character = scanner->token.string[1];
                 } else {
-                    copyQuotedString(scanner->token.string, &defn.constant.value.stringChunkNum);
+                    copyQuotedString(scanner->token.string, &node.defn.constant.value.stringChunkNum);
                 }
-                storeChunk(node.defnChunk, (unsigned char *)&defn);
+                saveSymbNode(&node);
             } else {
-                resultTypeChunk = node.typeChunk;
+                resultTypeChunk = node.node.typeChunk;
             }
 
             // Append the symbol table node to the icode
-            putSymtabNodeToIcode(Icode, &node);
+            putSymtabNodeToIcode(Icode, &node.node);
             getTokenAppend(scanner, Icode);
             break;
 
@@ -174,20 +168,20 @@ CHUNKNUM parseFactor(SCANNER *scanner, CHUNKNUM Icode)
 CHUNKNUM parseField(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM recordTypeChunkNum) {
     TTYPE recordType;
     CHUNKNUM varType;
-    SYMTABNODE fieldId;
+    SYMBNODE fieldId;
 
     getTokenAppend(scanner, Icode);
     retrieveChunk(recordTypeChunkNum, (unsigned char *)&recordType);
 
     if (scanner->token.code == tcIdentifier && recordType.form == fcRecord) {
         if (!searchSymtab(recordType.record.symtab, &fieldId, scanner->token.string)) {
-            fieldId.nodeChunkNum = 0;
+            fieldId.node.nodeChunkNum = 0;
             Error(errInvalidField);
         }
-        putSymtabNodeToIcode(Icode, &fieldId);
+        putSymtabNodeToIcode(Icode, &fieldId.node);
 
         getTokenAppend(scanner, Icode);
-        varType = fieldId.nodeChunkNum ? fieldId.typeChunk : dummyType;
+        varType = fieldId.node.nodeChunkNum ? fieldId.node.typeChunk : dummyType;
     } else {
         Error(errInvalidField);
         getTokenAppend(scanner, Icode);
@@ -330,16 +324,14 @@ CHUNKNUM parseTerm(SCANNER *scanner, CHUNKNUM Icode)
     return resultChunkNum;
 }
 
-CHUNKNUM parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pNode) {
-    DEFN defn;
+CHUNKNUM parseVariable(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pNode) {
     CHUNKNUM resultTypeChunk;
     char doneFlag = 0;
 
-    resultTypeChunk = pNode->typeChunk;
-    retrieveChunk(pNode->defnChunk, (unsigned char *)&defn);
+    resultTypeChunk = pNode->node.typeChunk;
 
     // Check how the variable identifier was defined.
-    switch (defn.how) {
+    switch (pNode->defn.how) {
         case dcVariable:
         case dcValueParm:
         case dcVarParm:

@@ -7,10 +7,9 @@
 #include <string.h>
 
 void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
-    DEFN defn;
     TTYPE newType;
     CHUNKNUM lastChunk = 0, newChunkNum;
-    SYMTABNODE newNode;
+    SYMBNODE newNode;
     int constValue = -1;
 
     getToken(scanner);
@@ -24,27 +23,25 @@ void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
         symtabEnterNewLocal(&newNode, scanner->token.string, dcUndefined);
         ++constValue;
 
-        retrieveChunk(newNode.defnChunk, (unsigned char *)&defn);
-        if (defn.how == dcUndefined) {
-            defn.how = dcConstant;
-            defn.constant.value.integer = constValue;
-            storeChunk(newNode.defnChunk, (unsigned char *)&defn);
-            setType(&newNode.typeChunk, *newTypeChunkNum);
-            storeChunk(newNode.nodeChunkNum, (unsigned char *)&newNode);
+        if (newNode.defn.how == dcUndefined) {
+            newNode.defn.how = dcConstant;
+            newNode.defn.constant.value.integer = constValue;
+            setType(&newNode.node.typeChunk, *newTypeChunkNum);
+            saveSymbNode(&newNode);
 
             // Link constant identifier symbol table nodes together.
             if (!lastChunk) {
-                newType.enumeration.constIds = lastChunk = newNode.nodeChunkNum;
+                newType.enumeration.constIds = lastChunk = newNode.node.nodeChunkNum;
             } else {
-                newChunkNum = newNode.nodeChunkNum;
-                retrieveChunk(lastChunk, (unsigned char *)&newNode);
-                newNode.nextNode = newChunkNum;
-                storeChunk(lastChunk, (unsigned char *)&newNode);
+                newChunkNum = newNode.node.nodeChunkNum;
+                loadSymbNode(lastChunk, &newNode);
+                newNode.node.nextNode = newChunkNum;
+                saveSymbNodeOnly(&newNode);
                 lastChunk = newChunkNum;
             }
         }
 
-        memset(&newNode, 0, sizeof(SYMTABNODE));
+        memset(&newNode, 0, sizeof(SYMBNODE));
 
         // ,
         getToken(scanner);
@@ -72,10 +69,8 @@ void parseIdentifierType(SCANNER *scanner) {
     getToken(scanner);
 }
 
-void parseSubrangeLimit(SCANNER *scanner, SYMTABNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum) {
-    SYMTABNODE node;
-    DEFN defn;
-    TTYPE type;
+void parseSubrangeLimit(SCANNER *scanner, SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum) {
+    SYMBNODE node;
     TTokenCode sign = tcDummy;
 
     *limit = 0;
@@ -109,47 +104,39 @@ void parseSubrangeLimit(SCANNER *scanner, SYMTABNODE *pLimit, int *limit, CHUNKN
                 }
                 pLimit = &node;
             }
-            if (retrieveChunk(pLimit->defnChunk, (unsigned char *)&defn) == 0) {
-                Error(errInvalidSubrangeType);
-                break;
-            }
-            if (defn.how == dcUndefined) {
-                defn.how = dcConstant;
-                storeChunk(pLimit->defnChunk, (unsigned char *)&defn);
+            if (pLimit->defn.how == dcUndefined) {
+                pLimit->defn.how = dcConstant;
+                saveSymbNodeDefn(pLimit);
                 *limitTypeChunkNum = dummyType;
                 break;
             }
-            if (pLimit->typeChunk == dummyType) {
+            if (pLimit->node.typeChunk == dummyType) {
                 Error(errInvalidSubrangeType);
                 break;
             }
-            if (retrieveChunk(pLimit->typeChunk, (unsigned char *)&type) == 0) {
+            if (pLimit->type.form == fcArray) {
                 Error(errInvalidSubrangeType);
                 break;
             }
-            if (type.form == fcArray) {
-                Error(errInvalidSubrangeType);
-                break;
-            }
-            if (defn.how == dcConstant) {
+            if (pLimit->defn.how == dcConstant) {
                 // Use the value of the constant identifer.
-                if (pLimit->typeChunk == integerType) {
-                    *limit = sign == tcMinus ? -defn.constant.value.integer :
-                        defn.constant.value.integer;
-                } else if (pLimit->typeChunk == charType) {
+                if (pLimit->node.typeChunk == integerType) {
+                    *limit = sign == tcMinus ? -pLimit->defn.constant.value.integer :
+                        pLimit->defn.constant.value.integer;
+                } else if (pLimit->node.typeChunk == charType) {
                     if (sign != tcDummy) {
                         Error(errInvalidSubrangeType);
                         break;
                     }
-                    *limit = defn.constant.value.character;
-                } else if (type.form == fcEnum) {
+                    *limit = pLimit->defn.constant.value.character;
+                } else if (pLimit->type.form == fcEnum) {
                     if (sign != tcDummy) {
                         Error(errInvalidSubrangeType);
                         break;
                     }
-                    *limit = defn.constant.value.integer;
+                    *limit = pLimit->defn.constant.value.integer;
                 }
-                *limitTypeChunkNum = pLimit->typeChunk;
+                *limitTypeChunkNum = pLimit->node.typeChunk;
             } else {
                 Error(errNotAConstantIdentifier);
             }
@@ -178,7 +165,7 @@ void parseSubrangeLimit(SCANNER *scanner, SYMTABNODE *pLimit, int *limit, CHUNKN
     getToken(scanner);
 }
 
-void parseSubrangeType(SCANNER *scanner, SYMTABNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
+void parseSubrangeType(SCANNER *scanner, SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
     int temp;
     CHUNKNUM newMinChunkNum, maxTypeChunkNum;
     TTYPE newType, baseType, maxType;
@@ -216,10 +203,8 @@ void parseSubrangeType(SCANNER *scanner, SYMTABNODE *pMinId, CHUNKNUM *newTypeCh
     storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
 }
 
-void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
-    DEFN defn;
-    TTYPE typeNode;
-    SYMTABNODE lastNode, idNode;
+void parseTypeDefinitions(SCANNER *scanner, SYMBNODE *pRoutineId) {
+    SYMBNODE lastNode, idNode;
     CHUNKNUM newTypeChunkNum, lastId = 0;  // last type id node in local list
 
     // Loop to parse a list of type definitions
@@ -231,22 +216,19 @@ void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
         }
 
         // Link the routine's local type id nodes together.
-        if (retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn) == 0) {
-            return;
-        }
-        if (!defn.routine.locals.typeIds) {
-            defn.routine.locals.typeIds = idNode.nodeChunkNum;
-            storeChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
+        if (!pRoutineId->defn.routine.locals.typeIds) {
+            pRoutineId->defn.routine.locals.typeIds = idNode.node.nodeChunkNum;
+            saveSymbNodeDefn(pRoutineId);
         } else {
-            if (retrieveChunk(lastId, (unsigned char *)&lastNode) == 0) {
+            if (loadSymbNode(lastId, &lastNode) == 0) {
                 return;
             }
-            lastNode.nextNode = idNode.nodeChunkNum;
-            if (storeChunk(lastId, (unsigned char *)&lastNode) == 0) {
+            lastNode.node.nextNode = idNode.node.nodeChunkNum;
+            if (saveSymbNodeOnly(&lastNode) == 0) {
                 return;
             }
         }
-        lastId = idNode.nodeChunkNum;
+        lastId = idNode.node.nodeChunkNum;
 
         // =
         getToken(scanner);
@@ -256,22 +238,21 @@ void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
         parseTypeSpec(scanner, &newTypeChunkNum);
         // Retrieve the idNode again because it might have changed
         // while parsing the enumeration types
-        retrieveChunk(idNode.nodeChunkNum, (unsigned char *)&idNode);
-        retrieveChunk(newTypeChunkNum, (unsigned char *)&typeNode);
-        setType(&idNode.typeChunk, newTypeChunkNum);
-        storeChunk(idNode.nodeChunkNum, (unsigned char *)&idNode);
-        retrieveChunk(idNode.defnChunk, (unsigned char *)&defn);
-        defn.how = dcType;
-        storeChunk(idNode.defnChunk, (unsigned char *)&defn);
+        loadSymbNode(idNode.node.nodeChunkNum, &idNode);
+        setType(&idNode.node.typeChunk, newTypeChunkNum);
+        retrieveChunk(newTypeChunkNum, (unsigned char *)&idNode.type);
+        idNode.defn.how = dcType;
 
         // If the type object doesn't have a name yet,
         // point it to the type id.
-        if (!typeNode.typeId) {
-            typeNode.typeId = idNode.nodeChunkNum;
-            if (storeChunk(newTypeChunkNum, (unsigned char *)&typeNode) == 0) {
+        if (!idNode.type.typeId) {
+            idNode.type.typeId = idNode.node.nodeChunkNum;
+            if (storeChunk(newTypeChunkNum, (unsigned char *)&idNode.type) == 0) {
                 return;
             }
         }
+
+        saveSymbNode(&idNode);
 
         // ;
         resync(scanner, tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
@@ -284,8 +265,7 @@ void parseTypeDefinitions(SCANNER *scanner, SYMTABNODE *pRoutineId) {
 }
 
 void parseTypeSpec(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
-    DEFN defn;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     switch (scanner->token.code) {
         // type identifier
@@ -293,14 +273,11 @@ void parseTypeSpec(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
             if (symtabStackSearchAll(scanner->token.string, &node) == 0) {
                 break;
             }
-            if (retrieveChunk(node.defnChunk, (unsigned char *)&defn) == 0) {
-                break;
-            }
 
-            switch (defn.how) {
+            switch (node.defn.how) {
                 case dcType:
                     parseIdentifierType(scanner);
-                    *newTypeChunkNum = node.typeChunk;
+                    *newTypeChunkNum = node.node.typeChunk;
                     break;
                 case dcConstant:
                     parseSubrangeType(scanner, &node, newTypeChunkNum);

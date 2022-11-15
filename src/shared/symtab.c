@@ -30,7 +30,7 @@ static int compNodeIdentifier(const char *identifier, CHUNKNUM other);
 // buffer is caller-supplied and is at least CHUNK_LEN in length
 static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer);
 
-static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier, TDefnCode dc);
+static char makeSymtabNode(SYMBNODE *pNode, const char *identifier, TDefnCode dc);
 static void setCurrentSymtab(CHUNKNUM symtabChunkNum);
 
 static int compNodeIdentifier(const char *identifier, CHUNKNUM other) {
@@ -42,7 +42,7 @@ static int compNodeIdentifier(const char *identifier, CHUNKNUM other) {
     return strncmp(identifier, otherIdent, CHUNK_LEN);
 }
 
-char enterNew(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc) {
+char enterNew(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifier, TDefnCode dc) {
     if (searchSymtab(symtabChunkNum, pNode, identifier)) {
         Error(errRedefinedIdentifier);
     }
@@ -50,31 +50,31 @@ char enterNew(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier
     return enterSymtab(symtabChunkNum, pNode, identifier, dc);
 }
 
-char enterSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier, TDefnCode dc) {
+char enterSymtab(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifier, TDefnCode dc) {
     int comp;
     SYMTAB symtab;
     CHUNKNUM chunkNum;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     retrieveChunk(symtabChunkNum, (unsigned char *)&symtab);
 
     chunkNum = symtab.rootChunkNum;
 
     // Loop to search table for insertion point
-    node.nodeChunkNum = 0;
+    node.node.nodeChunkNum = 0;
     while (chunkNum != 0) {
-        if (retrieveChunk(chunkNum, (unsigned char *)&node) == 0) {
+        if (loadSymbNode(chunkNum, &node) == 0) {
             abortTranslation(abortOutOfMemory);
             return 0;
         }
-        comp = compNodeIdentifier(identifier, node.nameChunkNum);
+        comp = compNodeIdentifier(identifier, node.node.nameChunkNum);
         if (comp == 0) {
-            memcpy(pNode, &node, sizeof(SYMTABNODE));
+            memcpy(pNode, &node, sizeof(node));
             return 1;
         }
 
         // Not yet found: next search left or right subtree
-        chunkNum = comp < 0 ? node.leftChunkNum : node.rightChunkNum;
+        chunkNum = comp < 0 ? node.node.leftChunkNum : node.node.rightChunkNum;
     }
 
     // Create and insert a new node
@@ -83,18 +83,18 @@ char enterSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identif
     }
 
     // Update the parent chunk to point to this one
-    if (node.nodeChunkNum == 0) {
-        symtab.rootChunkNum = pNode->nodeChunkNum;
+    if (node.node.nodeChunkNum == 0) {
+        symtab.rootChunkNum = pNode->node.nodeChunkNum;
     } else {
         // Don't need to retrieve node since it is still
         // populated from the loop.
         if (comp < 0) {
-            node.leftChunkNum = pNode->nodeChunkNum;
+            node.node.leftChunkNum = pNode->node.nodeChunkNum;
         }
         else {
-            node.rightChunkNum = pNode->nodeChunkNum;
+            node.node.rightChunkNum = pNode->node.nodeChunkNum;
         }
-        if (storeChunk(node.nodeChunkNum, (unsigned char *)&node) == 0) {
+        if (storeChunk(node.node.nodeChunkNum, (unsigned char *)&node) == 0) {
             abortTranslation(abortOutOfMemory);
             return 0;
         }
@@ -105,7 +105,7 @@ char enterSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identif
         return 0;
     }
 
-    if (storeChunk(pNode->nodeChunkNum, (unsigned char *)pNode) == 0) {
+    if (saveSymbNode(pNode) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
@@ -198,6 +198,46 @@ static void freeSymtabNode(CHUNKNUM nodeChunkNum, unsigned char *buffer)
     freeChunk(nodeChunkNum);
 }
 
+char loadSymbNode(CHUNKNUM nodeChunk, SYMBNODE *pNode) {
+    if (retrieveChunk(nodeChunk, (unsigned char *)&pNode->node) == 0) {
+        return 0;
+    }
+
+    if (pNode->node.typeChunk) {
+        if (retrieveChunk(pNode->node.typeChunk, (unsigned char *)&pNode->type) == 0) {
+            return 0;
+        }
+    }
+
+    if (pNode->node.defnChunk) {
+        if (retrieveChunk(pNode->node.defnChunk, (unsigned char *)&pNode->defn) == 0) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+char saveSymbNode(SYMBNODE *pNode) {
+    if (saveSymbNodeOnly(pNode) == 0) {
+        return 0;
+    }
+
+    return saveSymbNodeDefn(pNode);
+}
+
+char saveSymbNodeDefn(SYMBNODE *pNode) {
+    if (pNode->node.defnChunk) {
+        return storeChunk(pNode->node.defnChunk, (unsigned char *)&pNode->defn);
+    }
+
+    return 1;
+}
+
+char saveSymbNodeOnly(SYMBNODE *pNode) {
+    return storeChunk(pNode->node.nodeChunkNum, (unsigned char *)&pNode->node);
+}
+
 char makeSymtab(CHUNKNUM *symtabChunkNum)
 {
     SYMTAB symtab;
@@ -221,10 +261,9 @@ char makeSymtab(CHUNKNUM *symtabChunkNum)
     return 1;
 }
 
-static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier, TDefnCode dc)
+static char makeSymtabNode(SYMBNODE *pNode, const char *identifier, TDefnCode dc)
 {
     unsigned char identChunk[CHUNK_LEN];
-    DEFN defn;
 
     // Make sure the identifier isn't too long
     if (strlen(identifier) > CHUNK_LEN) {
@@ -233,13 +272,13 @@ static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier, TDefnCode 
     }
 
     // Allocate a chunk for the node
-    if (allocChunk(&pNode->nodeChunkNum) == 0) {
+    if (allocChunk(&pNode->node.nodeChunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
 
     // Allocate a chunk to store the node's identifier
-    if (allocChunk(&pNode->nameChunkNum) == 0) {
+    if (allocChunk(&pNode->node.nameChunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
@@ -247,30 +286,30 @@ static char makeSymtabNode(SYMTABNODE *pNode, const char *identifier, TDefnCode 
     // Store the identifier
     memset(identChunk, 0, sizeof(identChunk));
     memcpy(identChunk, identifier, strlen(identifier));
-    if (storeChunk(pNode->nameChunkNum, identChunk) == 0) {
+    if (storeChunk(pNode->node.nameChunkNum, identChunk) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
 
     // Allocate a chunk for the type definition
-    if (allocChunk(&pNode->defnChunk) == 0) {
+    if (allocChunk(&pNode->node.defnChunk) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
-    memset(&defn, 0, sizeof(DEFN));
-    defn.how = dc;
-    if (storeChunk(pNode->defnChunk, (unsigned char *)&defn) == 0) {
+    memset(&pNode->defn, 0, sizeof(DEFN));
+    pNode->defn.how = dc;
+    if (storeChunk(pNode->node.defnChunk, (unsigned char *)&pNode->defn) == 0) {
         abortTranslation(abortOutOfMemory);
         return 0;
     }
 
-    pNode->leftChunkNum = pNode->rightChunkNum = 0;
-    pNode->nextNode = pNode->typeChunk = 0;
+    pNode->node.leftChunkNum = pNode->node.rightChunkNum = 0;
+    pNode->node.nextNode = pNode->node.typeChunk = 0;
 
     return 1;
 }
 
-char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identifier) {
+char searchSymtab(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifier) {
     int comp;
     SYMTAB symtab;
     CHUNKNUM chunkNum;
@@ -280,18 +319,18 @@ char searchSymtab(CHUNKNUM symtabChunkNum, SYMTABNODE *pNode, const char *identi
     chunkNum = symtab.rootChunkNum;
 
     while (chunkNum) {
-        if (retrieveChunk(chunkNum, (unsigned char *)pNode) == 0) {
+        if (loadSymbNode(chunkNum, pNode) == 0) {
             abortTranslation(abortOutOfMemory);
             return 0;
         }
 
-        comp = compNodeIdentifier(identifier, pNode->nameChunkNum);
+        comp = compNodeIdentifier(identifier, pNode->node.nameChunkNum);
         if (comp == 0) {
             break;
         }
 
         // Not found yet: next search left or right subtree
-        chunkNum = comp < 0 ? pNode->leftChunkNum : pNode->rightChunkNum;
+        chunkNum = comp < 0 ? pNode->node.leftChunkNum : pNode->node.rightChunkNum;
     }
 
     return chunkNum ? 1 : 0;
@@ -334,14 +373,14 @@ void symtabExitScope(CHUNKNUM *symtabChunkNum) {
     *symtabChunkNum = symtabStack[currentNestingLevel--];
 }
 
-void symtabStackFind(const char *pString, SYMTABNODE *pNode) {
+void symtabStackFind(const char *pString, SYMBNODE *pNode) {
     if (symtabStackSearchAll(pString, pNode) == 0) {
         Error(errUndefinedIdentifier);
         enterSymtab(symtabStack[currentNestingLevel], pNode, pString, dcUndefined);
     }
 }
 
-char symtabStackSearchAll(const char *pString, SYMTABNODE *pNode) {
+char symtabStackSearchAll(const char *pString, SYMBNODE *pNode) {
     int i;
 
     for (i = currentNestingLevel; i >= 0; --i) {
@@ -353,15 +392,15 @@ char symtabStackSearchAll(const char *pString, SYMTABNODE *pNode) {
     return 0;
 }
 
-char symtabSearchLocal(SYMTABNODE *pNode, const char *pString) {
+char symtabSearchLocal(SYMBNODE *pNode, const char *pString) {
     return searchSymtab(symtabStack[currentNestingLevel], pNode, pString);
 }
 
-char symtabEnterLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc) {
+char symtabEnterLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc) {
     return enterSymtab(symtabStack[currentNestingLevel], pNode, pString, dc);
 }
 
-char symtabEnterNewLocal(SYMTABNODE *pNode, const char *pString, TDefnCode dc) {
+char symtabEnterNewLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc) {
     return enterNew(symtabStack[currentNestingLevel], pNode, pString, dc);
 }
 

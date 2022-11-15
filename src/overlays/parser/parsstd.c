@@ -17,13 +17,8 @@
 #include <parscommon.h>
 #include <common.h>
 
-CHUNKNUM parseStandardSubroutineCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRoutineId) {
-
-    DEFN defn;
-
-    retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-
-    switch (defn.routine.which) {
+CHUNKNUM parseStandardSubroutineCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutineId) {
+    switch (pRoutineId->defn.routine.which) {
         case rcRead:
         case rcReadln:
             return parseReadReadlnCall(scanner, Icode, pRoutineId);
@@ -60,15 +55,13 @@ CHUNKNUM parseStandardSubroutineCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNOD
     return 0;
 }
 
-CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRoutineId) {
-    DEFN defn;
+CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     TTYPE parmType;
-    SYMTABNODE parmId;
+    SYMBNODE parmId;
 
     // Actual parameters are optional for readln.
     if (scanner->token.code != tcLParen) {
-        retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-        if (defn.routine.which == rcRead) {
+        if (pRoutineId->defn.routine.which == rcRead) {
             Error(errWrongNumberOfParams);
         }
         return dummyType;
@@ -83,10 +76,10 @@ CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRout
         // but parse an expression anyway for error recovery.
         if (scanner->token.code == tcIdentifier) {
             findSymtabNode(&parmId, scanner->token.string);
-            putSymtabNodeToIcode(Icode, &parmId);
+            putSymtabNodeToIcode(Icode, &parmId.node);
 
             parseVariable(scanner, Icode, &parmId);
-            retrieveChunk(parmId.typeChunk, (unsigned char *)&parmType);
+            memcpy(&parmType, &parmId.type, sizeof(TTYPE));
             if (parmType.form == fcSubrange) {
                 retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
             }
@@ -108,15 +101,13 @@ CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRout
     return dummyType;
 }
 
-CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMTABNODE *pRoutineId) {
-    DEFN defn;
+CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     CHUNKNUM actualTypeChunk;
     TTYPE actualType;
 
     // Actual parameters are optional only for writeln
     if (scanner->token.code != tcLParen) {
-        retrieveChunk(pRoutineId->defnChunk, (unsigned char *)&defn);
-        if (defn.routine.which == rcWrite) {
+        if (pRoutineId->defn.routine.which == rcWrite) {
             Error(errWrongNumberOfParams);
         }
         return dummyType;
@@ -375,27 +366,24 @@ static struct TStdRtn {
 
 void initStandardRoutines(CHUNKNUM symtabChunkNum) {
     int i = 0;
-    DEFN defn;
-    SYMTABNODE routineId;
+    SYMBNODE routineId;
 
     do {
         struct TStdRtn *pSR = &stdRtnList[i];
         enterSymtab(symtabChunkNum, &routineId, pSR->pName, pSR->dc);
-        retrieveChunk(routineId.defnChunk, (unsigned char *)&defn);
-        defn.routine.which = pSR->rc;
-        defn.routine.parmCount = 0;
-        defn.routine.totalParmSize = 0;
-        defn.routine.totalLocalSize = 0;
-        defn.routine.locals.parmIds = 0;
-        defn.routine.locals.constantIds = 0;
-        defn.routine.locals.typeIds = 0;
-        defn.routine.locals.variableIds = 0;
-        defn.routine.locals.routineIds = 0;
-        defn.routine.symtab = 0;
-        defn.routine.Icode = 0;
-        storeChunk(routineId.defnChunk, (unsigned char *)&defn);
-        setType(&routineId.typeChunk, dummyType);
-        storeChunk(routineId.nodeChunkNum, (unsigned char *)&routineId);
+        routineId.defn.routine.which = pSR->rc;
+        routineId.defn.routine.parmCount = 0;
+        routineId.defn.routine.totalParmSize = 0;
+        routineId.defn.routine.totalLocalSize = 0;
+        routineId.defn.routine.locals.parmIds = 0;
+        routineId.defn.routine.locals.constantIds = 0;
+        routineId.defn.routine.locals.typeIds = 0;
+        routineId.defn.routine.locals.variableIds = 0;
+        routineId.defn.routine.locals.routineIds = 0;
+        routineId.defn.routine.symtab = 0;
+        routineId.defn.routine.Icode = 0;
+        setType(&routineId.node.typeChunk, dummyType);
+        saveSymbNode(&routineId);
     } while (stdRtnList[++i].pName);
 }
 
