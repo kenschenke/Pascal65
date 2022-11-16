@@ -16,31 +16,31 @@
 #include <parscommon.h>
 #include <string.h>
 
-void parseAssignment(SCANNER *scanner, SYMBNODE *pTargetNode, CHUNKNUM Icode)
+void parseAssignment(SYMBNODE *pTargetNode, CHUNKNUM Icode)
 {
     CHUNKNUM exprTypeChunk, targetTypeChunk;
 
-    targetTypeChunk = parseVariable(scanner, Icode, pTargetNode);
+    targetTypeChunk = parseVariable(Icode, pTargetNode);
 
     // :=
-    resync(scanner, tlColonEqual, tlExpressionStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcColonEqual, errMissingColonEqual);
+    resync(tlColonEqual, tlExpressionStart, NULL);
+    condGetTokenAppend(Icode, tcColonEqual, errMissingColonEqual);
 
     // <expr>
-    exprTypeChunk = parseExpression(scanner, Icode);
+    exprTypeChunk = parseExpression(Icode);
 
     // Check for assignment compatibility
     checkAssignmentCompatible(targetTypeChunk, exprTypeChunk, errIncompatibleAssignment);
 }
 
-void parseCASE(SCANNER *scanner, CHUNKNUM Icode) {
+void parseCASE(CHUNKNUM Icode) {
     TTYPE exprType;
     CHUNKNUM exprTypeChunk;
     char caseBranchFlag;  // true if another CASE branch, else false
 
     // <expr>
-    getTokenAppend(scanner, Icode);
-    exprTypeChunk = parseExpression(scanner, Icode);
+    getTokenAppend(Icode);
+    exprTypeChunk = parseExpression(Icode);
     retrieveChunk(exprTypeChunk, (unsigned char *)&exprType);
     if (exprType.form == fcSubrange && exprType.subrange.baseType) {
         retrieveChunk(exprType.subrange.baseType, (unsigned char *)&exprType);
@@ -54,18 +54,18 @@ void parseCASE(SCANNER *scanner, CHUNKNUM Icode) {
     }
 
     // OF
-    resync(scanner, tlOF, tlCaseLabelStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcOF, errMissingOF);
+    resync(tlOF, tlCaseLabelStart, NULL);
+    condGetTokenAppend(Icode, tcOF, errMissingOF);
 
     // Loop to parse CASE branches
-    caseBranchFlag = tokenIn(scanner->token.code, tlCaseLabelStart);
+    caseBranchFlag = tokenIn(tokenCode, tlCaseLabelStart);
     while (caseBranchFlag) {
-        if (tokenIn(scanner->token.code, tlCaseLabelStart)) parseCaseBranch(scanner, Icode, exprTypeChunk);
+        if (tokenIn(tokenCode, tlCaseLabelStart)) parseCaseBranch(Icode, exprTypeChunk);
 
-        if (scanner->token.code == tcSemicolon) {
-            getTokenAppend(scanner, Icode);
+        if (tokenCode == tcSemicolon) {
+            getTokenAppend(Icode);
             caseBranchFlag = 1;
-        } else if (tokenIn(scanner->token.code, tlCaseLabelStart)) {
+        } else if (tokenIn(tokenCode, tlCaseLabelStart)) {
             Error(errMissingSemicolon);
             caseBranchFlag = 1;
         } else {
@@ -74,20 +74,20 @@ void parseCASE(SCANNER *scanner, CHUNKNUM Icode) {
     }
 
     // END
-    resync(scanner, tlEND, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcEND, errMissingEND);
+    resync(tlEND, tlStatementStart, NULL);
+    condGetTokenAppend(Icode, tcEND, errMissingEND);
 }
 
-void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
+void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
     char caseLabelFlag;  // true if another CASE label, else false
 
     // <case-label-list>
     do {
-        parseCaseLabel(scanner, Icode, exprTypeChunk);
-        if (scanner->token.code == tcComma) {
+        parseCaseLabel(Icode, exprTypeChunk);
+        if (tokenCode == tcComma) {
             // Saw comma, look for another CASE label
-            getTokenAppend(scanner, Icode);
-            if (tokenIn(scanner->token.code, tlCaseLabelStart)) caseLabelFlag = 1;
+            getTokenAppend(Icode);
+            if (tokenIn(tokenCode, tlCaseLabelStart)) caseLabelFlag = 1;
             else {
                 Error(errMissingConstant);
                 caseLabelFlag = 0;
@@ -98,28 +98,28 @@ void parseCaseBranch(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
     } while (caseLabelFlag);
 
     // :
-    resync(scanner, tlColon, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcColon, errMissingColon);
+    resync(tlColon, tlStatementStart, NULL);
+    condGetTokenAppend(Icode, tcColon, errMissingColon);
 
     // <stmt>
-    parseStatement(scanner, Icode);
+    parseStatement(Icode);
 }
 
-void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
+void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
     char signFlag = 0;  // true if unary sign, else false
     TTYPE labelType;
     SYMBNODE node;
 
     // Unary + or -
-    if (tokenIn(scanner->token.code, tlUnaryOps)) {
+    if (tokenIn(tokenCode, tlUnaryOps)) {
         signFlag = 1;
-        getTokenAppend(scanner, Icode);
+        getTokenAppend(Icode);
     }
 
-    switch (scanner->token.code) {
+    switch (tokenCode) {
         // Identifier
         case tcIdentifier:
-            if (!symtabStackSearchAll(scanner->token.string, &node)) {
+            if (!symtabStackSearchAll(tokenString, &node)) {
                 Error(errUndefinedIdentifier);
             }
             retrieveChunk(node.node.typeChunk, (unsigned char *)&labelType);
@@ -145,64 +145,64 @@ void parseCaseLabel(SCANNER *scanner, CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
                 Error(errInvalidConstant);
             }
 
-            getTokenAppend(scanner, Icode);
+            getTokenAppend(Icode);
             break;
 
         // Number - Both the label and the CASE expression must be an integer.
         case tcNumber:
-            if (scanner->token.type != tyInteger) Error(errInvalidConstant);
+            if (tokenType != tyInteger) Error(errInvalidConstant);
             if (exprTypeChunk != integerType) Error(errIncompatibleTypes);
 
-            if (!symtabStackSearchAll(scanner->token.string, &node)) {
-                symtabEnterLocal(&node, scanner->token.string, dcUndefined);
+            if (!symtabStackSearchAll(tokenString, &node)) {
+                symtabEnterLocal(&node, tokenString, dcUndefined);
                 setType(&node.node.typeChunk, integerType);
-                node.defn.constant.value.integer = scanner->token.value.integer;
+                node.defn.constant.value.integer = tokenValue.integer;
                 saveSymbNode(&node);
             }
             putSymtabNodeToIcode(Icode, &node.node);
 
-            getTokenAppend(scanner, Icode);
+            getTokenAppend(Icode);
             break;
         
         // String - must be a single character without a unary sign
         case tcString:
-            if (signFlag || strlen(scanner->token.string) != 3) {
+            if (signFlag || strlen(tokenString) != 3) {
                 Error(errInvalidConstant);
             }
             if (exprTypeChunk != charType) Error(errIncompatibleTypes);
 
-            if (!symtabStackSearchAll(scanner->token.string, &node)) {
-                symtabEnterNewLocal(&node, scanner->token.string, dcUndefined);
+            if (!symtabStackSearchAll(tokenString, &node)) {
+                symtabEnterNewLocal(&node, tokenString, dcUndefined);
                 setType(&node.node.typeChunk, charType);
-                node.defn.constant.value.character = scanner->token.string[1];
+                node.defn.constant.value.character = tokenString[1];
                 saveSymbNode(&node);
             }
             putSymtabNodeToIcode(Icode, &node.node);
 
-            getTokenAppend(scanner, Icode);
+            getTokenAppend(Icode);
             break;
     }
 }
 
-void parseCompound(SCANNER *scanner, CHUNKNUM Icode) {
-    getTokenAppend(scanner, Icode);
+void parseCompound(CHUNKNUM Icode) {
+    getTokenAppend(Icode);
 
     // <stmt-list>
-    parseStatementList(scanner, Icode, tcEND);
+    parseStatementList(Icode, tcEND);
 
-    condGetTokenAppend(scanner, Icode, tcEND, errMissingEND);
+    condGetTokenAppend(Icode, tcEND, errMissingEND);
 }
 
-void parseFOR(SCANNER *scanner, CHUNKNUM Icode) {
+void parseFOR(CHUNKNUM Icode) {
     CHUNKNUM exprTypeChunk, expr2TypeChunk;
     TTYPE controlType;
     SYMBNODE node;
 
     // <id>
-    getTokenAppend(scanner, Icode);
-    if (scanner->token.code == tcIdentifier) {
+    getTokenAppend(Icode);
+    if (tokenCode == tcIdentifier) {
         // Verify the definition and type of the control id
-        symtabStackFind(scanner->token.string, &node);
+        symtabStackFind(tokenString, &node);
         memcpy(&controlType, &node.type, sizeof(TTYPE));
         if (node.defn.how != dcUndefined) {
             if (controlType.form == fcSubrange && controlType.subrange.baseType) {
@@ -222,76 +222,76 @@ void parseFOR(SCANNER *scanner, CHUNKNUM Icode) {
         }
 
         putSymtabNodeToIcode(Icode, &node.node);
-        getTokenAppend(scanner, Icode);
+        getTokenAppend(Icode);
     } else {
         Error(errMissingIdentifier);
     }
 
     // :=
-    resync(scanner, tlColonEqual, tlExpressionStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcColonEqual, errMissingColonEqual);
+    resync(tlColonEqual, tlExpressionStart, NULL);
+    condGetTokenAppend(Icode, tcColonEqual, errMissingColonEqual);
 
     // <expr-1>
-    exprTypeChunk = parseExpression(scanner, Icode);
+    exprTypeChunk = parseExpression(Icode);
     checkAssignmentCompatible(node.node.typeChunk, exprTypeChunk, errIncompatibleTypes);
 
     // TO or DOWNTO
-    resync(scanner, tlTODOWNTO, tlExpressionStart, NULL);
-    if (tokenIn(scanner->token.code, tlTODOWNTO)) getTokenAppend(scanner, Icode);
+    resync(tlTODOWNTO, tlExpressionStart, NULL);
+    if (tokenIn(tokenCode, tlTODOWNTO)) getTokenAppend(Icode);
     else Error(errMissingTOorDOWNTO);
 
     // <expr-2>
-    expr2TypeChunk = parseExpression(scanner, Icode);
+    expr2TypeChunk = parseExpression(Icode);
     checkAssignmentCompatible(controlType.nodeChunkNum, expr2TypeChunk, errIncompatibleTypes);
 
     // DO
-    resync(scanner, tlDO, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcDO, errMissingDO);
+    resync(tlDO, tlStatementStart, NULL);
+    condGetTokenAppend(Icode, tcDO, errMissingDO);
 
     // <stmt>
-    parseStatement(scanner, Icode);
+    parseStatement(Icode);
 }
 
-void parseIF(SCANNER *scanner, CHUNKNUM Icode) {
+void parseIF(CHUNKNUM Icode) {
     CHUNKNUM resultType;
 
     // <expr>
-    getTokenAppend(scanner, Icode);
-    resultType = parseExpression(scanner, Icode);
+    getTokenAppend(Icode);
+    resultType = parseExpression(Icode);
     checkBoolean(resultType, 0);
 
     // THEN
-    resync(scanner, tlTHEN, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcTHEN, errMissingTHEN);
+    resync(tlTHEN, tlStatementStart, NULL);
+    condGetTokenAppend(Icode, tcTHEN, errMissingTHEN);
 
     // <stmt-1>
-    parseStatement(scanner, Icode);
+    parseStatement(Icode);
 
-    if (scanner->token.code == tcELSE) {
+    if (tokenCode == tcELSE) {
         // ELSE <stmt-2>
-        getTokenAppend(scanner, Icode);
-        parseStatement(scanner, Icode);
+        getTokenAppend(Icode);
+        parseStatement(Icode);
     }
 }
 
-void parseREPEAT(SCANNER *scanner, CHUNKNUM Icode) {
+void parseREPEAT(CHUNKNUM Icode) {
     CHUNKNUM resultType;
 
-    getTokenAppend(scanner, Icode);
+    getTokenAppend(Icode);
 
     // <stmt-list>
-    parseStatementList(scanner, Icode, tcUNTIL);
+    parseStatementList(Icode, tcUNTIL);
 
     // UNTIL
-    condGetTokenAppend(scanner, Icode, tcUNTIL, errMissingUNTIL);
+    condGetTokenAppend(Icode, tcUNTIL, errMissingUNTIL);
 
     // <expr>
     insertLineMarker(Icode);
-    resultType = parseExpression(scanner, Icode);
+    resultType = parseExpression(Icode);
     checkBoolean(resultType, 0);
 }
 
-void parseStatement(SCANNER *scanner, CHUNKNUM Icode)
+void parseStatement(CHUNKNUM Icode)
 {
     SYMBNODE node;
 
@@ -299,12 +299,12 @@ void parseStatement(SCANNER *scanner, CHUNKNUM Icode)
 
     // Call the appropriate parsing function based on
     // the statement's first token.
-    switch (scanner->token.code) {
+    switch (tokenCode) {
         case tcIdentifier:
             // Search for the identifier and enter it if
             // necessary.  Append the symbol table node handle
             // to the icode.
-            findSymtabNode(&node, scanner->token.string);
+            findSymtabNode(&node, tokenString);
             putSymtabNodeToIcode(Icode, &node.node);
 
             // Based on how the identifier is defined,
@@ -313,58 +313,58 @@ void parseStatement(SCANNER *scanner, CHUNKNUM Icode)
                 node.defn.how = dcVariable;
                 setType(&node.node.typeChunk, dummyType);
                 saveSymbNode(&node);
-                parseAssignment(scanner, &node, Icode);
+                parseAssignment(&node, Icode);
             } else if (node.defn.how == dcProcedure) {
-                parseSubroutineCall(scanner, &node, 1, Icode);
+                parseSubroutineCall(&node, 1, Icode);
             } else {
-                parseAssignment(scanner, &node, Icode);
+                parseAssignment(&node, Icode);
             }
             break;
 
-        case tcREPEAT: parseREPEAT(scanner, Icode); break;
-        case tcWHILE: parseWHILE(scanner, Icode); break;
-        case tcIF: parseIF(scanner, Icode); break;
-        case tcFOR: parseFOR(scanner, Icode); break;
-        case tcCASE: parseCASE(scanner, Icode); break;
-        case tcBEGIN: parseCompound(scanner, Icode); break;
+        case tcREPEAT: parseREPEAT(Icode); break;
+        case tcWHILE: parseWHILE(Icode); break;
+        case tcIF: parseIF(Icode); break;
+        case tcFOR: parseFOR(Icode); break;
+        case tcCASE: parseCASE(Icode); break;
+        case tcBEGIN: parseCompound(Icode); break;
     }
 
     // Resync at a proper statement ending
-    if (scanner->token.code != tcEndOfFile) {
-        resync(scanner, tlStatementFollow, tlStatementStart, NULL);
+    if (tokenCode != tcEndOfFile) {
+        resync(tlStatementFollow, tlStatementStart, NULL);
     }
 }
 
-void parseStatementList(SCANNER *scanner, CHUNKNUM Icode, TTokenCode terminator) {
+void parseStatementList(CHUNKNUM Icode, TTokenCode terminator) {
     // Loop to parse statements and to check for and skip semicolons
 
     do {
-        parseStatement(scanner, Icode);
+        parseStatement(Icode);
 
-        if (tokenIn(scanner->token.code, tlStatementStart)) {
+        if (tokenIn(tokenCode, tlStatementStart)) {
             Error(errMissingSemicolon);
-        } else if (tokenIn(scanner->token.code, tlStatementListNotAllowed)) {
+        } else if (tokenIn(tokenCode, tlStatementListNotAllowed)) {
             Error(errUnexpectedToken);
-        } else while (scanner->token.code == tcSemicolon) {
-            getTokenAppend(scanner, Icode);
+        } else while (tokenCode == tcSemicolon) {
+            getTokenAppend(Icode);
         }
-    } while (scanner->token.code != terminator && scanner->token.code != tcEndOfFile);
+    } while (tokenCode != terminator && tokenCode != tcEndOfFile);
 }
 
-void parseWHILE(SCANNER *scanner, CHUNKNUM Icode) {
+void parseWHILE(CHUNKNUM Icode) {
     CHUNKNUM resultType;
 
     // <expr>
-    getTokenAppend(scanner, Icode);
-    resultType = parseExpression(scanner, Icode);
+    getTokenAppend(Icode);
+    resultType = parseExpression(Icode);
     checkBoolean(resultType, 0);
 
     // DO
-    resync(scanner, tlDO, tlStatementStart, NULL);
-    condGetTokenAppend(scanner, Icode, tcDO, errMissingDO);
+    resync(tlDO, tlStatementStart, NULL);
+    condGetTokenAppend(Icode, tcDO, errMissingDO);
 
     // <stmt>
-    parseStatement(scanner, Icode);
+    parseStatement(Icode);
 }
 
 

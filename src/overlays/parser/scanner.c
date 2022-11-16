@@ -14,37 +14,42 @@
 #include <string.h>
 
 static void initCharCodeMap(void);
-static void skipWhiteSpace(SCANNER *scanner);
+static void skipWhiteSpace(void);
+
+TINBUF *pInputBuffer;
+
+TTokenCode tokenCode;
+TDataType tokenType;
+TDataValue tokenValue;
+char tokenString[MAX_LINE_LEN + 1];
 
 TCharCode   charCodeMap[128];
 
-TOKEN *getNextToken(SCANNER *scanner)
+void getNextToken(void)
 {
-    skipWhiteSpace(scanner);
+    skipWhiteSpace();
 
-    switch (charCodeMap[getCurrentChar(scanner->pTinBuf)]) {
+    switch (charCodeMap[getCurrentChar()]) {
         case ccLetter:
-            getWordToken(&scanner->token, scanner);
+            getWordToken();
             break;
 
         case ccDigit:
-            getNumberToken(&scanner->token, scanner);
+            getNumberToken();
             break;
 
         case ccQuote:
-            getStringToken(&scanner->token, scanner);
+            getStringToken();
             break;
 
         case ccSpecial:
-            getSpecialToken(&scanner->token, scanner);
+            getSpecialToken();
             break;
 
         case ccEndOfFile:
-            scanner->token.code = tcEndOfFile;
+            tokenCode = tcEndOfFile;
             break;
     }
-
-    return &scanner->token;
 }
 
 static void initCharCodeMap(void)
@@ -73,41 +78,41 @@ static void initCharCodeMap(void)
     charCodeMap[eofChar] = ccEndOfFile;
 }
 
-static void skipWhiteSpace(SCANNER *scanner)
+static void skipWhiteSpace(void)
 {
     char ch;
 
     initCharCodeMap();
 
-    ch = getCurrentChar(scanner->pTinBuf);
+    ch = getCurrentChar();
     while(1) {
         if (ch == '/') {
-            ch = getChar(scanner->pTinBuf);
+            ch = getChar();
             if (ch == '/') {
-                ch = getLine(scanner->pTinBuf);
+                ch = getLine();
             } else {
-                putBackChar(scanner->pTinBuf);
+                putBackChar();
                 break;
             }
         } else if (ch == '(') {
-            ch = getChar(scanner->pTinBuf);
+            ch = getChar();
             if (ch == '*') {
                 while (ch != eofChar) {
-                    ch = getChar(scanner->pTinBuf);
+                    ch = getChar();
                     if (ch == '*') {
-                        ch = getChar(scanner->pTinBuf);
+                        ch = getChar();
                         if (ch == ')') {
                             break;
                         }
                     }
                 }
             } else {
-                putBackChar(scanner->pTinBuf);
+                putBackChar();
                 break;
             }
         } else if (charCodeMap[ch] != ccWhiteSpace) {
             break;
         }
-        ch = getChar(scanner->pTinBuf);
+        ch = getChar();
     }
 }

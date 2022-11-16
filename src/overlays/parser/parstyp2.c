@@ -21,7 +21,7 @@ int arraySize(TTYPE *pArrayType) {
     return pArrayType->array.elemCount * elemType.size;
 }
 
-void parseArrayType(SCANNER *scanner, CHUNKNUM *arrayTypeChunkNum) {
+void parseArrayType(CHUNKNUM *arrayTypeChunkNum) {
     TTYPE arrayType, *elmtType;
     int indexFlag;  // non-zero if another array index, 0 if done.
     CHUNKNUM newTypeChunkNum, typeChunkNum, finalTypeChunkNum;
@@ -32,24 +32,24 @@ void parseArrayType(SCANNER *scanner, CHUNKNUM *arrayTypeChunkNum) {
     typeChunkNum = *arrayTypeChunkNum;
 
     // [
-    getToken(scanner);
-    condGetToken(scanner, tcLBracket, errMissingLeftBracket);
+    getToken();
+    condGetToken(tcLBracket, errMissingLeftBracket);
 
     // Loop to parse each type spec in the index type list, separated by commas.
     do {
-        parseIndexType(scanner, elmtType);
+        parseIndexType(elmtType);
         storeChunk(typeChunkNum, (unsigned char *)elmtType);
 
         // ,
-        resync(scanner, tlIndexFollow, tlIndexStart, NULL);
-        if (scanner->token.code == tcComma || tokenIn(scanner->token.code, tlIndexStart)) {
+        resync(tlIndexFollow, tlIndexStart, NULL);
+        if (tokenCode == tcComma || tokenIn(tokenCode, tlIndexStart)) {
             // For each type spec after the first, create an element type object
             newTypeChunkNum = makeType(fcArray, 0, 0);
             setType(&elmtType->array.elemType, newTypeChunkNum);
             storeChunk(typeChunkNum, (unsigned char *)elmtType);
             typeChunkNum = newTypeChunkNum;
             retrieveChunk(typeChunkNum, (unsigned char *)elmtType);
-            condGetToken(scanner, tcComma, errMissingComma);
+            condGetToken(tcComma, errMissingComma);
             indexFlag = 1;
         } else {
             indexFlag = 0;
@@ -57,14 +57,14 @@ void parseArrayType(SCANNER *scanner, CHUNKNUM *arrayTypeChunkNum) {
     } while (indexFlag);
 
     // ]
-    condGetToken(scanner, tcRBracket, errMissingRightBracket);
+    condGetToken(tcRBracket, errMissingRightBracket);
 
     // OF
-    resync(scanner, tlIndexListFollow, tlDeclarationStart, tlStatementStart);
-    condGetToken(scanner, tcOF, errMissingOF);
+    resync(tlIndexListFollow, tlDeclarationStart, tlStatementStart);
+    condGetToken(tcOF, errMissingOF);
 
     // Final element type
-    parseTypeSpec(scanner, &finalTypeChunkNum);
+    parseTypeSpec(&finalTypeChunkNum);
     setType(&elmtType->array.elemType, finalTypeChunkNum);
     storeChunk(typeChunkNum, (unsigned char *)elmtType);
 
@@ -76,12 +76,12 @@ void parseArrayType(SCANNER *scanner, CHUNKNUM *arrayTypeChunkNum) {
     }
 }
 
-void parseIndexType(SCANNER *scanner, TTYPE *pArrayType) {
+void parseIndexType(TTYPE *pArrayType) {
     TTYPE indexType;
     CHUNKNUM indexTypeChunkNum;
 
-    if (tokenIn(scanner->token.code, tlIndexStart)) {
-        parseTypeSpec(scanner, &indexTypeChunkNum);
+    if (tokenIn(tokenCode, tlIndexStart)) {
+        parseTypeSpec(&indexTypeChunkNum);
         setType(&pArrayType->array.indexType, indexTypeChunkNum);
         retrieveChunk(indexTypeChunkNum, (unsigned char *)&indexType);
 
@@ -111,7 +111,7 @@ void parseIndexType(SCANNER *scanner, TTYPE *pArrayType) {
     Error(errInvalidIndexType);
 }
 
-void parseRecordType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
+void parseRecordType(CHUNKNUM *newTypeChunkNum) {
     TTYPE newType;
 
     *newTypeChunkNum = makeType(fcRecord, 0, 0);
@@ -119,11 +119,11 @@ void parseRecordType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
     makeSymtab(&newType.record.symtab);
 
     // Parse field declarations
-    getToken(scanner);
-    parseFieldDeclarations(scanner, &newType, 0);
+    getToken();
+    parseFieldDeclarations(&newType, 0);
     storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
 
     // END
-    condGetToken(scanner, tcEND, errMissingEND);
+    condGetToken(tcEND, errMissingEND);
 }
 

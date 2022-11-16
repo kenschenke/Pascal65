@@ -12,21 +12,21 @@
 
 #include <scanner.h>
 
-void getStringToken(TOKEN *token, SCANNER *scanner)
+void getStringToken(void)
 {
     char ch;
-    char *ps = token->string;
+    char *ps = tokenString;
 
     *ps++ = '\'';
 
     // Get the string
-    ch = getChar(scanner->pTinBuf);     // first char after opening quote
+    ch = getChar();     // first char after opening quote
     while (ch != eofChar) {
         if (ch == '\'') {   // look for another quote
             // Fetched a quote.  Now check for an adjacent quote,
             // since two consecutive quotes represent a single
             // quote in the string
-            ch = getChar(scanner->pTinBuf);
+            ch = getChar();
             if (ch != '\'')     // another quote, so previous
                 break;          // quote ended the string
         }
@@ -37,7 +37,7 @@ void getStringToken(TOKEN *token, SCANNER *scanner)
 
         // Append current char to string, then get the next char
         *ps++ = ch;
-        ch = getChar(scanner->pTinBuf);
+        ch = getChar();
     }
 
     if (ch == eofChar)
@@ -46,5 +46,5 @@ void getStringToken(TOKEN *token, SCANNER *scanner)
     *ps++ = '\'';
     *ps = 0;
 
-    token->code = tcString;
+    tokenCode = tcString;
 }

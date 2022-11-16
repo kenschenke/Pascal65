@@ -66,47 +66,47 @@ static TResWord *rwTable[] = {
     NULL, NULL, rw2, rw3, rw4, rw5, rw6, rw7, rw8, rw9,
 };
 
-static void checkForReservedWord(TOKEN *token)
+static void checkForReservedWord(void)
 {
-    int len = strlen(token->string);
+    int len = strlen(tokenString);
     TResWord *prw;
 
-    token->code = tcIdentifier;
+    tokenCode = tcIdentifier;
 
     if (len >= minResWordLength && len <= maxResWordLength) {
         for (prw = rwTable[len]; prw->pString; ++prw) {
-            if (strcmp(token->string, prw->pString) == 0) {
-                token->code = prw->code;
+            if (strcmp(tokenString, prw->pString) == 0) {
+                tokenCode = prw->code;
                 break;
             }
         }
     }
 }
 
-void getWordToken(TOKEN *token, SCANNER *scanner)
+void getWordToken(void)
 {
     char ch, *ps;
 
-    ch = getCurrentChar(scanner->pTinBuf);
-    ps = token->string;
+    ch = getCurrentChar();
+    ps = tokenString;
 
     // Extract the word
     do {
         *ps++ = ch;
-        ch = getChar(scanner->pTinBuf);
+        ch = getChar();
     } while (charCodeMap[ch] == ccLetter || charCodeMap[ch] == ccDigit);
 
     *ps = 0;
 
     // If this file came from a PC, convert lower-case ASCII
     // to upper-case ASCII.
-    for (ps = token->string; *ps; ++ps) {
+    for (ps = tokenString; *ps; ++ps) {
         if (*ps >= 97 && *ps <= 122) {
             *ps -= 32;
         }
     }
-    strlwr(token->string);
+    strlwr(tokenString);
 
-    checkForReservedWord(token);
+    checkForReservedWord();
 }
 

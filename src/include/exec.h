@@ -35,7 +35,6 @@ typedef struct {
     RTSTACK *runStack;
     char userStop;      // 1 if user requested stop execution
 
-    TOKEN *pToken;      // ptr to the current token
     TTokenCode token;   // code of current token
     SYMTABNODE *pNode;  // ptr to symtab node
 

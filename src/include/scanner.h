@@ -25,16 +25,18 @@ typedef struct {
     char string[MAX_LINE_LEN + 1];
 } TOKEN;
 
-typedef struct {
-    TINBUF *pTinBuf;
-    TOKEN token;
-} SCANNER;
+extern TINBUF *pInputBuffer;
 
-TOKEN *getNextToken(SCANNER *scanner);
+extern TTokenCode tokenCode;
+extern TDataType tokenType;
+extern TDataValue tokenValue;
+extern char tokenString[MAX_LINE_LEN + 1];
 
-void getNumberToken(TOKEN *token, SCANNER *scanner);
-void getSpecialToken(TOKEN *token, SCANNER *scanner);
-void getStringToken(TOKEN *token, SCANNER *scanner);
-void getWordToken(TOKEN *token, SCANNER *scanner);
+void getNextToken(void);
+
+void getNumberToken(void);
+void getSpecialToken(void);
+void getStringToken(void);
+void getWordToken(void);
 
 #endif // end of SCANNER_H

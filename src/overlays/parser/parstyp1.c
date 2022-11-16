@@ -6,21 +6,21 @@
 #include <types.h>
 #include <string.h>
 
-void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
+void parseEnumerationType(CHUNKNUM *newTypeChunkNum) {
     TTYPE newType;
     CHUNKNUM lastChunk = 0, newChunkNum;
     SYMBNODE newNode;
     int constValue = -1;
 
-    getToken(scanner);
-    resync(scanner, tlEnumConstStart, NULL, NULL);
+    getToken();
+    resync(tlEnumConstStart, NULL, NULL);
 
     *newTypeChunkNum = makeType(fcEnum, sizeof(int), 0);
     retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
 
     // Loop to parse list of constant identifiers separated by commas.
-    while (scanner->token.code == tcIdentifier) {
-        symtabEnterNewLocal(&newNode, scanner->token.string, dcUndefined);
+    while (tokenCode == tcIdentifier) {
+        symtabEnterNewLocal(&newNode, tokenString, dcUndefined);
         ++constValue;
 
         if (newNode.defn.how == dcUndefined) {
@@ -44,32 +44,32 @@ void parseEnumerationType(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
         memset(&newNode, 0, sizeof(SYMBNODE));
 
         // ,
-        getToken(scanner);
-        resync(scanner, tlEnumConstFollow, NULL, NULL);
-        if (scanner->token.code == tcComma) {
+        getToken();
+        resync(tlEnumConstFollow, NULL, NULL);
+        if (tokenCode == tcComma) {
             // Saw comma.  Skip extra commas and look for an identifier
             do {
-                getToken(scanner);
-                resync(scanner, tlEnumConstStart, tlEnumConstFollow, NULL);
-                if (scanner->token.code == tcComma) Error(errMissingIdentifier);
-            } while (scanner->token.code == tcComma);
-            if (scanner->token.code != tcIdentifier) Error(errMissingIdentifier);
+                getToken();
+                resync(tlEnumConstStart, tlEnumConstFollow, NULL);
+                if (tokenCode == tcComma) Error(errMissingIdentifier);
+            } while (tokenCode == tcComma);
+            if (tokenCode != tcIdentifier) Error(errMissingIdentifier);
         }
-        else if (scanner->token.code == tcIdentifier) Error(errMissingComma);
+        else if (tokenCode == tcIdentifier) Error(errMissingComma);
     }
 
     // )
-    condGetToken(scanner, tcRParen, errMissingRightParen);
+    condGetToken(tcRParen, errMissingRightParen);
 
     newType.enumeration.max = constValue;
     storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
 }
 
-void parseIdentifierType(SCANNER *scanner) {
-    getToken(scanner);
+void parseIdentifierType(void) {
+    getToken();
 }
 
-void parseSubrangeLimit(SCANNER *scanner, SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum) {
+void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum) {
     SYMBNODE node;
     TTokenCode sign = tcDummy;
 
@@ -77,17 +77,17 @@ void parseSubrangeLimit(SCANNER *scanner, SYMBNODE *pLimit, int *limit, CHUNKNUM
     *limitTypeChunkNum = dummyType;
 
     // Unary + or -
-    if (tokenIn(scanner->token.code, tlUnaryOps)) {
-        if (scanner->token.code == tcMinus) sign = tcMinus;
-        getToken(scanner);
+    if (tokenIn(tokenCode, tlUnaryOps)) {
+        if (tokenCode == tcMinus) sign = tcMinus;
+        getToken();
     }
 
-    switch (scanner->token.code) {
+    switch (tokenCode) {
         case tcNumber:
             // Numeric constant: integer type only
-            if (scanner->token.type == tyInteger) {
-                *limit = sign == tcMinus ? -scanner->token.value.integer :
-                    scanner->token.value.integer;
+            if (tokenType == tyInteger) {
+                *limit = sign == tcMinus ? -tokenValue.integer :
+                    tokenValue.integer;
                 *limitTypeChunkNum = integerType;
             } else {
                 Error(errInvalidSubrangeType);
@@ -98,7 +98,7 @@ void parseSubrangeLimit(SCANNER *scanner, SYMBNODE *pLimit, int *limit, CHUNKNUM
             // identifier limit: must be an integer, character, or
             // enumeration type.
             if (pLimit == NULL) {
-                if (findSymtabNode(&node, scanner->token.string) == 0) {
+                if (findSymtabNode(&node, tokenString) == 0) {
                     Error(errInvalidSubrangeType);
                     break;
                 }
@@ -148,12 +148,12 @@ void parseSubrangeLimit(SCANNER *scanner, SYMBNODE *pLimit, int *limit, CHUNKNUM
                 Error(errInvalidConstant);
             }
 
-            if (strlen(scanner->token.string) != 3) {
+            if (strlen(tokenString) != 3) {
                 // length inludes quotes
                 Error(errInvalidSubrangeType);
             }
 
-            *limit = scanner->token.string[1];
+            *limit = tokenString[1];
             *limitTypeChunkNum = charType;
             break;
         
@@ -162,10 +162,10 @@ void parseSubrangeLimit(SCANNER *scanner, SYMBNODE *pLimit, int *limit, CHUNKNUM
             break;
     }
 
-    getToken(scanner);
+    getToken();
 }
 
-void parseSubrangeType(SCANNER *scanner, SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
+void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
     int temp;
     CHUNKNUM newMinChunkNum, maxTypeChunkNum;
     TTYPE newType, baseType, maxType;
@@ -174,15 +174,15 @@ void parseSubrangeType(SCANNER *scanner, SYMBNODE *pMinId, CHUNKNUM *newTypeChun
     retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
 
     // <min-const>
-    parseSubrangeLimit(scanner, pMinId, &newType.subrange.min, &newMinChunkNum);
+    parseSubrangeLimit(pMinId, &newType.subrange.min, &newMinChunkNum);
     setType(&newType.subrange.baseType, newMinChunkNum);
 
     // ..
-    resync(scanner, tlSubrangeLimitFollow, tlDeclarationStart, NULL);
-    condGetToken(scanner, tcDotDot, errMissingDotDot);
+    resync(tlSubrangeLimitFollow, tlDeclarationStart, NULL);
+    condGetToken(tcDotDot, errMissingDotDot);
 
     // <max-const>
-    parseSubrangeLimit(scanner, NULL, &newType.subrange.max, &maxTypeChunkNum);
+    parseSubrangeLimit(NULL, &newType.subrange.max, &maxTypeChunkNum);
     retrieveChunk(maxTypeChunkNum, (unsigned char *)&maxType);
 
     // check limits
@@ -203,15 +203,15 @@ void parseSubrangeType(SCANNER *scanner, SYMBNODE *pMinId, CHUNKNUM *newTypeChun
     storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
 }
 
-void parseTypeDefinitions(SCANNER *scanner, SYMBNODE *pRoutineId) {
+void parseTypeDefinitions(SYMBNODE *pRoutineId) {
     SYMBNODE lastNode, idNode;
     CHUNKNUM newTypeChunkNum, lastId = 0;  // last type id node in local list
 
     // Loop to parse a list of type definitions
     // separated by semicolons.
-    while (scanner->token.code == tcIdentifier) {
+    while (tokenCode == tcIdentifier) {
         // <id>
-        if (symtabEnterNewLocal(&idNode, scanner->token.string, dcUndefined) == 0) {
+        if (symtabEnterNewLocal(&idNode, tokenString, dcUndefined) == 0) {
             return;
         }
 
@@ -231,11 +231,11 @@ void parseTypeDefinitions(SCANNER *scanner, SYMBNODE *pRoutineId) {
         lastId = idNode.node.nodeChunkNum;
 
         // =
-        getToken(scanner);
-        condGetToken(scanner, tcEqual, errMissingEqual);
+        getToken();
+        condGetToken(tcEqual, errMissingEqual);
 
         // <type>
-        parseTypeSpec(scanner, &newTypeChunkNum);
+        parseTypeSpec(&newTypeChunkNum);
         // Retrieve the idNode again because it might have changed
         // while parsing the enumeration types
         loadSymbNode(idNode.node.nodeChunkNum, &idNode);
@@ -255,57 +255,57 @@ void parseTypeDefinitions(SCANNER *scanner, SYMBNODE *pRoutineId) {
         saveSymbNode(&idNode);
 
         // ;
-        resync(scanner, tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
-        condGetToken(scanner, tcSemicolon, errMissingSemicolon);
+        resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
+        condGetToken(tcSemicolon, errMissingSemicolon);
 
         // Skip extra semicolons
-        while (scanner->token.code == tcSemicolon) getToken(scanner);
-        resync(scanner, tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
+        while (tokenCode == tcSemicolon) getToken();
+        resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
     }
 }
 
-void parseTypeSpec(SCANNER *scanner, CHUNKNUM *newTypeChunkNum) {
+void parseTypeSpec(CHUNKNUM *newTypeChunkNum) {
     SYMBNODE node;
 
-    switch (scanner->token.code) {
+    switch (tokenCode) {
         // type identifier
         case tcIdentifier:
-            if (symtabStackSearchAll(scanner->token.string, &node) == 0) {
+            if (symtabStackSearchAll(tokenString, &node) == 0) {
                 break;
             }
 
             switch (node.defn.how) {
                 case dcType:
-                    parseIdentifierType(scanner);
+                    parseIdentifierType();
                     *newTypeChunkNum = node.node.typeChunk;
                     break;
                 case dcConstant:
-                    parseSubrangeType(scanner, &node, newTypeChunkNum);
+                    parseSubrangeType(&node, newTypeChunkNum);
                     break;
                 default:
                     Error(errNotATypeIdentifier);
-                    getToken(scanner);
+                    getToken();
                     break;
             }
             break;
         
         case tcLParen:
-            parseEnumerationType(scanner, newTypeChunkNum);
+            parseEnumerationType(newTypeChunkNum);
             break;
         
         case tcARRAY:
-            parseArrayType(scanner, newTypeChunkNum);
+            parseArrayType(newTypeChunkNum);
             break;
         
         case tcRECORD:
-            parseRecordType(scanner, newTypeChunkNum);
+            parseRecordType(newTypeChunkNum);
             break;
         
         case tcPlus:
         case tcMinus:
         case tcNumber:
         case tcString:
-            parseSubrangeType(scanner, NULL, newTypeChunkNum);
+            parseSubrangeType(NULL, newTypeChunkNum);
             break;
         
         default:

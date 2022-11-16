@@ -57,37 +57,37 @@ void tin_close(TINBUF *tinBuf)
     free(tinBuf);
 }
 
-char getCurrentChar(TINBUF *tinBuf)
+char getCurrentChar(void)
 {
     if (isFatalError)
         return eofChar;
 
-    return *(tinBuf->pChar);
+    return *(pInputBuffer->pChar);
 }
 
-char getChar(TINBUF *tinBuf)
+char getChar(void)
 {
     char ch;
 
     if (isFatalError)
         return eofChar;
         
-    if (*(tinBuf->pChar) == eofChar) {
+    if (*(pInputBuffer->pChar) == eofChar) {
         return eofChar;
-    } else if (*(tinBuf->pChar) == 0) {
-        ch = getLine(tinBuf);
+    } else if (*(pInputBuffer->pChar) == 0) {
+        ch = getLine();
         if (isFatalError)
             return eofChar;
     } else {
-        tinBuf->pChar++;
+        pInputBuffer->pChar++;
         ++inputPosition;
-        ch = *(tinBuf->pChar);
+        ch = *(pInputBuffer->pChar);
     }
 
     return ch;
 }
 
-char getLine(TINBUF *tinBuf)
+char getLine(void)
 {
     extern int currentNestingLevel;
     int i, n;
@@ -95,22 +95,22 @@ char getLine(TINBUF *tinBuf)
     if (isFatalError)
         return eofChar;
         
-    if (feof(tinBuf->fh)) {
-        tinBuf->pChar = &eofChar;
+    if (feof(pInputBuffer->fh)) {
+        pInputBuffer->pChar = &eofChar;
     } else {
         i = 0;
         while(1) {
-            n = fread(tinBuf->buffer+i, sizeof(char), 1, tinBuf->fh);
+            n = fread(pInputBuffer->buffer+i, sizeof(char), 1, pInputBuffer->fh);
             if (n != 1) {
-                if (!feof(tinBuf->fh)) {
+                if (!feof(pInputBuffer->fh)) {
                     abortTranslation(abortSourceFileReadFailed);
                     return eofChar;
                 }
-                tinBuf->buffer[i] = 0;
+                pInputBuffer->buffer[i] = 0;
                 break;
             }
-            if (tinBuf->buffer[i] == 13) {  // carriage return
-                tinBuf->buffer[i] = 0;
+            if (pInputBuffer->buffer[i] == 13) {  // carriage return
+                pInputBuffer->buffer[i] = 0;
                 ++currentLineNumber;
                 break;
             }
@@ -120,19 +120,19 @@ char getLine(TINBUF *tinBuf)
                 return eofChar;
             }
         }
-        tinBuf->pChar = tinBuf->buffer;
+        pInputBuffer->pChar = pInputBuffer->buffer;
     }
 
-    return *(tinBuf->pChar);
+    return *(pInputBuffer->pChar);
 }
 
-char putBackChar(TINBUF *tinBuf)
+char putBackChar(void)
 {
     if (isFatalError)
         return eofChar;
 
-    tinBuf->pChar--;
+    pInputBuffer->pChar--;
     inputPosition--;
 
-    return *(tinBuf->pChar);
+    return *(pInputBuffer->pChar);
 }

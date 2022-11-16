@@ -31,9 +31,9 @@ typedef struct {
 TINBUF *tin_open(const char *pFilename, TAbortCode ac);
 void tin_close(TINBUF *tinBuf);
 
-char getCurrentChar(TINBUF *tinBuf);
-char getChar(TINBUF *tinBuf);
-char getLine(TINBUF *tinBuf);
-char putBackChar(TINBUF *tinBuf);
+char getCurrentChar(void);
+char getChar(void);
+char getLine(void);
+char putBackChar(void);
 
 #endif // end of BUFFER_H

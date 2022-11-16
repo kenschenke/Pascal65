@@ -12,78 +12,78 @@
 
 #include <scanner.h>
 
-void getSpecialToken(TOKEN *token, SCANNER *scanner)
+void getSpecialToken(void)
 {
-    char ch = getCurrentChar(scanner->pTinBuf);
-    char *ps = token->string;
+    char ch = getCurrentChar();
+    char *ps = tokenString;
     
     *ps++ = ch;
 
     switch (ch) {
-        case '^': token->code = tcUpArrow;   ch = getChar(scanner->pTinBuf); break;
-        case '*': token->code = tcStar;      ch = getChar(scanner->pTinBuf); break;
-        case '(': token->code = tcLParen;    ch = getChar(scanner->pTinBuf); break;
-        case ')': token->code = tcRParen;    ch = getChar(scanner->pTinBuf); break;
-        case '-': token->code = tcMinus;     ch = getChar(scanner->pTinBuf); break;
-        case '+': token->code = tcPlus;      ch = getChar(scanner->pTinBuf); break;
-        case '=': token->code = tcEqual;     ch = getChar(scanner->pTinBuf); break;
-        case '[': token->code = tcLBracket;  ch = getChar(scanner->pTinBuf); break;
-        case ']': token->code = tcRBracket;  ch = getChar(scanner->pTinBuf); break;
-        case ';': token->code = tcSemicolon; ch = getChar(scanner->pTinBuf); break;
-        case ',': token->code = tcComma;     ch = getChar(scanner->pTinBuf); break;
-        case '/': token->code = tcSlash;     ch = getChar(scanner->pTinBuf); break;
+        case '^': tokenCode = tcUpArrow;   ch = getChar(); break;
+        case '*': tokenCode = tcStar;      ch = getChar(); break;
+        case '(': tokenCode = tcLParen;    ch = getChar(); break;
+        case ')': tokenCode = tcRParen;    ch = getChar(); break;
+        case '-': tokenCode = tcMinus;     ch = getChar(); break;
+        case '+': tokenCode = tcPlus;      ch = getChar(); break;
+        case '=': tokenCode = tcEqual;     ch = getChar(); break;
+        case '[': tokenCode = tcLBracket;  ch = getChar(); break;
+        case ']': tokenCode = tcRBracket;  ch = getChar(); break;
+        case ';': tokenCode = tcSemicolon; ch = getChar(); break;
+        case ',': tokenCode = tcComma;     ch = getChar(); break;
+        case '/': tokenCode = tcSlash;     ch = getChar(); break;
 
         case ':':
-            ch = getChar(scanner->pTinBuf);     // : or :=
+            ch = getChar();     // : or :=
             if (ch == '=') {
                 *ps++ = '=';
-                token->code = tcColonEqual;
-                getChar(scanner->pTinBuf);
+                tokenCode = tcColonEqual;
+                getChar();
             } else {
-                token->code = tcColon;
+                tokenCode = tcColon;
             }
             break;
 
         case '<':
-            ch = getChar(scanner->pTinBuf);     // < or <= or <>
+            ch = getChar();     // < or <= or <>
             if (ch == '=') {
                 *ps++ = '=';
-                token->code = tcLe;
-                getChar(scanner->pTinBuf);
+                tokenCode = tcLe;
+                getChar();
             } else if (ch == '>') {
                 *ps++ = '>';
-                token->code = tcNe;
-                getChar(scanner->pTinBuf);
+                tokenCode = tcNe;
+                getChar();
             } else {
-                token->code = tcLt;
+                tokenCode = tcLt;
             }
             break;
 
         case '>':
-            ch = getChar(scanner->pTinBuf);     // > or >=
+            ch = getChar();     // > or >=
             if (ch == '=') {
                 *ps++ = '=';
-                token->code = tcGe;
-                getChar(scanner->pTinBuf);
+                tokenCode = tcGe;
+                getChar();
             } else {
-                token->code = tcGt;
+                tokenCode = tcGt;
             }
             break;
 
         case '.':
-            ch = getChar(scanner->pTinBuf);     // . or ..
+            ch = getChar();     // . or ..
             if (ch == '.') {
                 *ps++ = '.';
-                token->code = tcDotDot;
-                getChar(scanner->pTinBuf);
+                tokenCode = tcDotDot;
+                getChar();
             } else {
-                token->code = tcPeriod;
+                tokenCode = tcPeriod;
             }
             break;
         
         default:
-            token->code = tcError;
-            getChar(scanner->pTinBuf);
+            tokenCode = tcError;
+            getChar();
             Error(errUnrecognizable);
             break;
     }

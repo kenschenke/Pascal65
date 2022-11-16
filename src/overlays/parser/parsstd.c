@@ -17,36 +17,36 @@
 #include <parscommon.h>
 #include <common.h>
 
-CHUNKNUM parseStandardSubroutineCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutineId) {
+CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     switch (pRoutineId->defn.routine.which) {
         case rcRead:
         case rcReadln:
-            return parseReadReadlnCall(scanner, Icode, pRoutineId);
+            return parseReadReadlnCall(Icode, pRoutineId);
 
         case rcWrite:
         case rcWriteln:
-            return parseWriteWritelnCall(scanner, Icode, pRoutineId);
+            return parseWriteWritelnCall(Icode, pRoutineId);
 
         case rcEof:
         case rcEoln:
-            return parseEofEolnCall(scanner, Icode);
+            return parseEofEolnCall(Icode);
 
         case rcAbs:
         case rcSqr:
-            return parseAbsSqrCall(scanner, Icode);
+            return parseAbsSqrCall(Icode);
 
         case rcPred:
         case rcSucc:
-            return parsePredSuccCall(scanner, Icode);
+            return parsePredSuccCall(Icode);
 
         case rcChr:
-            return parseChrCall(scanner, Icode);
+            return parseChrCall(Icode);
 
         case rcOdd:
-            return parseOddCall(scanner, Icode);
+            return parseOddCall(Icode);
 
         case rcOrd:
-            return parseOrdCall(scanner, Icode);
+            return parseOrdCall(Icode);
 
         default:
             return 0;
@@ -55,12 +55,12 @@ CHUNKNUM parseStandardSubroutineCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE 
     return 0;
 }
 
-CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutineId) {
+CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     TTYPE parmType;
     SYMBNODE parmId;
 
     // Actual parameters are optional for readln.
-    if (scanner->token.code != tcLParen) {
+    if (tokenCode != tcLParen) {
         if (pRoutineId->defn.routine.which == rcRead) {
             Error(errWrongNumberOfParams);
         }
@@ -70,15 +70,15 @@ CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutin
     // Loop to parse comma-separated list of actual parameters.
     do {
         // left paren or comma
-        getTokenAppend(scanner, Icode);
+        getTokenAppend(Icode);
 
         // Each actual parameter must be a scalar variable,
         // but parse an expression anyway for error recovery.
-        if (scanner->token.code == tcIdentifier) {
-            findSymtabNode(&parmId, scanner->token.string);
+        if (tokenCode == tcIdentifier) {
+            findSymtabNode(&parmId, tokenString);
             putSymtabNodeToIcode(Icode, &parmId.node);
 
-            parseVariable(scanner, Icode, &parmId);
+            parseVariable(Icode, &parmId);
             memcpy(&parmType, &parmId.type, sizeof(TTYPE));
             if (parmType.form == fcSubrange) {
                 retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
@@ -87,26 +87,26 @@ CHUNKNUM parseReadReadlnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutin
                 Error(errIncompatibleTypes);
             }
         } else {
-            parseExpression(scanner, Icode);
+            parseExpression(Icode);
             Error(errInvalidVarParm);
         }
 
         // comma or right paren
-        resync(scanner, tlActualVarParmFollow, tlStatementFollow, tlStatementStart);
-    } while (scanner->token.code == tcComma);
+        resync(tlActualVarParmFollow, tlStatementFollow, tlStatementStart);
+    } while (tokenCode == tcComma);
 
     // right paren
-    condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+    condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
 
     return dummyType;
 }
 
-CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRoutineId) {
+CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     CHUNKNUM actualTypeChunk;
     TTYPE actualType;
 
     // Actual parameters are optional only for writeln
-    if (scanner->token.code != tcLParen) {
+    if (tokenCode != tcLParen) {
         if (pRoutineId->defn.routine.which == rcWrite) {
             Error(errWrongNumberOfParams);
         }
@@ -116,11 +116,11 @@ CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRout
     // Loop to parse comma-separated list of actual parameters.
     do {
         // left paren or comma
-        getTokenAppend(scanner, Icode);
+        getTokenAppend(Icode);
 
         // Value <expr> : The type must be either a non-boolean
         //                scalar or a string.
-        actualTypeChunk = parseExpression(scanner, Icode);
+        actualTypeChunk = parseExpression(Icode);
         retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
         if (actualType.form == fcSubrange) {
             retrieveChunk(actualType.subrange.baseType, (unsigned char *)&actualType);
@@ -131,9 +131,9 @@ CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRout
         }
 
         // Optional field width <expr>
-        if (scanner->token.code == tcColon) {
-            getTokenAppend(scanner, Icode);
-            actualTypeChunk = parseExpression(scanner, Icode);
+        if (tokenCode == tcColon) {
+            getTokenAppend(Icode);
+            actualTypeChunk = parseExpression(Icode);
             retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
             if (actualType.form == fcSubrange) {
                 retrieveChunk(actualType.subrange.baseType, (unsigned char *)&actualType);
@@ -143,10 +143,10 @@ CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRout
             }
 
             // Optional precision <expr>
-            if (scanner->token.code == tcColon) {
-                getTokenAppend(scanner, Icode);
+            if (tokenCode == tcColon) {
+                getTokenAppend(Icode);
             }
-            actualTypeChunk = parseExpression(scanner, Icode);
+            actualTypeChunk = parseExpression(Icode);
             retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
             if (actualType.form == fcSubrange) {
                 retrieveChunk(actualType.subrange.baseType, (unsigned char *)&actualType);
@@ -155,34 +155,34 @@ CHUNKNUM parseWriteWritelnCall(SCANNER *scanner, CHUNKNUM Icode, SYMBNODE *pRout
                 Error(errIncompatibleTypes);
             }
         }
-    } while (scanner->token.code == tcComma);
+    } while (tokenCode == tcComma);
 
     // right paren
-    condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+    condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
 
     return dummyType;
 }
 
-CHUNKNUM parseEofEolnCall(SCANNER *scanner, CHUNKNUM Icode) {
+CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
     // There should be no actual parameters, but parse
     // them anyway for error recovery.
-    if (scanner->token.code == tcLParen) {
+    if (tokenCode == tcLParen) {
         Error(errWrongNumberOfParams);
-        parseActualParmList(scanner, NULL, 0, Icode);
+        parseActualParmList(NULL, 0, Icode);
     }
 
     return booleanType;
 }
 
-CHUNKNUM parseAbsSqrCall(SCANNER *scanner, CHUNKNUM Icode) {
+CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
     TTYPE parmType;
     CHUNKNUM parmTypeChunk, resultType;
 
     // There should be one integer parameter.
-    if (scanner->token.code == tcLParen) {
-        getTokenAppend(scanner, Icode);
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(scanner, Icode);
+        parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
         if (parmType.form == fcSubrange) {
             retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
@@ -195,12 +195,12 @@ CHUNKNUM parseAbsSqrCall(SCANNER *scanner, CHUNKNUM Icode) {
         }
 
         // There better not be any more parameters.
-        if (scanner->token.code != tcRParen) {
-            skipExtraParms(scanner, Icode);
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
         }
 
         // right paren
-        condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
     } else {
         Error(errWrongNumberOfParams);
     }
@@ -208,15 +208,15 @@ CHUNKNUM parseAbsSqrCall(SCANNER *scanner, CHUNKNUM Icode) {
     return resultType;
 }
 
-CHUNKNUM parsePredSuccCall(SCANNER *scanner, CHUNKNUM Icode) {
+CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
     TTYPE parmType;
     CHUNKNUM resultType, parmTypeChunk;
 
     // There should be one integer or enumeration parameter
-    if (scanner->token.code == tcLParen) {
-        getTokenAppend(scanner, Icode);
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(scanner, Icode);
+        parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
         if (parmType.form == fcSubrange) {
             retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
@@ -229,12 +229,12 @@ CHUNKNUM parsePredSuccCall(SCANNER *scanner, CHUNKNUM Icode) {
         }
 
         // There better not be any more parameters
-        if (scanner->token.code != tcRParen) {
-            skipExtraParms(scanner, Icode);
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
         }
 
         // Right paren
-        condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
     } else {
         Error(errWrongNumberOfParams);
     }
@@ -242,15 +242,15 @@ CHUNKNUM parsePredSuccCall(SCANNER *scanner, CHUNKNUM Icode) {
     return resultType;
 }
 
-CHUNKNUM parseChrCall(SCANNER *scanner, CHUNKNUM Icode) {
+CHUNKNUM parseChrCall(CHUNKNUM Icode) {
     TTYPE parmType;
     CHUNKNUM parmTypeChunk;
 
     // There should be one character parameter.
-    if (scanner->token.code == tcLParen) {
-        getTokenAppend(scanner, Icode);
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(scanner, Icode);
+        parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
         if (parmType.form == fcSubrange) {
             retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
@@ -260,12 +260,12 @@ CHUNKNUM parseChrCall(SCANNER *scanner, CHUNKNUM Icode) {
         }
 
         // There better not be any more paramters
-        if (scanner->token.code != tcRParen) {
-            skipExtraParms(scanner, Icode);
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
         }
 
         // right paren
-        condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
     } else {
         Error(errWrongNumberOfParams);
     }
@@ -273,15 +273,15 @@ CHUNKNUM parseChrCall(SCANNER *scanner, CHUNKNUM Icode) {
     return charType;
 }
 
-CHUNKNUM parseOddCall(SCANNER *scanner, CHUNKNUM Icode) {
+CHUNKNUM parseOddCall(CHUNKNUM Icode) {
     TTYPE parmType;
     CHUNKNUM parmTypeChunk;
 
     // There should be one integer parameter.
-    if (scanner->token.code == tcLParen) {
-        getTokenAppend(scanner, Icode);
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(scanner, Icode);
+        parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
         if (parmType.form == fcSubrange) {
             retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
@@ -291,12 +291,12 @@ CHUNKNUM parseOddCall(SCANNER *scanner, CHUNKNUM Icode) {
         }
 
         // There better not be any more paramters
-        if (scanner->token.code != tcRParen) {
-            skipExtraParms(scanner, Icode);
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
         }
 
         // right paren
-        condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
     } else {
         Error(errWrongNumberOfParams);
     }
@@ -304,15 +304,15 @@ CHUNKNUM parseOddCall(SCANNER *scanner, CHUNKNUM Icode) {
     return booleanType;
 }
 
-CHUNKNUM parseOrdCall(SCANNER *scanner, CHUNKNUM Icode) {
+CHUNKNUM parseOrdCall(CHUNKNUM Icode) {
     TTYPE parmType;
     CHUNKNUM parmTypeChunk;
 
     // There should be one character or enumeration parameter.
-    if (scanner->token.code == tcLParen) {
-        getTokenAppend(scanner, Icode);
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(scanner, Icode);
+        parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
         if (parmType.form == fcSubrange) {
             retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
@@ -322,12 +322,12 @@ CHUNKNUM parseOrdCall(SCANNER *scanner, CHUNKNUM Icode) {
         }
 
         // There better not be any more paramters
-        if (scanner->token.code != tcRParen) {
-            skipExtraParms(scanner, Icode);
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
         }
 
         // right paren
-        condGetTokenAppend(scanner, Icode, tcRParen, errMissingRightParen);
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
     } else {
         Error(errWrongNumberOfParams);
     }
@@ -335,12 +335,12 @@ CHUNKNUM parseOrdCall(SCANNER *scanner, CHUNKNUM Icode) {
     return integerType;
 }
 
-void skipExtraParms(SCANNER *scanner, CHUNKNUM Icode) {
+void skipExtraParms(CHUNKNUM Icode) {
     Error(errWrongNumberOfParams);
 
-    while (scanner->token.code == tcComma) {
-        getTokenAppend(scanner, Icode);
-        parseExpression(scanner, Icode);
+    while (tokenCode == tcComma) {
+        getTokenAppend(Icode);
+        parseExpression(Icode);
     }
 }
 

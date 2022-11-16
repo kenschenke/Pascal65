@@ -13,7 +13,7 @@
 #include <scanner.h>
 #include <limits.h>
 
-void getNumberToken(TOKEN *token, SCANNER *scanner)
+void getNumberToken(void)
 {
     const int maxInteger = SHRT_MAX;
     char ch, *ps;
@@ -22,7 +22,7 @@ void getNumberToken(TOKEN *token, SCANNER *scanner)
     const int maxDigitCount = 20;
     int value = 0;
 
-    ch = getCurrentChar(scanner->pTinBuf);
+    ch = getCurrentChar();
     if (charCodeMap[ch] != ccDigit) {
         Error(errInvalidNumber);
         return;  // failure
@@ -30,7 +30,7 @@ void getNumberToken(TOKEN *token, SCANNER *scanner)
 
     // Acculumate the value as long as the total allowable
     // number of digits has not been exceeded.
-    ps = token->string;
+    ps = tokenString;
     do {
         *ps++ = ch;
 
@@ -40,11 +40,11 @@ void getNumberToken(TOKEN *token, SCANNER *scanner)
             countErrorFlag = 1;
         }
 
-        ch = getChar(scanner->pTinBuf);
+        ch = getChar();
     } while (charCodeMap[ch] == ccDigit);
 
     *ps = 0;
-    token->value.integer = value;
-    token->type = tyInteger;
-    token->code = countErrorFlag ? tcError : tcNumber;
+    tokenValue.integer = value;
+    tokenType = tyInteger;
+    tokenCode = countErrorFlag ? tcError : tcNumber;
 }
