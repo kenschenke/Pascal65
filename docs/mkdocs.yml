@@ -1,0 +1,14 @@
+site_name: Pascal65 Documentation
+theme: readthedocs
+nav:
+  - Home: index.md
+  - Why Pascal: whypascal.md
+  - System Requirements: sysreqs.md
+  - Notable Differences: notablediffs.md
+  - Limitations: limits.md
+  - Pascal Language Syntax:
+    - Pascal Syntax: langref/syntax.md
+    - If Then Else: langref/ifelse.md
+  - Function Reference:
+    - Odd: funcref/odd.md
+    - Ord: funcref/ord.md
