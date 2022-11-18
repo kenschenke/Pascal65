@@ -2,3 +2,4 @@ obj/*
 bin/*
 *.petscii
 *.map
+*.pas

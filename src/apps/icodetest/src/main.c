@@ -21,6 +21,10 @@ void logRuntimeError(const char *message, unsigned lineNumber)
     printf("*** Runtime error: %s\n", message);
 }
 
+void initStandardRoutines(void) {
+    
+}
+
 int main()
 {
     initBlockStorage();

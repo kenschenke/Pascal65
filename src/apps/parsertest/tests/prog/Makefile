@@ -1,48 +1,49 @@
 # Parser tests
+#
+# make <test suite>
+#    testprog - PROGRAM statement and PROGRAM header tests
 
 SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
-DRVDIR := ../../../drv
 
 LIBCSRCDIR = ../../mega65-libc/src
 
 PROGRAM := parsertest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
-CC65TARGET := c64
-c64_EMUCMD := x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
-c128_EMUCMD := x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
-mega65_EMUCMD := xmega65 -besure -8
-EMUCMD = $($(TARGET)_EMUCMD)
-DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
+TARGET := mega65
+CC65TARGET = c64
+EMUCMD = xmega65 -besure -go64 -autoload -8
 
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
 SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
 PARSERSRCDIR = ../../overlays/parser
+TESTSDIR = tests/prog
 
 c64_CFLAGS =
 c128_CFLAGS =
-mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
-CFLAGS = $($(TARGET)_CFLAGS) -D MAINPAS -O -I ../../include --check-stack
+mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../include
+CFLAGS = $($(TARGET)_CFLAGS) -D TESTPROG -O -I ../../mega65-libc/include
 ASFLAGS = --asm-include-dir ../../asminc
 LDFLAGS = --mapfile parsertest.map
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
+SOURCES += $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(wildcard $(PARSERSRCDIR)/*.c)
 SOURCES += $(wildcard $(PARSERSRCDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
-ifeq ($(TARGET),mega65)
-SOURCES += $(wildcard $(SRCDIR)/*.s)
+SOURCES += $(SHAREDSRCDIR)/common.c
+SOURCES += $(SHAREDSRCDIR)/error.c
+SOURCES += $(SHAREDSRCDIR)/symtab.c
+SOURCES += $(SHAREDSRCDIR)/types.c
 SOURCES += $(LIBCSRCDIR)/memory.c
-endif
+
+TESTS := $(wildcard tests/prog/*.pas)
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -107,7 +108,7 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
-	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
+	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 abortmsgs.petscii: $(SHAREDSRCDIR)/abortmsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -text -o abortmsgs.petscii
@@ -118,24 +119,15 @@ errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
 runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
 
-ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii main.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii $(TESTS)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write main.pas main.pas,seq
-else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii main.pas
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write abortmsgs.petscii abortmsgs,seq \
-	-write errormsgs.petscii errormsgs,seq \
-	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write main.pas main.pas,seq \
-	-write $(DRVFILE) $(TARGET)-reu.emd,prg
-endif
+	-write $(TESTSDIR)/missingpid.pas missingpid.pas \
+	-write $(TESTSDIR)/missingprog.pas missingprog.pas \
+	-write $(TESTSDIR)/badprogvar.pas badprogvar.pas
 
 clean:
 	$(RM) $(OBJECTS)
@@ -143,10 +135,6 @@ clean:
 	$(RM) $(PROGRAM)
 	$(RM) $(BINDIR)/*
 	$(RM) $(D81FILE)
-
-testprog:
-	rm -f obj/main.o
-	make -f tests/prog/Makefile
 
 run: $(D81FILE)
 	$(EMUCMD) $<

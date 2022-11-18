@@ -20,6 +20,7 @@ void testSymbolTableNodes(void) {
 }
 
 static void addNodes(void) {
+#if 0
     int cnt = 0;
     char chunk[CHUNK_LEN];
     SYMTAB symtab;
@@ -63,9 +64,11 @@ static void addNodes(void) {
     assertNonZero(retrieveChunk(node.nameChunkNum, (unsigned char *)chunk));
     assertEqualInt(0, strcmp(chunk, "crate"));
     assertEqualInt(++cnt, symtab.cntNodes);
+#endif
 }
 
 static void retrieveNodes(void) {
+#if 0
     SYMTAB symtab;
     SYMTABNODE node;
 
@@ -93,5 +96,6 @@ static void retrieveNodes(void) {
 
     assertNonZero(searchSymtab(&symtab, &node, "crate"));
     assertEqualInt(6, node.xNode);
+#endif
 }
 

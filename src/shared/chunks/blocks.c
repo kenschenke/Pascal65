@@ -87,13 +87,13 @@ unsigned getTotalBlocks(void) {
 
 void initBlockStorage(void)
 {
-	char ret;
 	unsigned i, b;
 
 #ifdef __MEGA65__
 	pages = TOTAL_BLOCKS;
 	// memset(sharedBlock, 0, BLOCK_LEN);
 #elif defined(USE_EMD)
+	char ret;
 	static char emLoaded = 0;
 
 	if (!emLoaded) {

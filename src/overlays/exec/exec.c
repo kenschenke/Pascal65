@@ -19,11 +19,13 @@
 #include <symtab.h>
 #include <ovrlcommon.h>
 
-void getTokenForExecutor(EXECUTOR *pExec)
+void getTokenForExecutor(EXECUTOR * /*pExec*/)
 {
+#if 0
     pExec->pToken = getNextTokenFromIcode(pGlobalIcode);
     pExec->token = pExec->pToken->code;
     pExec->pNode = &pGlobalIcode->symtabNode;
+#endif
 }
 
 RTSTACK *rtstack_init(void)
@@ -54,8 +56,7 @@ void rtstack_push(RTSTACK *pStack, int value)
 
 EXECUTOR *executorInit(void)
 {
-    SYMTAB symtab;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     EXECUTOR *pExec = malloc(sizeof(EXECUTOR));
     if (pExec == NULL) {
@@ -70,13 +71,11 @@ EXECUTOR *executorInit(void)
         return NULL;
     }
 
-    retrieveChunk(globalSymtab, (unsigned char *)&symtab);
+    searchSymtab(globalSymtab, &node, "input");
+    pExec->inputNode = node.node.nodeChunkNum;
 
-    searchSymtab(&symtab, &node, "input");
-    pExec->inputNode = node.nodeChunkNum;
-
-    searchSymtab(&symtab, &node, "output");
-    pExec->outputNode = node.nodeChunkNum;
+    searchSymtab(globalSymtab, &node, "output");
+    pExec->outputNode = node.node.nodeChunkNum;
 
     return pExec;
 }
@@ -87,14 +86,15 @@ void freeExecutor(EXECUTOR *pExec)
     free(pExec);
 }
 
-void executorGoto(EXECUTOR *pExec, unsigned location)
+void executorGoto(EXECUTOR * /*pExec*/, unsigned /*location*/)
 {
-    gotoIcodePosition(pGlobalIcode, location);
+    // gotoIcodePosition(pGlobalIcode, location);
 }
 
-unsigned executorCurrentLocation(EXECUTOR *pExec)
+unsigned executorCurrentLocation(EXECUTOR * /*pExec*/)
 {
-    return getCurrentIcodeLocation(pGlobalIcode);
+    return 0;
+    // return getCurrentIcodeLocation(pGlobalIcode);
 }
 
 void executorFree(EXECUTOR *pExec)
@@ -106,7 +106,7 @@ void executorGo(EXECUTOR *pExec)
 {
     // Reset the icode to the beginning
     // and extract the first token
-    resetIcodePosition(pGlobalIcode);
+    // resetIcodePosition(pGlobalIcode);
     getTokenForExecutor(pExec);
 
     // Loop to execute statements until the end of the program.

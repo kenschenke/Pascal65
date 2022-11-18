@@ -1,19 +1,14 @@
+# Source code formatter
+
 SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
 DRVDIR := ../../../drv
-PARSEROVRLSRC := ../../overlays/parser
-EXECOVRLSRC := ../../overlays/exec
-SHAREDSRCDIR = ../../shared
-SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
-SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
-LIBCSRCDIR = ../../mega65-libc/src
-TARGETSRCDIR = $(SRCDIR)/$(TARGET)
 
-PROGRAM := interpreter
+LIBCSRCDIR = ../../mega65-libc/src
+
+PROGRAM := prettyprint
 D81FILE := $(BINDIR)/$(PROGRAM).d81
-PARSEROVRLFILE := $(PROGRAM).1
-EXECOVRLFILE := $(PROGRAM).2
 PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := c64
 CC65TARGET = c64
@@ -23,39 +18,37 @@ mega65_EMUCMD := xmega65 -besure -8
 EMUCMD = $($(TARGET)_EMUCMD)
 DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 
+SHAREDSRCDIR = ../../shared
+SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
+SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
+PARSERSRCDIR = ../../overlays/parser
+FMTSRCDIR = ../../overlays/formatter
+
 c64_CFLAGS =
 c128_CFLAGS =
 mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../mega65-libc/include
 CONFIG := cfg-$(TARGET).cfg
 CFLAGS = $($(TARGET)_CFLAGS) -W error -D MAINPAS -O -I ../../include
 ASFLAGS = --asm-include-dir ../../asminc
-LDFLAGS = --mapfile interpreter.map -C $(CONFIG)
+LDFLAGS = --mapfile prettyprint.map -C $(CONFIG)
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
-SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
-SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
+SOURCES += $(wildcard $(PARSERSRCDIR)/*.c)
+SOURCES += $(wildcard $(PARSERSRCDIR)/*.s)
+SOURCES += $(wildcard $(FMTSRCDIR)/*.c)
+SOURCES += $(wildcard $(FMTSRCDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
 ifeq ($(TARGET),mega65)
 SOURCES += $(LIBCSRCDIR)/memory.c
 endif
 
-PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
-PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
-
-EXECOVRLSRCS := $(wildcard $(EXECOVRLSRC)/*.c)
-EXECOVRLSRCS += $(wildcard $(EXECOVRLSRC)/*.s)
-
-CONFIG := cfg-$(TARGET).cfg
-
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
-OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(PARSEROVRLSRCS)))))
-OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(EXECOVRLSRCS)))))
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -75,44 +68,28 @@ vpath %.s $(SRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath %.c $(TARGETSRCDIR)
+vpath %.c $(PARSERSRCDIR)
 $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
-vpath %.s $(TARGETSRCDIR)
+vpath %.s $(PARSERSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath $(PARSEROVRLSRC)/%.c
-$(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath $(PARSEROVRLSRC)/%.s
-$(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath $(EXECOVRLSRC)/%.c
-$(OBJDIR)/%.o: $(EXECOVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath $(EXECOVRLSRC)/%.s
-$(OBJDIR)/%.o: $(EXECOVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath $(LIBCSRCDIR)/%.c
-$(OBJDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJDIR)
+vpath %.c $(FMTSRCDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
-vpath $(LIBCSRCDIR)/%.s
-$(OBJDIR)/%.o: $(LIBCSRCDIR)/%.s | $(OBJDIR)
+vpath %.s $(FMTSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath $(SHAREDSRCDIR)/%.c
-$(OBJDIR)/%.o: $(SHAREDSRCDIR)/%.c | $(OBJDIR)
+vpath %.c $(SHAREDSRCDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
-vpath $(SHAREDSRCDIR)/%.s
-$(OBJDIR)/%.o: $(SHAREDSRCDIR)/%.s | $(OBJDIR)
+vpath %.s $(SHAREDSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath %.c $(SHAREDCHUNKSDIR)
@@ -131,6 +108,17 @@ vpath %.s $(SHAREDICODEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath %.c $(LIBCSRCDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(LIBCSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+$(BINDIR)/$(PROGRAM): $(OBJECTS)
+	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
+
 abortmsgs.petscii: $(SHAREDSRCDIR)/abortmsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -text -o abortmsgs.petscii
 
@@ -140,38 +128,21 @@ errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
 runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
 
-$(BINDIR)/$(PROGRAM): $(OBJECTS)
-	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
-
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii expr1.in input.pas decl.pas declerrs.pas synchek2.pas test.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii test.pas
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
-	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write expr1.in expr1.in,seq \
-	-write input.pas input.pas,seq \
-	-write decl.pas decl.pas,seq \
-	-write declerrs.pas declerrs.pas,seq \
-	-write test.pas test.pas,seq \
-	-write synchek2.pas synchek2.pas,seq
+	-write test.pas test.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii expr1.in input.pas decl.pas declerrs.pas synchek2.pas test.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii test.pas
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
-	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write expr1.in expr1.in,seq \
-	-write input.pas input.pas,seq \
-	-write decl.pas decl.pas,seq \
-	-write declerrs.pas declerrs.pas,seq \
-	-write synchek2.pas synchek2.pas,seq \
 	-write test.pas test.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
@@ -182,6 +153,10 @@ clean:
 	$(RM) $(PROGRAM)
 	$(RM) $(BINDIR)/*
 	$(RM) $(D81FILE)
+
+testprog:
+	rm -f obj/main.o
+	make -f tests/prog/Makefile
 
 run: $(D81FILE)
 	$(EMUCMD) $<

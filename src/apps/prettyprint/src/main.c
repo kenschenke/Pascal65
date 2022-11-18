@@ -22,13 +22,22 @@
 #include <device.h>
 #include <common.h>
 #include <blocks.h>
+#include <formatter.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
 
+#if 1
+extern char traceSym;
+#endif
+
+#if 1
+char failCode;
+#endif
+
 void main()
 {
-    EXECUTOR *pExec;
+    CHUNKNUM programId;
 
 #ifdef __C128__
     fast();
@@ -49,32 +58,21 @@ void main()
 #endif
 
     initBlockStorage();
+    initCommon();
+    initParser();
 
-    // load the parser
-    printf("Loading parser module\n");
-    if (loadfile("interpreter.1")) {
-        initCommon();
-        initParser();
-
-        parse("test.pas");
-    }
-
-    // If there were no syntax errors, convert the symbol tables.
-    // and create and invoke the backend executor.
-    if (errorCount > 0 || isFatalError) {
-        printf("Errors found in parsing -- exiting\n");
+    programId = parse("test.pas");
+    
+    if (fmtOpen("output.pas") == 0) {
+        printf("Unable to open output\n");
         return;
     }
-    // convertAllSymtabs();
-    
-    printf("Loading executor module\n");
-    if (loadfile("interpreter.2")) {
-        pExec = executorInit();
-        executorGo(pExec);
-        // freeAllSymtabs();
 
-        executorFree(pExec);
-    }
+    printf("Formatting output\n");
+    fmtSource(programId);
+    fmtClose();
+
+    printf("Done\n");
 }
 
 unsigned char loadfile(const char *name)
@@ -91,9 +89,10 @@ void log(const char *module, const char *message)
     printf("%s: %s\n", module, message);
 }
 
-void logError(const char *message, unsigned lineNumber, TErrorCode /*ec*/)
+void logError(const char *message, unsigned lineNumber, TErrorCode code)
 {
-    printf("*** ERROR: %s -- line %d\n", message, lineNumber);
+    printf("*** ERROR: %s -- line %d -- code %d\n", message, lineNumber, code);
+    exit(0);
 }
 
 void logFatalError(const char *message)

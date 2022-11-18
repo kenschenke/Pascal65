@@ -1,7 +1,7 @@
 SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
-DRVDIR := drv
+DRVDIR := ../../../drv
 
 PROGRAM := memtest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
