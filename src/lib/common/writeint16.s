@@ -1,19 +1,10 @@
 .include "cbm_kernal.inc"
 
 .importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
-.import tensTable, intOp1, intOp2, spcl32768
+.import tensTable, intBuf, intOp1, intOp2, spcl32768
 .import isNegInt16, invertInt16, leftpad, popax
 
-.export writeInt16, _printInt
-
-.proc _printInt
-    sta tmp1 ; padding
-    jsr popax
-    sta intOp1
-    stx intOp1 + 1
-    lda tmp1
-    jmp writeInt16
-.endproc
+.export writeInt16
 
 ; This routine writes a signed 16-bit integer to the output device
 ; as a series of PETSCII characters.  If bit 7 of the high byte is
@@ -26,7 +17,7 @@
 ; ptr1, ptr2, tmp1, tmp2, tmp3, and tmp4 are trashed as well as intOp2.
 ;
 ; ptr1 - used for accessing the tensTable
-; ptr2 - pointer to buf
+; ptr2 - pointer to intBuf
 ; tmp1 - current digit
 ; tmp2 - current offset into tensTable
 ; tmp3 - set to 0 until the first non-zero digit is seen in the number.
@@ -35,12 +26,6 @@
 
 NUM_WORDTBL = 8     ; four entries * 2 bytes
 
-.bss
-
-; This is used to store the characters for the number before
-; writing to the output.
-buf: .res 7
-
 .code
 
 ; number to write is in intOp1
@@ -48,9 +33,9 @@ buf: .res 7
 .proc writeInt16
     ; See if the number is -32768 : a special case.
     sta tmp4
-    lda #<buf
+    lda #<intBuf
     sta ptr2
-    lda #>buf
+    lda #>intBuf
     sta ptr2 + 1
     jsr clearbuf
     lda intOp1
@@ -163,10 +148,10 @@ buf: .res 7
     sta (ptr2),y
 
 @Done:
-    ; count the length of the null-terminated string in buf
-    lda #<buf
+    ; count the length of the null-terminated string in intBuf
+    lda #<intBuf
     sta ptr2
-    lda #>buf
+    lda #>intBuf
     sta ptr2 + 1
     ldy #0
 @L1:

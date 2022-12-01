@@ -2,7 +2,7 @@
 
 .import leftpad
 .importzp tmp1, tmp2, ptr1
-.export writebool
+.export writeBool
 
 .data
 
@@ -14,7 +14,7 @@ FALSE: .asciiz "FALSE"
 ; Write boolean TRUE or FALSE to output.
 ; Boolean value in .A
 ; Field width in .X
-.proc writebool
+.proc writeBool
     sta tmp1
     stx tmp2
     ldx #5

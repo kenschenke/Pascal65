@@ -1,6 +1,6 @@
 ; Placeholder for 16-bit integer operations
 
-.export tensTable, spcl32768, intOp1, intOp2, swapInt16, absInt16
+.export tensTable, spcl32768, intBuf, intOp1, intOp2, swapInt16, absInt16
 .export absInt16, swapInt16
 .export isNegInt16, invertInt16
 
@@ -11,6 +11,7 @@ tensTable:
     .word 1000
     .word 100
     .word 10
+    .word 1
 
 spcl32768:
     .asciiz "-32768"
@@ -20,6 +21,7 @@ spcl32768:
 ; Operands for 16-bit integer operations
 intOp1: .res 2
 intOp2: .res 2
+intBuf: .res 7
 
 .code
 

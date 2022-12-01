@@ -7,6 +7,12 @@ struct TestList
     int result;
 };
 
+struct ReadTest
+{
+    int num;
+    char *str;
+};
+
 struct TestList geTests[] = {
     {  1024,   2048, 0},
     { -2048,  -1024, 0},
@@ -166,6 +172,25 @@ struct TestList modTests[] = {
     {    12,     11,      1},
 };
 
+struct ReadTest readTests[] = {
+    {1, "1"},
+    {12, "12"},
+    {123, "123"},
+    {1234, "1234"},
+    {12345, "12345"},
+    {-1, "-1"},
+    {-12, "-12"},
+    {-123, "-123"},
+    {-1234, "-1234"},
+    {-12345, "-12345"},
+    {0, "0"},
+    {32767, "32767"},
+    {-32768, "-32768"},
+    {123, "123 45"},
+    {0, "+123"},
+    {12, "12z34"},
+};
+
 typedef int (*tester)(int, int);
 
 int testEq(int num1, int num2);
@@ -173,6 +198,8 @@ int testGe(int num1, int num2);
 int testGt(int num1, int num2);
 int testLe(int num1, int num2);
 int testLt(int num1, int num2);
+
+void testGetLine(void);
 
 int testAddInt16(int num1, int num2);
 int testDivInt16(int num1, int num2);
@@ -182,6 +209,9 @@ int testMultInt16(int num1, int num2);
 
 void testWriteBool(char value, char width);
 void testWriteChar(char value, char width);
+void testWriteInt16(int num, char width);
+
+int testReadInt16(char *p);
 
 void testFunc(tester testFn, struct TestList *tests, unsigned nTests)
 {
@@ -196,8 +226,26 @@ void testFunc(tester testFn, struct TestList *tests, unsigned nTests)
     }
 }
 
+void testReads()
+{
+    unsigned i;
+    int ret;
+
+    for (i = 0; i < sizeof(readTests)/sizeof(readTests[0]); ++i) {
+        ret = testReadInt16(readTests[i].str);
+        if (ret != readTests[i].num) {
+            printf("Test %d : expected %d got %d\n", i + 1, readTests[i].num, ret);
+        }
+    }
+}
+
 void main()
 {
+    int num;
+
+#if 0
+    unsigned int ch;
+
     printf("Testing greater than\n");
     testFunc(testGt, gtTests, sizeof(gtTests)/sizeof(gtTests[0]));
 
@@ -238,6 +286,34 @@ void main()
     printf("Test Char: ");
     testWriteChar('K', 3);
     printf("\n");
+
+    for (ch = 32; ch <= 127; ++ch)
+        printf("%c", ch);
+
+    printf("\n\n");
+
+    for (ch = 161; ch <= 255; ++ch)
+        printf("%c", ch);
+
+    extern char getlineBuf;
+    extern unsigned char getlineUsed;
+    printf("Enter your name: ");
+    testGetLine();
+    printf("You entered: \"%.*s\"\n", getlineUsed, &getlineBuf);
+#endif
+
+#if 0
+    testWriteInt16(-32768, 10);
+    printf("\n");
+    testWriteInt16(32767, 10);
+    printf("\n");
+    testWriteInt16(-1234, 10);
+    printf("\n");
+    testWriteInt16(12, 10);
+    printf("\n");
+#endif
+
+    testReads();
 
     printf("\nDone running tests\n");
 

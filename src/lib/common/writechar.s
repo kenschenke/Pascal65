@@ -1,12 +1,12 @@
 .include "cbm_kernal.inc"
 
 .import leftpad
-.export writechar
+.export writeChar
 
 ; Write character output.
 ; Character in .A
 ; Field width in .X
-.proc writechar
+.proc writeChar
     pha
     txa
     ldx #1
