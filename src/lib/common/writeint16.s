@@ -2,7 +2,7 @@
 
 .importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
 .import tensTable, intBuf, intOp1, intOp2, spcl32768
-.import isNegInt16, invertInt16, leftpad, popax
+.import isNegInt16, invertInt16, leftpad, popax, printz
 
 .export writeInt16
 
@@ -165,15 +165,9 @@ NUM_WORDTBL = 8     ; four entries * 2 bytes
     lda tmp4
     jsr leftpad
     ; print the buffer
-    ldy #0
-@L2:
-    lda (ptr2),y
-    beq @Ret
-    jsr CHROUT
-    iny
-    jmp @L2
-@Ret:
-    rts
+    lda #<intBuf
+    ldx #>intBuf
+    jmp printz
 .endproc
 
 .proc clearbuf
