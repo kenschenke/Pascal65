@@ -18,4 +18,15 @@ void testRetrieveChunk(void);
 void testReusingFreedChunks(void);
 void testFreeingAllChunksInABlock(void);
 
+// Dynamic Memory Buffers
+void testAllocateSmallBuffer(void);
+void testAllocateBufferOfOneChunkSize(void);
+void testAllocateBufferOfTwoChunks(void);
+void testAllocateBufferTwice(void);
+void testExpandBuffer(void);
+void testFreeBuffer(void);
+void testSetBufferPosition(void);
+void testBufferReadAndWrite(void);
+void testBufferMultiByteReadAndWrite(void);
+
 #endif // end of MEMTEST_H

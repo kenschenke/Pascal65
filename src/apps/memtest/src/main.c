@@ -5,6 +5,7 @@
 
 int main()
 {
+#if 0
     initBlockStorage();
     testAllocateAllBlocks();
 
@@ -37,6 +38,34 @@ int main()
 
     initBlockStorage();
     testFreeingAllChunksInABlock();
+#endif
+
+    initBlockStorage();
+    testAllocateSmallBuffer(); 
+    
+    initBlockStorage();
+    testAllocateBufferOfOneChunkSize();
+
+    initBlockStorage();
+    testAllocateBufferOfTwoChunks();
+
+    initBlockStorage();
+    testAllocateBufferTwice();
+
+    initBlockStorage();
+    testExpandBuffer();
+
+    initBlockStorage();
+    testFreeBuffer();
+
+    initBlockStorage();
+    testSetBufferPosition();
+
+    initBlockStorage();
+    testBufferReadAndWrite();
+
+    initBlockStorage();
+    testBufferMultiByteReadAndWrite();
 
     // if (wasBankMemoryCorrupted()) {
     //     printf("*********** Bank memory got corrupted ************\n");

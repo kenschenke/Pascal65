@@ -1,4 +1,5 @@
 .import eqInt16, geInt16, gtInt16, leInt16, ltInt16
+.import geUint16, gtUint16, leUint16, ltUint16
 .import addInt16, divInt16, modInt16, multInt16, subInt16
 .import writeBool, writeChar, writeInt16, readInt16
 .import intOp1, intOp2, intBuf
@@ -12,6 +13,7 @@
 .export _testLt, _testEq, _testGt, _testLe, _testGe, _testGetLine
 .export _testAddInt16, _testDivInt16, _testSubInt16, _testModInt16, _testMultInt16
 .export _testWriteBool, _testWriteChar, _testWriteInt16, _testReadInt16
+.export _testUintGe, _testUintGt, _testUintLe, _testUintLt
 
 .proc _testAddInt16
     sta intOp2
@@ -43,7 +45,9 @@
     jsr popax
     sta intOp1
     stx intOp1 + 1
-    jmp eqInt16
+    jsr eqInt16
+    ldx #0
+    rts
 .endproc
 
 .proc _testGe
@@ -52,7 +56,9 @@
     jsr popax
     sta intOp1
     stx intOp1 + 1
-    jmp geInt16
+    jsr geInt16
+    ldx #0
+    rts
 .endproc
 
 .proc _testGetLine
@@ -65,7 +71,9 @@
     jsr popax
     sta intOp1
     stx intOp1 + 1
-    jmp gtInt16
+    jsr gtInt16
+    ldx #0
+    rts
 .endproc
 
 .proc _testLe
@@ -74,7 +82,9 @@
     jsr popax
     sta intOp1
     stx intOp1 + 1
-    jmp leInt16
+    jsr leInt16
+    ldx #0
+    rts
 .endproc
 
 .proc _testLt
@@ -83,7 +93,53 @@
     jsr popax
     sta intOp1
     stx intOp1 + 1
-    jmp ltInt16
+    jsr ltInt16
+    ldx #0
+    rts
+.endproc
+
+.proc _testUintGe
+    sta intOp2
+    stx intOp2 + 1
+    jsr popax
+    sta intOp1
+    stx intOp1 + 1
+    jsr geUint16
+    ldx #0
+    rts
+.endproc
+
+.proc _testUintGt
+    sta intOp2
+    stx intOp2 + 1
+    jsr popax
+    sta intOp1
+    stx intOp1 + 1
+    jsr gtUint16
+    ldx #0
+    rts
+.endproc
+
+.proc _testUintLe
+    sta intOp2
+    stx intOp2 + 1
+    jsr popax
+    sta intOp1
+    stx intOp1 + 1
+    jsr leUint16
+    ldx #0
+    rts
+.endproc
+
+.proc _testUintLt
+    sta intOp2
+    stx intOp2 + 1
+    jsr popax
+    sta intOp1
+    stx intOp1 + 1
+    jsr ltUint16
+    ldx #0
+    rts
 .endproc
 
 .proc _testModInt16

@@ -5,7 +5,6 @@
 ; Compare intOp1 and intOp2 for equality.
 ; .A contains 1 if equal, 0 otherwise
 .proc eqInt16
-    ldx #0
     lda intOp1
     cmp intOp2
     bne L1
@@ -33,7 +32,6 @@ L1:
 ; Compare if intOp1 is less than intOp2
 ; .A contains 1 if intOp1 < intOp2, 0 otherwise.
 .proc ltInt16
-    ldx #0
     lda intOp1
     cmp intOp2
     lda intOp1 + 1
@@ -63,7 +61,6 @@ L1:
 ; Compare if intOp1 is greater than or equal to intOp2.
 ; .A contains 1 if intOp1 >= intOp2, 0 otherwise.
 .proc geInt16
-    ldx #0
     lda intOp1
     cmp intOp2
     lda intOp1 + 1

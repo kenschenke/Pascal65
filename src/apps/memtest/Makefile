@@ -16,6 +16,8 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 
 SHAREDSRCDIR = ../../shared
 CHUNKSSRCDIR = ../../shared/chunks
+MEMBUFSRCDIR = ../../shared/membuf
+LIBSRCDIR = ../../lib/common
 
 c64_CFLAGS =
 c128_CFLAGS =
@@ -28,8 +30,12 @@ SOURCES := $(wildcard $(SRCDIR)/*.c)
 ifeq ($(TARGET),mega65)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
 endif
+SOURCES += $(SRCDIR)/flushcache.s
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.c)
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.s)
+SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.c)
+SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.s)
+SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
 SOURCES += $(SHAREDSRCDIR)/tests.c
 
 ifeq ($(TARGET),mega65)
@@ -73,6 +79,18 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(CHUNKSSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.c $(MEMBUFSRCDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(MEMBUFSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.s $(LIBSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

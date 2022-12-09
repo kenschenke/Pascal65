@@ -44,6 +44,16 @@ void assertEqualChunkNumX(CHUNKNUM expected, CHUNKNUM actual,
 	}
 }
 
+void assertNonZeroChunkNumX(CHUNKNUM actual,
+	const char *file, const char *test, int line)
+{
+	if (actual == 0) {
+		errorHeader(file, test, line);
+		printf("Expected %04X to be non-zero\n", actual);
+		exit(5);
+	}
+}
+
 void assertEqualIntX(int expected, int actual,
 	const char *file, const char *test, int line)
 {
