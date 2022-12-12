@@ -76,7 +76,7 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
         // but parse an expression anyway for error recovery.
         if (tokenCode == tcIdentifier) {
             findSymtabNode(&parmId, tokenString);
-            putSymtabNodeToIcode(Icode, &parmId.node);
+            putSymtabNodeToIcode(Icode, &parmId);
 
             parseVariable(Icode, &parmId);
             memcpy(&parmType, &parmId.type, sizeof(TTYPE));

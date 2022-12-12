@@ -48,12 +48,12 @@ void checkIcodeBounds(CHUNKNUM chunkNum, int size);
 void flushIcodeCache(void);
 void freeIcode(CHUNKNUM chunkNum);
 unsigned getCurrentIcodeLocation(CHUNKNUM chunkNum);
-void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, SYMTABNODE *pNode);
+void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, SYMBNODE *pNode);
 void gotoIcodePosition(CHUNKNUM chunkNum, unsigned position);
 void initIcodeCache(void);
 void insertLineMarker(CHUNKNUM chunkNum);
 void makeIcode(CHUNKNUM *newChunkNum);
-void putSymtabNodeToIcode(CHUNKNUM chunkNum, SYMTABNODE *pNode);
+void putSymtabNodeToIcode(CHUNKNUM chunkNum, SYMBNODE *pNode);
 void putTokenToIcode(CHUNKNUM chunkNum, TTokenCode tc);
 void resetIcodePosition(CHUNKNUM chunkNum);
 

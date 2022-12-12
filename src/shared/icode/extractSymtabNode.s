@@ -15,7 +15,7 @@
 
 .export extractSymtabNode
 
-.import pullDataFromIcode, _retrieveChunk
+.import pullDataFromIcode, _retrieveChunk, _loadSymbNode
 .import popax, pushax
 
 .bss
@@ -26,7 +26,7 @@ hdrChunkNum: .res 2
 
 .code
 
-; char extractSymtabNode(CHUNKNUM hdrChunkNum, SYMTABNODE *pNode)
+; char extractSymtabNode(CHUNKNUM hdrChunkNum, SYMBNODE *pNode)
 .proc extractSymtabNode
     ; Store the pNode parameter
     sta pNode
@@ -57,6 +57,6 @@ hdrChunkNum: .res 2
     ; Second parameter
     lda pNode
     ldx pNode + 1
-    jmp _retrieveChunk
+    jmp _loadSymbNode
 
 .endproc

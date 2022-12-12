@@ -5,15 +5,14 @@
 void fmtPrintBlock(CHUNKNUM routineId) {
     DEFN defn;
     TOKEN token;
-    SYMTABNODE node;
+    SYMBNODE node;
 
     // First print the definitions and declarations.
     fmtPrintDeclarations(routineId);
     fmtPutLine(" ");
 
     // Then print the statements in the icode.
-    retrieveChunk(routineId, (unsigned char *)&node);
-    retrieveChunk(node.defnChunk, (unsigned char *)&defn);
+    loadSymbNode(routineId, &node);
     resetIcodePosition(defn.routine.Icode);
     fmtPrintCompound(defn.routine.Icode, &node, &token);
 }

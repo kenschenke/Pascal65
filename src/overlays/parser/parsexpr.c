@@ -52,7 +52,7 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
             // Search for the identifier and enter if necessary.
             // Append the symbol table node handle to the icode.
             symtabStackFind(tokenString, &node);
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
             if (node.defn.how == dcUndefined) {
                 node.defn.how = dcVariable;
                 setType(&node.node.typeChunk, dummyType);
@@ -99,7 +99,7 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
             }
 
             // Append the symbol table node handle to the icode.
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
             resultTypeChunk = node.node.typeChunk;
             getTokenAppend(Icode);
             break;
@@ -133,7 +133,7 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
             }
 
             // Append the symbol table node to the icode
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
             getTokenAppend(Icode);
             break;
 
@@ -178,7 +178,7 @@ CHUNKNUM parseField(CHUNKNUM Icode, CHUNKNUM recordTypeChunkNum) {
             fieldId.node.nodeChunkNum = 0;
             Error(errInvalidField);
         }
-        putSymtabNodeToIcode(Icode, &fieldId.node);
+        putSymtabNodeToIcode(Icode, &fieldId);
 
         getTokenAppend(Icode);
         varType = fieldId.node.nodeChunkNum ? fieldId.node.typeChunk : dummyType;

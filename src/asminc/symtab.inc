@@ -23,6 +23,16 @@
     .res 5          ; unused space
 .endstruct
 
+.struct SYMBNODE
+    node .res 23
+    defn .res 23
+    type .res 23
+.endstruct
+
 .if .sizeof(SYMTABNODE) <> CHUNK_LEN
     .error "SYMTABNODE must be CHUNK_LEN bytes in size"
+.endif
+
+.if .sizeof(SYMBNODE) <> CHUNK_LEN * 3
+    .error "SYMBNODE must be CHUNK_LEN * 3 bytes in size"
 .endif

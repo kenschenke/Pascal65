@@ -43,18 +43,18 @@ void fmtPrintVarsOrFields(CHUNKNUM variableId);
 void fmtPrintVariableDeclarations(CHUNKNUM variableId);
 
 // statements
-void fmtPrintAssignmentOrCall(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintCASE(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintCompound(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintFOR(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintIF(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintREPEAT(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintStatement(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintStatementList(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken, TTokenCode terminator);
-void fmtPrintWHILE(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
+void fmtPrintAssignmentOrCall(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintCASE(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintCompound(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintFOR(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintIF(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintREPEAT(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintStatement(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintStatementList(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken, TTokenCode terminator);
+void fmtPrintWHILE(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
 
 // expressions
-void fmtPrintExpression(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
-void fmtPrintIdentifier(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken);
+void fmtPrintExpression(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
+void fmtPrintIdentifier(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken);
 
 #endif // end of FORMATTER_H

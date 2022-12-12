@@ -10,7 +10,7 @@ void testIcodeGotoPosition(void) {
     TOKEN token;
     CHUNKNUM testChunkNum;
     CHUNKNUM symtab;
-    SYMTABNODE symtabNode;
+    SYMBNODE symtabNode;
 
     DECLARE_TEST("testIcodeGotoPosition");
 
@@ -36,16 +36,16 @@ void testIcodeGotoPosition(void) {
         assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
 
         if (i == 4) {
-            testChunkNum = symtabNode.nodeChunkNum;
+            testChunkNum = symtabNode.node.nodeChunkNum;
         }
     }
 
-    memset(&symtabNode, 0, sizeof(SYMTABNODE));
+    memset(&symtabNode, 0, sizeof(SYMBNODE));
     gotoIcodePosition(Icode, testPos);
     assertEqualInt(testPos, getCurrentIcodeLocation(Icode));
     getNextTokenFromIcode(Icode, &token, &symtabNode);
     assertEqualInt(tcIdentifier, token.code);
-    assertEqualChunkNum(testChunkNum, symtabNode.nodeChunkNum);
+    assertEqualChunkNum(testChunkNum, symtabNode.node.nodeChunkNum);
     assertEqualInt(0, strcmp("ident05", token.string));
     
 }
@@ -54,7 +54,7 @@ void testIcodePosition(void) {
     CHUNKNUM Icode;
     unsigned myPos = 0;
     CHUNKNUM symtab;
-    SYMTABNODE symtabNode;
+    SYMBNODE symtabNode;
 
     DECLARE_TEST("testIcodePosition");
 

@@ -25,7 +25,7 @@ chunkNum: .res 2
 
 .code
 
-; void putSymtabNodeToIcode(CHUNKNUM chunkNum, SYMTABNODE *pNode)
+; void putSymtabNodeToIcode(CHUNKNUM chunkNum, SYMBNODE *pNode)
 .proc _putSymtabNodeToIcode
     ; Store the pNode parameter
     sta pNode

@@ -209,7 +209,7 @@ void parseActualParm(CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode) {
     //                       the same type as the formal parameter.
     else if (tokenCode == tcIdentifier) {
         findSymtabNode(&actualNode, tokenString);
-        putSymtabNodeToIcode(Icode, &actualNode.node);
+        putSymtabNodeToIcode(Icode, &actualNode);
         
         exprTypeChunk = parseVariable(Icode, &actualNode);
         if (node.node.typeChunk != exprTypeChunk) {

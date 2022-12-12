@@ -30,11 +30,11 @@ hdrChunkNum: .res 2
 pNode: .res 2
 pToken: .res 2
 pString: .res 2
-symtabNode: .res .sizeof(SYMTABNODE)
+symtabNode: .res .sizeof(SYMBNODE)
 
 .code
 
-; void getNextTokenFromIcode(CHUNKNUM hdrChunkNum, TOKEN *pToken, SYMTABNODE *pNode)
+; void getNextTokenFromIcode(CHUNKNUM hdrChunkNum, TOKEN *pToken, SYMBNODE *pNode)
 .proc _getNextTokenFromIcode
     ; Save the third parameter
     sta pNode
@@ -146,7 +146,7 @@ symtabNode: .res .sizeof(SYMTABNODE)
     sta ptr2
     lda #>symtabNode
     sta ptr2 + 1
-    ldy #.sizeof(SYMTABNODE)
+    ldy #.sizeof(SYMBNODE)
     dey
 @CopyLoop:
     lda (ptr2),y

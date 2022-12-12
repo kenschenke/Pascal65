@@ -123,7 +123,7 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
                 Error(errUndefinedIdentifier);
             }
             retrieveChunk(node.node.typeChunk, (unsigned char *)&labelType);
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
 
             if (node.defn.how != dcUndefined) {
                 if (labelType.form == fcSubrange && labelType.subrange.baseType) {
@@ -159,7 +159,7 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
                 node.defn.constant.value.integer = tokenValue.integer;
                 saveSymbNode(&node);
             }
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
 
             getTokenAppend(Icode);
             break;
@@ -177,7 +177,7 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
                 node.defn.constant.value.character = tokenString[1];
                 saveSymbNode(&node);
             }
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
 
             getTokenAppend(Icode);
             break;
@@ -221,7 +221,7 @@ void parseFOR(CHUNKNUM Icode) {
             retrieveChunk(integerType, (unsigned char *)&controlType);
         }
 
-        putSymtabNodeToIcode(Icode, &node.node);
+        putSymtabNodeToIcode(Icode, &node);
         getTokenAppend(Icode);
     } else {
         Error(errMissingIdentifier);
@@ -305,7 +305,7 @@ void parseStatement(CHUNKNUM Icode)
             // necessary.  Append the symbol table node handle
             // to the icode.
             findSymtabNode(&node, tokenString);
-            putSymtabNodeToIcode(Icode, &node.node);
+            putSymtabNodeToIcode(Icode, &node);
 
             // Based on how the identifier is defined,
             // parse an assignment statement or procedure call.

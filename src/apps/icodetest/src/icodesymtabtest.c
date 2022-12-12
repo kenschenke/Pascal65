@@ -7,7 +7,7 @@ void testIcodeSymtabNode(void) {
     unsigned myPos = 0;
     CHUNKNUM symtab;
     CHUNKNUM chunkNum;
-    SYMTABNODE symtabNode;
+    SYMBNODE symtabNode;
     ICODE hdrChunk;
     TOKEN token;
 
@@ -31,7 +31,7 @@ void testIcodeSymtabNode(void) {
     // Add a symbol table node
     assertNonZero(makeSymtab(&symtab));
     assertNonZero(enterSymtab(symtab, &symtabNode, "mynode", dcUndefined));
-    chunkNum = symtabNode.nodeChunkNum;
+    chunkNum = symtabNode.node.nodeChunkNum;
     putSymtabNodeToIcode(Icode, &symtabNode);
     myPos += sizeof(CHUNKNUM);
     assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
@@ -43,10 +43,10 @@ void testIcodeSymtabNode(void) {
     currentLineNumber = 100;
 
     // Read the symbol table node back in
-    memset(&symtabNode, 0, sizeof(SYMTABNODE));
+    memset(&symtabNode, 0, sizeof(SYMBNODE));
     getNextTokenFromIcode(Icode, &token, &symtabNode);
     assertEqualInt(1, currentLineNumber);
-    assertEqualChunkNum(chunkNum, symtabNode.nodeChunkNum);
+    assertEqualChunkNum(chunkNum, symtabNode.node.nodeChunkNum);
 
     freeIcode(Icode);
 }

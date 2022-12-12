@@ -2,7 +2,7 @@
 #include <icode.h>
 #include <parscommon.h>
 
-void fmtPrintAssignmentOrCall(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintAssignmentOrCall(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     fmtPrintIdentifier(Icode, pNode, pToken);
 
     if (pToken->code == tcColonEqual) {
@@ -13,7 +13,7 @@ void fmtPrintAssignmentOrCall(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) 
     }
 }
 
-void fmtPrintCASE(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintCASE(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     fmtPut("CASE ");
 
     getNextTokenFromIcode(Icode, pToken, pNode);
@@ -47,7 +47,7 @@ void fmtPrintCASE(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     getNextTokenFromIcode(Icode, pToken, pNode);
 }
 
-void fmtPrintCompound(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintCompound(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     fmtPutLine("BEGIN");
     fmtIndent();
 
@@ -60,7 +60,7 @@ void fmtPrintCompound(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     getNextTokenFromIcode(Icode, pToken, pNode);
 }
 
-void fmtPrintExpression(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintExpression(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     char doneFlag = 0;  // non-zero if done with expression, 0 if note
 
     // Loop over the entire expresion
@@ -104,7 +104,7 @@ void fmtPrintExpression(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     } while (!doneFlag);
 }
 
-void fmtPrintFOR(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintFOR(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     fmtPut("FOR ");
 
     getNextTokenFromIcode(Icode, pToken, pNode);
@@ -128,7 +128,7 @@ void fmtPrintFOR(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
 static TTokenCode tlIdModStart[] = {tcLBracket, tcLParen, tcPeriod, tcDummy};
 static TTokenCode tlIdModEnd[] = {tcRBracket, tcRParen, tcDummy};
 
-void fmtPrintIdentifier(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintIdentifier(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     int saveMargin;
 
     fmtPut(pToken->string);
@@ -185,7 +185,7 @@ void fmtPrintIdentifier(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     }
 }
 
-void fmtPrintIF(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintIF(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     fmtPut("IF ");
 
     getNextTokenFromIcode(Icode, pToken, pNode);
@@ -207,7 +207,7 @@ void fmtPrintIF(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     }
 }
 
-void fmtPrintStatement(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintStatement(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     switch (pToken->code) {
         case tcIdentifier: fmtPrintAssignmentOrCall(Icode, pNode, pToken); break;
         case tcBEGIN:      fmtPrintCompound(Icode, pNode, pToken);         break;
@@ -226,7 +226,7 @@ void fmtPrintStatement(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     fmtPutLine("");
 }
 
-void fmtPrintREPEAT(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintREPEAT(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     int saveMargin;
 
     fmtPutLine("REPEAT");
@@ -244,13 +244,13 @@ void fmtPrintREPEAT(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
     fmtResetMargin(saveMargin);
 }
 
-void fmtPrintStatementList(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken, TTokenCode terminator) {
+void fmtPrintStatementList(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken, TTokenCode terminator) {
     while (pToken->code != terminator) {
         fmtPrintStatement(Icode, pNode, pToken);
     }
 }
 
-void fmtPrintWHILE(CHUNKNUM Icode, SYMTABNODE *pNode, TOKEN *pToken) {
+void fmtPrintWHILE(CHUNKNUM Icode, SYMBNODE *pNode, TOKEN *pToken) {
     int saveMargin;
 
     fmtPut("WHILE ");
