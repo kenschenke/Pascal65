@@ -88,13 +88,13 @@ void freeExecutor(EXECUTOR *pExec)
 
 void executorGoto(EXECUTOR * /*pExec*/, unsigned /*location*/)
 {
-    // gotoIcodePosition(pGlobalIcode, location);
+    // setMemBufPos(pGlobalIcode, location);
 }
 
 unsigned executorCurrentLocation(EXECUTOR * /*pExec*/)
 {
     return 0;
-    // return getCurrentIcodeLocation(pGlobalIcode);
+    // return getMemBufPos(pGlobalIcode);
 }
 
 void executorFree(EXECUTOR *pExec)
@@ -106,7 +106,7 @@ void executorGo(EXECUTOR *pExec)
 {
     // Reset the icode to the beginning
     // and extract the first token
-    // resetIcodePosition(pGlobalIcode);
+    // resetMemBufPosition(pGlobalIcode);
     getTokenForExecutor(pExec);
 
     // Loop to execute statements until the end of the program.

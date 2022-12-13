@@ -13,7 +13,7 @@ void parseBlock(SYMBNODE *pRoutineId) {
     resync(tlStatementStart, NULL, NULL);
     if (tokenCode != tcBEGIN) Error(errMissingBEGIN);
 
-    makeIcode(&pRoutineId->defn.routine.Icode);
+    allocMemBuf(&pRoutineId->defn.routine.Icode);
     saveSymbNodeDefn(pRoutineId);
     parseCompound(pRoutineId->defn.routine.Icode);
 }

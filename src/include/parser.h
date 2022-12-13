@@ -15,6 +15,7 @@
 
 #include <scanner.h>
 #include <icode.h>
+#include <membuf.h>
 #include <types.h>
 
 void initParser(void);

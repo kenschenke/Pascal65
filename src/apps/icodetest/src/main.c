@@ -28,19 +28,19 @@ void initStandardRoutines(void) {
 int main()
 {
     initBlockStorage();
-    initIcodeCache();
+    initMemBufCache();
     testIcodePosition();
 
     initBlockStorage();
-    initIcodeCache();
+    initMemBufCache();
     testIcodeGotoPosition();
 
     initBlockStorage();
-    initIcodeCache();
+    initMemBufCache();
     testIcodeToken();
 
     initBlockStorage();
-    initIcodeCache();
+    initMemBufCache();
     testIcodeSymtabNode();
 
     printf("Done with tests\n");

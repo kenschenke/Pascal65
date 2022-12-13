@@ -38,9 +38,3 @@ const char *symbolStrings[] = {
 };
 
 const TTokenCode mcLineMarker = ((TTokenCode) 127);
-
-ICODE cachedIcodeHdr;
-CHUNKNUM cachedIcodeHdrChunkNum;
-
-ICODE_CHUNK cachedIcodeData;
-CHUNKNUM cachedIcodeDataChunkNum;

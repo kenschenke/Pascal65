@@ -3,51 +3,50 @@
 #include <string.h>
 
 void testIcodeSymtabNode(void) {
-    CHUNKNUM Icode;
+    CHUNKNUM membuf;
     unsigned myPos = 0;
     CHUNKNUM symtab;
     CHUNKNUM chunkNum;
     SYMBNODE symtabNode;
-    ICODE hdrChunk;
     TOKEN token;
 
     DECLARE_TEST("testIcodeSymtabNode");
 
-    makeIcode(&Icode);
-    assertNonZero(Icode);
-    assertEqualInt(0, getCurrentIcodeLocation(Icode));
+    allocMemBuf(&membuf);
+    assertNonZeroChunkNum(membuf);
+    assertEqualInt(0, getMemBufPos(membuf));
 
     // Write an identifier token
-    putTokenToIcode(Icode, tcIdentifier);
+    putTokenToIcode(membuf, tcIdentifier);
     ++myPos;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Insert a line marker
     currentLineNumber = 1;
-    insertLineMarker(Icode);
+    insertLineMarker(membuf);
     myPos += 3;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Add a symbol table node
     assertNonZero(makeSymtab(&symtab));
     assertNonZero(enterSymtab(symtab, &symtabNode, "mynode", dcUndefined));
     chunkNum = symtabNode.node.nodeChunkNum;
-    putSymtabNodeToIcode(Icode, &symtabNode);
+    putSymtabNodeToIcode(membuf, &symtabNode);
     myPos += sizeof(CHUNKNUM);
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Reset the position and read the node back
 
-    resetIcodePosition(Icode);
-    assertEqualInt(0, getCurrentIcodeLocation(Icode));
+    resetMemBufPosition(membuf);
+    assertEqualInt(0, getMemBufPos(membuf));
     currentLineNumber = 100;
 
     // Read the symbol table node back in
     memset(&symtabNode, 0, sizeof(SYMBNODE));
-    getNextTokenFromIcode(Icode, &token, &symtabNode);
+    getNextTokenFromIcode(membuf, &token, &symtabNode);
     assertEqualInt(1, currentLineNumber);
     assertEqualChunkNum(chunkNum, symtabNode.node.nodeChunkNum);
 
-    freeIcode(Icode);
+    freeMemBuf(membuf);
 }
 

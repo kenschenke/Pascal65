@@ -10,12 +10,11 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
-.include "icode.inc"
 .include "symtab.inc"
 
 .export extractSymtabNode
 
-.import pullDataFromIcode, _retrieveChunk, _loadSymbNode
+.import _readFromMemBuf, _retrieveChunk, _loadSymbNode
 .import popax, pushax
 
 .bss
@@ -47,7 +46,7 @@ hdrChunkNum: .res 2
     jsr pushax
     lda #2
     ldx #0
-    jsr pullDataFromIcode
+    jsr _readFromMemBuf
 
     ; Call retrieveChunk
     ; First parameter

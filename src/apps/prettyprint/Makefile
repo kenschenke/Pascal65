@@ -21,8 +21,10 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
 SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
+SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
 PARSERSRCDIR = ../../overlays/parser
 FMTSRCDIR = ../../overlays/formatter
+LIBSRCDIR = ../../lib/common
 
 c64_CFLAGS =
 c128_CFLAGS =
@@ -42,8 +44,11 @@ SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
+SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
 ifeq ($(TARGET),mega65)
 SOURCES += $(LIBCSRCDIR)/memory.c
 endif
@@ -108,11 +113,23 @@ vpath %.s $(SHAREDICODEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath %.c $(SHAREDMEMBUFDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(SHAREDMEMBUFDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
 vpath %.c $(LIBCSRCDIR)
 $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(LIBCSRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.s $(LIBSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

@@ -10,12 +10,11 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
-.include "icode.inc"
 .include "symtab.inc"
 
 .export _putSymtabNodeToIcode
 
-.import _checkIcodeBounds, putDataToIcode, _errorCount
+.import _checkIcodeBounds, _writeToMemBuf, _errorCount
 .import popax, pushax
 
 .bss
@@ -51,18 +50,18 @@ chunkNum: .res 2
     jsr _checkIcodeBounds
 
     ; write node to icode
-    ; first parameter to _putDataToIcode
+    ; first parameter to _writeToMemBuf
     lda chunkNum
     ldx chunkNum + 1
     jsr pushax
-    ; second parameter to _putDataToIcode
+    ; second parameter to _writeToMemBuf
     lda pNode
     ldx pNode + 1
     jsr pushax
-    ; third parameter to _putDataToIcode
+    ; third parameter to _writeToMemBuf
     lda #2
     ldx #0
-    jsr putDataToIcode
+    jsr _writeToMemBuf
 
 @Done:
     rts

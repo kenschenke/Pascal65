@@ -10,6 +10,8 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
+.include "chunks.inc"
+
 .struct SYMTABNODE
     nodeChunkNum    .word
     leftChunkNum    .word

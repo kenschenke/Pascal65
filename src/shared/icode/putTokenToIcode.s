@@ -10,11 +10,9 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
-.include "icode.inc"
-
 .export _putTokenToIcode
 
-.import _checkIcodeBounds, putDataToIcode, _errorCount
+.import _checkIcodeBounds, _writeToMemBuf, _errorCount
 .import popax, pushax
 
 .bss
@@ -60,7 +58,7 @@ chunkNum: .res 2
     ; third parameter to putDataToIcode
     lda #1
     ldx #0
-    jsr putDataToIcode
+    jsr _writeToMemBuf
 
 @Done:
     rts

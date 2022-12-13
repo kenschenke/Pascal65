@@ -3,53 +3,53 @@
 #include <string.h>
 
 void testIcodeToken(void) {
-    CHUNKNUM Icode;
+    CHUNKNUM membuf;
     TOKEN token;
     unsigned myPos = 0;
 
     DECLARE_TEST("testIcodeToken");
 
-    makeIcode(&Icode);
-    assertNonZero(Icode);
-    assertEqualInt(0, getCurrentIcodeLocation(Icode));
+    allocMemBuf(&membuf);
+    assertNonZeroChunkNum(membuf);
+    assertEqualInt(0, getMemBufPos(membuf));
 
-    putTokenToIcode(Icode, tcColonEqual);
+    putTokenToIcode(membuf, tcColonEqual);
     ++myPos;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     currentLineNumber = 1;
-    insertLineMarker(Icode);
+    insertLineMarker(membuf);
     myPos += 3;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
-    putTokenToIcode(Icode, tcDotDot);
+    putTokenToIcode(membuf, tcDotDot);
     ++myPos;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     currentLineNumber = 2;
-    insertLineMarker(Icode);
+    insertLineMarker(membuf);
     myPos += 3;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     myPos = 0;
-    resetIcodePosition(Icode);
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    resetMemBufPosition(membuf);
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     currentLineNumber = 100;
-    getNextTokenFromIcode(Icode, &token, NULL);
+    getNextTokenFromIcode(membuf, &token, NULL);
     assertEqualByte(tcColonEqual, token.code);
     assertEqualInt(0, strcmp(":=", token.string));
     myPos += 4;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
     assertEqualInt(1, currentLineNumber);
 
     currentLineNumber = 100;
-    getNextTokenFromIcode(Icode, &token, NULL);
+    getNextTokenFromIcode(membuf, &token, NULL);
     assertEqualByte(tcDotDot, token.code);
     assertEqualInt(0, strcmp("..", token.string));
     myPos += 4;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
     assertEqualInt(2, currentLineNumber);
 
-    freeIcode(Icode);
+    freeMemBuf(membuf);
 }

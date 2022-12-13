@@ -3,7 +3,7 @@
 #include <string.h>
 
 void testIcodeGotoPosition(void) {
-    CHUNKNUM Icode;
+    CHUNKNUM membuf;
     int i;
     char ident[10];
     unsigned myPos = 0, testPos;
@@ -14,9 +14,9 @@ void testIcodeGotoPosition(void) {
 
     DECLARE_TEST("testIcodeGotoPosition");
 
-    makeIcode(&Icode);
-    assertNonZero(Icode);
-    assertEqualInt(0, getCurrentIcodeLocation(Icode));
+    allocMemBuf(&membuf);
+    assertNonZeroChunkNum(membuf);
+    assertEqualInt(0, getMemBufPos(membuf));
     assertNonZero(makeSymtab(&symtab));
 
     // Append 20 symbol table nodes
@@ -25,15 +25,15 @@ void testIcodeGotoPosition(void) {
             testPos = myPos;
         }
 
-        putTokenToIcode(Icode, tcIdentifier);
+        putTokenToIcode(membuf, tcIdentifier);
         ++myPos;
-        assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+        assertEqualInt(myPos, getMemBufPos(membuf));
 
         sprintf(ident, "ident%02d", i+1);
         assertNonZero(enterSymtab(symtab, &symtabNode, ident, dcUndefined));
-        putSymtabNodeToIcode(Icode, &symtabNode);
+        putSymtabNodeToIcode(membuf, &symtabNode);
         myPos += sizeof(CHUNKNUM);
-        assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+        assertEqualInt(myPos, getMemBufPos(membuf));
 
         if (i == 4) {
             testChunkNum = symtabNode.node.nodeChunkNum;
@@ -41,54 +41,53 @@ void testIcodeGotoPosition(void) {
     }
 
     memset(&symtabNode, 0, sizeof(SYMBNODE));
-    gotoIcodePosition(Icode, testPos);
-    assertEqualInt(testPos, getCurrentIcodeLocation(Icode));
-    getNextTokenFromIcode(Icode, &token, &symtabNode);
+    setMemBufPos(membuf, testPos);
+    assertEqualInt(testPos, getMemBufPos(membuf));
+    getNextTokenFromIcode(membuf, &token, &symtabNode);
     assertEqualInt(tcIdentifier, token.code);
     assertEqualChunkNum(testChunkNum, symtabNode.node.nodeChunkNum);
     assertEqualInt(0, strcmp("ident05", token.string));
-    
 }
 
 void testIcodePosition(void) {
-    CHUNKNUM Icode;
+    CHUNKNUM membuf;
     unsigned myPos = 0;
     CHUNKNUM symtab;
     SYMBNODE symtabNode;
 
     DECLARE_TEST("testIcodePosition");
 
-    makeIcode(&Icode);
-    assertNonZero(Icode);
-    assertEqualInt(0, getCurrentIcodeLocation(Icode));
+    allocMemBuf(&membuf);
+    assertNonZeroChunkNum(membuf);
+    assertEqualInt(0, getMemBufPos(membuf));
 
     // Add a symbol table node
     assertNonZero(makeSymtab(&symtab));
     assertNonZero(enterSymtab(symtab, &symtabNode, "mynode", dcUndefined));
-    putSymtabNodeToIcode(Icode, &symtabNode);
+    putSymtabNodeToIcode(membuf, &symtabNode);
     myPos += sizeof(CHUNKNUM);
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Insert a line marker
     currentLineNumber = 1;
-    insertLineMarker(Icode);
+    insertLineMarker(membuf);
     myPos += 3;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Write a token code
-    putTokenToIcode(Icode, tcColonEqual);
+    putTokenToIcode(membuf, tcColonEqual);
     ++myPos;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Insert another line marker
     ++currentLineNumber;
-    insertLineMarker(Icode);
+    insertLineMarker(membuf);
     myPos += 3;
-    assertEqualInt(myPos, getCurrentIcodeLocation(Icode));
+    assertEqualInt(myPos, getMemBufPos(membuf));
 
     // Reset the position
-    resetIcodePosition(Icode);
-    assertEqualInt(0, getCurrentIcodeLocation(Icode));
+    resetMemBufPosition(membuf);
+    assertEqualInt(0, getMemBufPos(membuf));
 
-    freeIcode(Icode);
+    freeMemBuf(membuf);
 }

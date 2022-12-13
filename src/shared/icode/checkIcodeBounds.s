@@ -10,12 +10,12 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
-.include "icode.inc"
+.include "membuf.inc"
 .include "error.inc"
 
 .export _checkIcodeBounds
 
-.import loadHeaderCache, _cachedIcodeHdr, _codeSegmentSize
+.import loadMemBufHeaderCache, _cachedMemBufHdr, _codeSegmentSize
 .import _Error, _abortTranslation
 .import popax
 
@@ -34,15 +34,15 @@ size: .res 2
     jsr popax
 
     ; Load the header from cache
-    jsr loadHeaderCache
+    jsr loadMemBufHeaderCache
 
     ; Add global position to size
     clc
     lda size
-    adc _cachedIcodeHdr + ICODE::posGlobal
+    adc _cachedMemBufHdr + MEMBUF::posGlobal
     sta size
     lda size + 1
-    adc _cachedIcodeHdr + ICODE::posGlobal + 1
+    adc _cachedMemBufHdr + MEMBUF::posGlobal + 1
     sta size + 1
 
     ; Compare it to codeSegmentSize

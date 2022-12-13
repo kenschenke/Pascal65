@@ -10,14 +10,14 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
-.include "icode.inc"
+.include "membuf.inc"
 .include "error.inc"
 
 .export _insertLineMarker
 
-.import _checkIcodeBounds, _gotoIcodePosition, loadDataCache, loadHeaderCache
-.import putDataToIcode
-.import _cachedIcodeData, _cachedIcodeHdr, _currentLineNumber, _mcLineMarker
+.import _checkIcodeBounds, _setMemBufPos, loadMemBufDataCache, loadMemBufHeaderCache
+.import _writeToMemBuf
+.import _cachedMemBufData, _cachedMemBufHdr, _currentLineNumber, _mcLineMarker
 .import _errorCount
 .import pushax
 .importzp ptr1
@@ -44,23 +44,23 @@ pos: .res 2
     ; Load the header from cache
     lda hdrChunkNum
     ldx hdrChunkNum + 1
-    jsr loadHeaderCache
+    jsr loadMemBufHeaderCache
 
     ; Remember the last appended token
 
     ; Are we at the beginning of the chunk already?
-    lda _cachedIcodeHdr + ICODE::posChunk
+    lda _cachedMemBufHdr + MEMBUF::posChunk
     bne @BackUpPos
     ; Yes.  Are we also at the start of the icode?
-    lda _cachedIcodeHdr + ICODE::posGlobal
-    ora _cachedIcodeHdr + ICODE::posGlobal + 1
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
+    ora _cachedMemBufHdr + MEMBUF::posGlobal + 1
     beq @JmpDone  ; yes - can't back up any more
 
     ; We are at the start of the chunk already.
     ; We will need to load the previous chunk.
-    lda _cachedIcodeHdr + ICODE::posGlobal
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
     sta pos
-    lda _cachedIcodeHdr + ICODE::posGlobal + 1
+    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
     sta pos + 1
     ; Subtract 1 from the pos
     sec
@@ -70,37 +70,37 @@ pos: .res 2
     lda pos + 1
     sbc #0
     sta pos
-    ; Call gotoIcodePosition
+    ; Call setMemBufPos
     lda pos
     ldx pos + 1
     jsr pushax
     lda hdrChunkNum
     ldx hdrChunkNum + 1
-    jsr _gotoIcodePosition
+    jsr _setMemBufPos
     jmp @GetLastToken
 
 @JmpDone:
     jmp @Done
 
 @BackUpPos:
-    dec _cachedIcodeHdr + ICODE::posChunk
+    dec _cachedMemBufHdr + MEMBUF::posChunk
     sec
-    lda _cachedIcodeHdr + ICODE::posGlobal
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
     sbc #1
-    sta _cachedIcodeHdr + ICODE::posGlobal
-    lda _cachedIcodeHdr + ICODE::posGlobal + 1
+    sta _cachedMemBufHdr + MEMBUF::posGlobal
+    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
     sbc #0
-    sta _cachedIcodeHdr + ICODE::posGlobal + 1
+    sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
 
 @GetLastToken:
     ; Load the data cache for the current chunk
-    lda _cachedIcodeHdr + ICODE::currentChunkNum
-    ldx _cachedIcodeHdr + ICODE::currentChunkNum + 1
-    jsr loadDataCache
+    lda _cachedMemBufHdr + MEMBUF::currentChunkNum
+    ldx _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
+    jsr loadMemBufDataCache
     ; Calculate the address of the token code we need to read
-    lda #<_cachedIcodeData
+    lda #<_cachedMemBufData
     sta ptr1
-    lda #>_cachedIcodeData
+    lda #>_cachedMemBufData
     sta ptr1 + 1
     ; Add 2 to get to the data portion of the chunk
     clc
@@ -113,7 +113,7 @@ pos: .res 2
     ; Add the chunk offset
     clc
     lda ptr1
-    adc _cachedIcodeHdr + ICODE::posChunk
+    adc _cachedMemBufHdr + MEMBUF::posChunk
     sta ptr1
     lda ptr1 + 1
     adc #0
@@ -142,7 +142,7 @@ pos: .res 2
     jsr pushax
     lda #1
     ldx #0
-    jsr putDataToIcode
+    jsr _writeToMemBuf
 
     ; Insert the current line number
     lda hdrChunkNum
@@ -153,7 +153,7 @@ pos: .res 2
     jsr pushax
     lda #2
     ldx #0
-    jsr putDataToIcode
+    jsr _writeToMemBuf
 
     ; Re-append the last token code
     lda hdrChunkNum
@@ -164,7 +164,7 @@ pos: .res 2
     jsr pushax
     lda #1
     ldx #0
-    jsr putDataToIcode
+    jsr _writeToMemBuf
 
 @Done:
     rts

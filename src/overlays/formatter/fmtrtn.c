@@ -1,6 +1,7 @@
 #include <formatter.h>
 #include <types.h>
 #include <icode.h>
+#include <membuf.h>
 
 void fmtPrintBlock(CHUNKNUM routineId) {
     DEFN defn;
@@ -13,7 +14,7 @@ void fmtPrintBlock(CHUNKNUM routineId) {
 
     // Then print the statements in the icode.
     loadSymbNode(routineId, &node);
-    resetIcodePosition(defn.routine.Icode);
+    resetMemBufPosition(defn.routine.Icode);
     fmtPrintCompound(defn.routine.Icode, &node, &token);
 }
 

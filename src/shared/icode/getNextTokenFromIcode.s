@@ -10,7 +10,6 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
-.include "icode.inc"
 .include "error.inc"
 .include "misc.inc"
 .include "symtab.inc"
@@ -18,7 +17,7 @@
 
 .export _getNextTokenFromIcode
 
-.import extractSymtabNode, pullDataFromIcode, _retrieveChunk
+.import extractSymtabNode, _readFromMemBuf, _retrieveChunk
 .import _currentLineNumber, _mcLineMarker, _symbolStrings
 .import popax, pushax
 .importzp ptr1, ptr2, ptr3
@@ -60,7 +59,7 @@ symtabNode: .res .sizeof(SYMBNODE)
     jsr pushax
     lda #1
     ldx #0
-    jsr pullDataFromIcode
+    jsr _readFromMemBuf
     lda code
     cmp _mcLineMarker
     bne @LookAtTokenCode
@@ -73,7 +72,7 @@ symtabNode: .res .sizeof(SYMBNODE)
     jsr pushax
     lda #2
     ldx #0
-    jsr pullDataFromIcode
+    jsr _readFromMemBuf
     jmp @LookForLineMarker
 
 @LookAtTokenCode:

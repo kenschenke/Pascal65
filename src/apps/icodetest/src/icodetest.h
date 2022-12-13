@@ -2,6 +2,7 @@
 #define ICODETEST_H
 
 #include <icode.h>
+#include <membuf.h>
 #include <tests.h>
 
 void testIcodeGotoPosition(void);

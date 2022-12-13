@@ -17,8 +17,11 @@ void testAllocateSmallBuffer(void)
 
     allocMemBuf(&chunkNum);
     assertNonZero(chunkNum);
+    flushMemCache();
+    assertNonZero(isMemBufAtEnd(chunkNum));
     reserveMemBuf(chunkNum, 10);
     flushMemCache();
+    assertZero(isMemBufAtEnd(chunkNum));
     assertNonZero(retrieveChunk(chunkNum, (unsigned char *)&hdr));
     assertEqualInt(MEMBUF_CHUNK_LEN, hdr.capacity);
     assertEqualInt(10, hdr.used);
@@ -220,18 +223,23 @@ void testBufferReadAndWrite(void)
 
     allocMemBuf(&chunkNum);
     assertNonZeroChunkNum(chunkNum);
+    flushMemCache();
+    assertNonZero(isMemBufAtEnd(chunkNum));
 
     for (ch = 'A'; ch <= 'Z'; ++ch) {
         writeToMemBuf(chunkNum, &ch, 1);
     }
     flushMemCache();
     assertNonZero(retrieveChunk(chunkNum, (unsigned char *)&hdr));
+    assertNonZero(isMemBufAtEnd(chunkNum));
    
     assertEqualInt(26, hdr.posGlobal);
     assertEqualInt(MEMBUF_CHUNK_LEN * 2, hdr.capacity);
     assertEqualInt(26, hdr.used);
 
     setMemBufPos(chunkNum, 0);
+    flushMemCache();
+    assertZero(isMemBufAtEnd(chunkNum));
     for (i = 0; i < 26; ++i) {
         readFromMemBuf(chunkNum, &ch, 1);
         assertEqualByte(i + 'A', ch);
@@ -244,6 +252,8 @@ void testBufferReadAndWrite(void)
     setMemBufPos(chunkNum, 20);
     readFromMemBuf(chunkNum, &ch, 1);
     assertEqualByte('U', ch);
+    flushMemCache();
+    assertZero(isMemBufAtEnd(chunkNum));
 }
 
 void testBufferMultiByteReadAndWrite(void)
