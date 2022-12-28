@@ -7,9 +7,12 @@ BINDIR := bin
 PROGRAM := realtest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := mega65
+TARGET := c64
 CC65TARGET = c64
-EMUCMD = xmega65 -besure -go64 -autoload -8
+c64_EMUCMD = x64sc -reu +warp -kernal kernal -VICIIdsize +confirmonexit -autostart
+c128_EMUCMD = x128 -reu +warp -kernal kernal -VICIIdsize +confirmonexit -autostart
+mega65_EMUCMD := xmega65 -besure -8
+EMUCMD = $($(TARGET)_EMUCMD)
 
 c64_CFLAGS =
 c128_CFLAGS =
