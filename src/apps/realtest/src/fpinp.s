@@ -14,7 +14,7 @@ CH_DEL = 20
 .export FPINP, DECBIN, FPD10, FPX10
 
 ; This routine reads a floating point number from the keyboard into FPACC.
-; It supposed standing floating point format (1, 2.25)
+; It supports standard floating point format (1, 2.25)
 ; and scientific notation (1.2E+5 or 0.1E-4).
 
 FPINP:
