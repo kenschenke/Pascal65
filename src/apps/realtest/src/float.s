@@ -1,6 +1,6 @@
 ; Floating point routines
 ;
-; Based on floating point routines published in
+; Based on floating point routines published in the book
 ; 6502 Software Gourmet Guide & Cookbook
 ; by Robert Findley
 
@@ -19,157 +19,170 @@ FPBASE: .res 44
 
 .code
 
+; This routine normalizes the number in FPACC.  A number is normalized
+; when the mantissa's most significant "1" is to the right of the
+; implied binary point.
+
 .proc FPNORM
     ldx #TSIGN
-    lda FPBASE + FPMSW       ; Fetch FPACC most-significant byte
-    bmi ACCMIN      ; If negative, branch
+    lda FPBASE + FPMSW  ; Fetch FPACC most-significant byte
+    bmi ACCMIN          ; If negative, branch
     pha
-    lda #0          ; If positive, clear sign register
-    sta FPBASE,x    ; by storing zero
+    lda #0              ; If positive, clear sign register
+    sta FPBASE,x        ; by storing zero
     tay
     pla
-    jmp ACZERT      ; Then test if FPACC=0
+    jmp ACZERT          ; Then test if FPACC=0
 ACCMIN:
-    sta FPBASE,x    ; Set sign indicator if minus
-    ldy #4          ; Set precision counter
+    sta FPBASE,x        ; Set sign indicator if minus
+    ldy #4              ; Set precision counter
     ldx #FPLSWE
-    jsr COMPLM      ; Two's complement FPACC
+    jsr COMPLM          ; Two's complement FPACC
 ACZERT:
     ldx #FPMSW
     ldy #4
 LOOK0:
-    lda FPBASE,x    ; See if FPACC = 0
-    bne ACNONZ      ; Branch if non-zero
-    dex             ; Decrement index pointer
-    dey             ; Decrement byte counter
-    bne LOOK0       ; If counter not zero, continue
-    sty FPBASE + FPACCE      ; FPACC = 0, clear exponent too
+    lda FPBASE,x        ; See if FPACC = 0
+    bne ACNONZ          ; Branch if non-zero
+    dex                 ; Decrement index pointer
+    dey                 ; Decrement byte counter
+    bne LOOK0           ; If counter not zero, continue
+    sty FPBASE + FPACCE ; FPACC = 0, clear exponent too
 NORMEX:
-    rts             ; Exit normalization routine
+    rts                 ; Exit normalization routine
 ACNONZ:
     ldx #FPLSWE
-    ldy #4          ; Set precision counter
-    jsr ROTATL      ; Rotate FPACC left
-    lda FPBASE,x    ; See if one is most-significant bit
-    bmi ACCSET      ; If minus, properly justified
-    dec FPBASE + FPACCE      ; If position, decrement FPACC exponent
-    jmp ACNONZ      ; Continue rotating
+    ldy #4              ; Set precision counter
+    jsr ROTATL          ; Rotate FPACC left
+    lda FPBASE,x        ; See if one is most-significant bit
+    bmi ACCSET          ; If minus, properly justified
+    dec FPBASE + FPACCE ; If position, decrement FPACC exponent
+    jmp ACNONZ          ; Continue rotating
 ACCSET:
     ldx #FPMSW
-    ldy #3          ; Set precision counter
-    jsr ROTATR      ; Compensating rotate right FPACC
-    lda FPBASE + TSIGN       ; Is original sign positive?
-    beq NORMEX      ; Yes, simply return
+    ldy #3              ; Set precision counter
+    jsr ROTATR          ; Compensating rotate right FPACC
+    lda FPBASE + TSIGN  ; Is original sign positive?
+    beq NORMEX          ; Yes, simply return
     ldy #3
-    jmp COMPLM      ; Restore FPACC to negative and return
+    jmp COMPLM          ; Restore FPACC to negative and return
 .endproc
+
+; This routine adds FPOP to FPACC and leaves the result in FPACC.
+; FPOP is also modified.
 
 .proc FPADD
-    lda FPBASE + FPMSW       ; See if FPACC most-significant byte = 0
-    bne NONZAC      ; Branch if not zero
+    lda FPBASE + FPMSW  ; See if FPACC most-significant byte = 0
+    bne NONZAC          ; Branch if not zero
 MOVOP:
-    ldy #FPLSW      ; Set pointer to FPACC least-significant byte
-    jsr CALCPTR     ; Calculate pointer
-    jsr pushax      ; Destination
-    ldy #FOPLSW     ; Set pointer to FPOP least-significant byte
-    jsr CALCPTR     ; Calculate pointer
-    jsr pushax      ; Source
-    lda #4          ; Set precision counter
-    jmp MOVIND      ; Move FPOP to FPACC and return
+    ldy #FPLSW          ; Set pointer to FPACC least-significant byte
+    jsr CALCPTR         ; Calculate pointer
+    jsr pushax          ; Destination
+    ldy #FOPLSW         ; Set pointer to FPOP least-significant byte
+    jsr CALCPTR         ; Calculate pointer
+    jsr pushax          ; Source
+    lda #4              ; Set precision counter
+    jmp MOVIND          ; Move FPOP to FPACC and return
 NONZAC:
-    lda FPBASE + FOPMSW      ; See if FPOP most-significant byte = 0
-    bne CKEQEX      ; No, check exponents
-    rts             ; Yes, return result = FPACC
+    lda FPBASE + FOPMSW ; See if FPOP most-significant byte = 0
+    bne CKEQEX          ; No, check exponents
+    rts                 ; Yes, return result = FPACC
 CKEQEX:
-    ldx #FPACCE     ; Set pointer to FPACC exponent
-    lda FPBASE,x    ; Fetch FPACC exponent
-    cmp FPBASE + FOPEXP      ; Is it equal to FPOP exponent?
-    beq SHACOP      ; Branch ahead if equal
-    sec             ; If not equal, determine which is larger
-    lda #0          ; Form the two's complement
-    sbc FPBASE,x      ; of the FPACC exponent
-    adc FPBASE + FOPEXP      ; Add in FPOP exponent
-    bpl SKPNEG      ; If positive FPOP > FPACC
-    sec             ; If negative form two's complement
-    sta FPBASE + TEMP1       ; of the result
-    lda #0          ; This will be used to test the
-    sbc FPBASE + TEMP1       ; Magnitude of the difference in exponents
+    ldx #FPACCE         ; Set pointer to FPACC exponent
+    lda FPBASE,x        ; Fetch FPACC exponent
+    cmp FPBASE + FOPEXP ; Is it equal to FPOP exponent?
+    beq SHACOP          ; Branch ahead if equal
+    sec                 ; If not equal, determine which is larger
+    lda #0              ; Form the two's complement
+    sbc FPBASE,x        ; of the FPACC exponent
+    adc FPBASE + FOPEXP ; Add in FPOP exponent
+    bpl SKPNEG          ; If positive FPOP > FPACC
+    sec                 ; If negative form two's complement
+    sta FPBASE + TEMP1  ; of the result
+    lda #0              ; This will be used to test the
+    sbc FPBASE + TEMP1  ; Magnitude of the difference in exponents
 SKPNEG:
-    cmp #$18        ; Is difference < 18 hexadecimal?
-    bmi LINEUP      ; If so, align the mantissas
-    sec             ; If not, is the FPOP > FPACC?
-    lda FPBASE + FOPEXP      ; This is tested by comparing
-    sbc FPBASE,x    ; The exponents of each
-    bpl MOVOP       ; FPOP larger, move FPOP to FPACC
-    rts             ; FPACC larger, return
+    cmp #$18            ; Is difference < 18 hexadecimal?
+    bmi LINEUP          ; If so, align the mantissas
+    sec                 ; If not, is the FPOP > FPACC?
+    lda FPBASE + FOPEXP ; This is tested by comparing
+    sbc FPBASE,x        ; The exponents of each
+    bpl MOVOP           ; FPOP larger, move FPOP to FPACC
+    rts                 ; FPACC larger, return
 LINEUP:
-    lda FPBASE + FOPEXP      ; Fetch FPOP exponent
-    sec             ; Set carry for subtraction
-    sbc FPBASE,x    ; Subtract FPOP-FPACC exponents
-    tay             ; Save difference in Y
-    bmi SHIFTO      ; If negative, FPACC >, shift FPOP
+    lda FPBASE + FOPEXP ; Fetch FPOP exponent
+    sec                 ; Set carry for subtraction
+    sbc FPBASE,x        ; Subtract FPOP-FPACC exponents
+    tay                 ; Save difference in Y
+    bmi SHIFTO          ; If negative, FPACC >, shift FPOP
 MORACC:
     ldx #FPACCE
-    jsr SHLOOP      ; Shift FPACC to right, one bit
-    dey             ; Decrement difference counter
-    bne MORACC      ; If not zero, continue
-    jmp SHACOP      ; When zero, set up for addition
+    jsr SHLOOP          ; Shift FPACC to right, one bit
+    dey                 ; Decrement difference counter
+    bne MORACC          ; If not zero, continue
+    jmp SHACOP          ; When zero, set up for addition
 SHIFTO:
     ldx #FOPEXP
-    jsr SHLOOP      ; Shift FPOP to right, one bit
-    iny             ; Increment difference counter
-    bne SHIFTO      ; Not zero, countinue
+    jsr SHLOOP          ; Shift FPOP to right, one bit
+    iny                 ; Increment difference counter
+    bne SHIFTO          ; Not zero, countinue
 SHACOP:
-    lda #0          ; Prepare for addition
-    sta FPBASE + FPLSWE      ; Clear FPACC least-significant byte - 1
-    sta FPBASE + FOLSWE      ; Clear FPOP least-significant byte - 1
-    ldx #FPACCE     ; Set pointer to FPACC exponent
-    jsr SHLOOP      ; Rotate FPACC right to allow for overflow
-    ldx #FOPEXP     ; Set pointer to FPOP exponent
-    jsr SHLOOP      ; Rotate FPOP right to keep alignment
-    ldy #FPLSWE     ; Set pointer to FPACC least-significant byte - 1
-    jsr CALCPTR     ; Calculate pointer
+    lda #0              ; Prepare for addition
+    sta FPBASE + FPLSWE ; Clear FPACC least-significant byte - 1
+    sta FPBASE + FOLSWE ; Clear FPOP least-significant byte - 1
+    ldx #FPACCE         ; Set pointer to FPACC exponent
+    jsr SHLOOP          ; Rotate FPACC right to allow for overflow
+    ldx #FOPEXP         ; Set pointer to FPOP exponent
+    jsr SHLOOP          ; Rotate FPOP right to keep alignment
+    ldy #FPLSWE         ; Set pointer to FPACC least-significant byte - 1
+    jsr CALCPTR         ; Calculate pointer
     jsr pushax
-    ldy #FOLSWE     ; Set pointer to FPOP least-significant byte - 1
-    jsr CALCPTR     ; Calculate pointer
+    ldy #FOLSWE         ; Set pointer to FPOP least-significant byte - 1
+    jsr CALCPTR         ; Calculate pointer
     jsr pushax
-    lda #4          ; Set precision counter
-    jsr ADDER       ; Add FPOP to FPACC
-    jmp FPNORM      ; Normalize result and return
+    lda #4              ; Set precision counter
+    jsr ADDER           ; Add FPOP to FPACC
+    jmp FPNORM          ; Normalize result and return
 SHLOOP:
-    inc FPBASE,x    ; Increment exponent value
-    dex             ; Decrement pointer
-    tya             ; Save difference counter
-    ldy #4          ; Set precision counter
+    inc FPBASE,x        ; Increment exponent value
+    dex                 ; Decrement pointer
+    tya                 ; Save difference counter
+    ldy #4              ; Set precision counter
 FSHIFT:
-    pha             ; Store difference counter on stack
-    lda FPBASE,x    ; Fetch most-significant byte of value
-    bmi BRING1      ; If negative, must rotate one in MSB
-    jsr ROTATR      ; Positive, rotate value right one bit
-    jmp RESCNT      ; Return to calling program
+    pha                 ; Store difference counter on stack
+    lda FPBASE,x        ; Fetch most-significant byte of value
+    bmi BRING1          ; If negative, must rotate one in MSB
+    jsr ROTATR          ; Positive, rotate value right one bit
+    jmp RESCNT          ; Return to calling program
 BRING1:
-    sec             ; Set carry to maintain minus
-    jsr ROTR        ; Rotate value right one bit
+    sec                 ; Set carry to maintain minus
+    jsr ROTR            ; Rotate value right one bit
 RESCNT:
-    pla             ; Fetch difference counter
-    tay             ; Restore in Y
-    rts             ; Return
+    pla                 ; Fetch difference counter
+    tay                 ; Restore in Y
+    rts                 ; Return
 .endproc
 
+; This routine subtracts FPOP from FPACC and leaves the result in FPACC.
+; FPOP is also modified.
+
 .proc FPSUB
-    ldx #FPLSW      ; Set pointer to FPACC least-significant byte
-    ldy #3          ; Set precision counter
-    jsr COMPLM      ; Complement FPACC
-    jmp FPADD       ; Subtract by adding negative
+    ldx #FPLSW          ; Set pointer to FPACC least-significant byte
+    ldy #3              ; Set precision counter
+    jsr COMPLM          ; Complement FPACC
+    jmp FPADD           ; Subtract by adding negative
 .endproc
+
+; This routine multiplies FPACC by FPOP and leaves the result in FPACC.
+; FPOP is also modified.
 
 FPMULT:
     jsr CKSIGN          ; Set up and check sign of mantissa
-    lda FPBASE + FOPEXP     ; Get FPOP exponent
+    lda FPBASE + FOPEXP ; Get FPOP exponent
     clc                 ; Add FPOP exponent
-    adc FPBASE + FPACCE     ; to FPACC exponent
-    sta FPBASE + FPACCE     ; Save in FPACC exponent
-    inc FPBASE + FPACCE     ; Add one for algorithm compensation
+    adc FPBASE + FPACCE ; to FPACC exponent
+    sta FPBASE + FPACCE ; Save in FPACC exponent
+    inc FPBASE + FPACCE ; Add one for algorithm compensation
 SETMCT:
     lda #$17            ; Set bit counter
     sta FPBASE + CNTR   ; Store bit counter
@@ -257,6 +270,9 @@ NEGOP:
     ldx #FOPLSW         ; Set pointer to FPOP LS byte
     ldy #3              ; Set precision counter
     jmp COMPLM          ; Complement FPOP and return
+
+; This routine divides FPACC by FPOP and leaves the result in FPACC.
+; FPOP is also modified.
 
 .proc FPDIV
     jsr CKSIGN          ; Clear work area and set SIGNS

@@ -1,12 +1,21 @@
+; Floating point keyboard input routine.
+;
+; Based on floating point routines published in the book
+; 6502 Software Gourmet Guide & Cookbook
+; by Robert Findley
+
 .include "cbm_kernal.inc"
 .include "c64.inc"
 .include "float.inc"
 
 CH_DEL = 20
-BORDER = 53280
 
 .import FPBASE, CALCPTR, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, pushax, FPNORM
 .export FPINP, DECBIN, FPD10, FPX10
+
+; This routine reads a floating point number from the keyboard into FPACC.
+; It supposed standing floating point format (1, 2.25)
+; and scientific notation (1.2E+5 or 0.1E-4).
 
 FPINP:
     cld                 ; Clear decimal mode flag

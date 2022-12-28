@@ -1,3 +1,9 @@
+; Floating point output routine.
+;
+; Based on floating point routines published in the book
+; 6502 Software Gourmet Guide & Cookbook
+; by Robert Findley
+
 .include "cbm_kernal.inc"
 .include "c64.inc"
 .include "float.inc"
@@ -5,6 +11,9 @@
 .import FPBASE, COMPLM, CALCPTR, MOVIND, ROTATL, ROTATR, pushax, DECBIN, FPD10, FPX10
 
 .export FPOUT
+
+; This routine outputs FPACC to the console.
+; FPACC is modified.
 
 FPOUT:
     lda #0

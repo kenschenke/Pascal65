@@ -1,4 +1,21 @@
-; Floating point offsets
+; Floating point memory layout
+;
+; All floating point operations occur in an area of memory
+; starting at FPBASE.  The following are offsets from FPBASE.
+
+; Accumulator (FPACC) layout:
+;    FPBASE + FPLSWE : Extension
+;    FPBASE + FPLSW  : Least significant byte
+;    FPBASE + FPNSW  : Next significant byte
+;    FPBASE + FPMSW  : Most significant byte
+;    FPBASE + FPACCE : Exponent
+;
+; Operand (FPOP) layout:
+;    FPBASE + FOPSWE : Extension
+;    FPBASE + FOPLSW : Least significant byte
+;    FPBASE + FOPNSW : Next significant byte
+;    FPBASE + FOPMSW : Most significant byte
+;    FPBASE + FOPEXP : Exponent
 
 CNTR   = $4     ; Counter Storage
 TSIGN  = $5     ; Sign indicator
