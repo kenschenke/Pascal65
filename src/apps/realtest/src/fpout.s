@@ -8,7 +8,7 @@
 .include "c64.inc"
 .include "float.inc"
 
-.import FPBASE, COMPLM, CALCPTR, MOVIND, ROTATL, ROTATR, pushax, DECBIN, FPD10, FPX10
+.import FPBASE, COMPLM, MOVIND, ROTATL, ROTATR, DECBIN, FPD10, FPX10
 
 .export FPOUT
 
@@ -48,13 +48,11 @@ DECEXD:
     jsr FPD10           ; Multiply FPACC by 0.1
     jmp DECREP          ; Check status of FPACC exponent
 DECOUT:
-    ldy #IOSTR          ; Set up for move operation
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store on parameter stack
-    ldy #FPLSW          ; Set pointer to FPACC LS byte
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store on parameter stack
-    lda #$3             ; Set precision counter
+    ldx #IOSTR          ; Set up for move operation
+    stx FPBASE + TOPNT  ; Set TOPNT to working register
+    ldx #FPLSW          ; Set pointer to FPACC LS byte
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #$3             ; Set precision counter
     jsr MOVIND          ; Move FPACC to output registers
     lda #$0
     sta FPBASE + IOSTR3 ; Clear output register MS byte + 1

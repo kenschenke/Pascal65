@@ -2,10 +2,10 @@
 
 .include "float.inc"
 
-.import popax, FPBASE, pushax
+.import FPBASE
 .importzp ptr1, ptr2
 
-.export ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM, CLRMEM, MOVIND, CALCPTR
+.export ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM, CLRMEM, MOVIND, MOVIN, CALCPTR
 
 .bss
 
@@ -46,23 +46,24 @@ MORRTR:
     jmp ROTR
 
 ; Add two multi-byte numbers
-; adder(void *num1, void *num2, char bytes)
-;    num1 points to first number
-;    num2 points to second number
-;    bytes is the number of bytes to add
+;    FMPNT is FPBASE offset of source
+;    TOPNT is FPBASE offset of destination
+;    X register contains number of bytes to add
 ; output:
 ;    the sum is stored in the first number
 .proc ADDER
+    txa
     pha
-    jsr popax
+    ldy FPBASE + FMPNT
+    jsr CALCPTR
     sta ptr2
     stx ptr2 + 1
-    jsr popax
+    ldy FPBASE + TOPNT
+    jsr CALCPTR
     sta ptr1
     stx ptr1 + 1
     pla
     tax
-    clc
     ldy #0
 ADDR1:
     lda (ptr1),y
@@ -93,13 +94,16 @@ COMPL:
 
 ; Clear a block of memory
 ; Input:
-;    A: low byte of memory address
-;    X: high byte of memory address
-;    Y: number of byte to clear
+;    TOPNT is FPBASE offset of memory to clear
+;    X: number of byte to clear
 .proc CLRMEM
+    txa
+    pha
+    ldy FPBASE + TOPNT
+    jsr CALCPTR
     sta ptr1
     stx ptr1 + 1
-    tya
+    pla
     tax
     lda #0
     tay
@@ -112,17 +116,23 @@ CLRM1:
 .endproc
 
 ; Copy a block of memory
-; movind(void *dest, void *orig, char len)
-.proc MOVIND
+;    FMPNT is FPBASE offset of source
+;    TOPNT is FPBASE offset of destination
+;    X register contains number of bytes to copy
+MOVIND:
+    txa
     pha
-    jsr popax
+    ldy FPBASE + FMPNT
+    jsr CALCPTR
     sta ptr1
     stx ptr1 + 1
-    jsr popax
+    ldy FPBASE + TOPNT
+    jsr CALCPTR
     sta ptr2
     stx ptr2 + 1
     pla
     tax
+MOVIN:
     ldy #0
 MOVIN1:
     lda (ptr1),y
@@ -131,7 +141,6 @@ MOVIN1:
     dex
     bne MOVIN1
     rts
-.endproc
 
 ; Calculate a memory address from FPBASE.
 ;    Inputs:
@@ -148,10 +157,10 @@ MOVIN1:
     clc
     lda ADDR1
     adc ADDR3
-    sta ADDR1
+    pha
     lda ADDR2
     adc #0
     tax
-    lda ADDR1
+    pla
     rts
 .endproc

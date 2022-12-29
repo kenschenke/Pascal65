@@ -7,7 +7,6 @@
 .include "float.inc"
 
 .import COMPLM, ROTATL, ROTL, ROTATR, ROTR, MOVIND, ADDER, CLRMEM, CALCPTR
-.import pushax
 .importzp ptr1, ptr2
 
 .export FPNORM, FPMULT, FPADD, FPDIV, FPSUB
@@ -75,13 +74,11 @@ ACCSET:
     lda FPBASE + FPMSW  ; See if FPACC most-significant byte = 0
     bne NONZAC          ; Branch if not zero
 MOVOP:
-    ldy #FPLSW          ; Set pointer to FPACC least-significant byte
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Destination
-    ldy #FOPLSW         ; Set pointer to FPOP least-significant byte
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Source
-    lda #4              ; Set precision counter
+    ldx #FOPLSW         ; Set pointer to FPOP LS byte
+    stx FPBASE + FMPNT  ; Save in FMPNT
+    ldx #FPLSW          ; Set pointer to FPACC LS byte
+    stx FPBASE + TOPNT  ; Save in TOPNT
+    ldx #$04            ; Set precision counter
     jmp MOVIND          ; Move FPOP to FPACC and return
 NONZAC:
     lda FPBASE + FOPMSW ; See if FPOP most-significant byte = 0
@@ -134,13 +131,11 @@ SHACOP:
     jsr SHLOOP          ; Rotate FPACC right to allow for overflow
     ldx #FOPEXP         ; Set pointer to FPOP exponent
     jsr SHLOOP          ; Rotate FPOP right to keep alignment
-    ldy #FPLSWE         ; Set pointer to FPACC least-significant byte - 1
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax
-    ldy #FOLSWE         ; Set pointer to FPOP least-significant byte - 1
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax
-    lda #4              ; Set precision counter
+    ldx #FOLSWE         ; Set pointer to FPOP least-significant byte - 1
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #FPLSWE         ; Set pointer to FPACC least-significant byte - 1
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$04            ; Set precision counter
     jsr ADDER           ; Add FPOP to FPACC
     jmp FPNORM          ; Normalize result and return
 SHLOOP:
@@ -192,13 +187,11 @@ MULTIP:
     jsr ROTATR          ; Rotate FPACC right
     bcc NADOPP          ; Carry = zero, don't add partial product
 ADOPP:
-    ldy #WORK1          ; Pointer to least-significant byte of partial product
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Save it on the parameter stack
-    ldy #MCAND1         ; Pointer to least-significant byte of multiplicand
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Save it on the parameter stack
-    lda #6              ; Set precision counter
+    ldx #MCAND1         ; Pointer to least-significant byte of multiplicand
+    stx FPBASE + FMPNT  ; Store pointer
+    ldx #WORK1          ; Pointer to least-significant byte of partial product
+    stx FPBASE + TOPNT  ; Store pointer
+    ldx #$06             ; Set precision counter
     jsr ADDER           ; Add multiplicand to partial product
 NADOPP:
     ldx #WORK6          ; Set pointer to most-significant byte of partial product
@@ -226,13 +219,11 @@ CROUND:
     dey                 ; Decrement counter
     bne CROUND          ; Not zero. Add next byte
 PREXFR:
-    ldy #FPLSWE         ; Set pointer to FPACC LSW - 1
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store it on the parameter stack
-    ldy #WORK3          ; Set pointer to partial product LSW - 1
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store it on the parameter stack
-    lda #4              ; Set precision counter
+    ldx #FPLSWE         ; Set pointer to FPACC LSW - 1
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #WORK3          ; Set pointer to partial product LSW - 1
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #$04            ; Set precision counter
 EXMLDV:
     jsr MOVIND          ; Move partial-product to FPACC
     jsr FPNORM          ; Normalize result
@@ -244,13 +235,13 @@ EXMLDV:
 MULTEX:
     rts                 ; Exit FPMULT
 CKSIGN:
-    ldy #WORK0          ; Set pointer to work area
-    jsr CALCPTR         ; Calculate pointer
-    ldy #8              ; Set precision counter
+    lda #WORK0          ; Set pointer to work area
+    sta FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$8             ; Set precision counter
     jsr CLRMEM          ; Clear work area
-    ldy #MCAND0         ; Set pointer to multiplicand storage
-    jsr CALCPTR         ; Calculate pointer
-    ldy #4              ; Set precision counter
+    lda #MCAND0         ; Set pointer to multiplicand storage
+    sta FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$4             ; Set precision counter
     jsr CLRMEM          ; Clear multiplicand storage
     lda #1              ; Initialize sign indicator
     sta FPBASE + SIGNS  ; By storing one in SIGNS
@@ -290,13 +281,11 @@ SETDCT:
 DIVIDE:
     jsr SETSUB          ; Subtrsct DIVISOR from DIVIDEND
     bmi NOGO            ; If result is minus, rotate zero in QUOTIENT
-    ldy #FOPLSW         ; Set pointer to DIVIDEND
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Push it on the parameter stack
-    ldy #WORK0          ; Set pointer to QUOTIENT
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Push it on the parameter stack
-    lda #3              ; Set precision counter
+    ldx #FOPLSW         ; Set pointer to DIVIDEND
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #WORK0          ; Set pointer to QUOTIENT
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #$3             ; Set precision counter
     jsr MOVIND          ; Move QUOTIENT to DIVIDEND
     sec                 ; Set carry for positive results
     jmp QUOROT
@@ -332,22 +321,18 @@ QUOROT:
     jsr ROTATR          ; Clear sign bit counter
     inc FPBASE + FPACCE ; Compensate exponent for rotate
 DVEXIT:
-    ldy #FPLSWE         ; Set pointer to FPACC
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Push to the parameter stack
-    ldy #WORK3          ; Set pointer to QUOTIENT
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Push to the parameter stack
-    lda #4              ; Set precision counter
+    ldx #FPLSWE         ; Set pointer to FPACC
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #WORK3          ; Set pointer to QUOTIENT
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #$04            ; Set precision counter
     jmp EXMLDV          ; Move QUOTIENT to FPACC
 SETSUB:
-    ldy #WORK0          ; Set pointer to work area
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Push to the parameter stack
-    ldy #FPLSW          ; Set pointer to FPACC
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Push to the parameter stack
-    lda #3              ; Set precision counter
+    ldx #WORK0          ; Set pointer to work area
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #FPLSW          ; Set pointer to FPACC
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #$3             ; Set precision counter
     jsr MOVIND          ; Move FPACC to work area
     ldy #FOPLSW         ; Set pointer to FPOP LS byte - 1
     jsr CALCPTR         ; Calculate pointer

@@ -10,7 +10,7 @@
 
 CH_DEL = 20
 
-.import FPBASE, CALCPTR, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, pushax, FPNORM
+.import FPBASE, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, FPNORM
 .export FPINP, DECBIN, FPD10, FPX10
 
 ; This routine reads a floating point number from the keyboard into FPACC.
@@ -19,9 +19,9 @@ CH_DEL = 20
 
 FPINP:
     cld                 ; Clear decimal mode flag
-    ldy #INMTAS         ; Set pointer to storage area
-    jsr CALCPTR         ; Calculate pointer
-    ldy #$0c            ; Set precision counter
+    ldx #INMTAS         ; Set pointer to storage area
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$0c            ; Set precision counter
     jsr CLRMEM          ; Clear storage area
 INPW1:
     jsr GETIN           ; Get character from keyboard
@@ -139,13 +139,11 @@ ENDINP:
 FINPUT:
     lda #$0
     sta FPBASE + IOSTR - 1  ; Clear input storage LSB - 1
-    ldy #FPLSWE         ; Set destination to FPACC
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Save on parameter stack
-    ldy #IOSTR - 1      ; Set source to input storage
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Save on parameter stack
-    lda #$04            ; Number of bytes to move
+    lda #FPLSWE         ; Set destination to FPACC
+    sta FPBASE + TOPNT  ; Set TOPNT to FPACC
+    lda #IOSTR - 1      ; Set source to input storage
+    sta FPBASE + FMPNT  ; Set byte counter
+    ldx #$04            ; Number of bytes to move
     jsr MOVIND          ; Move input to FPACC
     ldy #$17            ; Set exponent for normalization
     sty FPBASE + FPACCE ; Normalize the input
@@ -202,13 +200,11 @@ FPD10:
 DECBIN:
     lda #$0
     sta FPBASE + IOSTR3 ; Clear MS byte + 1 of result
-    ldy #IOLSW          ; Set pointer to I/O work area
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store on parameter stack
-    ldy #IOSTR          ; Set pointer to I/O storage
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store on parameter stack
-    lda #$04            ; Set precision counter
+    ldx #IOLSW          ; Set pointer to I/O work area
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #IOSTR          ; Set pointer to I/O storage
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #$04            ; Set precision counter
     jsr MOVIND          ; Move I/O storage to work area
     ldx #IOSTR          ; Set pointer to original value
     ldy #$04            ; Set precision counter
@@ -216,13 +212,11 @@ DECBIN:
     ldx #IOSTR          ; Reset pointer
     ldy #$04            ; Set precision counter
     jsr ROTATL          ; Multiply by two again (total = X4)
-    ldy #IOSTR          ; Set pointer to I/O storage
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store on parameter stack
-    ldy #IOLSW          ; Set pointer to I/O work area
-    jsr CALCPTR         ; Calculate pointer
-    jsr pushax          ; Store on parameter stack
-    lda #$04            ; Set precision counter
+    ldx #IOLSW          ; Set pointer to I/O work area
+    stx FPBASE + FMPNT  ; Store in FMPNT
+    ldx #IOSTR          ; Set pointer to I/O storage
+    stx FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$04            ; Set precision counter
     jsr ADDER           ; Add original to rotated (X5)
     ldx #IOSTR          ; Reset pointer
     ldy #$04            ; Set precision counter

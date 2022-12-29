@@ -1,7 +1,8 @@
 .include "float.inc"
 
-.import ROTATL, ROTATR, COMPLM, FPNORM, FPINP, FPOUT, FPADD, FPMULT, FPDIV, MOVIND, pushax, CALCPTR, FPSUB
+.import ROTATL, ROTATR, COMPLM, FPNORM, FPINP, FPOUT, FPADD, FPMULT, FPDIV, MOVIND, MOVIN, pushax, CALCPTR, FPSUB
 .import popa
+.importzp ptr1, ptr2
 
 .export _complm, _rotAtl, _rotAtr, _num, _fpnorm
 .export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers
@@ -128,12 +129,14 @@ L2:
     pla
     tax
     pla
-    jsr pushax
+    sta ptr2
+    stx ptr2 + 1
     ldy #FPLSW
     jsr CALCPTR
-    jsr pushax
-    lda #$04
-    jmp MOVIND
+    sta ptr1
+    stx ptr1 + 1
+    ldx #$04
+    jmp MOVIN
 .endproc
 
 .proc _addNumbers
@@ -143,13 +146,14 @@ L2:
     ; Copy caller's buffer to FOP
     ldy #FOPLSW
     jsr CALCPTR
-    jsr pushax
+    sta ptr2
+    stx ptr2 + 1
     pla
-    tax
+    sta ptr1 + 1
     pla
-    jsr pushax
-    lda #$04
-    jsr MOVIND
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
     jmp FPADD
 .endproc
 
@@ -160,13 +164,14 @@ L2:
     ; Copy caller's buffer to FOP
     ldy #FOPLSW
     jsr CALCPTR
-    jsr pushax
+    sta ptr2
+    stx ptr2 + 1
     pla
-    tax
+    sta ptr1 + 1
     pla
-    jsr pushax
-    lda #$04
-    jsr MOVIND
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
     jmp FPSUB
 .endproc
 
@@ -177,13 +182,14 @@ L2:
     ; Copy caller's buffer to FOP
     ldy #FOPLSW
     jsr CALCPTR
-    jsr pushax
+    sta ptr2
+    stx ptr2 + 1
     pla
-    tax
+    sta ptr1 + 1
     pla
-    jsr pushax
-    lda #$04
-    jsr MOVIND
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
     jmp FPMULT
 .endproc
 
@@ -194,12 +200,13 @@ L2:
     ; Copy caller's buffer to FOP
     ldy #FOPLSW
     jsr CALCPTR
-    jsr pushax
+    sta ptr2
+    stx ptr2 + 1
     pla
-    tax
+    sta ptr1 + 1
     pla
-    jsr pushax
-    lda #$04
-    jsr MOVIND
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
     jmp FPDIV
 .endproc

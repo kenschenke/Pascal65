@@ -17,6 +17,10 @@
 ;    FPBASE + FOPMSW : Most significant byte
 ;    FPBASE + FOPEXP : Exponent
 
+FMPNT  = $0     ; FROM offset (from FPBASE)
+TOPNT  = $1     ; TO offset (from FPBASE)
+PREC   = $2     ; Precision for FPOUT
+WIDTH  = $3     ; Width for FPOUT
 CNTR   = $4     ; Counter Storage
 TSIGN  = $5     ; Sign indicator
 SIGNS  = $6     ; Signs indicator (multiply and divide)
