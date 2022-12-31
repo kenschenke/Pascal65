@@ -4,11 +4,9 @@
 ; 6502 Software Gourmet Guide & Cookbook
 ; by Robert Findley
 
-.include "cbm_kernal.inc"
-.include "c64.inc"
 .include "float.inc"
 
-.import FPBASE, COMPLM, MOVIND, ROTATL, ROTATR, DECBIN, FPD10, FPX10
+.import FPBASE, FPBUF, COMPLM, MOVIND, ROTATL, ROTATR, DECBIN, FPD10, FPX10
 
 .export FPOUT
 
@@ -18,6 +16,7 @@
 FPOUT:
     lda #0
     sta FPBASE + IOEXPD ; Clear decimal exponent storage
+    sta FPBASE + TEMP1  ; Clear index for buffer
     lda FPBASE + FPMSW  ; Is value to output negative?
     bmi OUTNEG          ; Yes, make positive and output minus
     lda #'+'            ; Else, set ASCII code for plus sign
@@ -28,11 +27,16 @@ OUTNEG:
     jsr COMPLM          ; Make FPACC positive
     lda #'-'            ; Set ASCII code for minus sign
 AHEAD1:
-    jsr CHROUT          ; Output sign of result
+    ldx FPBASE + TEMP1  ; Load index of output buffer
+    sta FPBUF,x         ; Store sign of result
+    inx                 ; Increment buffer index
     lda #'0'            ; Set up ASCII zero
-    jsr CHROUT          ; Output zero to display
+    sta FPBUF,x         ; Store a zero in the buffer
+    inx                 ; Increment buffer index
     lda #'.'            ; Set up ASCII decimal point
-    jsr CHROUT          ; Output decimal point
+    sta FPBUF,x         ; Store decimal point in the buffer
+    inx                 ; Increment buffer index
+    stx FPBASE + TEMP1  ; Store buffer index for later
     dec FPBASE + FPACCE ; Decrement FPACC exponent
 DECEXT:
     bpl DECEXD          ; If compensated, exponent >= 0
@@ -75,7 +79,10 @@ OUTDIG:
 OUTDGS:
     lda FPBASE + IOSTR3 ; Get BCD from output register
     ora #'0'            ; Form ASCII code for numbers
-    jsr CHROUT          ; And output digit
+    ldx FPBASE + TEMP1  ; Index in output buffer
+    sta FPBUF,x         ; Store digit in output buffer
+    inx                 ; Increment buffer index
+    stx FPBASE + TEMP1  ; Store buffer index
 DECRDG:
     dec FPBASE + CNTR   ; Decrement digit counter
     beq EXPOUT          ; = zero, done output exponent
@@ -94,7 +101,10 @@ ZERODG:
     beq DECRDG          ; Before finishing display
 EXPOUT:
     lda #'E'            ; Setup ASCII code for E
-    jsr CHROUT          ; Display E for exponent
+    ldx FPBASE + TEMP1  ; Load output buffer index
+    sta FPBUF,x         ; Add E for exponent to output buffer
+    inx                 ; Increment buffer index
+    stx FPBASE + TEMP1  ; Store buffer index
     lda FPBASE + IOEXPD ; Test if negative
     bmi EXOUTN          ; Yes, display minus sign and negate
     lda #'+'            ; No, set ASCII code for plus sign
@@ -105,7 +115,10 @@ EXOUTN:
     inc FPBASE + IOEXPD ; For output of exponent value
     lda #'-'            ; Set ASCII code for minus sign
 AHEAD2:
-    jsr CHROUT          ; Output sign of exponent
+    ldx FPBASE + TEMP1  ; Load output buffer index
+    sta FPBUF,x         ; Store sign of exponent in output buffer
+    inx                 ; Increment buffer index
+    stx FPBASE + TEMP1  ; Store output buffer index
     ldy #$0             ; Clear ten's counter
     lda FPBASE + IOEXPD ; Fetch exponent
 SUB12:
@@ -118,7 +131,13 @@ SUB12:
 TOMUCH:
     tya                 ; Put MS digit into A
     ora #'0'            ; Form ASCII code
-    jsr CHROUT          ; Output ten's digit to display
+    ldx FPBASE + TEMP1  ; Load buffer index
+    sta FPBUF,x         ; Store ten's digit in output buffer
+    inx                 ; Increment buffer index
     lda FPBASE + IOEXPD ; Fetch unit's digit
     ora #'0'            ; Form ASCII code
-    jmp CHROUT          ; Output digit and return
+    sta FPBUF,x         ; Add digit to output buffer
+    inx                 ; Increment buffer index
+    lda #0              ; Clear A
+    sta FPBUF,x         ; Add NULL terminator to buffer
+    rts

@@ -10,11 +10,12 @@
 .importzp ptr1, ptr2
 
 .export FPNORM, FPMULT, FPADD, FPDIV, FPSUB
-.export FPBASE
+.export FPBASE, FPBUF
 
 .bss
 
 FPBASE: .res 44
+FPBUF: .res 15
 
 .code
 

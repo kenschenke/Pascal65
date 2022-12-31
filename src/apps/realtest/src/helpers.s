@@ -8,7 +8,7 @@
 .export _complm, _rotAtl, _rotAtr, _num, _fpnorm, _callNorm
 .export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers, _getAcc
 .export _testRounding
-.import FPBASE
+.import FPBASE, FPBUF
 
 .bss
 
@@ -125,7 +125,8 @@ L2:
 .proc _fpout
     lda #$00
     sta FPBASE + PREC
-    jmp FPOUT
+    jsr FPOUT
+    jmp outputBuffer
 .endproc
 
 .proc _getFirstNumber
@@ -237,3 +238,14 @@ L2:
     jmp PRECRD
 .endproc
 
+.proc outputBuffer
+    ldx #0
+L1:
+    lda FPBUF,x
+    beq L2
+    jsr CHROUT
+    inx
+    jmp L1
+L2:
+    rts
+.endproc
