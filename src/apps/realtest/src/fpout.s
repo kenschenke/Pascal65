@@ -13,7 +13,7 @@
 .export FPOUT
 
 ; This routine outputs FPACC to the console.
-; FPACC is modified.
+; FPACC and FPOP are modified.
 
 FPOUT:
     lda #0

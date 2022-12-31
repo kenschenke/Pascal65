@@ -1,11 +1,13 @@
 .include "float.inc"
+.include "cbm_kernal.inc"
 
-.import ROTATL, ROTATR, COMPLM, FPNORM, FPINP, FPOUT, FPADD, FPMULT, FPDIV, MOVIND, MOVIN, pushax, CALCPTR, FPSUB
+.import ROTATL, ROTATR, COMPLM, FPNORM, FPINP, FPOUT, FPADD, FPMULT, FPDIV, MOVIND, MOVIN, pushax, CALCPTR, FPSUB, PRECRD
 .import popa
 .importzp ptr1, ptr2
 
-.export _complm, _rotAtl, _rotAtr, _num, _fpnorm
-.export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers
+.export _complm, _rotAtl, _rotAtr, _num, _fpnorm, _callNorm
+.export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers, _getAcc
+.export _testRounding
 .import FPBASE
 
 .bss
@@ -87,6 +89,10 @@ L2:
     rts
 .endproc
 
+.proc _callNorm
+    jmp FPNORM
+.endproc
+
 ; fpnorm(unsigned char lsw, nsw, msw, exp)
 .proc _fpnorm
     sta FPBASE + FPACCE
@@ -117,6 +123,8 @@ L2:
 .endproc
 
 .proc _fpout
+    lda #$00
+    sta FPBASE + PREC
     jmp FPOUT
 .endproc
 
@@ -210,3 +218,22 @@ L2:
     jsr MOVIN
     jmp FPDIV
 .endproc
+
+.proc _getAcc
+    lda FPBASE + FPLSW
+    sta _lsb
+    lda FPBASE + FPNSW
+    sta _nsb
+    lda FPBASE + FPMSW
+    sta _msb
+    lda FPBASE + FPACCE
+    sta _exp
+    rts
+.endproc
+
+.proc _testRounding
+    lda #$2
+    sta FPBASE + PREC
+    jmp PRECRD
+.endproc
+

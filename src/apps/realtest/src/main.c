@@ -4,17 +4,12 @@
 
 unsigned char firstNum[4];
 
-#if 0
-static void dump(void);
-static void floatAddRunner(void);
-static void fixedToFloatRunner(void);
-static void floatToFixedRunner(void);
-#endif
 static void addTwoNumbers(void);
 static void multiplyTwoNumbers(void);
 static void divideTwoNumbers(void);
 static void subtractTwoNumbers(void);
-static void showBinary(unsigned long num);
+static void show32BitBinary(unsigned long num);
+static void show8BitBinary(unsigned char byte);
 static void handleOpt(char ch);
 static void prompt(void);
 static void complement(void);
@@ -25,6 +20,8 @@ static void showHelp(void);
 static void testInputOutput(void);
 
 void addNumbers(unsigned char *buffer);
+void callNorm(void);
+void getAcc(void);
 void subtractNumbers(unsigned char *buffer);
 void multNumbers(unsigned char *buffer);
 void divNumbers(unsigned char *buffer);
@@ -35,21 +32,7 @@ void fpnorm(unsigned char lsb, unsigned char nsb, unsigned char msb, unsigned ch
 void getFirstNumber(unsigned char *buffer);
 void rotAtl(void);
 void rotAtr(void);
-
-#if 0
-void floatAdd(void);
-void fixedToFloat(int num);
-int floatToFixed(unsigned char x1, unsigned char m1, unsigned char m2, unsigned char m3);
-
-static void dump(void)
-{
-    extern unsigned char M11, M12, M13, M21, M22, M23, X1, X2, E1, E2, E3, E4;
-
-    printf("X1 %02x   M1 %02x %02x %02x\n", X1, M11, M12, M13);
-    printf("X2 %02x   M2 %02x %02x %02x\n", X2, M21, M22, M23);
-    printf("E %02x %02x %02x %02x\n", E1, E2, E3, E4);
-}
-#endif
+void testRounding(void);
 
 static void addTwoNumbers(void)
 {
@@ -161,16 +144,18 @@ static void handleOpt(char ch) {
             exit(0);
             break;
 
+        case '?':
+            showHelp();
+            break;
+
         default:
-            printf("\nUnrecognized option\n");
+            printf("\nUnrecognized option - '?' for help\n");
             break;
     }
 }
 
 static void prompt(void) {
-    showHelp();
-
-    printf("\nSelect an option:\n");
+    printf("\nSelect an option - '?' for help:\n");
     handleOpt(cgetc());
 }
 
@@ -178,7 +163,7 @@ static void complement(void) {
     extern unsigned long num;
 
     num = 1234567;
-    // showBinary(num);
+    // show32BitBinary(num);
     complm();
     printf("num %ld\n", num);
 }
@@ -197,21 +182,21 @@ static void rotateLeft(void) {
     extern unsigned long num;
 
     num = 0x0df64126;
-    showBinary(num);
+    show32BitBinary(num);
     rotAtl();
-    showBinary(num);
+    show32BitBinary(num);
 }
 
 static void rotateRight(void) {
     extern unsigned long num;
 
     num = 0x0df64126;
-    showBinary(num);
+    show32BitBinary(num);
     rotAtr();
-    showBinary(num);
+    show32BitBinary(num);
 }
 
-static void showBinary(unsigned long num) {
+static void show32BitBinary(unsigned long num) {
     int i, j;
     unsigned long mask = 0x80000000;
 
@@ -225,10 +210,20 @@ static void showBinary(unsigned long num) {
     printf("\n");
 }
 
+static void show8BitBinary(unsigned char byte) {
+    int i;
+    unsigned char mask = 0x80;
+
+    for (i = 0; i < 8; i++) {
+        printf("%c", (byte & mask) == mask ? '1' : '0');
+        mask >>= 1;
+    }
+}
+
 static void showHelp(void) {
     printf("\nFloating Point Demonstration Program\n\n");
     printf("A - Add two numbers\n");
-    printf("F - Fixed to floating point\n");
+    // printf("F - Fixed to floating point\n");
     printf("C - Two's complement\n");
     printf("D - Divide two numbers\n");
     printf("I - Test input / output\n");
@@ -236,7 +231,7 @@ static void showHelp(void) {
     printf("M - Multiply two numbers\n");
     printf("N - Normalize\n");
     printf("R - Rotate right\n");
-    printf("P - Floating to fixed point\n");
+    // printf("P - Floating to fixed point\n");
     printf("S - Subtract two numbers\n");
     printf("? - This help screen\n");
 
@@ -245,9 +240,24 @@ static void showHelp(void) {
 
 static void testInputOutput(void)
 {
+    extern unsigned char lsb, nsb, msb, exp;
+
     printf("Enter a number: ");
     fpinp();
+    // callNorm();
+    // testRounding();
 
+    printf("\nFPACC:\n");
+    getAcc();
+    printf("EMNS ");
+    show8BitBinary(exp); printf(" ");
+    show8BitBinary(msb); printf(" ");
+    show8BitBinary(nsb); printf(" ");
+    show8BitBinary(lsb);
+    // printf("   LSB: %02x\n", lsb);
+    // printf("   NSB: %02x\n", nsb);
+    // printf("   MSB: %02x\n", msb);
+    // printf("   EXP: %02x\n", exp);
     printf("\n\nYou entered: ");
     fpout();
     printf("\n");
