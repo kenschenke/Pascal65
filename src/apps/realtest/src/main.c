@@ -248,18 +248,19 @@ static void testInputOutput(void)
     // testRounding();
 
     printf("\nFPACC:\n");
-    getAcc();
-    printf("EMNS ");
-    show8BitBinary(exp); printf(" ");
-    show8BitBinary(msb); printf(" ");
-    show8BitBinary(nsb); printf(" ");
-    show8BitBinary(lsb);
+    // show8BitBinary(exp); printf(" ");
+    // show8BitBinary(msb); printf(" ");
+    // show8BitBinary(nsb); printf(" ");
+    // show8BitBinary(lsb);
     // printf("   LSB: %02x\n", lsb);
     // printf("   NSB: %02x\n", nsb);
     // printf("   MSB: %02x\n", msb);
     // printf("   EXP: %02x\n", exp);
     printf("\n\nYou entered: ");
     fpout();
+    getAcc();
+    printf("EMNS ");
+    printf("%d\n", exp);
     printf("\n");
 }
 

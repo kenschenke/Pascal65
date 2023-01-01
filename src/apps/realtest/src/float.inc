@@ -17,6 +17,8 @@
 ;    FPBASE + FOPMSW : Most significant byte
 ;    FPBASE + FOPEXP : Exponent
 
+FPBUFSZ = $f    ; 15 bytes
+
 FMPNT  = $0     ; FROM offset (from FPBASE)
 TOPNT  = $1     ; TO offset (from FPBASE)
 PREC   = $2     ; Precision for FPOUT

@@ -15,7 +15,7 @@
 .bss
 
 FPBASE: .res 44
-FPBUF: .res 15
+FPBUF: .res FPBUFSZ
 
 .code
 
