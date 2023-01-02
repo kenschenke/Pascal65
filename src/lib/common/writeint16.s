@@ -2,14 +2,14 @@
 
 .importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
 .import tensTable, intBuf, intOp1, intOp2, spcl32768
-.import isNegInt16, invertInt16, leftpad, popax, printz
+.import isNegInt16, invertInt16, leftpad, popax
 
 .export writeInt16
 
-; This routine writes a signed 16-bit integer to the output device
-; as a series of PETSCII characters.  If bit 7 of the high byte is
-; set, the number is treated as negative and a minus sign is written
-; to the output device.
+; This routine converts the signed 16-bit integer in intOp1 into
+; a string stored in the intBuf buffer as a series of PETSCII
+; characters.  If bit 7 of the high byte is set, the number is
+; treated as negative and a minus sign is written to the buffer.
 ;
 ; The routine works by seeing how many times the number goes into
 ; 10000, then 1000, then 100, and finally 10.
@@ -164,10 +164,7 @@ NUM_WORDTBL = 8     ; four entries * 2 bytes
     tax
     lda tmp4
     jsr leftpad
-    ; print the buffer
-    lda #<intBuf
-    ldx #>intBuf
-    jmp printz
+    rts
 .endproc
 
 .proc clearbuf

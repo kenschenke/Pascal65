@@ -5,6 +5,8 @@
 unsigned char firstNum[4];
 
 static void addTwoNumbers(void);
+static void fixedToFloat(void);
+static void floatToFixed(void);
 static void multiplyTwoNumbers(void);
 static void divideTwoNumbers(void);
 static void subtractTwoNumbers(void);
@@ -22,6 +24,8 @@ static void testInputOutput(void);
 void addNumbers(unsigned char *buffer);
 void callNorm(void);
 void copyIntoBuf(char *buffer);
+int floatToInt16(void);
+void int16ToFloat(int num);
 void getAcc(void);
 char getLine(void);
 void subtractNumbers(unsigned char *buffer);
@@ -103,7 +107,7 @@ static void handleOpt(char ch) {
             
         case 'f':
         case 'F':
-            // fixedToFloatRunner();
+            fixedToFloat();
             break;
 
         case 'i':
@@ -133,7 +137,7 @@ static void handleOpt(char ch) {
 
         case 'p':
         case 'P':
-            // floatToFixedRunner();
+            floatToFixed();
             break;
 
         case 's':
@@ -225,7 +229,7 @@ static void show8BitBinary(unsigned char byte) {
 static void showHelp(void) {
     printf("\nFloating Point Demonstration Program\n\n");
     printf("A - Add two numbers\n");
-    // printf("F - Fixed to floating point\n");
+    printf("F - Fixed to floating point\n");
     printf("C - Two's complement\n");
     printf("D - Divide two numbers\n");
     printf("I - Test input / output\n");
@@ -233,11 +237,38 @@ static void showHelp(void) {
     printf("M - Multiply two numbers\n");
     printf("N - Normalize\n");
     printf("R - Rotate right\n");
-    // printf("P - Floating to fixed point\n");
+    printf("P - Floating to fixed point\n");
     printf("S - Subtract two numbers\n");
     printf("? - This help screen\n");
 
     printf("X - Exit\n");
+}
+
+static void floatToFixed(void)
+{
+    int num;
+    extern char getlineBuf;
+
+    printf("Enter a number FP number: ");
+    if (getLine()) {
+        printf("Stop pressed\n");
+        return;
+    }
+    copyIntoBuf(&getlineBuf);
+    fpinp();
+    num = floatToInt16();
+    printf("\n\nYou entered: %d\n", num);
+}
+
+static void fixedToFloat(void)
+{
+    int num;
+
+    printf("Enter a fixed number: ");
+    scanf("%d", &num);
+    printf("\nYou Entered: ");
+    int16ToFloat(num);
+    printf("\n");
 }
 
 static void testInputOutput(void)

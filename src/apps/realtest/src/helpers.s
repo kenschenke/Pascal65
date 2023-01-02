@@ -7,8 +7,8 @@
 
 .export _complm, _rotAtl, _rotAtr, _num, _fpnorm, _callNorm
 .export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers, _getAcc
-.export _testRounding, _getLine, _copyIntoBuf
-.import FPBASE, FPBUF, getline, _getlineBuf, _getlineUsed
+.export _testRounding, _getLine, _copyIntoBuf, _floatToInt16, _int16ToFloat
+.import FPBASE, FPBUF, getline, _getlineBuf, _getlineUsed, floatToInt16, intOp1, int16ToFloat
 
 .bss
 
@@ -110,6 +110,20 @@ L1:
 L2:
     sta (ptr2),y
     rts
+.endproc
+
+.proc _floatToInt16
+    jsr floatToInt16
+    lda intOp1
+    ldx intOp1 + 1
+    rts
+.endproc
+
+.proc _int16ToFloat
+    sta intOp1
+    stx intOp1 + 1
+    jsr int16ToFloat
+    jmp _fpout
 .endproc
 
 ; fpnorm(unsigned char lsw, nsw, msw, exp)

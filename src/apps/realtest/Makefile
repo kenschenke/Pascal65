@@ -24,7 +24,7 @@ LDFLAGS =
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
-SOURCES += $(LIBCOMMONDIR)/getline.s
+SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
 
 CONFIG := cfg-$(TARGET).cfg
 
