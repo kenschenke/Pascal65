@@ -3,6 +3,7 @@
 SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
+LIBCOMMONDIR := ../../lib/common
 
 PROGRAM := realtest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
@@ -23,6 +24,7 @@ LDFLAGS =
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
+SOURCES += $(LIBCOMMONDIR)/getline.s
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -43,6 +45,10 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.s $(LIBCOMMONDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

@@ -7,8 +7,8 @@
 
 .export _complm, _rotAtl, _rotAtr, _num, _fpnorm, _callNorm
 .export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers, _getAcc
-.export _testRounding
-.import FPBASE, FPBUF
+.export _testRounding, _getLine, _copyIntoBuf
+.import FPBASE, FPBUF, getline, _getlineBuf, _getlineUsed
 
 .bss
 
@@ -93,6 +93,25 @@ L2:
     jmp FPNORM
 .endproc
 
+.proc _copyIntoBuf
+    sta ptr1
+    stx ptr1 + 1
+    lda #<FPBUF
+    sta ptr2
+    lda #>FPBUF
+    sta ptr2 + 1
+    ldy #0
+L1:
+    lda (ptr1),y
+    beq L2
+    sta (ptr2),y
+    iny
+    jmp L1
+L2:
+    sta (ptr2),y
+    rts
+.endproc
+
 ; fpnorm(unsigned char lsw, nsw, msw, exp)
 .proc _fpnorm
     sta FPBASE + FPACCE
@@ -127,6 +146,17 @@ L2:
     sta FPBASE + PREC
     jsr FPOUT
     jmp outputBuffer
+.endproc
+
+.proc _getLine
+    jsr getline
+    pha
+    ldx _getlineUsed
+    lda #0
+    sta _getlineBuf,x
+    pla
+    ldx #0
+    rts
 .endproc
 
 .proc _getFirstNumber

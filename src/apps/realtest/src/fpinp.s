@@ -4,13 +4,9 @@
 ; 6502 Software Gourmet Guide & Cookbook
 ; by Robert Findley
 
-.include "cbm_kernal.inc"
-.include "c64.inc"
 .include "float.inc"
 
-CH_DEL = 20
-
-.import FPBASE, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, FPNORM
+.import FPBASE, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, FPNORM, FPBUF, XBUF
 .export FPINP, DECBIN, FPD10, FPX10
 
 ; This routine reads a floating point number from the keyboard into FPACC.
@@ -23,28 +19,20 @@ FPINP:
     stx FPBASE + TOPNT  ; Store in TOPNT
     ldx #$0c            ; Set precision counter
     jsr CLRMEM          ; Clear storage area
-INPW1:
-    jsr GETIN           ; Get character from keyboard
-    cmp #0              ; Was a char in the keyboard buffer?
-    beq INPW1           ; Branch back if not
+    ldx #$00            ; Clear A
+    stx XBUF            ; Clear the buffer index
+    lda FPBUF,x         ; Get the first character from the buffer
+    inc XBUF            ; Increment counter
     cmp #'+'            ; Test if plus sign
-    beq SECHO           ; Yes, echo and continue
+    beq NINPUT          ; Yes, continue
     cmp #'-'            ; Test if minus sign
     bne NOTPLM          ; No, test if valid character
     sta FPBASE + INMTAS ; Make input sign nonzero
-SECHO:
-    jsr CHROUT          ; Echo character to screen
 NINPUT:
-    jsr GETIN           ; Get character from keyboard
-    cmp #0              ; Was a char in the keyboard buffer?
-    beq NINPUT          ; Branch back if not
+    ldx XBUF
+    lda FPBUF,x         ; Get the next character from the buffer
+    inc XBUF            ; Increment index
 NOTPLM:
-    cmp #CH_DEL         ; Test for delete char
-    bne SERASE          ; No, skip erase
-ERASE:
-    jsr CHROUT          ; Output delete
-    jmp FPINP           ; Restart input
-SERASE:
     cmp #'.'            ; Test for decimal point
     bne SPRIOD          ; No, skip period
 PERIOD:
@@ -55,31 +43,26 @@ PER1:
     sta FPBASE + INPRDI ; Set decimal pointer indicator
     ldy #0
     sty FPBASE + CNTR   ; Reset digit counter
-    jsr CHROUT          ; Echo decimal point to output
     jmp NINPUT          ; Get next character
 SPRIOD:
     cmp #'E'            ; Test E for exponent
-    bne SFNDXP          ; No, skip exponent
+    beq FNDEXP          ; Yes, parse Exponent
+    cmp #'e'            ; Test e for exponent
+    bne SFNDXP          ; No, skip Exponent
 FNDEXP:
-    jsr CHROUT          ; Yes, echo 'E' to output
-INPW2:
-    jsr GETIN           ; Input next character of exponent
-    cmp #0              ; Was a char in the keyboard buffer?
-    beq INPW2           ; Branch back if not
+    ldx XBUF            ; Load the buffer index
+    lda FPBUF,x         ; Get the next character
+    inc XBUF            ; Increment the index
     cmp #'+'            ; Test for plus sign
-    beq EXECHO          ; Yes, echo it
+    beq EXPINP          ; Yes
     cmp #'-'            ; Test for minus sign
     bne NOEXPS          ; No, test for digit
     sta FPBASE + INEXPS ; Yes, store minus character
-EXECHO:
-    jsr CHROUT          ; Echo to output
 EXPINP:
-    jsr GETIN           ; Get next character of exponent
-    cmp #0              ; Was a char in the keyboard buffer?
-    beq EXPINP          ; Branch back if not
+    ldx XBUF            ; Load buffer index
+    lda FPBUF,x         ; Get next character
+    inc XBUF            ; Increment the index
 NOEXPS:
-    cmp #CH_DEL         ; Test for delete
-    beq ERASE           ; Yes, start again
     cmp #'0'            ; Number, test low limit
 ISLAND:
     bmi ENDINP          ; No, end input string
@@ -101,7 +84,7 @@ ISLAND:
     sta FPBASE,x        ; Store in exponent storage
     lda #'0'            ; Restore ASCII code
     ora FPBASE + TEMP1  ; By OR'ing with the value
-    bne EXECHO          ; Echo digit
+    bne EXPINP          ; Next digit
 SFNDXP:
     cmp #'0'            ; Test for valid number
     bmi ENDINP          ; Too low, end input
@@ -112,7 +95,6 @@ SFNDXP:
     bit FPBASE + IOSTR2 ; Test for too large
     bne JNINPUT         ; Yes, ignore present input
     tya                 ; No, fetch digit again
-    jsr CHROUT          ; Echo to output
     inc FPBASE + CNTR   ; Increment digit counter
     and #$0f            ; Mask off ASCII
     pha                 ; Save BCD digit temporarily

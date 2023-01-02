@@ -8,7 +8,7 @@
 
 .import FPBASE, FPBUF, COMPLM, MOVIND, ROTATL, ROTATR, DECBIN, FPD10, FPX10, PRECRD
 
-.export FPOUT
+.export FPOUT, XBUF
 
 .bss
 
@@ -132,7 +132,7 @@ EXPOUT:
     lda ISENOT          ; Are we doing 'E' notation?
     beq ADDPNT          ; No, jump ahead
     jsr INS0PT          ; Insert "0." at start of buffer
-    lda #'E'            ; Setup ASCII code for E
+    lda #'e'            ; Setup ASCII code for E
     ldx XBUF            ; Load output buffer index
     sta FPBUF,x         ; Add E for exponent to output buffer
     inx                 ; Increment buffer index

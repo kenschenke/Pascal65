@@ -21,7 +21,9 @@ static void testInputOutput(void);
 
 void addNumbers(unsigned char *buffer);
 void callNorm(void);
+void copyIntoBuf(char *buffer);
 void getAcc(void);
+char getLine(void);
 void subtractNumbers(unsigned char *buffer);
 void multNumbers(unsigned char *buffer);
 void divNumbers(unsigned char *buffer);
@@ -241,8 +243,14 @@ static void showHelp(void) {
 static void testInputOutput(void)
 {
     extern unsigned char lsb, nsb, msb, exp;
+    extern char getlineBuf;
 
     printf("Enter a number: ");
+    if (getLine()) {
+        printf("Stop pressed\n");
+        return;
+    }
+    copyIntoBuf(&getlineBuf);
     fpinp();
     // callNorm();
     // testRounding();
