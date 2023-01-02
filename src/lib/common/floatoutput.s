@@ -1,4 +1,4 @@
-; Floating point output routine.
+; Routine to output a floating point number into a string.
 ;
 ; Based on floating point routines published in the book
 ; 6502 Software Gourmet Guide & Cookbook

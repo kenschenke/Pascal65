@@ -1,3 +1,9 @@
+; Routine to round a floating point number to a given precision.
+;
+; Based on floating point routines published in the book
+; 6502 Software Gourmet Guide & Cookbook
+; by Robert Findley
+
 .include "float.inc"
 
 .import FPBASE, MOVIND, FPADD, FPSUB, FPMULT, COMPLM

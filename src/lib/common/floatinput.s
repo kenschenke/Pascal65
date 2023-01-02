@@ -1,4 +1,4 @@
-; Floating point keyboard input routine.
+; Routine to parse a floating number from a string.
 ;
 ; Based on floating point routines published in the book
 ; 6502 Software Gourmet Guide & Cookbook

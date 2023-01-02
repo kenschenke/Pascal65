@@ -1,4 +1,9 @@
-; Utility routines for floating point
+; Utility routines for floating point operations.
+;
+; Based on floating point routines published in the book
+; 6502 Software Gourmet Guide & Cookbook
+; by Robert Findley
+
 
 .include "float.inc"
 
