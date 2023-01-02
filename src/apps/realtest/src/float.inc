@@ -21,7 +21,7 @@ FPBUFSZ = $f    ; 15 bytes
 
 FMPNT  = $0     ; FROM offset (from FPBASE)
 TOPNT  = $1     ; TO offset (from FPBASE)
-PREC   = $2     ; Precision for FPOUT
+PREC   = $2     ; Precision for FPOUT -- value between $80 and $ff to skip
 WIDTH  = $3     ; Width for FPOUT
 CNTR   = $4     ; Counter Storage
 TSIGN  = $5     ; Sign indicator

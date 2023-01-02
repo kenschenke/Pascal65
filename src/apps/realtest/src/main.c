@@ -247,7 +247,7 @@ static void testInputOutput(void)
     // callNorm();
     // testRounding();
 
-    printf("\nFPACC:\n");
+    // printf("\nFPACC:\n");
     // show8BitBinary(exp); printf(" ");
     // show8BitBinary(msb); printf(" ");
     // show8BitBinary(nsb); printf(" ");
@@ -259,7 +259,7 @@ static void testInputOutput(void)
     printf("\n\nYou entered: ");
     fpout();
     getAcc();
-    printf("EMNS ");
+    printf("\nEMNS ");
     printf("%d\n", exp);
     printf("\n");
 }

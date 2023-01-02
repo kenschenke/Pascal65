@@ -1,6 +1,6 @@
 .include "float.inc"
 
-.import FPBASE, MOVIND, FPADD, FPSUB, FPMULT
+.import FPBASE, MOVIND, FPADD, FPSUB, FPMULT, COMPLM
 
 .export PRECRD
 
@@ -55,8 +55,11 @@ L2:
     ldx #$04            ; Move four bytes
     jsr MOVIND          ; Move temporary storage to FPACC
     lda FPBASE + FPMSW  ; Load FPACC MS byte
-    bmi L3              ; If FPACC is negative, subtract
+    bmi L3              ; If FPACC is negative, FPOP needs to be as well
     jmp FPADD           ; Add FPOP to FPACC
 L3:
-    jmp FPSUB           ; Subtract FPOP from FPACC
+    ldx #FOPLSW         ; Negate (two's complement) FPOP
+    ldy #$03
+    jsr COMPLM
+    jmp FPADD           ; Add FPOP to FPACC
 .endproc

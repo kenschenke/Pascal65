@@ -6,48 +6,64 @@
 
 .include "float.inc"
 
-.import FPBASE, FPBUF, COMPLM, MOVIND, ROTATL, ROTATR, DECBIN, FPD10, FPX10
+.import FPBASE, FPBUF, COMPLM, MOVIND, ROTATL, ROTATR, DECBIN, FPD10, FPX10, PRECRD
 
 .export FPOUT
 
 .bss
 
-XBUF: .res 1
+XBUF: .res 1            ; Index in output buffer
+ISNEG: .res 1           ; Bit 7 set if mantissa is negative
+ISENOT: .res 1          ; Non-zero if output is 'E' notation
 
 .code
 
-; This routine outputs FPACC to the console.
+; This routine outputs FPACC to FPBUF.
 ; FPACC and FPOP are modified.
+;
+; It supports standard floating point format like 1.23 as well as
+; scientific notation like 0.123E+01.  If the caller does not specify
+; a precision (see FPBASE + PREC) or the exponent falls outside the range
+; of -4 and +7, scientific notation is used.  Otherwise, standard notation.
 
 FPOUT:
     lda #0
     sta FPBASE + IOEXPD ; Clear decimal exponent storage
+    sta ISNEG           ; Clear sign indicator
     sta XBUF            ; Clear index for buffer
     ldx #FPBUFSZ - 1    ; Set offset for clearing output buffer
+    stx ISENOT          ; Assume we will be outputting in 'E' notation
 CLRBUF:
     sta FPBUF,x         ; Clear byte in output buffer
     dex                 ; Decrement index
     bpl CLRBUF          ; If >= 0, continue clearing
+    lda FPBASE + FPACCE ; Is the exponent >= 0?
+    bpl CKEPOS          ; Yes
+    eor #$ff            ; Make it positive
+    clc                 ; Clear carry for addition
+    adc #$01            ; Add one
+    cmp #$10            ; Is the exponent >= $10?
+    bcs SKIPRD          ; Yes, skip rounding
+    jmp CKPREC          ; No, check if the caller wants the value rounded
+CKEPOS:
+    cmp #$16            ; Is the exponent >= $16?
+    bcs SKIPRD          ; Yes, skip rounding
+CKPREC:
+    lda FPBASE + PREC   ; Is precision >= 0?
+    bmi SKIPRD          ; No, skip ahead
+    jsr PRECRD          ; Yes, round FPACC
+    lda #$00            ; Clear A
+    sta ISENOT          ; We will not be outputting in 'E' notation
+SKIPRD:
     lda FPBASE + FPMSW  ; Is value to output negative?
     bmi OUTNEG          ; Yes, make positive and output minus
-    lda #'+'            ; Else, set ASCII code for plus sign
-    bne AHEAD1          ; Go display plus sign
+    jmp AHEAD1          ; Skip ahead
 OUTNEG:
+    sta ISNEG           ; Set the sign indicator
     ldx #FPLSW          ; Set pointer to LS byte of FPACC
     ldy #$3             ; Set precision counter
     jsr COMPLM          ; Make FPACC positive
-    lda #'-'            ; Set ASCII code for minus sign
 AHEAD1:
-    ldx XBUF            ; Load index of output buffer
-    sta FPBUF,x         ; Store sign of result
-    inx                 ; Increment buffer index
-    lda #'0'            ; Set up ASCII zero
-    sta FPBUF,x         ; Store a zero in the buffer
-    inx                 ; Increment buffer index
-    lda #'.'            ; Set up ASCII decimal point
-    sta FPBUF,x         ; Store decimal point in the buffer
-    inx                 ; Increment buffer index
-    stx XBUF            ; Store buffer index for later
     dec FPBASE + FPACCE ; Decrement FPACC exponent
 DECEXT:
     bpl DECEXD          ; If compensated, exponent >= 0
@@ -111,6 +127,11 @@ ZERODG:
     sta FPBASE + IOEXPD
     beq DECRDG          ; Before finishing display
 EXPOUT:
+    lda FPBASE + IOEXPD ; Load the exponent into A
+    sta FPBASE + FPACCE ; Store in FPACCE
+    lda ISENOT          ; Are we doing 'E' notation?
+    beq ADDPNT          ; No, jump ahead
+    jsr INS0PT          ; Insert "0." at start of buffer
     lda #'E'            ; Setup ASCII code for E
     ldx XBUF            ; Load output buffer index
     sta FPBUF,x         ; Add E for exponent to output buffer
@@ -148,15 +169,83 @@ TOMUCH:
     lda FPBASE + IOEXPD ; Fetch unit's digit
     ora #'0'            ; Form ASCII code
     sta FPBUF,x         ; Add digit to output buffer
-    inx                 ; Increment buffer index
+    jmp ADDNEG          ; See if the number is negative
+ADDPNT:
+    lda FPBASE + FPACCE ; Is the exponent negative?
+    beq ZEROEXP
+    ; beq NEGEXP
+    bmi NEGEXP          ; Yes
+    clc                 ; Clear carry for addition
+    adc FPBASE + PREC   ; Add the precision in
+    tax                 ; Transfer precision to X
     lda #0              ; Clear A
-    sta FPBUF,x         ; Add NULL terminator to buffer
+    sta FPBUF,x         ; Terminate buffer after precision
+    lda FPBASE + PREC   ; Is the precision 0?
+    cmp #$0
+    beq ADDNEG          ; Yes, skip adding the decimal point
+    lda FPBASE + FPACCE ; Load the exponent back into A
+    ldx #$01            ; 1 character for insert
+    jsr INSBUF          ; Insert 1 character for the dec pt
+    ldx FPBASE + FPACCE ; Load exponent into X
+    lda #'.'            ; Load decimal point
+    sta FPBUF,x         ; Store decimal point in buffer
+    jmp ADDNEG
+ZEROEXP:
+    ldx FPBASE + PREC   ; Load precision into X (index)
+    lda #0              ; Clear A
+    sta FPBUF,x         ; Store NULL terminator to truncate digits
+    jsr INS0PT          ; Insert "0." at beginning of buffer
+    jmp ADDNEG          ; Skip ahead
+NEGEXP:
+    ldx FPBASE + PREC   ; Load precision into X
+    dex                 ; Decrement
+    lda #0              ; Clear A
+    sta FPBUF,x         ; Truncate buffer with null
+    jsr INS0PT          ; Add "0." to start of buffer
+    lda FPBASE + FPACCE ; Load exponent into A
+    eor #$ff            ; Negate it by applying two's complement
+    clc                 ; Clear carry for addition
+    adc #$01            ; Add one
+    pha                 ; Push the exponent onto the stack
+    tax                 ; Copy it to X
+    lda #$02            ; Start insert at position two
+    jsr INSBUF          ; Insert characters at position two
+    pla                 ; Pull exponent back off stack
+    tay                 ; Transfer it to Y
+    ldx #$02            ; Start at position two in output buffer
+    lda #'0'            ; Load ASCII zero into A
+STORE0:
+    sta FPBUF,x         ; Store ASCII zero in output buffer
+    inx                 ; Increment position in buffer
+    dey                 ; Decrement index
+    bne STORE0          ; Keep going if more zero's to write
+ADDNEG:
+    lda ISNEG           ; Was the number negative?
+    bpl SKIPNEG         ; No, skip adding a minus sign
+    lda #0
+    ldx #1
+    jsr INSBUF          ; Insert a space at the start of buffer
+    lda #'-'            ; Load a minus sign in A
+    sta FPBUF           ; Store a minus sign at start of buffer
+SKIPNEG:
     rts
+INS0PT:
+    lda #0              ; Insert at first position
+    ldx #2              ; Insert two characters
+    jsr INSBUF          ; at the beginning of the output buffer
+    ldx XBUF            ; Load the buffer offset into X
+    lda #'0'            ; Load ASCII zero into A
+    sta FPBUF           ; Store it in the first buffer position
+    inx                 ; Increment XBUF
+    lda #'.'            ; Load ASCII decimal point into A
+    sta FPBUF + 1       ; Store it in the second buffer position
+    inx                 ; Increment XBUF
+    stx XBUF            ; Store the new index in XBUF
+    rts                 ; Return
 
 ; This routine inserts bytes into FPBUF at a given position.
 ;    A - Position at which to insert
 ;    X - Number of bytes to insert
-;
 ;
 ;    I - position at which to insert
 ;    N - number of bytes to insert

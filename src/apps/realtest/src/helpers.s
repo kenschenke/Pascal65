@@ -123,7 +123,7 @@ L2:
 .endproc
 
 .proc _fpout
-    lda #$00
+    lda #$02
     sta FPBASE + PREC
     jsr FPOUT
     jmp outputBuffer
