@@ -7,6 +7,7 @@ unsigned char firstNum[4];
 static void addTwoNumbers(void);
 static void fixedToFloat(void);
 static void floatToFixed(void);
+static void compareTwoNumbers(void);
 static void multiplyTwoNumbers(void);
 static void divideTwoNumbers(void);
 static void subtractTwoNumbers(void);
@@ -22,6 +23,10 @@ static void showHelp(void);
 static void testInputOutput(void);
 
 void addNumbers(unsigned char *buffer);
+int areNumbersGt(unsigned char *buffer);
+int areNumbersGte(unsigned char *buffer);
+int areNumbersLt(unsigned char *buffer);
+int areNumbersLte(unsigned char *buffer);
 void callNorm(void);
 void copyIntoBuf(char *buffer);
 int floatToInt16(void);
@@ -42,9 +47,13 @@ void testRounding(void);
 
 static void addTwoNumbers(void)
 {
+    extern char getlineBuf;
+
     printf("Enter first number: ");
     getFirstNumber(firstNum);
     printf("\nEnter second number: ");
+    getLine();
+    copyIntoBuf(&getlineBuf);
     fpinp();
     addNumbers(firstNum);
     printf("\nSum is: ");
@@ -52,11 +61,29 @@ static void addTwoNumbers(void)
     printf("\n\n");
 }
 
-static void subtractTwoNumbers(void)
+static void compareTwoNumbers(void)
 {
+    extern char getlineBuf;
+
     printf("Enter first number: ");
     getFirstNumber(firstNum);
     printf("\nEnter second number: ");
+    getLine();
+    copyIntoBuf(&getlineBuf);
+    fpinp();
+    printf("Result is %d\n", areNumbersGte(firstNum));
+    printf("\n");
+}
+
+static void subtractTwoNumbers(void)
+{
+    extern char getlineBuf;
+
+    printf("Enter first number: ");
+    getFirstNumber(firstNum);
+    printf("\nEnter second number: ");
+    getLine();
+    copyIntoBuf(&getlineBuf);
     fpinp();
     subtractNumbers(firstNum);
     printf("\nDifference is: ");
@@ -93,6 +120,11 @@ static void handleOpt(char ch) {
         case 'a':
         case 'A':
             addTwoNumbers();
+            break;
+
+        case 'b':
+        case 'B':
+            compareTwoNumbers();
             break;
 
         case 'c':
@@ -229,6 +261,7 @@ static void show8BitBinary(unsigned char byte) {
 static void showHelp(void) {
     printf("\nFloating Point Demonstration Program\n\n");
     printf("A - Add two numbers\n");
+    printf("B - Compare two numbers\n");
     printf("F - Fixed to floating point\n");
     printf("C - Two's complement\n");
     printf("D - Divide two numbers\n");

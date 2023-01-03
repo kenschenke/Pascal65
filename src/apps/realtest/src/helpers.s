@@ -7,8 +7,10 @@
 
 .export _complm, _rotAtl, _rotAtr, _num, _fpnorm, _callNorm
 .export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers, _getAcc
-.export _testRounding, _getLine, _copyIntoBuf, _floatToInt16, _int16ToFloat
+.export _testRounding, _getLine, _copyIntoBuf, _floatToInt16, _int16ToFloat, _areNumbersLt, _areNumbersLte
+.export _areNumbersGt, _areNumbersGte
 .import FPBASE, FPBUF, getline, _getlineBuf, _getlineUsed, floatToInt16, intOp1, int16ToFloat
+.import floatLt, floatLte, floatGt, floatGte
 
 .bss
 
@@ -177,6 +179,11 @@ L2:
     pha
     txa
     pha
+    jsr getline
+    lda #<_getlineBuf
+    ldx #>_getlineBuf
+    jsr pushax
+    jsr _copyIntoBuf
     jsr FPINP
     ; Copy FPACC to caller's buffer
     pla
@@ -208,6 +215,86 @@ L2:
     ldx #$04
     jsr MOVIN
     jmp FPADD
+.endproc
+
+.proc _areNumbersGt
+    pha
+    txa
+    pha
+    ; Copy caller's buffer to FOP
+    ldy #FOPLSW
+    jsr CALCPTR
+    sta ptr2
+    stx ptr2 + 1
+    pla
+    sta ptr1 + 1
+    pla
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
+    jsr floatGt
+    ldx #0
+    rts
+.endproc
+
+.proc _areNumbersGte
+    pha
+    txa
+    pha
+    ; Copy caller's buffer to FOP
+    ldy #FOPLSW
+    jsr CALCPTR
+    sta ptr2
+    stx ptr2 + 1
+    pla
+    sta ptr1 + 1
+    pla
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
+    jsr floatGte
+    ldx #0
+    rts
+.endproc
+
+.proc _areNumbersLt
+    pha
+    txa
+    pha
+    ; Copy caller's buffer to FOP
+    ldy #FOPLSW
+    jsr CALCPTR
+    sta ptr2
+    stx ptr2 + 1
+    pla
+    sta ptr1 + 1
+    pla
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
+    jsr floatLt
+    ldx #0
+    rts
+.endproc
+
+.proc _areNumbersLte
+    pha
+    txa
+    pha
+    ; Copy caller's buffer to FOP
+    ldy #FOPLSW
+    jsr CALCPTR
+    sta ptr2
+    stx ptr2 + 1
+    pla
+    sta ptr1 + 1
+    pla
+    sta ptr1
+    ldx #$04
+    jsr MOVIN
+    jsr floatLte
+    ldx #0
+    rts
 .endproc
 
 .proc _subtractNumbers
