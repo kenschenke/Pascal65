@@ -10,13 +10,15 @@ void testGetLine(void);
 void testWriteBool(char value, char width);
 void testWriteChar(char value, char width);
 
+void testReal(void);
 void testInt16(void);
 void testUint16(void);
 
 void main()
 {
     // testInt16();
-    testUint16();
+    // testUint16();
+    testReal();
 
 #if 0
     unsigned int ch;
