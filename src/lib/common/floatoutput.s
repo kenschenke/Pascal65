@@ -194,6 +194,10 @@ ZEROEXP:
     lda #0              ; Clear A
     sta FPBUF,x         ; Store NULL terminator to truncate digits
     jsr INS0PT          ; Insert "0." at beginning of buffer
+    lda FPBASE + PREC   ; Load precision into A
+    bne ADDNEG          ; If precision is non-zero jump ahead
+    ldx #0              ; Precision is zero, truncate the un-needed '.'
+    sta FPBUF + 1       ; Write 0 over the '.'
     jmp ADDNEG          ; Skip ahead
 NEGEXP:
     ldx FPBASE + PREC   ; Load precision into X
@@ -222,6 +226,12 @@ STORE0:
 ADDNEG:
     lda ISNEG           ; Was the number negative?
     bpl SKIPNEG         ; No, skip adding a minus sign
+    lda FPBUF           ; Look at first buffer position
+    cmp #'0'            ; Is it zero?
+    bne ADDNEG1         ; No.  Proceed with the negative sign.
+    lda FPBUF + 1       ; Look at second buffer position
+    beq SKIPNEG         ; Buffer is "0".  Skip the negative sign.
+ADDNEG1:
     lda #0
     ldx #1
     jsr INSBUF          ; Insert a space at the start of buffer

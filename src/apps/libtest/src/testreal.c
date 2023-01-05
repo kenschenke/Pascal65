@@ -48,6 +48,8 @@ static struct StrTest StrTests[] = {
     {"1",        "1.00",            2},
     {"-1",       "-1.00",           2},
     {"1.00",     "1",               0},
+    {"0.4",      "0",               0},
+    {"-0.4",     "0",               0},
 };
 
 static struct CompTest EqTests[] = {
