@@ -13,8 +13,29 @@
 
 ; This routine divides FPACC by FPOP and leaves the result in FPACC.
 ; FPOP is also modified.
+;
+; This routine checks for divide by zero and just returns zero.
+; Any special handling for divide by zero is to be handled elsewhere.
 
 .proc FPDIV
+    lda #FPLSW          ; Set pointer to FPACC
+    sta FPBASE + FMPNT  ; Store in FMPNT
+    lda #WORK0          ; Set pointer to work area
+    sta FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$04            ; Move four bytes
+    jsr MOVIND          ; Move FPACC to work area
+    lda #FOPLSW         ; Set pointer to FPOP
+    sta FPBASE + FMPNT  ; Store in FMPNT
+    lda #FPLSW          ; Set pointer to FPACC
+    sta FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$04            ; Move four bytes
+    jsr MOVIND          ; Move FPOP to FPACC
+    lda #WORK0          ; Set pointer to work area
+    sta FPBASE + FMPNT  ; Store in FMPNT
+    lda #FOPLSW         ; Set pointer to FPOP
+    sta FPBASE + TOPNT  ; Store in TOPNT
+    ldx #$04            ; Move four bytes
+    jsr MOVIND          ; Move work area to FPOP
     jsr CKSIGN          ; Clear work area and set SIGNS
     lda FPBASE + FPMSW  ; Check for divide by zero
     beq DERROR          ; Divisor = zero, divide by zero error

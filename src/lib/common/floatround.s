@@ -11,7 +11,7 @@
 .export PRECRD
 
 ; This routine rounds FPACC per the caller's precision.
-; It does this by calculating 0.5 / 10^precision then
+; It does this by calculating 0.51 / 10^precision then
 ; adding (for positive) or subtracting (for negative)
 ; to FPACC.
 .proc PRECRD
@@ -23,12 +23,14 @@
     sta FPBASE + TOPNT  ; Store in TOPNT
     ldx #$04            ; Number of bytes to move
     jsr MOVIND          ; move FPACC to temporary storage
-    lda #0              ; Store 0.5 in FPACC
+    lda #0              ; Store 0.51 in FPACC
     sta FPBASE + FPLSWE
-    sta FPBASE + FPLSW
-    sta FPBASE + FPNSW
     sta FPBASE + FPACCE
-    lda #$40
+    lda #$af
+    sta FPBASE + FPLSW
+    lda #$47
+    sta FPBASE + FPNSW
+    lda #$41
     sta FPBASE + FPMSW
 L1:
     lda FPBASE + PREC

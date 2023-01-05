@@ -173,7 +173,6 @@ TOMUCH:
 ADDPNT:
     lda FPBASE + FPACCE ; Is the exponent negative?
     beq ZEROEXP
-    ; beq NEGEXP
     bmi NEGEXP          ; Yes
     clc                 ; Clear carry for addition
     adc FPBASE + PREC   ; Add the precision in
@@ -199,6 +198,7 @@ ZEROEXP:
 NEGEXP:
     ldx FPBASE + PREC   ; Load precision into X
     dex                 ; Decrement
+    dex                 ; Decrement again
     lda #0              ; Clear A
     sta FPBUF,x         ; Truncate buffer with null
     jsr INS0PT          ; Add "0." to start of buffer

@@ -14,7 +14,7 @@
 ; FPOP is also modified.
 
 .proc FPSUB
-    ldx #FPLSW          ; Set pointer to FPACC least-significant byte
+    ldx #FOPLSW         ; Set pointer to FPOP least-significant byte
     ldy #3              ; Set precision counter
     jsr COMPLM          ; Complement FPACC
     jmp FPADD           ; Subtract by adding negative
