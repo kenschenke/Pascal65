@@ -17,8 +17,8 @@ EMUCMD = $($(TARGET)_EMUCMD)
 
 c64_CFLAGS =
 c128_CFLAGS =
-mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../include
-CFLAGS = $($(TARGET)_CFLAGS) -D MAINPAS -O -I ../../mega65-libc/include
+mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../mega65-libc/include
+CFLAGS = $($(TARGET)_CFLAGS) -D MAINPAS -O -I ../../include
 ASFLAGS = --asm-include-dir ../../asminc
 LDFLAGS =
 

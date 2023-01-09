@@ -1,16 +1,11 @@
 .include "float.inc"
-.include "cbm_kernal.inc"
 
-.import ROTATL, ROTATR, COMPLM, FPNORM, FPINP, FPOUT, FPADD, FPMULT, FPDIV, MOVIND, MOVIN, pushax, CALCPTR, FPSUB, PRECRD
+.import ROTATL, ROTATR, COMPLM, FPNORM, MOVIND, MOVIN
 .import popa
-.importzp ptr1, ptr2
 
 .export _complm, _rotAtl, _rotAtr, _num, _fpnorm, _callNorm
-.export _lsb, _nsb, _msb, _exp, _fpinp, _fpout, _addNumbers, _getFirstNumber, _multNumbers, _divNumbers, _subtractNumbers, _getAcc
-.export _testRounding, _getLine, _copyIntoBuf, _floatToInt16, _int16ToFloat, _areNumbersLt, _areNumbersLte
-.export _areNumbersGt, _areNumbersGte
-.import FPBASE, FPBUF, getline, _getlineBuf, _getlineUsed, floatToInt16, intOp1, int16ToFloat
-.import floatLt, floatLte, floatGt, floatGte
+.export _lsb, _nsb, _msb, _exp, _getAcc
+.import FPBASE
 
 .bss
 
@@ -95,39 +90,6 @@ L2:
     jmp FPNORM
 .endproc
 
-.proc _copyIntoBuf
-    sta ptr1
-    stx ptr1 + 1
-    lda #<FPBUF
-    sta ptr2
-    lda #>FPBUF
-    sta ptr2 + 1
-    ldy #0
-L1:
-    lda (ptr1),y
-    beq L2
-    sta (ptr2),y
-    iny
-    jmp L1
-L2:
-    sta (ptr2),y
-    rts
-.endproc
-
-.proc _floatToInt16
-    jsr floatToInt16
-    lda intOp1
-    ldx intOp1 + 1
-    rts
-.endproc
-
-.proc _int16ToFloat
-    sta intOp1
-    stx intOp1 + 1
-    jsr int16ToFloat
-    jmp _fpout
-.endproc
-
 ; fpnorm(unsigned char lsw, nsw, msw, exp)
 .proc _fpnorm
     sta FPBASE + FPACCE
@@ -153,204 +115,6 @@ L2:
     rts
 .endproc
 
-.proc _fpinp
-    jmp FPINP
-.endproc
-
-.proc _fpout
-    lda #$02
-    sta FPBASE + PREC
-    jsr FPOUT
-    jmp outputBuffer
-.endproc
-
-.proc _getLine
-    jsr getline
-    pha
-    ldx _getlineUsed
-    lda #0
-    sta _getlineBuf,x
-    pla
-    ldx #0
-    rts
-.endproc
-
-.proc _getFirstNumber
-    pha
-    txa
-    pha
-    jsr getline
-    lda #<_getlineBuf
-    ldx #>_getlineBuf
-    jsr pushax
-    jsr _copyIntoBuf
-    jsr FPINP
-    ; Copy FPACC to caller's buffer
-    pla
-    tax
-    pla
-    sta ptr2
-    stx ptr2 + 1
-    ldy #FPLSW
-    jsr CALCPTR
-    sta ptr1
-    stx ptr1 + 1
-    ldx #$04
-    jmp MOVIN
-.endproc
-
-.proc _addNumbers
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jmp FPADD
-.endproc
-
-.proc _areNumbersGt
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jsr floatGt
-    ldx #0
-    rts
-.endproc
-
-.proc _areNumbersGte
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jsr floatGte
-    ldx #0
-    rts
-.endproc
-
-.proc _areNumbersLt
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jsr floatLt
-    ldx #0
-    rts
-.endproc
-
-.proc _areNumbersLte
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jsr floatLte
-    ldx #0
-    rts
-.endproc
-
-.proc _subtractNumbers
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jmp FPSUB
-.endproc
-
-.proc _multNumbers
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jmp FPMULT
-.endproc
-
-.proc _divNumbers
-    pha
-    txa
-    pha
-    ; Copy caller's buffer to FOP
-    ldy #FOPLSW
-    jsr CALCPTR
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldx #$04
-    jsr MOVIN
-    jmp FPDIV
-.endproc
-
 .proc _getAcc
     lda FPBASE + FPLSW
     sta _lsb
@@ -360,23 +124,5 @@ L2:
     sta _msb
     lda FPBASE + FPACCE
     sta _exp
-    rts
-.endproc
-
-.proc _testRounding
-    lda #$2
-    sta FPBASE + PREC
-    jmp PRECRD
-.endproc
-
-.proc outputBuffer
-    ldx #0
-L1:
-    lda FPBUF,x
-    beq L2
-    jsr CHROUT
-    inx
-    jmp L1
-L2:
     rts
 .endproc

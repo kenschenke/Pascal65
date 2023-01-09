@@ -21,6 +21,8 @@ ISENOT: .res 1          ; Non-zero if output is 'E' notation
 ; This routine outputs FPACC to FPBUF.
 ; FPACC and FPOP are modified.
 ;
+; Number of characters written is returned in A.
+;
 ; It supports standard floating point format like 1.23 as well as
 ; scientific notation like 0.123E+01.  If the caller does not specify
 ; a precision (see FPBASE + PREC) or the exponent falls outside the range
@@ -238,6 +240,14 @@ ADDNEG1:
     lda #'-'            ; Load a minus sign in A
     sta FPBUF           ; Store a minus sign at start of buffer
 SKIPNEG:
+    ldx #0
+CNTLOOP:
+    lda FPBUF,x
+    beq RETURN
+    inx
+    jmp CNTLOOP
+RETURN:
+    txa
     rts
 INS0PT:
     lda #0              ; Insert at first position

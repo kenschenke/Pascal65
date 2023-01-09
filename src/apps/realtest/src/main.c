@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <stdlib.h>
+#include <real.h>
 
 unsigned char firstNum[4];
 
@@ -22,97 +23,105 @@ static void rotateRight(void);
 static void showHelp(void);
 static void testInputOutput(void);
 
-void addNumbers(unsigned char *buffer);
-int areNumbersGt(unsigned char *buffer);
-int areNumbersGte(unsigned char *buffer);
-int areNumbersLt(unsigned char *buffer);
-int areNumbersLte(unsigned char *buffer);
 void callNorm(void);
-void copyIntoBuf(char *buffer);
-int floatToInt16(void);
-void int16ToFloat(int num);
 void getAcc(void);
-char getLine(void);
-void subtractNumbers(unsigned char *buffer);
-void multNumbers(unsigned char *buffer);
-void divNumbers(unsigned char *buffer);
 void complm(void);
-void fpinp(void);
-void fpout(void);
 void fpnorm(unsigned char lsb, unsigned char nsb, unsigned char msb, unsigned char exp);
-void getFirstNumber(unsigned char *buffer);
 void rotAtl(void);
 void rotAtr(void);
-void testRounding(void);
 
 static void addTwoNumbers(void)
 {
-    extern char getlineBuf;
+    char buf[25];
+    FLOAT num1, num2;
 
     printf("Enter first number: ");
-    getFirstNumber(firstNum);
-    printf("\nEnter second number: ");
-    getLine();
-    copyIntoBuf(&getlineBuf);
-    fpinp();
-    addNumbers(firstNum);
-    printf("\nSum is: ");
-    fpout();
-    printf("\n\n");
+    gets(buf);
+    num1 = strToFloat(buf);
+    printf("Enter second number: ");
+    gets(buf);
+    num2 = strToFloat(buf);
+    floatPrint(num1, 2, 13);
+    printf(" +\n");
+    floatPrint(num2, 2, 13);
+    printf("\n-------------\n");
+    floatPrint(floatAdd(num1, num2), 2, 12);
+    printf("\n");
 }
 
 static void compareTwoNumbers(void)
 {
-    extern char getlineBuf;
+    char buf[25];
+    FLOAT num1, num2;
 
     printf("Enter first number: ");
-    getFirstNumber(firstNum);
-    printf("\nEnter second number: ");
-    getLine();
-    copyIntoBuf(&getlineBuf);
-    fpinp();
-    printf("Result is %d\n", areNumbersGte(firstNum));
+    gets(buf);
+    num1 = strToFloat(buf);
+    printf("Enter second number: ");
+    gets(buf);
+    num2 = strToFloat(buf);
+    floatPrint(num1, 2, 0);
+    printf(" < ");
+    floatPrint(num2, 2, 0);
+    printf(" = %d\n", floatLt(num1, num2));
     printf("\n");
 }
 
 static void subtractTwoNumbers(void)
 {
-    extern char getlineBuf;
+    char buf[25];
+    FLOAT num1, num2;
 
     printf("Enter first number: ");
-    getFirstNumber(firstNum);
-    printf("\nEnter second number: ");
-    getLine();
-    copyIntoBuf(&getlineBuf);
-    fpinp();
-    subtractNumbers(firstNum);
-    printf("\nDifference is: ");
-    fpout();
-    printf("\n\n");
+    gets(buf);
+    num1 = strToFloat(buf);
+    printf("Enter second number: ");
+    gets(buf);
+    num2 = strToFloat(buf);
+    floatPrint(num1, 2, 13);
+    printf(" -\n");
+    floatPrint(num2, 2, 13);
+    printf("\n-------------\n");
+    floatPrint(floatSub(num1, num2), 2, 12);
+    printf("\n");
 }
 
 static void multiplyTwoNumbers(void)
 {
+    char buf[25];
+    FLOAT num1, num2;
+
     printf("Enter first number: ");
-    getFirstNumber(firstNum);
-    printf("\nEnter second number: ");
-    fpinp();
-    multNumbers(firstNum);
-    printf("\nProduct is: ");
-    fpout();
-    printf("\n\n");
+    gets(buf);
+    num1 = strToFloat(buf);
+    printf("Enter second number: ");
+    gets(buf);
+    num2 = strToFloat(buf);
+    floatPrint(num1, 2, 13);
+    printf(" x\n");
+    floatPrint(num2, 2, 13);
+    printf("\n-------------\n");
+    floatPrint(floatMult(num1, num2), 2, 12);
+    printf("\n");
 }
 
 static void divideTwoNumbers(void)
 {
+    char buf[25];
+    FLOAT num1, num2;
+
     printf("Enter first number: ");
-    getFirstNumber(firstNum);
-    printf("\nEnter second number: ");
-    fpinp();
-    divNumbers(firstNum);
-    printf("\nResult is: ");
-    fpout();
-    printf("\n\n");
+    gets(buf);
+    num1 = strToFloat(buf);
+    printf("Enter second number: ");
+    gets(buf);
+    num2 = strToFloat(buf);
+    floatPrint(num1, 2, 13);
+    printf(" Div\n");
+    floatPrint(num2, 2, 13);
+    printf("\n-------------\n");
+    floatPrint(floatDiv(num1, num2), 2, 12);
+    printf("\n");
 }
 
 static void handleOpt(char ch) {
@@ -279,45 +288,39 @@ static void showHelp(void) {
 
 static void floatToFixed(void)
 {
-    int num;
-    extern char getlineBuf;
+    char buf[25];
+    FLOAT num;
 
-    printf("Enter a number FP number: ");
-    if (getLine()) {
-        printf("Stop pressed\n");
-        return;
-    }
-    copyIntoBuf(&getlineBuf);
-    fpinp();
-    num = floatToInt16();
-    printf("\n\nYou entered: %d\n", num);
+    printf("Enter a floating point number: ");
+    gets(buf);
+    num = strToFloat(buf);
+
+    printf("\n\nYou entered: %d\n", floatToInt16(num));
 }
 
 static void fixedToFloat(void)
 {
     int num;
+    FLOAT fpnum;
 
     printf("Enter a fixed number: ");
     scanf("%d", &num);
+    fpnum = int16ToFloat(num);
     printf("\nYou Entered: ");
-    int16ToFloat(num);
+    floatPrint(fpnum, 2, 0);
     printf("\n");
 }
 
 static void testInputOutput(void)
 {
+    char buf[25];
+    FLOAT num;
     extern unsigned char lsb, nsb, msb, exp;
-    extern char getlineBuf;
 
     printf("Enter a number: ");
-    if (getLine()) {
-        printf("Stop pressed\n");
-        return;
-    }
-    copyIntoBuf(&getlineBuf);
-    fpinp();
+    gets(buf);
+    num = strToFloat(buf);
     // callNorm();
-    // testRounding();
 
     printf("\nFPACC:\n");
     // show8BitBinary(exp); printf(" ");
@@ -330,7 +333,7 @@ static void testInputOutput(void)
     printf("   MSB: %02x\n", msb);
     printf("   EXP: %02x\n", exp);
     printf("\n\nYou entered: ");
-    fpout();
+    floatPrint(num, 2, 0);
     // printf("\nEMNS ");
     // printf("%d\n", exp);
     printf("\n");
