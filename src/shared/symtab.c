@@ -305,6 +305,7 @@ static char makeSymtabNode(SYMBNODE *pNode, const char *identifier, TDefnCode dc
 
     pNode->node.leftChunkNum = pNode->node.rightChunkNum = 0;
     pNode->node.nextNode = pNode->node.typeChunk = 0;
+    pNode->node.level = currentNestingLevel;
 
     return 1;
 }

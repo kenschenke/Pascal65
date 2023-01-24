@@ -90,6 +90,10 @@ void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
     Error(errIncompatibleTypes);
 }
 
+CHUNKNUM getBaseType(TTYPE *pType) {
+    return pType->form == fcSubrange ? pType->subrange.baseType : pType->nodeChunkNum;
+}
+
 static char getType(CHUNKNUM chunkNum, TTYPE *pType) {
     if (retrieveChunk(chunkNum, (unsigned char *)pType) == 0) {
         return 0;
@@ -204,7 +208,15 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
 }
 
 char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
-    return type1Chunk == integerType && type2Chunk == integerType;
+    TTYPE type1, type2;
+
+    retrieveChunk(type1Chunk, (unsigned char *)&type1);
+    retrieveChunk(type2Chunk, (unsigned char *)&type2);
+    return getBaseType(&type1) == integerType && getBaseType(&type2) == integerType;
+}
+
+char isTypeScalar(TTYPE *pType) {
+    return pType->form != fcArray && pType->form != fcRecord ? 1 : 0;
 }
 
 CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId) {

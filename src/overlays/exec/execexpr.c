@@ -14,212 +14,435 @@
 #include <misc.h>
 #include <common.h>
 #include <stdlib.h>
+#include <string.h>
+#include <parscommon.h>
+#include <membuf.h>
+#if 1
+#include <stdio.h>
+#endif
 
-void executeExpression(EXECUTOR *pExec)
+CHUNKNUM executeExpression(void)
 {
+    CHUNKNUM operand1Type;     // first operand's type
+    CHUNKNUM operand2Type;     // second operand's type
+    CHUNKNUM resultType;       // result type
+    TTYPE type;
     TTokenCode op;
-    int operand1, operand2;
 
-    executeSimpleExpression(pExec);
+    // Execute the first simple expression
+    resultType = executeSimpleExpression();
 
     // If we now see a relational operator,
     // execute a second simple expression.
-    if (pExec->token == tcEqual || pExec->token == tcNe ||
-        pExec->token == tcLt    || pExec->token == tcGt ||
-        pExec->token == tcLe    || pExec->token == tcGe) {
-        op = pExec->token;
+    if (tokenIn(executor.token.code, tlRelOps)) {
+        op = executor.token.code;
+        operand1Type = resultType;
+        resultType = booleanType;
 
-        getTokenForExecutor(pExec);
-        executeSimpleExpression(pExec);
+        retrieveChunk(operand1Type, (unsigned char *)&type);
 
-        // Pop off the two operand values, ...
-        operand2 = rtstack_pop(pExec->runStack);
-        operand1 = rtstack_pop(pExec->runStack);
+        getTokenForExecutor();
+        operand2Type = executeSimpleExpression();
 
         // perform the operation, and push the resulting value
         // onto the runtime stack.
-        switch (op) {
-            case tcEqual:
-                rtstack_push(pExec->runStack, operand1 == operand2 ? 1 : 0);
-                break;
+        if ((operand1Type == integerType &&
+            operand2Type == integerType)
+            || (operand1Type == charType &&
+            operand2Type == charType)
+            || type.form == fcEnum) {
+            // integer <op> integer
+            // boolean <op> boolean
+            // char <op> char
+            // enum <op> enum
+            int value1, value2;
+            if (operand1Type == charType) {
+                value2 = stackPop()->character;
+                value1 = stackPop()->character;
+            } else {
+                value2 = stackPop()->integer;
+                value1 = stackPop()->integer;
+            }
+        
+            switch (op) {
+                case tcEqual:
+                    stackPushInt(value1 == value2);
+                    break;
 
-            case tcNe:
-                rtstack_push(pExec->runStack, operand1 != operand2 ? 1 : 0);
-                break;
-            
-            case tcLt:
-                rtstack_push(pExec->runStack, operand1 < operand2 ? 1 : 0);
-                break;
-            
-            case tcGt:
-                rtstack_push(pExec->runStack, operand1 > operand2 ? 1 : 0);
-                break;
-            
-            case tcLe:
-                rtstack_push(pExec->runStack, operand1 <= operand2 ? 1 : 0);
-                break;
-            
-            case tcGe:
-                rtstack_push(pExec->runStack, operand1 >= operand2 ? 1 : 0);
-                break;
+                case tcNe:
+                    stackPushInt(value1 != value2);
+                    break;
+                
+                case tcLt:
+                    stackPushInt(value1 < value2);
+                    break;
+                
+                case tcGt:
+                    stackPushInt(value1 > value2);
+                    break;
+                
+                case tcLe:
+                    stackPushInt(value1 <= value2);
+                    break;
+                
+                case tcGe:
+                    stackPushInt(value1 >= value2);
+                    break;
+            }
         }
     }
+
+    return resultType;
 }
 
-void executeSimpleExpression(EXECUTOR *pExec)
+CHUNKNUM executeSimpleExpression(void)
 {
-    int operand1, operand2;
+    CHUNKNUM operandType;           // operand's type
+    CHUNKNUM resultType;            // result type
     TTokenCode op;                  // binary operator
     TTokenCode unaryOp = tcPlus;    // unary operator
+    TTYPE rType, oType;
 
     // Unary + or -
-    if (pExec->token == tcPlus || pExec->token == tcMinus) {
-        unaryOp = pExec->token;
-        getTokenForExecutor(pExec);
+    if (tokenIn(executor.token.code, tlUnaryOps)) {
+        unaryOp = executor.token.code;
+        getTokenForExecutor();
     }
 
-    // Execute the first term and then negate its value
-    // if there was a unary minus.
-    executeTerm(pExec);
+    // Execute the first term.
+    resultType = executeTerm();
+
+    // If there was a unary -, negate the first operand value.
     if (unaryOp == tcMinus) {
-        rtstack_push(pExec->runStack, -rtstack_pop(pExec->runStack));
+        stackPushInt(-stackPop()->integer);
     }
 
     // Loop to execute subsequent additive operators and terms.
-    while (pExec->token == tcPlus || pExec->token == tcMinus || pExec->token == tcOR) {
-        op = pExec->token;
+    while (tokenIn(executor.token.code, tlAddOps)) {
+        op = executor.token.code;
 
-        getTokenForExecutor(pExec);
-        executeTerm(pExec);
+        retrieveChunk(resultType, (unsigned char *)&rType);
+        resultType = getBaseType(&rType);
 
-        // Pop off the two operand values, ...
-        operand2 = rtstack_pop(pExec->runStack);
-        operand1 = rtstack_pop(pExec->runStack);
+        getTokenForExecutor();
+        operandType = executeTerm();
+        retrieveChunk(operandType, (unsigned char *)&oType);
+        operandType = getBaseType(&oType);
 
-        // perform the operation, and push the resulting value
-        // onto the runtime stack
-        switch (op) {
-            case tcPlus:
-                rtstack_push(pExec->runStack, operand1 + operand2);
-                break;
+        // Perform the operation, and push the resulting valud onto the stack.
+        if (op == tcOR) {
+            // boolean OR boolean
+            int value2 = stackPop()->integer;
+            int value1 = stackPop()->integer;
 
-            case tcMinus:
-                rtstack_push(pExec->runStack, operand1 - operand2);
-                break;
+            stackPushInt(value1 || value2);
+            resultType == booleanType;
+        } else if (resultType == integerType && operandType == integerType) {
+            // integer +|- integer
+            int value2 = stackPop()->integer;
+            int value1 = stackPop()->integer;
 
-            case tcOR:
-                rtstack_push(pExec->runStack, operand1 != 0 || operand2 != 0 ? 1 : 0);
-                break;
+            stackPushInt(op == tcPlus ? value1 + value2 : value1 - value2);
+            resultType == integerType;
+          }
         }
-    }
+
+    return resultType;
 }
 
-void executeTerm(EXECUTOR *pExec)
+CHUNKNUM executeTerm(void)
 {
+    CHUNKNUM operandType;
+    CHUNKNUM resultType;
+    TTYPE rType, oType;
     TTokenCode op;
-    int operand1, operand2, divZeroFlag;
 
     // Execute the first factor
-    executeFactor(pExec);
+    resultType = executeFactor();
 
     // Loop to execute subsequent multiplicative operators and factors.
-    while (pExec->token == tcStar || pExec->token == tcSlash ||
-            pExec->token == tcDIV || pExec->token == tcMOD ||
-            pExec->token == tcAND) {
-        op = pExec->token;
+    while (tokenIn(executor.token.code, tlMulOps)) {
+        op = executor.token.code;
+        retrieveChunk(resultType, (unsigned char *)&rType);
+        resultType = getBaseType(&rType);
 
-        getTokenForExecutor(pExec);
-        executeFactor(pExec);
-
-        // Pop off the two operand values, ...
-        operand2 = rtstack_pop(pExec->runStack);
-        operand1 = rtstack_pop(pExec->runStack);
+        getTokenForExecutor();
+        operandType = executeFactor();
+        retrieveChunk(operandType, (unsigned char *)&oType);
+        operandType = getBaseType(&oType);
 
         // perform the operation, and push the resulting value
         // onto the runtime stack.
-        divZeroFlag = 0;  // non-zero if division by zero
         switch (op) {
-            case tcStar:
-                rtstack_push(pExec->runStack, operand1 * operand2);
+            case tcAND: {
+                // boolean AND boolean
+                int value2 = stackPop()->integer;
+                int value1 = stackPop()->integer;
+                stackPushInt(value1 && value2);
+                resultType = booleanType;
                 break;
-
-            case tcSlash:
-            case tcDIV:
-                if (operand2 != 0) {
-                    rtstack_push(pExec->runStack, operand1 / operand2);
-                } else {
-                    divZeroFlag = 1;
-                }
-                break;
-            
-            case tcMOD:
-                if (operand2 != 0) {
-                    rtstack_push(pExec->runStack, operand1 % operand2);
-                } else {
-                    divZeroFlag = 1;
-                }
-                break;
-
-            case tcAND:
-                rtstack_push(pExec->runStack, operand1 != 0 && operand2 != 0 ? 1 : 0);
-                break;
-        }
-
-        if (divZeroFlag) {
-            // Division by zero runtime error
-            runtimeError(rteDivisionByZero);
-            rtstack_push(pExec->runStack, 0);
-        }
-    }
-}
-
-void executeFactor(EXECUTOR *pExec)
-{
-    char buffer[5+1];
-
-    switch (pExec->token) {
-        case tcIdentifier:
-            // If the variable is "input", prompt for its value.
-            if (pExec->pNode->nodeChunkNum == pExec->inputNode) {
-                printf(">> At %d: input ? ", currentLineNumber);
-                if (strInput(buffer, sizeof(buffer))) {
-                    pExec->userStop = 1;
-                    // setSymtabInt(pExec->pNode, 0);
-                } else {
-                    // setSymtabInt(pExec->pNode, atoi(buffer));
-                }
             }
 
-            // Push the variable's value onto the runtime stack
-            // rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
-            getTokenForExecutor(pExec);
+            case tcStar:
+                if (resultType == integerType && operandType == integerType) {
+                    // integer * integer
+                    int value2 = stackPop()->integer;
+                    int value1 = stackPop()->integer;
+
+                    stackPushInt(value1 * value2);
+                    resultType = integerType;
+                }
+                break;
+
+            case tcSlash: {
+                if (operandType == integerType && resultType == integerType) {
+                    // integer / integer
+                    int value2 = stackPop()->integer;
+                    int value1 = stackPop()->integer;
+
+                    stackPushInt(value1 / value2);
+                    resultType = integerType;
+                }
+                break;
+            }
+
+            case tcDIV:
+            case tcMOD: {
+                int value2 = stackPop()->integer;
+                int value1 = stackPop()->integer;
+
+                if (value2 == 0) runtimeError(rteDivisionByZero);
+                stackPushInt(op == tcDIV ? value1 / value2 : value1 % value2);
+                resultType = integerType;
+                break;
+            }
+
+        }
+    }
+
+    return resultType;
+}
+
+CHUNKNUM executeFactor(void)
+{
+    CHUNKNUM resultType;
+
+    switch (executor.token.code) {
+        case tcIdentifier:
+            switch (executor.pNode.defn.how) {
+                case dcFunction:
+                    resultType = executeSubroutineCall(&executor.pNode);
+                    break;
+                
+                case dcConstant:
+                    resultType = executeConstant(&executor.pNode);
+                    break;
+                
+                default:
+                    resultType = executeVariable(&executor.pNode, 0);
+                    break;
+            }
             break;
 
         case tcNumber:
             // Push the number's value onto the runtime stack
-            // rtstack_push(pExec->runStack, getSymtabInt(pExec->pNode));
-            getTokenForExecutor(pExec);
+            if (executor.pNode.type.nodeChunkNum == integerType) {
+                stackPushInt(executor.pNode.defn.constant.value.integer);
+            }
+            resultType = executor.pNode.type.nodeChunkNum;
+            getTokenForExecutor();
             break;
 
-        case tcString:
-            // Just push 0 for now.
-            rtstack_push(pExec->runStack, 0);
-            getTokenForExecutor(pExec);
+        case tcString: {
+            // Push either a character or a string address onto the runtime stack,
+            // depending on the string length.
+            int length = strlen(executor.token.string);
+            if (length == 3) {
+                // Character
+                stackPushChar(executor.pNode.defn.constant.value.character);
+                resultType = charType;
+            }
+            getTokenForExecutor();
             break;
+        }
 
         case tcNOT:
             // Execute factor and invert its value.
-            getTokenForExecutor(pExec);
-            executeFactor(pExec);
-            rtstack_push(pExec->runStack, rtstack_pop(pExec->runStack) ? 0 : 1);
+            getTokenForExecutor();
+            executeFactor();
+            stackPushInt(1 - stackPop()->integer);
+            resultType = booleanType;
             break;
 
         case tcLParen:
             // Parenthesized subexpression: call executeExpression() recursively
-            getTokenForExecutor(pExec);
-            executeExpression(pExec);
-            getTokenForExecutor(pExec);
+            getTokenForExecutor();
+            resultType = executeExpression();
+            getTokenForExecutor();
             break;
     }
+
+    return resultType;
 }
 
+CHUNKNUM executeConstant(SYMBNODE *pId) {
+    TDataValue value;
+
+    memcpy(&value, &pId->defn.constant.value, sizeof(TDataValue));
+
+    if (pId->type.nodeChunkNum == charType) stackPushChar(value.character);
+    else stackPushInt(value.integer);
+
+    getTokenForExecutor();
+    return pId->type.nodeChunkNum;
+}
+
+// addressFlag is non-zero if this function is processing
+// the variable on the left-half of an assignment.  If so,
+// the address of the variable is left on the stack.  If not,
+// the variable's value is left on the stack in its place.
+CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
+    char doneFlag = 0;
+    TTYPE type;
+    CHUNKNUM resultType;
+    SYMBNODE node;
+
+    // Get the variable's runtime stack address
+    STACKITEM *pEntry = stackGetValueAddress(pId);
+
+    memcpy(&type, &pId->type, sizeof(TTYPE));
+    resultType = type.nodeChunkNum;
+
+    // If it's a VAR formal parameter, or the type is an array
+    // or record, then the stack item contains the address
+    // of the data.  Push the data address onto the stack.
+    if (pId->defn.how == dcVarParm || !isTypeScalar(&type)) {
+        // VAR formal parameter.  Push the address of the data
+        // onto the stack.
+        stackPushMemBuf(pEntry->membuf.membuf, 0);
+        pEntry = stackTOS();
+    } else {
+        stackPushItem(pEntry);
+    }
+
+    getTokenForExecutor();
+
+    // Loop to execute any subscripts and field designators,
+    // which will modify the data address at the top of the stack.
+    do {
+        switch (executor.token.code) {
+            case tcLBracket:
+                loadSymbNode(executor.prevNode, &node);
+                resultType = executeSubscripts(&node.type);
+                break;
+            
+            case tcPeriod:
+                resultType = executeField(&type);
+                break;
+            
+            default:
+                doneFlag = 1;
+                break;
+        }
+    } while (!doneFlag);
+
+    // If addressFlag is zero, and the data is not an array
+    // or a record, replace the address at the top of the stack
+    // with the data value.
+    if (!addressFlag && isTypeScalar(&type)) {
+        if (type.nodeChunkNum == charType) {
+            stackPushChar(stackPop()->pStackItem->character);
+        } else {
+            stackPushInt(stackPop()->pStackItem->integer);
+        }
+    }
+
+    // If addressFlag is zero, and the data is an array or a
+    // record, retrieve the value from the memory buffer and
+    // replace the address at the top of the stack with the value.
+    if (!addressFlag && !isTypeScalar(&type)) {
+        stackPop();     // pop the membuf address off the stack
+        if (resultType == charType) {
+            char value;
+            copyFromMemBuf(pEntry->membuf.membuf, &value, pEntry->membuf.offset, 1);
+            stackPushChar(value);
+        } else if (resultType == integerType) {
+            int value;
+            copyFromMemBuf(pEntry->membuf.membuf, &value, pEntry->membuf.offset, 2);
+            stackPushInt(value);
+        }
+
+        // type.nodeChunkNum = executor.pNode.type.nodeChunkNum;
+    } else if (!isTypeScalar(&type)) {
+        // The variable is the target of an assignment.  Look up the
+        // size of the data value and push it on the stack.
+        TTYPE t;
+        STACKITEM addr;
+        retrieveChunk(resultType, (unsigned char *)&t);
+        // Pop the address off the stack
+        memcpy(&addr, stackPop(), sizeof(STACKITEM));
+        // Push the size
+        stackPushInt(t.size);
+        // Now, push the address back on the stack
+        stackPushMemBuf(addr.membuf.membuf, addr.membuf.offset);
+    }
+
+    if (!addressFlag) {
+        void *pDataValue = isTypeScalar(&type) ? stackTOS() : stackTOS()->pStackItem;
+        traceDataFetch(pId, pDataValue, &type);
+    }
+
+    return resultType;
+}
+
+CHUNKNUM executeSubscripts(TTYPE *pType) {
+    TTYPE arrayType;
+    TTYPE elemType;
+    int value;
+
+    memcpy(&arrayType, pType, sizeof(TTYPE));
+    retrieveChunk(arrayType.array.elemType, (unsigned char *)&elemType);
+
+    // Loop to execute subscript lists enclosed in brackets.
+    while (executor.token.code == tcLBracket) {
+        // Loop to execute comma-separated subscript expressions
+        // within a subscript list.
+        do {
+            getTokenForExecutor();
+            executeExpression();
+
+            // Evaluate and range check the subscript
+            value = stackPop()->integer;
+            rangeCheck(&arrayType, value);
+
+            // Modify the data address at the top of the stack.
+            stackTOS()->membuf.offset += elemType.size * (value - arrayType.array.minIndex);
+            getTokenForExecutor();
+
+            // Prepare for another subscript in this list
+            if (executor.token.code == tcComma) {
+                retrieveChunk(arrayType.array.elemType, (unsigned char *)&arrayType);
+                retrieveChunk(arrayType.array.elemType, (unsigned char *)&elemType);
+            }
+        } while (executor.token.code == tcComma);
+
+        // Prepare for another subscript in this list
+        if (executor.token.code == tcLBracket) {
+            retrieveChunk(arrayType.array.elemType, (unsigned char *)&arrayType);
+            retrieveChunk(arrayType.array.elemType, (unsigned char *)&elemType);
+        }
+    }
+
+    return elemType.nodeChunkNum;
+}
+
+CHUNKNUM executeField(TTYPE * /*pType*/) {
+    CHUNKNUM resultType;
+    getTokenForExecutor();
+
+    stackTOS()->membuf.offset += executor.pNode.defn.data.offset;
+    resultType = executor.pNode.type.nodeChunkNum;
+    getTokenForExecutor();
+
+    return resultType;
+}

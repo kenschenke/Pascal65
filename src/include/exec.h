@@ -18,25 +18,61 @@
 #include <error.h>
 #include <symtab.h>
 #include <chunks.h>
+#include <real.h>
 
-#define RUNTIME_STACKSIZE 32
+#define RUNTIME_STACKSIZE 128
+#define RUNTIME_FRAMEHEADERSIZE 5
+
+typedef union STACKITEM {
+    int integer;
+    FLOAT real;
+    char character;
+    struct {
+        CHUNKNUM membuf;    // membuf header
+        int offset;         // offset of value within buffer
+    } membuf;
+    CHUNKNUM nodeChunk;     // chunknum of SYMBNODE
+    union STACKITEM *pStackItem;  // pointer to item elsewhere in stack
+} STACKITEM;
 
 typedef struct {
-    int stack[RUNTIME_STACKSIZE];
-    char top;
+    STACKITEM stack[RUNTIME_STACKSIZE];
+    STACKITEM *tos;     // pointer to top of stack
+    STACKITEM *pFrameBase;  // ptr to current stack frame base
 } RTSTACK;
 
+typedef struct {
+    STACKITEM functionValue;
+    STACKITEM staticLink;
+    STACKITEM dynamicLink;
+
+    struct {
+        STACKITEM icode;
+        STACKITEM location;
+    } returnAddress;
+} STACKFRAMEHDR;
+
 RTSTACK *rtstack_init(void);
+#if 0
 int rtstack_pop(RTSTACK *pStack);
 void rtstack_push(RTSTACK *pStack, int value);
+#endif
 
 typedef struct {
     unsigned stmtCount;
-    RTSTACK *runStack;
     char userStop;      // 1 if user requested stop execution
 
-    TTokenCode token;   // code of current token
-    SYMTABNODE *pNode;  // ptr to symtab node
+    TOKEN token;        // current token
+    SYMBNODE pNode;     // symtab node
+    CHUNKNUM prevNode;  // previous symtab node
+
+    CHUNKNUM Icode;     // current icode
+
+    // Trace Flags
+    int traceRoutineFlag;
+    int traceStatementFlag;
+    int traceStoreFlag;
+    int traceFetchFlag;
 
     // Chunk numbers for the special "input" and "output"
     // symbol table nodes entered by the parser.
@@ -44,29 +80,66 @@ typedef struct {
     CHUNKNUM outputNode;
 } EXECUTOR;
 
+extern EXECUTOR executor;
+
+void stackInit(void);
+void stackAllocateValue(SYMBNODE *pId);
+void stackDeallocateValue(SYMBNODE *pId);
+STACKITEM *stackGetValueAddress(SYMBNODE *pId);
+void stackPushInt(int value);
+void stackPushReal(FLOAT value);
+void stackPushChar(char value);
+void stackPushMemBuf(CHUNKNUM value, int offset);
+void stackPushNode(CHUNKNUM nodeChunk);
+void stackPushItem(STACKITEM *pStackItem);
+STACKITEM *stackPushFrameHeader(int oldLevel, int newLevel, CHUNKNUM icode);
+STACKITEM *stackPop(void);
+STACKITEM *stackTOS(void);
+void stackActivateFrame(STACKITEM *pNewFrameBase, int location);
+void stackPopFrame(SYMBNODE *routineId, CHUNKNUM *pIcode);
+
 // Icode
 
-void executorFree(EXECUTOR *pExec);
-EXECUTOR *executorInit(void);
-void freeExecutor(EXECUTOR *pExec);
-void executorGoto(EXECUTOR *pExec, unsigned location);
-unsigned executorCurrentLocation(EXECUTOR *pExec);
+void executorInit(void);
+void executorGoto(unsigned location);
+unsigned executorCurrentLocation(void);
+
+// Routines
+void executeRoutine(SYMBNODE *routineId);
+CHUNKNUM executeSubroutineCall(SYMBNODE *pRoutineId);
+void enterRoutine(SYMBNODE *pRoutineId);
+void exitRoutine(SYMBNODE *pRoutineId);
 
 // Statements
-void executeCompound(EXECUTOR *pExec);
-void executeREPEAT(EXECUTOR *pExec);
-void executeStatement(EXECUTOR *pExec);
-void executeStatementList(EXECUTOR *pExec, TTokenCode terminator);
-void executeAssignment(EXECUTOR *pExec);
+void executeCompound(void);
+void executeREPEAT(void);
+void executeStatement(void);
+void executeStatementList(TTokenCode terminator);
+void executeAssignment(SYMBNODE *pTargetId);
 
 // Expressions
-void executeExpression(EXECUTOR *pExec);
-void executeSimpleExpression(EXECUTOR *pExec);
-void executeTerm(EXECUTOR *pExec);
-void executeFactor(EXECUTOR *pExec);
+CHUNKNUM executeExpression(void);
+CHUNKNUM executeSimpleExpression(void);
+CHUNKNUM executeTerm(void);
+CHUNKNUM executeFactor(void);
+CHUNKNUM executeConstant(SYMBNODE *pId);
+CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag);
+CHUNKNUM executeSubscripts(TTYPE *pType);
+CHUNKNUM executeField(TTYPE *pType);
 
-EXECUTOR *executorInit(void);
-void executorGo(EXECUTOR *pExec);
-void getTokenForExecutor(EXECUTOR *pExec);
+void executorGo(SYMBNODE *pRoutineId);
+void getTokenForExecutor(void);
+
+void rangeCheck(TTYPE *targetType, int value);
+
+// Tracing
+void traceRoutineEntry(SYMBNODE *pRoutineId);
+void traceRoutineExit(SYMBNODE *pRoutineId);
+void traceStatement(void);
+void traceDataStore(SYMBNODE *pTargetId,
+    void *pDataValue, TTYPE *pDataType);
+void traceDataFetch(SYMBNODE *pId,
+    void *pDataValue, TTYPE *pDataType);
+void traceDataValue(void *pDataValue, TTYPE *pDataType);
 
 #endif // end of EXEC_H

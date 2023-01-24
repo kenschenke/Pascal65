@@ -28,7 +28,8 @@ unsigned char loadfile(const char *name);
 
 void main()
 {
-    EXECUTOR *pExec;
+    CHUNKNUM programId;
+    SYMBNODE programIdNode;
 
 #ifdef __C128__
     fast();
@@ -53,10 +54,11 @@ void main()
     // load the parser
     printf("Loading parser module\n");
     if (loadfile("interpreter.1")) {
+        printf("Running parser\n");
         initCommon();
         initParser();
 
-        parse("test.pas");
+        programId = parse("assign.pas");
     }
 
     // If there were no syntax errors, convert the symbol tables.
@@ -69,11 +71,11 @@ void main()
     
     printf("Loading executor module\n");
     if (loadfile("interpreter.2")) {
-        pExec = executorInit();
-        executorGo(pExec);
+        stackInit();
+        executorInit();
+        loadSymbNode(programId, &programIdNode);
+        executorGo(&programIdNode);
         // freeAllSymtabs();
-
-        executorFree(pExec);
     }
 }
 

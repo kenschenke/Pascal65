@@ -10,20 +10,31 @@
  * https://opensource.org/licenses/MIT
  */
 
+#include <stdio.h>
 #include <exec.h>
 #include <ovrlcommon.h>
 #include <string.h>
+#include <membuf.h>
 
-void executeStatement(EXECUTOR *pExec)
+void executeStatement(void)
 {
-    if (pExec->token != tcBEGIN) {
-        ++pExec->stmtCount;
+
+    if (executor.token.code != tcBEGIN) {
+        ++executor.stmtCount;
+        traceStatement();
     }
 
-    switch (pExec->token) {
-        case tcIdentifier: executeAssignment(pExec); break;
-        case tcREPEAT: executeREPEAT(pExec); break;
-        case tcBEGIN: executeCompound(pExec); break;
+    switch (executor.token.code) {
+        case tcIdentifier:
+            if (executor.pNode.defn.how == dcProcedure) {
+                executeSubroutineCall(&executor.pNode);
+            } else {
+                executeAssignment(&executor.pNode);
+            }
+            break;
+
+        case tcREPEAT: executeREPEAT(); break;
+        case tcBEGIN: executeCompound(); break;
 
         case tcWHILE:
         case tcIF:
@@ -31,42 +42,80 @@ void executeStatement(EXECUTOR *pExec)
         case tcCASE:
             runtimeError(rteUnimplementedRuntimeFeature);
             break;
+        
+#if 1
+        default:
+            printf("token = %d\n", executor.token.code);
+#endif
     }
 }
 
-void executeStatementList(EXECUTOR *pExec, TTokenCode terminator) {
+void executeStatementList(TTokenCode terminator) {
     // Look to execute statements and skip semicolons
     do {
-        executeStatement(pExec);
-        while (pExec->token == tcSemicolon) getTokenForExecutor(pExec);
-    } while (pExec->token != terminator);
+        executeStatement();
+        while (executor.token.code == tcSemicolon) getTokenForExecutor();
+    } while (executor.token.code != terminator);
 }
 
-void executeAssignment(EXECUTOR *pExec)
+void executeAssignment(SYMBNODE *pTargetId)
 {
-    char message[MAX_LINE_LEN+1];
-    SYMTABNODE targetNode;
+    SYMBNODE targetId;
+    STACKITEM target;           // runtime stack address of target
+    CHUNKNUM targetTypeChunkNum;
+    TTYPE targetType;           // target type object
+    CHUNKNUM exprType;          // expression type
 
-    memcpy(&targetNode, pExec->pNode, sizeof(SYMTABNODE));
+    memcpy(&targetId, pTargetId, sizeof(SYMBNODE));
 
-    getTokenForExecutor(pExec);     // :=
-    getTokenForExecutor(pExec);     // first token of expression
+    // Assignment to function name
+    if (targetId.defn.how == dcFunction) {
+        targetTypeChunkNum = targetId.type.nodeChunkNum;
+        memcpy(&target, stackGetValueAddress(&targetId), sizeof(STACKITEM));
 
-    // Execute the expression and pop its value into the
-    // target variable's symbol table node
-    executeExpression(pExec);
-    // setSymtabInt(&targetNode, rtstack_pop(pExec->runStack));
-
-    // If the target variable is "output", print its value
-    // preceded by the current source line number
-    if (targetNode.nodeChunkNum == pExec->outputNode) {
-        // sprintf(message, ">> At %d: output = %d", currentLineNumber,
-        //     getSymtabInt(&targetNode));
-        outputLine(message);
+        getTokenForExecutor();
     }
+
+    // Assignment to variable or formal parameter.
+    // ExecuteVariable leaves the target address on
+    // top of the runtime stack.
+    else {
+        targetTypeChunkNum = executeVariable(pTargetId, 1);
+        memcpy(&target, stackPop(), sizeof(STACKITEM));
+    }
+
+    // Execute the expression and leave its value
+    // on top of the runtime stack.
+    getTokenForExecutor();
+    exprType = executeExpression();
+
+    memcpy(&targetType, &targetId.type, sizeof(TTYPE));
+    if (targetType.nodeChunkNum != getBaseType(&targetType)) {
+        retrieveChunk(getBaseType(&targetType), (unsigned char *)&targetType);
+    }
+
+    // Do the assignment
+    /* if (pTargetType == realType) {
+
+    } else */ if (targetType.nodeChunkNum == integerType || targetType.form == fcEnum) {
+        int value = stackPop()->integer;
+        rangeCheck(&targetType, value);
+        target.pStackItem->integer = value;
+    } else if (targetType.nodeChunkNum == charType) {
+        char value = stackPop()->character;
+        rangeCheck(&targetType, value);
+        target.pStackItem->character = value;
+    } else {
+        void *pSource = stackPop();
+        copyToMemBuf(target.membuf.membuf, pSource,
+            target.membuf.offset, stackPop()->integer);
+    }
+
+    traceDataStore(&targetId, target.pStackItem, &targetType);
 }
 
-void executeREPEAT(EXECUTOR *pExec) {
+void executeREPEAT(void) {
+#if 0
     unsigned atLoopStart = executorCurrentLocation(pExec);
 
     do {
@@ -84,14 +133,15 @@ void executeREPEAT(EXECUTOR *pExec) {
             executorGoto(pExec, atLoopStart);
         }
     } while (executorCurrentLocation(pExec) == atLoopStart);
+#endif
 }
 
-void executeCompound(EXECUTOR *pExec) {
-    getTokenForExecutor(pExec);
+void executeCompound(void) {
+    getTokenForExecutor();
 
     // <stmt-list> END
-    executeStatementList(pExec, tcEND);
+    executeStatementList(tcEND);
 
-    getTokenForExecutor(pExec);
+    getTokenForExecutor();
 }
 

@@ -113,13 +113,9 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
                 // if the length is 1, the result type is character,
                 // else create a new string type.
                 length = strlen(tokenString) - 2;
-                if (length == 1) {
-                    resultTypeChunk = charType;
-                } else {
-                    resultTypeChunk = makeStringType(length);
-                    setType(&node.node.typeChunk, resultTypeChunk);
-                    saveSymbNode(&node);
-                }
+                resultTypeChunk = length == 1 ? charType : makeStringType(length);
+                setType(&node.node.typeChunk, resultTypeChunk);
+                saveSymbNode(&node);
 
                 // Set the character value or string value into the symbol table.
                 if (length == 1) {

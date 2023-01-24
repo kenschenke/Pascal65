@@ -17,115 +17,279 @@
 #include <error.h>
 #include <common.h>
 #include <symtab.h>
+#include <membuf.h>
 #include <ovrlcommon.h>
+#if 1
+#include <stdio.h>
+#endif
 
-void getTokenForExecutor(EXECUTOR * /*pExec*/)
+static RTSTACK rtStack;
+
+EXECUTOR executor;
+
+void getTokenForExecutor(void)
 {
 #if 0
-    pExec->pToken = getNextTokenFromIcode(pGlobalIcode);
-    pExec->token = pExec->pToken->code;
-    pExec->pNode = &pGlobalIcode->symtabNode;
+    printf("Icode = %04x\n", executor.Icode);
+#endif
+    executor.prevNode = executor.pNode.node.nodeChunkNum;
+    getNextTokenFromIcode(executor.Icode, &executor.token, &executor.pNode);
+#if 0
+    printf("token = %d -- %s\n", executor.token.code, executor.token.string);
 #endif
 }
 
-RTSTACK *rtstack_init(void)
-{
-    RTSTACK *pStack = malloc(sizeof(RTSTACK));
-    if (pStack == NULL) {
-        runtimeError(rteOutOfMemory);
-        return NULL;
-    }
-    
-    pStack->top = 0;
-    return pStack;
+void stackInit(void) {
+    rtStack.tos = &rtStack.stack[-1];       // point to just below bottom of stack
+    rtStack.pFrameBase = &rtStack.stack[0]; // point to bottom of stack
+
+#if 0
+    printf("rStack.pFrameBase = %04x\n", rtStack.pFrameBase);
+#endif
+
+    // Initialize the program's stack frame at the bottom
+    stackPushInt(0);                        // function return value
+    stackPushInt(0);                        // static link
+    stackPushInt(0);                        // dynamic link
+    stackPushInt(0);                        // return address icode pointer
+    stackPushInt(0);                        // return address icode location
 }
 
-int rtstack_pop(RTSTACK *pStack)
-{
-    return pStack->stack[pStack->top--];
-}
-
-void rtstack_push(RTSTACK *pStack, int value)
-{
-    if (pStack->top < RUNTIME_STACKSIZE) {
-        pStack->stack[++pStack->top] = value;
+void stackPushInt(int value) {
+    if (rtStack.tos < &rtStack.stack[RUNTIME_STACKSIZE-1]) {
+        (++rtStack.tos)->integer = value;
     } else {
         runtimeError(rteStackOverflow);
     }
 }
 
-EXECUTOR *executorInit(void)
+void stackPushReal(FLOAT value) {
+    if (rtStack.tos < &rtStack.stack[RUNTIME_STACKSIZE-1]) {
+        (++rtStack.tos)->real = value;
+    } else {
+        runtimeError(rteStackOverflow);
+    }
+}
+
+void stackPushChar(char value) {
+    if (rtStack.tos < &rtStack.stack[RUNTIME_STACKSIZE-1]) {
+        (++rtStack.tos)->character = value;
+    } else {
+        runtimeError(rteStackOverflow);
+    }
+}
+
+void stackPushMemBuf(CHUNKNUM value, int offset) {
+    if (rtStack.tos < &rtStack.stack[RUNTIME_STACKSIZE-1]) {
+        STACKITEM *pStackItem = ++rtStack.tos;
+        pStackItem->membuf.membuf = value;
+        pStackItem->membuf.offset = offset;
+    } else {
+        runtimeError(rteStackOverflow);
+    }
+}
+
+void stackPushNode(CHUNKNUM value) {
+    if (rtStack.tos < &rtStack.stack[RUNTIME_STACKSIZE-1]) {
+        (++rtStack.tos)->nodeChunk = value;
+    } else {
+        runtimeError(rteStackOverflow);
+    }
+}
+
+void stackPushItem(STACKITEM *value) {
+    if (rtStack.tos < &rtStack.stack[RUNTIME_STACKSIZE-1]) {
+        (++rtStack.tos)->pStackItem = value;
+    } else {
+        runtimeError(rteStackOverflow);
+    }
+}
+
+STACKITEM *stackPushFrameHeader(int oldLevel, int newLevel, CHUNKNUM icode) {
+    STACKFRAMEHDR *pHeader = (STACKFRAMEHDR *) rtStack.pFrameBase;
+    STACKITEM *pNewFrameBase = rtStack.tos + 1;
+
+#if 0
+    printf("push header %04x\n", rtStack.pFrameBase);
+#endif
+
+    stackPushInt(0);    // function return value (placeholder)
+
+    // Compute the stack link
+    if (newLevel == oldLevel + 1) {
+        // Callee nested within caller:
+        // Push address of caller's stack frame
+        stackPushItem((STACKITEM *)pHeader);
+    } else if (newLevel == oldLevel) {
+        // Callee e level as caller
+        // Push addrss of common parent's stack frame.
+        stackPushItem(pHeader->staticLink.pStackItem);
+    } else {
+        // Callee nested less deeply than caller:
+        // Push address of nearest common ancestor's stack frame.
+        int delta = oldLevel = newLevel;
+        while (delta-- >= 0) {
+            pHeader = (STACKFRAMEHDR *) pHeader->staticLink.pStackItem;
+        }
+        stackPushItem((STACKITEM *)pHeader);
+    }
+
+    stackPushItem(rtStack.pFrameBase);      // dynamic link
+    stackPushMemBuf(icode, 0);              // return address icode pointer
+    stackPushInt(0);                        // return address icode location (placeholder)
+
+    return pNewFrameBase;
+}
+
+void stackActivateFrame(STACKITEM *pNewFrameBase, int location) {
+    rtStack.pFrameBase = pNewFrameBase;
+#if 0
+    printf("activate %04x\n", pNewFrameBase);
+#endif
+    ((STACKFRAMEHDR *) rtStack.pFrameBase)->returnAddress.location.integer = location;
+}
+
+void stackPopFrame(SYMBNODE *pRoutineId, CHUNKNUM *pIcode) {
+    STACKFRAMEHDR *pHeader = (STACKFRAMEHDR *) rtStack.pFrameBase;
+
+    // Don't do anything if it's the bottommost stack frame
+    if (rtStack.pFrameBase != &rtStack.stack[0]) {
+        // Return to the caller's intermediate code.
+        *pIcode = pHeader->returnAddress.icode.membuf.membuf;
+        setMemBufPos(*pIcode, pHeader->returnAddress.location.integer);
+
+        // Cut the stack back.  Leave a function on top
+        rtStack.tos = (STACKITEM *) rtStack.pFrameBase;
+        if (pRoutineId->defn.how != dcFunction)
+            --rtStack.tos;
+        rtStack.pFrameBase = pHeader->dynamicLink.pStackItem;
+#if 0
+        printf("pop frame %04x\n", rtStack.pFrameBase);
+#endif
+    }
+}
+
+void stackAllocateValue(SYMBNODE *pId) {
+    CHUNKNUM baseType = getBaseType(&pId->type);
+#if 1
+    char name[23];
+#endif
+
+    if (baseType == integerType) {
+        stackPushInt(0);
+    } else if (baseType == booleanType) {
+        stackPushInt(0);
+    } else if (baseType == charType) {
+        stackPushChar(0);
+    } else if (baseType == fcEnum) {
+        stackPushInt(0);
+    } else {
+        // Array or record
+        CHUNKNUM membuf;
+        allocMemBuf(&membuf);
+        reserveMemBuf(membuf, pId->type.size);
+        stackPushMemBuf(membuf, 0);
+#if 1
+        retrieveChunk(pId->node.nameChunkNum, (unsigned char *)name);
+        printf("Allocated membuf %04x for %.22s at %d\n", membuf, name, pId->type.size);
+#endif
+    }
+}
+
+void stackDeallocateValue(SYMBNODE *pId) {
+    if (!isTypeScalar(&pId->type) && pId->defn.how != dcVarParm) {
+        STACKITEM *pValue = ((STACKITEM *) rtStack.pFrameBase) +
+        RUNTIME_FRAMEHEADERSIZE + pId->defn.data.offset;
+        freeMemBuf(pValue->membuf.membuf);
+    }
+}
+
+STACKITEM *stackGetValueAddress(SYMBNODE *pId) {
+    int functionFlag = pId->defn.how == dcFunction; // true if function, else false
+    STACKFRAMEHDR *pHeader = (STACKFRAMEHDR *) rtStack.pFrameBase;
+#if 0
+    char name[23];
+#endif
+
+    // Compute the difference between the current nesting level
+    // and the level of the variable or parameter.  Treat a function
+    // value as if it were a local variable of the function.  (Local
+    // variables are one level higher than the function name.)
+    int delta = currentNestingLevel - pId->node.level;
+    if (functionFlag) --delta;
+
+#if 0
+    printf("get Value %04x -- %04x -- %d %d\n", rtStack.pFrameBase, pHeader, delta, currentNestingLevel);
+#endif
+
+    // Chase static links delta times.
+    while (delta-- > 0) {
+        pHeader = (STACKFRAMEHDR *) pHeader->staticLink.pStackItem;
+    }
+
+#if 0
+    retrieveChunk(pId->node.nameChunkNum, (unsigned char *)name);
+    printf("name %.22s offset = %d %04x -> %04x\n", name, pId->defn.data.offset,
+        pHeader, (STACKITEM *)pHeader + RUNTIME_FRAMEHEADERSIZE + pId->defn.data.offset);
+#endif
+
+    return functionFlag ? &pHeader->functionValue
+        : ((STACKITEM *) pHeader)
+            + RUNTIME_FRAMEHEADERSIZE + pId->defn.data.offset;
+}
+
+STACKITEM *stackPop(void) {
+    return rtStack.tos--;
+}
+
+STACKITEM *stackTOS(void) {
+    return rtStack.tos;
+}
+
+void executorInit(void)
 {
     SYMBNODE node;
 
-    EXECUTOR *pExec = malloc(sizeof(EXECUTOR));
-    if (pExec == NULL) {
-        runtimeError(rteOutOfMemory);
-        return NULL;
-    }
+    memset(&executor, 0, sizeof(EXECUTOR));
 
-    memset(pExec, 0, sizeof(EXECUTOR));
-    pExec->runStack = rtstack_init();
-    if (pExec->runStack == NULL) {
-        free(pExec);
-        return NULL;
-    }
+    executor.traceRoutineFlag = 1;
+    executor.traceStatementFlag = 1;
+    executor.traceFetchFlag = 1;
+    executor.traceStoreFlag = 1;
 
     searchSymtab(globalSymtab, &node, "input");
-    pExec->inputNode = node.node.nodeChunkNum;
+    executor.inputNode = node.node.nodeChunkNum;
 
     searchSymtab(globalSymtab, &node, "output");
-    pExec->outputNode = node.node.nodeChunkNum;
-
-    return pExec;
+    executor.outputNode = node.node.nodeChunkNum;
 }
 
-void freeExecutor(EXECUTOR *pExec)
-{
-    free(pExec->runStack);
-    free(pExec);
-}
-
-void executorGoto(EXECUTOR * /*pExec*/, unsigned /*location*/)
+void executorGoto(unsigned /*location*/)
 {
     // setMemBufPos(pGlobalIcode, location);
 }
 
-unsigned executorCurrentLocation(EXECUTOR * /*pExec*/)
+unsigned executorCurrentLocation(void)
 {
     return 0;
     // return getMemBufPos(pGlobalIcode);
 }
 
-void executorFree(EXECUTOR *pExec)
+void executorGo(SYMBNODE *pRoutineId)
 {
-    free(pExec);
+    // Execute the program
+    currentNestingLevel = 1;
+    executeRoutine(pRoutineId);
+
+    // Print the executor's summary
+    printf("\n");
+    printf("Successful completion.  %d statements executed\n",
+        executor.stmtCount);
 }
 
-void executorGo(EXECUTOR *pExec)
-{
-    // Reset the icode to the beginning
-    // and extract the first token
-    // resetMemBufPosition(pGlobalIcode);
-    getTokenForExecutor(pExec);
-
-    // Loop to execute statements until the end of the program.
-    do {
-        if (isFatalError) {
-            break;
-        }
-        
-        if (pExec->userStop || isStopKeyPressed()) {
-            outputLine("STOP key pressed -- exiting");
-            break;
-        }
-
-        executeStatement(pExec);
-
-        // Skip semicolons
-        while (pExec->token == tcSemicolon) {
-            getTokenForExecutor(pExec);
-        }
-    } while (pExec->token != tcPeriod);
+void rangeCheck(TTYPE *pTargetType, int value) {
+    if (pTargetType->form == fcSubrange &&
+        (value < pTargetType->subrange.min || value > pTargetType->subrange.max)) {
+        runtimeError(rteValueOutOfRange);
+    }
 }
-

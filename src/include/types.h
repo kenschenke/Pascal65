@@ -56,8 +56,10 @@ typedef struct TTYPE {
 void checkAssignmentCompatible(CHUNKNUM targetTypeChunk, CHUNKNUM valueTypeChunk, TErrorCode ec);
 void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum);
 void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
+CHUNKNUM getBaseType(TTYPE *pType);
 char initPredefinedTypes(CHUNKNUM symtabChunkNum);
 char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
+char isTypeScalar(TTYPE *pType);
 CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId);
 CHUNKNUM makeStringType(int length);
 char setType(CHUNKNUM *targetType, CHUNKNUM sourceType);

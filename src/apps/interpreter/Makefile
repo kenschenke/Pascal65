@@ -7,7 +7,9 @@ EXECOVRLSRC := ../../overlays/exec
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
 SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
+SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
 LIBCSRCDIR = ../../mega65-libc/src
+LIBCOMMONDIR = ../../lib/common
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
 
 PROGRAM := interpreter
@@ -41,6 +43,10 @@ SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
+SOURCES += $(wildcard $(LIBCOMMONDIR)/*.c)
+SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
 ifeq ($(TARGET),mega65)
 SOURCES += $(LIBCSRCDIR)/memory.c
 endif
@@ -131,6 +137,18 @@ vpath %.s $(SHAREDICODEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath %.c $(SHAREDMEMBUFDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(SHAREDMEMBUFDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.s $(LIBCOMMONDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
 abortmsgs.petscii: $(SHAREDSRCDIR)/abortmsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -text -o abortmsgs.petscii
 
@@ -144,7 +162,7 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii expr1.in input.pas decl.pas declerrs.pas synchek2.pas test.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii assign.pas
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -152,14 +170,9 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write expr1.in expr1.in,seq \
-	-write input.pas input.pas,seq \
-	-write decl.pas decl.pas,seq \
-	-write declerrs.pas declerrs.pas,seq \
-	-write test.pas test.pas,seq \
-	-write synchek2.pas synchek2.pas,seq
+	-write assign.pas assign.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii expr1.in input.pas decl.pas declerrs.pas synchek2.pas test.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii assign.pas
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -167,12 +180,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write expr1.in expr1.in,seq \
-	-write input.pas input.pas,seq \
-	-write decl.pas decl.pas,seq \
-	-write declerrs.pas declerrs.pas,seq \
-	-write synchek2.pas synchek2.pas,seq \
-	-write test.pas test.pas,seq \
+	-write assign.pas assign.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

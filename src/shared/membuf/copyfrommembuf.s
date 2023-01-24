@@ -48,6 +48,6 @@ buffer: .res 2
     ldx buffer + 1
     jsr pushax
     lda length
-    ldx length
+    ldx length + 1
     jmp _readFromMemBuf
 .endproc
