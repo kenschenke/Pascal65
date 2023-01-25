@@ -366,13 +366,11 @@ CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
             char value;
             copyFromMemBuf(pEntry->membuf.membuf, &value, pEntry->membuf.offset, 1);
             stackPushChar(value);
-        } else if (resultType == integerType) {
+        } else if (resultType == integerType || resultType == booleanType) {
             int value;
             copyFromMemBuf(pEntry->membuf.membuf, &value, pEntry->membuf.offset, 2);
             stackPushInt(value);
         }
-
-        // type.nodeChunkNum = executor.pNode.type.nodeChunkNum;
     } else if (!isTypeScalar(&type)) {
         // The variable is the target of an assignment.  Look up the
         // size of the data value and push it on the stack.
