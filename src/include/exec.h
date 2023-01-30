@@ -106,6 +106,9 @@ unsigned executorCurrentLocation(void);
 
 // Routines
 void executeRoutine(SYMBNODE *routineId);
+void executeActualParameters(SYMBNODE *pRoutineId);
+CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId);
+CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId);
 CHUNKNUM executeSubroutineCall(SYMBNODE *pRoutineId);
 void enterRoutine(SYMBNODE *pRoutineId);
 void exitRoutine(SYMBNODE *pRoutineId);

@@ -18,7 +18,6 @@
 
 void executeStatement(void)
 {
-
     if (executor.token.code != tcBEGIN) {
         ++executor.stmtCount;
         traceStatement();
@@ -42,11 +41,6 @@ void executeStatement(void)
         case tcCASE:
             runtimeError(rteUnimplementedRuntimeFeature);
             break;
-        
-#if 1
-        default:
-            printf("token = %d\n", executor.token.code);
-#endif
     }
 }
 
@@ -71,7 +65,7 @@ void executeAssignment(SYMBNODE *pTargetId)
     // Assignment to function name
     if (targetId.defn.how == dcFunction) {
         targetTypeChunkNum = targetId.type.nodeChunkNum;
-        memcpy(&target, stackGetValueAddress(&targetId), sizeof(STACKITEM));
+        target.pStackItem = stackGetValueAddress(&targetId);
 
         getTokenForExecutor();
     }
@@ -98,7 +92,8 @@ void executeAssignment(SYMBNODE *pTargetId)
     /* if (pTargetType == realType) {
 
     } else */ if (targetType.nodeChunkNum == integerType || targetType.form == fcEnum) {
-        int value = stackPop()->integer;
+        int value;
+        value = stackPop()->integer;
         rangeCheck(&targetType, value);
         target.pStackItem->integer = value;
     } else if (targetType.nodeChunkNum == charType) {

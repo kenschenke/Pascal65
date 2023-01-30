@@ -313,7 +313,7 @@ CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLast
 }
 
 void parseVariableDeclarations(SYMBNODE *routineSymtab) {
-    parseVarOrFieldDecls(routineSymtab, NULL, 0);
+    parseVarOrFieldDecls(routineSymtab, NULL, routineSymtab->defn.routine.parmCount);
 }
 
 void parseFieldDeclarations(TTYPE *pRecordType, int offset) {

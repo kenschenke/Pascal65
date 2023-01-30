@@ -3,6 +3,7 @@
 #include <common.h>
 #include <buffer.h>
 #include <exec.h>
+#include <membuf.h>
 
 void traceRoutineEntry(SYMBNODE *pRoutineId) {
     if (executor.traceRoutineFlag) {
@@ -16,22 +17,19 @@ void traceRoutineExit(SYMBNODE *pRoutineId) {
     if (executor.traceRoutineFlag) {
         char name[CHUNK_LEN];
         retrieveChunk(pRoutineId->node.nameChunkNum, (unsigned char *)name);
-        printf(">> Entering routine %.*s\n", CHUNK_LEN, name);
+        printf(">> Exiting routine %.*s\n", CHUNK_LEN, name);
     }
 }
 
 void traceStatement(void) {
     if (executor.traceStatementFlag) {
         char buf[3];
-        printf(">> At %d\n", currentLineNumber);
+        printf(">> At Line %d %04x:%d\n", currentLineNumber, executor.Icode, getMemBufPos(executor.Icode));
         gets(buf);
     }
 }
 
 void traceDataStore(SYMBNODE *pTargetId, void *pDataValue, TTYPE *pDataType) {
-#if 0
-    printf("traceDataStore\n");
-#endif
     if (executor.traceStoreFlag) {
         TFormCode form = pTargetId->type.form;
         char name[CHUNK_LEN];
@@ -45,10 +43,6 @@ void traceDataStore(SYMBNODE *pTargetId, void *pDataValue, TTYPE *pDataType) {
 
         traceDataValue(pDataValue, pDataType);
     }
-#if 0
-    else
-        printf("Not tracing\n");
-#endif
 }
 
 void traceDataFetch(SYMBNODE *pId, void *pDataValue, TTYPE *pDataType) {

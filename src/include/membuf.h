@@ -34,6 +34,7 @@ void allocMemBuf(CHUNKNUM *newHeader);
 void reserveMemBuf(CHUNKNUM header, unsigned size);
 unsigned getMemBufPos(CHUNKNUM header);
 void initMemBufCache(void);
+void duplicateMemBuf(CHUNKNUM sourceHeader, CHUNKNUM *newHeader);
 char isMemBufAtEnd(CHUNKNUM header);
 void setMemBufPos(CHUNKNUM header, unsigned position);
 void freeMemBuf(CHUNKNUM header);

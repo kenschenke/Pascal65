@@ -1,5 +1,8 @@
 #include <exec.h>
 #include <membuf.h>
+#include <error.h>
+#include <common.h>
+#include <string.h>
 
 void executeRoutine(SYMBNODE *pRoutineId) {
     enterRoutine(pRoutineId);
@@ -10,8 +13,81 @@ void executeRoutine(SYMBNODE *pRoutineId) {
     exitRoutine(pRoutineId);
 }
 
-CHUNKNUM executeSubroutineCall(SYMBNODE *) {
-    return 0;
+CHUNKNUM executeSubroutineCall(SYMBNODE *pRoutineId) {
+    return pRoutineId->defn.routine.which == rcDeclared ?
+        executeDeclaredSubroutineCall(pRoutineId) :
+        executeStandardSubroutineCall(pRoutineId);
+}
+
+CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId) {
+    SYMBNODE routineId;
+    int oldLevel = currentNestingLevel;     // level of caller
+    int newLevel = pRoutineId->node.level + 1;   // level of callee's locals
+
+    // Set up a new stack frame for the callee
+    STACKITEM *pNewFrameBase = stackPushFrameHeader(oldLevel, newLevel, executor.Icode);
+
+    memcpy(&routineId, pRoutineId, sizeof(SYMBNODE));
+
+    // Push actual parameter values onto the stack
+    getTokenForExecutor();
+    if (executor.token.code == tcLParen) {
+        executeActualParameters(&routineId);
+        getTokenForExecutor();
+    }
+
+    // Activate the new stack frame
+    currentNestingLevel = newLevel;
+    stackActivateFrame(pNewFrameBase, getMemBufPos(executor.Icode));
+
+    // And execute the callee
+    executeRoutine(&routineId);
+
+    // Return to the caller.  Restore the current token.
+    currentNestingLevel = oldLevel;
+    getTokenForExecutor();
+
+    return routineId.type.nodeChunkNum;
+}
+
+CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
+    runtimeError(rteUnimplementedRuntimeFeature);
+    return pRoutineId->type.nodeChunkNum;
+}
+
+void executeActualParameters(SYMBNODE *pRoutineId) {
+    CHUNKNUM formalId;
+    SYMBNODE node;
+    CHUNKNUM formalType, actualType;
+
+    for (formalId = pRoutineId->defn.routine.locals.parmIds;
+        formalId;
+        formalId = node.node.nextNode) {
+        loadSymbNode(formalId, &node);
+
+        formalType = node.type.nodeChunkNum;
+        getTokenForExecutor();
+
+        // VAR parameter.  executeVariable will leave the actual
+        // parameter's address on top of the stack.
+        if (node.defn.how == dcVarParm) {
+            executeVariable(&node, 1);
+        } else {
+            // Value parameter
+            actualType = executeExpression();
+
+            if (!isTypeScalar(&node.type)) {
+                // Formal parameter is an array or record.
+                // Make a copy of the actual parameter's value.
+                CHUNKNUM membuf;
+                duplicateMemBuf(stackPop()->membuf.membuf, &membuf);
+                stackPushMemBuf(membuf, 0);
+            } else {
+                // Range check a formal subrange parameter.
+                rangeCheck(&pRoutineId->type, stackTOS()->integer);
+            }
+        }
+    }
 }
 
 void enterRoutine(SYMBNODE *pRoutineId) {

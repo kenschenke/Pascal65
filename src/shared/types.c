@@ -31,12 +31,6 @@ void checkAssignmentCompatible(CHUNKNUM targetTypeId, CHUNKNUM valueTypeId, TErr
         valueTypeId = valueType.subrange.baseType;
     }
 
-#if 0
-    if (currentLineNumber == 49) {
-        printf("targetType! = %04X\n", targetTypeId);
-    }
-#endif
-
     if (targetTypeId == valueTypeId) {
         return;
     }

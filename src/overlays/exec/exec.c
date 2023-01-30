@@ -29,23 +29,13 @@ EXECUTOR executor;
 
 void getTokenForExecutor(void)
 {
-#if 0
-    printf("Icode = %04x\n", executor.Icode);
-#endif
     executor.prevNode = executor.pNode.node.nodeChunkNum;
     getNextTokenFromIcode(executor.Icode, &executor.token, &executor.pNode);
-#if 0
-    printf("token = %d -- %s\n", executor.token.code, executor.token.string);
-#endif
 }
 
 void stackInit(void) {
     rtStack.tos = &rtStack.stack[-1];       // point to just below bottom of stack
     rtStack.pFrameBase = &rtStack.stack[0]; // point to bottom of stack
-
-#if 0
-    printf("rStack.pFrameBase = %04x\n", rtStack.pFrameBase);
-#endif
 
     // Initialize the program's stack frame at the bottom
     stackPushInt(0);                        // function return value
@@ -109,10 +99,6 @@ STACKITEM *stackPushFrameHeader(int oldLevel, int newLevel, CHUNKNUM icode) {
     STACKFRAMEHDR *pHeader = (STACKFRAMEHDR *) rtStack.pFrameBase;
     STACKITEM *pNewFrameBase = rtStack.tos + 1;
 
-#if 0
-    printf("push header %04x\n", rtStack.pFrameBase);
-#endif
-
     stackPushInt(0);    // function return value (placeholder)
 
     // Compute the stack link
@@ -122,12 +108,12 @@ STACKITEM *stackPushFrameHeader(int oldLevel, int newLevel, CHUNKNUM icode) {
         stackPushItem((STACKITEM *)pHeader);
     } else if (newLevel == oldLevel) {
         // Callee e level as caller
-        // Push addrss of common parent's stack frame.
+        // Push address of common parent's stack frame.
         stackPushItem(pHeader->staticLink.pStackItem);
     } else {
         // Callee nested less deeply than caller:
         // Push address of nearest common ancestor's stack frame.
-        int delta = oldLevel = newLevel;
+        int delta = oldLevel - newLevel;
         while (delta-- >= 0) {
             pHeader = (STACKFRAMEHDR *) pHeader->staticLink.pStackItem;
         }
@@ -143,9 +129,6 @@ STACKITEM *stackPushFrameHeader(int oldLevel, int newLevel, CHUNKNUM icode) {
 
 void stackActivateFrame(STACKITEM *pNewFrameBase, int location) {
     rtStack.pFrameBase = pNewFrameBase;
-#if 0
-    printf("activate %04x\n", pNewFrameBase);
-#endif
     ((STACKFRAMEHDR *) rtStack.pFrameBase)->returnAddress.location.integer = location;
 }
 
@@ -158,22 +141,16 @@ void stackPopFrame(SYMBNODE *pRoutineId, CHUNKNUM *pIcode) {
         *pIcode = pHeader->returnAddress.icode.membuf.membuf;
         setMemBufPos(*pIcode, pHeader->returnAddress.location.integer);
 
-        // Cut the stack back.  Leave a function on top
+        // Cut the stack back.  Leave a function value on top
         rtStack.tos = (STACKITEM *) rtStack.pFrameBase;
         if (pRoutineId->defn.how != dcFunction)
             --rtStack.tos;
         rtStack.pFrameBase = pHeader->dynamicLink.pStackItem;
-#if 0
-        printf("pop frame %04x\n", rtStack.pFrameBase);
-#endif
     }
 }
 
 void stackAllocateValue(SYMBNODE *pId) {
     CHUNKNUM baseType = getBaseType(&pId->type);
-#if 1
-    char name[23];
-#endif
 
     if (baseType == integerType) {
         stackPushInt(0);
@@ -189,10 +166,6 @@ void stackAllocateValue(SYMBNODE *pId) {
         allocMemBuf(&membuf);
         reserveMemBuf(membuf, pId->type.size);
         stackPushMemBuf(membuf, 0);
-#if 1
-        retrieveChunk(pId->node.nameChunkNum, (unsigned char *)name);
-        printf("Allocated membuf %04x for %.22s at %d\n", membuf, name, pId->type.size);
-#endif
     }
 }
 
@@ -207,9 +180,6 @@ void stackDeallocateValue(SYMBNODE *pId) {
 STACKITEM *stackGetValueAddress(SYMBNODE *pId) {
     int functionFlag = pId->defn.how == dcFunction; // true if function, else false
     STACKFRAMEHDR *pHeader = (STACKFRAMEHDR *) rtStack.pFrameBase;
-#if 0
-    char name[23];
-#endif
 
     // Compute the difference between the current nesting level
     // and the level of the variable or parameter.  Treat a function
@@ -218,20 +188,10 @@ STACKITEM *stackGetValueAddress(SYMBNODE *pId) {
     int delta = currentNestingLevel - pId->node.level;
     if (functionFlag) --delta;
 
-#if 0
-    printf("get Value %04x -- %04x -- %d %d\n", rtStack.pFrameBase, pHeader, delta, currentNestingLevel);
-#endif
-
     // Chase static links delta times.
     while (delta-- > 0) {
         pHeader = (STACKFRAMEHDR *) pHeader->staticLink.pStackItem;
     }
-
-#if 0
-    retrieveChunk(pId->node.nameChunkNum, (unsigned char *)name);
-    printf("name %.22s offset = %d %04x -> %04x\n", name, pId->defn.data.offset,
-        pHeader, (STACKITEM *)pHeader + RUNTIME_FRAMEHEADERSIZE + pId->defn.data.offset);
-#endif
 
     return functionFlag ? &pHeader->functionValue
         : ((STACKITEM *) pHeader)
