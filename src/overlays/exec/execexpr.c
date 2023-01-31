@@ -371,7 +371,11 @@ CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
             copyFromMemBuf(pEntry->membuf.membuf, &value, pEntry->membuf.offset, 2);
             stackPushInt(value);
         }
-    } else if (!isTypeScalar(&type)) {
+        else {
+            // Put the membuf back on the stack
+            stackPushMemBuf(pEntry->membuf.membuf, 0);
+        }
+    } else if (!isTypeScalar(&type) && pId->defn.how != dcVarParm) {
         // The variable is the target of an assignment.  Look up the
         // size of the data value and push it on the stack.
         TTYPE t;

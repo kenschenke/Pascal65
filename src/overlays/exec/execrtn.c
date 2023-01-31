@@ -71,7 +71,7 @@ void executeActualParameters(SYMBNODE *pRoutineId) {
         // VAR parameter.  executeVariable will leave the actual
         // parameter's address on top of the stack.
         if (node.defn.how == dcVarParm) {
-            executeVariable(&node, 1);
+            executeVariable(&executor.pNode, isTypeScalar(&node.type));
         } else {
             // Value parameter
             actualType = executeExpression();
