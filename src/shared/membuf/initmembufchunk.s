@@ -93,7 +93,7 @@ hdrChunkNum: .res 2
 
 @SetupDataChunk:
     ; Set the new data chunk to 0's
-    ldy #.sizeof(MEMBUF_CHUNK)
+    ldy #.sizeof(MEMBUF_CHUNK) - 1
     lda #<_cachedMemBufData
     sta ptr1
     lda #>_cachedMemBufData
@@ -102,7 +102,15 @@ hdrChunkNum: .res 2
 @Loop:
     sta (ptr1),y
     dey
-    bne @Loop
+    bpl @Loop
+
+    ; Store the zero'd out chunk
+    lda chunkNum
+    ldx chunkNum + 1
+    jsr pushax
+    lda #<_cachedMemBufData
+    ldx #>_cachedMemBufHdr
+    jsr _storeChunk
 
     ; Set the header's currentChunkNum to the new chunkNum
     lda chunkNum
@@ -125,8 +133,6 @@ hdrChunkNum: .res 2
     ; Load the data cache with the new data chunk
     lda chunkNum
     ldx chunkNum + 1
-    jsr loadMemBufDataCache
-
-    rts
+    jmp loadMemBufDataCache
 
 .endproc

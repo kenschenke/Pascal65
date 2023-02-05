@@ -38,3 +38,4 @@ const char *symbolStrings[] = {
 };
 
 const TTokenCode mcLineMarker = ((TTokenCode) 127);
+const TTokenCode mcLocationMarker = ((TTokenCode) 126);

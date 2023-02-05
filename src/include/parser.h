@@ -84,8 +84,8 @@ void parseWHILE(CHUNKNUM Icode);
 void parseIF(CHUNKNUM Icode);
 void parseFOR(CHUNKNUM Icode);
 void parseCASE(CHUNKNUM Icode);
-void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk);
-void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk);
+void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems);
+void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems);
 void parseCompound(CHUNKNUM Icode);
 
 // Expressions

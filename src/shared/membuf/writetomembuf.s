@@ -186,11 +186,24 @@ L6:
     beq Done
 
 L7:
+    ; Check if the next chunk is already allocated
+    lda _cachedMemBufData + MEMBUF_CHUNK::nextChunk
+    ora _cachedMemBufData + MEMBUF_CHUNK::nextChunk + 1
+    bne L8
     lda hdrChunkNum
     ldx hdrChunkNum + 1
     jsr initMemBufChunk
-
     jmp L4
+
+L8:
+    lda _cachedMemBufData + MEMBUF_CHUNK::nextChunk
+    sta _cachedMemBufHdr + MEMBUF::currentChunkNum
+    lda _cachedMemBufData + MEMBUF_CHUNK::nextChunk + 1
+    sta _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
+    lda #0
+    sta _cachedMemBufHdr + MEMBUF::posChunk
+    sta _cachedMemBufHdr + MEMBUF::posChunk + 1
+    jmp L2
 
 Done:
     ; If posGlobal >= used, set used to posGlobal
@@ -203,13 +216,13 @@ Done:
     lda _cachedMemBufHdr + MEMBUF::used + 1
     sta intOp2 + 1
     jsr geUint16
-    beq L8
+    beq L9
     lda _cachedMemBufHdr + MEMBUF::posGlobal
     sta _cachedMemBufHdr + MEMBUF::used
     lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
     sta _cachedMemBufHdr + MEMBUF::used + 1
 
-L8:
+L9:
     rts
 
 .endproc

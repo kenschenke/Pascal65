@@ -51,8 +51,12 @@ CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId) {
 }
 
 CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
-    runtimeError(rteUnimplementedRuntimeFeature);
-    return pRoutineId->type.nodeChunkNum;
+    switch (pRoutineId->defn.routine.which) {
+        case rcWrite:
+        case rcWriteln:  return executeWriteWritelnCall(pRoutineId);
+
+        default:  return dummyType;
+    }
 }
 
 void executeActualParameters(SYMBNODE *pRoutineId) {

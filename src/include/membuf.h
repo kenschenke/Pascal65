@@ -26,16 +26,24 @@ typedef struct MEMBUF {
     char unused[CHUNK_LEN - 12];
 } MEMBUF;
 
+typedef struct MEMBUF_LOCN {
+    CHUNKNUM chunkNum;
+    unsigned posGlobal;
+    unsigned posChunk;
+} MEMBUF_LOCN;
+
 #if sizeof(struct MEMBUF) != CHUNK_LEN
 #error MEMBUF should be CHUNK_LEN bytes in size
 #endif
 
 void allocMemBuf(CHUNKNUM *newHeader);
 void reserveMemBuf(CHUNKNUM header, unsigned size);
-unsigned getMemBufPos(CHUNKNUM header);
+void getMemBufLocn(CHUNKNUM header, MEMBUF_LOCN *pMemBufLocn);
+unsigned getMemBufPos(CHUNKNUM header);     // returns global position
 void initMemBufCache(void);
 void duplicateMemBuf(CHUNKNUM sourceHeader, CHUNKNUM *newHeader);
 char isMemBufAtEnd(CHUNKNUM header);
+void setMemBufLocn(CHUNKNUM header, MEMBUF_LOCN *pMemBufLocn);
 void setMemBufPos(CHUNKNUM header, unsigned position);
 void freeMemBuf(CHUNKNUM header);
 void copyFromMemBuf(CHUNKNUM header, void *buffer, unsigned offset, unsigned length);

@@ -35,8 +35,15 @@ void parseAssignment(SYMBNODE *pTargetNode, CHUNKNUM Icode)
 
 void parseCASE(CHUNKNUM Icode) {
     TTYPE exprType;
-    CHUNKNUM exprTypeChunk;
+    int value;
+    CHUNKNUM exprTypeChunk, caseItems;
     char caseBranchFlag;  // true if another CASE branch, else false
+    MEMBUF_LOCN locnFollow, locnBranchTable, locnBranchStmt;
+
+    allocMemBuf(&caseItems);
+
+    putLocationMarker(Icode, &locnFollow);
+    putLocationMarker(Icode, &locnBranchTable);
 
     // <expr>
     getTokenAppend(Icode);
@@ -60,7 +67,7 @@ void parseCASE(CHUNKNUM Icode) {
     // Loop to parse CASE branches
     caseBranchFlag = tokenIn(tokenCode, tlCaseLabelStart);
     while (caseBranchFlag) {
-        if (tokenIn(tokenCode, tlCaseLabelStart)) parseCaseBranch(Icode, exprTypeChunk);
+        if (tokenIn(tokenCode, tlCaseLabelStart)) parseCaseBranch(Icode, exprTypeChunk, caseItems);
 
         if (tokenCode == tcSemicolon) {
             getTokenAppend(Icode);
@@ -73,17 +80,39 @@ void parseCASE(CHUNKNUM Icode) {
         }
     }
 
+    // Append the branch table to the intermediate code.
+    fixupLocationMarker(Icode, &locnBranchTable);
+
+    /**
+     * At this point the case items buffer contains a list of case labels
+     * and Icode locations for their branch's code.  The code needs to loop
+     * through the buffer and write the items to the ICode then destroy the
+     * buffer.  A "zero" value needs to be written at the end of the items table.
+     */
+
+    setMemBufPos(caseItems, 0);
+    while (!isMemBufAtEnd(caseItems)) {
+        getCaseItem(caseItems, &value, &locnBranchStmt);
+        putCaseItem(Icode, value, &locnBranchStmt);
+    }
+    freeMemBuf(caseItems);
+    putCaseItem(Icode, 0, NULL);
+
     // END
     resync(tlEND, tlStatementStart, NULL);
     condGetTokenAppend(Icode, tcEND, errMissingEND);
+    fixupLocationMarker(Icode, &locnFollow);
 }
 
-void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
+void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) {
     char caseLabelFlag;  // true if another CASE label, else false
+    MEMBUF_LOCN locn, stmtLocn;
+    unsigned thisLocn;
+    int value;
 
     // <case-label-list>
     do {
-        parseCaseLabel(Icode, exprTypeChunk);
+        parseCaseLabel(Icode, exprTypeChunk, caseItems);
         if (tokenCode == tcComma) {
             // Saw comma, look for another CASE label
             getTokenAppend(Icode);
@@ -101,20 +130,51 @@ void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
     resync(tlColon, tlStatementStart, NULL);
     condGetTokenAppend(Icode, tcColon, errMissingColon);
 
+    /**
+     * The code needs to loop through the items in the case item buffer
+     * and fill in the current ICode location for each item with a
+     * "zero" location.  These were just added while parsing the labels
+     * for the current branch.
+     */
+
+    getMemBufLocn(Icode, &stmtLocn);
+    setMemBufPos(caseItems, 0);
+    while (!isMemBufAtEnd(caseItems)) {
+        thisLocn = getMemBufPos(caseItems) + sizeof(int);
+        getCaseItem(caseItems, &value, &locn);
+        if (locn.chunkNum == 0) {
+            setMemBufPos(caseItems, thisLocn);
+            writeToMemBuf(caseItems, &stmtLocn, sizeof(MEMBUF_LOCN));
+        }
+    }
+
     // <stmt>
     parseStatement(Icode);
 }
 
-void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
+void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) {
     char signFlag = 0;  // true if unary sign, else false
+    int value;
     TTYPE labelType;
     SYMBNODE node;
+    MEMBUF_LOCN locn;
+
+    memset(&locn, 0, sizeof(MEMBUF_LOCN));
 
     // Unary + or -
     if (tokenIn(tokenCode, tlUnaryOps)) {
         signFlag = 1;
         getTokenAppend(Icode);
     }
+
+    /**
+     * This function is called for each "label" in a case branch.
+     * i.e. Case 5, 6, 7:
+     * 
+     * It needs to parse the label and add an item to the caseItems buffer.
+     * The item will have a zero location because the code does not yet know
+     * the ICode location for the end of the case label.
+     */
 
     switch (tokenCode) {
         // Identifier
@@ -145,6 +205,16 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
                 Error(errInvalidConstant);
             }
 
+            // Set the label value into the CASE item
+            if (labelType.nodeChunkNum == integerType ||
+                labelType.form == fcEnum) {
+                value = signFlag ?
+                    -node.defn.constant.value.integer :
+                    node.defn.constant.value.integer;
+            } else {
+                value = node.defn.constant.value.character;
+            }
+
             getTokenAppend(Icode);
             break;
 
@@ -160,6 +230,11 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
                 saveSymbNode(&node);
             }
             putSymtabNodeToIcode(Icode, &node);
+
+            // Set the label value into the CASE item
+            value = signFlag ?
+                -node.defn.constant.value.integer :
+                node.defn.constant.value.integer;
 
             getTokenAppend(Icode);
             break;
@@ -179,9 +254,14 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk) {
             }
             putSymtabNodeToIcode(Icode, &node);
 
+            // Set the label value into the CASE item
+            value = tokenString[1];
+
             getTokenAppend(Icode);
             break;
     }
+
+    putCaseItem(caseItems, value, &locn);
 }
 
 void parseCompound(CHUNKNUM Icode) {
@@ -197,6 +277,9 @@ void parseFOR(CHUNKNUM Icode) {
     CHUNKNUM exprTypeChunk, expr2TypeChunk;
     TTYPE controlType;
     SYMBNODE node;
+    MEMBUF_LOCN locn;
+
+    putLocationMarker(Icode, &locn);
 
     // <id>
     getTokenAppend(Icode);
@@ -250,12 +333,20 @@ void parseFOR(CHUNKNUM Icode) {
 
     // <stmt>
     parseStatement(Icode);
+    fixupLocationMarker(Icode, &locn);
 }
 
 void parseIF(CHUNKNUM Icode) {
     CHUNKNUM resultType;
+    MEMBUF_LOCN falseLocn, followLocn;
 
-    // <expr>
+    // Append a placeholder location marker for where to go to if
+    // <expr> is false and another marker for the statement following
+    // the IF statement
+    putLocationMarker(Icode, &falseLocn);
+    putLocationMarker(Icode, &followLocn);
+
+    // <expr> : must be boolean
     getTokenAppend(Icode);
     resultType = parseExpression(Icode);
     checkBoolean(resultType, 0);
@@ -266,11 +357,17 @@ void parseIF(CHUNKNUM Icode) {
 
     // <stmt-1>
     parseStatement(Icode);
+    fixupLocationMarker(Icode, &falseLocn);
 
     if (tokenCode == tcELSE) {
+        // Append a placeholder location marker for the token that
+        // follows the IF statement. Remember the location of this
+        // placeholder so it can be fixed up later.
+
         // ELSE <stmt-2>
         getTokenAppend(Icode);
         parseStatement(Icode);
+        fixupLocationMarker(Icode, &followLocn);
     }
 }
 
@@ -353,8 +450,14 @@ void parseStatementList(CHUNKNUM Icode, TTokenCode terminator) {
 
 void parseWHILE(CHUNKNUM Icode) {
     CHUNKNUM resultType;
+    MEMBUF_LOCN locn;
+    putLocationMarker(Icode, &locn);
 
-    // <expr>
+    // Append a placeholder location marker for the token that
+    // follows the WHILE statement. Remember the location of this
+    // placeholder so it can be fixed up below.
+
+    // <expr> : must be boolean
     getTokenAppend(Icode);
     resultType = parseExpression(Icode);
     checkBoolean(resultType, 0);
@@ -365,6 +468,7 @@ void parseWHILE(CHUNKNUM Icode) {
 
     // <stmt>
     parseStatement(Icode);
+    fixupLocationMarker(Icode, &locn);
 }
 
 

@@ -113,9 +113,16 @@ CHUNKNUM executeSubroutineCall(SYMBNODE *pRoutineId);
 void enterRoutine(SYMBNODE *pRoutineId);
 void exitRoutine(SYMBNODE *pRoutineId);
 
+// Standard subroutines
+CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId);
+
 // Statements
 void executeCompound(void);
+void executeCASE(void);
+void executeFOR(void);
+void executeIF(void);
 void executeREPEAT(void);
+void executeWHILE(void);
 void executeStatement(void);
 void executeStatementList(TTokenCode terminator);
 void executeAssignment(SYMBNODE *pTargetId);
