@@ -17,9 +17,6 @@
 #include <string.h>
 #include <parscommon.h>
 #include <membuf.h>
-#if 1
-#include <stdio.h>
-#endif
 
 CHUNKNUM executeExpression(void)
 {
@@ -261,6 +258,9 @@ CHUNKNUM executeFactor(void)
                 // Character
                 stackPushChar(executor.pNode.defn.constant.value.character);
                 resultType = charType;
+            } else {
+                stackPushNode(executor.pNode.defn.constant.value.stringChunkNum);
+                resultType = executor.pNode.node.typeChunk;
             }
             getTokenForExecutor();
             break;
