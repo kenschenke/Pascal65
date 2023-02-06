@@ -52,8 +52,20 @@ CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId) {
 
 CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
     switch (pRoutineId->defn.routine.which) {
+        case rcRead:
+        case rcReadln:   return executeReadReadlnCall(pRoutineId);
+
         case rcWrite:
         case rcWriteln:  return executeWriteWritelnCall(pRoutineId);
+
+        case rcPred:
+        case rcSucc:     return executePrecSuccCall(pRoutineId);
+
+        case rcOdd:      return executeOddCall();
+
+        case rcChr:      return executeChrCall();
+
+        case rcOrd:      return executeOrdCall();
 
         default:  return dummyType;
     }

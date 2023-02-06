@@ -114,6 +114,11 @@ void enterRoutine(SYMBNODE *pRoutineId);
 void exitRoutine(SYMBNODE *pRoutineId);
 
 // Standard subroutines
+CHUNKNUM executeChrCall(void);
+CHUNKNUM executeOddCall(void);
+CHUNKNUM executeOrdCall(void);
+CHUNKNUM executePrecSuccCall(SYMBNODE *pRoutineId);
+CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId);
 CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId);
 
 // Statements

@@ -37,3 +37,9 @@ MEMBUF_CHUNK_LEN = CHUNK_LEN - 2
 .if .sizeof(MEMBUF_CHUNK) <> CHUNK_LEN
     .error "MEMBUF_CHUNK must be CHUNK_LEN bytes in size"
 .endif
+
+.struct MEMBUF_LOCN
+    chunkNum        .word
+    posGlobal       .word
+    posChunk        .word
+.endstruct

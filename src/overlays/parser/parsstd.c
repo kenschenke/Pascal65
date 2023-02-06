@@ -210,7 +210,7 @@ CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
 
 CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
     TTYPE parmType;
-    CHUNKNUM resultType, parmTypeChunk;
+    CHUNKNUM resultType, parmTypeChunk, baseTypeChunk;
 
     // There should be one integer or enumeration parameter
     if (tokenCode == tcLParen) {
@@ -218,14 +218,12 @@ CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
 
         parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        if (parmType.form == fcSubrange) {
-            retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
-        }
-        if (parmType.typeId != integerType && parmType.form != fcEnum) {
+        baseTypeChunk = getBaseType(&parmType);
+        if (baseTypeChunk != integerType && parmType.form != fcEnum) {
             Error(errIncompatibleTypes);
             resultType = integerType;
         } else {
-            resultType = parmType.typeId;
+            resultType = parmTypeChunk;
         }
 
         // There better not be any more parameters
@@ -244,7 +242,7 @@ CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
 
 CHUNKNUM parseChrCall(CHUNKNUM Icode) {
     TTYPE parmType;
-    CHUNKNUM parmTypeChunk;
+    CHUNKNUM parmTypeChunk, baseTypeChunk;
 
     // There should be one character parameter.
     if (tokenCode == tcLParen) {
@@ -252,10 +250,8 @@ CHUNKNUM parseChrCall(CHUNKNUM Icode) {
 
         parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        if (parmType.form == fcSubrange) {
-            retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
-        }
-        if (parmType.typeId != integerType) {
+        baseTypeChunk = getBaseType(&parmType);
+        if (baseTypeChunk != integerType) {
             Error(errIncompatibleTypes);
         }
 
@@ -275,7 +271,7 @@ CHUNKNUM parseChrCall(CHUNKNUM Icode) {
 
 CHUNKNUM parseOddCall(CHUNKNUM Icode) {
     TTYPE parmType;
-    CHUNKNUM parmTypeChunk;
+    CHUNKNUM parmTypeChunk, baseTypeChunk;
 
     // There should be one integer parameter.
     if (tokenCode == tcLParen) {
@@ -283,10 +279,8 @@ CHUNKNUM parseOddCall(CHUNKNUM Icode) {
 
         parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        if (parmType.form == fcSubrange) {
-            retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
-        }
-        if (parmType.typeId != integerType) {
+        baseTypeChunk = getBaseType(&parmType);
+        if (baseTypeChunk != integerType) {
             Error(errIncompatibleTypes);
         }
 
@@ -306,7 +300,7 @@ CHUNKNUM parseOddCall(CHUNKNUM Icode) {
 
 CHUNKNUM parseOrdCall(CHUNKNUM Icode) {
     TTYPE parmType;
-    CHUNKNUM parmTypeChunk;
+    CHUNKNUM parmTypeChunk, baseTypeChunk;
 
     // There should be one character or enumeration parameter.
     if (tokenCode == tcLParen) {
@@ -314,10 +308,8 @@ CHUNKNUM parseOrdCall(CHUNKNUM Icode) {
 
         parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        if (parmType.form == fcSubrange) {
-            retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
-        }
-        if (parmType.typeId != charType && parmType.form != fcEnum) {
+        baseTypeChunk = getBaseType(&parmType);
+        if (baseTypeChunk != charType && parmType.form != fcEnum) {
             Error(errIncompatibleTypes);
         }
 
@@ -359,7 +351,7 @@ static struct TStdRtn {
     {"eoln",    rcEoln,    dcFunction},
     {"odd",     rcOdd,     dcFunction},
     {"ord",     rcOrd,     dcFunction},
-    {"prec",    rcPred,    dcFunction},
+    {"pred",    rcPred,    dcFunction},
     {"succ",    rcSucc,    dcFunction},
     {NULL},
 };
