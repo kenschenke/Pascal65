@@ -67,6 +67,8 @@ CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
 
         case rcOrd:      return executeOrdCall();
 
+        case rcAbs:      return executeAbsCall();
+
         default:  return dummyType;
     }
 }

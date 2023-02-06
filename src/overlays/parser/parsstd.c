@@ -135,24 +135,18 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
             getTokenAppend(Icode);
             actualTypeChunk = parseExpression(Icode);
             retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
-            if (actualType.form == fcSubrange) {
-                retrieveChunk(actualType.subrange.baseType, (unsigned char *)&actualType);
-            }
-            if (actualType.typeId != integerType) {
+            if (getBaseType(&actualType) != integerType) {
                 Error(errIncompatibleTypes);
             }
 
             // Optional precision <expr>
             if (tokenCode == tcColon) {
                 getTokenAppend(Icode);
-            }
-            actualTypeChunk = parseExpression(Icode);
-            retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
-            if (actualType.form == fcSubrange) {
-                retrieveChunk(actualType.subrange.baseType, (unsigned char *)&actualType);
-            }
-            if (actualType.typeId != integerType) {
-                Error(errIncompatibleTypes);
+                actualTypeChunk = parseExpression(Icode);
+                retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
+                if (getBaseType(&actualType) != integerType) {
+                    Error(errIncompatibleTypes);
+                }
             }
         }
     } while (tokenCode == tcComma);
@@ -176,7 +170,7 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
 
 CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
     TTYPE parmType;
-    CHUNKNUM parmTypeChunk, resultType;
+    CHUNKNUM parmTypeChunk, baseTypeChunk, resultType;
 
     // There should be one integer parameter.
     if (tokenCode == tcLParen) {
@@ -184,14 +178,12 @@ CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
 
         parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        if (parmType.form == fcSubrange) {
-            retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
-        }
-        if (parmType.typeId != integerType) {
+        baseTypeChunk = getBaseType(&parmType);
+        if (baseTypeChunk != integerType) {
             Error(errIncompatibleTypes);
             resultType = integerType;
         } else {
-            resultType = parmType.typeId;
+            resultType = parmTypeChunk;
         }
 
         // There better not be any more parameters.

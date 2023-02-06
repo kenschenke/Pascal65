@@ -1,10 +1,30 @@
 #include <exec.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define DEFAULT_FIELD_WIDTH 10
 #define DEFAULT_PRECISION 2
 
 static void writeQuotedString(CHUNKNUM chunkNum);
+
+CHUNKNUM executeAbsCall(void) {
+    CHUNKNUM parmTypeChunk, parmBaseType;
+    TTYPE parmType;
+
+    getTokenForExecutor(); // (
+    getTokenForExecutor();
+
+    parmTypeChunk = executeExpression();
+    retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
+    parmBaseType = getBaseType(&parmType);
+
+    if (parmBaseType == integerType) {
+        stackTOS()->integer = abs(stackTOS()->integer);
+    }
+
+    getTokenForExecutor();
+    return parmTypeChunk;
+}
 
 CHUNKNUM executeChrCall(void) {
     getTokenForExecutor(); // (
