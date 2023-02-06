@@ -40,7 +40,7 @@ of the condition.  The *If Then Else* form looks like this:
 *)
 If <condition> Then
     <statement-if-true>
-Eelse
+Else
     <statement-if-false>
 ```
 

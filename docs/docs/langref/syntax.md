@@ -36,10 +36,44 @@ Begin
 End.
 ```
 
-## Anatomy of a Pascal Program
+## Structure of a Pascal Program
 
 Every Pascal program starts with a **Program** statement followed by the name of the
 program and the program's inputs in parenthesis and a semi-colon.
 
 The **Program** statement is followed by optional sections defining constant values,
-type declarations, and variable declarations.
+type declarations, variable declarations, function declarations, procedure declarations,
+and finally the main program block.
+
+This is how a Pascal program might look with all these structures.
+
+```
+Program NameOfProgram(output);
+
+Type
+(* Type declarations *)
+
+Const
+(* Constant value declarations *)
+
+Var
+(* Global variable declarations *)
+
+Function SampleFunctionName
+Var
+   (* Local Variable Declarations *)
+Begin
+   (* Function Code *)
+End;
+
+Procedure SampleProcedureName
+Var
+   (* Local Variable Declarations *)
+Begin
+   (* Procedure Code *)
+End;
+
+Begin
+   (* Main program block code *)
+End.
+```

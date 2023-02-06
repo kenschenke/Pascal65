@@ -1,0 +1,72 @@
+# Data Types
+
+Pascal has two main classes of data types: standard data types and declared data types.
+
+## Standard Data Types
+
+Pascal65 defines the following standard data types.
+
+| Data Types | Description                                         |
+| ---------- | --------------------------------------------------- |
+| Integer    | Signed 16-bit integer in the range -32768 to +32767 |
+| Boolean    | True or False                                       |
+| Char       | PETSCII character                                   |
+| Real       | Signed 24-bit floating point value (see below)      |
+
+### Real Data Type
+
+The **Real** data type is a signed 24-bit floating point value with an signed 8-bit exponent.
+Real values can be expressed in standard format such as *1.234* or scientific notation such as
+*1.2e+8*.
+
+## Declared Data Types
+
+Examples of declared data types are arrays and records, discussed in separate topics.
+
+## Type Declarations
+
+A type declaration defines a new data type, but can be thought of as an alias for an existing
+type.  These are declared in the **Type Declaration** section in the program.  An example one
+might look like this:
+
+```
+Type
+   Age, Height = Integer;
+   Yes, No = Boolean;
+   Length = Real;
+```
+
+## Contants
+
+Constants are delcared in the **Constants** section in the program.  An examine section might
+look like this:
+
+```
+Const
+   Pi = 3.14159;
+   MaxLength = 99.99;
+```
+
+## Enumerated Types
+
+Enumerated types define a new data type with a list of acceptable values.  They are declared
+in the **Type Declaration** section like this:
+
+```
+Type
+   Months = (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec);
+```
+
+## Subrange Types
+
+Subrange types define a range of integers or characters.  Subranges are most commenly used in
+array declarations.  Subranges can be used as a declared type or directly in the 
+**Variable Declarations** section.  Examples are:
+
+```
+Type
+   AgeRange = 1..99;
+
+Var
+   MiddleInitial : 'a'..'z';
+```

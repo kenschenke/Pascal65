@@ -8,6 +8,7 @@ nav:
   - Limitations: limits.md
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
+    - Data Types: langref/datatypes.md
     - If Then Else: langref/ifelse.md
   - Function Reference:
     - Odd: funcref/odd.md
