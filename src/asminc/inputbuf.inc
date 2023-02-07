@@ -1,0 +1,1 @@
+INPUTBUFLEN = 80

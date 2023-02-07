@@ -58,6 +58,9 @@ CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
         case rcWrite:
         case rcWriteln:  return executeWriteWritelnCall(pRoutineId);
 
+        case rcEof:
+        case rcEoln:     return executeEofEolnCall(pRoutineId);
+
         case rcPred:
         case rcSucc:     return executePrecSuccCall(pRoutineId);
 

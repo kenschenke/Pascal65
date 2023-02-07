@@ -102,7 +102,7 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
 }
 
 CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
-    CHUNKNUM actualTypeChunk;
+    CHUNKNUM actualTypeChunk, baseTypeChunk;
     TTYPE actualType;
 
     // Actual parameters are optional only for writeln
@@ -118,14 +118,14 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
         // left paren or comma
         getTokenAppend(Icode);
 
-        // Value <expr> : The type must be either a non-boolean
+        // Value <expr> : The type must be either a
         //                scalar or a string.
         actualTypeChunk = parseExpression(Icode);
         retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
-        if (actualType.form == fcSubrange) {
-            retrieveChunk(actualType.subrange.baseType, (unsigned char *)&actualType);
-        }
-        if ((actualType.form != fcScalar || actualType.typeId == booleanType) &&
+        baseTypeChunk = getBaseType(&actualType);
+        retrieveChunk(baseTypeChunk, (unsigned char *)&actualType);
+        if (actualType.form != fcScalar &&
+            (actualType.form != fcEnum || baseTypeChunk != booleanType) &&
             (actualType.form != fcArray || actualType.array.elemType != charType)) {
             Error(errIncompatibleTypes);
         }

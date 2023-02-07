@@ -1,6 +1,7 @@
 #include <exec.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inputbuf.h>
 
 #define DEFAULT_FIELD_WIDTH 10
 #define DEFAULT_PRECISION 2
@@ -35,6 +36,17 @@ CHUNKNUM executeChrCall(void) {
 
     getTokenForExecutor();
     return charType;
+}
+
+CHUNKNUM executeEofEolnCall(SYMBNODE *pRoutineId) {
+    if (pRoutineId->defn.routine.which == rcEof) {
+        stackPushInt(0);    // always FALSE for stdin
+    } else {
+        stackPushInt(isInputEndOfLine());
+    }
+
+    getTokenForExecutor();
+    return booleanType;
 }
 
 CHUNKNUM executeOddCall(void) {
@@ -101,12 +113,10 @@ CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
             // Read the value.
             retrieveChunk(varTypeChunk, (unsigned char *)&varType);
             if (getBaseType(&varType) == integerType) {
-                scanf("%d", &pVarValue->integer);
+                pVarValue->integer = readIntFromInput();
                 rangeCheck(&varType, pVarValue->integer);
             } else {
-                ch = getc(stdin);
-                if (ch == '\r') ch = ' ';
-                pVarValue->character = ch;
+                pVarValue->character = readCharFromInput();
                 rangeCheck(&varType, ch);
             }
         } while (executor.token.code == tcComma);
@@ -118,9 +128,7 @@ CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
 
     // Skip the rest of the input line if readln.
     if (routineCode == rcReadln) {
-        do {
-            ch = getc(stdin);
-        } while (ch != '\r');
+        clearInputBuf();
     }
 
     return dummyType;

@@ -1,28 +1,24 @@
+.include "inputbuf.inc"
 .include "cbm_kernal.inc"
 .include "c64.inc"
 
+.import inputBuf, inputBufUsed
 .importzp ptr1, tmp1
-.export getline, _getlineUsed, _getlineBuf
+.export getline
 
 CH_STOP = 3
 CH_DEL = 20
 CH_ENTER = 13
 
-MAX_CHARS = 80
-
-.bss
-
-_getlineBuf: .res MAX_CHARS
-_getlineUsed: .res 1
-
-.code
-
-; tmp1 - number of characters typed
+; Read an input line from the keyboard into inputBuf.
+; Non-zero is returned in A if the user presses RUN/STOP.
+; inputBufUsed contains the number of characters read.
+; inputBuf is not zero-terminated.
 .proc getline
     ; set up the buffer pointer
-    lda #<_getlineBuf
+    lda #<inputBuf
     sta ptr1
-    lda #>_getlineBuf
+    lda #>inputBuf
     sta ptr1 + 1
     ; turn the cursor on
     lda #0
@@ -49,7 +45,7 @@ Loop:
 Keep:
     ; Has the user already typed the maximum allowed characters?
     ldx tmp1
-    cpx #MAX_CHARS
+    cpx #INPUTBUFLEN
     beq Loop        ; Yes - ignore the key
     jsr CHROUT
     ldy tmp1
@@ -67,6 +63,7 @@ DeleteKey:
 StopKey:
     ; User hit STOP key
     lda #1
+    ldx #0
     sta CURS_FLAG
     rts
 
@@ -80,6 +77,6 @@ EnterKey:
     jsr CHROUT
     lda #0
     ldx tmp1
-    stx _getlineUsed
+    stx inputBufUsed
     rts
 .endproc
