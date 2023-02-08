@@ -11,5 +11,6 @@ nav:
     - Data Types: langref/datatypes.md
     - If Then Else: langref/ifelse.md
   - Function Reference:
+    - Chr: funcref/chr.md
     - Odd: funcref/odd.md
     - Ord: funcref/ord.md
