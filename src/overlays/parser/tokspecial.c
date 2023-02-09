@@ -71,11 +71,15 @@ void getSpecialToken(void)
             break;
 
         case '.':
-            ch = getChar();     // . or ..
+            ch = getChar();     // . or .. or .<digit>
             if (ch == '.') {
                 *ps++ = '.';
                 tokenCode = tcDotDot;
                 getChar();
+            } else if (charCodeMap[ch] == ccDigit) {
+                // This is the start of a real number
+                getNumberToken(1);
+                return;
             } else {
                 tokenCode = tcPeriod;
             }

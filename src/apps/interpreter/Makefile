@@ -158,6 +158,9 @@ errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
 runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
 
+routines.petscii: routines.pas
+	dos2unix < routines.pas | petcat -w2 -text -o routines.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
@@ -172,7 +175,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write assign.pas assign.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii routines.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii routines.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -180,7 +183,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write routines.pas routines.pas,seq \
+	-write routines.petscii routines.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

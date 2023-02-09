@@ -14,6 +14,7 @@
 #define MISC_H
 
 #include <chunks.h>
+#include <real.h>
 
 typedef enum {
     ccLetter, ccDigit, ccSpecial, ccQuote, ccWhiteSpace,
@@ -36,12 +37,13 @@ typedef enum {
 } TTokenCode;
 
 typedef enum {
-    tyDummy, tyInteger, tyCharacter, tyString,
+    tyDummy, tyInteger, tyReal, tyCharacter, tyString,
 } TDataType;
 
 typedef union {
     int integer;
     char character;
+    FLOAT real;
     CHUNKNUM stringChunkNum;
 } TDataValue;
 

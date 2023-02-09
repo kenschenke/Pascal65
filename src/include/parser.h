@@ -51,6 +51,7 @@ CHUNKNUM parsePredSuccCall(CHUNKNUM Icode);
 CHUNKNUM parseChrCall(CHUNKNUM Icode);
 CHUNKNUM parseOddCall(CHUNKNUM Icode);
 CHUNKNUM parseOrdCall(CHUNKNUM Icode);
+CHUNKNUM parseRoundTruncCall(CHUNKNUM Icode);
 void skipExtraParms(CHUNKNUM Icode);
 
 // Declarations

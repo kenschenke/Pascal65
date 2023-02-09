@@ -2,9 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inputbuf.h>
+#include <real.h>
 
 #define DEFAULT_FIELD_WIDTH 10
 #define DEFAULT_PRECISION 2
+
+// 0.51
+#define FLOAT_POINT_51 0x004147af
 
 static void writeQuotedString(CHUNKNUM chunkNum);
 
@@ -115,6 +119,8 @@ CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
             if (getBaseType(&varType) == integerType) {
                 pVarValue->integer = readIntFromInput();
                 rangeCheck(&varType, pVarValue->integer);
+            } else if (varTypeChunk == realType) {
+                pVarValue->real = readFloatFromInput();
             } else {
                 pVarValue->character = readCharFromInput();
                 rangeCheck(&varType, ch);
@@ -134,8 +140,33 @@ CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
     return dummyType;
 }
 
+CHUNKNUM executeRoundTruncCall(SYMBNODE *pRoutineId) {
+    FLOAT parmValue;
+    TRoutineCode which = pRoutineId->defn.routine.which;
+
+    getTokenForExecutor(); // (
+    getTokenForExecutor();
+    executeExpression();
+
+    parmValue = stackTOS()->real;
+
+    if (which == rcRound) {
+        if (floatGt(parmValue, 0)) {
+            stackTOS()->integer = floatToInt16(floatAdd(parmValue, FLOAT_POINT_51));
+        } else {
+            stackTOS()->integer = floatToInt16(floatSub(parmValue, FLOAT_POINT_51));
+        }
+    } else {
+        stackTOS()->integer = floatToInt16(parmValue);
+    }
+
+    getTokenForExecutor();  // token after )
+
+    return integerType;
+}
+
 CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
-    int fieldWidth;
+    int fieldWidth, fieldPrecision;
     TRoutineCode which;
     CHUNKNUM exprTypeChunkNum, baseTypeChunkNum;
     TTYPE exprType;
@@ -151,7 +182,7 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
             exprTypeChunkNum = executeExpression();
             retrieveChunk(exprTypeChunkNum, (unsigned char *)&exprType);
             baseTypeChunkNum = getBaseType(&exprType);
-            if (baseTypeChunkNum == integerType) {
+            if (baseTypeChunkNum == integerType || baseTypeChunkNum == realType) {
                 fieldWidth = DEFAULT_FIELD_WIDTH;
             } else {
                 fieldWidth = 0;
@@ -162,11 +193,20 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
                 getTokenForExecutor();
                 executeExpression();
                 fieldWidth = stackPop()->integer;
+
+                fieldPrecision = -1;
+                if (executor.token.code == tcColon) {
+                    getTokenForExecutor();
+                    executeExpression();
+                    fieldPrecision = stackPop()->integer;
+                }
             }
 
             // Write the value
             if (baseTypeChunkNum == integerType) {
                 printf("%*d", fieldWidth, stackPop()->integer);
+            } else if (baseTypeChunkNum = realType) {
+                floatPrint(stackPop()->real, fieldPrecision, fieldWidth);
             } else if (baseTypeChunkNum == booleanType) {
                 printf("%*s", fieldWidth, stackPop()->integer == 0 ? "FALSE" : "TRUE");
             } else if (baseTypeChunkNum == charType) {

@@ -53,10 +53,6 @@ typedef struct {
 } STACKFRAMEHDR;
 
 RTSTACK *rtstack_init(void);
-#if 0
-int rtstack_pop(RTSTACK *pStack);
-void rtstack_push(RTSTACK *pStack, int value);
-#endif
 
 typedef struct {
     unsigned stmtCount;
@@ -121,6 +117,7 @@ CHUNKNUM executeOddCall(void);
 CHUNKNUM executeOrdCall(void);
 CHUNKNUM executePrecSuccCall(SYMBNODE *pRoutineId);
 CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId);
+CHUNKNUM executeRoundTruncCall(SYMBNODE *pRoutineId);
 CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId);
 
 // Statements

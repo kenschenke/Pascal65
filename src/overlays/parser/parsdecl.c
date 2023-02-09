@@ -6,6 +6,7 @@
 #include <parscommon.h>
 #include <string.h>
 #include <types.h>
+#include <real.h>
 
 void copyQuotedString(const char *pString, CHUNKNUM *firstChunk) {
     CHUNKNUM chunkNum, nextChunkNum;
@@ -127,6 +128,10 @@ void parseConstant(SYMBNODE *constId) {
                     sign == tcMinus ? -tokenValue.integer :
                         tokenValue.integer;
                 setType(&constId->node.typeChunk, integerType);
+            } else {
+                constId->defn.constant.value.real =
+                    sign == tcMinus ? floatNeg(tokenValue.real) :
+                        tokenValue.real;
             }
             getToken();
             break;
@@ -226,6 +231,11 @@ void parseIdentifierConstant(SYMBNODE *id1, TTokenCode sign) {
             sign == tcMinus ? -id2.defn.constant.value.integer :
             id2.defn.constant.value.integer;
         setType(&id1->node.typeChunk, integerType);
+    } else if (id2.node.typeChunk == realType) {
+        id1->defn.constant.value.real =
+            sign == tcMinus ? floatNeg(id2.defn.constant.value.real) :
+                id2.defn.constant.value.real;
+        setType(&id1->node.typeChunk, realType);
     } else if (id2.node.typeChunk == charType) {
         // character identifer - no unary sign allowed
         if (sign != tcDummy) Error(errInvalidConstant);

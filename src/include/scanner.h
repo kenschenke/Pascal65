@@ -34,7 +34,7 @@ extern char tokenString[MAX_LINE_LEN + 1];
 
 void getNextToken(void);
 
-void getNumberToken(void);
+void getNumberToken(char sawDecimalPoint);
 void getSpecialToken(void);
 void getStringToken(void);
 void getWordToken(void);

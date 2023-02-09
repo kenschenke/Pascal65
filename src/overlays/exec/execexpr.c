@@ -86,6 +86,40 @@ CHUNKNUM executeExpression(void)
                     stackPushInt(value1 >= value2);
                     break;
             }
+        } else if (operand1Type == realType || operand2Type == realType) {
+            // real    <op> real
+            // real    <op> integer
+            // integer <op> real
+            FLOAT value2 = operand2Type == realType ? stackPop()->real :
+                int16ToFloat(stackPop()->integer);
+            FLOAT value1 = operand1Type == realType ? stackPop()->real :
+                int16ToFloat(stackPop()->integer);
+
+            switch (op) {
+                case tcEqual:
+                    stackPushInt(floatEq(value1, value2));
+                    break;
+                
+                case tcNe:
+                    stackPushInt(!floatEq(value1, value2));
+                    break;
+                
+                case tcLt:
+                    stackPushInt(floatLt(value1, value2));
+                    break;
+                
+                case tcGt:
+                    stackPushInt(floatGt(value1, value2));
+                    break;
+                
+                case tcLe:
+                    stackPushInt(floatLte(value1, value2));
+                    break;
+                
+                case tcGe:
+                    stackPushInt(floatGte(value1, value2));
+                    break;
+            }
         }
     }
 
@@ -111,7 +145,11 @@ CHUNKNUM executeSimpleExpression(void)
 
     // If there was a unary -, negate the first operand value.
     if (unaryOp == tcMinus) {
-        stackPushInt(-stackPop()->integer);
+        if (resultType == realType) {
+            stackPushReal(floatNeg(stackPop()->real));
+        } else {
+            stackPushInt(-stackPop()->integer);
+        }
     }
 
     // Loop to execute subsequent additive operators and terms.
@@ -141,8 +179,20 @@ CHUNKNUM executeSimpleExpression(void)
 
             stackPushInt(op == tcPlus ? value1 + value2 : value1 - value2);
             resultType == integerType;
-          }
+        } else {
+            // real    +|- real
+            // real    +|- integer
+            // integer +|- real
+            FLOAT value2 = operandType == realType ? stackPop()->real :
+                int16ToFloat(stackPop()->integer);
+            FLOAT value1 = resultType == realType ? stackPop()->real :
+                int16ToFloat(stackPop()->integer);
+            
+            stackPushReal(op == tcPlus ? floatAdd(value1, value2) :
+                floatSub(value1, value2));
+            resultType = realType;
         }
+    } 
 
     return resultType;
 }
@@ -188,10 +238,22 @@ CHUNKNUM executeTerm(void)
 
                     stackPushInt(value1 * value2);
                     resultType = integerType;
+                } else {
+                    // real    * real
+                    // real    * integer
+                    // integer * real
+                    FLOAT value2 = operandType == realType ? stackPop()->real :
+                        int16ToFloat(stackPop()->integer);
+                    FLOAT value1 = resultType == realType ? stackPop()->real :
+                        int16ToFloat(stackPop()->integer);
+                    
+                    stackPushReal(floatMult(value1, value2));
+                    resultType = realType;
                 }
                 break;
 
             case tcSlash: {
+                // integer / integer
                 if (operandType == integerType && resultType == integerType) {
                     // integer / integer
                     int value2 = stackPop()->integer;
@@ -199,6 +261,17 @@ CHUNKNUM executeTerm(void)
 
                     stackPushInt(value1 / value2);
                     resultType = integerType;
+                } else {
+                    // real    / real
+                    // real    / integer
+                    // integer / real
+                    FLOAT value2 = operandType == realType ? stackPop()->real :
+                        int16ToFloat(stackPop()->integer);
+                    FLOAT value1 = resultType == realType ? stackPop()->real :
+                        int16ToFloat(stackPop()->integer);
+                    
+                    stackPushReal(floatDiv(value1, value2));
+                    resultType = realType;
                 }
                 break;
             }
@@ -245,6 +318,8 @@ CHUNKNUM executeFactor(void)
             // Push the number's value onto the runtime stack
             if (executor.pNode.type.nodeChunkNum == integerType) {
                 stackPushInt(executor.pNode.defn.constant.value.integer);
+            } else {
+                stackPushReal(executor.pNode.defn.constant.value.real);
             }
             resultType = executor.pNode.type.nodeChunkNum;
             getTokenForExecutor();
@@ -290,7 +365,8 @@ CHUNKNUM executeConstant(SYMBNODE *pId) {
 
     memcpy(&value, &pId->defn.constant.value, sizeof(TDataValue));
 
-    if (pId->type.nodeChunkNum == charType) stackPushChar(value.character);
+    if (pId->type.nodeChunkNum == realType) stackPushReal(value.real);
+    else if (pId->type.nodeChunkNum == charType) stackPushChar(value.character);
     else stackPushInt(value.integer);
 
     getTokenForExecutor();
@@ -350,7 +426,9 @@ CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
     // or a record, replace the address at the top of the stack
     // with the data value.
     if (!addressFlag && isTypeScalar(&type)) {
-        if (type.nodeChunkNum == charType) {
+        if (type.nodeChunkNum == realType) {
+            stackPushReal(stackPop()->pStackItem->real);
+        } else if (type.nodeChunkNum == charType) {
             stackPushChar(stackPop()->pStackItem->character);
         } else {
             stackPushInt(stackPop()->pStackItem->integer);

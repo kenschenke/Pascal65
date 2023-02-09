@@ -9,7 +9,7 @@
 .import FPBASE, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, FPNORM, FPBUF, XBUF
 .export FPINP, DECBIN, FPD10, FPX10
 
-; This routine reads a floating point number from the keyboard into FPACC.
+; This routine reads a floating point number from FPBUF into FPACC.
 ; It supports standard floating point format (1, 2.25)
 ; and scientific notation (1.2E+5 or 0.1E-4).
 

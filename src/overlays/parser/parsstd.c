@@ -47,6 +47,10 @@ CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
 
         case rcOrd:
             return parseOrdCall(Icode);
+        
+        case rcRound:
+        case rcTrunc:
+            return parseRoundTruncCall(Icode);
 
         default:
             return 0;
@@ -179,7 +183,7 @@ CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
         parmTypeChunk = parseExpression(Icode);
         retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
         baseTypeChunk = getBaseType(&parmType);
-        if (baseTypeChunk != integerType) {
+        if (baseTypeChunk != integerType && baseTypeChunk != realType) {
             Error(errIncompatibleTypes);
             resultType = integerType;
         } else {
@@ -319,6 +323,35 @@ CHUNKNUM parseOrdCall(CHUNKNUM Icode) {
     return integerType;
 }
 
+CHUNKNUM parseRoundTruncCall(CHUNKNUM Icode) {
+    TTYPE parmType;
+    CHUNKNUM parmTypeChunk, parmTypeBase;
+
+    // There should be one real parameter
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
+
+        parmTypeChunk = parseExpression(Icode);
+        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
+        parmTypeBase = getBaseType(&parmType);
+        if (parmTypeBase != realType) {
+            Error(errIncompatibleTypes);
+        }
+
+        // There better not be any more parameters
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
+        }
+
+        // )
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
+    } else {
+        Error(errWrongNumberOfParams);
+    }
+
+    return integerType;
+}
+
 void skipExtraParms(CHUNKNUM Icode) {
     Error(errWrongNumberOfParams);
 
@@ -345,6 +378,8 @@ static struct TStdRtn {
     {"ord",     rcOrd,     dcFunction},
     {"pred",    rcPred,    dcFunction},
     {"succ",    rcSucc,    dcFunction},
+    {"round",   rcRound,   dcFunction},
+    {"trunc",   rcTrunc,   dcFunction},
     {NULL},
 };
 

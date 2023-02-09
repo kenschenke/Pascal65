@@ -110,7 +110,7 @@ void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNu
                 *limitTypeChunkNum = dummyType;
                 break;
             }
-            if (pLimit->node.typeChunk == dummyType) {
+            if (pLimit->node.typeChunk == dummyType || pLimit->node.typeChunk == realType) {
                 Error(errInvalidSubrangeType);
                 break;
             }

@@ -35,7 +35,7 @@ void getNextToken(void)
             break;
 
         case ccDigit:
-            getNumberToken();
+            getNumberToken(0);
             break;
 
         case ccQuote:

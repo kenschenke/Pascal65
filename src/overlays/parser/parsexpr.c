@@ -93,6 +93,9 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
                 if (tokenType == tyInteger) {
                     resultTypeChunk = integerType;
                     node.defn.constant.value.integer = tokenValue.integer;
+                } else {
+                    resultTypeChunk = realType;
+                    node.defn.constant.value.real = tokenValue.real;
                 }
                 setType(&node.node.typeChunk, resultTypeChunk);
                 saveSymbNode(&node);
@@ -204,9 +207,7 @@ CHUNKNUM parseSimpleExpression(CHUNKNUM Icode)
 
     // If there was a unary sign, check the term's type
     if (unaryOpFlag) {
-        if (resultTypeChunk != integerType) {
-            Error(errIncompatibleTypes);
-        }
+        checkIntegerOrReal(resultTypeChunk, 0);
     }
 
     // Loop to parse subsequent additive operators and terms
@@ -222,6 +223,13 @@ CHUNKNUM parseSimpleExpression(CHUNKNUM Icode)
                 // integer <op> integer => integer
                 if (integerOperands(resultTypeChunk, operandTypeChunk)) {
                     resultTypeChunk = integerType;
+                }
+
+                // real    <op> real    => real
+                // real    <op> integer => real
+                // integer <op> real => real
+                else if (realOperands(resultTypeChunk, operandTypeChunk)) {
+                    resultTypeChunk = realType;
                 } else {
                     Error(errIncompatibleTypes);
                 }
@@ -297,8 +305,33 @@ CHUNKNUM parseTerm(CHUNKNUM Icode)
         switch (op) {
             case tcStar:
                 // integer * integer => integer
+                if (integerOperands(resultChunkNum, operandTypeChunk)) {
+                    resultChunkNum = integerType;
+                }
+
+                // real    * real    => real
+                // real    * integer => real
+                // integer * real    => real
+                else if (realOperands(resultChunkNum, operandTypeChunk)) {
+                    resultChunkNum = realType;
+                } else {
+                    Error(errIncompatibleTypes);
+                }
+                break;
+
             case tcSlash:
-                // integer / integer => integer
+                // integer / integer => real
+                // real    / real    => real
+                // real    / integer => real
+                // integer / real    => real
+                if (integerOperands(resultChunkNum, operandTypeChunk)
+                 || realOperands(resultChunkNum, operandTypeChunk)) {
+                    resultChunkNum = realType;
+                } else {
+                    Error(errIncompatibleTypes);
+                }
+                break;
+
             case tcDIV:
             case tcMOD:
                 // integer <op> integer => integer

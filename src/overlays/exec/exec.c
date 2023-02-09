@@ -19,9 +19,6 @@
 #include <symtab.h>
 #include <membuf.h>
 #include <ovrlcommon.h>
-#if 1
-#include <stdio.h>
-#endif
 
 static RTSTACK rtStack;
 
@@ -154,6 +151,8 @@ void stackAllocateValue(SYMBNODE *pId) {
 
     if (baseType == integerType) {
         stackPushInt(0);
+    } else if (baseType == realType) {
+        stackPushReal(0);
     } else if (baseType == booleanType) {
         stackPushInt(0);
     } else if (baseType == charType) {

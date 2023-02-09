@@ -8,7 +8,7 @@ typedef enum {
     fcNone, fcScalar, fcEnum, fcSubrange, fcArray, fcRecord,
 } TFormCode;
 
-extern CHUNKNUM integerType, booleanType, charType, dummyType;
+extern CHUNKNUM integerType, realType, booleanType, charType, dummyType;
 
 typedef struct TTYPE {
     CHUNKNUM nodeChunkNum;
@@ -55,6 +55,7 @@ typedef struct TTYPE {
 
 void checkAssignmentCompatible(CHUNKNUM targetTypeChunk, CHUNKNUM valueTypeChunk, TErrorCode ec);
 void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum);
+void checkIntegerOrReal(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 CHUNKNUM getBaseType(TTYPE *pType);
 char initPredefinedTypes(CHUNKNUM symtabChunkNum);
@@ -62,6 +63,7 @@ char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 char isTypeScalar(TTYPE *pType);
 CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId);
 CHUNKNUM makeStringType(int length);
+char realOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 char setType(CHUNKNUM *targetType, CHUNKNUM sourceType);
 void removeType(CHUNKNUM typeChunk);
 

@@ -3,6 +3,7 @@
 #include <error.h>
 #include <common.h>
 #include <string.h>
+#include <real.h>
 
 void executeRoutine(SYMBNODE *pRoutineId) {
     enterRoutine(pRoutineId);
@@ -72,6 +73,9 @@ CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
 
         case rcAbs:      return executeAbsCall();
 
+        case rcRound:
+        case rcTrunc:    return executeRoundTruncCall(pRoutineId);
+
         default:  return dummyType;
     }
 }
@@ -79,7 +83,8 @@ CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
 void executeActualParameters(SYMBNODE *pRoutineId) {
     CHUNKNUM formalId;
     SYMBNODE node;
-    CHUNKNUM formalType, actualType;
+    CHUNKNUM formalType, actualType, actualBaseType;
+    TTYPE type;
 
     for (formalId = pRoutineId->defn.routine.locals.parmIds;
         formalId;
@@ -96,8 +101,14 @@ void executeActualParameters(SYMBNODE *pRoutineId) {
         } else {
             // Value parameter
             actualType = executeExpression();
+            retrieveChunk(actualType, (unsigned char *)&type);
+            actualBaseType = getBaseType(&type);
 
-            if (!isTypeScalar(&node.type)) {
+            if (formalType == realType && actualBaseType == integerType) {
+                // real formal := integer actual:
+                // Convert integer value to real.
+                stackPushReal(int16ToFloat(stackPop()->integer));
+            } else if (!isTypeScalar(&node.type)) {
                 // Formal parameter is an array or record.
                 // Make a copy of the actual parameter's value.
                 CHUNKNUM membuf;

@@ -4,6 +4,7 @@
 #include <buffer.h>
 #include <exec.h>
 #include <membuf.h>
+#include <real.h>
 
 void traceRoutineEntry(SYMBNODE *pRoutineId) {
     if (executor.traceRoutineFlag) {
@@ -91,6 +92,8 @@ void traceDataValue(void *pDataValue, TTYPE *pDataType) {
             retrieveChunk(node.nextNode, (unsigned char *)&node);
         }
         retrieveChunk(node.nameChunkNum, (unsigned char *)text);
+    } else if (pDataType->nodeChunkNum == realType) {
+        floatToStr(((STACKITEM *)pDataValue)->real, text, -1);
     } else {
         sprintf(text, "%d", ((STACKITEM *)pDataValue)->integer);
     }

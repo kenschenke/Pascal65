@@ -3,11 +3,13 @@
 .include "float.inc"
 
 .import FPBASE, popa, popax, popeax, FPADD, FPSUB, FPMULT, FPDIV, FPOUT, leftpad, printz, FPBUF, FPINP
-.import floatEq, floatGt, floatGte, floatLt, floatLte, intOp1, floatToInt16, int16ToFloat
+.import floatEq, floatGt, floatGte, floatLt, floatLte, intOp1, floatToInt16, int16ToFloat, COMPLM
+.import readFloatFromInput
 .importzp sreg, ptr1, ptr2
 
 .export _floatAdd, _floatSub, _floatMult, _floatDiv, _floatPrint, _strToFloat, _floatToStr
-.export _floatEq, _floatGt, _floatGte, _floatLt, _floatLte, _floatToInt16, _int16ToFloat
+.export _floatEq, _floatGt, _floatGte, _floatLt, _floatLte, _floatToInt16, _int16ToFloat, _floatNeg
+.export _readFloatFromInput
 
 ; FLOAT floatAdd(FLOAT num1, FLOAT num2)
 .proc _floatAdd
@@ -34,6 +36,15 @@
 .proc _floatDiv
     jsr storeTwo
     jsr FPDIV
+    jmp loadFPACC
+.endproc
+
+; FLOAT floatNeg(FLOAT num)
+.proc _floatNeg
+    jsr storeFPACC
+    ldx FPLSW
+    ldy #4
+    jsr COMPLM
     jmp loadFPACC
 .endproc
 
@@ -129,14 +140,12 @@ L2:
     sta ptr1
     lda #>FPBUF
     sta ptr1 + 1
-    ldx #0
     ldy #0
 L1:
     lda (ptr1),y
     sta (ptr2),y
     beq L2
-    inx
-    inx
+    iny
     jmp L1
 L2:
     rts
@@ -156,6 +165,11 @@ L2:
     sta intOp1
     stx intOp1 + 1
     jsr int16ToFloat
+    jmp loadFPACC
+.endproc
+
+.proc _readFloatFromInput
+    jsr readFloatFromInput
     jmp loadFPACC
 .endproc
 

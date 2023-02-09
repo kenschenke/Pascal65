@@ -7,31 +7,27 @@ CHUNKNUM booleanType;
 CHUNKNUM charType;
 CHUNKNUM dummyType;
 CHUNKNUM integerType;
+CHUNKNUM realType;
 
 static char getType(CHUNKNUM chunkNum, TTYPE *pType);
 
 void checkAssignmentCompatible(CHUNKNUM targetTypeId, CHUNKNUM valueTypeId, TErrorCode ec) {
     TTYPE targetType, valueType;
-#if 0
-    extern int currentLineNumber;
-#endif
+    CHUNKNUM baseTargetType, baseValueType;
 
-#if 0
-    getType(targetTypeId, &targetType);
-    getType(valueTypeId, &valueType);
-#else
     retrieveChunk(targetTypeId, (unsigned char *)&targetType);
     retrieveChunk(valueTypeId, (unsigned char *)&valueType);
-#endif
 
-    if (targetType.form == fcSubrange) {
-        targetTypeId = targetType.subrange.baseType;
-    }
-    if (valueType.form == fcSubrange) {
-        valueTypeId = valueType.subrange.baseType;
+    baseTargetType = getBaseType(&targetType);
+    baseValueType = getBaseType(&valueType);
+
+    // Two identical types
+    if (baseTargetType == baseValueType) {
+        return;
     }
 
-    if (targetTypeId == valueTypeId) {
+    // real := integer
+    if (baseTargetType == realType && baseValueType == integerType) {
         return;
     }
 
@@ -58,6 +54,29 @@ void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum) {
     }
 }
 
+void checkIntegerOrReal(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
+    TTYPE type;
+    CHUNKNUM baseType;
+
+    if (getType(type1Chunk, &type) == 0) {
+        Error(errIncompatibleTypes);
+    }
+    baseType = getBaseType(&type);
+    if (baseType != integerType && baseType != realType) {
+        Error(errIncompatibleTypes);
+    }
+
+    if (type2Chunk) {
+        if (getType(type2Chunk, &type) == 0) {
+            Error(errIncompatibleTypes);
+        }
+        baseType = getBaseType(&type);
+        if (baseType != integerType && baseType != realType) {
+            Error(errIncompatibleTypes);
+        }
+    }
+}
+
 void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
     TTYPE type1, type2;
 
@@ -68,6 +87,12 @@ void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
 
     // Two identical scalar or enumeration types.
     if (type1Chunk == type2Chunk && (type1.form == fcScalar || type1.form == fcEnum)) {
+        return;
+    }
+
+    // One integer operand and one real operand.
+    if ((type1Chunk == integerType && type2Chunk == realType) ||
+        (type2Chunk == integerType && type1Chunk == realType)) {
         return;
     }
 
@@ -105,7 +130,7 @@ static char getType(CHUNKNUM chunkNum, TTYPE *pType) {
 char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     TTYPE typeNode;
     SYMBNODE node;
-    CHUNKNUM integerId, booleanId, charId;
+    CHUNKNUM integerId, booleanId, charId, realId;
     CHUNKNUM falseId, trueId;
 
     // Enter the names of the predefined types and of "false"
@@ -113,6 +138,9 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
 
     enterSymtab(symtabChunkNum, &node, "integer", dcType);
     integerId = node.node.nodeChunkNum;
+
+    enterSymtab(symtabChunkNum, &node, "real", dcType);
+    realId = node.node.nodeChunkNum;
 
     enterSymtab(symtabChunkNum, &node, "boolean", dcType);
     booleanId = node.node.nodeChunkNum;
@@ -129,6 +157,7 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     // Create the predefined type objects
 
     integerType = makeType(fcScalar, sizeof(int), integerId);
+    realType = makeType(fcScalar, sizeof(unsigned long), realId);
     booleanType = makeType(fcEnum, sizeof(int), booleanId);
     charType = makeType(fcScalar, sizeof(char), charId);
     dummyType = makeType(fcNone, 1, 0);
@@ -138,6 +167,14 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     }
     setType(&node.node.typeChunk, integerType);
     if (storeChunk(integerId, (unsigned char *)&node.node) == 0) {
+        return 0;
+    }
+
+    if (loadSymbNode(realId, &node) == 0) {
+        return 0;
+    }
+    setType(&node.node.typeChunk, realType);
+    if (storeChunk(realId, (unsigned char *)&node.node) == 0) {
         return 0;
     }
 
@@ -207,6 +244,21 @@ char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
     retrieveChunk(type1Chunk, (unsigned char *)&type1);
     retrieveChunk(type2Chunk, (unsigned char *)&type2);
     return getBaseType(&type1) == integerType && getBaseType(&type2) == integerType;
+}
+
+char realOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
+    TTYPE type1, type2;
+    CHUNKNUM baseType1, baseType2;
+
+    retrieveChunk(type1Chunk, (unsigned char *)&type1);
+    retrieveChunk(type2Chunk, (unsigned char *)&type2);
+
+    baseType1 = getBaseType(&type1);
+    baseType2 = getBaseType(&type2);
+
+    return (baseType1 == realType && baseType2 == realType)
+        ||  (baseType1 == realType && baseType2 == integerType)
+        ||  (baseType2 == realType && baseType1 == integerType);
 }
 
 char isTypeScalar(TTYPE *pType) {

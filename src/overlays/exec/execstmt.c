@@ -54,8 +54,8 @@ void executeAssignment(SYMBNODE *pTargetId)
     SYMBNODE targetId;
     STACKITEM target;           // runtime stack address of target
     CHUNKNUM targetTypeChunkNum;
-    TTYPE targetType;           // target type object
-    CHUNKNUM exprType;          // expression type
+    TTYPE targetType, type;     // target type object
+    CHUNKNUM exprType, exprBaseType;
 
     memcpy(&targetId, pTargetId, sizeof(SYMBNODE));
 
@@ -79,6 +79,8 @@ void executeAssignment(SYMBNODE *pTargetId)
     // on top of the runtime stack.
     getTokenForExecutor();
     exprType = executeExpression();
+    retrieveChunk(exprType, (unsigned char *)&type);
+    exprBaseType = getBaseType(&type);
 
     memcpy(&targetType, &targetId.type, sizeof(TTYPE));
     if (targetType.nodeChunkNum != getBaseType(&targetType)) {
@@ -86,9 +88,11 @@ void executeAssignment(SYMBNODE *pTargetId)
     }
 
     // Do the assignment
-    /* if (pTargetType == realType) {
-
-    } else */ if (targetType.nodeChunkNum == integerType || targetType.form == fcEnum) {
+    if (targetType.nodeChunkNum == realType) {
+        target.pStackItem->real = exprBaseType == integerType
+            ? int16ToFloat(stackPop()->integer)     // real := integer
+            : stackPop()->real;                     // real := real
+    } else if (targetType.nodeChunkNum == integerType || targetType.form == fcEnum) {
         int value;
         value = stackPop()->integer;
         rangeCheck(&targetType, value);

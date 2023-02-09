@@ -15,6 +15,9 @@ FLOAT floatMult(FLOAT num1, FLOAT num2);
 // Result of num1 divided by num2
 FLOAT floatDiv(FLOAT num1, FLOAT num2);
 
+// Returns negative of num
+FLOAT floatNeg(FLOAT num);
+
 // Returns non-zero if num1 == num2
 char floatEq(FLOAT num1, FLOAT num2);
 
@@ -46,5 +49,7 @@ void floatToStr(FLOAT num, char *buffer, char precision);
 
 int floatToInt16(FLOAT num);
 FLOAT int16ToFloat(int num);
+
+FLOAT readFloatFromInput(void);
 
 #endif // end of REAL_H
