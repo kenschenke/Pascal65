@@ -10,11 +10,22 @@ CH_STOP = 3
 CH_DEL = 20
 CH_ENTER = 13
 
+.proc clearBuf
+    lda #0
+    ldx #INPUTBUFLEN - 1
+L1:
+    sta inputBuf,x
+    dex
+    bpl L1
+    rts
+.endproc
+
 ; Read an input line from the keyboard into inputBuf.
 ; Non-zero is returned in A if the user presses RUN/STOP.
 ; inputBufUsed contains the number of characters read.
 ; inputBuf is not zero-terminated.
 .proc getline
+    jsr clearBuf
     ; set up the buffer pointer
     lda #<inputBuf
     sta ptr1

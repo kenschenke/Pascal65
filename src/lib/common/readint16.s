@@ -54,7 +54,7 @@ L1:
     lda (ptr1),y
     cmp #'0'-1
     bcc L2          ; non-digit
-    cmp #'9'
+    cmp #'9'+1
     bcs L2          ; non-digit
     inc tmp2
     inc tmp3
