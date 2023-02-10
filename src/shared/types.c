@@ -298,7 +298,7 @@ CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId) {
 }
 
 CHUNKNUM makeStringType(int length) {
-    CHUNKNUM chunkNum, subrangeChunkNum;
+    CHUNKNUM subrangeChunkNum;
     TTYPE typeObj, subrange;
 
     typeObj.form = fcArray;
@@ -318,17 +318,17 @@ CHUNKNUM makeStringType(int length) {
     subrange.subrange.min = 1;
     subrange.subrange.max = length;
 
-    if (allocChunk(&chunkNum) == 0) {
+    if (allocChunk(&typeObj.nodeChunkNum) == 0) {
         abortTranslation(abortOutOfMemory);
     }
-    if (storeChunk(chunkNum, (unsigned char *)&typeObj) == 0) {
+    if (storeChunk(typeObj.nodeChunkNum, (unsigned char *)&typeObj) == 0) {
         abortTranslation(abortOutOfMemory);
     }
     if (storeChunk(subrangeChunkNum, (unsigned char *)&subrange) == 0) {
         abortTranslation(abortOutOfMemory);
     }
 
-    return chunkNum;
+    return typeObj.nodeChunkNum;
 }
 
 char setType(CHUNKNUM *targetType, CHUNKNUM sourceType) {

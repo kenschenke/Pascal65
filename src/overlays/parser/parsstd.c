@@ -127,7 +127,9 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
         actualTypeChunk = parseExpression(Icode);
         retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
         baseTypeChunk = getBaseType(&actualType);
-        retrieveChunk(baseTypeChunk, (unsigned char *)&actualType);
+        if (baseTypeChunk != actualTypeChunk) {
+            retrieveChunk(baseTypeChunk, (unsigned char *)&actualType);
+        }
         if (actualType.form != fcScalar &&
             (actualType.form != fcEnum || baseTypeChunk != booleanType) &&
             (actualType.form != fcArray || actualType.array.elemType != charType)) {

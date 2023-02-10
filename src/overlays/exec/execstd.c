@@ -205,7 +205,7 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
             // Write the value
             if (baseTypeChunkNum == integerType) {
                 printf("%*d", fieldWidth, stackPop()->integer);
-            } else if (baseTypeChunkNum = realType) {
+            } else if (baseTypeChunkNum == realType) {
                 floatPrint(stackPop()->real, fieldPrecision, fieldWidth);
             } else if (baseTypeChunkNum == booleanType) {
                 printf("%*s", fieldWidth, stackPop()->integer == 0 ? "FALSE" : "TRUE");
