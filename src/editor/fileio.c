@@ -25,7 +25,7 @@ void closeFile(void) {
         int ch;
 
         while (1) {
-            drawStatusRow(COLOUR_RED, 0, "Unsaved changes will be lost. Close Y/N?");
+            drawStatusRow(COLOR_RED, 0, "Unsaved changes will be lost. Close Y/N?");
             ch = editorReadKey();
             if (ch == 'y' || ch == 'Y') {
                 break;
@@ -231,7 +231,7 @@ void openFile(void) {
     clearStatusRow();
 
     if (editorPrompt("Open file: %s", filename, sizeof(filename)) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Open aborted");
+        drawStatusRow(COLOR_RED, 1, "Open aborted");
         return;
     }
 
@@ -245,20 +245,20 @@ char saveAs(void) {
     clearStatusRow();
 
     if (editorPrompt("Save as: %s", filename, sizeof(filename)) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Save aborted");
+        drawStatusRow(COLOR_RED, 1, "Save aborted");
         return 0;
     }
 
     if (doesFileExist(filename)) {
         sprintf(prompt, "%s already exists. Overwrite Y/N?", filename);
         while (1) {
-            drawStatusRow(COLOUR_RED, 0, prompt);
+            drawStatusRow(COLOR_RED, 0, prompt);
             ch = editorReadKey();
             if (ch == 'y' || ch == 'Y') {
                 break;
             } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
                 clearStatusRow();
-                drawStatusRow(COLOUR_RED, 1, "Save aborted");
+                drawStatusRow(COLOR_RED, 1, "Save aborted");
                 return 0;
             }
         }
@@ -281,7 +281,7 @@ char saveFile(void) {
     }
 
     if (E.cf.readOnly) {
-        drawStatusRow(COLOUR_RED, 1, "File is read-only");
+        drawStatusRow(COLOR_RED, 1, "File is read-only");
         return 0;
     }
 
@@ -314,12 +314,12 @@ char saveToExisting(void) {
 
     sprintf(tempFilename, "tmp%d.txt", E.cf.fileChunk);
     if (editorSave(tempFilename) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Save failed: %s", strerror(errno));
+        drawStatusRow(COLOR_RED, 1, "Save failed: %s", strerror(errno));
         return 0;
     }
 
     if (retrieveChunk(E.cf.filenameChunk, (unsigned char *)filename) == 0) {
-        drawStatusRow(COLOUR_RED, 1, "Invalid filename");
+        drawStatusRow(COLOR_RED, 1, "Invalid filename");
         return 0;
     }
 

@@ -187,6 +187,10 @@ static void editorMoveCursor(int key, char skipClear) {
         E.cf.cx = rowlen;
         if (E.cf.cx < 0) E.cf.cx = 0;
     }
+
+#ifndef __MEGA65__
+    gotoxy(E.cf.cx, E.cf.cy);
+#endif
 }
 
 static void editorProcessKeypress(void) {
@@ -433,7 +437,11 @@ void initEditor() {
     memset(&E.cf, 0, sizeof(efile));
 
     E.screenrows = 25;
+#ifdef __C64__
+    E.screencols = 40;
+#else
     E.screencols = 80;
+#endif
     E.screenrows -= 2;
 
     E.cbKeyPressed = NULL;
@@ -471,6 +479,9 @@ void editorNewFile(void) {
     }
 
     initFile(&E.cf);
+#ifndef __MEGA65__
+    cursor(0);
+#endif
 }
 
 void editorStoreFilename(efile *file, const char *filename) {
@@ -498,7 +509,7 @@ void setupScreenCols(void) {
         videomode(VIDEOMODE_80x25);
     else
         videomode(VIDEOMODE_40x25);
-#else
+#elif defined(__MEGA65__)
     if (E.screencols == 80)
         setscreensize(80, 25);
     else

@@ -26,6 +26,14 @@
 
 #define KILO_VERSION "0.0.1"
 
+#ifdef __C64__
+void __fastcall__ clearScreen40(void);
+void __fastcall__ initScreen40(void);
+void __fastcall__ setScreenBg40(char bg);
+void __fastcall__ drawRow40(char row, char col, char len,
+    char *buf, unsigned char *rev);
+#endif
+
 #ifdef __C128__
 void __fastcall__ clearScreen80(void);
 void __fastcall__ initScreen80(void);
@@ -52,16 +60,29 @@ static void drawRow65(char row, char col, char len, char *buf, char isReversed);
 char * SCREEN = (char*)0x0800;
 #endif
 
+#ifdef __C64__
+char * SCREEN = (char*)0x0400;
+#endif
+
 void clearScreen(void) {
-#ifdef __MEGA65__
-    clrscr();
-#else
+#ifdef __C128__
     if (E.screencols == 40)
         clearScreen40();
     else
         clearScreen80();
+#elif defined(__C64__)
+    clearScreen40();
+#else
+    clrscr();
 #endif
 }
+
+#ifdef __C64__
+void clearRow(char row, char startingCol) {
+    int offset = row * 40 + startingCol;
+    memset(SCREEN+offset, ' ', 40-startingCol);
+}
+#endif
 
 #ifdef __MEGA65__
  void clearRow(char row, char startingCol) {
@@ -97,21 +118,27 @@ static void setCursor(unsigned char clear, unsigned char color) {
     cellcolor(E.cf.cx - E.cf.coloff, E.cf.cy - E.cf.rowoff, color);
 }
 #else
-void clearCursor(void) {}
+void clearCursor(void) {
+    cursor(1);
+}
 #endif
 
 void clearStatusRow(void) {
+#if 0
     int x;
 
     for (x = 0; x < E.screencols; ++x) {
         cellcolor(x, E.screenrows + 1, COLOUR_WHITE);
     }
     clearRow(E.screenrows + 1, 0);
+#endif
 }
 
-void drawRow(char row, char col, char len, char *buf, char isReversed) {
+void drawRow(char row, char col, char len, char *buf, char /*isReversed*/) {
 #ifdef __MEGA65__
     drawRow65(row, col, len, buf, isReversed);
+#elif defined(__C64__)
+    drawRow40(row, col, len, buf, NULL);
 #else
     if (E.screencols == 40)
         drawRow40(row, len, buf, NULL);
@@ -129,9 +156,11 @@ void drawStatusRow(char color, char center, const char *fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
 
+#if 0
     for (x = 0; x < E.screencols; ++x) {
         cellcolor(x, E.screenrows + 1, color);
     }
+#endif
 
     x = center ? E.screencols / 2 - strlen(buf) / 2 : 0;
     drawRow(E.screenrows + 1, x, strlen(buf), buf, 0);
@@ -145,7 +174,7 @@ char editorPrompt(char *prompt, char *buf, size_t bufsize) {
     buf[0] = '\0';
 
     while (1) {
-        drawStatusRow(COLOUR_WHITE, 0, prompt, buf);
+        drawStatusRow(COLOR_WHITE, 0, prompt, buf);
         c = editorReadKey();
         if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
             if (buflen != 0) buf[--buflen] = '\0';
@@ -170,6 +199,8 @@ void initScreen(void) {
 #ifdef __MEGA65__
     conioinit();
     clearScreen();
+#elif defined(__C64__)
+    initScreen40();
 #else
     if (E.screencols == 40)
         initScreen40();
@@ -352,7 +383,9 @@ void editorRefreshScreen(void) {
     editorDrawStatusBar();
     editorDrawMessageBar();
 
+#ifdef __MEGA65__
     renderCursor();
+#endif
 }
 
 void editorSetStatusMessage(const char *fmt, ...) {
