@@ -58,7 +58,7 @@ void main()
         initCommon();
         initParser();
 
-        programId = parse("routines.pas");
+        programId = parse("translate.pas");
     }
 
     // If there were no syntax errors, convert the symbol tables.

@@ -1,9 +1,9 @@
-Welcome to Ked (Ken's Editor)
------------------------------
-Copyright 2022 by Ken Schenke
+Welcome to Pascal65
+-------------------
+Copyright 2022-2023 by Ken Schenke
 kenschenke@gmail.com
 
-You are viewing the help page for Ked.
+You are viewing the help.
 Ctrl+N jumps to the next page and
 Ctrl+P jumps to the previous page.
 You can also use the cursor keys to

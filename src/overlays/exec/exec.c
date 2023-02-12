@@ -211,10 +211,10 @@ void executorInit(void)
 
     memset(&executor, 0, sizeof(EXECUTOR));
 
-    executor.traceRoutineFlag = 1;
-    executor.traceStatementFlag = 1;
-    executor.traceFetchFlag = 1;
-    executor.traceStoreFlag = 1;
+    executor.traceRoutineFlag = 0;
+    executor.traceStatementFlag = 0;
+    executor.traceFetchFlag = 0;
+    executor.traceStoreFlag = 0;
 
     searchSymtab(globalSymtab, &node, "input");
     executor.inputNode = node.node.nodeChunkNum;
