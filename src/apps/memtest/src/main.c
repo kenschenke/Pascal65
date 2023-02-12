@@ -67,6 +67,9 @@ int main()
     initBlockStorage();
     testBufferMultiByteReadAndWrite();
 
+    initBlockStorage();
+    testBufferReadAtChunkBoundary();
+
     // if (wasBankMemoryCorrupted()) {
     //     printf("*********** Bank memory got corrupted ************\n");
     // }

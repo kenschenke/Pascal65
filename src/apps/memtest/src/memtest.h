@@ -28,5 +28,6 @@ void testFreeBuffer(void);
 void testSetBufferPosition(void);
 void testBufferReadAndWrite(void);
 void testBufferMultiByteReadAndWrite(void);
+void testBufferReadAtChunkBoundary(void);
 
 #endif // end of MEMTEST_H

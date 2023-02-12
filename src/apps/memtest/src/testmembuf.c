@@ -290,3 +290,41 @@ void testBufferMultiByteReadAndWrite(void)
         assertEqualByte(ch, buffer[i]);
     }
 }
+
+void testBufferReadAtChunkBoundary(void) {
+    int i;
+    char ch;
+    MEMBUF hdr;
+    CHUNKNUM chunkNum, dataChunkNum;
+    extern MEMBUF cachedMemBufHdr;
+    extern MEMBUF_CHUNK cachedMemBufData;
+
+	DECLARE_TEST("testBufferReadAtChunkBoundary");
+
+	printf("Running test: Buffer Read at Chunk Boundary\n");
+
+    allocMemBuf(&chunkNum);
+    assertNonZeroChunkNum(chunkNum);
+    flushMemCache();
+    assertNonZero(isMemBufAtEnd(chunkNum));
+
+    for (ch = 'A'; ch <= 'Z'; ++ch) {
+        writeToMemBuf(chunkNum, &ch, 1);
+    }
+    flushMemCache();
+    assertNonZero(retrieveChunk(chunkNum, (unsigned char *)&hdr));
+    assertNonZero(isMemBufAtEnd(chunkNum));
+   
+    setMemBufPos(chunkNum, 0);
+    flushMemCache();
+    for (i = 0; i < MEMBUF_CHUNK_LEN + 1; ++i) {
+        readFromMemBuf(chunkNum, &ch, 1);
+        assertEqualByte(i + 'A', ch);
+        if (i == 0) {
+            dataChunkNum = cachedMemBufHdr.currentChunkNum;
+            assertNonZero(cachedMemBufData.nextChunk);
+        }
+    }
+    assertEqualChunkNum(dataChunkNum, cachedMemBufHdr.currentChunkNum);
+}
+

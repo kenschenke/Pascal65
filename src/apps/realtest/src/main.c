@@ -45,7 +45,7 @@ static void addTwoNumbers(void)
     printf(" +\n");
     floatPrint(num2, 2, 13);
     printf("\n-------------\n");
-    floatPrint(floatAdd(num1, num2), 2, 12);
+    floatPrint(floatAdd(num1, num2), 2, 13);
     printf("\n");
 }
 
@@ -120,7 +120,7 @@ static void divideTwoNumbers(void)
     printf(" Div\n");
     floatPrint(num2, 2, 13);
     printf("\n-------------\n");
-    floatPrint(floatDiv(num1, num2), 2, 12);
+    floatPrint(floatDiv(num1, num2), 2, 13);
     printf("\n");
 }
 
