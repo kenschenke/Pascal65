@@ -23,7 +23,6 @@ CHUNKNUM executeExpression(void)
     CHUNKNUM operand1Type;     // first operand's type
     CHUNKNUM operand2Type;     // second operand's type
     CHUNKNUM resultType;       // result type
-    TTYPE type;
     TTokenCode op;
 
     // Execute the first simple expression
@@ -33,13 +32,11 @@ CHUNKNUM executeExpression(void)
     // execute a second simple expression.
     if (tokenIn(executor.token.code, tlRelOps)) {
         op = executor.token.code;
-        operand1Type = resultType;
+        operand1Type = getBaseType(getChunk(resultType));
         resultType = booleanType;
 
-        retrieveChunk(operand1Type, (unsigned char *)&type);
-
         getTokenForExecutor();
-        operand2Type = executeSimpleExpression();
+        operand2Type = getBaseType(getChunk(executeSimpleExpression()));
 
         // perform the operation, and push the resulting value
         // onto the runtime stack.
@@ -47,7 +44,7 @@ CHUNKNUM executeExpression(void)
             operand2Type == integerType)
             || (operand1Type == charType &&
             operand2Type == charType)
-            || type.form == fcEnum) {
+            || ((TTYPE *)getChunk(operand1Type))->form == fcEnum) {
             // integer <op> integer
             // boolean <op> boolean
             // char <op> char
@@ -132,7 +129,6 @@ CHUNKNUM executeSimpleExpression(void)
     CHUNKNUM resultType;            // result type
     TTokenCode op;                  // binary operator
     TTokenCode unaryOp = tcPlus;    // unary operator
-    TTYPE rType, oType;
 
     // Unary + or -
     if (tokenIn(executor.token.code, tlUnaryOps)) {
@@ -156,13 +152,10 @@ CHUNKNUM executeSimpleExpression(void)
     while (tokenIn(executor.token.code, tlAddOps)) {
         op = executor.token.code;
 
-        retrieveChunk(resultType, (unsigned char *)&rType);
-        resultType = getBaseType(&rType);
+        resultType = getBaseType(getChunk(resultType));
 
         getTokenForExecutor();
-        operandType = executeTerm();
-        retrieveChunk(operandType, (unsigned char *)&oType);
-        operandType = getBaseType(&oType);
+        operandType = getBaseType(getChunk(executeTerm()));
 
         // Perform the operation, and push the resulting valud onto the stack.
         if (op == tcOR) {
@@ -201,7 +194,6 @@ CHUNKNUM executeTerm(void)
 {
     CHUNKNUM operandType;
     CHUNKNUM resultType;
-    TTYPE rType, oType;
     TTokenCode op;
 
     // Execute the first factor
@@ -210,13 +202,10 @@ CHUNKNUM executeTerm(void)
     // Loop to execute subsequent multiplicative operators and factors.
     while (tokenIn(executor.token.code, tlMulOps)) {
         op = executor.token.code;
-        retrieveChunk(resultType, (unsigned char *)&rType);
-        resultType = getBaseType(&rType);
+        resultType = getBaseType(getChunk(resultType));
 
         getTokenForExecutor();
-        operandType = executeFactor();
-        retrieveChunk(operandType, (unsigned char *)&oType);
-        operandType = getBaseType(&oType);
+        operandType = getBaseType(getChunk(executeFactor()));
 
         // perform the operation, and push the resulting value
         // onto the runtime stack.
@@ -295,33 +284,39 @@ CHUNKNUM executeTerm(void)
 
 CHUNKNUM executeFactor(void)
 {
+    DEFN *pDefn = NULL;
     CHUNKNUM resultType;
+
+    if (executor.defnChunkNum) {
+        pDefn = getChunk(executor.defnChunkNum);
+    }
 
     switch (executor.token.code) {
         case tcIdentifier:
-            switch (executor.pNode.defn.how) {
+            switch (pDefn->how) {
                 case dcFunction:
-                    resultType = executeSubroutineCall(&executor.pNode);
+                    resultType = executeSubroutineCall(pDefn);
                     break;
                 
                 case dcConstant:
-                    resultType = executeConstant(&executor.pNode);
+                    resultType = executeConstant(pDefn, executor.typeChunkNum);
                     break;
                 
                 default:
-                    resultType = executeVariable(&executor.pNode, 0);
+                    resultType = executeVariable(executor.nodeChunkNum, pDefn, executor.typeChunkNum, 0);
+                    // pDefn is not valid after this call.
                     break;
             }
             break;
 
         case tcNumber:
             // Push the number's value onto the runtime stack
-            if (executor.pNode.type.nodeChunkNum == integerType) {
-                stackPushInt(executor.pNode.defn.constant.value.integer);
+            if (executor.typeChunkNum == integerType) {
+                stackPushInt(pDefn->constant.value.integer);
             } else {
-                stackPushReal(executor.pNode.defn.constant.value.real);
+                stackPushReal(pDefn->constant.value.real);
             }
-            resultType = executor.pNode.type.nodeChunkNum;
+            resultType = executor.typeChunkNum;
             getTokenForExecutor();
             break;
 
@@ -331,11 +326,11 @@ CHUNKNUM executeFactor(void)
             int length = strlen(executor.token.string);
             if (length == 3) {
                 // Character
-                stackPushChar(executor.pNode.defn.constant.value.character);
+                stackPushChar(pDefn->constant.value.character);
                 resultType = charType;
             } else {
-                stackPushNode(executor.pNode.defn.constant.value.stringChunkNum);
-                resultType = executor.pNode.node.typeChunk;
+                stackPushNode(pDefn->constant.value.stringChunkNum);
+                resultType = executor.typeChunkNum;
             }
             getTokenForExecutor();
             break;
@@ -360,39 +355,41 @@ CHUNKNUM executeFactor(void)
     return resultType;
 }
 
-CHUNKNUM executeConstant(SYMBNODE *pId) {
+CHUNKNUM executeConstant(DEFN *pDefn, CHUNKNUM typeChunkNum) {
     TDataValue value;
 
-    memcpy(&value, &pId->defn.constant.value, sizeof(TDataValue));
+    memcpy(&value, &pDefn->constant.value, sizeof(TDataValue));
 
-    if (pId->type.nodeChunkNum == realType) stackPushReal(value.real);
-    else if (pId->type.nodeChunkNum == charType) stackPushChar(value.character);
+    if (typeChunkNum == realType) stackPushReal(value.real);
+    else if (typeChunkNum == charType) stackPushChar(value.character);
     else stackPushInt(value.integer);
 
     getTokenForExecutor();
-    return pId->type.nodeChunkNum;
+    return typeChunkNum;
 }
 
 // addressFlag is non-zero if this function is processing
 // the variable on the left-half of an assignment.  If so,
 // the address of the variable is left on the stack.  If not,
 // the variable's value is left on the stack in its place.
-CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
+CHUNKNUM executeVariable(CHUNKNUM nodeChunkNum, DEFN *pDefn, CHUNKNUM typeChunkNum, char addressFlag) {
     char doneFlag = 0;
     TTYPE type;
     CHUNKNUM resultType;
     SYMBNODE node;
+    TDefnCode how = pDefn->how;
 
     // Get the variable's runtime stack address
-    STACKITEM *pEntry = stackGetValueAddress(pId);
+    STACKITEM *pEntry = stackGetValueAddress(nodeChunkNum, pDefn);
+    // pDefn is not valid after this call
 
-    memcpy(&type, &pId->type, sizeof(TTYPE));
+    memcpy(&type, getChunk(typeChunkNum), sizeof(TTYPE));
     resultType = type.nodeChunkNum;
 
     // If it's a VAR formal parameter, or the type is an array
     // or record, then the stack item contains the address
     // of the data.  Push the data address onto the stack.
-    if (pId->defn.how == dcVarParm || !isTypeScalar(&type)) {
+    if (how == dcVarParm || !isTypeScalar(&type)) {
         // VAR formal parameter.  Push the address of the data
         // onto the stack.
         stackPushMemBuf(pEntry->membuf.membuf, 0);
@@ -413,7 +410,7 @@ CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
                 break;
             
             case tcPeriod:
-                resultType = executeField(&type);
+                resultType = executeField();
                 break;
             
             default:
@@ -453,24 +450,24 @@ CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
             // Put the membuf back on the stack
             stackPushMemBuf(pEntry->membuf.membuf, 0);
         }
-    } else if (!isTypeScalar(&type) && pId->defn.how != dcVarParm) {
+    } else if (!isTypeScalar(&type) && how != dcVarParm) {
         // The variable is the target of an assignment.  Look up the
         // size of the data value and push it on the stack.
-        TTYPE t;
         STACKITEM addr;
-        retrieveChunk(resultType, (unsigned char *)&t);
         // Pop the address off the stack
         memcpy(&addr, stackPop(), sizeof(STACKITEM));
         // Push the size
-        stackPushInt(t.size);
+        stackPushInt(((TTYPE *)getChunk(resultType))->size);
         // Now, push the address back on the stack
         stackPushMemBuf(addr.membuf.membuf, addr.membuf.offset);
     }
 
+#if 0
     if (!addressFlag) {
         void *pDataValue = isTypeScalar(&type) ? stackTOS() : stackTOS()->pStackItem;
         traceDataFetch(pId, pDataValue, &type);
     }
+#endif
 
     return resultType;
 }
@@ -516,12 +513,12 @@ CHUNKNUM executeSubscripts(TTYPE *pType) {
     return elemType.nodeChunkNum;
 }
 
-CHUNKNUM executeField(TTYPE * /*pType*/) {
+CHUNKNUM executeField(void) {
     CHUNKNUM resultType;
     getTokenForExecutor();
 
-    stackTOS()->membuf.offset += executor.pNode.defn.data.offset;
-    resultType = executor.pNode.type.nodeChunkNum;
+    stackTOS()->membuf.offset += ((DEFN *)getChunk(executor.defnChunkNum))->data.offset;
+    resultType = executor.typeChunkNum;
     getTokenForExecutor();
 
     return resultType;

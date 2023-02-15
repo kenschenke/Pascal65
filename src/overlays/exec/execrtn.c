@@ -14,21 +14,23 @@ void executeRoutine(SYMBNODE *pRoutineId) {
     exitRoutine(pRoutineId);
 }
 
-CHUNKNUM executeSubroutineCall(SYMBNODE *pRoutineId) {
-    return pRoutineId->defn.routine.which == rcDeclared ?
-        executeDeclaredSubroutineCall(pRoutineId) :
-        executeStandardSubroutineCall(pRoutineId);
+CHUNKNUM executeSubroutineCall(DEFN *pDefn) {
+    return pDefn->routine.which == rcDeclared ?
+        executeDeclaredSubroutineCall(executor.nodeChunkNum) :
+        executeStandardSubroutineCall(pDefn->routine.which);
 }
 
-CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId) {
+CHUNKNUM executeDeclaredSubroutineCall(CHUNKNUM nodeChunkNum) {
     SYMBNODE routineId;
     int oldLevel = currentNestingLevel;     // level of caller
-    int newLevel = pRoutineId->node.level + 1;   // level of callee's locals
+    int newLevel;                           // level of callee's locals
+    STACKITEM *pNewFrameBase;
+
+    loadSymbNode(nodeChunkNum, &routineId);
+    newLevel = routineId.node.level + 1;   // level of callee's locals
 
     // Set up a new stack frame for the callee
-    STACKITEM *pNewFrameBase = stackPushFrameHeader(oldLevel, newLevel, executor.Icode);
-
-    memcpy(&routineId, pRoutineId, sizeof(SYMBNODE));
+    pNewFrameBase = stackPushFrameHeader(oldLevel, newLevel, executor.Icode);
 
     // Push actual parameter values onto the stack
     getTokenForExecutor();
@@ -51,19 +53,19 @@ CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId) {
     return routineId.type.nodeChunkNum;
 }
 
-CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
-    switch (pRoutineId->defn.routine.which) {
+CHUNKNUM executeStandardSubroutineCall(TRoutineCode routineCode) {
+    switch (routineCode) {
         case rcRead:
-        case rcReadln:   return executeReadReadlnCall(pRoutineId);
+        case rcReadln:   return executeReadReadlnCall(routineCode);
 
         case rcWrite:
-        case rcWriteln:  return executeWriteWritelnCall(pRoutineId);
+        case rcWriteln:  return executeWriteWritelnCall(routineCode);
 
         case rcEof:
-        case rcEoln:     return executeEofEolnCall(pRoutineId);
+        case rcEoln:     return executeEofEolnCall(routineCode);
 
         case rcPred:
-        case rcSucc:     return executePrecSuccCall(pRoutineId);
+        case rcSucc:     return executePrecSuccCall(routineCode);
 
         case rcOdd:      return executeOddCall();
 
@@ -74,7 +76,7 @@ CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
         case rcAbs:      return executeAbsCall();
 
         case rcRound:
-        case rcTrunc:    return executeRoundTruncCall(pRoutineId);
+        case rcTrunc:    return executeRoundTruncCall(routineCode);
 
         default:  return dummyType;
     }
@@ -84,7 +86,6 @@ void executeActualParameters(SYMBNODE *pRoutineId) {
     CHUNKNUM formalId;
     SYMBNODE node;
     CHUNKNUM formalType, actualType, actualBaseType;
-    TTYPE type;
 
     for (formalId = pRoutineId->defn.routine.locals.parmIds;
         formalId;
@@ -97,12 +98,11 @@ void executeActualParameters(SYMBNODE *pRoutineId) {
         // VAR parameter.  executeVariable will leave the actual
         // parameter's address on top of the stack.
         if (node.defn.how == dcVarParm) {
-            executeVariable(&executor.pNode, isTypeScalar(&node.type));
+            executeVariable(executor.nodeChunkNum, getChunk(executor.defnChunkNum), executor.typeChunkNum, isTypeScalar(getChunk(executor.typeChunkNum)));
         } else {
             // Value parameter
             actualType = executeExpression();
-            retrieveChunk(actualType, (unsigned char *)&type);
-            actualBaseType = getBaseType(&type);
+            actualBaseType = getBaseType(getChunk(actualType));
 
             if (formalType == realType && actualBaseType == integerType) {
                 // real formal := integer actual:

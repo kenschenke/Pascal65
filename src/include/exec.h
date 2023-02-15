@@ -59,7 +59,9 @@ typedef struct {
     char userStop;      // 1 if user requested stop execution
 
     TOKEN token;        // current token
-    SYMBNODE pNode;     // symtab node
+    CHUNKNUM nodeChunkNum;
+    CHUNKNUM defnChunkNum;
+    CHUNKNUM typeChunkNum;
     CHUNKNUM prevNode;  // previous symtab node
 
     CHUNKNUM Icode;     // current icode
@@ -81,7 +83,7 @@ extern EXECUTOR executor;
 void stackInit(void);
 void stackAllocateValue(SYMBNODE *pId);
 void stackDeallocateValue(SYMBNODE *pId);
-STACKITEM *stackGetValueAddress(SYMBNODE *pId);
+STACKITEM *stackGetValueAddress(CHUNKNUM nodeChunkNum, DEFN *pDefn);
 void stackPushInt(int value);
 void stackPushReal(FLOAT value);
 void stackPushChar(char value);
@@ -103,22 +105,22 @@ unsigned executorCurrentLocation(void);
 // Routines
 void executeRoutine(SYMBNODE *routineId);
 void executeActualParameters(SYMBNODE *pRoutineId);
-CHUNKNUM executeDeclaredSubroutineCall(SYMBNODE *pRoutineId);
-CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId);
-CHUNKNUM executeSubroutineCall(SYMBNODE *pRoutineId);
+CHUNKNUM executeDeclaredSubroutineCall(CHUNKNUM nodeChunkNum);
+CHUNKNUM executeStandardSubroutineCall(TRoutineCode routineCode);
+CHUNKNUM executeSubroutineCall(DEFN *pDefn);
 void enterRoutine(SYMBNODE *pRoutineId);
 void exitRoutine(SYMBNODE *pRoutineId);
 
 // Standard subroutines
 CHUNKNUM executeAbsCall(void);
 CHUNKNUM executeChrCall(void);
-CHUNKNUM executeEofEolnCall(SYMBNODE *pRoutineId);
+CHUNKNUM executeEofEolnCall(TRoutineCode routineCode);
 CHUNKNUM executeOddCall(void);
 CHUNKNUM executeOrdCall(void);
-CHUNKNUM executePrecSuccCall(SYMBNODE *pRoutineId);
-CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId);
-CHUNKNUM executeRoundTruncCall(SYMBNODE *pRoutineId);
-CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId);
+CHUNKNUM executePrecSuccCall(TRoutineCode routineCode);
+CHUNKNUM executeReadReadlnCall(TRoutineCode routineCode);
+CHUNKNUM executeRoundTruncCall(TRoutineCode routineCode);
+CHUNKNUM executeWriteWritelnCall(TRoutineCode routineCode);
 
 // Statements
 void executeCompound(void);
@@ -129,17 +131,17 @@ void executeREPEAT(void);
 void executeWHILE(void);
 void executeStatement(void);
 void executeStatementList(TTokenCode terminator);
-void executeAssignment(SYMBNODE *pTargetId);
+void executeAssignment(void);
 
 // Expressions
 CHUNKNUM executeExpression(void);
 CHUNKNUM executeSimpleExpression(void);
 CHUNKNUM executeTerm(void);
 CHUNKNUM executeFactor(void);
-CHUNKNUM executeConstant(SYMBNODE *pId);
-CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag);
+CHUNKNUM executeConstant(DEFN *pDefn, CHUNKNUM typeChunkNum);
+CHUNKNUM executeVariable(CHUNKNUM nodeChunkNum, DEFN *pDefn, CHUNKNUM typeChunkNum, char addressFlag);
 CHUNKNUM executeSubscripts(TTYPE *pType);
-CHUNKNUM executeField(TTYPE *pType);
+CHUNKNUM executeField(void);
 
 void executorGo(SYMBNODE *pRoutineId);
 void getTokenForExecutor(void);

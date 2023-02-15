@@ -26,7 +26,7 @@ void checkIcodeBounds(CHUNKNUM chunkNum, int size);
 void fixupLocationMarker(CHUNKNUM headerChunkNum, MEMBUF_LOCN *pMemBufLocn);
 void getCaseItem(CHUNKNUM headerChunkNum, int *value, MEMBUF_LOCN *pMemBufLocn);
 void getLocationMarker(CHUNKNUM chunkNum, MEMBUF_LOCN *pMemBufLocn);
-void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, SYMBNODE *pNode);
+void getNextTokenFromIcode(CHUNKNUM chunkNum, TOKEN *pToken, CHUNKNUM *nodeChunkNum);
 void insertLineMarker(CHUNKNUM chunkNum);
 void putCaseItem(CHUNKNUM headerChunkNum, int value, MEMBUF_LOCN *pMemBufLocn);
 void putLocationMarker(CHUNKNUM headerChunkNum, MEMBUF_LOCN *pMemBufLocn);

@@ -26,8 +26,18 @@ EXECUTOR executor;
 
 void getTokenForExecutor(void)
 {
-    executor.prevNode = executor.pNode.node.nodeChunkNum;
-    getNextTokenFromIcode(executor.Icode, &executor.token, &executor.pNode);
+    CHUNKNUM nodeChunkNum = 0;
+
+    executor.prevNode = executor.nodeChunkNum;
+    getNextTokenFromIcode(executor.Icode, &executor.token, &nodeChunkNum);
+
+    if (nodeChunkNum) {
+        SYMTABNODE *node = getChunk(nodeChunkNum);
+
+        executor.nodeChunkNum = nodeChunkNum;
+        executor.defnChunkNum = node->defnChunk;
+        executor.typeChunkNum = node->typeChunk;
+    }
 }
 
 void stackInit(void) {
@@ -176,15 +186,17 @@ void stackDeallocateValue(SYMBNODE *pId) {
     }
 }
 
-STACKITEM *stackGetValueAddress(SYMBNODE *pId) {
-    int functionFlag = pId->defn.how == dcFunction; // true if function, else false
+STACKITEM *stackGetValueAddress(CHUNKNUM nodeChunkNum, DEFN *pDefn) {
+    TDefnCode how = pDefn->how;
+    int offset = pDefn->data.offset;
+    int functionFlag = how == dcFunction; // true if function, else false
     STACKFRAMEHDR *pHeader = (STACKFRAMEHDR *) rtStack.pFrameBase;
 
     // Compute the difference between the current nesting level
     // and the level of the variable or parameter.  Treat a function
     // value as if it were a local variable of the function.  (Local
     // variables are one level higher than the function name.)
-    int delta = currentNestingLevel - pId->node.level;
+    int delta = currentNestingLevel - ((SYMTABNODE *)getChunk(nodeChunkNum))->level;
     if (functionFlag) --delta;
 
     // Chase static links delta times.
@@ -194,7 +206,7 @@ STACKITEM *stackGetValueAddress(SYMBNODE *pId) {
 
     return functionFlag ? &pHeader->functionValue
         : ((STACKITEM *) pHeader)
-            + RUNTIME_FRAMEHEADERSIZE + pId->defn.data.offset;
+            + RUNTIME_FRAMEHEADERSIZE + offset;
 }
 
 STACKITEM *stackPop(void) {

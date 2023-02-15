@@ -24,13 +24,15 @@ void executeStatement(void)
     }
 
     switch (executor.token.code) {
-        case tcIdentifier:
-            if (executor.pNode.defn.how == dcProcedure) {
-                executeSubroutineCall(&executor.pNode);
+        case tcIdentifier: {
+            DEFN *pDefn = getChunk(executor.defnChunkNum);
+            if (pDefn->how == dcProcedure) {
+                executeSubroutineCall(pDefn);
             } else {
-                executeAssignment(&executor.pNode);
+                executeAssignment();
             }
             break;
+        }
 
         case tcREPEAT: executeREPEAT(); break;
         case tcBEGIN: executeCompound(); break;
@@ -49,20 +51,20 @@ void executeStatementList(TTokenCode terminator) {
     } while (executor.token.code != terminator);
 }
 
-void executeAssignment(SYMBNODE *pTargetId)
+void executeAssignment(void)
 {
-    SYMBNODE targetId;
+    DEFN *pDefn;
     STACKITEM target;           // runtime stack address of target
     CHUNKNUM targetTypeChunkNum;
-    TTYPE targetType, type;     // target type object
+    TTYPE *targetType;     // target type object
     CHUNKNUM exprType, exprBaseType;
 
-    memcpy(&targetId, pTargetId, sizeof(SYMBNODE));
+    pDefn = getChunk(executor.defnChunkNum);
 
     // Assignment to function name
-    if (targetId.defn.how == dcFunction) {
-        targetTypeChunkNum = targetId.type.nodeChunkNum;
-        target.pStackItem = stackGetValueAddress(&targetId);
+    if (pDefn->how == dcFunction) {
+        targetTypeChunkNum = executor.typeChunkNum;
+        target.pStackItem = stackGetValueAddress(executor.nodeChunkNum, pDefn);
 
         getTokenForExecutor();
     }
@@ -71,7 +73,8 @@ void executeAssignment(SYMBNODE *pTargetId)
     // ExecuteVariable leaves the target address on
     // top of the runtime stack.
     else {
-        targetTypeChunkNum = executeVariable(pTargetId, 1);
+        targetTypeChunkNum = executeVariable(executor.nodeChunkNum,
+            getChunk(executor.defnChunkNum), executor.typeChunkNum, 1);
         memcpy(&target, stackPop(), sizeof(STACKITEM));
     }
 
@@ -79,27 +82,26 @@ void executeAssignment(SYMBNODE *pTargetId)
     // on top of the runtime stack.
     getTokenForExecutor();
     exprType = executeExpression();
-    retrieveChunk(exprType, (unsigned char *)&type);
-    exprBaseType = getBaseType(&type);
+    exprBaseType = getBaseType(getChunk(exprType));
 
-    memcpy(&targetType, &targetId.type, sizeof(TTYPE));
-    if (targetType.nodeChunkNum != getBaseType(&targetType)) {
-        retrieveChunk(getBaseType(&targetType), (unsigned char *)&targetType);
+    targetType = getChunk(executor.typeChunkNum);
+    if (targetType->nodeChunkNum != getBaseType(targetType)) {
+        targetType = getChunk(getBaseType(targetType));
     }
 
     // Do the assignment
-    if (targetType.nodeChunkNum == realType) {
+    if (targetType->nodeChunkNum == realType) {
         target.pStackItem->real = exprBaseType == integerType
             ? int16ToFloat(stackPop()->integer)     // real := integer
             : stackPop()->real;                     // real := real
-    } else if (targetType.nodeChunkNum == integerType || targetType.form == fcEnum) {
+    } else if (targetType->nodeChunkNum == integerType || targetType->form == fcEnum) {
         int value;
         value = stackPop()->integer;
-        rangeCheck(&targetType, value);
+        rangeCheck(targetType, value);
         target.pStackItem->integer = value;
-    } else if (targetType.nodeChunkNum == charType) {
+    } else if (targetType->nodeChunkNum == charType) {
         char value = stackPop()->character;
-        rangeCheck(&targetType, value);
+        rangeCheck(targetType, value);
         target.pStackItem->character = value;
     } else {
         void *pSource = stackPop();
@@ -107,7 +109,9 @@ void executeAssignment(SYMBNODE *pTargetId)
             target.membuf.offset, stackPop()->integer);
     }
 
+#if 0
     traceDataStore(&targetId, target.pStackItem, &targetType);
+#endif
 }
 
 void executeCompound(void) {
@@ -121,7 +125,6 @@ void executeCompound(void) {
 
 void executeCASE(void) {
     int exprValue, labelValue;
-    TTYPE exprType, exprBaseType;
     CHUNKNUM exprTypeChunkNum, exprBaseTypeChunkNum;
     MEMBUF_LOCN followLocn, branchTable, branchLocn;
 
@@ -136,10 +139,8 @@ void executeCASE(void) {
     // Evaluate the CASE expression.
     getTokenForExecutor();
     exprTypeChunkNum = executeExpression();
-    retrieveChunk(exprTypeChunkNum, (unsigned char *)&exprType);
-    exprBaseTypeChunkNum = getBaseType(&exprType);
-    retrieveChunk(exprBaseTypeChunkNum, (unsigned char *)&exprBaseType);
-    exprValue = exprBaseTypeChunkNum == integerType || exprBaseType.form == fcEnum ?
+    exprBaseTypeChunkNum = getBaseType(getChunk(exprTypeChunkNum));
+    exprValue = exprBaseTypeChunkNum == integerType || ((TTYPE *)getChunk(exprBaseTypeChunkNum))->form == fcEnum ?
         stackPop()->integer : stackPop()->character;
     
     // Search the branch table for the expression value.
@@ -167,8 +168,7 @@ void executeFOR(void) {
     char integerFlag;
     int initialValue, controlValue, delta, finalValue;
     CHUNKNUM controlTypeChunk, controlTypeBase;
-    TTYPE controlType, baseType;
-    SYMBNODE controlId;
+    TTYPE controlType;
     MEMBUF_LOCN locnFollow, loopStart;
     STACKITEM *pControlValue;
 
@@ -180,8 +180,8 @@ void executeFOR(void) {
     // Get a pointer to the control variable's type object and
     // a pointer to its value on the runtime stack item.
     getTokenForExecutor();
-    memcpy(&controlId, &executor.pNode, sizeof(SYMBNODE));
-    controlTypeChunk = executeVariable(&controlId, 1);
+    controlTypeChunk = executeVariable(executor.nodeChunkNum,
+        getChunk(executor.defnChunkNum), executor.typeChunkNum, 1);
     retrieveChunk(controlTypeChunk, (unsigned char *)&controlType);
     pControlValue = stackPop()->pStackItem;
 
@@ -189,9 +189,8 @@ void executeFOR(void) {
     getTokenForExecutor();
     executeExpression();
     controlTypeBase = getBaseType(&controlType);
-    retrieveChunk(controlTypeBase, (unsigned char *)&baseType);
     integerFlag = controlTypeBase == integerType ||
-        baseType.form == fcEnum;
+        ((TTYPE *)getChunk(controlTypeBase))->form == fcEnum;
     initialValue = integerFlag ? stackPop()->integer : stackPop()->character;
     controlValue = initialValue;
 
@@ -214,7 +213,9 @@ void executeFOR(void) {
             if (integerFlag) pControlValue->integer = controlValue;
             else pControlValue->character = controlValue & 0xFF;
             rangeCheck(&controlType, controlValue);
+#if 0
             traceDataStore(&controlId, pControlValue, &controlType);
+#endif
 
             // DO <stmt>
             getTokenForExecutor();

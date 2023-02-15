@@ -34,7 +34,7 @@ void parseAssignment(SYMBNODE *pTargetNode, CHUNKNUM Icode)
 }
 
 void parseCASE(CHUNKNUM Icode) {
-    TTYPE exprType;
+    TTYPE *pExprType;
     int value;
     CHUNKNUM exprTypeChunk, caseItems;
     char caseBranchFlag;  // true if another CASE branch, else false
@@ -47,16 +47,13 @@ void parseCASE(CHUNKNUM Icode) {
 
     // <expr>
     getTokenAppend(Icode);
-    exprTypeChunk = parseExpression(Icode);
-    retrieveChunk(exprTypeChunk, (unsigned char *)&exprType);
-    if (exprType.form == fcSubrange && exprType.subrange.baseType) {
-        retrieveChunk(exprType.subrange.baseType, (unsigned char *)&exprType);
-    }
+    exprTypeChunk = getBaseType(getChunk(parseExpression(Icode)));
+    pExprType = getChunk(exprTypeChunk);
 
     // Verify the type of the case expression
-    if (exprType.nodeChunkNum != integerType &&
-        exprType.nodeChunkNum != charType &&
-        exprType.form != fcEnum) {
+    if (exprTypeChunk != integerType &&
+        exprTypeChunk != charType &&
+        ((TTYPE *)getChunk(exprTypeChunk))->form != fcEnum) {
         Error(errIncompatibleTypes);
     }
 
@@ -155,7 +152,7 @@ void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems)
 void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) {
     char signFlag = 0;  // true if unary sign, else false
     int value;
-    TTYPE labelType;
+    CHUNKNUM labelType;
     SYMBNODE node;
     MEMBUF_LOCN locn;
 
@@ -182,32 +179,28 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) 
             if (!symtabStackSearchAll(tokenString, &node)) {
                 Error(errUndefinedIdentifier);
             }
-            retrieveChunk(node.node.typeChunk, (unsigned char *)&labelType);
             putSymtabNodeToIcode(Icode, &node);
 
-            if (node.defn.how != dcUndefined) {
-                if (labelType.form == fcSubrange && labelType.subrange.baseType) {
-                    retrieveChunk(labelType.subrange.baseType, (unsigned char *)&labelType);
-                }
-            } else {
+            labelType = getBaseType(getChunk(node.node.typeChunk));
+            if (node.defn.how == dcUndefined) {
                 node.defn.how = dcConstant;
                 setType(&node.node.typeChunk, dummyType);
                 saveSymbNode(&node);
-                retrieveChunk(dummyType, (unsigned char *)&labelType);
+                labelType = dummyType;
             }
 
-            if (exprTypeChunk != labelType.nodeChunkNum) {
+            if (exprTypeChunk != labelType) {
                 Error(errIncompatibleTypes);
             }
 
             // Only an integer constant can have a unary sign
-            if (signFlag && labelType.nodeChunkNum != integerType) {
+            if (signFlag && labelType != integerType) {
                 Error(errInvalidConstant);
             }
 
             // Set the label value into the CASE item
-            if (labelType.nodeChunkNum == integerType ||
-                labelType.form == fcEnum) {
+            if (labelType == integerType ||
+                ((TTYPE *)getChunk(labelType))->form == fcEnum) {
                 value = signFlag ?
                     -node.defn.constant.value.integer :
                     node.defn.constant.value.integer;
@@ -274,8 +267,7 @@ void parseCompound(CHUNKNUM Icode) {
 }
 
 void parseFOR(CHUNKNUM Icode) {
-    CHUNKNUM exprTypeChunk, expr2TypeChunk;
-    TTYPE controlType;
+    CHUNKNUM exprTypeChunk, expr2TypeChunk, controlType;
     SYMBNODE node;
     MEMBUF_LOCN locn;
 
@@ -286,22 +278,17 @@ void parseFOR(CHUNKNUM Icode) {
     if (tokenCode == tcIdentifier) {
         // Verify the definition and type of the control id
         symtabStackFind(tokenString, &node);
-        memcpy(&controlType, &node.type, sizeof(TTYPE));
-        if (node.defn.how != dcUndefined) {
-            if (controlType.form == fcSubrange && controlType.subrange.baseType) {
-                retrieveChunk(controlType.subrange.baseType, (unsigned char *)&controlType);
-            }
-        } else {
+        controlType = getBaseType(&node.type);
+        if (node.defn.how == dcUndefined) {
             node.defn.how = dcVariable;
-            retrieveChunk(integerType, (unsigned char *)&controlType);
             node.node.typeChunk = integerType;
             saveSymbNode(&node);
         }
-        if (controlType.nodeChunkNum != integerType &&
-            controlType.nodeChunkNum != charType &&
-            controlType.form != fcEnum) {
+        if (controlType != integerType &&
+            controlType != charType &&
+            ((TTYPE *)getChunk(controlType))->form != fcEnum) {
             Error(errIncompatibleTypes);
-            retrieveChunk(integerType, (unsigned char *)&controlType);
+            controlType = integerType;
         }
 
         putSymtabNodeToIcode(Icode, &node);
@@ -325,7 +312,7 @@ void parseFOR(CHUNKNUM Icode) {
 
     // <expr-2>
     expr2TypeChunk = parseExpression(Icode);
-    checkAssignmentCompatible(controlType.nodeChunkNum, expr2TypeChunk, errIncompatibleTypes);
+    checkAssignmentCompatible(controlType, expr2TypeChunk, errIncompatibleTypes);
 
     // DO
     resync(tlDO, tlStatementStart, NULL);

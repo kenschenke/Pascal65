@@ -213,9 +213,7 @@ void parseSubroutineDeclarations(SYMBNODE *pRoutineId) {
             pRoutineId->defn.routine.locals.routineIds = rtnId;
             saveSymbNode(pRoutineId);
         } else {
-            retrieveChunk(lastId, (unsigned char *)&node);
-            node.node.nextNode = rtnId;
-            storeChunk(lastId, (unsigned char *)&node);
+            ((SYMTABNODE *)getChunk(lastId))->nextNode = rtnId;
         }
         lastId = rtnId;
 

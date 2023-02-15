@@ -18,7 +18,7 @@
 .export _getNextTokenFromIcode
 
 .import extractSymtabNode, _readFromMemBuf, _retrieveChunk
-.import _currentLineNumber, _mcLineMarker, _symbolStrings
+.import _currentLineNumber, _mcLineMarker, _symbolStrings, _getChunk
 .import popax, pushax
 .importzp ptr1, ptr2, ptr3
 
@@ -26,18 +26,19 @@
 
 code: .res 1
 hdrChunkNum: .res 2
-pNode: .res 2
+nodeChunkNum: .res 2
+pNodeChunkNum: .res 2
 pToken: .res 2
 pString: .res 2
 symtabNode: .res .sizeof(SYMBNODE)
 
 .code
 
-; void getNextTokenFromIcode(CHUNKNUM hdrChunkNum, TOKEN *pToken, SYMBNODE *pNode)
+; void getNextTokenFromIcode(CHUNKNUM hdrChunkNum, TOKEN *pToken, CHUNKNUM *pNodeChunkNum)
 .proc _getNextTokenFromIcode
     ; Save the third parameter
-    sta pNode
-    stx pNode + 1
+    sta pNodeChunkNum
+    stx pNodeChunkNum + 1
     ; Save the second parameter
     jsr popax
     sta pToken
@@ -91,8 +92,8 @@ symtabNode: .res .sizeof(SYMBNODE)
     lda hdrChunkNum
     ldx hdrChunkNum + 1
     jsr pushax
-    lda #<symtabNode
-    ldx #>symtabNode
+    lda #<nodeChunkNum
+    ldx #>nodeChunkNum
     jsr extractSymtabNode
 
     ; Clear the string
@@ -120,38 +121,38 @@ symtabNode: .res .sizeof(SYMBNODE)
     dey
     bpl @ClrLoop
 
+    ; Get a pointer to the symbol table node
+    lda nodeChunkNum
+    ldx nodeChunkNum + 1
+    jsr _getChunk
+    sta ptr1            ; Store the chunk pointer
+    stx ptr1 + 1
+
     ; Retrieve the token name from the symbol table
-    lda symtabNode + SYMTABNODE::nameChunkNum
-    ldx symtabNode + SYMTABNODE::nameChunkNum + 1
+    ldy #SYMTABNODE::nameChunkNum
+    lda (ptr1),y
+    iny
+    lda (ptr1),y
+    tax
     jsr pushax
     lda pString
     ldx pString + 1
     jsr _retrieveChunk
 
-    ; If the caller provided a pointer to a symbol table node,
-    ; copy the retrieved node into their buffer.
-    lda pNode
-    ora pNode + 1
+    ; See if the caller provided a pointer to a chunknum
+    lda pNodeChunkNum
+    ora pNodeChunkNum + 1
     beq @Done
-
-    ; Copy the retrieved node into the caller's buffer
-    ; ptr1 is the caller's pNode buffer
-    lda pNode
+    lda pNodeChunkNum
     sta ptr1
-    lda pNode + 1
+    lda pNodeChunkNum + 1
     sta ptr1 + 1
-    ; ptr2 is the retrieved node buffer (the source)
-    lda #<symtabNode
-    sta ptr2
-    lda #>symtabNode
-    sta ptr2 + 1
-    ldy #.sizeof(SYMBNODE)
-    dey
-@CopyLoop:
-    lda (ptr2),y
+    ldy #0
+    lda nodeChunkNum
     sta (ptr1),y
-    dey
-    bpl @CopyLoop
+    iny
+    lda nodeChunkNum + 1
+    sta (ptr1),y
 
     jmp @Done
 

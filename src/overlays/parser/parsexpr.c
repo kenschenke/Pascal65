@@ -165,15 +165,15 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
 }
 
 CHUNKNUM parseField(CHUNKNUM Icode, CHUNKNUM recordTypeChunkNum) {
-    TTYPE recordType;
+    TTYPE *pRecordType;
     CHUNKNUM varType;
     SYMBNODE fieldId;
 
     getTokenAppend(Icode);
-    retrieveChunk(recordTypeChunkNum, (unsigned char *)&recordType);
+    pRecordType = getChunk(recordTypeChunkNum);
 
-    if (tokenCode == tcIdentifier && recordType.form == fcRecord) {
-        if (!searchSymtab(recordType.record.symtab, &fieldId, tokenString)) {
+    if (tokenCode == tcIdentifier && pRecordType->form == fcRecord) {
+        if (!searchSymtab(pRecordType->record.symtab, &fieldId, tokenString)) {
             fieldId.node.nodeChunkNum = 0;
             Error(errInvalidField);
         }
@@ -248,9 +248,6 @@ CHUNKNUM parseSimpleExpression(CHUNKNUM Icode)
 
 CHUNKNUM parseSubscripts(CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
     CHUNKNUM resultTypeChunk, targetTypeChunk;
-    TTYPE arrayType;
-
-    retrieveChunk(arrayTypeChunk, (unsigned char *)&arrayType);
 
     // Loop to parse a list of subscripts separated by commas.
     do {
@@ -258,17 +255,15 @@ CHUNKNUM parseSubscripts(CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
         getTokenAppend(Icode);
 
         // The current variable is an array type.
-        if (arrayType.form == fcArray) {
+        if (((TTYPE *)getChunk(arrayTypeChunk))->form == fcArray) {
             // The subscript expression must be an assignment type
             // compatible with the corresponding subscript type.
             targetTypeChunk = parseExpression(Icode);
-            // retrieveChunk(targetTypeChunk, (unsigned char *)&targetType);
-            // retrieveChunk(arrayType.array.indexType, (unsigned char *)&indexType);
-            checkAssignmentCompatible(arrayType.array.indexType, targetTypeChunk, errIncompatibleTypes);
+            checkAssignmentCompatible(((TTYPE *)getChunk(arrayTypeChunk))->array.indexType,
+                targetTypeChunk, errIncompatibleTypes);
 
             // Update the variable's type
-            resultTypeChunk = arrayType.array.elemType;
-            // retrieveChunk(pType->array.elemType, (unsigned char *)pType);
+            resultTypeChunk = ((TTYPE *)getChunk(arrayTypeChunk))->array.elemType;
         }
 
         // No longer an array type, so too many subscripts.
@@ -288,7 +283,6 @@ CHUNKNUM parseSubscripts(CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
 CHUNKNUM parseTerm(CHUNKNUM Icode)
 {
     CHUNKNUM resultChunkNum, operandTypeChunk;
-    // TTYPE operandType;
     TTokenCode op;
 
     // Parse the first factor

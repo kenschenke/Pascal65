@@ -13,17 +13,14 @@
 static void writeQuotedString(CHUNKNUM chunkNum);
 
 CHUNKNUM executeAbsCall(void) {
-    CHUNKNUM parmTypeChunk, parmBaseType;
-    TTYPE parmType;
+    CHUNKNUM parmTypeChunk;
 
     getTokenForExecutor(); // (
     getTokenForExecutor();
 
     parmTypeChunk = executeExpression();
-    retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-    parmBaseType = getBaseType(&parmType);
 
-    if (parmBaseType == integerType) {
+    if (getBaseType(getChunk(parmTypeChunk)) == integerType) {
         stackTOS()->integer = abs(stackTOS()->integer);
     }
 
@@ -42,8 +39,8 @@ CHUNKNUM executeChrCall(void) {
     return charType;
 }
 
-CHUNKNUM executeEofEolnCall(SYMBNODE *pRoutineId) {
-    if (pRoutineId->defn.routine.which == rcEof) {
+CHUNKNUM executeEofEolnCall(TRoutineCode routineCode) {
+    if (routineCode == rcEof) {
         stackPushInt(0);    // always FALSE for stdin
     } else {
         stackPushInt(isInputEndOfLine());
@@ -74,11 +71,9 @@ CHUNKNUM executeOrdCall(void) {
     return integerType;
 }
 
-CHUNKNUM executePrecSuccCall(SYMBNODE *pRoutineId) {
-    TTYPE parmType;
+CHUNKNUM executePrecSuccCall(TRoutineCode routineCode) {
     CHUNKNUM parmTypeChunk;
     int parmValue;
-    TRoutineCode routineCode = pRoutineId->defn.routine.which;
 
     getTokenForExecutor();  // (
     getTokenForExecutor();
@@ -88,21 +83,18 @@ CHUNKNUM executePrecSuccCall(SYMBNODE *pRoutineId) {
 
     if (routineCode == rcPred) --parmValue;
     else                       ++parmValue;
-    retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-    rangeCheck(&parmType, parmValue);
+    rangeCheck(getChunk(parmTypeChunk), parmValue);
     stackPushInt(parmValue);
 
     getTokenForExecutor(); // token after )
     return parmTypeChunk;
 }
 
-CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
-    SYMBNODE *pVarId = &executor.pNode;
+CHUNKNUM executeReadReadlnCall(TRoutineCode routineCode) {
     CHUNKNUM varTypeChunk;
-    TTYPE varType;
+    TTYPE *pVarType;
     char ch;
     STACKITEM *pVarValue;
-    TRoutineCode routineCode = pRoutineId->defn.routine.which;
 
     // Actual parameters are optional for readln
     getTokenForExecutor();
@@ -111,19 +103,19 @@ CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
         do {
             // Variable
             getTokenForExecutor();
-            varTypeChunk = executeVariable(pVarId, 1);
+            varTypeChunk = executeVariable(executor.nodeChunkNum, getChunk(executor.defnChunkNum), executor.typeChunkNum, 1);
             pVarValue = stackPop()->pStackItem;
 
             // Read the value.
-            retrieveChunk(varTypeChunk, (unsigned char *)&varType);
-            if (getBaseType(&varType) == integerType) {
+            pVarType = getChunk(varTypeChunk);
+            if (getBaseType(pVarType) == integerType) {
                 pVarValue->integer = readIntFromInput();
-                rangeCheck(&varType, pVarValue->integer);
+                rangeCheck(pVarType, pVarValue->integer);
             } else if (varTypeChunk == realType) {
                 pVarValue->real = readFloatFromInput();
             } else {
                 pVarValue->character = readCharFromInput();
-                rangeCheck(&varType, ch);
+                rangeCheck(pVarType, ch);
             }
         } while (executor.token.code == tcComma);
 
@@ -140,9 +132,8 @@ CHUNKNUM executeReadReadlnCall(SYMBNODE *pRoutineId) {
     return dummyType;
 }
 
-CHUNKNUM executeRoundTruncCall(SYMBNODE *pRoutineId) {
+CHUNKNUM executeRoundTruncCall(TRoutineCode routineCode) {
     FLOAT parmValue;
-    TRoutineCode which = pRoutineId->defn.routine.which;
 
     getTokenForExecutor(); // (
     getTokenForExecutor();
@@ -150,7 +141,7 @@ CHUNKNUM executeRoundTruncCall(SYMBNODE *pRoutineId) {
 
     parmValue = stackTOS()->real;
 
-    if (which == rcRound) {
+    if (routineCode == rcRound) {
         if (floatGt(parmValue, 0)) {
             stackTOS()->integer = floatToInt16(floatAdd(parmValue, FLOAT_POINT_51));
         } else {
@@ -165,13 +156,10 @@ CHUNKNUM executeRoundTruncCall(SYMBNODE *pRoutineId) {
     return integerType;
 }
 
-CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
+CHUNKNUM executeWriteWritelnCall(TRoutineCode routineCode) {
     int fieldWidth, fieldPrecision;
-    TRoutineCode which;
     CHUNKNUM exprTypeChunkNum, baseTypeChunkNum;
     TTYPE exprType;
-
-    which = pRoutineId->defn.routine.which;
 
     // Actual parameters are optional for writeln.
     getTokenForExecutor();
@@ -212,7 +200,7 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
             } else if (baseTypeChunkNum == charType) {
                 printf("%*c", fieldWidth, stackPop()->character);
             } else if (exprType.form == fcArray && exprType.array.elemType == charType) {
-                writeQuotedString(executor.pNode.defn.constant.value.stringChunkNum);
+                writeQuotedString(((DEFN *)getChunk(executor.defnChunkNum))->constant.value.stringChunkNum);
             }
         } while (executor.token.code == tcComma);
 
@@ -220,7 +208,7 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
     }
 
     // End the line if writeln.
-    if (which == rcWriteln) {
+    if (routineCode == rcWriteln) {
         puts("\n");
     }
 
@@ -228,12 +216,12 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
 }
 
 static void writeQuotedString(CHUNKNUM chunkNum) {
-    STRVALCHUNK chunk;
+    STRVALCHUNK *pChunk;
 
     while (chunkNum) {
-        retrieveChunk(chunkNum, (unsigned char *)&chunk);
-        printf("%.*s", sizeof(chunk.value), chunk.value);
-        chunkNum = chunk.nextChunkNum;
+        pChunk = getChunk(chunkNum);
+        printf("%.*s", sizeof(pChunk->value), pChunk->value);
+        chunkNum = pChunk->nextChunkNum;
     }
 }
 

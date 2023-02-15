@@ -132,6 +132,7 @@ void parseConstant(SYMBNODE *constId) {
                 constId->defn.constant.value.real =
                     sign == tcMinus ? floatNeg(tokenValue.real) :
                         tokenValue.real;
+                setType(&constId->node.typeChunk, realType);
             }
             getToken();
             break;
