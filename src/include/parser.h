@@ -56,7 +56,7 @@ void skipExtraParms(CHUNKNUM Icode);
 
 // Declarations
 int arraySize(TTYPE *pArrayType);
-void copyQuotedString(const char *pString, CHUNKNUM *firstChunk);
+void copyQuotedString(char *pString, CHUNKNUM *firstChunk);
 void parseArrayType(CHUNKNUM *newTypeChunkNum);
 void parseDeclarations(SYMBNODE *routineSymtab);
 void parseConstant(SYMBNODE *constId);

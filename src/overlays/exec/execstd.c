@@ -216,12 +216,15 @@ CHUNKNUM executeWriteWritelnCall(TRoutineCode routineCode) {
 }
 
 static void writeQuotedString(CHUNKNUM chunkNum) {
-    STRVALCHUNK *pChunk;
+    char buffer[CHUNK_LEN];
+    int toGet, len = ((MEMBUF *)getChunk(chunkNum))->used;
 
-    while (chunkNum) {
-        pChunk = getChunk(chunkNum);
-        printf("%.*s", sizeof(pChunk->value), pChunk->value);
-        chunkNum = pChunk->nextChunkNum;
+    setMemBufPos(chunkNum, 0);
+    while (len) {
+        toGet = len > CHUNK_LEN ? CHUNK_LEN : len;
+        readFromMemBuf(chunkNum, buffer, toGet);
+        printf("%.*s", toGet, buffer);
+        len -= toGet;
     }
 }
 
