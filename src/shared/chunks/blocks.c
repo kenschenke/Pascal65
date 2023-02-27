@@ -39,6 +39,7 @@
 #endif
 
 static unsigned pages;	// max pages per REU
+static unsigned lastPageToAllocate;
 
 static unsigned char BlocksUsed[MAX_BLOCKS / 8];
 
@@ -111,6 +112,7 @@ void initBlockStorage(void)
 		if (pages > MAX_BLOCKS) {
 			pages = MAX_BLOCKS;
 		}
+		lastPageToAllocate = pages;
 		emLoaded = 1;
 	}
 #endif
@@ -139,7 +141,7 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 	}
 #endif
 
-	for (i = 0; i < pages; ++i) {
+	for (i = 0; i < lastPageToAllocate; ++i) {
 		if (!isBlockAllocated(i)) {
 			// printf("blockNum = %d\n", i);
 			BlocksUsed[BLOCK_ALLOC_INDEX(i)] |= BLOCK_ALLOC_MASK(i);
@@ -154,7 +156,37 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 		}
 	}
 
+#if 1
+	printf("out of blocks -- i:%d pages:%d\n", i, pages);
+#endif
+
 	return NULL;
+}
+
+char allocBlockGroup(BLOCKNUM *blockNum, unsigned numBlocks) {
+#ifdef __MEGA65__
+#error allocBlockGroup not implemented on MEGA 65
+#endif
+
+	unsigned i;
+
+	// Block groups are pulled from the top of extended memory.
+	// Make sure there are enough consecutive, un-allocated blocks
+	// at the top of memory.
+	if (numBlocks > lastPageToAllocate) {
+		return 0;
+	}
+	for (i = lastPageToAllocate - numBlocks; i < lastPageToAllocate; ++i) {
+		if (isBlockAllocated(i)) {
+			// block is allocated
+			return 0;
+		}
+	}
+
+	*blockNum = lastPageToAllocate - numBlocks;
+	lastPageToAllocate -= numBlocks;
+
+	return 1;
 }
 
 void freeBlock(BLOCKNUM blockNum)
