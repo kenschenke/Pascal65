@@ -23,7 +23,7 @@ TDataType tokenType;
 TDataValue tokenValue;
 char tokenString[MAX_LINE_LEN + 1];
 
-TCharCode   charCodeMap[128];
+TCharCode   charCodeMap[255];
 
 void getNextToken(void)
 {
@@ -62,6 +62,7 @@ static void initCharCodeMap(void)
 
     for (i = 97; i <= 122; ++i) charCodeMap[i] = ccLetter;
     for (i = 65; i <= 90; ++i) charCodeMap[i] = ccLetter;
+    for (i = 193; i <= 218; ++i) charCodeMap[i] = ccLetter;
     for (i = 48; i <= 57; ++i) charCodeMap[i] = ccDigit;
     charCodeMap['+' ] = charCodeMap['-' ] = ccSpecial;
     charCodeMap['*' ] = charCodeMap['/' ] = ccSpecial;
