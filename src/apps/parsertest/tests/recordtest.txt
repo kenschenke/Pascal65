@@ -1,0 +1,131 @@
+L
+N sr
+T 20
+N b
+T 22
+N true
+T 16
+
+L
+N sr
+T 20
+N c
+T 22
+C k
+T 16
+
+L
+N sr
+T 20
+N e
+T 22
+N three
+T 16
+
+L
+N sr
+T 20
+N i
+T 22
+I 123
+T 16
+
+L
+N sr
+T 20
+N r
+T 22
+F 543.21
+T 16
+
+L
+N aar
+T 20
+N a
+T 13
+I 5
+T 14
+T 22
+I 100
+T 16
+
+L
+N nr
+T 20
+N j
+T 22
+I 55
+T 16
+
+L
+N nr
+T 20
+N s
+T 20
+N b
+T 22
+N false
+T 16
+
+L
+N nr
+T 20
+N s
+T 20
+N i
+T 22
+I 25
+T 16
+
+L
+N na
+T 20
+N k
+T 22
+I 22
+T 16
+
+L
+N na
+T 20
+N d
+T 20
+n f
+T 22
+N true
+T 16
+
+L
+N na
+T 20
+N d
+T 20
+N t
+T 22
+F 98.6
+T 16
+
+L
+N ara
+T 13
+I 2
+T 14
+T 20
+N i
+T 22
+I 101
+T 16
+
+L
+N ara
+T 13
+I 2
+T 14
+T 20
+N r
+T 22
+F 2.1
+T 16
+
+T 36
+T 20

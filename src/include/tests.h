@@ -17,6 +17,7 @@
 
 #define assertEqualByte(e, a) assertEqualByteX(e, a, __FILE__, testName, __LINE__)
 #define assertEqualChunkNum(e, a) assertEqualChunkNumX(e, a, __FILE__, testName, __LINE__)
+#define assertEqualFloat(e, a) assertEqualFloatX(e, a, __FILE__, testName, __LINE__)
 #define assertNonZeroChunkNum(a) assertNonZeroChunkNumX(a, __FILE__, testName, __LINE__)
 #define assertEqualInt(e, a) assertEqualIntX(e, a, __FILE__, testName, __LINE__)
 #define assertEqualPointer(e, a) assertEqualPointerX(e, a, __FILE__, testName, __LINE__)
@@ -30,6 +31,8 @@
 void assertEqualByteX(unsigned char expected, unsigned char actual,
     const char *file, const char *test, int line);
 void assertEqualChunkNumX(CHUNKNUM expected, CHUNKNUM actual,
+    const char *file, const char *test, int line);
+void assertEqualFloatX(const char *expected, FLOAT actual,
     const char *file, const char *test, int line);
 void assertNonZeroChunkNumX(CHUNKNUM actual,
     const char *file, const char *test, int line);

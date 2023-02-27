@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <real.h>
 #include <tests.h>
 
 #ifdef __TEST__
@@ -40,6 +41,18 @@ void assertEqualChunkNumX(CHUNKNUM expected, CHUNKNUM actual,
 	if (expected != actual) {
 		errorHeader(file, test, line);
 		printf("Expected %d -- got %d\n", expected, actual);
+		exit(5);
+	}
+}
+
+void assertEqualFloatX(const char *expected, FLOAT actual,
+    const char *file, const char *test, int line) {
+	if (strToFloat(expected) != actual) {
+		char buf[15];
+
+		floatToStr(actual, buf, 2);
+		errorHeader(file, test, line);
+		printf("Expected %s -- got %s\n", expected, buf);
 		exit(5);
 	}
 }

@@ -1,0 +1,74 @@
+L
+N i
+T 22
+I 1234
+T 16
+
+L
+N r
+T 22
+F 54.321
+T 16
+
+L
+N s
+T 22
+I 2345
+T 16
+
+L
+N b
+T 22
+N true
+T 16
+
+L
+N b2
+T 22
+N false
+T 16
+
+L
+N b
+T 22
+N b2
+16
+
+L
+N c
+T 22
+C k
+T 16
+
+L
+N c2
+T 22
+C j
+T 16
+
+L
+N c
+T 22
+N c2
+T 16
+
+L
+N i
+T 22
+N j
+T 16
+
+L
+N r
+T 22
+N s
+T 16
+
+L
+N r
+T 22
+N j
+T 16
+
+T 36
+T 20

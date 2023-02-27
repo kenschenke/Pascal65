@@ -2,43 +2,72 @@
 #include <buffer.h>
 #include <scanner.h>
 #include <common.h>
+#include <cbm.h>
+#include <device.h>
 #include <parser.h>
 #include <symtab.h>
 #include <stdlib.h>
+#include <string.h>
+
+#ifdef __MEGA65__
+#error Code to cache overlays is needed
+#else
+#include <em.h>
+#endif
+
+extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
+extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
+unsigned char loadfile(const char *name);
+
+void arrayTest(CHUNKNUM);
+void constTest(CHUNKNUM);
+void enumTest(CHUNKNUM);
+void recordTest(CHUNKNUM);
+void scalarTest(CHUNKNUM);
+void subrangeTest(CHUNKNUM);
+void varTest(CHUNKNUM);
 
 struct TestCase {
     const char *source;
-    TErrorCode code;
-    unsigned lineNumber;
+    void (*testRunner)(CHUNKNUM);
+    // TErrorCode code;
+    // unsigned lineNumber;
 };
 
 static struct TestCase cases[] = {
-#ifdef MAINPAS
-    {"main.pas", 0, 0},
-#endif
-#ifdef TESTPROG
-    {"missingprog.pas", errMissingPROGRAM, 3},
-    {"missingpid.pas", errMissingIdentifier, 3},
-    {"badprogvar.pas", errMissingIdentifier, 3},
-#endif
+    {"scalartest.pas", scalarTest},
+    {"arraytest.pas", arrayTest},
+    {"subrangetest.pas", subrangeTest},
+    {"enumtest.pas", enumTest},
+    {"consttest.pas", constTest},
+    {"recordtest.pas", recordTest},
+    // {"missingprog.pas", errMissingPROGRAM, 3},
+    // {"missingpid.pas", errMissingIdentifier, 3},
+    // {"badprogvar.pas", errMissingIdentifier, 3},
     {NULL},
 };
 
+#if 0
 static TErrorCode expectedCode;
 static unsigned expectedLineNumber;
+#endif
+static unsigned overlay1size, overlay2size;
+static unsigned overlay1blocks, overlay2blocks;
+
+static BLOCKNUM parserCache, testCache;
 
 static int sawCode;
 static int testsRun;
 static int testsFail;
 
-void logError(const char *message, unsigned lineNumber, TErrorCode code)
+void logError(const char *message, unsigned lineNumber, TErrorCode /*code*/)
 {
-#ifdef MAINPAS
-    printf("*** ERROR: %s line %d\n", message, lineNumber);
-#else
+#if 0
     if (code == expectedCode && lineNumber == expectedLineNumber) {
         sawCode = 1;
     }
+#else
+    printf("*** ERROR: %s -- line %d\n", message, lineNumber);
 #endif
 }
 
@@ -47,7 +76,7 @@ void logFatalError(const char *message)
     printf("*** Fatal translation error: %s\n", message);
 }
 
-void logRuntimeError(const char *message, unsigned lineNumber)
+void logRuntimeError(const char *message, unsigned /*lineNumber*/)
 {
     printf("*** Runtime error: %s\n", message);
 }
@@ -56,14 +85,74 @@ void logRuntimeError(const char *message, unsigned lineNumber)
 char failCode;
 #endif
 
+unsigned char loadfile(const char *name)
+{
+    if (cbm_load(name, getcurrentdevice(), NULL) == 0) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static void loadOverlayFromCache(unsigned size, void *buffer, unsigned cache) {
+    struct em_copy emc;
+
+    emc.buf = buffer;
+    emc.offs = 0;
+    emc.page = cache;
+    emc.count = size;
+    em_copyfrom(&emc);
+}
+
+static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigned cache) {
+    struct em_copy emc;
+
+    if (!loadfile(name)) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+
+    // Copy the parser overlay to the cache
+    emc.buf = buffer;
+    emc.offs = 0;
+    emc.page = cache;
+    emc.count = size;
+    em_copyto(&emc);
+}
+
 int main()
 {
+    CHUNKNUM programId;
     int i = 0;
-    TINBUF *tinBuf;
-    SCANNER scanner;
+
+    overlay1size = (unsigned)_OVERLAY1_SIZE__;
+    overlay2size = (unsigned)_OVERLAY2_SIZE__;
+    overlay1blocks = overlay1size/BLOCK_LEN + (overlay1size % BLOCK_LEN ? 1 : 0);
+    overlay2blocks = overlay2size/BLOCK_LEN + (overlay2size % BLOCK_LEN ? 1 : 0);
 
     testsRun = 0;
     testsFail = 0;
+
+#if 0
+    printf("avail = %d\n", _heapmemavail());
+    return 0;
+#endif
+
+    initBlockStorage();
+
+    // Allocate space in extended memory to cache the parser and parsertest overlays.
+    // This is done so they don't have to be reloaded for each test.
+    if (!allocBlockGroup(&parserCache, overlay1blocks) ||
+        !allocBlockGroup(&testCache, overlay2blocks)) {
+        printf("Unable to allocate extended memory\n");
+        return 0;
+    }
+
+    printf("Loading parser from disk\n");
+    loadOverlayFromFile("parsertest.1", overlay1size, _OVERLAY1_LOAD__, parserCache);
+
+    printf("Loading tester from disk\n");
+    loadOverlayFromFile("parsertest.2", overlay2size, _OVERLAY2_LOAD__, testCache);
 
     while (1) {
         if (!cases[i].source) {
@@ -71,31 +160,32 @@ int main()
         }
 
         initBlockStorage();
+
+        // Load the parser overlay from extended memory cache
+        loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, parserCache);
         initCommon();
         initParser();
+        // programId = parse("translate.pas");
 
         sawCode = 0;
-        expectedCode = cases[i].code;
-        expectedLineNumber = cases[i].lineNumber;
+        // expectedCode = cases[i].code;
+        // expectedLineNumber = cases[i].lineNumber;
 
-        tinBuf = tin_open(cases[i].source, abortSourceFileOpenFailed);
-        scanner.pTinBuf = tinBuf;
-        parse(&scanner);
-        tin_close(tinBuf);
+        // parse(cases[i].source);
 
-#ifndef MAINPAS
-        if (!sawCode) {
-            printf("source: %s\n", cases[i].source);
-            printf("   *** ERROR: never saw code %d on line %d\n",
-                expectedCode, expectedLineNumber);
-            ++testsFail;
-        }
-#endif
+        printf("\nParsing %s\n", cases[i].source);
+        programId = parse(cases[i].source);
+    
+        // Load the testing overlay
+        printf("Running tests\n");
+        loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, testCache);
+
+        cases[i].testRunner(programId);
 
         ++i;
     }
 
-    printf("%d test%s run\n", i, i == 1 ? "" : "s");
+    printf("\n%d test%s run\n", i, i == 1 ? "" : "s");
     printf("%d test%s failed\n", testsFail, testsFail == 1 ? "" : "s");
 
 	return 0;
