@@ -8,84 +8,16 @@
 #include <types.h>
 #include <real.h>
 
-void copyQuotedString(const char *pString, CHUNKNUM *firstChunk) {
-    CHUNKNUM chunkNum, nextChunkNum;
-    const char *p = pString + 1;
-    char isAlloc;  // non-zero if the next chunk is new
-    STRVALCHUNK chunk;
-    int toCopy, len = strlen(p) - 1;
+void copyQuotedString(char *pString, CHUNKNUM *firstChunk) {
+    int len = strlen(pString) - 2;
 
-    // Store the string as one or more chunks
-
-    // If there is already a string value for this node, replace it.
-    chunkNum = *firstChunk;
-    if (chunkNum) {
-        // There's already a chunk - retrieve it
-        if (retrieveChunk(chunkNum, (unsigned char *)&chunk) == 0) {
-            abortTranslation(abortOutOfMemory);
-            return;
-        }
-    } else {
-        // No value assigned yet - allocate a new chunk
-        if (allocChunk(&chunkNum) == 0) {
-            abortTranslation(abortOutOfMemory);
-            return;
-        }
-        // Store the chunkNum in the node as the first value chunk
-        *firstChunk = chunkNum;
-        chunk.nextChunkNum = 0;
+    if (!(*firstChunk)) {
+        // Memory buffer not allocated yet
+        allocMemBuf(firstChunk);
     }
 
-    while (len) {
-        memset(chunk.value, 0, sizeof(chunk.value));
-        toCopy = len > sizeof(chunk.value) ? sizeof(chunk.value) : len;
-        memcpy(chunk.value, p, toCopy);
-        len -= toCopy;
-        p += toCopy;
-
-        nextChunkNum = chunk.nextChunkNum;
-        if (len) {
-            if (nextChunkNum == 0) {
-                if (allocChunk(&nextChunkNum) == 0) {
-                    abortTranslation(abortOutOfMemory);
-                    return;
-                }
-                isAlloc = 1;
-                chunk.nextChunkNum = nextChunkNum;
-            } else {
-                isAlloc = 0;
-            }
-        } else {
-            chunk.nextChunkNum = 0;
-        }
-
-        if (storeChunk(chunkNum, (unsigned char *)&chunk) == 0) {
-            abortTranslation(abortOutOfMemory);
-            return;
-        }
-
-        chunkNum = nextChunkNum;
-        if (chunkNum) {
-            if (isAlloc) {
-                memset(&chunk, 0, sizeof(chunk));
-            } else {
-                if (retrieveChunk(chunkNum, (unsigned char *)&chunk) == 0) {
-                    abortTranslation(abortOutOfMemory);
-                    return;
-                }
-            }
-        }
-    }
-
-    while (nextChunkNum) {
-        if (retrieveChunk(nextChunkNum, (unsigned char *)&chunk) == 0) {
-            abortTranslation(abortOutOfMemory);
-            return;
-        }
-
-        freeChunk(nextChunkNum);
-        nextChunkNum = chunk.nextChunkNum;
-    }
+    reserveMemBuf(*firstChunk, len);
+    copyToMemBuf(*firstChunk, pString + 1, 0, len);
 }
 
 void parseDeclarations(SYMBNODE *routineSymtab) {

@@ -228,12 +228,19 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
 }
 
 static void writeQuotedString(CHUNKNUM chunkNum) {
-    STRVALCHUNK chunk;
+    char buffer[CHUNK_LEN];
+    int toGet, len;
+    MEMBUF membuf;
 
-    while (chunkNum) {
-        retrieveChunk(chunkNum, (unsigned char *)&chunk);
-        printf("%.*s", sizeof(chunk.value), chunk.value);
-        chunkNum = chunk.nextChunkNum;
+    retrieveChunk(chunkNum, (unsigned char *)&membuf);
+    len = membuf.used;
+
+    setMemBufPos(chunkNum, 0);
+    while (len) {
+        toGet = len > CHUNK_LEN ? CHUNK_LEN : len;
+        readFromMemBuf(chunkNum, buffer, toGet);
+        printf("%.*s", toGet, buffer);
+        len -= toGet;
     }
 }
 
