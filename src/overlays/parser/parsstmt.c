@@ -49,13 +49,11 @@ void parseCASE(CHUNKNUM Icode) {
     getTokenAppend(Icode);
     exprTypeChunk = parseExpression(Icode);
     retrieveChunk(exprTypeChunk, (unsigned char *)&exprType);
-    if (exprType.form == fcSubrange && exprType.subrange.baseType) {
-        retrieveChunk(exprType.subrange.baseType, (unsigned char *)&exprType);
-    }
+    exprTypeChunk = getBaseType(&exprType);
 
     // Verify the type of the case expression
-    if (exprType.nodeChunkNum != integerType &&
-        exprType.nodeChunkNum != charType &&
+    if (exprTypeChunk != integerType &&
+        exprTypeChunk != charType &&
         exprType.form != fcEnum) {
         Error(errIncompatibleTypes);
     }
