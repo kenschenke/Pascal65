@@ -171,6 +171,24 @@ arraytest.petscii: $(TESTSDIR)/arraytest.pas
 arraytext.petscii: $(TESTSDIR)/arraytest.txt
 	dos2unix < $(TESTSDIR)/arraytest.txt | petcat -w2 -text -o arraytext.petscii
 
+casechartest.petscii: $(TESTSDIR)/casechartest.pas
+	dos2unix < $(TESTSDIR)/casechartest.pas | petcat -w2 -text -o casechartest.petscii
+
+casechartext.petscii: $(TESTSDIR)/casechartest.txt
+	dos2unix < $(TESTSDIR)/casechartest.txt | petcat -w2 -text -o casechartext.petscii
+
+caseenumtest.petscii: $(TESTSDIR)/caseenumtest.pas
+	dos2unix < $(TESTSDIR)/caseenumtest.pas | petcat -w2 -text -o caseenumtest.petscii
+
+caseenumtext.petscii: $(TESTSDIR)/caseenumtest.txt
+	dos2unix < $(TESTSDIR)/caseenumtest.txt | petcat -w2 -text -o caseenumtext.petscii
+
+caseinttest.petscii: $(TESTSDIR)/caseinttest.pas
+	dos2unix < $(TESTSDIR)/caseinttest.pas | petcat -w2 -text -o caseinttest.petscii
+
+caseinttext.petscii: $(TESTSDIR)/caseinttest.txt
+	dos2unix < $(TESTSDIR)/caseinttest.txt | petcat -w2 -text -o caseinttext.petscii
+
 consttest.petscii: $(TESTSDIR)/consttest.pas
 	dos2unix < $(TESTSDIR)/consttest.pas | petcat -w2 -text -o consttest.petscii
 
@@ -183,11 +201,29 @@ enumtest.petscii: $(TESTSDIR)/enumtest.pas
 enumtext.petscii: $(TESTSDIR)/enumtest.txt
 	dos2unix < $(TESTSDIR)/enumtest.txt | petcat -w2 -text -o enumtext.petscii
 
+fortest.petscii: $(TESTSDIR)/fortest.pas
+	dos2unix < $(TESTSDIR)/fortest.pas | petcat -w2 -text -o fortest.petscii
+
+fortext.petscii: $(TESTSDIR)/fortest.txt
+	dos2unix < $(TESTSDIR)/fortest.txt | petcat -w2 -text -o fortext.petscii
+
+iftest.petscii: $(TESTSDIR)/iftest.pas
+	dos2unix < $(TESTSDIR)/iftest.pas | petcat -w2 -text -o iftest.petscii
+
+iftext.petscii: $(TESTSDIR)/iftest.txt
+	dos2unix < $(TESTSDIR)/iftest.txt | petcat -w2 -text -o iftext.petscii
+
 recordtest.petscii: $(TESTSDIR)/recordtest.pas
 	dos2unix < $(TESTSDIR)/recordtest.pas | petcat -w2 -text -o recordtest.petscii
 
 recordtext.petscii: $(TESTSDIR)/recordtest.txt
 	dos2unix < $(TESTSDIR)/recordtest.txt | petcat -w2 -text -o recordtext.petscii
+
+repeattest.petscii: $(TESTSDIR)/repeattest.pas
+	dos2unix < $(TESTSDIR)/repeattest.pas | petcat -w2 -text -o repeattest.petscii
+
+repeattext.petscii: $(TESTSDIR)/repeattest.txt
+	dos2unix < $(TESTSDIR)/repeattest.txt | petcat -w2 -text -o repeattext.petscii
 
 scalartest.petscii: $(TESTSDIR)/scalartest.pas
 	dos2unix < $(TESTSDIR)/scalartest.pas | petcat -w2 -text -o scalartest.petscii
@@ -200,6 +236,12 @@ subrangetest.petscii: $(TESTSDIR)/subrangetest.pas
 
 vartest.petscii: $(TESTSDIR)/vartest.pas
 	dos2unix < $(TESTSDIR)/vartest.pas | petcat -w2 -text -o vartest.petscii
+
+whiletest.petscii: $(TESTSDIR)/whiletest.pas
+	dos2unix < $(TESTSDIR)/whiletest.pas | petcat -w2 -text -o whiletest.petscii
+
+whiletext.petscii: $(TESTSDIR)/whiletest.txt
+	dos2unix < $(TESTSDIR)/whiletest.txt | petcat -w2 -text -o whiletext.petscii
 
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
@@ -214,7 +256,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii recordtest.petscii recordtext.petscii scalartest.petscii scalartext.petscii subrangetest.petscii vartest.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii casechartest.petscii casechartext.petscii caseenumtest.petscii caseenumtext.petscii caseinttest.petscii caseinttext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii fortest.petscii fortext.petscii iftest.petscii iftext.petscii recordtest.petscii recordtext.petscii repeattest.petscii repeattext.petscii scalartest.petscii scalartext.petscii subrangetest.petscii vartest.petscii whiletest.petscii whiletext.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -224,16 +266,30 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write arraytest.petscii arraytest.pas,seq \
 	-write arraytext.petscii arraytest.txt,seq \
+	-write casechartest.petscii casechartest.pas,seq \
+	-write casechartext.petscii casechartest.txt,seq \
+	-write caseenumtest.petscii caseenumtest.pas,seq \
+	-write caseenumtext.petscii caseenumtest.txt,seq \
+	-write caseinttest.petscii caseinttest.pas,seq \
+	-write caseinttext.petscii caseinttest.txt,seq \
 	-write consttest.petscii consttest.pas,seq \
 	-write consttext.petscii consttest.txt,seq \
 	-write enumtest.petscii enumtest.pas,seq \
 	-write enumtext.petscii enumtest.txt,seq \
+	-write fortest.petscii fortest.pas,seq \
+	-write fortext.petscii fortest.txt,seq \
+	-write iftest.petscii iftest.pas,seq \
+	-write iftext.petscii iftest.txt,seq \
 	-write recordtest.petscii recordtest.pas,seq \
 	-write recordtext.petscii recordtest.txt,seq \
+	-write repeattest.petscii repeattest.pas,seq \
+	-write repeattext.petscii repeattest.txt,seq \
 	-write scalartest.petscii scalartest.pas,seq \
 	-write scalartext.petscii scalartest.txt,seq \
 	-write subrangetest.petscii subrangetest.pas,seq \
 	-write vartest.petscii vartest.pas,seq \
+	-write whiletest.petscii whiletest.pas,seq \
+	-write whiletext.petscii whiletest.txt,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

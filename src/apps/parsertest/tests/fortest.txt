@@ -1,0 +1,73 @@
+# For i := 0 to 10 Do
+T 38
+M 1
+N i
+T 22
+I 0
+T 56
+I 10
+T 33
+
+# writeln(i);
+N writeln
+T 8
+N i
+T 9
+P 1
+T 16
+
+# For i := 10 downto 1 Do
+T 38
+M 2
+N i
+T 22
+I 10
+T 34
+I 1
+T 33
+
+# Begin
+T 29
+
+# writeln(i);
+N writeln
+T 8
+N i
+T 9
+T 16
+
+# writeln(i + 1);
+N writeln
+T 8
+N i
+T 11
+I 1
+T 9
+T 16
+
+# End;
+T 36
+P 2
+T 16
+
+# For c := 'a' to 'z' Do
+T 38
+M 3
+N c
+T 22
+C a
+T 56
+C z
+T 33
+
+# writeln(c);
+N writeln
+T 8
+N c
+T 9
+P 3
+T 16
+
+# End.
+T 36
+T 20

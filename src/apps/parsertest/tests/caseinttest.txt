@@ -1,0 +1,58 @@
+# Case i Of
+T 30
+M 8
+B
+N i
+T 47
+
+# 1: writeln(i + 1);
+S 1
+N writeln
+T 8
+N i
+T 11
+I 1
+T 9
+T 16
+
+# 2, 3: Begin
+S 2
+S 3
+T 29
+
+# writeln(i + 3);
+N writeln
+T 8
+N i
+T 11
+I 3
+T 9
+T 16
+
+# writeln(i div 3);
+N writeln
+T 8
+N i
+T 32
+I 3
+T 9
+T 16
+T 36
+T 16
+
+7, 8, 9: writeln(i * 9);
+S 7
+S 8
+S 9
+N writeln
+T 8
+N i
+T 7
+I 9
+T 9
+T 16
+
+# End.
+G 8
+T 36
+T 20

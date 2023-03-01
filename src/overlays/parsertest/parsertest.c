@@ -7,6 +7,9 @@
 #include <tests.h>
 #include <icode.h>
 #include <ctype.h>
+#include <membuf.h> 
+
+#define MAX_MARKERS 8
 
 CHUNKNUM testIcode;
 TOKEN testToken;
@@ -171,10 +174,16 @@ void runArrayTests(CHUNKNUM variableIds, struct ArrayTestCase *tests, const char
     }
 }
 
-void runIcodeTests(const char *testFile, int firstLine, const char *testName) {
+void runIcodeTests(const char *testFile, int firstLine, const char *testRunName) {
     FILE *fh;
     char buf[40];
-    int i = 0;
+    int caseValues[MAX_MARKERS];
+    MEMBUF_LOCN markers[MAX_MARKERS];
+    int i = 0, j;
+
+    DECLARE_TEST(testRunName);
+
+    markers[0].chunkNum = 0;
 
     fh = fopen(testFile, "r");
     if (fh == NULL) {
@@ -186,6 +195,16 @@ void runIcodeTests(const char *testFile, int firstLine, const char *testName) {
 
     while (!feof(fh)) {
         fgets(buf, sizeof(buf), fh);
+
+        j = 0;
+        while (buf[j]) {
+            if (buf[j] == '#') {
+                buf[j] = 0;
+                break;
+            }
+            ++j;
+        }
+
         while (isspace(buf[strlen(buf)-1])) {
             buf[strlen(buf)-1] = 0;
         }
@@ -196,12 +215,7 @@ void runIcodeTests(const char *testFile, int firstLine, const char *testName) {
 
         switch (buf[0]) {
             case ICODETEST_CHAR:
-                if (buf[2] != testNode.defn.constant.value.character) {
-                    errorHeader(testName, i + 1);
-                    printf("  Expected '%c' -- got '%c'\n",
-                        buf[2], testNode.defn.constant.value.character);
-                    exit(5);
-                }
+                assertEqualByte(buf[2], testNode.defn.constant.value.character);
                 break;
 
             case ICODETEST_FLOAT:
@@ -214,25 +228,12 @@ void runIcodeTests(const char *testFile, int firstLine, const char *testName) {
                 }
                 break;
             
-            case ICODETEST_INT: {
-                int num = atoi(buf + 2);
-
-                if (num != testNode.defn.constant.value.integer) {
-                    errorHeader(testName, i + 1);
-                    printf("  Expected %d -- got %d\n",
-                        num, testNode.defn.constant.value.integer);
-                    exit(5);
-                }
+            case ICODETEST_INT:
+                assertEqualInt(atoi(buf + 2), testNode.defn.constant.value.integer);
                 break;
-            }
             
             case ICODETEST_LINE:
-                if (firstLine != currentLineNumber) {
-                    errorHeader(testName, i + 1);
-                    printf("  Expected %d -- got %d\n",
-                        (int) firstLine, currentLineNumber);
-                    exit(5);
-                }
+                assertEqualInt(firstLine, currentLineNumber);
                 ++firstLine;
                 break;
             
@@ -248,19 +249,71 @@ void runIcodeTests(const char *testFile, int firstLine, const char *testName) {
                 break;
             }
             
-            case ICODETEST_TOKEN: {
-                int num = atoi(buf + 2);
+            case ICODETEST_TOKEN:
+                assertEqualInt(atoi(buf + 2), testToken.code);
+                break;
 
-                if (num != testToken.code) {
-                    errorHeader(testName, i + 1);
-                    printf("  Expected %d -- got %d\n", num, testToken.code);
-                    exit(5);
+            case ICODETEST_MARKER: {
+                int num = atoi(buf + 2);
+                assertNonZero(num >= 1 && num <= MAX_MARKERS);
+                getLocationMarker(testIcode, markers + num - 1);
+                break;
+            }
+
+            case ICODETEST_POS: {
+                int num = atoi(buf + 2);
+                MEMBUF_LOCN thisLocn;
+                assertNonZero(num >= 1 && num <= MAX_MARKERS);
+                getMemBufLocn(testIcode, &thisLocn);
+                assertEqualChunkNum(markers[num-1].chunkNum, thisLocn.chunkNum);
+                assertEqualInt(markers[num-1].posChunk, thisLocn.posChunk);
+                break;
+            }
+
+            case ICODETEST_BRANCHTBL: {
+                int x = 0;
+                MEMBUF_LOCN branchTable, thisLocn;
+
+                getLocationMarker(testIcode, &branchTable);
+                getMemBufLocn(testIcode, &thisLocn);
+                setMemBufLocn(testIcode, &branchTable);
+                while (1) {
+                    assertNonZero(x < MAX_MARKERS);
+                    getCaseItem(testIcode, caseValues + x, markers + x);
+                    if (caseValues[x] == 0 && markers[x].chunkNum == 0) {
+                        break;
+                    }
+                    ++x;
                 }
+                setMemBufLocn(testIcode, &thisLocn);
+                break;
+            }
+
+            case ICODETEST_CASEBRANCH: {
+                int x = 0, value = atoi(buf + 2);
+                MEMBUF_LOCN thisLocn;
+                getMemBufLocn(testIcode, &thisLocn);
+                while (1) {
+                    if (caseValues[x] == value) {
+                        setMemBufLocn(testIcode, markers + x);
+                        setMemBufPos(testIcode, getMemBufPos(testIcode)-1);
+                        break;
+                    }
+                    assertNonZero(x < MAX_MARKERS);
+                    ++x;
+                }
+                break;
+            }
+
+            case ICODETEST_GO: {
+                int num = atoi(buf + 2);
+                assertNonZero(num >= 1 && num <= MAX_MARKERS);
+                setMemBufLocn(testIcode, markers + num - 1);
                 break;
             }
         }
 
-        if (buf[0] != ICODETEST_LINE) {
+        if (buf[0] != ICODETEST_LINE && buf[0] != ICODETEST_POS) {
             getNextTestToken();
         }
 
@@ -331,4 +384,10 @@ void runVarTests(CHUNKNUM variableIds, struct VarTestCase *tests, int level, con
         variableIds = node.node.nextNode;
         ++i;
     }
+}
+
+void runIcodeTest(CHUNKNUM icode, const char *testFile, int firstLine, const char *testRunName) {
+    testIcode = icode;
+    setMemBufPos(testIcode, 0);
+    runIcodeTests(testFile, firstLine, testRunName);
 }

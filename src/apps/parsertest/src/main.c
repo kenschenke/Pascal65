@@ -19,6 +19,8 @@ extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
 unsigned char loadfile(const char *name);
 
+static void runControlTest(const char *test, int firstLine);
+
 void arrayTest(CHUNKNUM);
 void constTest(CHUNKNUM);
 void enumTest(CHUNKNUM);
@@ -26,6 +28,7 @@ void recordTest(CHUNKNUM);
 void scalarTest(CHUNKNUM);
 void subrangeTest(CHUNKNUM);
 void varTest(CHUNKNUM);
+void runIcodeTest(CHUNKNUM Icode, const char *testFile, int firstLine, const char *testName);
 
 struct TestCase {
     const char *source;
@@ -120,10 +123,37 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
     em_copyto(&emc);
 }
 
+static void runControlTest(const char *test, int firstLine) {
+    SYMBNODE programNode;
+    CHUNKNUM programId;
+    char buf[25], buf2[30];
+
+    sprintf(buf, "%stest.pas", test);
+
+    initBlockStorage();
+
+    loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, parserCache);
+    initCommon();
+    initParser();
+
+    printf("\nParsing %s\n", buf);
+    programId = parse(buf);
+
+    printf("Running tests\n");
+    loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, testCache);
+
+    sprintf(buf, "%stest.txt", test);
+    sprintf(buf2, "%sIcodeTests", test);
+
+    loadSymbNode(programId, &programNode);
+    runIcodeTest(programNode.defn.routine.Icode, buf, firstLine, buf2);
+}
+
 int main()
 {
     CHUNKNUM programId;
-    int i = 0;
+    int i = 0, j = 0;
+    const char *controlTests[] = { "casechar", "caseenum", "caseint", "for", "if", "repeat", "while", NULL };
 
     overlay1size = (unsigned)_OVERLAY1_SIZE__;
     overlay2size = (unsigned)_OVERLAY2_SIZE__;
@@ -148,10 +178,7 @@ int main()
         return 0;
     }
 
-    printf("Loading parser from disk\n");
     loadOverlayFromFile("parsertest.1", overlay1size, _OVERLAY1_LOAD__, parserCache);
-
-    printf("Loading tester from disk\n");
     loadOverlayFromFile("parsertest.2", overlay2size, _OVERLAY2_LOAD__, testCache);
 
     while (1) {
@@ -182,6 +209,13 @@ int main()
 
         cases[i].testRunner(programId);
 
+        ++i;
+    }
+
+    while (controlTests[j]) {
+        runControlTest(controlTests[j], 7);
+
+        ++j;
         ++i;
     }
 

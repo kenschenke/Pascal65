@@ -1,0 +1,36 @@
+# i := 0;
+L
+N i
+T 22
+I 0
+T 16
+
+# Repeat
+L
+T 53
+
+# writeln(i);
+N writeln
+T 8
+N i
+T 9
+T 16
+
+# i := i + 5;
+N i
+T 22
+N i
+T 11
+I 5
+T 16
+
+# Until i > 5;
+T 58
+N i
+T 18
+I 5
+T 16
+
+# End.
+T 36
+T 20
