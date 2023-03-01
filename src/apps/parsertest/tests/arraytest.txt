@@ -1,0 +1,199 @@
+L
+N ab
+T 13
+I 1
+T 14
+T 22 
+N true
+T 16
+
+L
+N ab
+T 13
+N i
+T 14
+T 22
+N false
+T 16
+
+L
+N ac
+T 13
+I 0
+T 14
+T 22
+C c
+T 16
+
+L
+N ai
+T 13
+T 10
+I 2
+T 14
+T 22
+I 12345
+T 16
+
+L
+N ar
+T 13
+I 1
+T 14
+T 22
+F 3.14159
+T 16
+
+L
+N ae
+T 13
+I 0
+T 14
+T 22
+N one
+T 16
+
+L
+N ae2
+T 13
+N three
+T 14
+T 22
+T 10
+I 5
+T 16
+
+L
+N ae3
+T 13
+N gamma
+T 14
+T 22
+F 3.14
+T 16
+
+L
+N an
+T 13
+I 5
+T 14
+T 13
+C t
+T 14
+T 22
+F 54.321
+T 16
+
+L
+N ab
+T 13
+I 2
+T 14
+T 22
+N b
+T 16
+
+L
+N ac
+T 13
+I 3
+T 14
+T 22
+N c
+T 16
+
+L
+N ai
+T 13
+I 1
+T 14
+T 22
+N i
+T 16
+
+L
+N ar
+T 13
+I 2
+T 14
+T 22
+N r
+T 16
+
+L
+N ae
+T 13
+T 10
+I 1
+T 14
+T 22
+N e
+T 16
+
+L
+N ae2
+T 13
+N four
+T 14
+T 22
+I 12
+T 16
+
+L
+N al
+T 13
+C c
+T 14
+T 22
+N true
+T 16
+
+L
+N b
+T 22
+N ab
+T 13
+I 3
+T 14
+T 16
+
+L
+N c
+T 22
+N ac
+T 13
+I 6
+T 14
+T 16
+
+L
+N i
+T 22
+N ai
+T 13
+T 10
+I 2
+T 14
+T 16
+
+L
+N r
+T 22
+N ar
+T 13
+I 1
+T 14
+T 16
+
+L
+N e
+T 22
+N ae
+T 13
+T 10
+I 4
+T 14
+T 16
+
+T 36
+T 20

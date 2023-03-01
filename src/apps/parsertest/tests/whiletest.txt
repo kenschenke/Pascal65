@@ -1,0 +1,68 @@
+# i := 0;
+L
+N i
+T 22
+I 0
+T 16
+
+# While i < 5 Do
+L
+T 60
+M 1
+N i
+T 17
+I 5
+T 33
+
+# i := i + 1;
+L
+N i
+T 22
+N i
+T 11
+I 1
+P 1
+T 16
+
+# i := 5;
+L
+N i
+T 22
+I 5
+T 16
+
+# While i >= 0 Do Begin
+L
+T 60
+M 2
+N i
+T 24
+I 0
+T 33
+T 29
+
+# writeln(i);
+L
+N writeln
+T 8
+N i
+T 9
+T 16
+
+# i := i - 1;
+L
+N i
+T 22
+N i
+T 10
+I 1
+T 16
+
+# End;
+T 36
+P 2
+T 16
+
+# End.
+T 36
+T 20

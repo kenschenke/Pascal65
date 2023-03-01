@@ -33,6 +33,18 @@ void initBlockStorage(void);
 // if allocation failed.  Zero-based block number returned by ref.
 unsigned char *allocBlock(BLOCKNUM *blockNum);
 
+// Allocates a group of consecutive blocks.  The starting
+// block number is returned via the first parameter.
+// The starting block number is an REU page number that can be
+// passed to em_copyto() and em_copyfrom().
+//
+// NOTE: This is intended for caching overlays or other large
+// blocks of extended memory.  Once allocated, the blocks are
+// permanently removed from available allocation.
+//
+// Non-zero is returned on success.
+char allocBlockGroup(BLOCKNUM *blockNum, unsigned numBlocks);
+
 // Frees the block.  Block number is zero-based.
 void freeBlock(BLOCKNUM blockNum);
 

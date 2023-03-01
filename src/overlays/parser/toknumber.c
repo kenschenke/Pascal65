@@ -29,7 +29,6 @@ void getNumberToken(char sawDecimalPoint)
     const int maxDigitCount = 20;
     int value = 0;
     TDataType type = tyInteger;
-    char sawDotDotFlag = 0;  // non-zero if encountered '..'
     char sawExponent = 0;    // non-zero if 'e' or 'E' encountered
     char sawExponentSign = 0;// non-zero when +|- encountered after e|E
 
@@ -70,11 +69,13 @@ void getNumberToken(char sawDecimalPoint)
                 break;
             }
 
+            // Look at the next character and see if it's a
+            // decimal point too.  If so, this is actually
+            // the '..' operator.
             ch = getChar();
             if (ch == '.') {
-                // We have a '.' token.  Put the character back
+                // We have a '..' operator.  Put the character back
                 // so that the token can be extracted next.
-                sawDotDotFlag = 1;
                 putBackChar();
                 break;
             } else {

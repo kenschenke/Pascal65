@@ -1,0 +1,50 @@
+L
+N ee
+T 22
+N beta
+T 16
+
+L
+N ef
+T 22
+N ee
+T 16
+
+L
+N ae
+T 13
+N gamma
+T 14
+T 22
+I 123
+T 16
+
+L
+N a1
+T 13
+N gamma
+T 14
+T 22
+F 3.14159
+T 16
+
+L
+N an
+T 13
+N four
+T 14
+T 22
+I 543
+T 16
+
+L
+N af
+T 13
+N apple
+T 14
+T 22
+N true
+T 16
+
+T 36
+T 20

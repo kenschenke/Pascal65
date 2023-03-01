@@ -15,35 +15,38 @@
 
 #include <chunks.h>
 
-#define assertEqualByte(e, a) assertEqualByteX(e, a, __FILE__, testName, __LINE__)
-#define assertEqualChunkNum(e, a) assertEqualChunkNumX(e, a, __FILE__, testName, __LINE__)
-#define assertNonZeroChunkNum(a) assertNonZeroChunkNumX(a, __FILE__, testName, __LINE__)
-#define assertEqualInt(e, a) assertEqualIntX(e, a, __FILE__, testName, __LINE__)
-#define assertEqualPointer(e, a) assertEqualPointerX(e, a, __FILE__, testName, __LINE__)
-#define assertNonZero(v) assertNonZeroX(v, __FILE__, testName, __LINE__)
-#define assertNotNull(p) assertNotNullX(p, __FILE__, testName, __LINE__)
-#define assertNull(p) assertNullX(p, __FILE__, testName, __LINE__)
-#define assertZero(v) assertZeroX(v, __FILE__, testName, __LINE__)
+#define assertEqualByte(e, a) assertEqualByteX(e, a, testName, __LINE__)
+#define assertEqualChunkNum(e, a) assertEqualChunkNumX(e, a, testName, __LINE__)
+#define assertEqualFloat(e, a) assertEqualFloatX(e, a, testName, __LINE__)
+#define assertNonZeroChunkNum(a) assertNonZeroChunkNumX(a, testName, __LINE__)
+#define assertEqualInt(e, a) assertEqualIntX(e, a, testName, __LINE__)
+#define assertEqualPointer(e, a) assertEqualPointerX(e, a, testName, __LINE__)
+#define assertNonZero(v) assertNonZeroX(v, testName, __LINE__)
+#define assertNotNull(p) assertNotNullX(p, testName, __LINE__)
+#define assertNull(p) assertNullX(p, testName, __LINE__)
+#define assertZero(v) assertZeroX(v, testName, __LINE__)
 
 #define DECLARE_TEST(t) const char *testName = t;
 
 void assertEqualByteX(unsigned char expected, unsigned char actual,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertEqualChunkNumX(CHUNKNUM expected, CHUNKNUM actual,
-    const char *file, const char *test, int line);
+    const char *test, int line);
+void assertEqualFloatX(const char *expected, FLOAT actual,
+    const char *test, int line);
 void assertNonZeroChunkNumX(CHUNKNUM actual,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertEqualIntX(int expected, int actual,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertEqualPointerX(unsigned char *expected, unsigned char *actual,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertNonZeroX(unsigned char value,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertNotNullX(unsigned char *p,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertNullX(unsigned char *p,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 void assertZeroX(unsigned char value,
-    const char *file, const char *test, int line);
+    const char *test, int line);
 
 #endif // end of TESTS_H

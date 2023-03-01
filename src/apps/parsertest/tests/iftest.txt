@@ -1,0 +1,153 @@
+# If i + 1 > 5 Then
+T 41
+M 1
+M 2
+N i
+T 11
+I 1
+T 18
+I 5
+T 55
+
+# writeln(i);
+N writeln
+T 8
+N i
+T 9
+P 1
+
+# If (i + 1 > 5) And (i * 2 < 200) Then Begin
+T 41
+M 3
+M 4
+T 8
+N i
+T 11
+I 1
+T 18
+I 5
+T 9
+T 27
+T 8
+N i
+T 7
+I 2
+T 17
+I 200
+T 9
+T 55
+T 29
+
+# writeln(i);
+N writeln
+T 8
+N i
+T 9
+T 16
+
+# writeln(i Div 10);
+N writeln
+T 8
+N i
+T 32
+I 10
+T 9
+T 16
+
+# End;
+T 36
+P 3
+
+# If ((i * 2 < 100) And (i < 5)) Or (i > 1000) Then
+T 41
+M 5
+M 6
+T 8
+T 8
+N i
+T 7
+I 2
+T 17
+I 100
+T 9
+T 27
+T 8
+N i
+T 17
+I 5
+T 9
+T 9
+T 48
+T 8
+N i
+T 18
+I 1000
+T 9
+T 55
+
+# writeln(i)
+N writeln
+T 8
+N i
+T 9
+
+# Else
+P 5
+T 35
+
+# writeln(i * 10);
+N writeln
+T 8
+N i
+T 7
+I 10
+T 9
+P 6
+T 16
+
+# If i > 0 Then
+T 41
+M 7
+M 8
+N i
+T 18
+I 0
+T 55
+
+# writeln(i)
+N writeln
+T 8
+N i
+T 9
+
+# Else Begin
+P 7
+T 35
+T 29
+
+# writeln(i * 2);
+N writeln
+T 8
+N i
+T 7
+I 2
+T 9
+T 16
+
+# writeln(i > 0);
+N writeln
+T 8
+N i
+T 18
+I 0
+T 9
+T 16
+
+# End;
+T 36
+P 8
+T 16
+
+# End.
+T 36
+T 20

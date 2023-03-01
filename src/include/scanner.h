@@ -16,7 +16,7 @@
 #include <buffer.h>
 #include <misc.h>
 
-extern TCharCode charCodeMap[128];
+extern TCharCode charCodeMap[255];
 
 typedef struct {
     TTokenCode code;

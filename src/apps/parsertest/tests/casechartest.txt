@@ -1,0 +1,60 @@
+# Case c Of
+T 30
+M 8
+B
+N c
+T 47
+
+# 'a': writeln('a', c);
+S 65 # 'a'
+N writeln
+T 8
+C a
+T 19
+N c
+T 9
+T 16
+
+# 'b', 'c': Begin
+S 66 # 'b'
+S 67 # 'c'
+T 29
+
+# writeln(c, 'd');
+N writeln
+T 8
+N c
+T 19
+C d
+T 9
+T 16
+
+# writeln('e', c);
+N writeln
+T 8
+C e
+T 19
+N c
+T 9
+T 16
+T 36
+T 16
+
+'f', 'g', 'h': writeln(c, 'z', 'x');
+S 70 # 'f'
+S 71 # 'g'
+S 72 # 'h'
+N writeln
+T 8
+N c
+T 19
+C z
+T 19
+C x
+T 9
+T 16
+
+# End.
+G 8
+T 36
+T 20

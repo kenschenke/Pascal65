@@ -1,0 +1,56 @@
+# Case e Of
+T 30
+M 8
+B
+N e
+T 47
+
+# apple: writeln(10);
+S 0
+N writeln
+T 8
+I 10
+T 9
+T 16
+
+# banana, cherry: Begin
+S 1
+S 2
+T 29
+
+# writeln(10 + 3);
+N writeln
+T 8
+I 10
+T 11
+I 3
+T 9
+T 16
+
+# writeln(100 div 7);
+N writeln
+T 8
+I 100
+T 32
+I 7
+T 9
+T 16
+T 36
+T 16
+
+# kiwi, lemon, pear: writeln(20 * 9);
+S 3
+S 4
+S 5
+N writeln
+T 8
+I 20
+T 7
+I 9
+T 9
+T 16
+
+# End.
+G 8
+T 36
+T 20
