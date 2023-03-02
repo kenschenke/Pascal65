@@ -34,9 +34,7 @@ void parseEnumerationType(CHUNKNUM *newTypeChunkNum) {
                 newType.enumeration.constIds = lastChunk = newNode.node.nodeChunkNum;
             } else {
                 newChunkNum = newNode.node.nodeChunkNum;
-                loadSymbNode(lastChunk, &newNode);
-                newNode.node.nextNode = newChunkNum;
-                saveSymbNodeOnly(&newNode);
+                ((SYMTABNODE *)getChunk(lastChunk))->nextNode = newChunkNum;
                 lastChunk = newChunkNum;
             }
         }
@@ -168,7 +166,7 @@ void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNu
 void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
     int temp;
     CHUNKNUM newMinChunkNum, maxTypeChunkNum;
-    TTYPE newType, baseType, maxType;
+    TTYPE newType;
 
     *newTypeChunkNum = makeType(fcSubrange, 0, 0);
     retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
@@ -183,13 +181,11 @@ void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
 
     // <max-const>
     parseSubrangeLimit(NULL, &newType.subrange.max, &maxTypeChunkNum);
-    retrieveChunk(maxTypeChunkNum, (unsigned char *)&maxType);
 
     // check limits
     if (maxTypeChunkNum != newType.subrange.baseType) {
         Error(errIncompatibleTypes);
         newType.subrange.min = newType.subrange.max = 0;
-        storeChunk(maxTypeChunkNum, (unsigned char *)&maxType);
     } else if (newType.subrange.min > newType.subrange.max) {
         Error(errMinGtMax);
 
@@ -198,13 +194,12 @@ void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
         newType.subrange.max = temp;
     }
 
-    retrieveChunk(newType.subrange.baseType, (unsigned char *)&baseType);
-    newType.size = baseType.size;
+    newType.size = ((TTYPE *)getChunk(newType.subrange.baseType))->size;
     storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
 }
 
 void parseTypeDefinitions(SYMBNODE *pRoutineId) {
-    SYMBNODE lastNode, idNode;
+    SYMBNODE idNode;
     CHUNKNUM newTypeChunkNum, lastId = 0;  // last type id node in local list
 
     // Loop to parse a list of type definitions
@@ -220,13 +215,7 @@ void parseTypeDefinitions(SYMBNODE *pRoutineId) {
             pRoutineId->defn.routine.locals.typeIds = idNode.node.nodeChunkNum;
             saveSymbNodeDefn(pRoutineId);
         } else {
-            if (loadSymbNode(lastId, &lastNode) == 0) {
-                return;
-            }
-            lastNode.node.nextNode = idNode.node.nodeChunkNum;
-            if (saveSymbNodeOnly(&lastNode) == 0) {
-                return;
-            }
+            ((SYMTABNODE *)getChunk(lastId))->nextNode = idNode.node.nodeChunkNum;
         }
         lastId = idNode.node.nodeChunkNum;
 

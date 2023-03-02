@@ -7,7 +7,6 @@
 void constTest(CHUNKNUM programId) {
     char name[CHUNK_LEN];
     CHUNKNUM constId;
-    STRVALCHUNK strChunk;
     SYMBNODE programNode, constNode;
 
     DECLARE_TEST("constTest");
@@ -39,8 +38,8 @@ void constTest(CHUNKNUM programId) {
                 printf("Expected const type to be character array\n");
                 exit(5);
             }
-            retrieveChunk(constNode.defn.constant.value.stringChunkNum, (unsigned char *)&strChunk);
-            if (strncmp(strChunk.value, "Hello, World", CHUNK_LEN - 2)) {
+            copyFromMemBuf(constNode.defn.constant.value.stringChunkNum, name, 0, CHUNK_LEN);
+            if (strncmp(name, "Hello, World", CHUNK_LEN)) {
                 printf("Expected const string to be \"Hello, World\"\n");
                 exit(5);
             }

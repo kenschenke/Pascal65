@@ -170,7 +170,7 @@ CHUNKNUM parseField(CHUNKNUM Icode, CHUNKNUM recordTypeChunkNum) {
     SYMBNODE fieldId;
 
     getTokenAppend(Icode);
-    retrieveChunk(recordTypeChunkNum, (unsigned char *)&recordType);
+    getChunkCopy(recordTypeChunkNum, &recordType);
 
     if (tokenCode == tcIdentifier && recordType.form == fcRecord) {
         if (!searchSymtab(recordType.record.symtab, &fieldId, tokenString)) {
@@ -250,7 +250,7 @@ CHUNKNUM parseSubscripts(CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
     CHUNKNUM resultTypeChunk, targetTypeChunk;
     TTYPE arrayType;
 
-    retrieveChunk(arrayTypeChunk, (unsigned char *)&arrayType);
+    getChunkCopy(arrayTypeChunk, &arrayType);
 
     // Loop to parse a list of subscripts separated by commas.
     do {
@@ -262,13 +262,10 @@ CHUNKNUM parseSubscripts(CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
             // The subscript expression must be an assignment type
             // compatible with the corresponding subscript type.
             targetTypeChunk = parseExpression(Icode);
-            // retrieveChunk(targetTypeChunk, (unsigned char *)&targetType);
-            // retrieveChunk(arrayType.array.indexType, (unsigned char *)&indexType);
             checkAssignmentCompatible(arrayType.array.indexType, targetTypeChunk, errIncompatibleTypes);
 
             // Update the variable's type
             resultTypeChunk = arrayType.array.elemType;
-            // retrieveChunk(pType->array.elemType, (unsigned char *)pType);
         }
 
         // No longer an array type, so too many subscripts.

@@ -139,18 +139,14 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
         // Optional field width <expr>
         if (tokenCode == tcColon) {
             getTokenAppend(Icode);
-            actualTypeChunk = parseExpression(Icode);
-            retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
-            if (getBaseType(&actualType) != integerType) {
+            if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
                 Error(errIncompatibleTypes);
             }
 
             // Optional precision <expr>
             if (tokenCode == tcColon) {
                 getTokenAppend(Icode);
-                actualTypeChunk = parseExpression(Icode);
-                retrieveChunk(actualTypeChunk, (unsigned char *)&actualType);
-                if (getBaseType(&actualType) != integerType) {
+                if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
                     Error(errIncompatibleTypes);
                 }
             }
@@ -175,7 +171,6 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
 }
 
 CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
-    TTYPE parmType;
     CHUNKNUM parmTypeChunk, baseTypeChunk, resultType;
 
     // There should be one integer parameter.
@@ -183,8 +178,7 @@ CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
         getTokenAppend(Icode);
 
         parmTypeChunk = parseExpression(Icode);
-        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        baseTypeChunk = getBaseType(&parmType);
+        baseTypeChunk = getBaseType(getChunk(parmTypeChunk));
         if (baseTypeChunk != integerType && baseTypeChunk != realType) {
             Error(errIncompatibleTypes);
             resultType = integerType;
@@ -207,7 +201,7 @@ CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
 }
 
 CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
-    TTYPE parmType;
+    TTYPE *parmType;
     CHUNKNUM resultType, parmTypeChunk, baseTypeChunk;
 
     // There should be one integer or enumeration parameter
@@ -215,9 +209,9 @@ CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
         getTokenAppend(Icode);
 
         parmTypeChunk = parseExpression(Icode);
-        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        baseTypeChunk = getBaseType(&parmType);
-        if (baseTypeChunk != integerType && parmType.form != fcEnum) {
+        parmType = getChunk(parmTypeChunk);
+        baseTypeChunk = getBaseType(parmType);
+        if (baseTypeChunk != integerType && parmType->form != fcEnum) {
             Error(errIncompatibleTypes);
             resultType = integerType;
         } else {
@@ -239,17 +233,11 @@ CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
 }
 
 CHUNKNUM parseChrCall(CHUNKNUM Icode) {
-    TTYPE parmType;
-    CHUNKNUM parmTypeChunk, baseTypeChunk;
-
     // There should be one character parameter.
     if (tokenCode == tcLParen) {
         getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(Icode);
-        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        baseTypeChunk = getBaseType(&parmType);
-        if (baseTypeChunk != integerType) {
+        if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
             Error(errIncompatibleTypes);
         }
 
@@ -268,17 +256,11 @@ CHUNKNUM parseChrCall(CHUNKNUM Icode) {
 }
 
 CHUNKNUM parseOddCall(CHUNKNUM Icode) {
-    TTYPE parmType;
-    CHUNKNUM parmTypeChunk, baseTypeChunk;
-
     // There should be one integer parameter.
     if (tokenCode == tcLParen) {
         getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(Icode);
-        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        baseTypeChunk = getBaseType(&parmType);
-        if (baseTypeChunk != integerType) {
+        if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
             Error(errIncompatibleTypes);
         }
 
@@ -326,17 +308,11 @@ CHUNKNUM parseOrdCall(CHUNKNUM Icode) {
 }
 
 CHUNKNUM parseRoundTruncCall(CHUNKNUM Icode) {
-    TTYPE parmType;
-    CHUNKNUM parmTypeChunk, parmTypeBase;
-
     // There should be one real parameter
     if (tokenCode == tcLParen) {
         getTokenAppend(Icode);
 
-        parmTypeChunk = parseExpression(Icode);
-        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        parmTypeBase = getBaseType(&parmType);
-        if (parmTypeBase != realType) {
+        if (getBaseType(getChunk(parseExpression(Icode))) != realType) {
             Error(errIncompatibleTypes);
         }
 

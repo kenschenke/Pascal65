@@ -265,9 +265,8 @@ void parseFieldDeclarations(TTYPE *pRecordType, int offset) {
 
 void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offset) {
     CHUNKNUM firstId, lastId, pId, newTypeChunkNum, prevSublistLastId = 0;
-    TTYPE newType;
     SYMBNODE node;
-    int totalSize = 0;
+    int size, totalSize = 0;
 
     // Loop to parse a list of variable or field declarations
     while (tokenCode == tcIdentifier) {
@@ -280,7 +279,7 @@ void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offse
 
         // <type>
         parseTypeSpec(&newTypeChunkNum);
-        retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
+        size = ((TTYPE *)getChunk(newTypeChunkNum))->size;
 
         // Now loop to assign the type and offset to each
         // identifier in the sublist.
@@ -294,11 +293,11 @@ void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offse
             if (routineSymtab != NULL) {
                 // Variables
                 node.defn.data.offset = offset++;
-                totalSize += newType.size;
+                totalSize += size;
             } else {
                 // Record fields
                 node.defn.data.offset = offset;
-                offset += newType.size;
+                offset += size;
             }
 
             saveSymbNodeDefn(&node);
@@ -315,9 +314,7 @@ void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offse
 
             // Link this list to the previous sublist
             if (prevSublistLastId) {
-                retrieveChunk(prevSublistLastId, (unsigned char *)&node.node);
-                node.node.nextNode = firstId;
-                saveSymbNodeOnly(&node);
+                ((SYMTABNODE *)getChunk(prevSublistLastId))->nextNode = firstId;
             }
             prevSublistLastId = lastId;
         }
