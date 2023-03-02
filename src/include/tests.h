@@ -14,6 +14,7 @@
 #define TESTS_H
 
 #include <chunks.h>
+#include <real.h>
 
 #define assertEqualByte(e, a) assertEqualByteX(e, a, testName, __LINE__)
 #define assertEqualChunkNum(e, a) assertEqualChunkNumX(e, a, testName, __LINE__)

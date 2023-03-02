@@ -20,6 +20,7 @@ int main()
 
     initBlockStorage();
     testAllocateAllChunks();
+#endif
 
     initBlockStorage();
     testRetrieveChunk();
@@ -38,8 +39,8 @@ int main()
 
     initBlockStorage();
     testFreeingAllChunksInABlock();
-#endif
 
+#if 0
     initBlockStorage();
     testAllocateSmallBuffer(); 
     
@@ -73,6 +74,7 @@ int main()
     // if (wasBankMemoryCorrupted()) {
     //     printf("*********** Bank memory got corrupted ************\n");
     // }
+#endif
 
     printf("Done with tests\n");
 

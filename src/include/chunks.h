@@ -46,8 +46,22 @@ int getAvailChunks(void);
 // allocated and unallocated.
 unsigned getTotalChunks(void);
 
+// Retrieves the chunk and returns a pointer to the chunk
+// or NULL on failure.  Changes made to the chunk are
+// automatically saved when another chunk is requested.
+// ******** W A R N I N G: ********
+// The returned pointer is only guaranteed valid until the
+// next call to any function that stores, retrieves, or
+// frees a chunk or block.
+void *getChunk(CHUNKNUM chunkNum);
+
 // Retrieves the data in the chunk and copies into
-// callers buffer.  Buffer must be at least CHUNK_LEN long.
+// caller's buffer.  Buffer must be at least CHUNK_LEN long.
+// Zero is returned on failure.  Non-zero on success.
+char getChunkCopy(CHUNKNUM chunkNum, void *buffer);
+
+// Retrieves the data in the chunk and copies into
+// caller's buffer.  Buffer must be at least CHUNK_LEN long.
 // Zero is returned on failure.  Non-zero on success.
 char retrieveChunk(CHUNKNUM chunkNum, unsigned char *chunk);
 
