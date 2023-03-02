@@ -19,8 +19,8 @@ PARSEROVRLFILE := $(PROGRAM).1
 EXECOVRLFILE := $(PROGRAM).2
 EDITOROVRLFILE := $(PROGRAM).3
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
-CC65TARGET = c64
+TARGET := c128
+CC65TARGET = c128
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 mega65_EMUCMD := xmega65 -besure -8
@@ -44,14 +44,41 @@ SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
-SOURCES += $(wildcard $(LIBCOMMONDIR)/*.c)
-SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
+SOURCES += $(LIBCOMMONDIR)/float.s
+SOURCES += $(LIBCOMMONDIR)/floatinput.s
+SOURCES += $(LIBCOMMONDIR)/floatnorm.s
+SOURCES += $(LIBCOMMONDIR)/floatutil.s
+SOURCES += $(LIBCOMMONDIR)/int16.s
+SOURCES += $(LIBCOMMONDIR)/int16comp.s
+SOURCES += $(LIBCOMMONDIR)/parseint16.s
+SOURCES += $(LIBCOMMONDIR)/readint16.s
+SOURCES += $(LIBCOMMONDIR)/uint16comp.s
+SOURCES += $(LIBCOMMONDIR)/writeint16.s
+# SOURCES += $(wildcard $(LIBCOMMONDIR)/*.c)
+# SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
 
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
 PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
 EXECOVRLSRCS := $(wildcard $(EXECOVRLSRC)/*.c)
 EXECOVRLSRCS += $(wildcard $(EXECOVRLSRC)/*.s)
+#EXECOVRLSRCS += $(LIBCOMMONDIR)/float.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatadd.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatc.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatcomp.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatdiv.s
+#EXECOVRLSRCS += $(LIBCOMMONDIR)/floatinput.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatmult.s
+#EXECOVRLSRCS += $(LIBCOMMONDIR)/floatnorm.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatoutput.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatround.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatsub.s
+#EXECOVRLSRCS += $(LIBCOMMONDIR)/floatutil.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/getline.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/inputbuf.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/leftpad.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/printz.s
+# EXECOVRLSRCS += $(LIBCOMMONDIR)/int16.s
 
 EDITOROVRLSRCS := $(wildcard $(EDITOROVRLSRC)/*.c)
 EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/*.s)
@@ -107,6 +134,14 @@ $(OBJDIR)/%.o: $(EXECOVRLSRC)/%.c | $(OBJDIR)
 
 vpath $(EXECOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(EXECOVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(LIBCOMMONDIR)/%.c
+$(OBJDIR)/%.o: $(LIBCOMMONDIR)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(LIBCOMMONDIR)/%.s
+$(OBJDIR)/%.o: $(LIBCOMMONDIR)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(EDITOROVRLSRC)/%.c

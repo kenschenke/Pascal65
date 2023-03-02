@@ -32,7 +32,7 @@ mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../mega65-libc/include
 CONFIG := cfg-$(TARGET).cfg
 CFLAGS = $($(TARGET)_CFLAGS) -W error -D MAINPAS -D __TEST__ -O -I ../../include
 ASFLAGS = --asm-include-dir ../../asminc
-LDFLAGS = --mapfile interpreter.map -C $(CONFIG)
+LDFLAGS = --mapfile parsertest.map -C $(CONFIG)
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
