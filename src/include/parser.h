@@ -59,21 +59,21 @@ void skipExtraParms(CHUNKNUM Icode);
 // Declarations
 int arraySize(TTYPE *pArrayType);
 void copyQuotedString(char *pString, CHUNKNUM *firstChunk);
-void parseArrayType(CHUNKNUM *newTypeChunkNum);
+CHUNKNUM parseArrayType(void);
 void parseDeclarations(void);
 void parseConstant(SYMBNODE *constId);
 void parseConstantDefinitions(void);
-void parseEnumerationType(CHUNKNUM *newTypeChunkNum);
+CHUNKNUM parseEnumerationType(void);
 void parseFieldDeclarations(TTYPE *pRecordType, int offset);
 CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLastId);
 void parseIdentifierConstant(SYMBNODE *id1, TTokenCode sign);
 void parseIdentifierType(void);
 void parseIndexType(TTYPE *pArrayType);
-void parseRecordType(CHUNKNUM *newTypeChunkNum);
+CHUNKNUM parseRecordType(void);
 void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum);
-void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum);
+CHUNKNUM parseSubrangeType(SYMBNODE *pMinId);
 void parseTypeDefinitions(void);
-void parseTypeSpec(CHUNKNUM *newTypeChunkNum);
+CHUNKNUM parseTypeSpec(void);
 void parseVariableDeclarations(void);
 void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offset);
 

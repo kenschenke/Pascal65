@@ -277,7 +277,7 @@ void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offse
         condGetToken(tcColon, errMissingColon);
 
         // <type>
-        parseTypeSpec(&newTypeChunkNum);
+        newTypeChunkNum = parseTypeSpec();
         size = ((TTYPE *)getChunk(newTypeChunkNum))->size;
 
         // Now loop to assign the type and offset to each

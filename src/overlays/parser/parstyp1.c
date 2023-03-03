@@ -6,17 +6,17 @@
 #include <types.h>
 #include <string.h>
 
-void parseEnumerationType(CHUNKNUM *newTypeChunkNum) {
+CHUNKNUM parseEnumerationType(void) {
     TTYPE newType;
-    CHUNKNUM lastChunk = 0, newChunkNum;
+    CHUNKNUM lastChunk = 0, newChunkNum, newTypeChunkNum;
     SYMBNODE newNode;
     int constValue = -1;
 
     getToken();
     resync(tlEnumConstStart, NULL, NULL);
 
-    *newTypeChunkNum = makeType(fcEnum, sizeof(int), 0);
-    retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
+    newTypeChunkNum = makeType(fcEnum, sizeof(int), 0);
+    retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
 
     // Loop to parse list of constant identifiers separated by commas.
     while (tokenCode == tcIdentifier) {
@@ -26,7 +26,7 @@ void parseEnumerationType(CHUNKNUM *newTypeChunkNum) {
         if (newNode.defn.how == dcUndefined) {
             newNode.defn.how = dcConstant;
             newNode.defn.constant.value.integer = constValue;
-            setType(&newNode.node.typeChunk, *newTypeChunkNum);
+            setType(&newNode.node.typeChunk, newTypeChunkNum);
             saveSymbNode(&newNode);
 
             // Link constant identifier symbol table nodes together.
@@ -60,7 +60,9 @@ void parseEnumerationType(CHUNKNUM *newTypeChunkNum) {
     condGetToken(tcRParen, errMissingRightParen);
 
     newType.enumeration.max = constValue;
-    storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
+    storeChunk(newTypeChunkNum, (unsigned char *)&newType);
+
+    return newTypeChunkNum;
 }
 
 void parseIdentifierType(void) {
@@ -163,13 +165,13 @@ void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNu
     getToken();
 }
 
-void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
+CHUNKNUM parseSubrangeType(SYMBNODE *pMinId) {
     int temp;
-    CHUNKNUM newMinChunkNum, maxTypeChunkNum;
+    CHUNKNUM newMinChunkNum, maxTypeChunkNum, newTypeChunkNum;
     TTYPE newType;
 
-    *newTypeChunkNum = makeType(fcSubrange, 0, 0);
-    retrieveChunk(*newTypeChunkNum, (unsigned char *)&newType);
+    newTypeChunkNum = makeType(fcSubrange, 0, 0);
+    retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
 
     // <min-const>
     parseSubrangeLimit(pMinId, &newType.subrange.min, &newMinChunkNum);
@@ -195,7 +197,9 @@ void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
     }
 
     newType.size = ((TTYPE *)getChunk(newType.subrange.baseType))->size;
-    storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
+    storeChunk(newTypeChunkNum, (unsigned char *)&newType);
+
+    return newTypeChunkNum;
 }
 
 void parseTypeDefinitions(void) {
@@ -223,7 +227,7 @@ void parseTypeDefinitions(void) {
         condGetToken(tcEqual, errMissingEqual);
 
         // <type>
-        parseTypeSpec(&newTypeChunkNum);
+        newTypeChunkNum = parseTypeSpec();
         // Retrieve the idNode again because it might have changed
         // while parsing the enumeration types
         loadSymbNode(idNode.node.nodeChunkNum, &idNode);
@@ -252,7 +256,8 @@ void parseTypeDefinitions(void) {
     }
 }
 
-void parseTypeSpec(CHUNKNUM *newTypeChunkNum) {
+CHUNKNUM parseTypeSpec(void) {
+    CHUNKNUM newTypeChunkNum;
     SYMBNODE node;
 
     switch (tokenCode) {
@@ -265,10 +270,10 @@ void parseTypeSpec(CHUNKNUM *newTypeChunkNum) {
             switch (node.defn.how) {
                 case dcType:
                     parseIdentifierType();
-                    *newTypeChunkNum = node.node.typeChunk;
+                    newTypeChunkNum = node.node.typeChunk;
                     break;
                 case dcConstant:
-                    parseSubrangeType(&node, newTypeChunkNum);
+                    newTypeChunkNum = parseSubrangeType(&node);
                     break;
                 default:
                     Error(errNotATypeIdentifier);
@@ -278,28 +283,30 @@ void parseTypeSpec(CHUNKNUM *newTypeChunkNum) {
             break;
         
         case tcLParen:
-            parseEnumerationType(newTypeChunkNum);
+            newTypeChunkNum = parseEnumerationType();
             break;
         
         case tcARRAY:
-            parseArrayType(newTypeChunkNum);
+            newTypeChunkNum = parseArrayType();
             break;
         
         case tcRECORD:
-            parseRecordType(newTypeChunkNum);
+            newTypeChunkNum = parseRecordType();
             break;
         
         case tcPlus:
         case tcMinus:
         case tcNumber:
         case tcString:
-            parseSubrangeType(NULL, newTypeChunkNum);
+            newTypeChunkNum = parseSubrangeType(NULL);
             break;
         
         default:
             Error(errInvalidType);
-            *newTypeChunkNum = 0;
+            newTypeChunkNum = 0;
             break;
     }
+
+    return newTypeChunkNum;
 }
 
