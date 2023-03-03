@@ -32,16 +32,16 @@ void resync(const TTokenCode *pList1,
 // Routines
 void parseActualParm(CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode);
 void parseActualParmList(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
-void parseBlock(SYMBNODE *pRoutineId);
+void parseBlock(void);
 CHUNKNUM parseDeclaredSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
 void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize);
-void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc);
+void parseFuncOrProcHeader(char isFunc);
 void parseProgram(void);
 void parseProgramHeader(void);
 CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId);
-void parseSubroutine(SYMBNODE *pRoutineId);
+void parseSubroutine(void);
 CHUNKNUM parseSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
-void parseSubroutineDeclarations(SYMBNODE *pRoutineId);
+void parseSubroutineDeclarations(void);
 
 // Standard Routines
 void initStandardRoutines(CHUNKNUM symtabChunkNum);
@@ -60,9 +60,9 @@ void skipExtraParms(CHUNKNUM Icode);
 int arraySize(TTYPE *pArrayType);
 void copyQuotedString(char *pString, CHUNKNUM *firstChunk);
 void parseArrayType(CHUNKNUM *newTypeChunkNum);
-void parseDeclarations(SYMBNODE *routineSymtab);
+void parseDeclarations(void);
 void parseConstant(SYMBNODE *constId);
-void parseConstantDefinitions(SYMBNODE *routineSymtab);
+void parseConstantDefinitions(void);
 void parseEnumerationType(CHUNKNUM *newTypeChunkNum);
 void parseFieldDeclarations(TTYPE *pRecordType, int offset);
 CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLastId);
@@ -72,9 +72,9 @@ void parseIndexType(TTYPE *pArrayType);
 void parseRecordType(CHUNKNUM *newTypeChunkNum);
 void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum);
 void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum);
-void parseTypeDefinitions(SYMBNODE *pRoutineId);
+void parseTypeDefinitions(void);
 void parseTypeSpec(CHUNKNUM *newTypeChunkNum);
-void parseVariableDeclarations(SYMBNODE *routineSymtab);
+void parseVariableDeclarations(void);
 void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offset);
 
 // Statements

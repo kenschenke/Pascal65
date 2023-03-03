@@ -198,7 +198,7 @@ void parseSubrangeType(SYMBNODE *pMinId, CHUNKNUM *newTypeChunkNum) {
     storeChunk(*newTypeChunkNum, (unsigned char *)&newType);
 }
 
-void parseTypeDefinitions(SYMBNODE *pRoutineId) {
+void parseTypeDefinitions(void) {
     SYMBNODE idNode;
     CHUNKNUM newTypeChunkNum, lastId = 0;  // last type id node in local list
 
@@ -211,9 +211,9 @@ void parseTypeDefinitions(SYMBNODE *pRoutineId) {
         }
 
         // Link the routine's local type id nodes together.
-        if (!pRoutineId->defn.routine.locals.typeIds) {
-            pRoutineId->defn.routine.locals.typeIds = idNode.node.nodeChunkNum;
-            saveSymbNodeDefn(pRoutineId);
+        if (!routineNode.defn.routine.locals.typeIds) {
+            routineNode.defn.routine.locals.typeIds = idNode.node.nodeChunkNum;
+            saveSymbNodeDefn(&routineNode);
         } else {
             ((SYMTABNODE *)getChunk(lastId))->nextNode = idNode.node.nodeChunkNum;
         }

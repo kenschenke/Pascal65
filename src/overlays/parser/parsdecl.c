@@ -20,24 +20,24 @@ void copyQuotedString(char *pString, CHUNKNUM *firstChunk) {
     copyToMemBuf(*firstChunk, pString + 1, 0, len);
 }
 
-void parseDeclarations(SYMBNODE *routineSymtab) {
+void parseDeclarations(void) {
     if (tokenCode == tcCONST) {
         getToken();
-        parseConstantDefinitions(routineSymtab);
+        parseConstantDefinitions();
     }
 
     if (tokenCode == tcTYPE) {
         getToken();
-        parseTypeDefinitions(routineSymtab);
+        parseTypeDefinitions();
     }
 
     if (tokenCode == tcVAR) {
         getToken();
-        parseVariableDeclarations(routineSymtab);
+        parseVariableDeclarations();
     }
 
     if (tokenIn(tokenCode, tlProcFuncStart)) {
-        parseSubroutineDeclarations(routineSymtab);
+        parseSubroutineDeclarations();
     }
 }
 
@@ -95,7 +95,7 @@ void parseConstant(SYMBNODE *constId) {
     saveSymbNode(constId);
 }
 
-void parseConstantDefinitions(SYMBNODE *routineSymtab) {
+void parseConstantDefinitions(void) {
     SYMBNODE constId, lastId;
 
     // Loop to parse a list of constant definitions
@@ -106,9 +106,9 @@ void parseConstantDefinitions(SYMBNODE *routineSymtab) {
         }
 
         // Link the routine's local constant id nodes together
-        if (!routineSymtab->defn.routine.locals.constantIds) {
-            routineSymtab->defn.routine.locals.constantIds = constId.node.nodeChunkNum;
-            saveSymbNodeDefn(routineSymtab);
+        if (!routineNode.defn.routine.locals.constantIds) {
+            routineNode.defn.routine.locals.constantIds = constId.node.nodeChunkNum;
+            saveSymbNodeDefn(&routineNode);
         } else {
             if (loadSymbNode(lastId.node.nodeChunkNum, &lastId) == 0) {
                 return;
@@ -255,8 +255,8 @@ CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLast
     return firstId;
 }
 
-void parseVariableDeclarations(SYMBNODE *routineSymtab) {
-    parseVarOrFieldDecls(routineSymtab, NULL, routineSymtab->defn.routine.parmCount);
+void parseVariableDeclarations(void) {
+    parseVarOrFieldDecls(&routineNode, NULL, routineNode.defn.routine.parmCount);
 }
 
 void parseFieldDeclarations(TTYPE *pRecordType, int offset) {

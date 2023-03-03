@@ -4,21 +4,21 @@
 #include <parser.h>
 #include <parscommon.h>
 
-void parseBlock(SYMBNODE *pRoutineId) {
+void parseBlock(void) {
     // declarations
-    parseDeclarations(pRoutineId);
+    parseDeclarations();
 
     // <compound-statement>   reset the icode and append BEGIN to it,
     //                        and then parse the compound statement.
     resync(tlStatementStart, NULL, NULL);
     if (tokenCode != tcBEGIN) Error(errMissingBEGIN);
 
-    allocMemBuf(&pRoutineId->defn.routine.Icode);
-    saveSymbNodeDefn(pRoutineId);
-    parseCompound(pRoutineId->defn.routine.Icode);
+    allocMemBuf(&routineNode.defn.routine.Icode);
+    saveSymbNodeDefn(&routineNode);
+    parseCompound(routineNode.defn.routine.Icode);
 }
 
-void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc) {
+void parseFuncOrProcHeader(char isFunc) {
     int parmCount;  // count of formal params
     int totalParmSize;  // total byte size of all parameters
     char forwardFlag = 0;
@@ -30,13 +30,13 @@ void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc) {
     // <id>   If the routine id has already been declared in this scope,
     //        it must have been a forward declaration.
     if (tokenCode == tcIdentifier) {
-        if (!symtabSearchLocal(pRoutineId, tokenString)) {
+        if (!symtabSearchLocal(&routineNode, tokenString)) {
             // Not already declared
-            symtabEnterLocal(pRoutineId, tokenString,
+            symtabEnterLocal(&routineNode, tokenString,
                 isFunc ? dcFunction : dcProcedure);
-            pRoutineId->defn.routine.totalLocalSize = 0;
+            routineNode.defn.routine.totalLocalSize = 0;
         } else {
-            if (pRoutineId->defn.how == isFunc ? dcFunction : dcProcedure && pRoutineId->defn.routine.which == rcForward) {
+            if (routineNode.defn.how == isFunc ? dcFunction : dcProcedure && routineNode.defn.routine.which == rcForward) {
                 forwardFlag = 1;
             } else {
                 Error(errRedefinedIdentifier);
@@ -64,23 +64,23 @@ void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc) {
             Error(errAlreadyForwarded);
         } else {
             // Not forwarded
-            pRoutineId->defn.routine.parmCount = parmCount;
-            pRoutineId->defn.routine.totalParmSize = totalParmSize;
-            pRoutineId->defn.routine.locals.parmIds = parmList;
+            routineNode.defn.routine.parmCount = parmCount;
+            routineNode.defn.routine.totalParmSize = totalParmSize;
+            routineNode.defn.routine.locals.parmIds = parmList;
         }
     } else if (!forwardFlag) {
         // No parameters and no forward declaration
-        pRoutineId->defn.routine.parmCount = 0;
-        pRoutineId->defn.routine.totalParmSize = 0;
-        pRoutineId->defn.routine.locals.parmIds = 0;
+        routineNode.defn.routine.parmCount = 0;
+        routineNode.defn.routine.totalParmSize = 0;
+        routineNode.defn.routine.locals.parmIds = 0;
     }
 
-    pRoutineId->defn.routine.locals.constantIds = 0;
-    pRoutineId->defn.routine.locals.typeIds = 0;
-    pRoutineId->defn.routine.locals.variableIds = 0;
-    pRoutineId->defn.routine.locals.routineIds = 0;
+    routineNode.defn.routine.locals.constantIds = 0;
+    routineNode.defn.routine.locals.typeIds = 0;
+    routineNode.defn.routine.locals.variableIds = 0;
+    routineNode.defn.routine.locals.routineIds = 0;
 
-    saveSymbNodeDefn(pRoutineId);
+    saveSymbNodeDefn(&routineNode);
 
     if (isFunc) {
         // Optional <type-id> : If there was a forward declaration, there must
@@ -94,20 +94,20 @@ void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc) {
                 if (forwardFlag) {
                     Error(errAlreadyForwarded);
                 } else {
-                    setType(&pRoutineId->node.typeChunk, typeId.node.typeChunk);
+                    setType(&routineNode.node.typeChunk, typeId.node.typeChunk);
                 }
 
                 getToken();
             } else {
                 Error(errMissingIdentifier);
-                setType(&pRoutineId->node.typeChunk, dummyType);
+                setType(&routineNode.node.typeChunk, dummyType);
             }
         }
     } else {
-        setType(&pRoutineId->node.typeChunk, dummyType);
+        setType(&routineNode.node.typeChunk, dummyType);
     }
 
-    saveSymbNodeOnly(pRoutineId);
+    saveSymbNodeOnly(&routineNode);
 }
 
 void parseProgram(void) {
@@ -124,7 +124,7 @@ void parseProgram(void) {
     }
 
     // <block>
-    parseBlock(&routineNode);
+    parseBlock();
     symtabExitScope(&routineNode.defn.routine.symtab);
     saveSymbNodeDefn(&routineNode);
 
@@ -199,23 +199,27 @@ void parseProgramHeader(void) {
     }
 }
 
-void parseSubroutineDeclarations(SYMBNODE *pRoutineId) {
-    SYMBNODE node;
-    CHUNKNUM rtnId, lastId = 0;
+void parseSubroutineDeclarations(void) {
+    CHUNKNUM parentRtnId, childRtnId, lastId = 0;
+
+    saveSymbNode(&routineNode);
+    parentRtnId = routineNode.node.nodeChunkNum;
 
     // Loop to parse procedure and function definitions
     while (tokenIn(tokenCode, tlProcFuncStart)) {
-        parseSubroutine(&node);
-        rtnId = node.node.nodeChunkNum;
+        saveSymbNode(&routineNode);
+        parseSubroutine();
+        childRtnId = routineNode.node.nodeChunkNum;
 
         // Link the routine's local (nested) routine id nodes together.
-        if (!pRoutineId->defn.routine.locals.routineIds) {
-            pRoutineId->defn.routine.locals.routineIds = rtnId;
-            saveSymbNode(pRoutineId);
+        loadSymbNode(parentRtnId, &routineNode);
+        if (!routineNode.defn.routine.locals.routineIds) {
+            routineNode.defn.routine.locals.routineIds = childRtnId;
+            saveSymbNode(&routineNode);
         } else {
-            ((SYMTABNODE *)getChunk(lastId))->nextNode = rtnId;
+            ((SYMTABNODE *)getChunk(lastId))->nextNode = childRtnId;
         }
-        lastId = rtnId;
+        lastId = childRtnId;
 
         // semicolon
         resync(tlDeclarationFollow, tlProcFuncStart, tlStatementStart);
@@ -228,9 +232,9 @@ void parseSubroutineDeclarations(SYMBNODE *pRoutineId) {
     }
 }
 
-void parseSubroutine(SYMBNODE *pRoutineId) {
+void parseSubroutine(void) {
     // <routine-header>
-    parseFuncOrProcHeader(pRoutineId, tokenCode == tcFUNCTION);
+    parseFuncOrProcHeader(tokenCode == tcFUNCTION);
 
     // ;
     resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
@@ -243,14 +247,14 @@ void parseSubroutine(SYMBNODE *pRoutineId) {
 
     // <block> or forward
     if (stricmp(tokenString, "forward")) {
-        pRoutineId->defn.routine.which = rcDeclared;
-        saveSymbNode(pRoutineId);
-        parseBlock(pRoutineId);
+        routineNode.defn.routine.which = rcDeclared;
+        saveSymbNode(&routineNode);
+        parseBlock();
     } else {
         getToken();
-        pRoutineId->defn.routine.which = rcForward;
-        saveSymbNode(pRoutineId);
+        routineNode.defn.routine.which = rcForward;
+        saveSymbNode(&routineNode);
     }
 
-    symtabExitScope(&pRoutineId->defn.routine.symtab);
+    symtabExitScope(&routineNode.defn.routine.symtab);
 }
