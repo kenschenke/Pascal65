@@ -18,6 +18,8 @@
 #include <membuf.h>
 #include <types.h>
 
+extern SYMBNODE routineNode;
+
 void initParser(void);
 CHUNKNUM parse(const char *filename);  // returns programId
 char findSymtabNode(SYMBNODE *pNode, const char *identifier);
@@ -34,8 +36,8 @@ void parseBlock(SYMBNODE *pRoutineId);
 CHUNKNUM parseDeclaredSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
 void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize);
 void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc);
-void parseProgram(SYMBNODE *pProgramId);
-void parseProgramHeader(SYMBNODE *pProgramId);
+void parseProgram(void);
+void parseProgramHeader(void);
 CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId);
 void parseSubroutine(SYMBNODE *pRoutineId);
 CHUNKNUM parseSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);

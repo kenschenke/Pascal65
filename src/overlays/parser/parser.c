@@ -18,6 +18,8 @@
 #include <parscommon.h>
 #include <string.h>
 
+SYMBNODE routineNode;
+
 void condGetToken(TTokenCode tc, TErrorCode ec) {
     // Get another token only if the current one matches tc
     if (tc == tokenCode) {
@@ -71,7 +73,6 @@ CHUNKNUM parse(const char *filename)
 {
     int i;
     TINBUF *tinBuf;
-    SYMBNODE programId;
 
     for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
 
@@ -79,13 +80,13 @@ CHUNKNUM parse(const char *filename)
     pInputBuffer = tinBuf;
 
     getToken();
-    parseProgram(&programId);
+    parseProgram();
     tin_close(tinBuf);
 
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);
 
-    return programId.node.nodeChunkNum;
+    return routineNode.node.nodeChunkNum;
 }
 
 void resync(const TTokenCode *pList1,

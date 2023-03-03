@@ -110,9 +110,9 @@ void parseFuncOrProcHeader(SYMBNODE *pRoutineId, char isFunc) {
     saveSymbNodeOnly(pRoutineId);
 }
 
-void parseProgram(SYMBNODE *pProgramId) {
+void parseProgram(void) {
     // <program-header>
-    parseProgramHeader(pProgramId);
+    parseProgramHeader();
 
     // ;
     resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
@@ -124,16 +124,16 @@ void parseProgram(SYMBNODE *pProgramId) {
     }
 
     // <block>
-    parseBlock(pProgramId);
-    symtabExitScope(&pProgramId->defn.routine.symtab);
-    saveSymbNodeDefn(pProgramId);
+    parseBlock(&routineNode);
+    symtabExitScope(&routineNode.defn.routine.symtab);
+    saveSymbNodeDefn(&routineNode);
 
     // .
     resync(tlProgramEnd, NULL, NULL);
-    condGetTokenAppend(pProgramId->defn.routine.Icode, tcPeriod, errMissingPeriod);
+    condGetTokenAppend(routineNode.defn.routine.Icode, tcPeriod, errMissingPeriod);
 }
 
-void parseProgramHeader(SYMBNODE *pProgramId) {
+void parseProgramHeader(void) {
     SYMBNODE parmId, prevParmId;
 
     // PROGRAM
@@ -141,21 +141,21 @@ void parseProgramHeader(SYMBNODE *pProgramId) {
 
     // <id>
     if (tokenCode == tcIdentifier) {
-        symtabEnterNewLocal(pProgramId, tokenString, dcProgram);
+        symtabEnterNewLocal(&routineNode, tokenString, dcProgram);
 
-        pProgramId->defn.routine.which = rcDeclared;
-        pProgramId->defn.routine.parmCount = 0;
-        pProgramId->defn.routine.totalParmSize = 0;
-        pProgramId->defn.routine.totalLocalSize = 0;
-        pProgramId->defn.routine.locals.parmIds = 0;
-        pProgramId->defn.routine.locals.constantIds = 0;
-        pProgramId->defn.routine.locals.typeIds = 0;
-        pProgramId->defn.routine.locals.variableIds = 0;
-        pProgramId->defn.routine.locals.routineIds = 0;
-        pProgramId->defn.routine.symtab = 0;
-        pProgramId->defn.routine.Icode = 0;
-        setType(&pProgramId->node.typeChunk, dummyType);
-        saveSymbNode(pProgramId);
+        routineNode.defn.routine.which = rcDeclared;
+        routineNode.defn.routine.parmCount = 0;
+        routineNode.defn.routine.totalParmSize = 0;
+        routineNode.defn.routine.totalLocalSize = 0;
+        routineNode.defn.routine.locals.parmIds = 0;
+        routineNode.defn.routine.locals.constantIds = 0;
+        routineNode.defn.routine.locals.typeIds = 0;
+        routineNode.defn.routine.locals.variableIds = 0;
+        routineNode.defn.routine.locals.routineIds = 0;
+        routineNode.defn.routine.symtab = 0;
+        routineNode.defn.routine.Icode = 0;
+        setType(&routineNode.node.typeChunk, dummyType);
+        saveSymbNode(&routineNode);
         getToken();
     } else {
         Error(errMissingIdentifier);
@@ -179,8 +179,8 @@ void parseProgramHeader(SYMBNODE *pProgramId) {
                 getToken();
 
                 // Link program parm id nodes together
-                if (!pProgramId->defn.routine.locals.parmIds) {
-                    pProgramId->defn.routine.locals.parmIds = parmId.node.nodeChunkNum;
+                if (!routineNode.defn.routine.locals.parmIds) {
+                    routineNode.defn.routine.locals.parmIds = parmId.node.nodeChunkNum;
                 } else {
                     prevParmId.node.nextNode = parmId.node.nodeChunkNum;
                     saveSymbNodeOnly(&prevParmId);
@@ -191,7 +191,7 @@ void parseProgramHeader(SYMBNODE *pProgramId) {
             }
         } while (tokenCode == tcComma);
 
-        saveSymbNode(pProgramId);
+        saveSymbNode(&routineNode);
 
         // )
         resync(tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
