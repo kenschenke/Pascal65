@@ -213,7 +213,6 @@ void parseTypeDefinitions(void) {
         // Link the routine's local type id nodes together.
         if (!routineNode.defn.routine.locals.typeIds) {
             routineNode.defn.routine.locals.typeIds = idNode.node.nodeChunkNum;
-            saveSymbNodeDefn(&routineNode);
         } else {
             ((SYMTABNODE *)getChunk(lastId))->nextNode = idNode.node.nodeChunkNum;
         }

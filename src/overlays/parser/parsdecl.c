@@ -108,7 +108,6 @@ void parseConstantDefinitions(void) {
         // Link the routine's local constant id nodes together
         if (!routineNode.defn.routine.locals.constantIds) {
             routineNode.defn.routine.locals.constantIds = constId.node.nodeChunkNum;
-            saveSymbNodeDefn(&routineNode);
         } else {
             if (loadSymbNode(lastId.node.nodeChunkNum, &lastId) == 0) {
                 return;

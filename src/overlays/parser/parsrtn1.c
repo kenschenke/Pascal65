@@ -80,8 +80,6 @@ void parseFuncOrProcHeader(char isFunc) {
     routineNode.defn.routine.locals.variableIds = 0;
     routineNode.defn.routine.locals.routineIds = 0;
 
-    saveSymbNodeDefn(&routineNode);
-
     if (isFunc) {
         // Optional <type-id> : If there was a forward declaration, there must
         //                      not be a type id, but if there was, parse it
@@ -106,8 +104,6 @@ void parseFuncOrProcHeader(char isFunc) {
     } else {
         setType(&routineNode.node.typeChunk, dummyType);
     }
-
-    saveSymbNodeOnly(&routineNode);
 }
 
 void parseProgram(void) {
@@ -155,7 +151,6 @@ void parseProgramHeader(void) {
         routineNode.defn.routine.symtab = 0;
         routineNode.defn.routine.Icode = 0;
         setType(&routineNode.node.typeChunk, dummyType);
-        saveSymbNode(&routineNode);
         getToken();
     } else {
         Error(errMissingIdentifier);
@@ -191,8 +186,6 @@ void parseProgramHeader(void) {
             }
         } while (tokenCode == tcComma);
 
-        saveSymbNode(&routineNode);
-
         // )
         resync(tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
         condGetToken(tcRParen, errMissingRightParen);
@@ -207,7 +200,6 @@ void parseSubroutineDeclarations(void) {
 
     // Loop to parse procedure and function definitions
     while (tokenIn(tokenCode, tlProcFuncStart)) {
-        saveSymbNode(&routineNode);
         parseSubroutine();
         childRtnId = routineNode.node.nodeChunkNum;
 
