@@ -4,6 +4,22 @@
 #include <parser.h>
 #include <parscommon.h>
 
+void checkForwardDeclaredParams(CHUNKNUM fwdParms, CHUNKNUM declParms) {
+    CHUNKNUM fwdChunkNum = fwdParms, declChunkNum = declParms;
+    SYMTABNODE fwdNode, declNode;
+
+    while (fwdChunkNum) {
+        getChunkCopy(fwdChunkNum, &fwdNode);
+        getChunkCopy(declChunkNum, &declNode);
+        if (fwdNode.typeChunk != declNode.typeChunk) {
+            Error(errAlreadyForwarded);
+        }
+
+        fwdChunkNum = fwdNode.nextNode;
+        declChunkNum = declNode.nextNode;
+    }
+}
+
 void parseBlock(void) {
     // declarations
     parseDeclarations();
@@ -55,13 +71,16 @@ void parseFuncOrProcHeader(char isFunc) {
     // Enter the next nesting level and open a new scope for the function
     symtabStackEnterScope();
 
-    // Optional (<id-list>) : If there was a forward declaration, there
-    //                        must not be a parameter list, but if there
-    //                        is, parse it anyway for error recovery.
+    // Optional (<id-list>) : If there was a forward declaration, the
+    //                        parameter list must match with ones
+    //                        already forward-declared.
     if (tokenCode == tcLParen) {
         parseFormalParmList(&parmList, &parmCount, &totalParmSize);
         if (forwardFlag) {
-            Error(errAlreadyForwarded);
+            if (parmCount != routineNode.defn.routine.parmCount) {
+                Error(errAlreadyForwarded);
+            }
+            checkForwardDeclaredParams(routineNode.defn.routine.locals.parmIds, parmList);
         } else {
             // Not forwarded
             routineNode.defn.routine.parmCount = parmCount;

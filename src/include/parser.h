@@ -30,6 +30,7 @@ void resync(const TTokenCode *pList1,
     const TTokenCode *pList3);
 
 // Routines
+void checkForwardDeclaredParams(CHUNKNUM fwdParms, CHUNKNUM declParms);
 void parseActualParm(CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode);
 void parseActualParmList(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
 void parseBlock(void);
