@@ -27,6 +27,7 @@ void enumTest(CHUNKNUM);
 void recordTest(CHUNKNUM);
 void routineTest(CHUNKNUM);
 void scalarTest(CHUNKNUM);
+void stdRtnTest(CHUNKNUM);
 void subrangeTest(CHUNKNUM);
 void varTest(CHUNKNUM);
 void runIcodeTest(CHUNKNUM Icode, const char *testFile, int firstLine, const char *testName);
@@ -46,6 +47,7 @@ static struct TestCase cases[] = {
     {"consttest.pas", constTest},
     {"recordtest.pas", recordTest},
     {"routinetest.pas", routineTest},
+    {"stdrtntest.pas", stdRtnTest},
     // {"missingprog.pas", errMissingPROGRAM, 3},
     // {"missingpid.pas", errMissingIdentifier, 3},
     // {"badprogvar.pas", errMissingIdentifier, 3},

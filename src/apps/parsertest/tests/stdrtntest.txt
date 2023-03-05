@@ -1,0 +1,361 @@
+# read(c, i, r);
+N read
+T 8
+N c
+T 19
+N i
+T 19
+N r
+T 9
+T 16
+
+# readln(s);
+N readln
+T 8
+N s
+T 9
+T 16
+
+# write(b, c, i, r);
+N write
+T 8
+N b
+T 19
+N c
+T 19
+N i
+T 19
+N r
+T 9
+T 16
+
+# write(false, 'a', 123);
+N write
+T 8
+N false
+T 19
+C a
+T 19
+I 123
+T 9
+T 16
+
+# write(r:5);
+N write
+T 8
+N r
+T 15
+I 5
+T 9
+T 16
+
+# write(r:5:2);
+N write
+T 8
+N r
+T 15
+I 5
+T 15
+I 2
+T 9
+T 16
+
+# write(1.2345);
+N write
+T 8
+R 1.2345
+T 9
+T 16
+
+# write(1.2345:5);
+N write
+T 8
+R 1.2345
+T 15
+I 5
+T 9
+T 16
+
+# write(1.2345:5:2);
+N write
+T 8
+R 1.2345
+T 15
+I 5
+T 15
+I 2
+T 9
+T 16
+
+# writeln(s);
+N writeln
+T 8
+N s
+T 9
+T 16
+
+# b := eof;
+N b
+T 22
+N eof
+T 16
+
+# b := eoln;
+N b
+T 22
+N eoln
+T 16
+
+# i := abs(j);
+N i
+T 22
+N abs
+T 8
+N j
+T 9
+T 16
+
+# i := abs(-5);
+N i
+T 22
+N abs
+T 8
+T 10
+I 5
+T 9
+T 16
+
+# r := abs(r2);
+N r
+T 22
+N abs
+T 8
+N r2
+T 9
+T 16
+
+# r := abs(-1.2345);
+N r
+T 22
+N abs
+T 8
+T 10
+R 1.2345
+T 9
+T 16
+
+# i := sqr(j);
+N i
+T 22
+N sqr
+T 8
+N j
+T 9
+T 16
+
+# i := sqr(5);
+N i
+T 22
+N sqr
+T 8
+I 5
+T 9
+T 16
+
+# r := sqr(r2);
+N r
+T 22
+N sqr
+T 8
+N r2
+T 9
+T 16
+
+# r := sqr(5.11);
+N r
+T 22
+N sqr
+T 8
+R 5.11
+T 9
+T 16
+
+# i := pred(j);
+N i
+T 22
+N pred
+T 8
+N j
+T 9
+T 16
+
+# i := pred(10);
+N i
+T 22
+N pred
+T 8
+I 10
+T 9
+T 16
+
+# e := pred(e2);
+N e
+T 22
+N pred
+T 8
+N e2
+T 9
+T 16
+
+# e := pred(three);
+N e
+T 22
+N pred
+T 8
+N three
+T 9
+T 16
+
+# j := succ(j);
+N j
+T 22
+N succ
+T 8
+N j
+T 9
+T 16
+
+# j := succ(11);
+N j
+T 22
+N succ
+T 8
+I 11
+T 9
+T 16
+
+# e := pred(e2);
+N e
+T 22
+N pred
+T 8
+N e2
+T 9
+T 16
+
+# e := pred(four);
+N e
+T 22
+N pred
+T 8
+N four
+T 9
+T 16
+
+# c := chr(i);
+N c
+T 22
+N chr
+T 8
+N i
+T 9
+T 16
+
+# c := chr(65);
+N c
+T 22
+N chr
+T 8
+I 65
+T 9
+T 16
+
+# b := odd(i);
+N b
+T 22
+N odd
+T 8
+N i
+T 9
+T 16
+
+# b := odd(11);
+N b
+T 22
+N odd
+T 8
+I 11
+T 9
+T 16
+
+# i := ord(c);
+N i
+T 22
+N ord
+T 8
+N c
+T 9
+T 16
+
+# i := ord('c');
+N i
+T 22
+N ord
+T 8
+C c
+T 9
+T 16
+
+# i := ord(e);
+N i
+T 22
+N ord
+T 8
+N e
+T 9
+T 16
+
+# i := ord(three);
+N i
+T 22
+N ord
+T 8
+N three
+T 9
+T 16
+
+# i := round(r);
+N i
+T 22
+N round
+T 8
+N r
+T 9
+T 16
+
+# i := round(1.234);
+N i
+T 22
+N round
+T 8
+R 1.234
+T 9
+T 16
+
+# i := trunc(r);
+N i
+T 22
+N trunc
+T 8
+N r
+T 9
+T 16
+
+# i := trunc(2.345);
+N i
+T 22
+N trunc
+T 8
+R 2.345
+T 9
+T 16

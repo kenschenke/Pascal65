@@ -234,6 +234,12 @@ scalartest.petscii: $(TESTSDIR)/scalartest.pas
 scalartext.petscii: $(TESTSDIR)/scalartest.txt
 	dos2unix < $(TESTSDIR)/scalartest.txt | petcat -w2 -text -o scalartext.petscii
 
+stdrtntest.petscii: $(TESTSDIR)/stdrtntest.pas
+	dos2unix < $(TESTSDIR)/stdrtntest.pas | petcat -w2 -text -o stdrtntest.petscii
+
+stdrtntext.petscii: $(TESTSDIR)/stdrtntest.txt
+	dos2unix < $(TESTSDIR)/stdrtntest.txt | petcat -w2 -text -o stdrtntext.petscii
+
 subrangetest.petscii: $(TESTSDIR)/subrangetest.pas
 	dos2unix < $(TESTSDIR)/subrangetest.pas | petcat -w2 -text -o subrangetest.petscii
 
@@ -259,7 +265,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii casechartest.petscii casechartext.petscii caseenumtest.petscii caseenumtext.petscii caseinttest.petscii caseinttext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii fortest.petscii fortext.petscii iftest.petscii iftext.petscii recordtest.petscii recordtext.petscii repeattest.petscii repeattext.petscii routinetest.petscii scalartest.petscii scalartext.petscii subrangetest.petscii vartest.petscii whiletest.petscii whiletext.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii casechartest.petscii casechartext.petscii caseenumtest.petscii caseenumtext.petscii caseinttest.petscii caseinttext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii fortest.petscii fortext.petscii iftest.petscii iftext.petscii recordtest.petscii recordtext.petscii repeattest.petscii repeattext.petscii routinetest.petscii scalartest.petscii scalartext.petscii stdrtntest.petscii stdrtntext.petscii subrangetest.petscii vartest.petscii whiletest.petscii whiletext.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -290,6 +296,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write routinetest.petscii routinetest.pas,seq \
 	-write scalartest.petscii scalartest.pas,seq \
 	-write scalartext.petscii scalartest.txt,seq \
+	-write stdrtntest.petscii stdrtntest.pas,seq \
+	-write stdrtntext.petscii stdrtntest.txt,seq \
 	-write subrangetest.petscii subrangetest.pas,seq \
 	-write vartest.petscii vartest.pas,seq \
 	-write whiletest.petscii whiletest.pas,seq \
