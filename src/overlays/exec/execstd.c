@@ -12,7 +12,8 @@
 
 static void writeQuotedString(CHUNKNUM chunkNum);
 
-CHUNKNUM executeAbsCall(void) {
+CHUNKNUM executeAbsSqrCall(SYMBNODE *pRoutineId) {
+    char absFlag = pRoutineId->defn.routine.which == rcAbs;
     CHUNKNUM parmTypeChunk, parmBaseType;
     TTYPE parmType;
 
@@ -24,7 +25,11 @@ CHUNKNUM executeAbsCall(void) {
     parmBaseType = getBaseType(&parmType);
 
     if (parmBaseType == integerType) {
-        stackTOS()->integer = abs(stackTOS()->integer);
+        stackTOS()->integer = absFlag ? abs(stackTOS()->integer) :
+            stackTOS()->integer * stackTOS()->integer;
+    } else {
+        stackTOS()->real = absFlag ? floatAbs(stackTOS()->real) :
+            floatMult(stackTOS()->real, stackTOS()->real);
     }
 
     getTokenForExecutor();

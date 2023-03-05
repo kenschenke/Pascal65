@@ -3,6 +3,9 @@
 
 typedef unsigned long FLOAT;
 
+// Absolute value of num returned
+FLOAT floatAbs(FLOAT num);
+
 // Sum of num1 and num2 returned
 FLOAT floatAdd(FLOAT num1, FLOAT num2);
 

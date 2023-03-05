@@ -71,7 +71,8 @@ CHUNKNUM executeStandardSubroutineCall(SYMBNODE *pRoutineId) {
 
         case rcOrd:      return executeOrdCall();
 
-        case rcAbs:      return executeAbsCall();
+        case rcAbs:
+        case rcSqr:      return executeAbsSqrCall(pRoutineId);
 
         case rcRound:
         case rcTrunc:    return executeRoundTruncCall(pRoutineId);

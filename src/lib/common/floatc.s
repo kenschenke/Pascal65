@@ -9,7 +9,20 @@
 
 .export _floatAdd, _floatSub, _floatMult, _floatDiv, _floatPrint, _strToFloat, _floatToStr
 .export _floatEq, _floatGt, _floatGte, _floatLt, _floatLte, _floatToInt16, _int16ToFloat, _floatNeg
-.export _readFloatFromInput
+.export _readFloatFromInput, _floatAbs
+
+; FLOAT floatAbs(FLOAT num)
+.proc _floatAbs
+    jsr storeFPACC
+    lda FPBASE + FPMSW
+    and #$80                ; Check for high bit in MSB
+    beq L1                  ; If not set, jump ahead
+    ldx FPLSW               ; Set pointer
+    ldy #4                  ; Four bytes
+    jsr COMPLM              ; Negate the accumulator
+L1:
+    jmp loadFPACC
+.endproc
 
 ; FLOAT floatAdd(FLOAT num1, FLOAT num2)
 .proc _floatAdd
