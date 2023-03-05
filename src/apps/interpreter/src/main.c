@@ -58,7 +58,7 @@ void main()
         initCommon();
         initParser();
 
-        programId = parse("translate.pas");
+        programId = parse("nested.pas");
     }
 
     // If there were no syntax errors, convert the symbol tables.

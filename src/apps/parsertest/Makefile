@@ -225,6 +225,9 @@ repeattest.petscii: $(TESTSDIR)/repeattest.pas
 repeattext.petscii: $(TESTSDIR)/repeattest.txt
 	dos2unix < $(TESTSDIR)/repeattest.txt | petcat -w2 -text -o repeattext.petscii
 
+routinetest.petscii: $(TESTSDIR)/routinetest.pas
+	dos2unix < $(TESTSDIR)/routinetest.pas | petcat -w2 -text -o routinetest.petscii
+
 scalartest.petscii: $(TESTSDIR)/scalartest.pas
 	dos2unix < $(TESTSDIR)/scalartest.pas | petcat -w2 -text -o scalartest.petscii
 
@@ -256,7 +259,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii casechartest.petscii casechartext.petscii caseenumtest.petscii caseenumtext.petscii caseinttest.petscii caseinttext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii fortest.petscii fortext.petscii iftest.petscii iftext.petscii recordtest.petscii recordtext.petscii repeattest.petscii repeattext.petscii scalartest.petscii scalartext.petscii subrangetest.petscii vartest.petscii whiletest.petscii whiletext.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii casechartest.petscii casechartext.petscii caseenumtest.petscii caseenumtext.petscii caseinttest.petscii caseinttext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii fortest.petscii fortext.petscii iftest.petscii iftext.petscii recordtest.petscii recordtext.petscii repeattest.petscii repeattext.petscii routinetest.petscii scalartest.petscii scalartext.petscii subrangetest.petscii vartest.petscii whiletest.petscii whiletext.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -284,6 +287,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write recordtext.petscii recordtest.txt,seq \
 	-write repeattest.petscii repeattest.pas,seq \
 	-write repeattext.petscii repeattest.txt,seq \
+	-write routinetest.petscii routinetest.pas,seq \
 	-write scalartest.petscii scalartest.pas,seq \
 	-write scalartext.petscii scalartest.txt,seq \
 	-write subrangetest.petscii subrangetest.pas,seq \

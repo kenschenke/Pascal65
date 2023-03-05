@@ -158,8 +158,14 @@ errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
 runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
 
+nested.petscii: nested.pas
+	dos2unix < nested.pas | petcat -w2 -text -o nested.petscii
+
 routines.petscii: routines.pas
 	dos2unix < routines.pas | petcat -w2 -text -o routines.petscii
+
+testforward.petscii: testforward.pas
+	dos2unix < testforward.pas | petcat -w2 -text -o testforward.petscii
 
 translate.petscii: translate.pas
 	dos2unix < translate.pas | petcat -w2 -text -o translate.petscii
@@ -178,7 +184,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write assign.pas assign.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii translate.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii testforward.petscii translate.petscii nested.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
@@ -186,6 +192,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
+	-write nested.petscii nested.pas,seq \
+	-write testforward.petscii testforward.pas,seq \
 	-write translate.petscii translate.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
