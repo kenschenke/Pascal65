@@ -83,12 +83,11 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
             putSymtabNodeToIcode(Icode, &parmId);
 
             parseVariable(Icode, &parmId);
-            memcpy(&parmType, &parmId.type, sizeof(TTYPE));
-            if (parmType.form == fcSubrange) {
-                retrieveChunk(parmType.subrange.baseType, (unsigned char *)&parmType);
-            }
+            getChunkCopy(getBaseType(&parmId.type), &parmType);
             if (parmType.form != fcScalar) {
-                Error(errIncompatibleTypes);
+                if (parmType.form != fcArray || parmType.array.elemType != charType) {
+                    Error(errIncompatibleTypes);
+                }
             }
         } else {
             parseExpression(Icode);
@@ -357,6 +356,7 @@ static struct TStdRtn {
     {"pred",    rcPred,    dcFunction},
     {"succ",    rcSucc,    dcFunction},
     {"round",   rcRound,   dcFunction},
+    {"sqr",     rcSqr,     dcFunction},
     {"trunc",   rcTrunc,   dcFunction},
     {NULL},
 };
