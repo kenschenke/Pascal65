@@ -63,12 +63,12 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
             // parse a constant, function call, or variable.
             switch (node.defn.how) {
                 case dcFunction:
-                    resultTypeChunk = parseSubroutineCall(&node, 1, Icode);
+                    resultTypeChunk = parseSubroutineCall(node.node.nodeChunkNum, 1, Icode);
                     break;
 
                 case dcProcedure:
                     Error(errInvalidIdentifierUsage);
-                    resultTypeChunk = parseSubroutineCall(&node, 0, Icode);
+                    resultTypeChunk = parseSubroutineCall(node.node.nodeChunkNum, 0, Icode);
                     break;
 
                 case dcConstant:

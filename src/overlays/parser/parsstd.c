@@ -17,15 +17,15 @@
 #include <parscommon.h>
 #include <common.h>
 
-CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
-    switch (pRoutineId->defn.routine.which) {
+CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode) {
+    switch (routineNode.defn.routine.which) {
         case rcRead:
         case rcReadln:
-            return parseReadReadlnCall(Icode, pRoutineId);
+            return parseReadReadlnCall(Icode);
 
         case rcWrite:
         case rcWriteln:
-            return parseWriteWritelnCall(Icode, pRoutineId);
+            return parseWriteWritelnCall(Icode);
 
         case rcEof:
         case rcEoln:
@@ -59,13 +59,13 @@ CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     return 0;
 }
 
-CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
+CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode) {
     TTYPE parmType;
     SYMBNODE parmId;
 
     // Actual parameters are optional for readln.
     if (tokenCode != tcLParen) {
-        if (pRoutineId->defn.routine.which == rcRead) {
+        if (routineNode.defn.routine.which == rcRead) {
             Error(errWrongNumberOfParams);
         }
         return dummyType;
@@ -104,13 +104,13 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
     return dummyType;
 }
 
-CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId) {
+CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode) {
     CHUNKNUM actualTypeChunk, baseTypeChunk;
     TTYPE actualType;
 
     // Actual parameters are optional only for writeln
     if (tokenCode != tcLParen) {
-        if (pRoutineId->defn.routine.which == rcWrite) {
+        if (routineNode.defn.routine.which == rcWrite) {
             Error(errWrongNumberOfParams);
         }
         return dummyType;
@@ -163,7 +163,7 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
     // them anyway for error recovery.
     if (tokenCode == tcLParen) {
         Error(errWrongNumberOfParams);
-        parseActualParmList(NULL, 0, Icode);
+        parseActualParmList(0, 0, Icode);
     }
 
     return booleanType;

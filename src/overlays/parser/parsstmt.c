@@ -410,7 +410,7 @@ void parseStatement(CHUNKNUM Icode)
                 saveSymbNode(&node);
                 parseAssignment(&node, Icode);
             } else if (node.defn.how == dcProcedure) {
-                parseSubroutineCall(&node, 1, Icode);
+                parseSubroutineCall(node.node.nodeChunkNum, 1, Icode);
             } else {
                 parseAssignment(&node, Icode);
             }

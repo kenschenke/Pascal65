@@ -32,22 +32,22 @@ void resync(const TTokenCode *pList1,
 // Routines
 void checkForwardDeclaredParams(CHUNKNUM fwdParms, CHUNKNUM declParms);
 void parseActualParm(CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode);
-void parseActualParmList(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
+void parseActualParmList(char routineFlag, char parmCheckFlag, CHUNKNUM Icode);
 void parseBlock(void);
-CHUNKNUM parseDeclaredSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
+CHUNKNUM parseDeclaredSubroutineCall(char parmCheckFlag, CHUNKNUM Icode);
 void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize);
 void parseFuncOrProcHeader(char isFunc);
 void parseProgram(void);
 void parseProgramHeader(void);
-CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode, SYMBNODE *pRoutineId);
+CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode);
 void parseSubroutine(void);
-CHUNKNUM parseSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode);
+CHUNKNUM parseSubroutineCall(CHUNKNUM callChunkNum, char parmCheckFlag, CHUNKNUM Icode);
 void parseSubroutineDeclarations(void);
 
 // Standard Routines
 void initStandardRoutines(CHUNKNUM symtabChunkNum);
-CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId);
-CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode, SYMBNODE *pRoutineId);
+CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode);
+CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode);
 CHUNKNUM parseEofEolnCall(CHUNKNUM Icode);
 CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode);
 CHUNKNUM parsePredSuccCall(CHUNKNUM Icode);

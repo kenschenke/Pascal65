@@ -117,27 +117,35 @@ void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize
     condGetToken(tcRParen, errMissingRightParen);
 }
 
-CHUNKNUM parseSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
+CHUNKNUM parseSubroutineCall(CHUNKNUM callChunkNum, char parmCheckFlag, CHUNKNUM Icode) {
+    CHUNKNUM resultChunkNum;
+    CHUNKNUM routineChunkNum = routineNode.node.nodeChunkNum;
+
     getTokenAppend(Icode);
 
-    if (pRoutineId->defn.routine.which == rcDeclared || pRoutineId->defn.routine.which == rcForward || !parmCheckFlag) {
-        return parseDeclaredSubroutineCall(pRoutineId, parmCheckFlag, Icode);
+    saveSymbNode(&routineNode);
+    loadSymbNode(callChunkNum, &routineNode);
+    if (routineNode.defn.routine.which == rcDeclared || routineNode.defn.routine.which == rcForward || !parmCheckFlag) {
+        resultChunkNum = parseDeclaredSubroutineCall(parmCheckFlag, Icode);
     } else {
-        return parseStandardSubroutineCall(Icode, pRoutineId);
+        resultChunkNum = parseStandardSubroutineCall(Icode);
     }
+
+    loadSymbNode(routineChunkNum, &routineNode);
+    return resultChunkNum;
 }
 
-CHUNKNUM parseDeclaredSubroutineCall(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
-    parseActualParmList(pRoutineId, parmCheckFlag, Icode);
-    return pRoutineId->node.typeChunk;
+CHUNKNUM parseDeclaredSubroutineCall(char parmCheckFlag, CHUNKNUM Icode) {
+    parseActualParmList(1, parmCheckFlag, Icode);
+    return routineNode.node.typeChunk;
 }
 
-void parseActualParmList(SYMBNODE *pRoutineId, char parmCheckFlag, CHUNKNUM Icode) {
+void parseActualParmList(char routineFlag, char parmCheckFlag, CHUNKNUM Icode) {
     SYMBNODE node;
     CHUNKNUM formalId = 0;
 
-    if (pRoutineId) {
-        formalId = pRoutineId->defn.routine.locals.parmIds;
+    if (routineFlag) {
+        formalId = routineNode.defn.routine.locals.parmIds;
     }
 
     // If there are no actual parameters, there better not be any
