@@ -69,8 +69,8 @@ void parseIdentifierType(void) {
     getToken();
 }
 
-void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNum) {
-    SYMBNODE node;
+void parseSubrangeLimit(CHUNKNUM limitIdChunkNum, int *limit, CHUNKNUM *limitTypeChunkNum) {
+    SYMBNODE limitId;
     TTokenCode sign = tcDummy;
 
     *limit = 0;
@@ -97,46 +97,45 @@ void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNu
         case tcIdentifier:
             // identifier limit: must be an integer, character, or
             // enumeration type.
-            if (pLimit == NULL) {
-                if (findSymtabNode(&node, tokenString) == 0) {
+            if (limitIdChunkNum == 0) {
+                if (findSymtabNode(&limitId, tokenString) == 0) {
                     Error(errInvalidSubrangeType);
                     break;
                 }
-                pLimit = &node;
             }
-            if (pLimit->defn.how == dcUndefined) {
-                pLimit->defn.how = dcConstant;
-                saveSymbNodeDefn(pLimit);
+            if (limitId.defn.how == dcUndefined) {
+                limitId.defn.how = dcConstant;
+                saveSymbNodeDefn(&limitId);
                 *limitTypeChunkNum = dummyType;
                 break;
             }
-            if (pLimit->node.typeChunk == dummyType || pLimit->node.typeChunk == realType) {
+            if (limitId.node.typeChunk == dummyType || limitId.node.typeChunk == realType) {
                 Error(errInvalidSubrangeType);
                 break;
             }
-            if (pLimit->type.form == fcArray) {
+            if (limitId.type.form == fcArray) {
                 Error(errInvalidSubrangeType);
                 break;
             }
-            if (pLimit->defn.how == dcConstant) {
+            if (limitId.defn.how == dcConstant) {
                 // Use the value of the constant identifer.
-                if (pLimit->node.typeChunk == integerType) {
-                    *limit = sign == tcMinus ? -pLimit->defn.constant.value.integer :
-                        pLimit->defn.constant.value.integer;
-                } else if (pLimit->node.typeChunk == charType) {
+                if (limitId.node.typeChunk == integerType) {
+                    *limit = sign == tcMinus ? -limitId.defn.constant.value.integer :
+                        limitId.defn.constant.value.integer;
+                } else if (limitId.node.typeChunk == charType) {
                     if (sign != tcDummy) {
                         Error(errInvalidSubrangeType);
                         break;
                     }
-                    *limit = pLimit->defn.constant.value.character;
-                } else if (pLimit->type.form == fcEnum) {
+                    *limit = limitId.defn.constant.value.character;
+                } else if (limitId.type.form == fcEnum) {
                     if (sign != tcDummy) {
                         Error(errInvalidSubrangeType);
                         break;
                     }
-                    *limit = pLimit->defn.constant.value.integer;
+                    *limit = limitId.defn.constant.value.integer;
                 }
-                *limitTypeChunkNum = pLimit->node.typeChunk;
+                *limitTypeChunkNum = limitId.node.typeChunk;
             } else {
                 Error(errNotAConstantIdentifier);
             }
@@ -162,10 +161,12 @@ void parseSubrangeLimit(SYMBNODE *pLimit, int *limit, CHUNKNUM *limitTypeChunkNu
             break;
     }
 
+    if (limitIdChunkNum) saveSymbNode(&limitId);
+
     getToken();
 }
 
-CHUNKNUM parseSubrangeType(SYMBNODE *pMinId) {
+CHUNKNUM parseSubrangeType(CHUNKNUM minIdChunkNum) {
     int temp;
     CHUNKNUM newMinChunkNum, maxTypeChunkNum, newTypeChunkNum;
     TTYPE newType;
@@ -174,7 +175,7 @@ CHUNKNUM parseSubrangeType(SYMBNODE *pMinId) {
     retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
 
     // <min-const>
-    parseSubrangeLimit(pMinId, &newType.subrange.min, &newMinChunkNum);
+    parseSubrangeLimit(minIdChunkNum, &newType.subrange.min, &newMinChunkNum);
     setType(&newType.subrange.baseType, newMinChunkNum);
 
     // ..
@@ -182,7 +183,7 @@ CHUNKNUM parseSubrangeType(SYMBNODE *pMinId) {
     condGetToken(tcDotDot, errMissingDotDot);
 
     // <max-const>
-    parseSubrangeLimit(NULL, &newType.subrange.max, &maxTypeChunkNum);
+    parseSubrangeLimit(0, &newType.subrange.max, &maxTypeChunkNum);
 
     // check limits
     if (maxTypeChunkNum != newType.subrange.baseType) {
@@ -273,7 +274,7 @@ CHUNKNUM parseTypeSpec(void) {
                     newTypeChunkNum = node.node.typeChunk;
                     break;
                 case dcConstant:
-                    newTypeChunkNum = parseSubrangeType(&node);
+                    newTypeChunkNum = parseSubrangeType(node.node.nodeChunkNum);
                     break;
                 default:
                     Error(errNotATypeIdentifier);
@@ -298,7 +299,7 @@ CHUNKNUM parseTypeSpec(void) {
         case tcMinus:
         case tcNumber:
         case tcString:
-            newTypeChunkNum = parseSubrangeType(NULL);
+            newTypeChunkNum = parseSubrangeType(0);
             break;
         
         default:
