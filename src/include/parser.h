@@ -69,7 +69,7 @@ void parseFieldDeclarations(TTYPE *pRecordType, int offset);
 CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLastId);
 void parseIdentifierConstant(CHUNKNUM constIdChunkNum, TTokenCode sign);
 void parseIdentifierType(void);
-void parseIndexType(TTYPE *pArrayType);
+void parseIndexType(CHUNKNUM arrayTypeChunkNum);
 CHUNKNUM parseRecordType(void);
 void parseSubrangeLimit(CHUNKNUM limitIdChunkNum, int *limit, CHUNKNUM *limitTypeChunkNum);
 CHUNKNUM parseSubrangeType(CHUNKNUM minIdChunkNum);
