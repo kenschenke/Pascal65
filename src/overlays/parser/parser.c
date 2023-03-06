@@ -72,16 +72,14 @@ void initParser(void) {
 CHUNKNUM parse(const char *filename)
 {
     int i;
-    TINBUF *tinBuf;
 
     for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
 
-    tinBuf = tin_open(filename, abortSourceFileOpenFailed);
-    pInputBuffer = tinBuf;
+    tinOpen(filename, abortSourceFileOpenFailed);
 
     getToken();
     parseProgram();
-    tin_close(tinBuf);
+    tinClose();
 
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);

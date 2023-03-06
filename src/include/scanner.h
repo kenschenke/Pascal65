@@ -25,8 +25,6 @@ typedef struct {
     char string[MAX_LINE_LEN + 1];
 } TOKEN;
 
-extern TINBUF *pInputBuffer;
-
 extern TTokenCode tokenCode;
 extern TDataType tokenType;
 extern TDataValue tokenValue;

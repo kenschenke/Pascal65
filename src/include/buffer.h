@@ -22,14 +22,8 @@ extern short currentLineNumber;
 extern char eofChar;
 extern unsigned inputPosition;
 
-typedef struct {
-    FILE *fh;
-    char buffer[MAX_LINE_LEN + 1];
-    char *pChar;
-} TINBUF;
-
-TINBUF *tin_open(const char *pFilename, TAbortCode ac);
-void tin_close(TINBUF *tinBuf);
+void tinOpen(const char *pFilename, TAbortCode ac);
+void tinClose(void);
 
 char getCurrentChar(void);
 char getChar(void);

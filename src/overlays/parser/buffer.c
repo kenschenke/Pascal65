@@ -16,45 +16,30 @@
 
 #include <buffer.h>
 
+static FILE *tinFh;
+char tinBuffer[MAX_LINE_LEN + 1];
+char *pBufChar;
+
 short currentLineNumber;
 char eofChar = 0x7f;
 unsigned inputPosition;
 
-TINBUF *tin_open(const char *pFilename, TAbortCode ac)
+void tinOpen(const char *pFilename, TAbortCode ac)
 {
-    FILE *fh;
-    TINBUF *tinBuf;
-
-    tinBuf = malloc(sizeof(TINBUF));
-    if (tinBuf == NULL) {
-        return NULL;
-    }
-    memset(tinBuf, 0, sizeof(TINBUF));
-
-    fh = fopen(pFilename, "r");
-    if (fh == NULL) {
+    tinFh = fopen(pFilename, "r");
+    if (tinFh == NULL) {
         abortTranslation(ac);
-        return tinBuf;
     }
 
-    if (tinBuf == NULL) {
-        fclose(fh);
-        abortTranslation(abortOutOfMemory);
-        return tinBuf;
-    }
-
-    tinBuf->fh = fh;
-    memset(tinBuf->buffer, 0, sizeof(tinBuf->buffer));
-    tinBuf->pChar = tinBuf->buffer;
+    memset(tinBuffer, 0, sizeof(tinBuffer));
+    pBufChar = tinBuffer;
     currentLineNumber = 0;
-
-    return tinBuf;
 }
 
-void tin_close(TINBUF *tinBuf)
+void tinClose(void)
 {
-    fclose(tinBuf->fh);
-    free(tinBuf);
+    fclose(tinFh);
+    tinFh = NULL;
 }
 
 char getCurrentChar(void)
@@ -62,7 +47,7 @@ char getCurrentChar(void)
     if (isFatalError)
         return eofChar;
 
-    return *(pInputBuffer->pChar);
+    return *pBufChar;
 }
 
 char getChar(void)
@@ -72,16 +57,16 @@ char getChar(void)
     if (isFatalError)
         return eofChar;
         
-    if (*(pInputBuffer->pChar) == eofChar) {
+    if (*pBufChar == eofChar) {
         return eofChar;
-    } else if (*(pInputBuffer->pChar) == 0) {
+    } else if (*pBufChar == 0) {
         ch = getLine();
         if (isFatalError)
             return eofChar;
     } else {
-        pInputBuffer->pChar++;
+        pBufChar++;
         ++inputPosition;
-        ch = *(pInputBuffer->pChar);
+        ch = *pBufChar;
     }
 
     return ch;
@@ -95,22 +80,22 @@ char getLine(void)
     if (isFatalError)
         return eofChar;
         
-    if (feof(pInputBuffer->fh)) {
-        pInputBuffer->pChar = &eofChar;
+    if (feof(tinFh)) {
+        pBufChar = &eofChar;
     } else {
         i = 0;
         while(1) {
-            n = fread(pInputBuffer->buffer+i, sizeof(char), 1, pInputBuffer->fh);
+            n = fread(tinBuffer+i, sizeof(char), 1, tinFh);
             if (n != 1) {
-                if (!feof(pInputBuffer->fh)) {
+                if (!feof(tinFh)) {
                     abortTranslation(abortSourceFileReadFailed);
                     return eofChar;
                 }
-                pInputBuffer->buffer[i] = 0;
+                tinBuffer[i] = 0;
                 break;
             }
-            if (pInputBuffer->buffer[i] == 13) {  // carriage return
-                pInputBuffer->buffer[i] = 0;
+            if (tinBuffer[i] == 13) {  // carriage return
+                tinBuffer[i] = 0;
                 ++currentLineNumber;
                 break;
             }
@@ -120,10 +105,10 @@ char getLine(void)
                 return eofChar;
             }
         }
-        pInputBuffer->pChar = pInputBuffer->buffer;
+        pBufChar = tinBuffer;
     }
 
-    return *(pInputBuffer->pChar);
+    return *pBufChar;
 }
 
 char putBackChar(void)
@@ -131,8 +116,8 @@ char putBackChar(void)
     if (isFatalError)
         return eofChar;
 
-    pInputBuffer->pChar--;
+    pBufChar--;
     inputPosition--;
 
-    return *(pInputBuffer->pChar);
+    return *pBufChar;
 }

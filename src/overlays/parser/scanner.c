@@ -16,8 +16,6 @@
 static void initCharCodeMap(void);
 static void skipWhiteSpace(void);
 
-TINBUF *pInputBuffer;
-
 TTokenCode tokenCode;
 TDataType tokenType;
 TDataValue tokenValue;
