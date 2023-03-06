@@ -29,8 +29,9 @@ LDFLAGS =
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 ifeq ($(TARGET),mega65)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
-endif
+else
 SOURCES += $(SRCDIR)/flushcache.s
+endif
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.c)
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.s)
 SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.c)

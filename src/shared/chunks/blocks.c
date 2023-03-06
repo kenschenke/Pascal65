@@ -91,8 +91,13 @@ void initBlockStorage(void)
 	unsigned i, b;
 
 #ifdef __MEGA65__
+	static char blockInit = 0;
 	pages = TOTAL_BLOCKS;
 	// memset(sharedBlock, 0, BLOCK_LEN);
+	if (!blockInit) {
+		lastPageToAllocate = pages;
+		blockInit = 1;
+	}
 #elif defined(USE_EMD)
 	char ret;
 	static char emLoaded = 0;
@@ -155,10 +160,6 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 			return sharedBlock;
 		}
 	}
-
-#if 1
-	printf("out of blocks -- i:%d pages:%d\n", i, pages);
-#endif
 
 	return NULL;
 }

@@ -325,6 +325,6 @@ void testBufferReadAtChunkBoundary(void) {
             assertNonZero(cachedMemBufData.nextChunk);
         }
     }
-    assertEqualChunkNum(dataChunkNum, cachedMemBufHdr.currentChunkNum);
+    assertEqualChunkNum(dataChunkNum + 1, cachedMemBufHdr.currentChunkNum);
 }
 
