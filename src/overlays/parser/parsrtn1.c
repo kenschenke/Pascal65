@@ -158,17 +158,8 @@ void parseProgramHeader(void) {
     if (tokenCode == tcIdentifier) {
         symtabEnterNewLocal(&routineNode, tokenString, dcProgram);
 
+        memset(&routineNode.defn, 0, sizeof(DEFN));
         routineNode.defn.routine.which = rcDeclared;
-        routineNode.defn.routine.parmCount = 0;
-        routineNode.defn.routine.totalParmSize = 0;
-        routineNode.defn.routine.totalLocalSize = 0;
-        routineNode.defn.routine.locals.parmIds = 0;
-        routineNode.defn.routine.locals.constantIds = 0;
-        routineNode.defn.routine.locals.typeIds = 0;
-        routineNode.defn.routine.locals.variableIds = 0;
-        routineNode.defn.routine.locals.routineIds = 0;
-        routineNode.defn.routine.symtab = 0;
-        routineNode.defn.routine.Icode = 0;
         setType(&routineNode.node.typeChunk, dummyType);
         getToken();
     } else {
