@@ -41,9 +41,13 @@ void parseDeclarations(void) {
     }
 }
 
-void parseConstant(SYMBNODE *constId) {
+void parseConstant(CHUNKNUM constIdChunkNum) {
+    SYMBNODE constId;
     int length;
     TTokenCode sign = tcDummy;  // unary + or - sign, or none
+
+    loadSymbNode(constIdChunkNum, &constId);
+    constId.defn.how = dcConstant;
 
     // unary + or -
 
@@ -56,22 +60,24 @@ void parseConstant(SYMBNODE *constId) {
         // Numeric constant: integer
         case tcNumber:
             if (tokenType == tyInteger) {
-                constId->defn.constant.value.integer =
+                constId.defn.constant.value.integer =
                     sign == tcMinus ? -tokenValue.integer :
                         tokenValue.integer;
-                setType(&constId->node.typeChunk, integerType);
+                setType(&constId.node.typeChunk, integerType);
             } else {
-                constId->defn.constant.value.real =
+                constId.defn.constant.value.real =
                     sign == tcMinus ? floatNeg(tokenValue.real) :
                         tokenValue.real;
-                setType(&constId->node.typeChunk, realType);
+                setType(&constId.node.typeChunk, realType);
             }
+            saveSymbNode(&constId);
             getToken();
             break;
         
         // Identifier constant
         case tcIdentifier:
-            parseIdentifierConstant(constId, sign);
+            saveSymbNodeDefn(&constId);
+            parseIdentifierConstant(constId.node.nodeChunkNum, sign);
             break;
         
         // String constant
@@ -81,18 +87,17 @@ void parseConstant(SYMBNODE *constId) {
 
             if (length == 1) {
                 // Single character
-                constId->defn.constant.value.character = tokenString[1];
-                setType(&constId->node.typeChunk, charType);
+                constId.defn.constant.value.character = tokenString[1];
+                setType(&constId.node.typeChunk, charType);
             } else {
                 // String (character array) : create a new unnamed string type
-                copyQuotedString(tokenString, &constId->defn.constant.value.stringChunkNum);
-                setType(&constId->node.typeChunk, makeStringType(length));
+                copyQuotedString(tokenString, &constId.defn.constant.value.stringChunkNum);
+                setType(&constId.node.typeChunk, makeStringType(length));
             }
+            saveSymbNode(&constId);
             getToken();
             break;
     }
-
-    saveSymbNode(constId);
 }
 
 void parseConstantDefinitions(void) {
@@ -124,11 +129,7 @@ void parseConstantDefinitions(void) {
         condGetToken(tcEqual, errMissingEqual);
 
         // <constant>
-        parseConstant(&constId);
-        constId.defn.how = dcConstant;
-        if (saveSymbNodeDefn(&constId) == 0) {
-            return;
-        }
+        parseConstant(constId.node.nodeChunkNum);
 
         // ;
         resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
@@ -140,8 +141,10 @@ void parseConstantDefinitions(void) {
     }
 }
 
-void parseIdentifierConstant(SYMBNODE *id1, TTokenCode sign) {
-    SYMBNODE id2;
+void parseIdentifierConstant(CHUNKNUM constIdChunkNum, TTokenCode sign) {
+    SYMBNODE id1, id2;
+
+    loadSymbNode(constIdChunkNum, &id1);
 
     // id1 is the lhalf
     // id2 is the rhalf
@@ -151,35 +154,35 @@ void parseIdentifierConstant(SYMBNODE *id1, TTokenCode sign) {
     }
     if (id2.defn.how != dcConstant) {
         Error(errNotAConstantIdentifier);
-        setType(&id1->node.typeChunk, dummyType);
-        saveSymbNode(id1);
+        setType(&id1.node.typeChunk, dummyType);
+        saveSymbNode(&id1);
         getToken();
         return;
     }
 
     if (id2.node.typeChunk == integerType) {
         // Integer identifier
-        id1->defn.constant.value.integer =
+        id1.defn.constant.value.integer =
             sign == tcMinus ? -id2.defn.constant.value.integer :
             id2.defn.constant.value.integer;
-        setType(&id1->node.typeChunk, integerType);
+        setType(&id1.node.typeChunk, integerType);
     } else if (id2.node.typeChunk == realType) {
-        id1->defn.constant.value.real =
+        id1.defn.constant.value.real =
             sign == tcMinus ? floatNeg(id2.defn.constant.value.real) :
                 id2.defn.constant.value.real;
-        setType(&id1->node.typeChunk, realType);
+        setType(&id1.node.typeChunk, realType);
     } else if (id2.node.typeChunk == charType) {
         // character identifer - no unary sign allowed
         if (sign != tcDummy) Error(errInvalidConstant);
-        id1->defn.constant.value.character =
+        id1.defn.constant.value.character =
             id2.defn.constant.value.character;
-        setType(&id1->node.typeChunk, charType);
+        setType(&id1.node.typeChunk, charType);
     } else if (id2.node.typeChunk && id2.type.form == fcEnum) {
         // enumeration identifier: no unary sign allowed
         if (sign != tcDummy) Error(errInvalidConstant);
-        id1->defn.constant.value.integer =
+        id1.defn.constant.value.integer =
             id2.defn.constant.value.integer;
-        setType(&id1->node.typeChunk, id2.node.typeChunk);
+        setType(&id1.node.typeChunk, id2.node.typeChunk);
     } else if (id2.node.typeChunk && id2.type.form == fcArray) {
         // array identifier
         // must be character array, and no unary sign allowed
@@ -187,11 +190,11 @@ void parseIdentifierConstant(SYMBNODE *id1, TTokenCode sign) {
             Error(errInvalidConstant);
         }
 
-        id1->defn.constant.value.stringChunkNum = id2.defn.constant.value.stringChunkNum;
-        setType(&id1->node.typeChunk, id2.node.typeChunk);
+        id1.defn.constant.value.stringChunkNum = id2.defn.constant.value.stringChunkNum;
+        setType(&id1.node.typeChunk, id2.node.typeChunk);
     }
 
-    saveSymbNode(id1);
+    saveSymbNode(&id1);
 
     getToken();
 }
