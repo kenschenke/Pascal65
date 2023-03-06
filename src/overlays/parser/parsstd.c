@@ -249,18 +249,9 @@ void initStandardRoutines(CHUNKNUM symtabChunkNum) {
 
     do {
         struct TStdRtn *pSR = &stdRtnList[i];
+        memset(&routineId.defn, 0, sizeof(DEFN));
         enterSymtab(symtabChunkNum, &routineId, pSR->pName, pSR->dc);
         routineId.defn.routine.which = pSR->rc;
-        routineId.defn.routine.parmCount = 0;
-        routineId.defn.routine.totalParmSize = 0;
-        routineId.defn.routine.totalLocalSize = 0;
-        routineId.defn.routine.locals.parmIds = 0;
-        routineId.defn.routine.locals.constantIds = 0;
-        routineId.defn.routine.locals.typeIds = 0;
-        routineId.defn.routine.locals.variableIds = 0;
-        routineId.defn.routine.locals.routineIds = 0;
-        routineId.defn.routine.symtab = 0;
-        routineId.defn.routine.Icode = 0;
         setType(&routineId.node.typeChunk, dummyType);
         saveSymbNode(&routineId);
     } while (stdRtnList[++i].pName);
