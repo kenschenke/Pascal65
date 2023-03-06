@@ -27,7 +27,7 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 
 c64_CFLAGS =
 c128_CFLAGS =
-mega65_CFLAGS = -D __MEGA65__ -D __TEST__ -I ../../mega65-libc/include
+mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
 CONFIG := cfg-$(TARGET).cfg
 CFLAGS = $($(TARGET)_CFLAGS) -W error -D MAINPAS -O -I ../../include
 ASFLAGS = --asm-include-dir ../../asminc
@@ -45,8 +45,10 @@ SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
-SOURCES += $(wildcard $(LIBCOMMONDIR)/*.c)
-SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
+SOURCES += $(LIBCOMMONDIR)/int16.s
+SOURCES += $(LIBCOMMONDIR)/floatcomp.s
+SOURCES += $(LIBCOMMONDIR)/uint16comp.s
+SOURCES += $(LIBCOMMONDIR)/int16comp.s
 ifeq ($(TARGET),mega65)
 SOURCES += $(LIBCSRCDIR)/memory.c
 endif
@@ -56,6 +58,24 @@ PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
 EXECOVRLSRCS := $(wildcard $(EXECOVRLSRC)/*.c)
 EXECOVRLSRCS += $(wildcard $(EXECOVRLSRC)/*.s)
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatc.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/float.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatadd.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatsub.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatmult.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatdiv.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatutil.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatnorm.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatoutput.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatinput.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/floatround.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/leftpad.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/printz.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/readint16.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/writeint16.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/inputbuf.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/getline.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/parseint16.s
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -174,14 +194,15 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii assign.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii assign.pas testforward.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
-	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
+	-write $(BINDIR)/$(PARSEROVRLFILE) i1 \
+	-write $(BINDIR)/$(EXECOVRLFILE) i2 \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
+	-write testforward.petscii tfwd,seq \
 	-write assign.pas assign.pas,seq
 else
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii testforward.petscii translate.petscii nested.petscii
