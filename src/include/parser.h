@@ -49,12 +49,6 @@ void initStandardRoutines(CHUNKNUM symtabChunkNum);
 CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode);
 CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode);
 CHUNKNUM parseEofEolnCall(CHUNKNUM Icode);
-CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode);
-CHUNKNUM parsePredSuccCall(CHUNKNUM Icode);
-CHUNKNUM parseChrCall(CHUNKNUM Icode);
-CHUNKNUM parseOddCall(CHUNKNUM Icode);
-CHUNKNUM parseOrdCall(CHUNKNUM Icode);
-CHUNKNUM parseRoundTruncCall(CHUNKNUM Icode);
 void skipExtraParms(CHUNKNUM Icode);
 
 // Declarations

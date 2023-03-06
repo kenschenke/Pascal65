@@ -17,6 +17,13 @@
 #include <parscommon.h>
 #include <common.h>
 
+#define STDPARM_INTEGER 0x1
+#define STDPARM_ENUM    0x2
+#define STDPARM_REAL    0x4
+#define STDPARM_CHAR    0x8
+
+static CHUNKNUM checkStdParms(CHUNKNUM Icode, char allowedParms, CHUNKNUM returnType);
+
 CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode) {
     switch (routineNode.defn.routine.which) {
         case rcRead:
@@ -33,30 +40,65 @@ CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode) {
 
         case rcAbs:
         case rcSqr:
-            return parseAbsSqrCall(Icode);
+            return checkStdParms(Icode, STDPARM_INTEGER | STDPARM_REAL, 0);
 
         case rcPred:
         case rcSucc:
-            return parsePredSuccCall(Icode);
+            return checkStdParms(Icode, STDPARM_INTEGER | STDPARM_ENUM, 0);
 
         case rcChr:
-            return parseChrCall(Icode);
+            return checkStdParms(Icode, STDPARM_INTEGER, charType);
 
         case rcOdd:
-            return parseOddCall(Icode);
+            return checkStdParms(Icode, STDPARM_INTEGER, booleanType);
 
         case rcOrd:
-            return parseOrdCall(Icode);
+            return checkStdParms(Icode, STDPARM_CHAR | STDPARM_ENUM, integerType);
         
         case rcRound:
         case rcTrunc:
-            return parseRoundTruncCall(Icode);
+            return checkStdParms(Icode, STDPARM_REAL, integerType);
 
         default:
             return 0;
     }
 
     return 0;
+}
+
+static CHUNKNUM checkStdParms(CHUNKNUM Icode, char allowedParms, CHUNKNUM returnType) {
+    TTYPE parmType;
+    CHUNKNUM parmTypeChunk, baseTypeChunk, resultType;
+
+    // There should be one integer parameter.
+    if (tokenCode == tcLParen) {
+        getTokenAppend(Icode);
+
+        parmTypeChunk = parseExpression(Icode);
+        getChunkCopy(parmTypeChunk, &parmType);
+        baseTypeChunk = getBaseType(getChunk(parmTypeChunk));
+        if ((allowedParms & STDPARM_CHAR && baseTypeChunk == charType) ||
+            (allowedParms & STDPARM_ENUM && parmType.form == fcEnum) ||
+            (allowedParms & STDPARM_INTEGER && baseTypeChunk == integerType) ||
+            (allowedParms & STDPARM_REAL && baseTypeChunk == realType)) {
+            resultType = returnType ? returnType : parmTypeChunk;
+        } else {
+            Error(errIncompatibleTypes);
+            resultType = integerType;
+        }
+
+        // There better not be any more parameters.
+        if (tokenCode != tcRParen) {
+            skipExtraParms(Icode);
+        }
+
+        // right paren
+        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
+    } else {
+        Error(errWrongNumberOfParams);
+    }
+
+    return resultType;
 }
 
 CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode) {
@@ -167,166 +209,6 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
     }
 
     return booleanType;
-}
-
-CHUNKNUM parseAbsSqrCall(CHUNKNUM Icode) {
-    CHUNKNUM parmTypeChunk, baseTypeChunk, resultType;
-
-    // There should be one integer parameter.
-    if (tokenCode == tcLParen) {
-        getTokenAppend(Icode);
-
-        parmTypeChunk = parseExpression(Icode);
-        baseTypeChunk = getBaseType(getChunk(parmTypeChunk));
-        if (baseTypeChunk != integerType && baseTypeChunk != realType) {
-            Error(errIncompatibleTypes);
-            resultType = integerType;
-        } else {
-            resultType = parmTypeChunk;
-        }
-
-        // There better not be any more parameters.
-        if (tokenCode != tcRParen) {
-            skipExtraParms(Icode);
-        }
-
-        // right paren
-        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-    } else {
-        Error(errWrongNumberOfParams);
-    }
-
-    return resultType;
-}
-
-CHUNKNUM parsePredSuccCall(CHUNKNUM Icode) {
-    TTYPE *parmType;
-    CHUNKNUM resultType, parmTypeChunk, baseTypeChunk;
-
-    // There should be one integer or enumeration parameter
-    if (tokenCode == tcLParen) {
-        getTokenAppend(Icode);
-
-        parmTypeChunk = parseExpression(Icode);
-        parmType = getChunk(parmTypeChunk);
-        baseTypeChunk = getBaseType(parmType);
-        if (baseTypeChunk != integerType && parmType->form != fcEnum) {
-            Error(errIncompatibleTypes);
-            resultType = integerType;
-        } else {
-            resultType = parmTypeChunk;
-        }
-
-        // There better not be any more parameters
-        if (tokenCode != tcRParen) {
-            skipExtraParms(Icode);
-        }
-
-        // Right paren
-        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-    } else {
-        Error(errWrongNumberOfParams);
-    }
-
-    return resultType;
-}
-
-CHUNKNUM parseChrCall(CHUNKNUM Icode) {
-    // There should be one character parameter.
-    if (tokenCode == tcLParen) {
-        getTokenAppend(Icode);
-
-        if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
-            Error(errIncompatibleTypes);
-        }
-
-        // There better not be any more paramters
-        if (tokenCode != tcRParen) {
-            skipExtraParms(Icode);
-        }
-
-        // right paren
-        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-    } else {
-        Error(errWrongNumberOfParams);
-    }
-
-    return charType;
-}
-
-CHUNKNUM parseOddCall(CHUNKNUM Icode) {
-    // There should be one integer parameter.
-    if (tokenCode == tcLParen) {
-        getTokenAppend(Icode);
-
-        if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
-            Error(errIncompatibleTypes);
-        }
-
-        // There better not be any more paramters
-        if (tokenCode != tcRParen) {
-            skipExtraParms(Icode);
-        }
-
-        // right paren
-        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-    } else {
-        Error(errWrongNumberOfParams);
-    }
-
-    return booleanType;
-}
-
-CHUNKNUM parseOrdCall(CHUNKNUM Icode) {
-    TTYPE parmType;
-    CHUNKNUM parmTypeChunk, baseTypeChunk;
-
-    // There should be one character or enumeration parameter.
-    if (tokenCode == tcLParen) {
-        getTokenAppend(Icode);
-
-        parmTypeChunk = parseExpression(Icode);
-        retrieveChunk(parmTypeChunk, (unsigned char *)&parmType);
-        baseTypeChunk = getBaseType(&parmType);
-        if (baseTypeChunk != charType && parmType.form != fcEnum) {
-            Error(errIncompatibleTypes);
-        }
-
-        // There better not be any more paramters
-        if (tokenCode != tcRParen) {
-            skipExtraParms(Icode);
-        }
-
-        // right paren
-        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-    } else {
-        Error(errWrongNumberOfParams);
-    }
-
-    return integerType;
-}
-
-CHUNKNUM parseRoundTruncCall(CHUNKNUM Icode) {
-    // There should be one real parameter
-    if (tokenCode == tcLParen) {
-        getTokenAppend(Icode);
-
-        if (getBaseType(getChunk(parseExpression(Icode))) != realType) {
-            Error(errIncompatibleTypes);
-        }
-
-        // There better not be any more parameters
-        if (tokenCode != tcRParen) {
-            skipExtraParms(Icode);
-        }
-
-        // )
-        condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-    } else {
-        Error(errWrongNumberOfParams);
-    }
-
-    return integerType;
 }
 
 void skipExtraParms(CHUNKNUM Icode) {
