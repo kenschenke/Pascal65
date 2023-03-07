@@ -17,7 +17,7 @@ D81FILE := $(BINDIR)/$(PROGRAM).d81
 PARSEROVRLFILE := $(PROGRAM).1
 EXECOVRLFILE := $(PROGRAM).2
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
@@ -197,12 +197,12 @@ ifeq ($(TARGET),mega65)
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii assign.pas testforward.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write $(BINDIR)/$(PARSEROVRLFILE) i1 \
-	-write $(BINDIR)/$(EXECOVRLFILE) i2 \
+	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
+	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write testforward.petscii tfwd,seq \
+	-write testforward.petscii testforward.pas,seq \
 	-write assign.pas assign.pas,seq
 else
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii testforward.petscii translate.petscii nested.petscii
