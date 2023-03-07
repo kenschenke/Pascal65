@@ -145,7 +145,6 @@ char saveSymbNode(SYMBNODE *pNode);
 char saveSymbNodeDefn(SYMBNODE *pNode);
 char saveSymbNodeOnly(SYMBNODE *pNode);
 
-CHUNKNUM getCurrentSymtab(void);
 void initSymtabs(void);
 void initSymtabsForParser(void);
 char symtabEnterLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc);

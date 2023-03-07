@@ -9,7 +9,7 @@ CHUNKNUM dummyType;
 CHUNKNUM integerType;
 CHUNKNUM realType;
 
-static char getType(CHUNKNUM chunkNum, TTYPE *pType);
+static void setPredefinedType(CHUNKNUM typeId, CHUNKNUM typeChunk);
 
 void checkAssignmentCompatible(CHUNKNUM targetTypeId, CHUNKNUM valueTypeId, TErrorCode ec) {
     TTYPE targetType, valueType;
@@ -58,18 +58,14 @@ void checkIntegerOrReal(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
     TTYPE type;
     CHUNKNUM baseType;
 
-    if (getType(type1Chunk, &type) == 0) {
-        Error(errIncompatibleTypes);
-    }
+    getChunkCopy(type1Chunk, &type);
     baseType = getBaseType(&type);
     if (baseType != integerType && baseType != realType) {
         Error(errIncompatibleTypes);
     }
 
     if (type2Chunk) {
-        if (getType(type2Chunk, &type) == 0) {
-            Error(errIncompatibleTypes);
-        }
+        getChunkCopy(type2Chunk, &type);
         baseType = getBaseType(&type);
         if (baseType != integerType && baseType != realType) {
             Error(errIncompatibleTypes);
@@ -80,10 +76,8 @@ void checkIntegerOrReal(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
 void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
     TTYPE type1, type2;
 
-    if (getType(type1Chunk, &type1) == 0 ||
-        getType(type2Chunk, &type2) == 0) {
-        Error(errIncompatibleTypes);
-    }
+    getChunkCopy(type1Chunk, &type1);
+    getChunkCopy(type2Chunk, &type2);
 
     // Two identical scalar or enumeration types.
     if (type1Chunk == type2Chunk && (type1.form == fcScalar || type1.form == fcEnum)) {
@@ -111,20 +105,6 @@ void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk) {
 
 CHUNKNUM getBaseType(TTYPE *pType) {
     return pType->form == fcSubrange ? pType->subrange.baseType : pType->nodeChunkNum;
-}
-
-static char getType(CHUNKNUM chunkNum, TTYPE *pType) {
-    if (retrieveChunk(chunkNum, (unsigned char *)pType) == 0) {
-        return 0;
-    }
-
-    if (pType->form == fcSubrange) {
-        if (retrieveChunk(pType->subrange.baseType, (unsigned char *)pType) == 0) {
-            return 0;
-        }
-    }
-
-    return 1;
 }
 
 char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
@@ -162,37 +142,10 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     charType = makeType(fcScalar, sizeof(char), charId);
     dummyType = makeType(fcNone, 1, 0);
 
-    if (loadSymbNode(integerId, &node) == 0) {
-        return 0;
-    }
-    setType(&node.node.typeChunk, integerType);
-    if (storeChunk(integerId, (unsigned char *)&node.node) == 0) {
-        return 0;
-    }
-
-    if (loadSymbNode(realId, &node) == 0) {
-        return 0;
-    }
-    setType(&node.node.typeChunk, realType);
-    if (storeChunk(realId, (unsigned char *)&node.node) == 0) {
-        return 0;
-    }
-
-    if (loadSymbNode(booleanId, &node) == 0) {
-        return 0;
-    }
-    setType(&node.node.typeChunk, booleanType);
-    if (storeChunk(booleanId, (unsigned char *)&node.node) == 0) {
-        return 0;
-    }
-
-    if (loadSymbNode(charId, &node) == 0) {
-        return 0;
-    }
-    setType(&node.node.typeChunk, charType);
-    if (storeChunk(charId, (unsigned char *)&node.node) == 0) {
-        return 0;
-    }
+    setPredefinedType(integerId, integerType);
+    setPredefinedType(realId, realType);
+    setPredefinedType(booleanId, booleanType);
+    setPredefinedType(charId, charType);
 
     if (retrieveChunk(booleanType, (unsigned char *)&typeNode) == 0) {
         return 0;
@@ -209,25 +162,15 @@ char initPredefinedTypes(CHUNKNUM symtabChunkNum) {
     }
     node.node.nextNode = trueId;
     setType(&node.node.typeChunk, booleanType);
-    if (storeChunk(falseId, (unsigned char *)&node.node) == 0) {
-        return 0;
-    }
     node.defn.constant.value.integer = 0;
-    if (storeChunk(node.node.defnChunk, (unsigned char *)&node.defn) == 0) {
-        return 0;
-    }
+    saveSymbNode(&node);
 
     if (loadSymbNode(trueId, &node) == 0) {
         return 0;
     }
     setType(&node.node.typeChunk, booleanType);
-    if (storeChunk(trueId, (unsigned char *)&node.node) == 0) {
-        return 0;
-    }
     node.defn.constant.value.integer = 1;
-    if (storeChunk(node.node.defnChunk, (unsigned char *)&node.defn) == 0) {
-        return 0;
-    }
+    saveSymbNode(&node);
 
     // Initialize the dummy type object that will be used
     // for erroneous type definitions and for typeless objects.
@@ -329,6 +272,14 @@ CHUNKNUM makeStringType(int length) {
     }
 
     return typeObj.nodeChunkNum;
+}
+
+static void setPredefinedType(CHUNKNUM typeId, CHUNKNUM typeChunkNum) {
+    SYMTABNODE node;
+
+    getChunkCopy(typeId, &node);
+    setType(&node.typeChunk, typeChunkNum);
+    storeChunk(typeId, (unsigned char *)&node);
 }
 
 char setType(CHUNKNUM *targetType, CHUNKNUM sourceType) {

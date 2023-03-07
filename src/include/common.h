@@ -44,6 +44,5 @@ extern char isFatalError;       // non-zero if fatal parsing error encountered
 
 void initCommon(void);
 char isStopKeyPressed(void);
-char strInput(char *buffer, int buflen);
 
 #endif // end of COMMON_H

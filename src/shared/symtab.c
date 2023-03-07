@@ -404,7 +404,3 @@ char symtabEnterLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc) {
 char symtabEnterNewLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc) {
     return enterNew(symtabStack[currentNestingLevel], pNode, pString, dc);
 }
-
-CHUNKNUM getCurrentSymtab(void) {
-    return symtabStack[currentNestingLevel];
-}

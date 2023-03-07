@@ -18,7 +18,7 @@
 .export _getNextTokenFromIcode
 
 .import extractSymtabNode, _readFromMemBuf, _retrieveChunk
-.import _currentLineNumber, _mcLineMarker, _symbolStrings
+.import _currentLineNumber, _mcLineMarker
 .import popax, pushax
 .importzp ptr1, ptr2, ptr3
 
@@ -83,7 +83,7 @@ symtabNode: .res .sizeof(SYMBNODE)
     cmp #tcIdentifier
     beq @HasSymbolTableNode
     cmp #tcString
-    bne @HasSpecialToken
+    bne @Done
 
 @HasSymbolTableNode:
     ; Extract a symbol table node
@@ -152,44 +152,6 @@ symtabNode: .res .sizeof(SYMBNODE)
     sta (ptr1),y
     dey
     bpl @CopyLoop
-
-    jmp @Done
-
-@HasSpecialToken:
-    ; Copy the string for this token into the token's string buffer
-
-    ; ptr1 is the token's string buffer (the destination)
-    lda pToken
-    sta ptr1
-    lda pToken + 1
-    sta ptr1 + 1
-    ; offset to the string buffer portion of the token
-    clc
-    lda ptr1
-    adc #4
-    sta ptr1
-    lda ptr1 + 1
-    adc #0
-    sta ptr1 + 1
-
-    ; ptr2 is the symbol string (the source of the copy)
-    lda code
-    adc code
-    tay
-    lda _symbolStrings,y
-    sta ptr2
-    iny
-    lda _symbolStrings,y
-    sta ptr2 + 1
-
-    ; Copy the string, including the null terminator
-    ldy #0
-@TokenLoop:
-    lda (ptr2),y
-    sta (ptr1),y
-    beq @Done
-    iny
-    jmp @TokenLoop
 
 @Done:
     ; Store the token code in the pToken buffer
