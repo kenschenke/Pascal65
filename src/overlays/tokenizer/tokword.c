@@ -94,7 +94,7 @@ void getWordToken(void)
     do {
         *ps++ = ch;
         ch = getChar();
-    } while (charCodeMap[ch] == ccLetter || charCodeMap[ch] == ccDigit);
+    } while (getCharCode(ch) == ccLetter || getCharCode(ch) == ccDigit);
 
     *ps = 0;
 

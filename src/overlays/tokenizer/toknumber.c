@@ -33,7 +33,7 @@ void getNumberToken(char sawDecimalPoint)
     char sawExponentSign = 0;// non-zero when +|- encountered after e|E
 
     ch = getCurrentChar();
-    if (charCodeMap[ch] != ccDigit) {
+    if (getCharCode(ch) != ccDigit) {
         Error(errInvalidNumber);
         return;  // failure
     }
@@ -94,7 +94,7 @@ void getNumberToken(char sawDecimalPoint)
                 break;
             }
             sawExponentSign = 1;
-        } else if (charCodeMap[ch] != ccDigit) {
+        } else if (getCharCode(ch) != ccDigit) {
             break;
         }
 

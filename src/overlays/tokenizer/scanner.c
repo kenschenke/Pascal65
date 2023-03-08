@@ -21,13 +21,11 @@ TDataType tokenType;
 TDataValue tokenValue;
 char tokenString[MAX_LINE_LEN + 1];
 
-TCharCode   charCodeMap[255];
-
 void getNextToken(void)
 {
     skipWhiteSpace();
 
-    switch (charCodeMap[getCurrentChar()]) {
+    switch (getCharCode(getCurrentChar())) {
         case ccLetter:
             getWordToken();
             break;
@@ -50,38 +48,36 @@ void getNextToken(void)
     }
 }
 
-static void initCharCodeMap(void)
-{
-    int i;
-
-    if (charCodeMap['a'] != ccError) {
-        return;  // already initialized
+TCharCode getCharCode(unsigned char ch) {
+    if ((ch >= 65 && ch <= 90) ||
+        (ch >= 97 && ch <= 122) ||
+        (ch >= 193 && ch <= 218)) {
+        return ccLetter;
     }
 
-    for (i = 97; i <= 122; ++i) charCodeMap[i] = ccLetter;
-    for (i = 65; i <= 90; ++i) charCodeMap[i] = ccLetter;
-    for (i = 193; i <= 218; ++i) charCodeMap[i] = ccLetter;
-    for (i = 48; i <= 57; ++i) charCodeMap[i] = ccDigit;
-    charCodeMap['+' ] = charCodeMap['-' ] = ccSpecial;
-    charCodeMap['*' ] = charCodeMap['/' ] = ccSpecial;
-    charCodeMap['=' ] = charCodeMap['^' ] = ccSpecial;
-    charCodeMap['.' ] = charCodeMap[',' ] = ccSpecial;
-    charCodeMap['<' ] = charCodeMap['>' ] = ccSpecial;
-    charCodeMap['(' ] = charCodeMap[')' ] = ccSpecial;
-    charCodeMap['[' ] = charCodeMap[']' ] = ccSpecial;
-    charCodeMap[':' ] = charCodeMap[';' ] = ccSpecial;
-    charCodeMap[' ' ] = charCodeMap['\t'] = ccWhiteSpace;
-    charCodeMap[13  ] = charCodeMap['\0'] = ccWhiteSpace;
-    charCodeMap[10  ] = ccWhiteSpace;  // tab (C64 doesn't have this)
-    charCodeMap['\''] = ccQuote;
-    charCodeMap[eofChar] = ccEndOfFile;
+    if (ch == '+' || ch == '-' || ch == '*' || ch == '/' ||
+        ch == '=' || ch == '^' || ch == '.' || ch == ',' ||
+        ch == '<' || ch == '>' || ch == '(' || ch == ')' ||
+        ch == '[' || ch == ']' || ch == ':' || ch == ';') {
+        return ccSpecial;
+    }
+
+    if (ch >= 48 && ch <= 57) return ccDigit;
+
+    if (ch == ' ' || ch == '\t' || ch == 10 || ch == 13 || ch == '\0') {
+        return ccWhiteSpace;
+    }
+
+    if (ch == '\'') return ccQuote;
+
+    if (ch == eofChar) return ccEndOfFile;
+
+    return ccError;
 }
 
 static void skipWhiteSpace(void)
 {
     char ch;
-
-    initCharCodeMap();
 
     ch = getCurrentChar();
     while(1) {
@@ -109,7 +105,7 @@ static void skipWhiteSpace(void)
                 putBackChar();
                 break;
             }
-        } else if (charCodeMap[ch] != ccWhiteSpace) {
+        } else if (getCharCode(ch) != ccWhiteSpace) {
             break;
         }
         ch = getChar();

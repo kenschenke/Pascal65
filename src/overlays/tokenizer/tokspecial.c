@@ -76,7 +76,7 @@ void getSpecialToken(void)
                 *ps++ = '.';
                 tokenCode = tcDotDot;
                 getChar();
-            } else if (charCodeMap[ch] == ccDigit) {
+            } else if (getCharCode(ch) == ccDigit) {
                 // This is the start of a real number
                 getNumberToken(1);
                 return;

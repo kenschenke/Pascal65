@@ -52,12 +52,8 @@ static void writeTzIdentifier(CHUNKNUM Icode);
 CHUNKNUM tokenize(const char *filename) {
     CHUNKNUM Icode, stringChunk;
     TTokenizerCode tzType;
-    int i;
     
     allocMemBuf(&Icode);
-
-
-    for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
 
     tinOpen(filename, abortSourceFileOpenFailed);
 

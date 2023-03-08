@@ -16,8 +16,6 @@
 #include <buffer.h>
 #include <misc.h>
 
-extern TCharCode charCodeMap[255];
-
 typedef struct {
     TTokenCode code;
     TDataType type;
@@ -29,6 +27,8 @@ extern TTokenCode tokenCode;
 extern TDataType tokenType;
 extern TDataValue tokenValue;
 extern char tokenString[MAX_LINE_LEN + 1];
+
+TCharCode getCharCode(unsigned char ch);
 
 void getNextToken(void);
 
