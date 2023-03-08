@@ -2,6 +2,7 @@ SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
 DRVDIR := ../../../drv
+TOKENIZEROVRLSRC := ../../overlays/tokenizer
 PARSEROVRLSRC := ../../overlays/parser
 TESTOVRLSRC := ../../overlays/parsertest
 SHAREDSRCDIR = ../../shared
@@ -15,10 +16,11 @@ TESTSDIR = tests
 
 PROGRAM := parsertest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
-PARSEROVRLFILE := $(PROGRAM).1
-TESTOVRLFILE := $(PROGRAM).2
+TOKENIZEROVRLFILE := $(PROGRAM).1
+PARSEROVRLFILE := $(PROGRAM).2
+TESTOVRLFILE := $(PROGRAM).3
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
@@ -52,6 +54,8 @@ ifeq ($(TARGET),mega65)
 SOURCES += $(LIBCSRCDIR)/memory.c
 endif
 
+TOKENIZEROVRLSRCS := $(wildcard $(TOKENIZEROVRLSRC)/*.c)
+
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
 PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
@@ -61,6 +65,7 @@ TESTOVRLSRCS += $(wildcard $(TESTOVRLSRC)/*.s)
 CONFIG := cfg-$(TARGET).cfg
 
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TOKENIZEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(PARSEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TESTOVRLSRCS)))))
 
@@ -90,21 +95,25 @@ vpath %.s $(TARGETSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath $(TOKENIZEROVRLSRC)/%.c
+$(OBJDIR)/%.o: $(TOKENIZEROVRLSRC)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
 vpath $(PARSEROVRLSRC)/%.c
 $(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(PARSEROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(TESTOVRLSRC)/%.c
 $(OBJDIR)/%.o: $(TESTOVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(TESTOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(TESTOVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LIBCSRCDIR)/%.c
 $(OBJDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJDIR)
@@ -259,6 +268,7 @@ ifeq ($(TARGET),mega65)
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(TESTOVRLFILE) $(TESTOVRLFILE) \
 	-write abortmsgs.petscii abortmsgs,seq \
@@ -268,6 +278,7 @@ else
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii arraytest.petscii arraytext.petscii casechartest.petscii casechartext.petscii caseenumtest.petscii caseenumtext.petscii caseinttest.petscii caseinttext.petscii consttest.petscii consttext.petscii enumtest.petscii enumtext.petscii fortest.petscii fortext.petscii iftest.petscii iftext.petscii recordtest.petscii recordtext.petscii repeattest.petscii repeattext.petscii routinetest.petscii scalartest.petscii scalartext.petscii stdrtntest.petscii stdrtntext.petscii subrangetest.petscii vartest.petscii whiletest.petscii whiletext.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(TESTOVRLFILE) $(TESTOVRLFILE) \
 	-write abortmsgs.petscii abortmsgs,seq \

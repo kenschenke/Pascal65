@@ -17,12 +17,20 @@
 #include <symtab.h>
 #include <parscommon.h>
 #include <string.h>
+#include <tokenizer.h>
 
 SYMBNODE routineNode;
+TTokenCode parserToken;
+TDataValue parserValue;
+CHUNKNUM parserIdentifier;
+TTokenizerCode parserTokenizerCode;
+char parserString[CHUNK_LEN + 1];
+
+static CHUNKNUM parserIcode;
 
 void condGetToken(TTokenCode tc, TErrorCode ec) {
     // Get another token only if the current one matches tc
-    if (tc == tokenCode) {
+    if (tc == parserToken) {
         getToken();
     } else {
         Error(ec);
@@ -31,7 +39,7 @@ void condGetToken(TTokenCode tc, TErrorCode ec) {
 
 void condGetTokenAppend(CHUNKNUM Icode, TTokenCode tc, TErrorCode ec) {
     // Get another token only if the current one matches tc.
-    if (tc == tokenCode) {
+    if (tc == parserToken) {
         getTokenAppend(Icode);
     } else {
         Error(ec);
@@ -56,30 +64,60 @@ char findSymtabNode(SYMBNODE *pNode, const char *identifier) {
 
 void getToken(void)
 {
-    getNextToken();
+    if (isMemBufAtEnd(parserIcode)) {
+        Error(errUnexpectedEndOfFile);
+        return;
+    }
+
+    readFromMemBuf(parserIcode, &parserTokenizerCode, 1);
+    switch (parserTokenizerCode) {
+        case tzIdentifier:
+            readFromMemBuf(parserIcode, &parserIdentifier, 2);
+            getChunkCopy(parserIdentifier, parserString);
+            parserToken = tcIdentifier;
+            break;
+
+        case tzInteger:
+            readFromMemBuf(parserIcode, &parserValue.integer, 2);
+            parserToken = tcNumber;
+            break;
+        
+        case tzReal:
+            readFromMemBuf(parserIcode, &parserValue.real, 4);
+            parserToken = tcNumber;
+            break;
+        
+        case tzChar:
+            readFromMemBuf(parserIcode, &parserValue.character, 1);
+            parserToken = tcString;
+            break;
+        
+        case tzString:
+            readFromMemBuf(parserIcode, &parserValue.string.len, 2);
+            readFromMemBuf(parserIcode, &parserValue.string.chunkNum, 2);
+            getChunkCopy(parserValue.string.chunkNum, parserString);
+            parserToken = tcString;
+            break;
+    }
 }
 
 void getTokenAppend(CHUNKNUM Icode)
 {
     getToken();
-    putTokenToIcode(Icode, tokenCode);
+    putTokenToIcode(Icode, parserToken);
 }
 
 void initParser(void) {
     initSymtabsForParser();
 }
 
-CHUNKNUM parse(const char *filename)
+CHUNKNUM parse(CHUNKNUM Icode)
 {
-    int i;
-
-    for (i = 0; i <= 127; ++i) charCodeMap[i] = ccError;
-
-    tinOpen(filename, abortSourceFileOpenFailed);
+    parserIcode = Icode;
+    setMemBufPos(Icode, 0);
 
     getToken();
     parseProgram();
-    tinClose();
 
     // printf("\n%20d source lines.\n", scanner->pTinBuf->currentLineNumber);
     // printf("%20d syntax errors.\n", errorCount);
@@ -93,27 +131,27 @@ void resync(const TTokenCode *pList1,
     TErrorCode errorCode;
 
     // Is the current token in one of the lists?
-    char errorFlag = !tokenIn(tokenCode, pList1) &&
-                    !tokenIn(tokenCode, pList2) &&
-                    !tokenIn(tokenCode, pList3);
+    char errorFlag = !tokenIn(parserToken, pList1) &&
+                    !tokenIn(parserToken, pList2) &&
+                    !tokenIn(parserToken, pList3);
     
     if (errorFlag) {
         // Nope.  Flag it as an error.
-        errorCode = tokenCode == tcEndOfFile ?
+        errorCode = parserToken == tcEndOfFile ?
             errUnexpectedEndOfFile : errUnexpectedToken;
         Error(errorCode);
 
         // Skip tokens
-        while (!tokenIn(tokenCode, pList1) &&
-            !tokenIn(tokenCode, pList2) &&
-            !tokenIn(tokenCode, pList3) &&
-            tokenCode != tcPeriod &&
-            tokenCode != tcEndOfFile) {
+        while (!tokenIn(parserToken, pList1) &&
+            !tokenIn(parserToken, pList2) &&
+            !tokenIn(parserToken, pList3) &&
+            parserToken != tcPeriod &&
+            parserToken != tcEndOfFile) {
             getToken();
         }
 
         // Flag an unexpected end of file (if haven't already)
-        if ((tokenCode == tcEndOfFile) &&
+        if ((parserToken == tcEndOfFile) &&
             (errorCode != errUnexpectedEndOfFile)) {
             Error(errUnexpectedEndOfFile);
         }

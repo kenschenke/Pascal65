@@ -111,6 +111,10 @@ char getLine(void)
     return *pBufChar;
 }
 
+char isBufferEof(void) {
+    return feof(tinFh) ? 1 : 0;
+}
+
 char putBackChar(void)
 {
     if (isFatalError)

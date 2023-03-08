@@ -28,6 +28,7 @@ void tinClose(void);
 char getCurrentChar(void);
 char getChar(void);
 char getLine(void);
+char isBufferEof(void);
 char putBackChar(void);
 
 #endif // end of BUFFER_H

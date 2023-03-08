@@ -17,11 +17,17 @@
 #include <icode.h>
 #include <membuf.h>
 #include <types.h>
+#include <tokenizer.h>
 
 extern SYMBNODE routineNode;
+extern TTokenCode parserToken;
+extern TDataValue parserValue;
+extern CHUNKNUM parserIdentifier;
+extern TTokenizerCode parserTokenizerCode;
+extern char parserString[CHUNK_LEN + 1];
 
 void initParser(void);
-CHUNKNUM parse(const char *filename);  // returns programId
+CHUNKNUM parse(CHUNKNUM Icode);  // returns programId
 char findSymtabNode(SYMBNODE *pNode, const char *identifier);
 void condGetToken(TTokenCode tc, TErrorCode ec);
 void condGetTokenAppend(CHUNKNUM Icode, TTokenCode tc, TErrorCode ec);
