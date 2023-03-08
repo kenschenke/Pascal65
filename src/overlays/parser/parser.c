@@ -93,9 +93,9 @@ void getToken(void)
             break;
         
         case tzString:
-            readFromMemBuf(parserIcode, &parserValue.string.len, 2);
-            readFromMemBuf(parserIcode, &parserValue.string.chunkNum, 2);
-            getChunkCopy(parserValue.string.chunkNum, parserString);
+            // readFromMemBuf(parserIcode, &parserValue.string.len, 2);
+            // readFromMemBuf(parserIcode, &parserValue.string.chunkNum, 2);
+            // getChunkCopy(parserValue.string.chunkNum, parserString);
             parserToken = tcString;
             break;
     }

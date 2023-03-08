@@ -8,6 +8,7 @@
 #include <symtab.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tokenizer.h>
 
 #ifdef __MEGA65__
 #error Code to cache overlays is needed
@@ -129,7 +130,7 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
 
 static void runControlTest(const char *test, int firstLine) {
     SYMBNODE programNode;
-    CHUNKNUM programId;
+    CHUNKNUM tokenIcode, programId;
     char buf[25], buf2[30];
 
     sprintf(buf, "%stest.pas", test);
@@ -141,7 +142,9 @@ static void runControlTest(const char *test, int firstLine) {
     initParser();
 
     printf("\nParsing %s\n", buf);
-    programId = parse(buf);
+    tokenIcode = tokenize(buf);
+
+    programId = parse(tokenIcode);
 
     printf("Running tests\n");
     loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, testCache);
@@ -155,7 +158,7 @@ static void runControlTest(const char *test, int firstLine) {
 
 int main()
 {
-    CHUNKNUM programId;
+    CHUNKNUM tokenIcode, programId;
     int i = 0, j = 0;
     const char *controlTests[] = { "casechar", "caseenum", "caseint", "for", "if", "repeat", "while", NULL };
 
@@ -205,7 +208,8 @@ int main()
         // parse(cases[i].source);
 
         printf("\nParsing %s\n", cases[i].source);
-        programId = parse(cases[i].source);
+        tokenIcode = tokenize(cases[i].source);
+        programId = parse(tokenIcode);
     
         // Load the testing overlay
         printf("Running tests\n");

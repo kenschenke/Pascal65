@@ -13,17 +13,12 @@
  * with enough information for the parser to add them to a symbol table.  This
  * would allow node creation code to be moved into the tokenizer overlay.
  * 
- * REWRITE: Also, the charMap[] might be smaller if it is moved into a function that
- * just returns the character class.
- * 
  * REWRITE: initPredefinedTypes can happen in the tokenizer, maybe in a
  * initTokenizer function.
  * 
- * TODO: Remove membuf's dependency on in16 and float shared routines.
+ * TODO: Remove membuf's dependency on int16 and float shared routines.
  * 
  * TODO: Move testing code from shared code in parsertest to the parsertest overlay.
- * 
- * TODO: Replace tokenIn arrays with enums and hard-coded lists of tokens.
  * 
  * tzIdentifier
  *    The tzIdentifier code is followed by the two-byte chunk number
