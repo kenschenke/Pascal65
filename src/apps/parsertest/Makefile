@@ -160,13 +160,13 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 abortmsgs.petscii: $(SHAREDSRCDIR)/abortmsgs.txt
-	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -text -o abortmsgs.petscii
+	dos2unix < $(SHAREDSRCDIR)/abortmsgs.txt | petcat -w2 -text -o abortmsgs.petscii
 
 errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
-	dos2unix < $(SHAREDSRCDIR)/errormsgs.txt | petcat -text -o errormsgs.petscii
+	dos2unix < $(SHAREDSRCDIR)/errormsgs.txt | petcat -w2 -text -o errormsgs.petscii
 
 runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
-	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -text -o runtimemsgs.petscii
+	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -w2 -text -o runtimemsgs.petscii
 
 routines.petscii: routines.pas
 	dos2unix < routines.pas | petcat -w2 -text -o routines.petscii
