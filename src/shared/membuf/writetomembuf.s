@@ -16,7 +16,6 @@
 
 .import initMemBufChunk, loadMemBufDataCache, loadMemBufHeaderCache
 .import _cachedMemBufData, _cachedMemBufHdr
-.import intOp1, intOp2, geUint16
 .import popax
 .importzp ptr1, ptr2
 
@@ -28,6 +27,27 @@ length: .res 2
 toCopy: .res 1
 
 .code
+
+.proc isPosGeUsed
+    ; Compare the high bytes first
+    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    cmp _cachedMemBufHdr + MEMBUF::used + 1
+    bcc L1
+    bne L2
+    
+    ; Compare the low bytes
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
+    cmp _cachedMemBufHdr + MEMBUF::used
+    bcs L2
+
+L1:
+    lda #0
+    rts
+
+L2:
+    lda #1
+    rts
+.endproc
 
 ; TODO
 ; 
@@ -207,15 +227,7 @@ L8:
 
 Done:
     ; If posGlobal >= used, set used to posGlobal
-    lda _cachedMemBufHdr + MEMBUF::posGlobal
-    sta intOp1
-    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
-    sta intOp1 + 1
-    lda _cachedMemBufHdr + MEMBUF::used
-    sta intOp2
-    lda _cachedMemBufHdr + MEMBUF::used + 1
-    sta intOp2 + 1
-    jsr geUint16
+    jsr isPosGeUsed
     beq L9
     lda _cachedMemBufHdr + MEMBUF::posGlobal
     sta _cachedMemBufHdr + MEMBUF::used

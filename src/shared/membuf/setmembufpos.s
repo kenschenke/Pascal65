@@ -16,7 +16,6 @@
 
 .import loadMemBufDataCache, loadMemBufHeaderCache, _retrieveChunk
 .import _cachedMemBufData, _cachedMemBufHdr, _reserveMemBuf
-.import geUint16, ltUint16, intOp1, intOp2
 .import popax, pushax
 
 .bss
@@ -26,13 +25,32 @@ position: .res 2
 
 .code
 
+.proc isPosLtChunkLen
+    ; If high byte of position set, it's definitely
+    ; not less than the chunk length.
+    ; Compare the high bytes first
+    lda position + 1
+    bne L1
+
+    ; Compare the lower byte of position
+    lda position
+    cmp #MEMBUF_CHUNK_LEN
+    bcc L2
+
+L1:
+    lda #0
+    rts
+
+L2:
+    lda #1
+    rts
+.endproc
+
 ; void setMemBufPos(CHUNKNUM hdrChunkNum, unsigned position)
 .proc _setMemBufPos
     ; Store the second parameter
     sta position
-    sta intOp1              ; for later
     stx position + 1
-    stx intOp1 + 1          ; for later
     ; Store the first parameter
     jsr popax
     sta hdrChunkNum
@@ -74,15 +92,7 @@ L1:
     jsr loadMemBufDataCache
 
     ; If position < MEMBUF_CHUNK_LEN, this is the chunk we want
-    lda position
-    sta intOp1
-    lda position + 1
-    sta intOp1 + 1
-    lda #MEMBUF_CHUNK_LEN
-    sta intOp2
-    lda #0
-    sta intOp2 + 1
-    jsr ltUint16
+    jsr isPosLtChunkLen
     beq L2      ; greater than or equal
 
     ; This is the chunk we want - set the buffer header positions

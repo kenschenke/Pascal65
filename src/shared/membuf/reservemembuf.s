@@ -6,7 +6,6 @@
 .import loadMemBufDataCache, loadMemBufHeaderCache
 .import _cachedMemBufData, _cachedMemBufHdr
 .import _allocChunk, _retrieveChunk, _storeChunk
-.import intOp1, intOp2, leUint16, geUint16
 .import popax, pushax
 
 .importzp ptr1
@@ -20,6 +19,44 @@ size: .res 2
 
 .code
 
+.proc isSizeLeCapacity
+    ; Compare high bytes first.
+    ; If high byte of size is > capacity then the answer is false.
+    lda _cachedMemBufHdr + MEMBUF::capacity + 1
+    cmp size + 1
+    bcc L2
+    ; If low byte of size <= capacity then answer is true
+    lda _cachedMemBufHdr + MEMBUF::capacity
+    cmp size
+    bcs L1
+    jmp L2
+L1:
+    lda #1
+    rts
+
+L2:
+    lda #0
+    rts
+.endproc
+
+.proc isCapacityGeSize
+    ; Compare high bytes first.
+    ; If high byte of size > capacity then the answer is false.
+    lda _cachedMemBufHdr + MEMBUF::capacity + 1
+    cmp size + 1
+    bcc L1
+    ; If low byte of size > capacity then answer is false
+    lda _cachedMemBufHdr + MEMBUF::capacity
+    cmp size
+    bcc L1
+    lda #1
+    rts
+
+L1:
+    lda #0
+    rts
+.endproc
+
 ; hdrChunkNum : the header
 ; lastChunkNum : previous chunknum or 0 if no chunk yet
 ; currentChunkNum : the current chunknum
@@ -28,9 +65,7 @@ size: .res 2
 .proc _reserveMemBuf
     ; Store the second parameter
     sta size
-    sta intOp1          ; for later
     stx size + 1
-    stx intOp1 + 1      ; for later
     ; Store the first parameter
     jsr popax
     sta hdrChunkNum
@@ -41,13 +76,8 @@ size: .res 2
     ldx hdrChunkNum + 1
     jsr loadMemBufHeaderCache
 
-    ; If size is less than the current capacity, nothing to do.
-    lda _cachedMemBufHdr + MEMBUF::capacity
-    sta intOp2
-    lda _cachedMemBufHdr + MEMBUF::capacity + 1
-    sta intOp2 + 1
-    ; size is already in intOp1
-    jsr leUint16
+    ; If size is <= current capacity, nothing to do.
+    jsr isSizeLeCapacity
     bne L0          ; nothing to do
 
     ; Reset the buffer position and capacity (recalculated below)
@@ -83,15 +113,7 @@ L0:
     ; Loop until the capacity is >= the requested size
 L1:
     ; If capacity >= size, we have enough memory allocated
-    lda _cachedMemBufHdr + MEMBUF::capacity
-    sta intOp1
-    lda _cachedMemBufHdr + MEMBUF::capacity + 1
-    sta intOp1 + 1
-    lda size
-    sta intOp2
-    lda size + 1
-    sta intOp2 + 1
-    jsr geUint16
+    jsr isCapacityGeSize
     bne L0
 
 L2:
