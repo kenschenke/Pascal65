@@ -27,7 +27,7 @@ void parseBlock(void) {
     // <compound-statement>   reset the icode and append BEGIN to it,
     //                        and then parse the compound statement.
     resync(tlStatementStart, NULL, NULL);
-    if (tokenCode != tcBEGIN) Error(errMissingBEGIN);
+    if (parserToken != tcBEGIN) Error(errMissingBEGIN);
 
     allocMemBuf(&routineNode.defn.routine.Icode);
     saveSymbNodeDefn(&routineNode);
@@ -45,10 +45,10 @@ void parseFuncOrProcHeader(char isFunc) {
 
     // <id>   If the routine id has already been declared in this scope,
     //        it must have been a forward declaration.
-    if (tokenCode == tcIdentifier) {
-        if (!symtabSearchLocal(&routineNode, tokenString)) {
+    if (parserToken == tcIdentifier) {
+        if (!symtabSearchLocal(&routineNode, parserString)) {
             // Not already declared
-            symtabEnterLocal(&routineNode, tokenString,
+            symtabEnterLocal(&routineNode, parserString,
                 isFunc ? dcFunction : dcProcedure);
             routineNode.defn.routine.totalLocalSize = 0;
         } else {
@@ -74,7 +74,7 @@ void parseFuncOrProcHeader(char isFunc) {
     // Optional (<id-list>) : If there was a forward declaration, the
     //                        parameter list must match with ones
     //                        already forward-declared.
-    if (tokenCode == tcLParen) {
+    if (parserToken == tcLParen) {
         parseFormalParmList(&parmList, &parmCount, &totalParmSize);
         if (forwardFlag) {
             if (parmCount != routineNode.defn.routine.parmCount) {
@@ -103,10 +103,10 @@ void parseFuncOrProcHeader(char isFunc) {
         // Optional <type-id> : If there was a forward declaration, there must
         //                      not be a type id, but if there was, parse it
         //                      anyway for error recovery.
-        if (!forwardFlag || tokenCode == tcColon) {
+        if (!forwardFlag || parserToken == tcColon) {
             condGetToken(tcColon, errMissingColon);
-            if (tokenCode == tcIdentifier) {
-                symtabStackFind(tokenString, &typeId);
+            if (parserToken == tcIdentifier) {
+                symtabStackFind(parserString, &typeId);
                 if (typeId.defn.how != dcType) Error(errInvalidType);
                 if (forwardFlag) {
                     Error(errAlreadyForwarded);
@@ -131,10 +131,10 @@ void parseProgram(void) {
 
     // ;
     resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
-    if (tokenCode == tcSemicolon) {
+    if (parserToken == tcSemicolon) {
         getToken();
-    } else if (tokenIn(tokenCode, tlDeclarationStart) ||
-        tokenIn(tokenCode, tlStatementStart)) {
+    } else if (tokenIn(parserToken, tlDeclarationStart) ||
+        tokenIn(parserToken, tlStatementStart)) {
         Error(errMissingSemicolon);
     }
 
@@ -155,8 +155,8 @@ void parseProgramHeader(void) {
     condGetToken(tcPROGRAM, errMissingPROGRAM);
 
     // <id>
-    if (tokenCode == tcIdentifier) {
-        symtabEnterNewLocal(&routineNode, tokenString, dcProgram);
+    if (parserToken == tcIdentifier) {
+        symtabEnterNewLocal(&routineNode, parserString, dcProgram);
 
         memset(&routineNode.defn, 0, sizeof(DEFN));
         routineNode.defn.routine.which = rcDeclared;
@@ -173,12 +173,12 @@ void parseProgramHeader(void) {
     symtabStackEnterScope();
 
     // Optional (<id-list>)
-    if (tokenCode == tcLParen) {
+    if (parserToken == tcLParen) {
         // Loop to parse a comma-separated identifier list.
         do {
             getToken();
-            if (tokenCode == tcIdentifier) {
-                symtabEnterNewLocal(&parmId, tokenString, dcVarParm);
+            if (parserToken == tcIdentifier) {
+                symtabEnterNewLocal(&parmId, parserString, dcVarParm);
                 setType(&parmId.node.typeChunk, dummyType);
                 saveSymbNodeOnly(&parmId);
                 getToken();
@@ -194,7 +194,7 @@ void parseProgramHeader(void) {
             } else {
                 Error(errMissingIdentifier);
             }
-        } while (tokenCode == tcComma);
+        } while (parserToken == tcComma);
 
         // )
         resync(tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
@@ -209,7 +209,7 @@ void parseSubroutineDeclarations(void) {
     parentRtnId = routineNode.node.nodeChunkNum;
 
     // Loop to parse procedure and function definitions
-    while (tokenIn(tokenCode, tlProcFuncStart)) {
+    while (tokenIn(parserToken, tlProcFuncStart)) {
         parseSubroutine();
         childRtnId = routineNode.node.nodeChunkNum;
 
@@ -225,10 +225,10 @@ void parseSubroutineDeclarations(void) {
 
         // semicolon
         resync(tlDeclarationFollow, tlProcFuncStart, tlStatementStart);
-        if (tokenCode == tcSemicolon) {
+        if (parserToken == tcSemicolon) {
             getToken();
-        } else if (tokenIn(tokenCode, tlProcFuncStart) ||
-            tokenIn(tokenCode, tlStatementStart)) {
+        } else if (tokenIn(parserToken, tlProcFuncStart) ||
+            tokenIn(parserToken, tlStatementStart)) {
             Error(errMissingSemicolon);
         }
     }
@@ -236,19 +236,19 @@ void parseSubroutineDeclarations(void) {
 
 void parseSubroutine(void) {
     // <routine-header>
-    parseFuncOrProcHeader(tokenCode == tcFUNCTION);
+    parseFuncOrProcHeader(parserToken == tcFUNCTION);
 
     // ;
     resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
-    if (tokenCode == tcSemicolon) {
+    if (parserToken == tcSemicolon) {
         getToken();
-    } else if (tokenIn(tokenCode, tlDeclarationStart) ||
-        tokenIn(tokenCode, tlStatementStart)) {
+    } else if (tokenIn(parserToken, tlDeclarationStart) ||
+        tokenIn(parserToken, tlStatementStart)) {
         Error(errMissingSemicolon);
     }
 
     // <block> or forward
-    if (stricmp(tokenString, "forward")) {
+    if (stricmp(parserString, "forward")) {
         routineNode.defn.routine.which = rcDeclared;
         saveSymbNode(&routineNode);
         parseBlock();

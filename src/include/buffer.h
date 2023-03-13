@@ -18,7 +18,6 @@
 
 #define MAX_LINE_LEN 80
 
-extern short currentLineNumber;
 extern char eofChar;
 extern unsigned inputPosition;
 

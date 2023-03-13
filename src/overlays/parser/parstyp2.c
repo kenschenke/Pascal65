@@ -41,7 +41,7 @@ CHUNKNUM parseArrayType(void) {
 
         // ,
         resync(tlIndexFollow, tlIndexStart, NULL);
-        if (tokenCode == tcComma || tokenIn(tokenCode, tlIndexStart)) {
+        if (parserToken == tcComma || tokenIn(parserToken, tlIndexStart)) {
             // For each type spec after the first, create an element type object
             newTypeChunkNum = makeType(fcArray, 0, 0);
             setType(&arrayType.array.elemType, newTypeChunkNum);
@@ -83,7 +83,7 @@ void parseIndexType(CHUNKNUM arrayTypeChunkNum) {
 
     getChunkCopy(arrayTypeChunkNum, &arrayType);
 
-    if (tokenIn(tokenCode, tlIndexStart)) {
+    if (tokenIn(parserToken, tlIndexStart)) {
         indexTypeChunkNum = parseTypeSpec();
         setType(&arrayType.array.indexType, indexTypeChunkNum);
         retrieveChunk(indexTypeChunkNum, (unsigned char *)&indexType);

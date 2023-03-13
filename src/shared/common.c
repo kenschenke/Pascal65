@@ -24,6 +24,7 @@ short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
 CHUNKNUM globalSymtab;
 char isFatalError;
+short currentLineNumber;
 
 // Tokens that can start a declaration
 const TTokenCode tlDeclarationStart[] = {

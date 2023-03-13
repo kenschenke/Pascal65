@@ -16,12 +16,12 @@ void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize
     getToken();
 
     // Loop to parse parameter declarations separated by semicolons
-    while (tokenCode == tcIdentifier || tokenCode == tcVAR) {
+    while (parserToken == tcIdentifier || parserToken == tcVAR) {
         parmType = 0;
         firstId = 0;
 
         // VAR or value parameter?
-        if (tokenCode == tcVAR) {
+        if (parserToken == tcVAR) {
             parmDefn = dcVarParm;
             getToken();
         } else {
@@ -29,8 +29,8 @@ void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize
         }
 
         // Loop to parse the comma-separated sublist of parameter ids.
-        while (tokenCode == tcIdentifier) {
-            symtabEnterNewLocal(&node, tokenString, parmDefn);
+        while (parserToken == tcIdentifier) {
+            symtabEnterNewLocal(&node, parserString, parmDefn);
             parmId = node.node.nodeChunkNum;
             ++(*parmCount);
             if (!(*pParmList)) {
@@ -50,20 +50,20 @@ void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize
             // comma
             getToken();
             resync(tlIdentifierFollow, NULL, NULL);
-            if (tokenCode == tcComma) {
+            if (parserToken == tcComma) {
                 // Saw comma.
                 // Skip extra commas and look for an identifier.
                 do {
                     getToken();
                     resync(tlIdentifierStart, tlIdentifierFollow, NULL);
-                    if (tokenCode == tcComma) {
+                    if (parserToken == tcComma) {
                         Error(errMissingIdentifier);
                     }
-                } while (tokenCode == tcComma);
-                if (tokenCode != tcIdentifier) {
+                } while (parserToken == tcComma);
+                if (parserToken != tcIdentifier) {
                     Error(errMissingIdentifier);
                 }
-            } else if (tokenCode == tcIdentifier) {
+            } else if (parserToken == tcIdentifier) {
                 Error(errMissingComma);
             }
         }
@@ -73,8 +73,8 @@ void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize
         condGetToken(tcColon, errMissingColon);
 
         // <type-id>
-        if (tokenCode == tcIdentifier) {
-            findSymtabNode(&node, tokenString);
+        if (parserToken == tcIdentifier) {
+            findSymtabNode(&node, parserString);
             if (node.defn.how != dcType) {
                 Error(errInvalidType);
             }
@@ -104,10 +104,10 @@ void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize
 
         // semicolon or )
         resync(tlFormalParmsFollow, tlDeclarationFollow, NULL);
-        if (tokenCode == tcIdentifier || tokenCode == tcVAR) {
+        if (parserToken == tcIdentifier || parserToken == tcVAR) {
             Error(errMissingSemicolon);
         } else {
-            while (tokenCode == tcSemicolon) {
+            while (parserToken == tcSemicolon) {
                 getToken();
             }
         }
@@ -150,7 +150,7 @@ void parseActualParmList(char routineFlag, char parmCheckFlag, CHUNKNUM Icode) {
 
     // If there are no actual parameters, there better not be any
     // formal parameters either.
-    if (tokenCode != tcLParen) {
+    if (parserToken != tcLParen) {
         if (parmCheckFlag && formalId) {
             Error(errWrongNumberOfParams);
         }
@@ -162,7 +162,7 @@ void parseActualParmList(char routineFlag, char parmCheckFlag, CHUNKNUM Icode) {
         // ( or ,
         getTokenAppend(Icode);
 
-        if (tokenCode == tcRParen) {
+        if (parserToken == tcRParen) {
             if (formalId) {
                 Error(errWrongNumberOfParams);
             }
@@ -174,7 +174,7 @@ void parseActualParmList(char routineFlag, char parmCheckFlag, CHUNKNUM Icode) {
             loadSymbNode(formalId, &node);
             formalId = node.node.nextNode;
         }
-    } while (tokenCode == tcComma);
+    } while (parserToken == tcComma);
 
     // )
     condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
@@ -215,8 +215,8 @@ void parseActualParm(CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode) {
 
     // Formal VAR parameter: The actual parameter must be a variable of
     //                       the same type as the formal parameter.
-    else if (tokenCode == tcIdentifier) {
-        findSymtabNode(&actualNode, tokenString);
+    else if (parserToken == tcIdentifier) {
+        findSymtabNode(&actualNode, parserString);
         putSymtabNodeToIcode(Icode, &actualNode);
         
         exprTypeChunk = parseVariable(Icode, &actualNode);

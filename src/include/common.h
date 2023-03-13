@@ -21,6 +21,7 @@ extern int currentNestingLevel;
 extern short cntSymtabs;
 extern CHUNKNUM firstSymtabChunk;
 extern CHUNKNUM globalSymtab;
+extern short currentLineNumber;
 
 extern const TTokenCode tlDeclarationStart[], tlDeclarationFollow[],
     tlIdentifierStart[], tlIdentifierFollow[],

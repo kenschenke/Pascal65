@@ -71,7 +71,7 @@ static CHUNKNUM checkStdParms(CHUNKNUM Icode, char allowedParms, CHUNKNUM return
     CHUNKNUM parmTypeChunk, baseTypeChunk, resultType;
 
     // There should be one integer parameter.
-    if (tokenCode == tcLParen) {
+    if (parserToken == tcLParen) {
         getTokenAppend(Icode);
 
         parmTypeChunk = parseExpression(Icode);
@@ -88,7 +88,7 @@ static CHUNKNUM checkStdParms(CHUNKNUM Icode, char allowedParms, CHUNKNUM return
         }
 
         // There better not be any more parameters.
-        if (tokenCode != tcRParen) {
+        if (parserToken != tcRParen) {
             skipExtraParms(Icode);
         }
 
@@ -106,7 +106,7 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode) {
     SYMBNODE parmId;
 
     // Actual parameters are optional for readln.
-    if (tokenCode != tcLParen) {
+    if (parserToken != tcLParen) {
         if (routineNode.defn.routine.which == rcRead) {
             Error(errWrongNumberOfParams);
         }
@@ -120,8 +120,8 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode) {
 
         // Each actual parameter must be a scalar variable,
         // but parse an expression anyway for error recovery.
-        if (tokenCode == tcIdentifier) {
-            findSymtabNode(&parmId, tokenString);
+        if (parserToken == tcIdentifier) {
+            findSymtabNode(&parmId, parserString);
             putSymtabNodeToIcode(Icode, &parmId);
 
             parseVariable(Icode, &parmId);
@@ -138,7 +138,7 @@ CHUNKNUM parseReadReadlnCall(CHUNKNUM Icode) {
 
         // comma or right paren
         resync(tlActualVarParmFollow, tlStatementFollow, tlStatementStart);
-    } while (tokenCode == tcComma);
+    } while (parserToken == tcComma);
 
     // right paren
     condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
@@ -151,7 +151,7 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode) {
     TTYPE actualType;
 
     // Actual parameters are optional only for writeln
-    if (tokenCode != tcLParen) {
+    if (parserToken != tcLParen) {
         if (routineNode.defn.routine.which == rcWrite) {
             Error(errWrongNumberOfParams);
         }
@@ -178,21 +178,21 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode) {
         }
 
         // Optional field width <expr>
-        if (tokenCode == tcColon) {
+        if (parserToken == tcColon) {
             getTokenAppend(Icode);
             if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
                 Error(errIncompatibleTypes);
             }
 
             // Optional precision <expr>
-            if (tokenCode == tcColon) {
+            if (parserToken == tcColon) {
                 getTokenAppend(Icode);
                 if (getBaseType(getChunk(parseExpression(Icode))) != integerType) {
                     Error(errIncompatibleTypes);
                 }
             }
         }
-    } while (tokenCode == tcComma);
+    } while (parserToken == tcComma);
 
     // right paren
     condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
@@ -203,7 +203,7 @@ CHUNKNUM parseWriteWritelnCall(CHUNKNUM Icode) {
 CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
     // There should be no actual parameters, but parse
     // them anyway for error recovery.
-    if (tokenCode == tcLParen) {
+    if (parserToken == tcLParen) {
         Error(errWrongNumberOfParams);
         parseActualParmList(0, 0, Icode);
     }
@@ -214,7 +214,7 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode) {
 void skipExtraParms(CHUNKNUM Icode) {
     Error(errWrongNumberOfParams);
 
-    while (tokenCode == tcComma) {
+    while (parserToken == tcComma) {
         getTokenAppend(Icode);
         parseExpression(Icode);
     }

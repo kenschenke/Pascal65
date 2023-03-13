@@ -3,6 +3,7 @@
 #include <error.h>
 #include <scanner.h>
 #include <string.h>
+#include <common.h>
 
 /**
  * The tokenizer creates a membuf to store the tokenized code.  In addition
@@ -21,9 +22,11 @@
  * TODO: Move testing code from shared code in parsertest to the parsertest overlay.
  * 
  * tzIdentifier
- *    The tzIdentifier code is followed by the two-byte chunk number
- *    containing the indentifier name.  Identifiers are limited to 22
- *    characters in length and thus fit in one chunk.
+ *    The tzIdentifier code is followed by a one-byte integer string
+ *    length followed by the string value (not null-terminated).
+ * 
+ * tzLineNum
+ *    This code is followed by the two-byte line number integer.
  * 
  * tzToken
  *    The tzToken code is followed by the one-byte TTokenCode value.
@@ -34,19 +37,21 @@
  * tzReal
  *    The tzReal code is followed by the four-byte real value.
  * 
- * tzChar
+ * tzChar - NOT USED
  *    The tzChar code is followed by the one-byte character value.
  * 
  * tzString
  *    The tzString code is followed by a two-byte integer string
  *    length followed by the string value (not null-terminated).
+ *    The string is stored with the quotes.
  */
 
 static void writeTzIdentifier(CHUNKNUM Icode);
 
 CHUNKNUM tokenize(const char *filename) {
-    CHUNKNUM Icode, stringChunk;
+    CHUNKNUM Icode;
     TTokenizerCode tzType;
+    extern char lineNumberChanged;
     
     allocMemBuf(&Icode);
 
@@ -55,24 +60,21 @@ CHUNKNUM tokenize(const char *filename) {
     while (!isBufferEof()) {
         getNextToken();
 
+        if (lineNumberChanged) {
+            tzType = tzLineNum;
+            writeToMemBuf(Icode, &tzType, 1);
+            writeToMemBuf(Icode, &currentLineNumber, 2);
+            lineNumberChanged = 0;
+        }
+
         switch (tokenCode) {
-            case tcIdentifier: {
-                char chunk[CHUNK_LEN];
-                CHUNKNUM identChunk;
-
-                if (strlen(tokenString) > CHUNK_LEN) {
-                    Error(errIdentifierTooLong);
-                    tokenString[CHUNK_LEN] = 0;
-                }
-
-                allocChunk(&identChunk);
-                memset(chunk, 0, CHUNK_LEN);
-                memcpy(chunk, tokenString, strlen(tokenString));
-                storeChunk(identChunk, (unsigned char *)chunk);
-
-                tzType = tzIdentifier;
+            case tcIdentifier:
+            case tcString: {
+                char len = (char) strlen(tokenString);
+                tzType = tokenCode == tcIdentifier ? tzIdentifier : tzString;
                 writeToMemBuf(Icode, &tzType, 1);
-                writeToMemBuf(Icode, &identChunk, 2);
+                writeToMemBuf(Icode, &len, 1);
+                writeToMemBuf(Icode, tokenString, len);
                 break;
             }
 
@@ -88,26 +90,6 @@ CHUNKNUM tokenize(const char *filename) {
                 }
                 break;
             
-            case tcString: {
-                int len = strlen(tokenString);
-                if (len == 3) {
-                    tzType = tzChar;
-                    writeToMemBuf(Icode, &tzType, 1);
-                    writeToMemBuf(Icode, tokenString + 1, 1);
-                } else {
-                    allocMemBuf(&stringChunk);
-
-                    len -= 2;
-                    reserveMemBuf(stringChunk, len);
-                    copyToMemBuf(stringChunk, tokenString + 1, 0, len);
-
-                    tzType = tzString;
-                    writeToMemBuf(Icode, &len, 2);
-                    writeToMemBuf(Icode, &stringChunk, 2);
-                }
-                break;
-            }
-
             default:
                 tzType = tzToken;
                 writeToMemBuf(Icode, &tzType, 1);

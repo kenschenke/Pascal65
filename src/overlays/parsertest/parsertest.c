@@ -8,6 +8,7 @@
 #include <icode.h>
 #include <ctype.h>
 #include <membuf.h> 
+#include <common.h>
 
 #define MAX_MARKERS 8
 

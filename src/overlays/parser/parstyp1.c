@@ -19,8 +19,8 @@ CHUNKNUM parseEnumerationType(void) {
     retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
 
     // Loop to parse list of constant identifiers separated by commas.
-    while (tokenCode == tcIdentifier) {
-        symtabEnterNewLocal(&newNode, tokenString, dcUndefined);
+    while (parserToken == tcIdentifier) {
+        symtabEnterNewLocal(&newNode, parserString, dcUndefined);
         ++constValue;
 
         if (newNode.defn.how == dcUndefined) {
@@ -44,16 +44,16 @@ CHUNKNUM parseEnumerationType(void) {
         // ,
         getToken();
         resync(tlEnumConstFollow, NULL, NULL);
-        if (tokenCode == tcComma) {
+        if (parserToken == tcComma) {
             // Saw comma.  Skip extra commas and look for an identifier
             do {
                 getToken();
                 resync(tlEnumConstStart, tlEnumConstFollow, NULL);
-                if (tokenCode == tcComma) Error(errMissingIdentifier);
-            } while (tokenCode == tcComma);
-            if (tokenCode != tcIdentifier) Error(errMissingIdentifier);
+                if (parserToken == tcComma) Error(errMissingIdentifier);
+            } while (parserToken == tcComma);
+            if (parserToken != tcIdentifier) Error(errMissingIdentifier);
         }
-        else if (tokenCode == tcIdentifier) Error(errMissingComma);
+        else if (parserToken == tcIdentifier) Error(errMissingComma);
     }
 
     // )
@@ -77,17 +77,17 @@ void parseSubrangeLimit(CHUNKNUM limitIdChunkNum, int *limit, CHUNKNUM *limitTyp
     *limitTypeChunkNum = dummyType;
 
     // Unary + or -
-    if (tokenIn(tokenCode, tlUnaryOps)) {
-        if (tokenCode == tcMinus) sign = tcMinus;
+    if (tokenIn(parserToken, tlUnaryOps)) {
+        if (parserToken == tcMinus) sign = tcMinus;
         getToken();
     }
 
-    switch (tokenCode) {
+    switch (parserToken) {
         case tcNumber:
             // Numeric constant: integer type only
-            if (tokenType == tyInteger) {
-                *limit = sign == tcMinus ? -tokenValue.integer :
-                    tokenValue.integer;
+            if (parserType == tyInteger) {
+                *limit = sign == tcMinus ? -parserValue.integer :
+                    parserValue.integer;
                 *limitTypeChunkNum = integerType;
             } else {
                 Error(errInvalidSubrangeType);
@@ -98,7 +98,7 @@ void parseSubrangeLimit(CHUNKNUM limitIdChunkNum, int *limit, CHUNKNUM *limitTyp
             // identifier limit: must be an integer, character, or
             // enumeration type.
             if (limitIdChunkNum == 0) {
-                if (findSymtabNode(&limitId, tokenString) == 0) {
+                if (findSymtabNode(&limitId, parserString) == 0) {
                     Error(errInvalidSubrangeType);
                     break;
                 }
@@ -147,12 +147,12 @@ void parseSubrangeLimit(CHUNKNUM limitIdChunkNum, int *limit, CHUNKNUM *limitTyp
                 Error(errInvalidConstant);
             }
 
-            if (strlen(tokenString) != 3) {
+            if (strlen(parserString) != 3) {
                 // length inludes quotes
                 Error(errInvalidSubrangeType);
             }
 
-            *limit = tokenString[1];
+            *limit = parserString[1];
             *limitTypeChunkNum = charType;
             break;
         
@@ -209,9 +209,9 @@ void parseTypeDefinitions(void) {
 
     // Loop to parse a list of type definitions
     // separated by semicolons.
-    while (tokenCode == tcIdentifier) {
+    while (parserToken == tcIdentifier) {
         // <id>
-        if (symtabEnterNewLocal(&idNode, tokenString, dcUndefined) == 0) {
+        if (symtabEnterNewLocal(&idNode, parserString, dcUndefined) == 0) {
             return;
         }
 
@@ -252,7 +252,7 @@ void parseTypeDefinitions(void) {
         condGetToken(tcSemicolon, errMissingSemicolon);
 
         // Skip extra semicolons
-        while (tokenCode == tcSemicolon) getToken();
+        while (parserToken == tcSemicolon) getToken();
         resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
     }
 }
@@ -261,10 +261,10 @@ CHUNKNUM parseTypeSpec(void) {
     CHUNKNUM newTypeChunkNum;
     SYMBNODE node;
 
-    switch (tokenCode) {
+    switch (parserToken) {
         // type identifier
         case tcIdentifier:
-            if (symtabStackSearchAll(tokenString, &node) == 0) {
+            if (symtabStackSearchAll(parserString, &node) == 0) {
                 break;
             }
 

@@ -18,13 +18,14 @@
 #include <parscommon.h>
 #include <string.h>
 #include <tokenizer.h>
+#include <real.h>
 
 SYMBNODE routineNode;
 TTokenCode parserToken;
 TDataValue parserValue;
+TDataType parserType;
 CHUNKNUM parserIdentifier;
-TTokenizerCode parserTokenizerCode;
-char parserString[CHUNK_LEN + 1];
+char parserString[MAX_LINE_LEN + 1];
 
 static CHUNKNUM parserIcode;
 
@@ -64,39 +65,46 @@ char findSymtabNode(SYMBNODE *pNode, const char *identifier) {
 
 void getToken(void)
 {
+    TTokenizerCode code;
+
     if (isMemBufAtEnd(parserIcode)) {
         Error(errUnexpectedEndOfFile);
         return;
     }
 
-    readFromMemBuf(parserIcode, &parserTokenizerCode, 1);
-    switch (parserTokenizerCode) {
-        case tzIdentifier:
-            readFromMemBuf(parserIcode, &parserIdentifier, 2);
-            getChunkCopy(parserIdentifier, parserString);
-            parserToken = tcIdentifier;
+    readFromMemBuf(parserIcode, &code, 1);
+    switch (code) {
+        case tzLineNum:
+            readFromMemBuf(parserIcode, &currentLineNumber, 2);
+            getToken();
             break;
+
+        case tzIdentifier:
+        case tzString: {
+            char len;
+            readFromMemBuf(parserIcode, &len, 1);
+            readFromMemBuf(parserIcode, parserString, len);
+            parserString[len] = 0;
+            parserToken = code == tzIdentifier ? tcIdentifier : tcString;
+            break;
+        }
 
         case tzInteger:
             readFromMemBuf(parserIcode, &parserValue.integer, 2);
             parserToken = tcNumber;
+            parserType = tyInteger;
+            sprintf(parserString, "%d", parserValue.integer);
             break;
         
         case tzReal:
             readFromMemBuf(parserIcode, &parserValue.real, 4);
             parserToken = tcNumber;
+            parserType = tyReal;
+            floatToStr(parserValue.real, parserString, -1);
             break;
         
-        case tzChar:
-            readFromMemBuf(parserIcode, &parserValue.character, 1);
-            parserToken = tcString;
-            break;
-        
-        case tzString:
-            // readFromMemBuf(parserIcode, &parserValue.string.len, 2);
-            // readFromMemBuf(parserIcode, &parserValue.string.chunkNum, 2);
-            // getChunkCopy(parserValue.string.chunkNum, parserString);
-            parserToken = tcString;
+        case tzToken:
+            readFromMemBuf(parserIcode, &parserToken, 1);
             break;
     }
 }

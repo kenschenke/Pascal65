@@ -26,7 +26,7 @@ CHUNKNUM parseExpression(CHUNKNUM Icode)
 
     // If we now see a relational operator,
     // parse a second simple expression.
-    if (tokenIn(tokenCode, tlRelOps)) {
+    if (tokenIn(parserToken, tlRelOps)) {
         getTokenAppend(Icode);
         operandTypeChunk = parseSimpleExpression(Icode);
 
@@ -47,11 +47,11 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
     CHUNKNUM resultTypeChunk;
     SYMBNODE node;
 
-    switch (tokenCode) {
+    switch (parserToken) {
         case tcIdentifier:
             // Search for the identifier and enter if necessary.
             // Append the symbol table node handle to the icode.
-            symtabStackFind(tokenString, &node);
+            symtabStackFind(parserString, &node);
             putSymtabNodeToIcode(Icode, &node);
             if (node.defn.how == dcUndefined) {
                 node.defn.how = dcVariable;
@@ -85,17 +85,17 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
 
         case tcNumber:
             // Search for the number and enter it if necessary.
-            if (!symtabStackSearchAll(tokenString, &node)) {
-                symtabEnterLocal(&node, tokenString, dcUndefined);
+            if (!symtabStackSearchAll(parserString, &node)) {
+                symtabEnterLocal(&node, parserString, dcUndefined);
 
                 // Determine the number's type and set its value into
                 // the symbol table node.
-                if (tokenType == tyInteger) {
+                if (parserType == tyInteger) {
                     resultTypeChunk = integerType;
-                    node.defn.constant.value.integer = tokenValue.integer;
+                    node.defn.constant.value.integer = parserValue.integer;
                 } else {
                     resultTypeChunk = realType;
-                    node.defn.constant.value.real = tokenValue.real;
+                    node.defn.constant.value.real = parserValue.real;
                 }
                 setType(&node.node.typeChunk, resultTypeChunk);
                 saveSymbNode(&node);
@@ -109,22 +109,22 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
 
         case tcString:
             // Search for the string and enter it if necessary.
-            if (!symtabStackSearchAll(tokenString, &node)) {
-                symtabEnterLocal(&node, tokenString, dcUndefined);
+            if (!symtabStackSearchAll(parserString, &node)) {
+                symtabEnterLocal(&node, parserString, dcUndefined);
 
                 // compute the string length (without the quotes).
                 // if the length is 1, the result type is character,
                 // else create a new string type.
-                length = strlen(tokenString) - 2;
+                length = strlen(parserString) - 2;
                 resultTypeChunk = length == 1 ? charType : makeStringType(length);
                 setType(&node.node.typeChunk, resultTypeChunk);
                 saveSymbNode(&node);
 
                 // Set the character value or string value into the symbol table.
                 if (length == 1) {
-                    node.defn.constant.value.character = tokenString[1];
+                    node.defn.constant.value.character = parserString[1];
                 } else {
-                    copyQuotedString(tokenString, &node.defn.constant.value.stringChunkNum);
+                    copyQuotedString(parserString, &node.defn.constant.value.stringChunkNum);
                 }
                 saveSymbNode(&node);
             } else {
@@ -148,7 +148,7 @@ CHUNKNUM parseFactor(CHUNKNUM Icode)
             resultTypeChunk = parseExpression(Icode);
 
             // and check for the closing right parenthesis
-            if (tokenCode == tcRParen) {
+            if (parserToken == tcRParen) {
                 getTokenAppend(Icode);
             } else {
                 Error(errMissingRightParen);
@@ -172,8 +172,8 @@ CHUNKNUM parseField(CHUNKNUM Icode, CHUNKNUM recordTypeChunkNum) {
     getTokenAppend(Icode);
     getChunkCopy(recordTypeChunkNum, &recordType);
 
-    if (tokenCode == tcIdentifier && recordType.form == fcRecord) {
-        if (!searchSymtab(recordType.record.symtab, &fieldId, tokenString)) {
+    if (parserToken == tcIdentifier && recordType.form == fcRecord) {
+        if (!searchSymtab(recordType.record.symtab, &fieldId, parserString)) {
             fieldId.node.nodeChunkNum = 0;
             Error(errInvalidField);
         }
@@ -197,7 +197,7 @@ CHUNKNUM parseSimpleExpression(CHUNKNUM Icode)
     char unaryOpFlag = 0;  // non-zero if unary op
 
     // Unary + or -
-    if (tokenIn(tokenCode, tlUnaryOps)) {
+    if (tokenIn(parserToken, tlUnaryOps)) {
         getTokenAppend(Icode);
         unaryOpFlag = 1;
     }
@@ -211,9 +211,9 @@ CHUNKNUM parseSimpleExpression(CHUNKNUM Icode)
     }
 
     // Loop to parse subsequent additive operators and terms
-    while (tokenIn(tokenCode, tlAddOps)) {
+    while (tokenIn(parserToken, tlAddOps)) {
         // Remember the operator and parse the subsequent term.
-        op = tokenCode;
+        op = parserToken;
         getTokenAppend(Icode);
         operandTypeChunk = parseTerm(Icode);
 
@@ -274,7 +274,7 @@ CHUNKNUM parseSubscripts(CHUNKNUM Icode, CHUNKNUM arrayTypeChunk) {
             Error(errTooManySubscripts);
             parseExpression(Icode);
         }
-    } while (tokenCode == tcComma);
+    } while (parserToken == tcComma);
 
     // ]
     condGetTokenAppend(Icode, tcRBracket, errMissingRightBracket);
@@ -292,9 +292,9 @@ CHUNKNUM parseTerm(CHUNKNUM Icode)
     resultChunkNum = parseFactor(Icode);
 
     // Loop to parse subsequent multiplicative operators and factors
-    while (tokenIn(tokenCode, tlMulOps)) {
+    while (tokenIn(parserToken, tlMulOps)) {
         // Remember the operator and parse subsequent factor
-        op = tokenCode;
+        op = parserToken;
         getTokenAppend(Icode);
         operandTypeChunk = parseFactor(Icode);
 
@@ -375,7 +375,7 @@ CHUNKNUM parseVariable(CHUNKNUM Icode, SYMBNODE *pNode) {
 
     // [ or . : Loop to parse any subscripts and fields.
     do {
-        switch (tokenCode) {
+        switch (parserToken) {
             case tcLBracket:
                 resultTypeChunk = parseSubscripts(Icode, resultTypeChunk);
                 break;

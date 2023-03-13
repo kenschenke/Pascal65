@@ -20,7 +20,7 @@ static FILE *tinFh;
 char tinBuffer[MAX_LINE_LEN + 1];
 char *pBufChar;
 
-short currentLineNumber;
+char lineNumberChanged;
 char eofChar = 0x7f;
 unsigned inputPosition;
 
@@ -97,6 +97,7 @@ char getLine(void)
             if (tinBuffer[i] == 13) {  // carriage return
                 tinBuffer[i] = 0;
                 ++currentLineNumber;
+                lineNumberChanged = 1;
                 break;
             }
             ++i;

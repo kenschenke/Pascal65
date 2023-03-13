@@ -6,7 +6,7 @@
 extern CHUNKNUM tokenizerIcode;
 
 typedef enum {
-    tzDummy, tzIdentifier, tzToken, tzInteger, tzReal, tzChar, tzString
+    tzDummy, tzLineNum, tzIdentifier, tzToken, tzInteger, tzReal, tzChar, tzString
 } TTokenizerCode;
 
 // Returns membuf of intermediate code containing tokenized code

@@ -18,6 +18,7 @@
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
+extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
 unsigned char loadfile(const char *name);
 
 static void runControlTest(const char *test, int firstLine);
@@ -59,10 +60,10 @@ static struct TestCase cases[] = {
 static TErrorCode expectedCode;
 static unsigned expectedLineNumber;
 #endif
-static unsigned overlay1size, overlay2size;
-static unsigned overlay1blocks, overlay2blocks;
+static unsigned overlay1size, overlay2size, overlay3size;
+static unsigned overlay1blocks, overlay2blocks, overlay3blocks;
 
-static BLOCKNUM parserCache, testCache;
+static BLOCKNUM parserCache, testCache, tokenizerCache;
 
 static int sawCode;
 static int testsRun;
@@ -137,17 +138,19 @@ static void runControlTest(const char *test, int firstLine) {
 
     initBlockStorage();
 
-    loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, parserCache);
+    loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
     initCommon();
-    initParser();
 
-    printf("\nParsing %s\n", buf);
+    printf("\nTokenizing %s\n", buf);
     tokenIcode = tokenize(buf);
 
+    loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
+    initParser();
+    printf("Parsing\n");
     programId = parse(tokenIcode);
 
     printf("Running tests\n");
-    loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, testCache);
+    loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, testCache);
 
     sprintf(buf, "%stest.txt", test);
     sprintf(buf2, "%sIcodeTests", test);
@@ -164,8 +167,10 @@ int main()
 
     overlay1size = (unsigned)_OVERLAY1_SIZE__;
     overlay2size = (unsigned)_OVERLAY2_SIZE__;
+    overlay3size = (unsigned)_OVERLAY3_SIZE__;
     overlay1blocks = overlay1size/BLOCK_LEN + (overlay1size % BLOCK_LEN ? 1 : 0);
     overlay2blocks = overlay2size/BLOCK_LEN + (overlay2size % BLOCK_LEN ? 1 : 0);
+    overlay3blocks = overlay3size/BLOCK_LEN + (overlay3size % BLOCK_LEN ? 1 : 0);
 
     testsRun = 0;
     testsFail = 0;
@@ -179,14 +184,16 @@ int main()
 
     // Allocate space in extended memory to cache the parser and parsertest overlays.
     // This is done so they don't have to be reloaded for each test.
-    if (!allocBlockGroup(&parserCache, overlay1blocks) ||
-        !allocBlockGroup(&testCache, overlay2blocks)) {
+    if (!allocBlockGroup(&tokenizerCache, overlay1blocks) ||
+        !allocBlockGroup(&parserCache, overlay2blocks) ||
+        !allocBlockGroup(&testCache, overlay3blocks)) {
         printf("Unable to allocate extended memory\n");
         return 0;
     }
 
-    loadOverlayFromFile("parsertest.1", overlay1size, _OVERLAY1_LOAD__, parserCache);
-    loadOverlayFromFile("parsertest.2", overlay2size, _OVERLAY2_LOAD__, testCache);
+    loadOverlayFromFile("parsertest.1", overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
+    loadOverlayFromFile("parsertest.2", overlay2size, _OVERLAY2_LOAD__, parserCache);
+    loadOverlayFromFile("parsertest.3", overlay3size, _OVERLAY3_LOAD__, testCache);
 
     while (1) {
         if (!cases[i].source) {
@@ -196,9 +203,8 @@ int main()
         initBlockStorage();
 
         // Load the parser overlay from extended memory cache
-        loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, parserCache);
+        loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
         initCommon();
-        initParser();
         // programId = parse("translate.pas");
 
         sawCode = 0;
@@ -207,13 +213,17 @@ int main()
 
         // parse(cases[i].source);
 
-        printf("\nParsing %s\n", cases[i].source);
+        printf("\nTokenizing %s\n", cases[i].source);
         tokenIcode = tokenize(cases[i].source);
+
+        printf("Parsing\n");
+        loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
+        initParser();
         programId = parse(tokenIcode);
     
         // Load the testing overlay
         printf("Running tests\n");
-        loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, testCache);
+        loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, testCache);
 
         cases[i].testRunner(programId);
 

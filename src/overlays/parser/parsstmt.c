@@ -63,14 +63,14 @@ void parseCASE(CHUNKNUM Icode) {
     condGetTokenAppend(Icode, tcOF, errMissingOF);
 
     // Loop to parse CASE branches
-    caseBranchFlag = tokenIn(tokenCode, tlCaseLabelStart);
+    caseBranchFlag = tokenIn(parserToken, tlCaseLabelStart);
     while (caseBranchFlag) {
-        if (tokenIn(tokenCode, tlCaseLabelStart)) parseCaseBranch(Icode, exprTypeChunk, caseItems);
+        if (tokenIn(parserToken, tlCaseLabelStart)) parseCaseBranch(Icode, exprTypeChunk, caseItems);
 
-        if (tokenCode == tcSemicolon) {
+        if (parserToken == tcSemicolon) {
             getTokenAppend(Icode);
             caseBranchFlag = 1;
-        } else if (tokenIn(tokenCode, tlCaseLabelStart)) {
+        } else if (tokenIn(parserToken, tlCaseLabelStart)) {
             Error(errMissingSemicolon);
             caseBranchFlag = 1;
         } else {
@@ -111,10 +111,10 @@ void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems)
     // <case-label-list>
     do {
         parseCaseLabel(Icode, exprTypeChunk, caseItems);
-        if (tokenCode == tcComma) {
+        if (parserToken == tcComma) {
             // Saw comma, look for another CASE label
             getTokenAppend(Icode);
-            if (tokenIn(tokenCode, tlCaseLabelStart)) caseLabelFlag = 1;
+            if (tokenIn(parserToken, tlCaseLabelStart)) caseLabelFlag = 1;
             else {
                 Error(errMissingConstant);
                 caseLabelFlag = 0;
@@ -160,7 +160,7 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) 
     memset(&locn, 0, sizeof(MEMBUF_LOCN));
 
     // Unary + or -
-    if (tokenIn(tokenCode, tlUnaryOps)) {
+    if (tokenIn(parserToken, tlUnaryOps)) {
         signFlag = 1;
         getTokenAppend(Icode);
     }
@@ -174,10 +174,10 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) 
      * the ICode location for the end of the case label.
      */
 
-    switch (tokenCode) {
+    switch (parserToken) {
         // Identifier
         case tcIdentifier:
-            if (!symtabStackSearchAll(tokenString, &node)) {
+            if (!symtabStackSearchAll(parserString, &node)) {
                 Error(errUndefinedIdentifier);
             }
             retrieveChunk(node.node.typeChunk, (unsigned char *)&labelType);
@@ -218,13 +218,13 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) 
 
         // Number - Both the label and the CASE expression must be an integer.
         case tcNumber:
-            if (tokenType != tyInteger) Error(errInvalidConstant);
+            if (parserType != tyInteger) Error(errInvalidConstant);
             if (exprTypeChunk != integerType) Error(errIncompatibleTypes);
 
-            if (!symtabStackSearchAll(tokenString, &node)) {
-                symtabEnterLocal(&node, tokenString, dcUndefined);
+            if (!symtabStackSearchAll(parserString, &node)) {
+                symtabEnterLocal(&node, parserString, dcUndefined);
                 setType(&node.node.typeChunk, integerType);
-                node.defn.constant.value.integer = tokenValue.integer;
+                node.defn.constant.value.integer = parserValue.integer;
                 saveSymbNode(&node);
             }
             putSymtabNodeToIcode(Icode, &node);
@@ -239,21 +239,21 @@ void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) 
         
         // String - must be a single character without a unary sign
         case tcString:
-            if (signFlag || strlen(tokenString) != 3) {
+            if (signFlag || strlen(parserString) != 3) {
                 Error(errInvalidConstant);
             }
             if (exprTypeChunk != charType) Error(errIncompatibleTypes);
 
-            if (!symtabStackSearchAll(tokenString, &node)) {
-                symtabEnterNewLocal(&node, tokenString, dcUndefined);
+            if (!symtabStackSearchAll(parserString, &node)) {
+                symtabEnterNewLocal(&node, parserString, dcUndefined);
                 setType(&node.node.typeChunk, charType);
-                node.defn.constant.value.character = tokenString[1];
+                node.defn.constant.value.character = parserString[1];
                 saveSymbNode(&node);
             }
             putSymtabNodeToIcode(Icode, &node);
 
             // Set the label value into the CASE item
-            value = tokenString[1];
+            value = parserString[1];
 
             getTokenAppend(Icode);
             break;
@@ -281,9 +281,9 @@ void parseFOR(CHUNKNUM Icode) {
 
     // <id>
     getTokenAppend(Icode);
-    if (tokenCode == tcIdentifier) {
+    if (parserToken == tcIdentifier) {
         // Verify the definition and type of the control id
-        symtabStackFind(tokenString, &node);
+        symtabStackFind(parserString, &node);
         memcpy(&controlType, &node.type, sizeof(TTYPE));
         if (node.defn.how != dcUndefined) {
             if (controlType.form == fcSubrange && controlType.subrange.baseType) {
@@ -318,7 +318,7 @@ void parseFOR(CHUNKNUM Icode) {
 
     // TO or DOWNTO
     resync(tlTODOWNTO, tlExpressionStart, NULL);
-    if (tokenIn(tokenCode, tlTODOWNTO)) getTokenAppend(Icode);
+    if (tokenIn(parserToken, tlTODOWNTO)) getTokenAppend(Icode);
     else Error(errMissingTOorDOWNTO);
 
     // <expr-2>
@@ -357,7 +357,7 @@ void parseIF(CHUNKNUM Icode) {
     parseStatement(Icode);
     fixupLocationMarker(Icode, &falseLocn);
 
-    if (tokenCode == tcELSE) {
+    if (parserToken == tcELSE) {
         // Append a placeholder location marker for the token that
         // follows the IF statement. Remember the location of this
         // placeholder so it can be fixed up later.
@@ -394,12 +394,12 @@ void parseStatement(CHUNKNUM Icode)
 
     // Call the appropriate parsing function based on
     // the statement's first token.
-    switch (tokenCode) {
+    switch (parserToken) {
         case tcIdentifier:
             // Search for the identifier and enter it if
             // necessary.  Append the symbol table node handle
             // to the icode.
-            findSymtabNode(&node, tokenString);
+            findSymtabNode(&node, parserString);
             putSymtabNodeToIcode(Icode, &node);
 
             // Based on how the identifier is defined,
@@ -425,7 +425,7 @@ void parseStatement(CHUNKNUM Icode)
     }
 
     // Resync at a proper statement ending
-    if (tokenCode != tcEndOfFile) {
+    if (parserToken != tcEndOfFile) {
         resync(tlStatementFollow, tlStatementStart, NULL);
     }
 }
@@ -436,14 +436,14 @@ void parseStatementList(CHUNKNUM Icode, TTokenCode terminator) {
     do {
         parseStatement(Icode);
 
-        if (tokenIn(tokenCode, tlStatementStart)) {
+        if (tokenIn(parserToken, tlStatementStart)) {
             Error(errMissingSemicolon);
-        } else if (tokenIn(tokenCode, tlStatementListNotAllowed)) {
+        } else if (tokenIn(parserToken, tlStatementListNotAllowed)) {
             Error(errUnexpectedToken);
-        } else while (tokenCode == tcSemicolon) {
+        } else while (parserToken == tcSemicolon) {
             getTokenAppend(Icode);
         }
-    } while (tokenCode != terminator && tokenCode != tcEndOfFile);
+    } while (parserToken != terminator && parserToken != tcEndOfFile);
 }
 
 void parseWHILE(CHUNKNUM Icode) {

@@ -18,13 +18,14 @@
 #include <membuf.h>
 #include <types.h>
 #include <tokenizer.h>
+#include <misc.h>
 
 extern SYMBNODE routineNode;
 extern TTokenCode parserToken;
 extern TDataValue parserValue;
+extern TDataType parserType;
 extern CHUNKNUM parserIdentifier;
-extern TTokenizerCode parserTokenizerCode;
-extern char parserString[CHUNK_LEN + 1];
+extern char parserString[MAX_LINE_LEN + 1];
 
 void initParser(void);
 CHUNKNUM parse(CHUNKNUM Icode);  // returns programId

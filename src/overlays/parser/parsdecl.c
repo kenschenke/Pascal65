@@ -1,5 +1,4 @@
 #include <parser.h>
-#include <scanner.h>
 #include <error.h>
 #include <common.h>
 #include <symtab.h>
@@ -21,22 +20,22 @@ void copyQuotedString(char *pString, CHUNKNUM *firstChunk) {
 }
 
 void parseDeclarations(void) {
-    if (tokenCode == tcCONST) {
+    if (parserToken == tcCONST) {
         getToken();
         parseConstantDefinitions();
     }
 
-    if (tokenCode == tcTYPE) {
+    if (parserToken == tcTYPE) {
         getToken();
         parseTypeDefinitions();
     }
 
-    if (tokenCode == tcVAR) {
+    if (parserToken == tcVAR) {
         getToken();
         parseVariableDeclarations();
     }
 
-    if (tokenIn(tokenCode, tlProcFuncStart)) {
+    if (tokenIn(parserToken, tlProcFuncStart)) {
         parseSubroutineDeclarations();
     }
 }
@@ -51,23 +50,23 @@ void parseConstant(CHUNKNUM constIdChunkNum) {
 
     // unary + or -
 
-    if (tokenIn(tokenCode, tlUnaryOps)) {
-        if (tokenCode == tcMinus) sign = tcMinus;
+    if (tokenIn(parserToken, tlUnaryOps)) {
+        if (parserToken == tcMinus) sign = tcMinus;
         getToken();
     }
 
-    switch (tokenCode) {
+    switch (parserToken) {
         // Numeric constant: integer
         case tcNumber:
-            if (tokenType == tyInteger) {
+            if (parserType == tyInteger) {
                 constId.defn.constant.value.integer =
-                    sign == tcMinus ? -tokenValue.integer :
-                        tokenValue.integer;
+                    sign == tcMinus ? -parserValue.integer :
+                        parserValue.integer;
                 setType(&constId.node.typeChunk, integerType);
             } else {
                 constId.defn.constant.value.real =
-                    sign == tcMinus ? floatNeg(tokenValue.real) :
-                        tokenValue.real;
+                    sign == tcMinus ? floatNeg(parserValue.real) :
+                        parserValue.real;
                 setType(&constId.node.typeChunk, realType);
             }
             saveSymbNode(&constId);
@@ -82,16 +81,16 @@ void parseConstant(CHUNKNUM constIdChunkNum) {
         
         // String constant
         case tcString:
-            length = strlen(tokenString) - 2;  // skip quotes
+            length = strlen(parserString) - 2;  // skip quotes
             if (sign != tcDummy) Error(errInvalidConstant);
 
             if (length == 1) {
                 // Single character
-                constId.defn.constant.value.character = tokenString[1];
+                constId.defn.constant.value.character = parserString[1];
                 setType(&constId.node.typeChunk, charType);
             } else {
                 // String (character array) : create a new unnamed string type
-                copyQuotedString(tokenString, &constId.defn.constant.value.stringChunkNum);
+                copyQuotedString(parserString, &constId.defn.constant.value.stringChunkNum);
                 setType(&constId.node.typeChunk, makeStringType(length));
             }
             saveSymbNode(&constId);
@@ -105,8 +104,8 @@ void parseConstantDefinitions(void) {
 
     // Loop to parse a list of constant definitions
     // separated by semicolons
-    while (tokenCode == tcIdentifier) {
-        if (symtabEnterNewLocal(&constId, tokenString, dcUndefined) == 0) {
+    while (parserToken == tcIdentifier) {
+        if (symtabEnterNewLocal(&constId, parserString, dcUndefined) == 0) {
             return;
         }
 
@@ -136,7 +135,7 @@ void parseConstantDefinitions(void) {
         condGetToken(tcSemicolon, errMissingSemicolon);
 
         // skip extra semicolons
-        while (tokenCode == tcSemicolon) getToken();
+        while (parserToken == tcSemicolon) getToken();
         resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
     }
 }
@@ -149,7 +148,7 @@ void parseIdentifierConstant(CHUNKNUM constIdChunkNum, TTokenCode sign) {
     // id1 is the lhalf
     // id2 is the rhalf
 
-    if (findSymtabNode(&id2, tokenString) == 0) {
+    if (findSymtabNode(&id2, parserString) == 0) {
         return;
     }
     if (id2.defn.how != dcConstant) {
@@ -205,13 +204,13 @@ CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLast
     *pLastId = 0;
 
     // Loop to parse each identifier in the sublist
-    while (tokenCode == tcIdentifier) {
+    while (parserToken == tcIdentifier) {
         // variable: enter into local symbol table
         // field:    enter into record symbol table
         if (routineId != NULL) {
-            symtabEnterNewLocal(&pId, tokenString, dcUndefined);
+            symtabEnterNewLocal(&pId, parserString, dcUndefined);
         } else {
-            enterNew(pRecordType->record.symtab, &pId, tokenString, dcUndefined);
+            enterNew(pRecordType->record.symtab, &pId, parserString, dcUndefined);
         }
 
         // Link newly-declared identifier nodes together
@@ -235,21 +234,21 @@ CHUNKNUM parseIdSublist(SYMBNODE *routineId, TTYPE *pRecordType, CHUNKNUM *pLast
         // ,
         getToken();
         resync(tlIdentifierFollow, NULL, NULL);
-        if (tokenCode == tcComma) {
+        if (parserToken == tcComma) {
             // Saw comma
             // Skip extra commas and look for an identifier
             do {
                 getToken();
                 resync(tlIdentifierStart, tlIdentifierFollow, NULL);
-                if (tokenCode == tcComma) {
+                if (parserToken == tcComma) {
                     Error(errMissingIdentifier);
                 }
-            } while (tokenCode == tcComma);
-            if (tokenCode != tcIdentifier) {
+            } while (parserToken == tcComma);
+            if (parserToken != tcIdentifier) {
                 Error(errMissingIdentifier);
             }
         }
-        else if (tokenCode == tcIdentifier) {
+        else if (parserToken == tcIdentifier) {
             Error(errMissingComma);
         }
     }
@@ -271,7 +270,7 @@ void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offse
     int size, totalSize = 0;
 
     // Loop to parse a list of variable or field declarations
-    while (tokenCode == tcIdentifier) {
+    while (parserToken == tcIdentifier) {
         // <id-sublist>
         firstId = parseIdSublist(routineSymtab, pRecordType, &lastId);
 
@@ -328,15 +327,15 @@ void parseVarOrFieldDecls(SYMBNODE *routineSymtab, TTYPE *pRecordType, int offse
             condGetToken(tcSemicolon, errMissingSemicolon);
 
             // skip extra semicolons
-            while (tokenCode == tcSemicolon) getToken();
+            while (parserToken == tcSemicolon) getToken();
             resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
         } else {
             resync(tlFieldDeclFollow, NULL, NULL);
-            if (tokenCode != tcEND) {
+            if (parserToken != tcEND) {
                 condGetToken(tcSemicolon, errMissingSemicolon);
 
                 // skip extra semicolons
-                while (tokenCode == tcSemicolon) getToken();
+                while (parserToken == tcSemicolon) getToken();
                 resync(tlFieldDeclFollow, tlDeclarationStart, tlStatementStart);
             }
         }
