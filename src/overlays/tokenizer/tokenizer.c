@@ -10,13 +10,6 @@
  * to the Pascal language tokens such as tcSemicolon or tcIf, identifiers and
  * literals are stored in the intermediate code like this:
  * 
- * REWRITE: The tokenizer needs to create the symbol table nodes and populate
- * with enough information for the parser to add them to a symbol table.  This
- * would allow node creation code to be moved into the tokenizer overlay.
- * 
- * REWRITE: initPredefinedTypes can happen in the tokenizer, maybe in a
- * initTokenizer function.
- * 
  * TODO: Remove membuf's dependency on int16 and float shared routines.
  * 
  * TODO: Move testing code from shared code in parsertest to the parsertest overlay.
@@ -33,12 +26,13 @@
  * 
  * tzInteger
  *    The tzInteger code is followed by the two-byte integer value.
+ *    This is followed by a one-byte integer string length then the
+ *    integer as a string.
  * 
  * tzReal
  *    The tzReal code is followed by the four-byte real value.
- * 
- * tzChar - NOT USED
- *    The tzChar code is followed by the one-byte character value.
+ *    This is followed by a one-byte integer string length then the
+ *    float as a string.
  * 
  * tzString
  *    The tzString code is followed by a two-byte integer string
@@ -178,7 +172,8 @@ CHUNKNUM tokenize(const char *filename) {
                 break;
             }
 
-            case tcNumber:
+            case tcNumber: {
+                char len = (char) strlen(tokenString);
                 if (tokenType == tyInteger) {
                     tzType = tzInteger;
                     writeToMemBuf(Icode, &tzType, 1);
@@ -188,7 +183,10 @@ CHUNKNUM tokenize(const char *filename) {
                     writeToMemBuf(Icode, &tzType, 1);
                     writeToMemBuf(Icode, &tokenValue.real, 4);
                 }
+                writeToMemBuf(Icode, &len, 1);
+                writeToMemBuf(Icode, tokenString, len);
                 break;
+            }
             
             default:
                 tzType = tzToken;

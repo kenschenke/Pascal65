@@ -90,18 +90,22 @@ void getToken(void)
         }
 
         case tzInteger:
-            readFromMemBuf(parserIcode, &parserValue.integer, 2);
+        case tzReal: {
+            char len;
+
+            if (code == tzInteger) {
+                readFromMemBuf(parserIcode, &parserValue.integer, 2);
+                parserType = tyInteger;
+            } else {
+                readFromMemBuf(parserIcode, &parserValue.real, 4);
+                parserType = tyReal;
+            }
             parserToken = tcNumber;
-            parserType = tyInteger;
-            sprintf(parserString, "%d", parserValue.integer);
+            readFromMemBuf(parserIcode, &len, 1);
+            readFromMemBuf(parserIcode, parserString, len);
+            parserString[len] = 0;
             break;
-        
-        case tzReal:
-            readFromMemBuf(parserIcode, &parserValue.real, 4);
-            parserToken = tcNumber;
-            parserType = tyReal;
-            floatToStr(parserValue.real, parserString, -1);
-            break;
+        }
         
         case tzToken:
             readFromMemBuf(parserIcode, &parserToken, 1);
