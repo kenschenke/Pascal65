@@ -55,14 +55,6 @@ CheckBlock:
     ora _blockData + 1
     beq GetBlock            ; no
 
-    ; Is the chunk in a different block?
-    lda _currentBlock
-    cmp blockNum
-    bne @StoreCurrentBlock  ; yes
-    lda _currentBlock + 1
-    cmp blockNum + 1
-    beq StoreChunk          ; no
-
 @StoreCurrentBlock:
     ; Store the current block
     lda _currentBlock
