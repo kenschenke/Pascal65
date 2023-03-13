@@ -134,7 +134,6 @@ void initCommon(void)
     firstSymtabChunk = 0;
     isFatalError = 0;
 
-    initSymtabs();
     initMemBufCache();
 }
 

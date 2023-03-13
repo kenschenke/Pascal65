@@ -58,7 +58,6 @@ void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum);
 void checkIntegerOrReal(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 void checkRelOpOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 CHUNKNUM getBaseType(TTYPE *pType);
-char initPredefinedTypes(CHUNKNUM symtabChunkNum);
 char integerOperands(CHUNKNUM type1Chunk, CHUNKNUM type2Chunk);
 char isTypeScalar(TTYPE *pType);
 CHUNKNUM makeType(TFormCode fc, int s, CHUNKNUM formId);

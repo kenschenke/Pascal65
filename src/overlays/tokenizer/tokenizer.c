@@ -46,7 +46,107 @@
  *    The string is stored with the quotes.
  */
 
+static void initPredefined(CHUNKNUM symtabChunkNum);
+static void initSymtabs(void);
+static void setPredefinedType(CHUNKNUM typeId, CHUNKNUM typeChunk);
 static void writeTzIdentifier(CHUNKNUM Icode);
+
+static void initPredefinedTypes(CHUNKNUM symtabChunkNum) {
+    TTYPE typeNode;
+    SYMBNODE node;
+    CHUNKNUM integerId, booleanId, charId, realId;
+    CHUNKNUM falseId, trueId;
+
+    // Enter the names of the predefined types and of "false"
+    // and "true" into the symbol table.
+
+    enterSymtab(symtabChunkNum, &node, "integer", dcType);
+    integerId = node.node.nodeChunkNum;
+
+    enterSymtab(symtabChunkNum, &node, "real", dcType);
+    realId = node.node.nodeChunkNum;
+
+    enterSymtab(symtabChunkNum, &node, "boolean", dcType);
+    booleanId = node.node.nodeChunkNum;
+
+    enterSymtab(symtabChunkNum, &node, "char", dcType);
+    charId = node.node.nodeChunkNum;
+
+    enterSymtab(symtabChunkNum, &node, "false", dcConstant);
+    falseId = node.node.nodeChunkNum;
+
+    enterSymtab(symtabChunkNum, &node, "true", dcConstant);
+    trueId = node.node.nodeChunkNum;
+
+    // Create the predefined type objects
+
+    integerType = makeType(fcScalar, sizeof(int), integerId);
+    realType = makeType(fcScalar, sizeof(unsigned long), realId);
+    booleanType = makeType(fcEnum, sizeof(int), booleanId);
+    charType = makeType(fcScalar, sizeof(char), charId);
+    dummyType = makeType(fcNone, 1, 0);
+
+    setPredefinedType(integerId, integerType);
+    setPredefinedType(realId, realType);
+    setPredefinedType(booleanId, booleanType);
+    setPredefinedType(charId, charType);
+
+    if (retrieveChunk(booleanType, (unsigned char *)&typeNode) == 0) {
+        return;
+    }
+    typeNode.enumeration.max = 1;
+    typeNode.enumeration.constIds = falseId;
+    if (storeChunk(booleanType, (unsigned char *)&typeNode) == 0) {
+        return;
+    }
+
+    // More initialization for the "false" and "true" id nodes.
+    if (loadSymbNode(falseId, &node) == 0) {
+        return;
+    }
+    node.node.nextNode = trueId;
+    setType(&node.node.typeChunk, booleanType);
+    node.defn.constant.value.integer = 0;
+    saveSymbNode(&node);
+
+    if (loadSymbNode(trueId, &node) == 0) {
+        return;
+    }
+    setType(&node.node.typeChunk, booleanType);
+    node.defn.constant.value.integer = 1;
+    saveSymbNode(&node);
+
+    // Initialize the dummy type object that will be used
+    // for erroneous type definitions and for typeless objects.
+    if (setType(&dummyType, makeType(fcNone, 1, 0)) == 0) {
+        return;
+    }
+}
+
+static void initSymtabs(void) {
+    int i;
+
+    currentNestingLevel = 0;
+    for (i = 1; i < MAX_NESTING_LEVEL; ++i) symtabStack[i] = 0;
+
+    makeSymtab(&globalSymtab);
+
+    symtabStack[0] = globalSymtab;
+
+    initPredefinedTypes(symtabStack[0]);
+}
+
+void initTokenizer(void) {
+    initSymtabs();
+}
+
+static void setPredefinedType(CHUNKNUM typeId, CHUNKNUM typeChunkNum) {
+    SYMTABNODE node;
+
+    getChunkCopy(typeId, &node);
+    setType(&node.typeChunk, typeChunkNum);
+    storeChunk(typeId, (unsigned char *)&node);
+}
 
 CHUNKNUM tokenize(const char *filename) {
     CHUNKNUM Icode;

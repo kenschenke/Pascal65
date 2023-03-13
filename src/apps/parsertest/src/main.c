@@ -142,6 +142,7 @@ static void runControlTest(const char *test, int firstLine) {
     initCommon();
 
     printf("\nTokenizing %s\n", buf);
+    initTokenizer();
     tokenIcode = tokenize(buf);
 
     loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
@@ -214,6 +215,7 @@ int main()
         // parse(cases[i].source);
 
         printf("\nTokenizing %s\n", cases[i].source);
+        initTokenizer();
         tokenIcode = tokenize(cases[i].source);
 
         printf("Parsing\n");

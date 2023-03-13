@@ -17,7 +17,11 @@
 #include <misc.h>
 #include <types.h>
 
+#define MAX_NESTING_LEVEL 8
+
 struct ICODE;
+
+extern CHUNKNUM symtabStack[MAX_NESTING_LEVEL];
 
 typedef struct STRVALCHUNK {
     CHUNKNUM nextChunkNum;
@@ -145,7 +149,6 @@ char saveSymbNode(SYMBNODE *pNode);
 char saveSymbNodeDefn(SYMBNODE *pNode);
 char saveSymbNodeOnly(SYMBNODE *pNode);
 
-void initSymtabs(void);
 void initSymtabsForParser(void);
 char symtabEnterLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc);
 char symtabEnterNewLocal(SYMBNODE *pNode, const char *pString, TDefnCode dc);

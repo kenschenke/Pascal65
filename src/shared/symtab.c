@@ -18,13 +18,11 @@
 #include <types.h>
 #include <parser.h>
 
-#define MAX_NESTING_LEVEL 8
-
 extern short currentLineNumber;
 
 int currentNestingLevel;
 
-static CHUNKNUM symtabStack[MAX_NESTING_LEVEL];
+CHUNKNUM symtabStack[MAX_NESTING_LEVEL];
 
 static int compNodeIdentifier(const char *identifier, CHUNKNUM other);
 // buffer is caller-supplied and is at least CHUNK_LEN in length
@@ -335,19 +333,6 @@ char searchSymtab(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifi
     }
 
     return chunkNum ? 1 : 0;
-}
-
-void initSymtabs(void) {
-    int i;
-
-    currentNestingLevel = 0;
-    for (i = 1; i < MAX_NESTING_LEVEL; ++i) symtabStack[i] = 0;
-
-    makeSymtab(&globalSymtab);
-
-    symtabStack[0] = globalSymtab;
-
-    initPredefinedTypes(symtabStack[0]);
 }
 
 void initSymtabsForParser(void) {
