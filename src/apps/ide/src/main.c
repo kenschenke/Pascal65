@@ -295,6 +295,11 @@ void main()
     _heapadd((void *)0x1600, 0x1fff - 0x1600);
 #endif
 
+#if 0
+    printf("avail = %d\n", _heapmemavail());
+    return;
+#endif
+
     initBlockStorage();
 
 #if 1
