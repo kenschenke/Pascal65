@@ -28,7 +28,7 @@ unsigned char loadfile(const char *name);
 
 void main()
 {
-    CHUNKNUM programId;
+    CHUNKNUM programId, tokenId;
     SYMBNODE programIdNode;
 
 #ifdef __C128__
@@ -52,13 +52,22 @@ void main()
     initBlockStorage();
 
     // load the parser
-    printf("Loading parser module\n");
+    // printf("Loading tokenizer module\n");
     if (loadfile("interpreter.1")) {
-        printf("Running parser\n");
+        // printf("Running tokenizer\n");
         initCommon();
+        initTokenizer();
+
+        tokenId = tokenize("translate.pas");
+    }
+
+    // load the parser
+    // printf("Loading parser module\n");
+    if (loadfile("interpreter.2")) {
+        // printf("Running parser\n");
         initParser();
 
-        programId = parse("nested.pas");
+        programId = parse(tokenId);
     }
 
     // If there were no syntax errors, convert the symbol tables.
@@ -69,8 +78,8 @@ void main()
     }
     // convertAllSymtabs();
     
-    printf("Loading executor module\n");
-    if (loadfile("interpreter.2")) {
+    // printf("Loading executor module\n");
+    if (loadfile("interpreter.3")) {
         stackInit();
         executorInit();
         loadSymbNode(programId, &programIdNode);
