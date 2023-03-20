@@ -12,9 +12,7 @@
 
 #include "editor.h"
 
-#include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #ifdef __C128__
 #include <c128.h>
@@ -33,6 +31,7 @@ static void editorInsertTab(void);
 static void editorInsertNewLine(int spaces);
 static void editorMoveCursor(int key, char skipClear);
 static void editorProcessKeypress(void);
+static void openHelpFile(void);
 
 #ifdef __MEGA65__
 void fastcall setscreensize(unsigned char width, unsigned char height);
@@ -188,9 +187,13 @@ static void editorMoveCursor(int key, char skipClear) {
         if (E.cf.cx < 0) E.cf.cx = 0;
     }
 
-#ifndef __MEGA65__
-    gotoxy(E.cf.cx, E.cf.cy);
+    if (E.cf.cx < E.cf.coloff + E.screencols && E.cf.cy < E.cf.rowoff + E.screenrows) {
+#ifdef __MEGA65__
+        gotoxy(E.cf.cx, E.cf.cy);
+#elif defined(__C64__)
+        renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
+    }
 }
 
 static void editorProcessKeypress(void) {
@@ -239,6 +242,27 @@ static void editorProcessKeypress(void) {
                 editorInsertChar(' ');
                 E.cf.cx--;
             }
+            break;
+
+        case CTRL_KEY('a'):
+            clearCursor();
+            openHelpFile();
+            break;
+
+        case BACKARROW:
+            handleFiles();
+            break;
+
+        case CTRL_KEY('o'):
+            openFile();
+            if (E.cf.fileChunk) {
+                clearScreen();
+                editorSetAllRowsDirty();
+            }
+            break;
+
+        case CTRL_KEY('u'):
+            saveFile();
             break;
 
         case CTRL_KEY('x'):
@@ -379,10 +403,6 @@ static void editorProcessKeypress(void) {
             if (E.cf.fileChunk) editorMoveCursor(c, 0);
             break;
 
-        case CTRL_KEY('l'):
-        case '\x1b':
-            break;
-
         case CTRL_KEY('n'):
         case CTRL_KEY('p'):
         case PAGE_UP:
@@ -479,8 +499,8 @@ void editorNewFile(void) {
     }
 
     initFile(&E.cf);
-#ifndef __MEGA65__
-    cursor(0);
+#ifdef __C64__
+    renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
 }
 
@@ -501,6 +521,16 @@ void editorRetrieveFilename(efile *file, char *buffer) {
     } else {
         retrieveChunk(file->filenameChunk, (unsigned char *)buffer);
     }
+}
+
+static void openHelpFile(void) {
+    char buf[CHUNK_LEN];
+
+    editorOpen("help.txt", 1);
+    strcpy(buf, "Help File");
+    allocChunk(&E.cf.filenameChunk);
+    storeChunk(E.cf.filenameChunk, (unsigned char *)buf);
+    storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
 }
 
 void setupScreenCols(void) {

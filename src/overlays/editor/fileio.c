@@ -236,6 +236,10 @@ void openFile(void) {
     }
 
     editorOpen(filename, 0);
+
+#ifdef __C64__
+    renderCursor64(0, 0);
+#endif
 }
 
 char saveAs(void) {

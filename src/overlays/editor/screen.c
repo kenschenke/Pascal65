@@ -26,28 +26,6 @@
 
 #define KILO_VERSION "0.0.1"
 
-#ifdef __C64__
-void __fastcall__ clearScreen40(void);
-void __fastcall__ initScreen40(void);
-void __fastcall__ setScreenBg40(char bg);
-void __fastcall__ drawRow40(char row, char col, char len,
-    char *buf, unsigned char *rev);
-#endif
-
-#ifdef __C128__
-void __fastcall__ clearScreen80(void);
-void __fastcall__ initScreen80(void);
-void __fastcall__ setScreenBg80(char bg);
-void __fastcall__ drawRow80(char row, char len,
-    char *buf, unsigned char *rev);
-
-void __fastcall__ clearScreen40(void);
-void __fastcall__ initScreen40(void);
-void __fastcall__ setScreenBg40(char bg);
-void __fastcall__ drawRow40(char row, char len,
-    char *buf, unsigned char *rev);
-#endif
-
 static void editorDrawMessageBar(void);
 static void editorDrawRows(void);
 static void editorDrawStatusBar(void);
@@ -119,7 +97,7 @@ static void setCursor(unsigned char clear, unsigned char color) {
 }
 #else
 void clearCursor(void) {
-    cursor(1);
+    clearCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 }
 #endif
 
@@ -134,16 +112,16 @@ void clearStatusRow(void) {
 #endif
 }
 
-void drawRow(char row, char col, char len, char *buf, char /*isReversed*/) {
+void drawRow(char row, char col, char len, char *buf, char isReversed) {
 #ifdef __MEGA65__
     drawRow65(row, col, len, buf, isReversed);
 #elif defined(__C64__)
-    drawRow40(row, col, len, buf, NULL);
+    drawRow40(row, col, len, buf, isReversed);
 #else
     if (E.screencols == 40)
-        drawRow40(row, len, buf, NULL);
+        drawRow40(row, len, buf, isReversed);
     else
-        drawRow80(row, len, buf, NULL);
+        drawRow80(row, len, buf, isReversed);
 #endif
 }
 
@@ -201,6 +179,7 @@ void initScreen(void) {
     clearScreen();
 #elif defined(__C64__)
     initScreen40();
+    clearCursor();
 #else
     if (E.screencols == 40)
         initScreen40();
@@ -385,6 +364,8 @@ void editorRefreshScreen(void) {
 
 #ifdef __MEGA65__
     renderCursor();
+#else
+    renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
 }
 

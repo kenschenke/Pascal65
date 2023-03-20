@@ -1,9 +1,9 @@
-Welcome to Ked (Ken's Editor)
+Welcome to Pascal65
 -----------------------------
-Copyright 2022 by Ken Schenke
+Copyright 2022-23 Ken Schenke
 kenschenke@gmail.com
 
-You are viewing the help page for Ked.
+This is the help page for Pascal65.
 Ctrl+N jumps to the next page and
 Ctrl+P jumps to the previous page.
 You can also use the cursor keys to
@@ -23,6 +23,7 @@ Scroll Down          Esc+W    Ctrl+W
 Scroll to file top   Esc+B    Ctrl+B
 Scroll to file end   Esc+E    Ctrl+E
 Open File                     Ctrl+O
-Save File                     Ctrl+S
+Save File                     Ctrl+U
 Other File Functions      Back arrow
+View This Help File           Ctrl+A
 Exit                          Ctrl+X

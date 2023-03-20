@@ -4,7 +4,8 @@ BINDIR := bin
 DRVDIR := ../../../drv
 PARSEROVRLSRC := ../../overlays/parser
 EXECOVRLSRC := ../../overlays/exec
-EDITOROVRLSRC := ../../editor
+EDITOROVRLSRC := ../../overlays/editor
+TOKENIZEROVRLSRC := ../../overlays/tokenizer
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = ../../shared/chunks
 SHAREDICODEDIR = ../../shared/icode
@@ -15,12 +16,13 @@ TARGETSRCDIR = $(SRCDIR)/$(TARGET)
 
 PROGRAM := pascal65
 D81FILE := $(BINDIR)/$(PROGRAM).d81
-PARSEROVRLFILE := $(PROGRAM).1
-EXECOVRLFILE := $(PROGRAM).2
-EDITOROVRLFILE := $(PROGRAM).3
+TOKENIZEROVRLFILE := $(PROGRAM).1
+PARSEROVRLFILE := $(PROGRAM).2
+EXECOVRLFILE := $(PROGRAM).3
+EDITOROVRLFILE := $(PROGRAM).4
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c128
-CC65TARGET = c128
+TARGET := c64
+CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 mega65_EMUCMD := xmega65 -besure -8
@@ -48,6 +50,9 @@ SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
 PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
+TOKENIZEROVRLSRCS := $(wildcard $(TOKENIZEROVRLSRC)/*.c)
+TOKENIZEROVRLSRCS += $(wildcard $(TOKENIZEROVRLSRC)/*.s)
+
 EXECOVRLSRCS := $(wildcard $(EXECOVRLSRC)/*.c)
 EXECOVRLSRCS += $(wildcard $(EXECOVRLSRC)/*.s)
 EXECOVRLSRCS += $(LIBCOMMONDIR)/float.s
@@ -67,6 +72,7 @@ EXECOVRLSRCS += $(LIBCOMMONDIR)/inputbuf.s
 EXECOVRLSRCS += $(LIBCOMMONDIR)/leftpad.s
 EXECOVRLSRCS += $(LIBCOMMONDIR)/printz.s
 EXECOVRLSRCS += $(LIBCOMMONDIR)/int16.s
+EXECOVRLSRCS += $(LIBCOMMONDIR)/parseint16.s
 EXECOVRLSRCS += $(LIBCOMMONDIR)/readint16.s
 EXECOVRLSRCS += $(LIBCOMMONDIR)/writeint16.s
 
@@ -80,6 +86,7 @@ endif
 CONFIG := cfg-$(TARGET).cfg
 
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TOKENIZEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(PARSEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(EXECOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(EDITOROVRLSRCS)))))
@@ -110,37 +117,45 @@ vpath %.s $(TARGETSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath $(TOKENIZEROVRLSRC)/%.c
+$(OBJDIR)/%.o: $(TOKENIZEROVRLSRC)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(TOKENIZEROVRLSRC)/%.s
+$(OBJDIR)/%.o: $(TOKENIZEROVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
 vpath $(PARSEROVRLSRC)/%.c
 $(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(PARSEROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(EXECOVRLSRC)/%.c
 $(OBJDIR)/%.o: $(EXECOVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(EXECOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(EXECOVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LIBCOMMONDIR)/%.c
 $(OBJDIR)/%.o: $(LIBCOMMONDIR)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(LIBCOMMONDIR)/%.s
 $(OBJDIR)/%.o: $(LIBCOMMONDIR)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(EDITOROVRLSRC)/%.c
 $(OBJDIR)/%.o: $(EDITOROVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(EDITOROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(EDITOROVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 ifeq ($(TARGET),mega65)
 vpath $(LIBCSRCDIR)/%.c
@@ -217,6 +232,7 @@ else
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii help.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
 	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \

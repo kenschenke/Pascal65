@@ -105,11 +105,36 @@ enum editorKey {
 
 /*** prototypes ***/
 
+#ifdef __C64__
+void __fastcall__ clearCursor64(char x, char y);
+void __fastcall__ clearScreen40(void);
+void __fastcall__ initScreen40(void);
+void __fastcall__ renderCursor64(char x, char y);
+void __fastcall__ setScreenBg40(char bg);
+void __fastcall__ drawRow40(char row, char col, char len,
+    char *buf, char isReversed);
+#endif
+
+#ifdef __C128__
+void __fastcall__ clearScreen80(void);
+void __fastcall__ initScreen80(void);
+void __fastcall__ setScreenBg80(char bg);
+void __fastcall__ drawRow80(char row, char len,
+    char *buf, unsigned char *rev);
+
+void __fastcall__ clearScreen40(void);
+void __fastcall__ initScreen40(void);
+void __fastcall__ setScreenBg40(char bg);
+void __fastcall__ drawRow40(char row, char len,
+    char *buf, unsigned char *rev);
+#endif
+
 void clearCursor(void);
 void clearRow(char row, char startingCol);
 void clearScreen(void);
 void clearStatusRow(void);
 void closeFile(void);
+void cursorOff(void);
 char doesFileExist(char *filename);
 void drawRow(char row, char col, char len, char *buf, char isReversed);
 void drawStatusRow(char color, char center, const char *fmt, ...);
@@ -139,6 +164,7 @@ void editorSetStatusMessage(const char *fmt, ...);
 void editorStoreFilename(efile *file, const char *filename);
 void editorRefreshScreen();
 void editorUpdateRow(erow *row);
+void handleFiles(void);
 void initEditor(void);
 void initFile(efile *file);
 char saveAs(void);
