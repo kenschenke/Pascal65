@@ -59,7 +59,7 @@ void main()
 #if 1
     if (loadfile("pascal65.4")) {
         initEditor();
-        editorSetStatusMessage("Ctrl-O: open  Ctrl-X: quit  Ctrl-A: help");
+        editorSetDefaultStatusMessage();
         // E.cbExitRequested = handleExitRequested;
         // E.cbKeyPressed = handleKeyPressed;
         // E.cbExitRequested = handleExitRequested;

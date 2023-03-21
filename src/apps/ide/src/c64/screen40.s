@@ -2,7 +2,7 @@
 ; void __fastcall__ drawRow40(char row, char len, char *buf);
 
     .export     _drawRow40, _clearScreen40, _setScreenBg40, _initScreen40, _cursorOnOff
-    .export     _renderCursor64, _clearCursor64
+    .export     _renderCursor64, _clearCursor64, _setRowColor
     .import     popa, popax, incRow, petscii2Screen
     .importzp   ptr1, ptr2, ptr3, tmp1, tmp2, tmp3, tmp4
 
@@ -66,7 +66,6 @@ _initScreen40:
 ; void drawRow40(char row, char col, char len, char *buf, char isReversed)
 ;       ptr1 - char buffer
 ;       ptr2 = screen RAM
-;       ptr3 - reverse buffer (or'd with chars)
 ;       tmp1 - length of buffer
 ;       tmp2 - row number, then # of chars to pad later
 ;       tmp3 - col number to start rendering
@@ -201,6 +200,26 @@ _clearScreen40:
     tay
     lda #3
     sta (ptr1),y
+    rts
+.endproc
+
+; This routine sets the color of the row (zero-based)
+; void setRowColor(char row, char color)
+.proc _setRowColor
+    pha
+    jsr popa
+    tay
+    ldx #0
+    stx ptr1
+    ldx #$d8
+    stx ptr1 + 1
+    jsr calcScreenPos
+    pla
+    ldy #39
+L1:
+    sta (ptr1),y
+    dey
+    bpl L1
     rts
 .endproc
 

@@ -22,8 +22,10 @@ Scroll Up            Esc+V    Ctrl+V
 Scroll Down          Esc+W    Ctrl+W
 Scroll to file top   Esc+B    Ctrl+B
 Scroll to file end   Esc+E    Ctrl+E
-Open File                     Ctrl+O
-Save File                     Ctrl+U
+Open File                     F1
+Save File                     F2
+Run Pascal File               F4
+Compile Pascal File           F5
 Other File Functions      Back arrow
-View This Help File           Ctrl+A
+View This Help File           F7
 Exit                          Ctrl+X

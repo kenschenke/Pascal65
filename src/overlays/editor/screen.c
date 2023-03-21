@@ -97,19 +97,14 @@ static void setCursor(unsigned char clear, unsigned char color) {
 }
 #else
 void clearCursor(void) {
+#ifdef __C64__
     clearCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
+#endif
 }
 #endif
 
 void clearStatusRow(void) {
-#if 0
-    int x;
-
-    for (x = 0; x < E.screencols; ++x) {
-        cellcolor(x, E.screenrows + 1, COLOUR_WHITE);
-    }
-    clearRow(E.screenrows + 1, 0);
-#endif
+    drawStatusRow(COLOR_WHITE, 0, "");
 }
 
 void drawRow(char row, char col, char len, char *buf, char isReversed) {
@@ -140,36 +135,51 @@ void drawStatusRow(char color, char center, const char *fmt, ...) {
     }
 #endif
 
+    clearRow(E.screenrows + 1, 0);
     x = center ? E.screencols / 2 - strlen(buf) / 2 : 0;
     drawRow(E.screenrows + 1, x, strlen(buf), buf, 0);
-    clearRow(E.screenrows + 1, x + strlen(buf));
+
+#ifdef __C64__
+    setRowColor(E.screenrows + 1, color);
+#endif
 }
 
-char editorPrompt(char *prompt, char *buf, size_t bufsize) {
+char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
     size_t buflen = 0;
-    int c;
+    int c, x = promptLength;
 
     buf[0] = '\0';
 
+    clearCursor();
     while (1) {
         drawStatusRow(COLOR_WHITE, 0, prompt, buf);
+#ifdef __C64__
+        renderCursor64(x, E.screenrows + 1);
+#endif
         c = editorReadKey();
         if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
-            if (buflen != 0) buf[--buflen] = '\0';
-        } else if (c == '\x1b') {
+            if (buflen != 0) {
+                buf[--buflen] = '\0';
+                --x;
+            }
+        } else if (c == 3) {
             clearStatusRow();
+            clearCursor();
             return 0;
         } else if (c == CH_ENTER) {
             if (buflen != 0) {
                 clearStatusRow();
+                clearCursor();
                 return 1;
             }
         } else if (buflen + 1 < bufsize && !iscntrl(c) && c < 128) {
             buf[buflen++] = c;
             buf[buflen] = '\0';
+            ++x;
         }
     }
 
+    clearCursor();
     return 0;
 }
 
@@ -364,7 +374,7 @@ void editorRefreshScreen(void) {
 
 #ifdef __MEGA65__
     renderCursor();
-#else
+#elif defined(__C64__)
     renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
 }

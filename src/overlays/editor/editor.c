@@ -244,16 +244,18 @@ static void editorProcessKeypress(void) {
             }
             break;
 
-        case CTRL_KEY('a'):
+        case CH_F7:
             clearCursor();
+            drawStatusRow(COLOR_WHITE, 0, "Loading Help File...");
             openHelpFile();
+            editorSetDefaultStatusMessage();
             break;
 
         case BACKARROW:
             handleFiles();
             break;
 
-        case CTRL_KEY('o'):
+        case CH_F1:
             openFile();
             if (E.cf.fileChunk) {
                 clearScreen();
@@ -261,7 +263,7 @@ static void editorProcessKeypress(void) {
             }
             break;
 
-        case CTRL_KEY('u'):
+        case CH_F2:
             saveFile();
             break;
 
@@ -521,6 +523,10 @@ void editorRetrieveFilename(efile *file, char *buffer) {
     } else {
         retrieveChunk(file->filenameChunk, (unsigned char *)buffer);
     }
+}
+
+void editorSetDefaultStatusMessage(void) {
+    editorSetStatusMessage("F1: open  Ctrl-X: quit  F7: help");
 }
 
 static void openHelpFile(void) {
