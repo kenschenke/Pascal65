@@ -85,6 +85,7 @@ extern struct editorConfig E;
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 enum editorKey {
+    STOP_KEY = 3,
     HELP_KEY = 31,
     BACKARROW = 95,
     BACKSPACE = 127,

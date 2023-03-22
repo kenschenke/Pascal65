@@ -427,6 +427,10 @@ static void editorProcessKeypress(void) {
             }
             break;
 
+        case STOP_KEY:
+            // do nothing
+            break;
+
         default:
             if (!E.cf.readOnly) {
                 clearCursor();

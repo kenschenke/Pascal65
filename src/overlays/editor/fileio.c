@@ -26,12 +26,18 @@ void closeFile(void) {
         int ch;
 
         while (1) {
-            drawStatusRow(COLOR_LIGHTRED, 0, "Unsaved changes will be lost. Close Y/N?");
+            drawStatusRow(COLOR_LIGHTRED, 0, "Save changes before closing? Y/N");
             ch = editorReadKey();
             if (ch == 'y' || ch == 'Y') {
                 break;
-            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
+            } else if (ch == STOP_KEY) {
                 clearStatusRow();
+                editorSetDefaultStatusMessage();
+                return;
+            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
+                editorClose();
+                clearStatusRow();
+                editorSetDefaultStatusMessage();
                 return;
             }
         }
@@ -151,8 +157,7 @@ void editorOpen(const char *filename, char readOnly) {
 
     while (!feof(fp)) {
         if (!fgets(buf, buflen, fp)) {
-            fclose(fp);
-            editorSetStatusMessage("Cannot read file");
+            break;
         }
 
         line = buf;
@@ -237,6 +242,7 @@ void openFile(void) {
     }
 
     editorOpen(filename, 0);
+    editorSetDefaultStatusMessage();
 
 #ifdef __C64__
     renderCursor64(0, 0);
