@@ -467,10 +467,12 @@ CHUNKNUM executeVariable(SYMBNODE *pId, char addressFlag) {
         stackPushMemBuf(addr.membuf.membuf, addr.membuf.offset);
     }
 
+#ifdef __TEST__
     if (!addressFlag) {
         void *pDataValue = isTypeScalar(&type) ? stackTOS() : stackTOS()->pStackItem;
         traceDataFetch(pId, pDataValue, &type);
     }
+#endif
 
     return resultType;
 }

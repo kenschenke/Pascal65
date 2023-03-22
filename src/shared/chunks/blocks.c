@@ -15,6 +15,8 @@
 #include <chunks.h>
 #include <string.h>
 #include <stdlib.h>
+#include <libcommon.h>
+#include <int16.h>
 
 #ifdef __MEGA65__
 #include <memory.h>
@@ -105,11 +107,12 @@ void initBlockStorage(void)
 	if (!emLoaded) {
 		ret = em_load_driver(EM_DRIVER);
 		if (ret == EM_ERR_NO_DEVICE) {
-			printf("Expanded memory hardware not detected.\n");
+			printlnz("Expanded memory hardware not detected.");
 			exit(0);
 		}
 		if (ret != EM_ERR_OK) {
-			printf("Failed to load extended memory driver - code %d\n", ret);
+			printz("Failed to load extended memory driver - code ");
+			printlnz(formatInt16(ret));
 			exit(0);
 		}
 

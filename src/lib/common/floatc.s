@@ -2,7 +2,7 @@
 
 .include "float.inc"
 
-.import FPBASE, popa, popax, popeax, FPADD, FPSUB, FPMULT, FPDIV, FPOUT, leftpad, printz, FPBUF, FPINP
+.import FPBASE, popa, popax, popeax, FPADD, FPSUB, FPMULT, FPDIV, FPOUT, leftpad, _printz, FPBUF, FPINP
 .import floatEq, floatGt, floatGte, floatLt, floatLte, intOp1, floatToInt16, int16ToFloat, COMPLM
 .import readFloatFromInput
 .importzp sreg, ptr1, ptr2
@@ -114,7 +114,7 @@ L1:
     jsr leftpad
     lda #<FPBUF
     ldx #>FPBUF
-    jmp printz
+    jmp _printz
 .endproc
 
 ; FLOAT strToFloat(const char *str)

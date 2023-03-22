@@ -13,7 +13,7 @@ void editorFind(void) { }
 void editorPasteClipboard(void) { }
 int editorReadKey(void) { return 0; }
 void editorRefreshScreen(void) { }
-void editorSetStatusMessage(const char *fmt, ...) { }
+void editorSetStatusMessage(const char *msg) { }
 void initScreen(void) { }
 
 int main()

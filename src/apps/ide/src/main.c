@@ -5,6 +5,7 @@
 #include <editor.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libcommon.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
@@ -13,22 +14,25 @@ unsigned char loadfile(const char *name);
 
 void logError(const char *message, unsigned lineNumber, TErrorCode code)
 {
-    printf("*** ERROR: %s\n", message);
+    printz("*** ERROR: ");
+    printlnz(message);
 }
 
 void logFatalError(const char *message)
 {
-    printf("*** Fatal translation error: %s\n", message);
+    printz("*** Fatal error: ");
+    printlnz(message);
 }
 
 void logRuntimeError(const char *message, unsigned lineNumber)
 {
-    printf("*** Runtime error: %s\n", message);
+    printz("*** Runtime error: ");
+    printlnz(message);
 }
 
 void outputLine(const char *message)
 {
-    printf("%s\n", message);
+    printlnz(message);
 }
 
 void parserOverlay(void);
@@ -42,7 +46,7 @@ void main()
 #endif
     // bgcolor(COLOR_BLUE);
     // textcolor(COLOR_WHITE);
-    printf("Loading editor overlay\n");
+    printlnz("Loading editor overlay");
 
 #ifdef __MEGA65
     // On the Mega65, $1600 - $1fff is available to use in the heap
@@ -117,5 +121,7 @@ unsigned char loadfile(const char *name)
 
 void log(const char *module, const char *message)
 {
-    printf("%s: %s\n", module, message);
+    printz(module);
+    printz(": ");
+    printlnz(message);
 }

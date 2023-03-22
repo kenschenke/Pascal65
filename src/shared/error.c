@@ -69,7 +69,7 @@ static void getMessage(CHUNKNUM chunkNum, int msgNum)
 
     setMemBufPos(chunkNum, msgNum * CHUNK_LEN);
     readFromMemBuf(chunkNum, chunk, CHUNK_LEN);
-    sprintf(msgbuf, "%.*s", CHUNK_LEN, chunk);
+    strncpy(msgbuf, chunk, CHUNK_LEN);
 }
 
 static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs) {

@@ -19,6 +19,7 @@
 #include <cbm.h>
 #include <doscmd.h>
 #include <errno.h>
+#include <int16.h>
 
 void closeFile(void) {
     if (E.cf.dirty && E.cf.fileChunk) {
@@ -230,7 +231,7 @@ void openFile(void) {
 
     clearStatusRow();
 
-    if (editorPrompt("Open file: %s", filename, sizeof(filename), 11) == 0) {
+    if (editorPrompt("Open file: ", filename, sizeof(filename), 11) == 0) {
         editorSetDefaultStatusMessage();
         return;
     }
@@ -248,13 +249,14 @@ char saveAs(void) {
 
     clearStatusRow();
 
-    if (editorPrompt("Save as: %s", filename, sizeof(filename), 11) == 0) {
+    if (editorPrompt("Save as: ", filename, sizeof(filename), 9) == 0) {
         editorSetDefaultStatusMessage();
         return 0;
     }
 
     if (doesFileExist(filename)) {
-        sprintf(prompt, "%s already exists. Overwrite Y/N?", filename);
+        strcpy(prompt, filename);
+        strcat(prompt, " already exists. Overwrite Y/N?");
         while (1) {
             drawStatusRow(COLOR_RED, 0, prompt);
             ch = editorReadKey();
@@ -316,9 +318,14 @@ char saveToExisting(void) {
 
     clearStatusRow();
 
-    sprintf(tempFilename, "tmp%d.txt", E.cf.fileChunk);
+    strcpy(tempFilename, "tmp");
+    strcat(tempFilename, formatInt16(E.cf.fileChunk));
+    strcat(tempFilename, ".txt");
     if (editorSave(tempFilename) == 0) {
-        drawStatusRow(COLOR_LIGHTRED, 1, "Save failed: %s", strerror(errno));
+        char message[40];
+        strcpy(message, "Save failed: ");
+        strcat(message, strerror(errno));
+        drawStatusRow(COLOR_LIGHTRED, 1, message);
         return 0;
     }
 

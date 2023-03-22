@@ -113,7 +113,7 @@ void __fastcall__ renderCursor64(char x, char y);
 void __fastcall__ setRowColor(char row, char color);
 void __fastcall__ setScreenBg40(char bg);
 void __fastcall__ drawRow40(char row, char col, char len,
-    char *buf, char isReversed);
+    const char *buf, char isReversed);
 #endif
 
 #ifdef __C128__
@@ -137,8 +137,8 @@ void clearStatusRow(void);
 void closeFile(void);
 void cursorOff(void);
 char doesFileExist(char *filename);
-void drawRow(char row, char col, char len, char *buf, char isReversed);
-void drawStatusRow(char color, char center, const char *fmt, ...);
+void drawRow(char row, char col, char len, const char *buf, char isReversed);
+void drawStatusRow(char color, char center, const char *msg);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
@@ -162,7 +162,7 @@ char editorSave(char *filename);
 void editorSetAllRowsDirty(void);
 void editorSetRowDirty(erow *row);
 void editorSetDefaultStatusMessage(void);
-void editorSetStatusMessage(const char *fmt, ...);
+void editorSetStatusMessage(const char *msg);
 void editorStoreFilename(efile *file, const char *filename);
 void editorRefreshScreen();
 void editorUpdateRow(erow *row);

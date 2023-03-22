@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <inputbuf.h>
 #include <real.h>
+#include <string.h>
+#include <libcommon.h>
+#include <int16.h>
 
 #define DEFAULT_FIELD_WIDTH 10
 #define DEFAULT_PRECISION 2
@@ -209,13 +212,23 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
 
             // Write the value
             if (baseTypeChunkNum == integerType) {
-                printf("%*d", fieldWidth, stackPop()->integer);
+                char buf[6];
+                strcpy(buf, formatInt16(stackPop()->integer));
+                leftPad(fieldWidth, strlen(buf));
+                printz(buf);
             } else if (baseTypeChunkNum == realType) {
                 floatPrint(stackPop()->real, fieldPrecision, fieldWidth);
             } else if (baseTypeChunkNum == booleanType) {
-                printf("%*s", fieldWidth, stackPop()->integer == 0 ? "FALSE" : "TRUE");
+                char buf[6];
+                strcpy(buf, stackPop()->integer == 0 ? "FALSE" : "TRUE");
+                leftPad(fieldWidth, strlen(buf));
+                printz(buf);
             } else if (baseTypeChunkNum == charType) {
-                printf("%*c", fieldWidth, stackPop()->character);
+                char buf[2];
+                leftPad(fieldWidth, 1);
+                buf[0] = stackPop()->character;
+                buf[1] = 0;
+                printz(buf);
             } else if (exprType.form == fcArray && exprType.array.elemType == charType) {
                 writeQuotedString(executor.pNode.defn.constant.value.stringChunkNum);
             }
@@ -233,7 +246,7 @@ CHUNKNUM executeWriteWritelnCall(SYMBNODE *pRoutineId) {
 }
 
 static void writeQuotedString(CHUNKNUM chunkNum) {
-    char buffer[CHUNK_LEN];
+    char buffer[CHUNK_LEN + 1];
     int toGet, len;
     MEMBUF membuf;
 
@@ -244,7 +257,8 @@ static void writeQuotedString(CHUNKNUM chunkNum) {
     while (len) {
         toGet = len > CHUNK_LEN ? CHUNK_LEN : len;
         readFromMemBuf(chunkNum, buffer, toGet);
-        printf("%.*s", toGet, buffer);
+        buffer[toGet] = 0;
+        printz(buffer);
         len -= toGet;
     }
 }

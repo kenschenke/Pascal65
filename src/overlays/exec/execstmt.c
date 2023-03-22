@@ -20,7 +20,9 @@ void executeStatement(void)
 {
     if (executor.token.code != tcBEGIN) {
         ++executor.stmtCount;
+#ifdef __TEST__
         traceStatement();
+#endif
     }
 
     switch (executor.token.code) {
@@ -107,7 +109,9 @@ void executeAssignment(SYMBNODE *pTargetId)
             target.membuf.offset, stackPop()->integer);
     }
 
+#ifdef __TEST__
     traceDataStore(&targetId, target.pStackItem, &targetType);
+#endif
 }
 
 void executeCompound(void) {
@@ -214,7 +218,9 @@ void executeFOR(void) {
             if (integerFlag) pControlValue->integer = controlValue;
             else pControlValue->character = controlValue & 0xFF;
             rangeCheck(&controlType, controlValue);
+#ifdef __TEST__
             traceDataStore(&controlId, pControlValue, &controlType);
+#endif
 
             // DO <stmt>
             getTokenForExecutor();

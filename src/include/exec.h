@@ -146,6 +146,7 @@ void getTokenForExecutor(void);
 
 void rangeCheck(TTYPE *targetType, int value);
 
+#ifdef __TEST__
 // Tracing
 void traceRoutineEntry(SYMBNODE *pRoutineId);
 void traceRoutineExit(SYMBNODE *pRoutineId);
@@ -155,5 +156,6 @@ void traceDataStore(SYMBNODE *pTargetId,
 void traceDataFetch(SYMBNODE *pId,
     void *pDataValue, TTYPE *pDataType);
 void traceDataValue(void *pDataValue, TTYPE *pDataType);
+#endif
 
 #endif // end of EXEC_H

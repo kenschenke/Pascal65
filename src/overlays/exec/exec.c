@@ -19,6 +19,8 @@
 #include <symtab.h>
 #include <membuf.h>
 #include <ovrlcommon.h>
+#include <libcommon.h>
+#include <int16.h>
 
 static RTSTACK rtStack;
 
@@ -241,9 +243,10 @@ void executorGo(SYMBNODE *pRoutineId)
     executeRoutine(pRoutineId);
 
     // Print the executor's summary
-    printf("\n");
-    printf("Successful completion.  %d statements executed\n",
-        executor.stmtCount);
+    printlnz("");
+    printz("Successful completion.  ");
+    printInt16(executor.stmtCount);
+    printlnz(" statements exected");
 }
 
 void rangeCheck(TTYPE *pTargetType, int value) {

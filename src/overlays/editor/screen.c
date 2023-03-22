@@ -19,6 +19,7 @@
 #include <conio.h>
 #include <chunks.h>
 #include <ctype.h>
+#include <int16.h>
 
 #ifdef __MEGA65__
 #include <cbm.h>
@@ -107,7 +108,7 @@ void clearStatusRow(void) {
     drawStatusRow(COLOR_WHITE, 0, "");
 }
 
-void drawRow(char row, char col, char len, char *buf, char isReversed) {
+void drawRow(char row, char col, char len, const char *buf, char isReversed) {
 #ifdef __MEGA65__
     drawRow65(row, col, len, buf, isReversed);
 #elif defined(__C64__)
@@ -120,15 +121,8 @@ void drawRow(char row, char col, char len, char *buf, char isReversed) {
 #endif
 }
 
-void drawStatusRow(char color, char center, const char *fmt, ...) {
+void drawStatusRow(char color, char center, const char *msg) {
     int x;
-    char buf[80 + 1];
-
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-
 #if 0
     for (x = 0; x < E.screencols; ++x) {
         cellcolor(x, E.screenrows + 1, color);
@@ -136,8 +130,8 @@ void drawStatusRow(char color, char center, const char *fmt, ...) {
 #endif
 
     clearRow(E.screenrows + 1, 0);
-    x = center ? E.screencols / 2 - strlen(buf) / 2 : 0;
-    drawRow(E.screenrows + 1, x, strlen(buf), buf, 0);
+    x = center ? E.screencols / 2 - strlen(msg) / 2 : 0;
+    drawRow(E.screenrows + 1, x, strlen(msg), msg, 0);
 
 #ifdef __C64__
     setRowColor(E.screenrows + 1, color);
@@ -145,6 +139,7 @@ void drawStatusRow(char color, char center, const char *fmt, ...) {
 }
 
 char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
+    char msg[81];
     size_t buflen = 0;
     int c, x = promptLength;
 
@@ -152,7 +147,9 @@ char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
 
     clearCursor();
     while (1) {
-        drawStatusRow(COLOR_WHITE, 0, prompt, buf);
+        strcpy(msg, prompt);
+        strcat(msg, buf);
+        drawStatusRow(COLOR_WHITE, 0, msg);
 #ifdef __C64__
         renderCursor64(x, E.screenrows + 1);
 #endif
@@ -331,12 +328,28 @@ static void editorDrawStatusBar(void) {
         if (filename[0] == 0) {
             strcpy(filename, "[No Name]");
         }
-        len = snprintf(status, sizeof(status), "%.16s%s %d line%s%s (%ldk free)",
-            filename, E.cf.dirty ? "*": "",
-            E.cf.numrows, E.cf.numrows == 1 ? "" : "s",
-            E.cf.readOnly ? " R/O" : "",
-            ((long)getAvailChunks() * CHUNK_LEN) / 1024);
-        rlen = snprintf(rstatus, sizeof(rstatus), "C:%d R:%d", E.cf.cx + 1, E.cf.cy + 1);
+        strncpy(status, filename, 16);
+        if (E.cf.dirty) {
+            strcat(status, "*");
+        }
+        strcat(status, " ");
+        strcat(status, formatInt16(E.cf.numrows));
+        strcat(status, " line");
+        if (E.cf.numrows != 1) {
+            strcat(status, "s");
+        }
+        if (E.cf.readOnly) {
+            strcat(status, " R/O");
+        }
+        strcat(status, " (");
+        strcat(status, formatInt16((int)(((long)getAvailChunks() * CHUNK_LEN) / 1024)));
+        strcat(status, "k free)");
+        len = strlen(status);
+        strcpy(rstatus, "C:");
+        strcat(rstatus, formatInt16(E.cf.cx + 1));
+        strcat(rstatus, " R:");
+        strcat(rstatus, formatInt16(E.cf.cy + 1));
+        rlen = strlen(rstatus);
         if (len > E.screencols) len = E.screencols;
     }
     memcpy(E.statusbar, status, len);
@@ -379,11 +392,8 @@ void editorRefreshScreen(void) {
 #endif
 }
 
-void editorSetStatusMessage(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(E.statusmsg, sizeof(E.statusmsg), fmt, ap);
-    va_end(ap);
+void editorSetStatusMessage(const char *msg) {
+    strcpy(E.statusmsg, msg);
     E.statusmsg_dirty = 1;
 }
 

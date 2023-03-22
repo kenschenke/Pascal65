@@ -6,6 +6,8 @@
 #include <membuf.h>
 #include <real.h>
 
+#ifdef __TEST__
+
 void traceRoutineEntry(SYMBNODE *pRoutineId) {
     if (executor.traceRoutineFlag) {
         char name[CHUNK_LEN];
@@ -101,3 +103,4 @@ void traceDataValue(void *pDataValue, TTYPE *pDataType) {
     printf("%s\n", text);
 }
 
+#endif

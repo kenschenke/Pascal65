@@ -3,6 +3,7 @@
 #include <editor.h>
 #include <doscmd.h>
 #include <unistd.h>
+#include <int16.h>
 
 #ifdef __C128__
 #include <c128.h>
@@ -23,13 +24,11 @@ static int openFiles;
 
 static void cycleCurrentDevice(void) {
     int dev = getCurrentDrive() + 1;
-    char buf[4+1];
     if (dev > 9) {
         dev = 8;
     }
 
-    sprintf(buf, "%d", dev);
-    chdir(buf);
+    chdir(formatInt16(dev));
 }
 
 void handleFiles(void) {
@@ -142,9 +141,18 @@ static void showFileScreen(void) {
                 } else {
                     strcpy(chunk, "No filename");
                 }
-                n = snprintf(buf, sizeof(buf), "%c%2d: %s%s",
-                    chunkNum == selectedFile ? '*' : ' ', i, chunk,
-                    file.dirty ? " (modified)" : "");
+                buf[n=0] = chunkNum == selectedFile ? '*' : ' ';
+                if (i < 10) {
+                    buf[++n] = ' ';
+                }
+                buf[++n] = 0;
+                strcat(buf, formatInt16(i));
+                strcat(buf, ": ");
+                strcat(buf, chunk);
+                if (file.dirty) {
+                    strcat(buf, " (modified)");
+                }
+                n = strlen(buf);
                 drawRow(y++, 7, n, buf, 0);
             }
 
@@ -157,13 +165,21 @@ static void showFileScreen(void) {
 
     if (count) {
         ++y;
-        n = snprintf(buf, sizeof(buf), "%d file%s open",
-            count, count == 1 ? "": "s");
+        strcpy(buf, formatInt16(count));
+        strcat(buf, " file");
+        if (count != 1) {
+            strcat(buf, "s");
+        }
+        strcat(buf, " open");
+        n = strlen(buf);
         drawRow(y++, 3, n, buf, 0);
         drawRow(y++, 3, 29, "Type number to switch to file", 0);
         if (count > 9) {
-            n = snprintf(buf, sizeof(buf), "Showing files %d - %d",
-                filePage * 9 + 1, count >= (filePage+1)*9 ? filePage * 9 + 9 : count);
+            strcpy(buf, "Showing files ");
+            strcat(buf, formatInt16(filePage * 9 + 1));
+            strcat(buf, " - ");
+            strcat(buf, formatInt16(count >= (filePage+1)*9 ? filePage * 9 + 9 : count));
+            n = strlen(buf);
             drawRow(y++, 3, n, buf, 0);
             drawRow(y++, 3, 37, "Left / right arrows to see more files", 0);
         }
@@ -172,8 +188,10 @@ static void showFileScreen(void) {
     ++y;
     drawRow(y++, 3, 34, "O: Open  C: Close  S: Save  N: New", 0);
 
-    n = snprintf(buf, sizeof(buf), "A: Save As  D: Device (Currently %d)",
-        8); // getCurrentDrive());
+    strcpy(buf, "A: Save As  D: Device (Currently ");
+    strcat(buf, formatInt16(8));
+    strcat(buf, ")");
+    n = strlen(buf);
     drawRow(y++, 3, n, buf, 0);
 
     drawRow(y, 3, 19, "\x1f  Return To Editor", 0);

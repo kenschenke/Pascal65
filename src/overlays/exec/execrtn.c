@@ -127,7 +127,9 @@ void enterRoutine(SYMBNODE *pRoutineId) {
     CHUNKNUM chunkNum;
     SYMBNODE nodeId;      // local variable's symtab node
 
+#ifdef __TEST__
     traceRoutineEntry(pRoutineId);
+#endif
 
     // Allocate the callee's local variables.
     for (chunkNum = pRoutineId->defn.routine.locals.variableIds;
@@ -146,7 +148,9 @@ void exitRoutine(SYMBNODE *pRoutineId) {
     CHUNKNUM chunkNum;
     SYMBNODE nodeId;
 
+#ifdef __TEST__
     traceRoutineExit(pRoutineId);
+#endif
 
     // Deallocate local parameters and variables.
     for (chunkNum = pRoutineId->defn.routine.locals.parmIds;

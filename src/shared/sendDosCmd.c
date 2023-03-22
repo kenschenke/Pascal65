@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <doscmd.h>
 #include <unistd.h>
+#include <string.h>
 
 void __fastcall__ sendDosCmd(char *cmd, char device);
 
@@ -30,13 +31,17 @@ char getCurrentDrive(void) {
 void removeFile(char *filename) {
     char cmd[20];
 
-    sprintf(cmd, "s0:%s", filename);
+    strcpy(cmd, "s0:");
+    strcat(cmd, filename);
     sendDosCmd(cmd, getCurrentDrive());
 }
 
 void renameFile(char *oldName, char *newName) {
     char cmd[40];
 
-    sprintf(cmd, "r0:%s=0:%s", newName, oldName);
+    strcpy(cmd, "r0:");
+    strcat(cmd, newName);
+    strcat(cmd, "=0:");
+    strcat(cmd, oldName);
     sendDosCmd(cmd, getCurrentDrive());
 }
