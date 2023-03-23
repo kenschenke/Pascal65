@@ -185,7 +185,6 @@ void editorInsertRow(int at, char *s, size_t len) {
         retrieveChunk(curChunk, (unsigned char *)&curRow);
         curRow.idx++;
         editorSetRowDirty(&curRow);
-        storeChunk(curChunk, (unsigned char *)&curRow);
         curChunk = curRow.nextRowChunk;
     }
 
@@ -296,7 +295,6 @@ void editorRowInsertChar(erow *row, int at, int c) {
         editorUpdateRow(row);
         editorSetRowDirty(row);
         storeChunk(chunkNum, (unsigned char *)&chunk);
-        storeChunk(row->rowChunk, (unsigned char *)row);
         E.cf.dirty = 1;
         return;
     }
@@ -327,7 +325,6 @@ void editorRowInsertChar(erow *row, int at, int c) {
 
     editorUpdateRow(row);
     editorSetRowDirty(row);
-    storeChunk(row->rowChunk, (unsigned char *)row);
     E.cf.dirty = 1;
 }
 
@@ -336,9 +333,8 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
     echunk chunk, newChunk;
     size_t toCopy;
 
-    editorSetRowDirty(row);
     row->size += len;
-    storeChunk(row->rowChunk, (unsigned char *)row);
+    editorSetRowDirty(row);
 
     // Get the last chunk for the row
     editorRowLastChunk(row, &curChunk, &chunk);

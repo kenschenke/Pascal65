@@ -192,6 +192,7 @@ void editorOpen(const char *filename, char readOnly) {
 
     fclose(fp);
     E.cf.dirty = 0;
+    editorSetDefaultStatusMessage();
 }
 
 char editorSave(char *filename) {
@@ -242,7 +243,6 @@ void openFile(void) {
     }
 
     editorOpen(filename, 0);
-    editorSetDefaultStatusMessage();
 
 #ifdef __C64__
     renderCursor64(0, 0);

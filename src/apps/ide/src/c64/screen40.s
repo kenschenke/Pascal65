@@ -100,6 +100,8 @@ _drawRow40:
     lda #NUM_COLS
     sec
     sbc tmp1
+    sec
+    sbc tmp3
     sta tmp2
     ldy #$0
 @LoopChar:
