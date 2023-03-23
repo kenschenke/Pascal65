@@ -385,11 +385,15 @@ void editorRefreshScreen(void) {
     editorDrawStatusBar();
     editorDrawMessageBar();
 
+    if (E.cf.fileChunk) {
 #ifdef __MEGA65__
-    renderCursor();
+        renderCursor();
 #elif defined(__C64__)
-    renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
+        renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
+    } else {
+        clearCursor();
+    }
 }
 
 void editorSetStatusMessage(const char *msg) {
