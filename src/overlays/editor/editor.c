@@ -161,6 +161,8 @@ static void editorMoveCursor(int key, char skipClear) {
                 if (!skipClear) clearCursor();
                 E.cf.cy++;
                 E.cf.cx = 0;
+                E.cf.coloff = 0;
+                editorSetAllRowsDirty();
             }
             break;
         case CH_CURS_UP:
