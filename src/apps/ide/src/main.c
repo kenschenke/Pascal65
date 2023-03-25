@@ -80,15 +80,12 @@ void main()
             "kenschenke@gmail.com\r"
             "github.com/kenschenke/Pascal65\r"
             "\r"
-            "Based on\r"
-            "\r"
-            "\"Build Your Own Text Editor\"\r"
-            "viewsourcecode.org/snaptoken/kilo/\r"
-            "\r"
-            "And\r"
-            "\r"
-            "antirez's Kilo editor\r"
-            "antirez.com/news/108\r";
+            "Pascal compiler based on the book\r"
+            "\"Writing Compilers and Interpreters:\r"
+            "A Software Engineering Approach\"\r"
+            "Second Edition\r"
+            "by Ronald Mak"
+            "\r";
         
         updateStatusBarFilename();
         editorRun();

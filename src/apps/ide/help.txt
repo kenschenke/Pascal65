@@ -29,3 +29,13 @@ Compile Pascal File           F5
 Other File Functions      Back arrow
 View This Help File           F7
 Exit                          Ctrl+X
+
+The text editor is based on:
+
+"Build Your Own Text Editor"
+viewsourcecode.org/snaptoken/kilo/
+
+And
+
+antirez's Kilo editor
+antirez.com/news/108
