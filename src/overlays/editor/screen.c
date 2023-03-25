@@ -27,6 +27,13 @@
 
 #define KILO_VERSION "0.0.1"
 
+#define STATUSCOL_RO 18
+#define STATUSCOL_MEM 23
+#define STATUSCOL_X 31
+#define STATUSCOL_X_LABEL 29
+#define STATUSCOL_Y 37
+#define STATUSCOL_Y_LABEL 35
+
 static void editorDrawMessageBar(void);
 static void editorDrawRows(void);
 static void editorDrawStatusBar(void);
@@ -314,47 +321,20 @@ static void editorDrawRows(void) {
 }
 
 static void editorDrawStatusBar(void) {
-    char status[80], rstatus[80], filename[CHUNK_LEN];
-    int len, rlen;
+    char num[10];
 
-    memset(E.statusbar, ' ', E.screencols);
+    if (E.cf.fileChunk) {
+        strcpy(num, formatInt16((int)(((long)getAvailChunks() * CHUNK_LEN) / 1024)));
+        strcat(num, "k  ");
+        memcpy(E.statusbar + STATUSCOL_MEM, num, strlen(num));
+        
+        strcpy(num, formatInt16(E.cf.cx + 1));
+        strcat(num, "  ");
+        memcpy(E.statusbar + STATUSCOL_X, num, strlen(num));
 
-    if (E.cf.fileChunk == 0) {
-        strcpy(status, "Welcome");
-        len = strlen(status);
-        rlen = 0;
-    } else {
-        editorRetrieveFilename(&E.cf, filename);
-        if (filename[0] == 0) {
-            strcpy(filename, "[No Name]");
-        }
-        strncpy(status, filename, 16);
-        if (E.cf.dirty) {
-            strcat(status, "*");
-        }
-        strcat(status, " ");
-        strcat(status, formatInt16(E.cf.numrows));
-        strcat(status, " line");
-        if (E.cf.numrows != 1) {
-            strcat(status, "s");
-        }
-        if (E.cf.readOnly) {
-            strcat(status, " R/O");
-        }
-        strcat(status, " (");
-        strcat(status, formatInt16((int)(((long)getAvailChunks() * CHUNK_LEN) / 1024)));
-        strcat(status, "k free)");
-        len = strlen(status);
-        strcpy(rstatus, "C:");
-        strcat(rstatus, formatInt16(E.cf.cx + 1));
-        strcat(rstatus, " R:");
-        strcat(rstatus, formatInt16(E.cf.cy + 1));
-        rlen = strlen(rstatus);
-        if (len > E.screencols) len = E.screencols;
-    }
-    memcpy(E.statusbar, status, len);
-    if (E.screencols >= 80) {
-        memcpy(E.statusbar + E.screencols - rlen, rstatus, rlen);
+        strcpy(num, formatInt16(E.cf.cy + 1));
+        strcat(num, "  ");
+        memcpy(E.statusbar + STATUSCOL_Y, num, strlen(num));
     }
 
     drawRow(E.screenrows, 0, E.screencols, E.statusbar, 1);
@@ -399,5 +379,37 @@ void editorRefreshScreen(void) {
 void editorSetStatusMessage(const char *msg) {
     strcpy(E.statusmsg, msg);
     E.statusmsg_dirty = 1;
+}
+
+void updateStatusBarFilename(void) {
+    if (E.cf.fileChunk == 0) {
+        memcpy(E.statusbar, "Welcome", 7);
+        memset(E.statusbar + 7, ' ', sizeof(E.statusbar)-7);
+    } else {
+        char filename[CHUNK_LEN];
+        int n;
+        editorRetrieveFilename(&E.cf, filename);
+        filename[16] = 0;
+        n = strlen(filename);
+        if (n == 0) {
+            strcpy(filename, "[No Name]");
+            n = 9;
+        }
+        if (E.cf.dirty) {
+            filename[strlen(filename)] = '*';
+            ++n;
+        }
+        memcpy(E.statusbar, filename, n);
+        memset(E.statusbar+n, ' ', 18-n);
+
+        if (E.cf.readOnly) {
+            memcpy(E.statusbar + STATUSCOL_RO, "R/O", 3);
+        } else {
+            memset(E.statusbar + STATUSCOL_RO, ' ', 3);
+        }
+
+        memcpy(E.statusbar + STATUSCOL_X_LABEL, "C:", 2);
+        memcpy(E.statusbar + STATUSCOL_Y_LABEL, "R:", 2);
+    }
 }
 

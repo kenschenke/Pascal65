@@ -90,6 +90,7 @@ void main()
             "antirez's Kilo editor\r"
             "antirez.com/news/108\r";
         
+        updateStatusBarFilename();
         editorRun();
     }
 #endif

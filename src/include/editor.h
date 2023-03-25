@@ -154,7 +154,6 @@ char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
 char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
 void editorNewFile(void);
 void editorOpen(const char *filename, char readOnly);
-void editorSwitchToOpenFile(CHUNKNUM fileChunkNum);
 void editorClose(void);  // close current file
 int editorReadKey(void);
 void editorRetrieveFilename(efile *file, char *buffer);
@@ -180,5 +179,6 @@ void initScreen(void);
 void openFile(void);
 void renderCursor(void);
 void setupScreenCols(void);
+void updateStatusBarFilename(void);
 
 #endif // end of EDITOR_H

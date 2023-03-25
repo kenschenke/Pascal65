@@ -257,6 +257,7 @@ static void editorProcessKeypress(void) {
 
         case BACKARROW:
             handleFiles();
+            editorSetDefaultStatusMessage();
             break;
 
         case CH_F1:
@@ -501,6 +502,7 @@ void initFile(efile *file) {
     file->dirty = 0;
     file->filenameChunk = 0;
     file->readOnly = 0;
+    storeChunk(file->fileChunk, (unsigned char *)file);
 }
 
 void editorNewFile(void) {
@@ -509,6 +511,7 @@ void editorNewFile(void) {
     }
 
     initFile(&E.cf);
+    updateStatusBarFilename();
 #ifdef __C64__
     renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
@@ -545,6 +548,7 @@ static void openHelpFile(void) {
     allocChunk(&E.cf.filenameChunk);
     storeChunk(E.cf.filenameChunk, (unsigned char *)buf);
     storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+    updateStatusBarFilename();
 }
 
 void setupScreenCols(void) {

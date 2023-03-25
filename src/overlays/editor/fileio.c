@@ -98,7 +98,9 @@ void editorClose(void) {
         }
     }
 
-    freeChunk(E.cf.filenameChunk);
+    if (E.cf.filenameChunk) {
+        freeChunk(E.cf.filenameChunk);
+    }
     freeChunk(E.cf.fileChunk);
     E.cf.fileChunk = 0;
     E.cf.firstRowChunk = 0;
@@ -108,31 +110,8 @@ void editorClose(void) {
         retrieveChunk(E.firstFileChunk, (unsigned char *)&E.cf);
         editorSetAllRowsDirty();
     }
-}
 
-void editorSwitchToOpenFile(CHUNKNUM fileChunkNum) {
-    CHUNKNUM chunkNum;
-
-    // First, store the current file chunk
-    if (E.cf.fileChunk) {
-        storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
-    }
-
-    // Find the other file in the list
-    chunkNum = E.firstFileChunk;
-    while (chunkNum) {
-        retrieveChunk(chunkNum, (unsigned char *)&E.cf);
-        if (chunkNum == fileChunkNum) {
-            break;
-        }
-        chunkNum = E.cf.nextFileChunk;
-    }
-
-    if (!chunkNum) {
-        E.cf.fileChunk = 0;
-    }
-
-    editorSetAllRowsDirty();
+    updateStatusBarFilename();
 }
 
 void editorOpen(const char *filename, char readOnly) {
@@ -193,6 +172,7 @@ void editorOpen(const char *filename, char readOnly) {
     fclose(fp);
     E.cf.dirty = 0;
     editorSetDefaultStatusMessage();
+    updateStatusBarFilename();
 }
 
 char editorSave(char *filename) {
@@ -228,6 +208,7 @@ char editorSave(char *filename) {
     }
 
     E.cf.dirty = 0;
+    updateStatusBarFilename();
 
     return 1;
 }

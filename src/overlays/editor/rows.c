@@ -198,6 +198,7 @@ void editorInsertRow(int at, char *s, size_t len) {
 
     E.cf.numrows++;
     E.cf.dirty = 1;
+    updateStatusBarFilename();
 
     editorRowAppendString(&newRow, s, len);
     storeChunk(newRowChunk, (unsigned char *)&newRow);
@@ -258,6 +259,7 @@ void editorDelRow(int at) {
 
     E.cf.numrows--;
     E.cf.dirty = 1;
+    updateStatusBarFilename();
 }
 
 void editorRowInsertChar(erow *row, int at, int c) {
@@ -280,6 +282,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
         editorUpdateRow(row);
         editorSetRowDirty(row);
         E.cf.dirty = 1;
+        updateStatusBarFilename();
         return;
     }
 
@@ -296,6 +299,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
         editorSetRowDirty(row);
         storeChunk(chunkNum, (unsigned char *)&chunk);
         E.cf.dirty = 1;
+        updateStatusBarFilename();
         return;
     }
 
@@ -326,6 +330,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
     editorUpdateRow(row);
     editorSetRowDirty(row);
     E.cf.dirty = 1;
+    updateStatusBarFilename();
 }
 
 void editorRowAppendString(erow *row, char *s, size_t len) {
@@ -374,6 +379,7 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
 
     // editorUpdateRow(row);
     E.cf.dirty = 1;
+    updateStatusBarFilename();
 }
 
 void editorRowDelChars(erow *row, int at, int length) {

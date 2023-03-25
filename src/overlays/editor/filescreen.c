@@ -218,6 +218,7 @@ static void switchToFile(char num) {
                 retrieveChunk(chunkNum, (unsigned char *)&E.cf);
                 clearScreen();
                 editorSetAllRowsDirty();
+                updateStatusBarFilename();
                 return;
             }
         }
