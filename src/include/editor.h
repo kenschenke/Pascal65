@@ -66,8 +66,8 @@ struct editorConfig {
     unsigned screenrows;            // # of rows on display
     unsigned screencols;            // # of columns
     CHUNKNUM firstFileChunk;
+    CHUNKNUM titleChunk;            // membuf for the title screen contents
     struct efile cf;                // point to current file
-    char *welcomePage;
     char quit;                      // non-zero when user selects quit command
     char last_key_esc;              // non-zero if last key was ESC
     char statusmsg[80];

@@ -20,6 +20,7 @@
 #include <chunks.h>
 #include <ctype.h>
 #include <int16.h>
+#include <membuf.h>
 
 #ifdef __MEGA65__
 #include <cbm.h>
@@ -244,30 +245,39 @@ static void editorDrawRows(void) {
     echunk *chunk;
 
     if (E.cf.fileChunk == 0) {
-        char *n, *p;
+        char ch, buf[41];
+        char *p;
         int rows = 0, x;
         // First, count the rows for the welcome screen.
-        p = E.welcomePage;
-        while (1) {
-            n = strchr(p, '\r');
-            ++rows;
-            if (n == NULL) {
-                break;
+        setMemBufPos(E.titleChunk, 0);
+        while (!isMemBufAtEnd(E.titleChunk)) {
+            readFromMemBuf(E.titleChunk, &ch, 1);
+            if (ch == '\n') {
+                ++rows;
             }
-            p = n + 1;
         }
-        p = E.welcomePage;
+        setMemBufPos(E.titleChunk, 0);
         // Center the rows vertically
         y = E.screenrows / 2 - rows / 2;
-        while (1) {
-            n = strchr(p, '\r');
-            len = n == NULL ? strlen(p) : n - p;
-            x = E.screencols / 2 - len / 2;
-            drawRow(y++, x, len, p, 0);
-            if (n == NULL) {
-                break;
+        p = buf;
+        while (!isMemBufAtEnd(E.titleChunk)) {
+            readFromMemBuf(E.titleChunk, p, 1);
+            if (*p == '\n') {
+                // printf("?");
+                *p = 0;
+                len = strlen(buf);
+                if (len < 1) {
+                    ++y;
+                    p = buf;
+                    continue;
+                }
+                x = E.screencols / 2 - len / 2;
+                drawRow(y++, x, len, buf, 0);
+                p = buf;
+            } else {
+                // printf("%c", *p);
+                ++p;
             }
-            p = n + 1;
         }
 
         return;

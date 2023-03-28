@@ -12,7 +12,11 @@
 
 #include "editor.h"
 
+#include <stdio.h>
 #include <string.h>
+#include <membuf.h>
+#include <stdlib.h>
+#include <libcommon.h>
 
 #ifdef __C128__
 #include <c128.h>
@@ -31,6 +35,7 @@ static void editorInsertTab(void);
 static void editorInsertNewLine(int spaces);
 static void editorMoveCursor(int key, char skipClear);
 static void editorProcessKeypress(void);
+static void initTitleScreen(void);
 static void openHelpFile(void);
 
 #ifdef __MEGA65__
@@ -454,7 +459,6 @@ void editorRun(void) {
 void initEditor() {
     E.quit = 0;
     E.last_key_esc = 0;
-    E.welcomePage = NULL;
     E.statusmsg[0] = '\0';
     E.statusmsg_dirty = 0;
 
@@ -477,6 +481,8 @@ void initEditor() {
 
     memset(E.statusbar, ' ', E.screencols);
 
+    initTitleScreen();
+
 #ifdef __C128__
     fast();
 #endif
@@ -497,6 +503,29 @@ void initFile(void) {
     E.cf.filenameChunk = 0;
     E.cf.readOnly = 0;
     storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+}
+
+static void initTitleScreen(void) {
+    FILE *fp;
+    char buf[41];
+
+    allocMemBuf(&E.titleChunk);
+
+    fp = fopen("title.txt", "r");
+    if (fp == NULL) {
+        printlnz("Unable to locate title.txt");
+        exit(5);
+    }
+
+    while (!feof(fp)) {
+        if (fgets(buf, sizeof(buf), fp) == NULL) {
+            break;
+        }
+
+        writeToMemBuf(E.titleChunk, buf, strlen(buf));
+    }
+
+    fclose(fp);
 }
 
 void editorNewFile(void) {

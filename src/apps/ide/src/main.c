@@ -73,20 +73,6 @@ void main()
         //         editorOpen(argv[i], 0);
         // }
 
-        E.welcomePage =
-            "Welcome To Pascal65 Version " "XXX" "\r"
-            "\r"
-            "Copyright 2022-2023 by Ken Schenke\r"
-            "kenschenke@gmail.com\r"
-            "github.com/kenschenke/Pascal65\r"
-            "\r"
-            "Pascal compiler based on the book\r"
-            "\"Writing Compilers and Interpreters:\r"
-            "A Software Engineering Approach\"\r"
-            "Second Edition\r"
-            "by Ronald Mak"
-            "\r";
-        
         updateStatusBarFilename();
         editorRun();
     }
