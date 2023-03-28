@@ -223,6 +223,7 @@ ifeq ($(TARGET),mega65)
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(EXECOVRLFILE) $(EXECOVRLFILE) \
 	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \
