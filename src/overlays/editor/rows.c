@@ -18,7 +18,6 @@
 #include <chunks.h>
 
 void editorFreeRow(CHUNKNUM firstTextChunk);
-void editorUpdateRow(erow *row);
 
 char editorRowAt(int at, erow *row) {
     CHUNKNUM c;
@@ -93,39 +92,9 @@ char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk) {
 
 /*** row operations ***/
 
-void editorUpdateRow(erow *row) {
-#if 0
-    int tabs = 0;
-    int j, idx;
-    char *buf;
-
-    for (j = 0; j < row->size; ++j) {
-        if (row->chars[j] == '\t') tabs++;
-    }
-
-    buf = malloc(row->size + tabs*(EDITOR_TAB_STOP-1) + 1);
-
-    idx = 0;
-    for (j = 0; j < row->size; ++j) {
-        if (row->chars[j] == '\t') {
-            buf[idx++] = ' ';
-            while (idx % EDITOR_TAB_STOP != 0) buf[idx++] = ' ';
-        } else {
-            buf[idx++] = row->chars[j];
-        }
-    }
-    buf[idx] = '\0';
-
-    row->chars = realloc(row->chars, idx);
-    memcpy(row->chars, buf, idx);
-#endif
-}
-
 void editorDeleteToStartOfLine() {
     if (E.cf.cx > 0) {
-        erow row;
-        editorRowAt(E.cf.cy, &row);
-        editorRowDelChars(&row, 0, E.cf.cx);
+        editorRowDelChars(0, E.cf.cx);
         E.cf.cx = 0;
     }
 }
@@ -135,7 +104,7 @@ void editorDeleteToEndOfLine() {
     editorRowAt(E.cf.cy, &row);
 
     if (E.cf.cx < row.size) {
-        editorRowDelChars(&row, E.cf.cx, row.size - E.cf.cx);
+        editorRowDelChars(E.cf.cx, row.size - E.cf.cx);
     }
 }
 
@@ -262,25 +231,29 @@ void editorDelRow(int at) {
     updateStatusBarFilename();
 }
 
-void editorRowInsertChar(erow *row, int at, int c) {
+void editorRowInsertChar(int at, int c) {
+    erow row;
     CHUNKNUM chunkNum, newChunkNum, nextChunkNum;
     echunk chunk, newChunk;
     int chunkFirstCol, rowIdx, startAt, toCopy;
     unsigned char buf[ECHUNK_LEN];
 
-    if (at < 0 || at > row->size) at = row->size;
-    rowIdx = row->idx;
-    editorChunkAtX(row, at, &chunkFirstCol, &chunkNum, &chunk);
+    if (editorRowAt(E.cf.cy, &row) == 0) {
+        return;
+    }
+
+    if (at < 0 || at > row.size) at = row.size;
+    rowIdx = row.idx;
+    editorChunkAtX(&row, at, &chunkFirstCol, &chunkNum, &chunk);
 
     // If the chunk was not found, just append the character to the end
     // of the row.
 
     if (chunkNum == 0) {
         buf[0] = (unsigned char ) c;
-        editorRowAt(rowIdx, row);
-        editorRowAppendString(row, (char *)buf, 1);
-        editorUpdateRow(row);
-        editorSetRowDirty(row);
+        editorRowAt(rowIdx, &row);
+        editorRowAppendString(&row, (char *)buf, 1);
+        editorSetRowDirty(&row);
         E.cf.dirty = 1;
         updateStatusBarFilename();
         return;
@@ -294,9 +267,8 @@ void editorRowInsertChar(erow *row, int at, int c) {
         memmove(chunk.bytes + startAt + 1, chunk.bytes + startAt, toCopy);
         chunk.bytes[startAt] = (unsigned char) c;
         chunk.bytesUsed++;
-        row->size++;
-        editorUpdateRow(row);
-        editorSetRowDirty(row);
+        row.size++;
+        editorSetRowDirty(&row);
         storeChunk(chunkNum, (unsigned char *)&chunk);
         E.cf.dirty = 1;
         updateStatusBarFilename();
@@ -325,10 +297,9 @@ void editorRowInsertChar(erow *row, int at, int c) {
     chunk.nextChunk = newChunkNum;
     storeChunk(chunkNum, (unsigned char *)&chunk);
 
-    row->size++;
+    row.size++;
 
-    editorUpdateRow(row);
-    editorSetRowDirty(row);
+    editorSetRowDirty(&row);
     E.cf.dirty = 1;
     updateStatusBarFilename();
 }
@@ -377,21 +348,25 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
         memcpy(&chunk, &newChunk, CHUNK_LEN);
     }
 
-    // editorUpdateRow(row);
     E.cf.dirty = 1;
     updateStatusBarFilename();
 }
 
-void editorRowDelChars(erow *row, int at, int length) {
+void editorRowDelChars(int at, int length) {
+    erow row;
     int i, chunkFirstCol, startAt, toCopy;
     echunk chunk, prevChunk;
     CHUNKNUM chunkNum, prevChunkNum;
 
-    if (at < 0 || at + length - 1 >= row->size) return;
+    if (editorRowAt(E.cf.cy, &row) == 0) {
+        return;
+    }
+
+    if (at < 0 || at + length - 1 >= row.size) return;
 
     // Delete one character at a time
     for (i = 0; i < length; ++i) {
-        editorChunkAtX(row, at, &chunkFirstCol, &chunkNum, &chunk);
+        editorChunkAtX(&row, at, &chunkFirstCol, &chunkNum, &chunk);
         if (chunkNum == 0) {
             return;
         }
@@ -401,9 +376,9 @@ void editorRowDelChars(erow *row, int at, int length) {
             // If this is the first chunk on the line, adjust the
             // first chunk number in the row.
             if (at == 0) {
-                row->firstTextChunk = chunk.nextChunk;
+                row.firstTextChunk = chunk.nextChunk;
             } else {
-                editorChunkAtX(row, at - 1, &chunkFirstCol, &prevChunkNum, &prevChunk);
+                editorChunkAtX(&row, at - 1, &chunkFirstCol, &prevChunkNum, &prevChunk);
                 if (prevChunkNum) {
                     prevChunk.nextChunk = chunk.nextChunk;
                     storeChunk(prevChunkNum, (unsigned char *)&prevChunk);
@@ -422,12 +397,11 @@ void editorRowDelChars(erow *row, int at, int length) {
             storeChunk(chunkNum, (unsigned char *)&chunk);
         }
 
-        row->size--;
-        storeChunk(row->rowChunk, (unsigned char *)row);
+        row.size--;
+        storeChunk(row.rowChunk, (unsigned char *)&row);
     }
 
-    editorUpdateRow(row);
-    editorSetRowDirty(row);
+    editorSetRowDirty(&row);
 }
 
 void editorSetAllRowsDirty() {

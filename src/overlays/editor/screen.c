@@ -388,7 +388,7 @@ void updateStatusBarFilename(void) {
     } else {
         char filename[CHUNK_LEN];
         int n;
-        editorRetrieveFilename(&E.cf, filename);
+        editorRetrieveFilename(filename);
         filename[16] = 0;
         n = strlen(filename);
         if (n == 0) {

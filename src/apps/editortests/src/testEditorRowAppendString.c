@@ -19,6 +19,8 @@ static void testAppendWithEnoughSpace(void);
 static void testAppendWithOverflow(void);
 
 void testEditorRowAppendString(void) {
+    printf("Running editorRowAppendString tests\n");
+    
     testAppendWithEnoughSpace();
     testAppendWithOverflow();
 }
@@ -48,7 +50,6 @@ static void testAppendWithOverflow(void) {
     erow row;
     echunk chunk;
     int offset, toCompare;
-    char bytes[ECHUNK_LEN];
 
     DECLARE_TEST("testAppendWithOverflow");
 

@@ -48,14 +48,13 @@ static void editorDelChar(void) {
     if (E.cf.cy == E.cf.numrows) return;
     if (E.cf.cx == 0 && E.cf.cy == 0) return;
 
-    if (editorRowAt(E.cf.cy, &row) == 0) {
-        return;
-    }
-
     if (E.cf.cx > 0) {
-        editorRowDelChars(&row, E.cf.cx - 1, 1);
+        editorRowDelChars(E.cf.cx - 1, 1);
         E.cf.cx--;
     } else {
+        if (editorRowAt(E.cf.cy, &row) == 0) {
+            return;
+        }
         chunkNum = row.firstTextChunk;
         if (editorRowAt(E.cf.cy - 1, &row) == 0) {
             return;
@@ -73,15 +72,10 @@ static void editorDelChar(void) {
 }
 
 static void editorInsertChar(int c) {
-    erow row;
-
     if (E.cf.cy == E.cf.numrows) {
         editorInsertRow(E.cf.numrows, "", 0);
     }
-    if (editorRowAt(E.cf.cy, &row) == 0) {
-        return;
-    }
-    editorRowInsertChar(&row, E.cf.cx, c);
+    editorRowInsertChar(E.cf.cx, c);
     E.cf.cx++;
 }
 
@@ -131,14 +125,15 @@ static void editorInsertNewLine(int spaces) {
 /*** input ***/
 
 static void editorMoveCursor(int key, char skipClear) {
+    char hasRow = 0;
     int rowlen;
-    erow rowBuf, *row = NULL;
+    erow row;
     
     if (E.cf.cy < E.cf.numrows) {
-        if (editorRowAt(E.cf.cy, &rowBuf) == 0) {
+        if (editorRowAt(E.cf.cy, &row) == 0) {
             return;
         }
-        row = &rowBuf;
+        hasRow = 1;
     }
 
     switch (key) {
@@ -149,15 +144,15 @@ static void editorMoveCursor(int key, char skipClear) {
             } else if (E.cf.cy > 0) {
                 if (!skipClear) clearCursor();
                 E.cf.cy--;
-                editorRowAt(E.cf.cy, &rowBuf);
-                E.cf.cx = rowBuf.size;
+                editorRowAt(E.cf.cy, &row);
+                E.cf.cx = row.size;
             }
             break;
         case CH_CURS_RIGHT:
-            if (row && E.cf.cx < row->size) {
+            if (hasRow && E.cf.cx < row.size) {
                 if (!skipClear) clearCursor();
                 E.cf.cx++;
-            } else if (row && row->size && E.cf.cx == row->size && E.cf.cy < E.cf.numrows - 1) {
+            } else if (hasRow && row.size && E.cf.cx == row.size && E.cf.cy < E.cf.numrows - 1) {
                 if (!skipClear) clearCursor();
                 E.cf.cy++;
                 E.cf.cx = 0;
@@ -182,10 +177,9 @@ static void editorMoveCursor(int key, char skipClear) {
     }
 
     if (E.cf.cy < E.cf.numrows) {
-        editorRowAt(E.cf.cy, &rowBuf);
-        row = &rowBuf;
+        editorRowAt(E.cf.cy, &row);
     }
-    rowlen = row ? row->size : 0;
+    rowlen = hasRow ? row.size : 0;
     if (E.cf.cx > rowlen) {
         E.cf.cx = rowlen;
         if (E.cf.cx < 0) E.cf.cx = 0;
@@ -489,20 +483,20 @@ void initEditor() {
     setupScreenCols();
 }
 
-void initFile(efile *file) {
-    allocChunk(&file->fileChunk);
-    file->nextFileChunk = E.firstFileChunk;
-    E.firstFileChunk = file->fileChunk;
-    file->cx = 0;
-    file->cy = 0;
-    file->rowoff = 0;
-    file->coloff = 0;
-    file->numrows = 0;
-    file->firstRowChunk = 0;
-    file->dirty = 0;
-    file->filenameChunk = 0;
-    file->readOnly = 0;
-    storeChunk(file->fileChunk, (unsigned char *)file);
+void initFile(void) {
+    allocChunk(&E.cf.fileChunk);
+    E.cf.nextFileChunk = E.firstFileChunk;
+    E.firstFileChunk = E.cf.fileChunk;
+    E.cf.cx = 0;
+    E.cf.cy = 0;
+    E.cf.rowoff = 0;
+    E.cf.coloff = 0;
+    E.cf.numrows = 0;
+    E.cf.firstRowChunk = 0;
+    E.cf.dirty = 0;
+    E.cf.filenameChunk = 0;
+    E.cf.readOnly = 0;
+    storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
 }
 
 void editorNewFile(void) {
@@ -510,29 +504,29 @@ void editorNewFile(void) {
         storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
     }
 
-    initFile(&E.cf);
+    initFile();
     updateStatusBarFilename();
 #ifdef __C64__
     renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
 }
 
-void editorStoreFilename(efile *file, const char *filename) {
+void editorStoreFilename(const char *filename) {
     char bytes[CHUNK_LEN];
 
-    if (file->filenameChunk == 0) {
-        allocChunk(&file->filenameChunk);
+    if (E.cf.filenameChunk == 0) {
+        allocChunk(&E.cf.filenameChunk);
     }
 
     strcpy(bytes, filename);
-    storeChunk(file->filenameChunk, (unsigned char *)bytes);
+    storeChunk(E.cf.filenameChunk, (unsigned char *)bytes);
 }
 
-void editorRetrieveFilename(efile *file, char *buffer) {
-    if (file->filenameChunk == 0) {
+void editorRetrieveFilename(char *buffer) {
+    if (E.cf.filenameChunk == 0) {
         memset(buffer, 0, CHUNK_LEN);
     } else {
-        retrieveChunk(file->filenameChunk, (unsigned char *)buffer);
+        retrieveChunk(E.cf.filenameChunk, (unsigned char *)buffer);
     }
 }
 

@@ -1,5 +1,6 @@
 #include <tests.h>
 #include <editor.h>
+#include <stdio.h>
 
 #include "editortests.h"
 
@@ -10,6 +11,8 @@ static void testMiddleByteInChunk(void);
 static void testRangeError(void);
 
 void testEditorChunkAtX(void) {
+    printf("Running editorChunkAtX tests\n");
+
     testRangeError();
     testEmptyRow();
     testFirstByteInChunk();

@@ -1,5 +1,6 @@
 #include <tests.h>
 #include <editor.h>
+#include <stdio.h>
 
 #include "editortests.h"
 
@@ -7,6 +8,8 @@ static void testRowNumberOutOfRange(void);
 static void testChunkRetrieval(void);
 
 void testEditorRowAt(void) {
+    printf("Running editorRowAt tests\n");
+    
     testRowNumberOutOfRange();
     testChunkRetrieval();
 }
@@ -17,6 +20,7 @@ static void testRowNumberOutOfRange(void) {
     DECLARE_TEST("testRowNumberOutOfRange");
 
     setupTestData();
+
     assertZero(editorRowAt(-1, &row));
     assertZero(editorRowAt(TEST_ROWS, &row));
 }
@@ -29,9 +33,9 @@ static void testChunkRetrieval(void) {
     setupTestData();
 
     // Set the nextChunk for the first chunk to a bad value.
-    assertNonZero(retrieveChunk(E.cf->firstRowChunk, (unsigned char *)&row));
+    assertNonZero(retrieveChunk(E.cf.firstRowChunk, (unsigned char *)&row));
     row.nextRowChunk = TO_BLOCK_AND_CHUNK(99, 5);
-    assertNonZero(storeChunk(E.cf->firstRowChunk, (unsigned char *)&row));
+    assertNonZero(storeChunk(E.cf.firstRowChunk, (unsigned char *)&row));
 
     assertNonZero(editorRowAt(0, &row));    // this one should work
     assertEqualByte(0, row.idx);

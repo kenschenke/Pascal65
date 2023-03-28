@@ -15,7 +15,7 @@ void setupTestData(void) {
     CHUNKNUM rowChunk, textChunk;
     char buf[15];
 
-    initFile(&E.cf);
+    initFile();
 
     initBlockStorage();
 

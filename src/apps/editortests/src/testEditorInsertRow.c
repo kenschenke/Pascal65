@@ -1,6 +1,7 @@
 #include <tests.h>
 #include <editor.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "editortests.h"
 
@@ -10,6 +11,8 @@ static void testInsertMiddleRow(void);
 static void testRowNumberOutOfRange(void);
 
 void testEditorInsertRow(void) {
+    printf("Running editorInsertRow tests\n");
+
     testRowNumberOutOfRange();
     testInsertFirstRow();
     testInsertMiddleRow();

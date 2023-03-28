@@ -13,6 +13,8 @@ static void testDeleteOnlyCharInFirstChunk(void);
 static void testDeleteOnlyCharInMiddleChunk(void);
 
 void testEditorRowDelChars(void) {
+    printf("Running editorRowDelChars tests\n");
+
     testCharPosOutOfRange();
     testDeleteOnlyCharInFirstChunk();
     testDeleteOnlyCharInMiddleChunk();
@@ -23,15 +25,17 @@ void testEditorRowDelChars(void) {
 
 static void testCharPosOutOfRange(void) {
     erow row;
-
     DECLARE_TEST("testCharPosOutOfRange");
 
     setupTestData();
 
+    E.cf.cy = 0;
+    editorRowDelChars(-1, 1);
     assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
-    editorRowDelChars(&row, -1, 1);
     assertEqualByte(TEST_CHUNK_LEN * TEST_CHUNKS_PER_ROW, row.size);
-    editorRowDelChars(&row, row.size - 1, 2);
+
+    editorRowDelChars(row.size - 1, 2);
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertEqualByte(TEST_CHUNK_LEN * TEST_CHUNKS_PER_ROW, row.size);
 }
 
@@ -50,7 +54,8 @@ static void testDeleteFirstCharInChunk(void) {
     assertNonZero(storeChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     row.size = 10 + TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1);
     assertNonZero(storeChunk(rowChunkNums[0], (unsigned char *)&row));
-    editorRowDelChars(&row, 0, 1);
+    editorRowDelChars(0, 1);
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertEqualInt(9 + TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1), row.size);
     assertNonZero(retrieveChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     assertEqualByte(9, chunk.bytesUsed);
@@ -66,10 +71,10 @@ static void testDeleteLastCharInChunk(void) {
 
     setupTestData();
 
-    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertNonZero(retrieveChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     memcpy(bytes, chunk.bytes, TEST_CHUNK_LEN);
-    editorRowDelChars(&row, TEST_CHUNK_LEN - 1, 1);
+    editorRowDelChars(TEST_CHUNK_LEN - 1, 1);
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertEqualInt(TEST_CHUNK_LEN * TEST_CHUNKS_PER_ROW - 1, row.size);
     assertNonZero(retrieveChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     assertEqualByte(TEST_CHUNK_LEN - 1, chunk.bytesUsed);
@@ -91,7 +96,8 @@ static void testDeleteMiddleCharInChunk(void) {
     assertNonZero(storeChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     row.size = 10 + TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1);
     assertNonZero(storeChunk(rowChunkNums[0], (unsigned char *)&row));
-    editorRowDelChars(&row, 5, 1);
+    editorRowDelChars(5, 1);
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertEqualInt(9 + TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1), row.size);
     assertNonZero(retrieveChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     assertEqualByte(9, chunk.bytesUsed);
@@ -112,7 +118,8 @@ static void testDeleteOnlyCharInFirstChunk(void) {
     assertNonZero(storeChunk(textChunkNums[0][0], (unsigned char *)&chunk));
     row.size = TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1) + 1;
     assertNonZero(storeChunk(rowChunkNums[0], (unsigned char *)&row));
-    editorRowDelChars(&row, 0, 1);
+    editorRowDelChars(0, 1);
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertEqualInt(TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1), row.size);
     assertEqualChunkNum(textChunkNums[0][1], row.firstTextChunk);
     assertZero(retrieveChunk(textChunkNums[0][0], (unsigned char *)&chunk));
@@ -132,7 +139,8 @@ static void testDeleteOnlyCharInMiddleChunk(void) {
     assertNonZero(storeChunk(textChunkNums[0][2], (unsigned char *)&chunk));
     row.size = TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1) + 1;
     assertNonZero(storeChunk(rowChunkNums[0], (unsigned char *)&row));
-    editorRowDelChars(&row, TEST_CHUNK_LEN * 2, 1);
+    editorRowDelChars(TEST_CHUNK_LEN * 2, 1);
+    assertNonZero(retrieveChunk(rowChunkNums[0], (unsigned char *)&row));
     assertEqualInt(TEST_CHUNK_LEN * (TEST_CHUNKS_PER_ROW - 1), row.size);
     assertNonZero(retrieveChunk(textChunkNums[0][1], (unsigned char *)&chunk));
     assertEqualChunkNum(textChunkNums[0][3], chunk.nextChunk);

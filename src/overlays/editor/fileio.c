@@ -130,9 +130,9 @@ void editorOpen(const char *filename, char readOnly) {
         return;
     }
 
-    initFile(&E.cf);
+    initFile();
     E.cf.readOnly = readOnly;
-    editorStoreFilename(&E.cf, filename);
+    editorStoreFilename(filename);
 
     while (!feof(fp)) {
         if (!fgets(buf, buflen, fp)) {
