@@ -110,6 +110,7 @@ static void loadOverlayFromCache(unsigned size, void *buffer, unsigned cache) {
     emc.offs = 0;
     emc.page = cache;
     emc.count = size;
+    flushChunkBlock();
     em_copyfrom(&emc);
 }
 
@@ -126,6 +127,7 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
     emc.offs = 0;
     emc.page = cache;
     emc.count = size;
+    flushChunkBlock();
     em_copyto(&emc);
 }
 

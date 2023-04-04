@@ -35,6 +35,10 @@ typedef unsigned short CHUNKNUM;
 // Zero returned on failure.  Non-zero on success.
 char allocChunk(CHUNKNUM *chunkNum);
 
+// Flushes the chunk's current block and writes it
+// to extended memory.
+void flushChunkBlock(void);
+
 // Frees chunk and flushes block to storage since it
 // loses currency.
 void freeChunk(CHUNKNUM chunkNum);

@@ -42,6 +42,10 @@ unsigned char *allocBlock(BLOCKNUM *blockNum);
 // blocks of extended memory.  Once allocated, the blocks are
 // permanently removed from available allocation.
 //
+// NOTE: Be sure to call flushChunkBlock() before calling
+// em_copyfrom() or em_copyto() to make sure the chunking
+// routines are not inadvertantly using state or invalid blocks.
+//
 // Non-zero is returned on success.
 char allocBlockGroup(BLOCKNUM *blockNum, unsigned numBlocks);
 

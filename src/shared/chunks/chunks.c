@@ -21,6 +21,13 @@ unsigned		availChunks;
 
 unsigned char FullBlocks[MAX_BLOCKS / 8];
 
+void flushChunkBlock(void) {
+	if (currentBlock) {
+		storeBlock(currentBlock);
+		blockData = NULL;
+	}
+}
+
 unsigned getTotalChunks(void) {
 #ifdef __MEGA65__
 	return CHUNKS_PER_BLOCK * BLOCKS_PER_BANK * BANKS;
