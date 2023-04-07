@@ -16,7 +16,7 @@
 .importzp ptr1
 .import _allocBlock, _storeBlock, _isBlockAllocated, _retrieveBlock, _FullBlocks, _currentBlock, _blockData
 .import __chunkGetBlock, isChunkAlloc, isBlockFull, _getTotalBlocks, setChunkAlloc, packBlockAndChunkNum
-.import setBlockFull, clearChunkAlloc, clearBlockFull, packBlockAndChunkNum, decAvailChunks
+.import setBlockFull, clearChunkAlloc, clearBlockFull, packBlockAndChunkNum, decAvailChunks, _flushChunkBlock
 
 .export _allocChunk
 
@@ -88,6 +88,8 @@ totalBlocks: .res 2
     lda #0
     sta idx
     sta idx + 1
+    ; Store the current block before continuing
+    jsr _flushChunkBlock
 @L1:
     lda idx
     ldx idx + 1

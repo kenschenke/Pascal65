@@ -25,8 +25,8 @@
 #include <em.h>
 #endif
 
-#define BLOCK_ALLOC_INDEX(BLOCK) (BLOCK / 8)
-#define BLOCK_ALLOC_MASK(BLOCK) (1 << (BLOCK % 8))
+#define BLOCK_ALLOC_INDEX(BLOCK) (BLOCK / 64)
+#define BLOCK_ALLOC_MASK(BLOCK) (1 << ((BLOCK/8) % 8))
 
 #ifdef __MEGA65__
 // nothing to do
@@ -43,7 +43,12 @@
 static unsigned pages;	// max pages per REU
 static unsigned lastPageToAllocate;
 
-static unsigned char BlocksUsed[MAX_BLOCKS / 8];
+// Blocks are allocated eight at a time.
+// Each bit represents an eight-block group.
+static unsigned char BlocksUsed[MAX_BLOCKS / 64];
+
+static char isBlockGroupAllocated(BLOCKNUM blockNum);
+static void setBlockGroupUnallocated(unsigned group);
 
 #ifdef __MEGA65__
 unsigned char sharedBlock[BLOCK_LEN];
@@ -125,7 +130,7 @@ void initBlockStorage(void)
 	}
 #endif
 
-    b = MAX_BLOCKS / 8;
+    b = MAX_BLOCKS / 64;
     for (i = 0; i < b; ++i) {
         BlocksUsed[i] = 0;
     }
@@ -136,6 +141,22 @@ void initBlockStorage(void)
 }
 
 char isBlockAllocated(BLOCKNUM blockNum) {
+	unsigned char *p;
+
+	// Check if the eight-block group for this block is allocated
+	if (!isBlockGroupAllocated(blockNum)) {
+		// It's not
+		return 0;
+	}
+
+	// Retrieve a pointer to the block and check the first two bytes.  That will
+	// indicate if any chunks in that block are allocated.
+	em_commit();
+	p = em_map(blockNum);
+	return (p[0] || p[1]) ? 1 : 0;
+}
+
+static char isBlockGroupAllocated(BLOCKNUM blockNum) {
 	return (BlocksUsed[BLOCK_ALLOC_INDEX(blockNum)] & BLOCK_ALLOC_MASK(blockNum)) ? 1 : 0;
 }
 
@@ -150,18 +171,25 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 #endif
 
 	for (i = 0; i < lastPageToAllocate; ++i) {
-		if (!isBlockAllocated(i)) {
-			// printf("blockNum = %d\n", i);
+		// If the eight-block group for this block is not allocated,
+		// do so and set the first two bytes of each block to zero.
+		if (!isBlockGroupAllocated(i)) {
 			BlocksUsed[BLOCK_ALLOC_INDEX(i)] |= BLOCK_ALLOC_MASK(i);
-			*blockNum = i;
+			setBlockGroupUnallocated(i);
+		}
+		else if (isBlockAllocated(i)) {
+			continue;
+		}
+
+		*blockNum = i;
 #ifdef USE_EMD
-			sharedBlock = em_map(i);
+		sharedBlock = em_map(i);
 #endif
 #ifdef __MEGA65__
-			memset(sharedBlock, 0, BLOCK_LEN);
+		memset(sharedBlock, 0, BLOCK_LEN);
 #endif
-			return sharedBlock;
-		}
+
+		return sharedBlock;
 	}
 
 	return NULL;
@@ -195,9 +223,37 @@ char allocBlockGroup(BLOCKNUM *blockNum, unsigned numBlocks) {
 
 void freeBlock(BLOCKNUM blockNum)
 {
-	unsigned index = BLOCK_ALLOC_INDEX(blockNum);
+	BLOCKNUM b = blockNum;
+	unsigned char *p;
+	unsigned i;
 
-	BlocksUsed[index] &= ~BLOCK_ALLOC_MASK(blockNum);
+	// Set the first two bytes to zero in the block.
+#ifdef USE_EMD
+	p = em_use(blockNum);
+	p[0] = p[1] = 0;
+	em_commit();
+#else
+#error freeBlock not implemented
+#endif
+
+	// Check each of the eight blocks in the group.
+	// If they are all now un-allocated, mark the
+	// group as such.
+	b -= (b % 8);
+	for (i = 0; i < 8; ++i,++b) {
+		p = em_map(b);
+		if (p[0] || p[1]) {
+			// If either of the first two bytes are non-zero,
+			// at least one of the blocks is still in use.
+			break;
+		}
+	}
+
+	if (i >= 8) {
+		// All eight blocks are not in use.
+		// Set the entire group as unallocated.
+		BlocksUsed[BLOCK_ALLOC_INDEX(blockNum)] &= ~BLOCK_ALLOC_MASK(blockNum);
+	}
 }
 
 unsigned char *retrieveBlock(BLOCKNUM blockNum)
@@ -217,6 +273,17 @@ unsigned char *retrieveBlock(BLOCKNUM blockNum)
 #endif
 
 	return sharedBlock;
+}
+
+static void setBlockGroupUnallocated(unsigned group) {
+	int i;
+	unsigned char *p;
+
+	for (i = 0; i < 8; ++i) {
+		p = em_use(group + i);
+		p[0] = p[1] = 0;
+		em_commit();
+	}
 }
 
 unsigned char storeBlock(BLOCKNUM blockNum)

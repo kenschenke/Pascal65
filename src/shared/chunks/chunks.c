@@ -22,7 +22,7 @@ unsigned		availChunks;
 unsigned char FullBlocks[MAX_BLOCKS / 8];
 
 void flushChunkBlock(void) {
-	if (currentBlock) {
+	if (blockData) {
 		storeBlock(currentBlock);
 		blockData = NULL;
 	}

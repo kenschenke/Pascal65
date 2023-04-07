@@ -14,7 +14,7 @@
 .include "chunks.inc"
 
 .export _storeChunk
-.import popax, _currentBlock, _isBlockAllocated, _storeBlock, _blockData, _retrieveBlock
+.import popax, _currentBlock, _storeBlock, _blockData, _retrieveBlock
 .import __chunkGetBlock, extractBlockAndChunkNum
 .importzp ptr1, ptr2, tmp1
 
@@ -41,15 +41,6 @@ buffer: .res 2
     dey
     sty chunkNum
 
-    ; is blockNum allocated?
-    jsr _isBlockAllocated
-    cmp #0
-    bne CheckBlock
-
-@F1:
-    jmp Failure
-
-CheckBlock:
     ; Do we have a current block?
     lda _blockData
     ora _blockData + 1

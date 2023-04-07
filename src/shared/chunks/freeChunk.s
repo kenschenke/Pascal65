@@ -15,7 +15,7 @@
 
 .export _freeChunk
 
-.import _isBlockAllocated, _currentBlock, _storeBlock, _blockData, _FullBlocks, _freeBlock, _retrieveBlock
+.import _currentBlock, _storeBlock, _blockData, _FullBlocks, _freeBlock, _retrieveBlock
 .import __chunkGetBlock, clearChunkAlloc, clearBlockFull, isChunkAlloc, extractBlockAndChunkNum
 .import incAvailChunks
 .importzp ptr1
@@ -34,11 +34,6 @@ chunkNum: .res 1
     stx blockNum + 1
     dey
     sty chunkNum
-
-    ; is blockNum allocated?
-    jsr _isBlockAllocated
-    cmp #0
-    beq JmpDone
 
     ; Do we have a current block?
     lda _blockData

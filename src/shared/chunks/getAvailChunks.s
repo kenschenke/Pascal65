@@ -15,7 +15,7 @@
 
 .export _getAvailChunks
 .import _currentBlock, _storeBlock, _FullBlocks, _isBlockAllocated, __chunkGetBlock, _blockData
-.import _getTotalBlocks, isBlockFull, isChunkAlloc, _availChunks
+.import _getTotalBlocks, isBlockFull, isChunkAlloc, _availChunks, _flushChunkBlock
 .importzp ptr1
 
 .bss
@@ -38,19 +38,8 @@ totalBlocks: .res 2
     sta avail
     sta avail + 1
 
-    ; Do we have a current block?
-    lda _blockData
-    ora _blockData + 1
-    beq CheckBlocks              ; no - get on with it
     ; Store the block before we start.
-    lda _currentBlock
-    ldx _currentBlock + 1
-    jsr _storeBlock
-    cmp #0
-    beq @D1
-    lda #0
-    sta _currentBlock
-    sta _currentBlock + 1
+    jsr _flushChunkBlock
     jmp CheckBlocks
 
 @D1:

@@ -21,7 +21,7 @@ void testAllocateAllBlocks(void)
 		p = allocBlock(&blockNum);
 		assertNotNull(p);
 		assertEqualByte(i, blockNum);
-		memset(p, i % 256, BLOCK_LEN);
+		memset(p, (i % 254) + 1, BLOCK_LEN);
 		assertNonZero(storeBlock(blockNum));
 	}
 
@@ -30,7 +30,7 @@ void testAllocateAllBlocks(void)
 		p = retrieveBlock(i);
 		assertNotNull(p);
 		for (j = 0; j < BLOCK_LEN; ++j) {
-			assertEqualByte(i % 256, p[j]);
+			assertEqualByte((i % 254) + 1, p[j]);
 		}
 	}
 
@@ -66,6 +66,7 @@ void testRetrieveBlock(void)
 	// Allocate a block and verify it can be retrieved
 	p1 = allocBlock(&blockNum);
 	assertNotNull(p1);
+	p1[0] = 1;	// put something in the block so it's used
 	assertEqualInt(0, blockNum);
 	
 	// Retrieve the same block
@@ -102,12 +103,14 @@ void testReusingFreedBlocks(void)
 	// Reallocate two blocks
 	p = allocBlock(&blockNums[2]);
 	assertNotNull(p);
+	p[0] = 1;	// put something in the block so it's used
 	assertNonZero(isBlockAllocated(blockNums[2]));
 	memset(p, 20, BLOCK_LEN);
 	assertNonZero(storeBlock(blockNums[2]));
 
 	p = allocBlock(&blockNums[4]);
 	assertNotNull(p);
+	p[0] = 1;	// put something in the block so it's used
 	assertNonZero(isBlockAllocated(blockNums[4]));
 	memset(p, 40, BLOCK_LEN);
 	assertNonZero(storeBlock(blockNums[4]));
@@ -150,6 +153,7 @@ void testStoreBlock(void)
 
 	// Allocate a block and verify it can be stored
 	p = allocBlock(&blockNum);
+	p[1] = 1;	// put something in the block so it's used
 	assertNotNull(p);
 
 	// Store the same block
