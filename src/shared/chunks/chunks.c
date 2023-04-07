@@ -19,8 +19,6 @@ BLOCKNUM		currentBlock;
 unsigned char	*blockData;
 unsigned		availChunks;
 
-unsigned char FullBlocks[MAX_BLOCKS / 8];
-
 void flushChunkBlock(void) {
 	if (blockData) {
 		storeBlock(currentBlock);

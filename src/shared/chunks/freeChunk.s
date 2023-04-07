@@ -15,8 +15,8 @@
 
 .export _freeChunk
 
-.import _currentBlock, _storeBlock, _blockData, _FullBlocks, _freeBlock, _retrieveBlock
-.import __chunkGetBlock, clearChunkAlloc, clearBlockFull, isChunkAlloc, extractBlockAndChunkNum
+.import _currentBlock, _storeBlock, _blockData, _freeBlock, _retrieveBlock
+.import __chunkGetBlock, clearChunkAlloc, isChunkAlloc, extractBlockAndChunkNum
 .import incAvailChunks
 .importzp ptr1
 
@@ -78,10 +78,6 @@ FreeChunk:
     ; at the beginning of the block
     lda chunkNum
     jsr clearChunkAlloc
-    ; The block is no longer full either
-    lda blockNum
-    ldx blockNum + 1
-    jsr clearBlockFull
 
     ; Check if all other chunks in this block are also freed
     lda #0
