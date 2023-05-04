@@ -52,6 +52,8 @@ static void setBlockGroupUnallocated(unsigned group);
 
 #ifdef __MEGA65__
 unsigned char sharedBlock[BLOCK_LEN];
+BLOCKNUM currentBlockNum;
+#define BLOCK_NOT_ALLOCATED 0xffff
 #elif defined(USE_EMD)
 unsigned char *sharedBlock;
 #endif
@@ -105,6 +107,7 @@ void initBlockStorage(void)
 		lastPageToAllocate = pages;
 		blockInit = 1;
 	}
+	currentBlockNum = BLOCK_NOT_ALLOCATED;
 #elif defined(USE_EMD)
 	char ret;
 	static char emLoaded = 0;
@@ -151,8 +154,19 @@ char isBlockAllocated(BLOCKNUM blockNum) {
 
 	// Retrieve a pointer to the block and check the first two bytes.  That will
 	// indicate if any chunks in that block are allocated.
+#ifdef USE_EMD
 	em_commit();
 	p = em_map(blockNum);
+#else
+	if (currentBlockNum != blockNum) {
+		if (currentBlockNum != BLOCK_NOT_ALLOCATED) {
+			transferToBank(currentBlockNum);
+		}
+		transferFromBank(blockNum);
+		currentBlockNum = blockNum;
+	}
+	p = sharedBlock;
+#endif
 	return (p[0] || p[1]) ? 1 : 0;
 }
 
@@ -187,6 +201,7 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 #endif
 #ifdef __MEGA65__
 		memset(sharedBlock, 0, BLOCK_LEN);
+		currentBlockNum = i;
 #endif
 
 		return sharedBlock;
@@ -196,10 +211,6 @@ unsigned char *allocBlock(BLOCKNUM *blockNum)
 }
 
 char allocBlockGroup(BLOCKNUM *blockNum, unsigned numBlocks) {
-#ifdef __MEGA65__
-#error allocBlockGroup not implemented on MEGA 65
-#endif
-
 	unsigned i;
 
 	// Block groups are pulled from the top of extended memory.
@@ -233,7 +244,15 @@ void freeBlock(BLOCKNUM blockNum)
 	p[0] = p[1] = 0;
 	em_commit();
 #else
-#error freeBlock not implemented
+	if (blockNum != currentBlockNum) {
+		if (currentBlockNum != BLOCK_NOT_ALLOCATED) {
+			transferToBank(currentBlockNum);
+		}
+		transferFromBank(blockNum);
+	}
+	sharedBlock[0] = sharedBlock[1] = 0;
+	transferToBank(blockNum);
+	currentBlockNum = BLOCK_NOT_ALLOCATED;
 #endif
 
 	// Check each of the eight blocks in the group.
@@ -241,7 +260,12 @@ void freeBlock(BLOCKNUM blockNum)
 	// group as such.
 	b -= (b % 8);
 	for (i = 0; i < 8; ++i,++b) {
+#ifdef USE_EMD
 		p = em_map(b);
+#else
+		transferFromBank(b);
+		p = sharedBlock;
+#endif
 		if (p[0] || p[1]) {
 			// If either of the first two bytes are non-zero,
 			// at least one of the blocks is still in use.
@@ -279,10 +303,25 @@ static void setBlockGroupUnallocated(unsigned group) {
 	int i;
 	unsigned char *p;
 
+#ifndef USE_EMD
+	if (currentBlockNum != BLOCK_NOT_ALLOCATED) {
+		transferToBank(currentBlockNum);
+	}
+	p = sharedBlock;
+#endif
+
 	for (i = 0; i < 8; ++i) {
+#ifdef USE_EMD
 		p = em_use(group + i);
+#else
+		transferFromBank(group + i);
+#endif
 		p[0] = p[1] = 0;
+#ifdef USE_EMD
 		em_commit();
+#else
+		transferToBank(group + i);
+#endif
 	}
 }
 
