@@ -19,7 +19,7 @@ TOKENIZEROVRLFILE := $(PROGRAM).1
 PARSEROVRLFILE := $(PROGRAM).2
 EXECOVRLFILE := $(PROGRAM).3
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
@@ -219,6 +219,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write testforward.petscii testforward.pas,seq \
+	-write translate.petscii translate.pas,seq \
 	-write assign.pas assign.pas,seq
 else
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii testforward.petscii translate.petscii nested.petscii
