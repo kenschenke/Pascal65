@@ -42,33 +42,11 @@ static void editorScroll(void);
 static void setCursor(unsigned char value, unsigned char color);
 
 #ifdef __MEGA65__
-static void drawRow65(char row, char col, char len, char *buf, char isReversed);
+void drawRow65(char row, char col, char len, char *buf, char isReversed);
 
 char * SCREEN = (char*)0x0800;
-#endif
-
-#ifdef __C64__
-char * SCREEN = (char*)0x0400;
-#endif
-
-void clearScreen(void) {
-#ifdef __C128__
-    if (E.screencols == 40)
-        clearScreen40();
-    else
-        clearScreen80();
 #elif defined(__C64__)
-    clearScreen40();
-#else
-    clrscr();
-#endif
-}
-
-#ifdef __C64__
-void clearRow(char row, char startingCol) {
-    int offset = row * 40 + startingCol;
-    memset(SCREEN+offset, ' ', 40-startingCol);
-}
+char * SCREEN = (char*)0x0400;
 #endif
 
 #ifdef __MEGA65__
@@ -77,20 +55,12 @@ void clearRow(char row, char startingCol) {
     memset(SCREEN+offset, ' ', 80-startingCol);
 }
 
-static void drawRow65(char row, char col, char len, char *buf, char isReversed) {
+void drawRow65(char row, char col, char len, char *buf, char isReversed) {
     char i;
     int offset = row * 80 + col;
     for (i = 0; i < len; ++i) {
         SCREEN[offset++] = petsciitoscreencode(buf[i]) | (isReversed ? 128 : 0);
     }
-}
-
-void clearCursor(void) {
-    setCursor(1, COLOUR_WHITE);
-}
-
-void renderCursor(void) {
-    setCursor(0, COLOUR_ORANGE);
 }
 
 static void setCursor(unsigned char clear, unsigned char color) {
@@ -104,11 +74,10 @@ static void setCursor(unsigned char clear, unsigned char color) {
     }
     cellcolor(E.cf.cx - E.cf.coloff, E.cf.cy - E.cf.rowoff, color);
 }
-#else
-void clearCursor(void) {
-#ifdef __C64__
-    clearCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
-#endif
+#elif defined(__C64__)
+void clearRow(char row, char startingCol) {
+    int offset = row * 40 + startingCol;
+    memset(SCREEN+offset, ' ', 40-startingCol);
 }
 #endif
 
@@ -116,34 +85,14 @@ void clearStatusRow(void) {
     drawStatusRow(COLOR_WHITE, 0, "");
 }
 
-void drawRow(char row, char col, char len, const char *buf, char isReversed) {
-#ifdef __MEGA65__
-    drawRow65(row, col, len, buf, isReversed);
-#elif defined(__C64__)
-    drawRow40(row, col, len, buf, isReversed);
-#else
-    if (E.screencols == 40)
-        drawRow40(row, len, buf, isReversed);
-    else
-        drawRow80(row, len, buf, isReversed);
-#endif
-}
-
 void drawStatusRow(char color, char center, const char *msg) {
     int x;
-#if 0
-    for (x = 0; x < E.screencols; ++x) {
-        cellcolor(x, E.screenrows + 1, color);
-    }
-#endif
 
     clearRow(E.screenrows + 1, 0);
     x = center ? E.screencols / 2 - strlen(msg) / 2 : 0;
     drawRow(E.screenrows + 1, x, strlen(msg), msg, 0);
 
-#ifdef __C64__
     setRowColor(E.screenrows + 1, color);
-#endif
 }
 
 char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
@@ -158,9 +107,7 @@ char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
         strcpy(msg, prompt);
         strcat(msg, buf);
         drawStatusRow(COLOR_WHITE, 0, msg);
-#ifdef __C64__
-        renderCursor64(x, E.screenrows + 1);
-#endif
+        renderCursor(x, E.screenrows + 1);
         c = editorReadKey();
         if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
             if (buflen != 0) {
@@ -186,21 +133,6 @@ char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
 
     clearCursor();
     return 0;
-}
-
-void initScreen(void) {
-#ifdef __MEGA65__
-    conioinit();
-    clearScreen();
-#elif defined(__C64__)
-    initScreen40();
-    clearCursor();
-#else
-    if (E.screencols == 40)
-        initScreen40();
-    else
-        initScreen80();
-#endif
 }
 
 #ifdef __C128__
@@ -376,11 +308,7 @@ void editorRefreshScreen(void) {
     editorDrawMessageBar();
 
     if (E.cf.fileChunk) {
-#ifdef __MEGA65__
-        renderCursor();
-#elif defined(__C64__)
-        renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
-#endif
+        renderCursor(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
     } else {
         clearCursor();
     }

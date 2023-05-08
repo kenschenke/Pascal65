@@ -21,7 +21,7 @@ PARSEROVRLFILE := $(PROGRAM).2
 EXECOVRLFILE := $(PROGRAM).3
 EDITOROVRLFILE := $(PROGRAM).4
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
@@ -78,6 +78,8 @@ EXECOVRLSRCS += $(LIBCOMMONDIR)/writeint16.s
 
 EDITOROVRLSRCS := $(wildcard $(EDITOROVRLSRC)/*.c)
 EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/*.s)
+EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/$(TARGET)/*.c)
+EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/$(TARGET)/*.s)
 EDITOROVRLSRCS += $(LIBCOMMONDIR)/int16c.s
 ifeq ($(TARGET),mega65)
 EDITOROVRLSRCS += $(wildcard $(LIBCSRCDIR)/*.c)
@@ -156,6 +158,14 @@ $(OBJDIR)/%.o: $(EDITOROVRLSRC)/%.c | $(OBJDIR)
 
 vpath $(EDITOROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(EDITOROVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(EDITOROVRLSRC)/$(TARGET)/%.c
+$(OBJDIR)/%.o: $(EDITOROVRLSRC)/$(TARGET)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(EDITOROVRLSRC)/$(TARGET)/%.s
+$(OBJDIR)/%.o: $(EDITOROVRLSRC)/$(TARGET)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 ifeq ($(TARGET),mega65)

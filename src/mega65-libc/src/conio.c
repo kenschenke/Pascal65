@@ -64,7 +64,7 @@ typedef struct tagESCAPE_CODE
 static char *p2sbuf = (char*) 0x334;
 #endif
 
-static ESCAPE_CODE escapeCode[255];
+// static ESCAPE_CODE escapeCode[255];
 static unsigned char g_curTextColor = COLOUR_WHITE;
 static unsigned char g_curX = 0;
 static unsigned char g_curY = 0;
@@ -133,17 +133,20 @@ void conioinit(void)
 
     flushkeybuf();
 
+#if 0
     for (i = 0; i < sizeof(escapeCode) / sizeof(escapeCode[0]); ++i)
     {
         escapeCode[i].fn = escNOP;
         escapeCode[i].arg = 0x0;
     }
+#endif
 
     // Setup escape codes according to it's hashed strings.
     // We know that for those codes and with k=277 there are no collisions.
     // Adding new codes should verify no collisions are added by changing k
     // or by using another algorithm.
 
+#if 0
     escapeCode[1].fn = moveleft;
     escapeCode[7].fn = moveright;
     escapeCode[10].fn = moveup;
@@ -191,6 +194,7 @@ void conioinit(void)
     escapeCode[240].fn = textcolor;
     escapeCode[240].arg = COLOUR_RED;
     escapeCode[249].fn = movedown;
+#endif
 }
 
 char petsciitoscreencode(char c)
@@ -374,16 +378,19 @@ void bgcolor(unsigned char c)
 }
 #endif
 
+#if 0
 void textcolor(unsigned char c)
 {
     g_curTextColor = (g_curTextColor & 0xF0) | (c & 0xf);
 }
+#endif
 
 void cellcolor(unsigned char x, unsigned char y, unsigned char c)
 {
-    lpoke(COLOR_RAM_BASE + (y * (unsigned int)g_curScreenW) + x, c);
+    lpoke(COLOR_RAM_BASE + (unsigned int)y * 80 + x, c);
 }
 
+#if 0
 void revers(unsigned char enable)
 {
     if (enable)
@@ -391,6 +398,7 @@ void revers(unsigned char enable)
     else
         g_curTextColor &= ~ATTRIB_REVERSE;
 }
+#endif
 
 #if 0
 void highlight(unsigned char enable)
@@ -402,6 +410,7 @@ void highlight(unsigned char enable)
 }
 #endif
 
+#if 0
 void blink(unsigned char enable)
 {
     if (enable)
@@ -409,7 +418,9 @@ void blink(unsigned char enable)
     else
         g_curTextColor &= ~ATTRIB_BLINK;
 }
+#endif
 
+#if 0
 void underline(unsigned char enable)
 {
     if (enable)
@@ -417,6 +428,7 @@ void underline(unsigned char enable)
     else
         g_curTextColor &= ~ATTRIB_UNDERLINE;
 }
+#endif
 
 #if 0
 void altpal(unsigned char enable)
@@ -490,25 +502,33 @@ void cputnc(unsigned char len, unsigned char c)
 }
 #endif
 
+#if 0
 void moveup(unsigned char count)
 {
     g_curY -= count;
 }
+#endif
 
+#if 0
 void movedown(unsigned char count)
 {
     g_curY += count;
 }
+#endif
 
+#if 0
 void moveleft(unsigned char count)
 {
     g_curX -= count;
 }
+#endif
 
+#if 0
 void moveright(unsigned char count)
 {
     g_curX += count;
 }
+#endif
 
 #if 0
 unsigned char _cprintf(const unsigned char translateCodes, const unsigned char *fmt, ...)

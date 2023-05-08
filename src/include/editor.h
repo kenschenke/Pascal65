@@ -176,7 +176,7 @@ void setScreenBg(char bg);
 #endif
 void initScreen(void);
 void openFile(void);
-void renderCursor(void);
+void renderCursor(char x, char y);
 void setupScreenCols(void);
 void updateStatusBarFilename(void);
 

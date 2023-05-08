@@ -1,21 +1,15 @@
-; void __fastcall__ clearScreen40(void);
-; void __fastcall__ drawRow40(char row, char len, char *buf);
+; void __fastcall__ clearScreen(void);
+; void __fastcall__ drawRow(char row, char len, char *buf);
 
-    .export     _drawRow40, _clearScreen40, _setScreenBg40, _initScreen40, _cursorOnOff
-    .export     _renderCursor64, _clearCursor64, _setRowColor
-    .import     popa, popax, incRow, petscii2Screen
+    .export     _drawRow, _clearScreen, _initScreen
+    .export     _renderCursor, _clearCursor, _setRowColor
+    .import     popa, popax, incRow, petscii2Screen, _E
     .importzp   ptr1, ptr2, ptr3, tmp1, tmp2, tmp3, tmp4
 
     .include    "c64.inc"
 
     ;; Registers
     NUM_COLS = 40
-
-.proc _cursorOnOff
-    lda #0
-    sta 204
-    rts
-.endproc
 
 ; Fill screen memory
 ;   .A byte to fill
@@ -50,27 +44,22 @@ fillMem:
     bne @NewRow
     rts
 
-; void setScreenBg40(char bg)
-_setScreenBg40:
-    sta 53280
-    sta 53281
-    rts
-
-_initScreen40:
+_initScreen:
     lda #1      ; white text
     ldx #0
     ldy #$d8    ; color ram
     jsr fillMem
-    jmp _clearScreen40
+    jsr _clearCursor
+    jmp _clearScreen
 
-; void drawRow40(char row, char col, char len, char *buf, char isReversed)
+; void drawRow(char row, char col, char len, char *buf, char isReversed)
 ;       ptr1 - char buffer
 ;       ptr2 = screen RAM
 ;       tmp1 - length of buffer
 ;       tmp2 - row number, then # of chars to pad later
 ;       tmp3 - col number to start rendering
 ;       tmp4 - non-zero if drawing reversed characters
-_drawRow40:
+_drawRow:
     sta tmp4        ; isReversed
     jsr popax       ; Pull the character buffer pointer off the stack
     sta ptr1        ; Low byte of char buffer
@@ -131,26 +120,29 @@ _drawRow40:
 @Done:
     rts
 
-_clearScreen40:
+_clearScreen:
     lda #' '
     ldx #$00
     ldy #$04
     jmp fillMem
 
-; void clearCursor64(char x, char y)
+; void clearCursor(void)
 ; Clears the rendered cursor
 ; x and y are zero-based column and row of current cursor position
 ; Uses ptr1 as screen memory
-.proc _clearCursor64
-    pha
-    tay
+.proc _clearCursor
     ldx #0
     stx ptr1
     ldx #4
     stx ptr1 + 1    ; Set ptr1 to $400 (base of screen RAM)
+    lda _E + 14     ; E.cf.cy
+    sec
+    sbc _E + 16     ; E.cf.rowoff
+    tay
     jsr calcScreenPos
-    jsr popa
-    pha
+    lda _E + 12     ; E.cf.cx
+    sec
+    sbc _E + 18     ; E.cf.coloff
     tay
     lda (ptr1),y
     and #$7f
@@ -159,23 +151,25 @@ _clearScreen40:
     stx ptr1
     ldx #$d8
     stx ptr1 + 1
-    pla
-    tax
-    pla
+    lda _E + 14     ; E.cf.cy
+    sec
+    sbc _E + 16     ; E.cf.rowoff
     tay
     jsr calcScreenPos
-    txa
+    lda _E + 12     ; E.cf.cx
+    sec
+    sbc _E + 18     ; E.cf.coloff
     tay
     lda #1
     sta (ptr1),y
     rts
 .endproc
 
-; void renderCursor64(char x, char y)
+; void renderCursor(char x, char y)
 ; Renders the cursor
 ; x and y are zero-based column and row of current cursor position
 ; Uses ptr1 as screen memory
-.proc _renderCursor64
+.proc _renderCursor
     pha
     tay
     ldx #0

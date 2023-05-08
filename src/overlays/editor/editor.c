@@ -191,10 +191,9 @@ static void editorMoveCursor(int key, char skipClear) {
     }
 
     if (E.cf.cx < E.cf.coloff + E.screencols && E.cf.cy < E.cf.rowoff + E.screenrows) {
+        renderCursor(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #ifdef __MEGA65__
         gotoxy(E.cf.cx, E.cf.cy);
-#elif defined(__C64__)
-        renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 #endif
     }
 }
@@ -466,10 +465,10 @@ void initEditor() {
     memset(&E.cf, 0, sizeof(efile));
 
     E.screenrows = 25;
-#ifdef __C64__
-    E.screencols = 40;
-#else
+#ifdef __MEGA65
     E.screencols = 80;
+#elif defined(__C64__)
+    E.screencols = 40;
 #endif
     E.screenrows -= 2;
 
@@ -535,9 +534,7 @@ void editorNewFile(void) {
 
     initFile();
     updateStatusBarFilename();
-#ifdef __C64__
-    renderCursor64(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
-#endif
+    renderCursor(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
 }
 
 void editorStoreFilename(const char *filename) {
@@ -581,10 +578,7 @@ void setupScreenCols(void) {
     else
         videomode(VIDEOMODE_40x25);
 #elif defined(__MEGA65__)
-    if (E.screencols == 80)
-        setscreensize(80, 25);
-    else
-        setscreensize(40, 25);
+    setscreensize(80, 25);
 #endif
 
     initScreen();
