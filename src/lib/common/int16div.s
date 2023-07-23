@@ -1,5 +1,8 @@
+.include "error.inc"
+
 .importzp tmp1, tmp2, tmp3, tmp4
 .import absInt16, intOp1, intOp2, invertInt16, isNegInt16, ltInt16, swapInt16
+.import runtimeError, exit
 
 .export divInt16
 
@@ -26,15 +29,20 @@
 ; Finally, if the result is negative, it inverts the sign on the result.
 
 .proc divInt16
-    ; Special case - either operand is zero
-    lda intOp1
-    ora intOp1 + 1
-    beq Zero            ; is intOp1 zero?
+    ; Check for divide by zero
     lda intOp2
     ora intOp2 + 1
-    bne L1              ; is intOp2 non-zero?
+    bne DividendCheck
+    ; Divide by zero
+    lda #rteDivisionByZero
+    jmp runtimeError
 
-Zero:
+DividendCheck:
+    ; Special case - dividend is zero
+    lda intOp1
+    ora intOp1 + 1
+    bne L1            ; is intOp1 zero?
+
     ; op1 and/or op2 is zero.  Result is zero.
     lda #0
     sta intOp1

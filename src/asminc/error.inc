@@ -83,3 +83,13 @@ errCodeSegmentOverflow = 54
 errUnimplementedFeature = 55
 errIdentifierTooLong = 56
 numParserErrors = 57
+
+rteNone = 0
+rteStackOverflow = 1
+rteValueOutOfRange = 2
+rteInvalidCaseValue = 3
+rteDivisionByZero = 4
+rteInvalidFunctionArgument = 5
+rteInvalidUserInput = 6
+rteUnimplementedRuntimeFeature = 7
+rteOutOfMemory = 8

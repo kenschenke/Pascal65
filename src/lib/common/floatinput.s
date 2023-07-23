@@ -12,6 +12,7 @@
 ; This routine reads a floating point number from FPBUF into FPACC.
 ; It supports standard floating point format (1, 2.25)
 ; and scientific notation (1.2E+5 or 0.1E-4).
+; Note: FPOP is also modified.
 
 FPINP:
     cld                 ; Clear decimal mode flag

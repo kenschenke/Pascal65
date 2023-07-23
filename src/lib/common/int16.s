@@ -1,6 +1,6 @@
 ; Placeholder for 16-bit integer operations
 
-.export tensTable, spcl32768, intBuf, intOp1, intOp2, swapInt16, absInt16
+.export tensTable, spcl32768, intBuf, intOp1, intOp2, swapInt16
 .export absInt16, swapInt16
 .export isNegInt16, invertInt16
 

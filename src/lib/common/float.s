@@ -6,10 +6,10 @@
 
 .include "float.inc"
 
-.import readInt16, intBuf, FPOUT, writeInt16, FPINP
+.import readInt16, intBuf, FPOUT, writeInt16, FPINP, MOVIND
 .importzp ptr1, ptr2
 
-.export FPBASE, FPBUF, floatToInt16, int16ToFloat
+.export FPBASE, FPBUF, floatToInt16, int16ToFloat, copyFPACCtoFPOP
 
 .bss
 
@@ -69,4 +69,13 @@ L1:
 L2:
     sta (ptr2),y
     jmp FPINP
+.endproc
+
+.proc copyFPACCtoFPOP
+    lda #FPLSW          ; Origin is FPACC
+    sta FPBASE + FMPNT
+    lda #FOPLSW         ; Destination is FPOP
+    sta FPBASE + TOPNT
+    ldx #4              ; Copy 4 bytes
+    jmp MOVIND
 .endproc

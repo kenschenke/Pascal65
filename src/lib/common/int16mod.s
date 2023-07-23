@@ -1,9 +1,11 @@
-.import divInt16, intOp1, intOp2, multInt16, swapInt16, subInt16
+.include "error.inc"
+
+.import divInt16, intOp1, intOp2, multInt16, swapInt16, subInt16, runtimeError
 
 .export modInt16
 
 ; This routine finds the remainder (mod) of dividing intOp1 by intOp2.
-; It does not check for mod 0 (divide by zero).
+; It checks for mod 0 (divide by zero).
 ;
 ; 1.  Divide intOp1 by intOp2
 ; 2.  Multiply answer by intOp2
@@ -11,6 +13,13 @@
 ; 4.  Result is remainder
 
 .proc modInt16
+    ; Check for divide by zero
+    lda intOp2
+    ora intOp2 + 1
+    bne L1
+    lda #rteDivisionByZero
+    jmp runtimeError
+L1:
     ; Push intOp1 and intOp2 onto stack
     lda intOp1
     pha

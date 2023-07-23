@@ -5,8 +5,9 @@
 ; by Robert Findley
 
 .include "float.inc"
+.include "error.inc"
 
-.import FPBASE, CALCPTR, EXMLDV, ROTATR, ROTATL, ROTL, MOVIND, CKSIGN
+.import FPBASE, CALCPTR, EXMLDV, ROTATR, ROTATL, ROTL, MOVIND, CKSIGN, runtimeError
 .importzp ptr1, ptr2
 
 .export FPDIV
@@ -14,8 +15,7 @@
 ; This routine divides FPACC by FPOP and leaves the result in FPACC.
 ; FPOP is also modified.
 ;
-; This routine checks for divide by zero and just returns zero.
-; Any special handling for divide by zero is to be handled elsewhere.
+; This routine checks for divide by zero.
 
 .proc FPDIV
     lda #FPLSW          ; Set pointer to FPACC
@@ -49,7 +49,7 @@ SETDCT:
     lda #$17            ; Set bit counter storage
     sta FPBASE + CNTR   ; to 17 hex
 DIVIDE:
-    jsr SETSUB          ; Subtrsct DIVISOR from DIVIDEND
+    jsr SETSUB          ; Subtract DIVISOR from DIVIDEND
     bmi NOGO            ; If result is minus, rotate zero in QUOTIENT
     ldx #FOPLSW         ; Set pointer to DIVIDEND
     stx FPBASE + TOPNT  ; Store in TOPNT
@@ -60,8 +60,8 @@ DIVIDE:
     sec                 ; Set carry for positive results
     jmp QUOROT
 DERROR:
-    lda #'?'            ; Set ASCII for "?""
-    jmp ERROUT          ; Print "?" and return
+    lda #rteDivisionByZero
+    jmp runtimeError
 NOGO:
     clc                 ; Negative result, clear carry
 QUOROT:
