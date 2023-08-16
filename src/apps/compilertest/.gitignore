@@ -4,3 +4,4 @@ obj/*
 *.map
 *.pas
 *.IN
+src/main.s
