@@ -100,13 +100,13 @@ STACKITEM *stackPushFrameHeader(int oldLevel, int newLevel, CHUNKNUM icode) {
 
     stackPushInt(0);    // function return value (placeholder)
 
-    // Compute the stack link
+    // Compute the static link
     if (newLevel == oldLevel + 1) {
         // Callee nested within caller:
         // Push address of caller's stack frame
         stackPushItem((STACKITEM *)pHeader);
     } else if (newLevel == oldLevel) {
-        // Callee e level as caller
+        // Callee same level as caller
         // Push address of common parent's stack frame.
         stackPushItem(pHeader->staticLink.pStackItem);
     } else {
