@@ -1,6 +1,10 @@
 .include "cbm_kernal.inc"
 
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .importzp tmp1
+.endif
 
 .export leftpad
 

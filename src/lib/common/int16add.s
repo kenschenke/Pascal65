@@ -1,4 +1,8 @@
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .import intOp1, intOp2
+.endif
 .export addInt16
 
 ; Add intOp1 and intOp2, storing the result in intOp1

@@ -1,4 +1,8 @@
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .import intOp1, intOp2
+.endif
 
 .export eqInt16, leInt16, ltInt16, geInt16, gtInt16
 

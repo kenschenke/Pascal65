@@ -1,11 +1,11 @@
 .include "inputbuf.inc"
 .include "float.inc"
+.include "runtime.inc"
 
-.import intOp1, intBuf, getline, readInt16, FPBASE, FPINP, FPBUF
-.importzp ptr1, sreg
+.import getline, readInt16, FPINP
 
-.export _clearInputBuf, _isInputEndOfLine, _readCharFromInput
-.export readFloatFromInput, _readIntFromInput, inputBuf, inputBufUsed
+.export clearInputBuf, isInputEndOfLine, readCharFromInput
+.export readFloatFromInput, readIntFromInput, inputBuf, inputBufUsed
 
 .bss
 
@@ -18,14 +18,14 @@ sawExponentSign: .res 1
 
 .code
 
-.proc _clearInputBuf
+.proc clearInputBuf
     lda #0
     sta inputBufUsed
     sta inputPos
     rts
 .endproc
 
-.proc _isInputEndOfLine
+.proc isInputEndOfLine
     lda #1
     ldx inputBufUsed
     dex
@@ -38,7 +38,7 @@ L1:
     rts
 .endproc
 
-.proc _readCharFromInput
+.proc readCharFromInput
     ldx inputBufUsed        ; Check how many unread chars in input buffer
     dex                     ; Less One
     bmi L1                  ; If negative, need to read a line
@@ -143,7 +143,7 @@ L11:
 .endproc
 
 ; Reads an integer from inputBuf and returns it in A/X
-.proc _readIntFromInput
+.proc readIntFromInput
     ; Clear intBuf
     lda #<intBuf
     sta ptr1

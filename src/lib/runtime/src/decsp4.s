@@ -1,5 +1,6 @@
+.include "runtime.inc"
+
 .export decsp4
-.importzp sp
 
 .proc decsp4
     lda sp

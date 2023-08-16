@@ -1,6 +1,7 @@
 .include "cbm_kernal.inc"
+.include "runtime.inc"
 
-.import savedStackPtr, _printlnz
+.import printlnz
 .export exit
 
 .data
@@ -16,7 +17,7 @@ exiting: .asciiz "exiting."
     jsr CHROUT
     lda #<exiting
     ldx #>exiting
-    jsr _printlnz
+    jsr printlnz
     ; restore the stack pointer
     ldx savedStackPtr
     txs

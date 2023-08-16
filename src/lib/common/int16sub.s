@@ -1,4 +1,8 @@
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .import intOp1, intOp2
+.endif
 .export subInt16
 
 ; Subtract intOp2 from intOp1, storing the result in intOp1

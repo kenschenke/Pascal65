@@ -1,6 +1,7 @@
+.include "runtime.inc"
+
 .export pusheax
 .import decsp4
-.importzp sp, sreg
 
 .proc pusheax
     pha                     ; decsp will destroy A (but not X)

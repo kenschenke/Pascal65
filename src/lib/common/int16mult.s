@@ -1,5 +1,11 @@
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .importzp tmp1, tmp2, tmp3, tmp4
-.import absInt16, intOp1, intOp2, invertInt16, ltInt16, swapInt16
+.import intOp1, intOp2
+.endif
+
+.import absInt16, invertInt16, ltInt16, swapInt16
 
 .export multInt16
 
@@ -41,7 +47,22 @@
     sta tmp3
     lda intOp2 + 1
     sta tmp4
+    ; If intOp1 is zero result is zero
+    lda intOp1
+    ora intOp1 + 1
+    bne L0
+    jmp Done
+L0:
+    ; If intOp2 is zero, store zero in result
+    lda intOp2
+    ora intOp2
+    bne L1
+    lda #0
+    sta intOp1
+    sta intOp1 + 1
+    jmp Done
     ; Take the absolute value of intOp1
+L1:
     jsr absInt16
     ; Store it in intOp2
     lda intOp1

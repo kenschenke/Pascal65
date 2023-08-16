@@ -1,5 +1,10 @@
-.import intBuf, intOp1, tensTable, invertInt16
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import intOp1, intBuf
 .importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
+.endif
+.import tensTable, invertInt16
 
 .export readInt16
 

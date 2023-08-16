@@ -1,5 +1,6 @@
+.include "runtime.inc"
+
 .export addysp
-.importzp sp
 
 .proc addysp
         pha                     ; Save A

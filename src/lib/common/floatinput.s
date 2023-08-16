@@ -6,7 +6,13 @@
 
 .include "float.inc"
 
-.import FPBASE, CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, FPNORM, FPBUF, XBUF
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import FPBASE, FPBUF
+.endif
+
+.import CLRMEM, ADDER, ROTATL, FPMULT, MOVIND, COMPLM, FPNORM, XBUF
 .export FPINP, DECBIN, FPD10, FPX10
 
 ; This routine reads a floating point number from FPBUF into FPACC.

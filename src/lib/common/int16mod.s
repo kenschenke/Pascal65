@@ -1,6 +1,11 @@
 .include "error.inc"
 
-.import divInt16, intOp1, intOp2, multInt16, swapInt16, subInt16, runtimeError
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import intOp1, intOp2
+.endif
+.import divInt16, multInt16, swapInt16, subInt16, runtimeError
 
 .export modInt16
 

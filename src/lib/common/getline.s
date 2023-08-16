@@ -3,8 +3,13 @@
 .include "c64.inc"
 
 .import inputBuf, inputBufUsed
-.importzp ptr1, tmp1
 .export getline
+
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.importzp ptr1, tmp1
+.endif
 
 CH_STOP = 3
 CH_DEL = 20

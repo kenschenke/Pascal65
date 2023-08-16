@@ -5,8 +5,13 @@
 ; by Robert Findley
 
 .include "float.inc"
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import FPBASE
+.endif
 
-.import FPBASE, MOVIND, FPADD, FPSUB, FPMULT, COMPLM
+.import MOVIND, FPADD, FPSUB, FPMULT, COMPLM
 
 .export PRECRD
 

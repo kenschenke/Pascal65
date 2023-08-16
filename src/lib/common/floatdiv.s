@@ -7,8 +7,14 @@
 .include "float.inc"
 .include "error.inc"
 
-.import FPBASE, CALCPTR, EXMLDV, ROTATR, ROTATL, ROTL, MOVIND, CKSIGN, runtimeError
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import FPBASE
 .importzp ptr1, ptr2
+.endif
+
+.import CALCPTR, EXMLDV, ROTATR, ROTATL, ROTL, MOVIND, CKSIGN, runtimeError
 
 .export FPDIV
 

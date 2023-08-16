@@ -1,7 +1,13 @@
 .include "error.inc"
 
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .importzp tmp1, tmp2, tmp3, tmp4
-.import absInt16, intOp1, intOp2, invertInt16, isNegInt16, ltInt16, swapInt16
+.import intOp1, intOp2
+.endif
+
+.import absInt16, invertInt16, isNegInt16, ltInt16, swapInt16
 .import runtimeError, exit
 
 .export divInt16

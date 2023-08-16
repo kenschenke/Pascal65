@@ -2,8 +2,15 @@
 
 .include "cbm_kernal.inc"
 
-.import exit, _printz
+.import exit
+
+.ifdef RUNTIME
+.include "runtime.inc"
+.import printz
+.else
+.import _printz
 .importzp ptr1, tmp1
+.endif
 
 .export runtimeError, runtimeErrorInit
 
@@ -106,6 +113,10 @@ runtimeMsgs: .res 16
     tax
     dey
     lda (ptr1),y
+.ifdef RUNTIME
+    jsr printz
+.else
     jsr _printz
+.endif
     jmp exit
 .endproc

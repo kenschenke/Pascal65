@@ -6,15 +6,23 @@
 
 .include "float.inc"
 
-.import readInt16, intBuf, FPOUT, writeInt16, FPINP, MOVIND
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import intBuf
 .importzp ptr1, ptr2
+.export FPBASE, FPBUF
+.endif
+.import readInt16, FPOUT, writeInt16, FPINP, MOVIND
 
-.export FPBASE, FPBUF, floatToInt16, int16ToFloat, copyFPACCtoFPOP
+.export floatToInt16, int16ToFloat, copyFPACCtoFPOP
 
+.ifndef RUNTIME
 .bss
 
 FPBASE: .res 44
 FPBUF: .res FPBUFSZ
+.endif
 
 .code
 

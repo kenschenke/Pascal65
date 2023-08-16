@@ -1,7 +1,13 @@
 .include "cbm_kernal.inc"
 
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
-.import tensTable, intBuf, intOp1, intOp2, spcl32768
+.import intBuf, intOp1, intOp2
+.endif
+
+.import tensTable, spcl32768
 .import isNegInt16, invertInt16, leftpad, popax
 
 .export writeInt16

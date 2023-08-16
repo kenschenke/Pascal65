@@ -6,7 +6,13 @@
 
 .include "float.inc"
 
-.import FPBASE, FPSUB
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import FPBASE
+.endif
+
+.import FPSUB
 
 .export floatEq, floatGt, floatGte, floatLt, floatLte
 
