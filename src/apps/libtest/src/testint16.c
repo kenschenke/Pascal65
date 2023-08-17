@@ -269,17 +269,20 @@ void testInt16(void)
     printf("Testing mod\n");
     testFunc(testModInt16, modTests, sizeof(modTests)/sizeof(modTests[0]));
 
-#if 0
+    printf("Testing writeInt16\n");
     testWriteInt16(-32768, 10);
-    printf("%s\n", intBuffer);
+    if (!strcmp(intBuffer, "    -32768"))
+        printf("Expected intBuffer to be \"    -32768\"\n");
     testWriteInt16(32767, 10);
-    printf("%s\n", intBuffer);
+    if (!strcmp(intBuffer, "     32767"))
+        printf("Expected intBuffer to be \"     32767\"\n");
     testWriteInt16(-1234, 10);
-    printf("%s\n", intBuffer);
+    if (!strcmp(intBuffer, "     -1234"))
+        printf("Expected intBuffer to be \"     -1234\"\n");
     testWriteInt16(12, 10);
-    printf("%s\n", intBuffer);
+    if (!strcmp(intBuffer, "        12"))
+        printf("Expected intBuffer to be \"        12\"\n");
 
     testReads();
-#endif
 }
 

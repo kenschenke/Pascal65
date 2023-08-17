@@ -27,6 +27,8 @@ ISENOT: .res 1          ; Non-zero if output is 'E' notation
 ; This routine outputs FPACC to FPBUF.
 ; FPACC and FPOP are modified.
 ;
+; Precision is passed in A.  Use 0xff for scientific notation.
+;
 ; Number of characters written is returned in A.
 ;
 ; It supports standard floating point format like 1.23 as well as
@@ -35,6 +37,7 @@ ISENOT: .res 1          ; Non-zero if output is 'E' notation
 ; of -4 and +7, scientific notation is used.  Otherwise, standard notation.
 
 FPOUT:
+    sta FPBASE + PREC   ; Store the precision
     lda #0
     sta FPBASE + IOEXPD ; Clear decimal exponent storage
     sta ISNEG           ; Clear sign indicator

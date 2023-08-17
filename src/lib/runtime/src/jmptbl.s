@@ -4,7 +4,7 @@
 .import absInt16, addInt16, divInt16, int16Sqr, modInt16, multInt16, subInt16, writeInt16
 .import eqInt16, leInt16, ltInt16, geInt16, gtInt16
 .import copyFPACCtoFPOP, FPADD, FPDIV, FPINP, FPMULT, FPOUT, FPSUB, floatAbs, PRECRD
-.import floatEq, floatGt, floatGte, floatLt, floatLte, floatToInt16, int16ToFloat
+.import floatEq, floatGt, floatGte, floatLt, floatLte, floatToInt16, int16ToFloat, getFPBUF
 .import incsp4, popeax, pushax, pusheax, popToReal, popToIntOp1, popToIntOp2
 .import pushAddrStack, pushByteStack, pushIntStack, pushFromIntOp1, pushRealStack
 .import readByteStack, readIntStack, readRealStack
@@ -82,3 +82,4 @@ jmp clearInputBuf   ; BASE + 186
 jmp readFloatFromInput  ; BASE + 189
 jmp readIntFromInput    ; BASE + 192
 jmp calcArrayOffset ; BASE + 195
+jmp getFPBUF    ; BASE + 198

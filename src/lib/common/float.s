@@ -14,7 +14,7 @@
 .endif
 .import readInt16, FPOUT, writeInt16, FPINP, MOVIND
 
-.export floatToInt16, int16ToFloat, copyFPACCtoFPOP
+.export floatToInt16, int16ToFloat, copyFPACCtoFPOP, FPBUF, getFPBUF
 
 .ifndef RUNTIME
 .bss
@@ -77,4 +77,11 @@ L2:
     sta FPBASE + TOPNT
     ldx #4              ; Copy 4 bytes
     jmp MOVIND
+.endproc
+
+; Returns a pointer to FPBUF in A/X
+.proc getFPBUF
+    lda #<FPBUF
+    ldx #>FPBUF
+    rts
 .endproc

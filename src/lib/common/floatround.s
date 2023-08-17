@@ -19,8 +19,10 @@
 ; It does this by calculating 0.51 / 10^precision then
 ; adding (for positive) or subtracting (for negative)
 ; to FPACC.
+;
+; The desired precision is passed in A.
 .proc PRECRD
-    lda FPBASE + PREC   ; Load precision in A
+    sta FPBASE + PREC   ; Load precision in A
     pha                 ; Store it on the stack
     lda #FPLSW          ; Pointer to FPACC LS byte
     sta FPBASE + FMPNT  ; Store in FMPNT

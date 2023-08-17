@@ -2,7 +2,7 @@
 .include "float.inc"
 .include "runtime.inc"
 
-.import getline, readInt16, FPINP
+.import getline, readInt16, FPINP, FPBUF
 
 .export clearInputBuf, isInputEndOfLine, readCharFromInput
 .export readFloatFromInput, readIntFromInput, inputBuf, inputBufUsed

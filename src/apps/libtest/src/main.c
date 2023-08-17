@@ -21,9 +21,9 @@ void testUint16(void);
 void main()
 {
     initInt16();
-    testInt16();
+    // testInt16();
     // testUint16();
-    // testReal();
+    testReal();
 
 #if 0
     unsigned int ch;

@@ -3,7 +3,8 @@
 .import popax, FPBASE, FPBUF, FPINP, FPOUT, floatEq, floatGt, floatGte, floatLt, floatLte, MOVIND, FPSUB, CALCPTR, FPADD, FPMULT, FPDIV
 .importzp ptr1, ptr2
 
-.export _floatStrTest, _saveOps
+.export _floatStrTest, _saveOps, _floatEq, _floatGt, _floatGte, _floatLt, _floatLte
+.export _floatAdd, _floatSub, _floatMult, _floatDiv
 
 .bss
 
@@ -13,7 +14,7 @@ buf: .res 4
 
 ; floatStrTest(const char *input, char *buffer, unsigned char precision)
 .proc _floatStrTest
-    sta FPBASE + PREC
+    pha             ; save the precision
     jsr popax
     sta buf
     stx buf + 1
@@ -33,6 +34,7 @@ L1:
     jmp L1
 L2:
     jsr FPINP
+    pla             ; pull the precision back off the stack
     jsr FPOUT
     lda #<FPBUF
     sta ptr1
