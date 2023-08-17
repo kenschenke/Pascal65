@@ -10,18 +10,16 @@
 .include "runtime.inc"
 .else
 .importzp ptr1, ptr2, intPtr
-.export FPBASE, FPBUF
 .endif
 .import readInt16, FPOUT, writeInt16, FPINP, MOVIND
 
 .export floatToInt16, int16ToFloat, copyFPACCtoFPOP, FPBUF, getFPBUF
+.export FPBASE, FPBUF
 
-.ifndef RUNTIME
 .bss
 
 FPBASE: .res 44
 FPBUF: .res FPBUFSZ
-.endif
 
 .code
 

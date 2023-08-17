@@ -5,12 +5,12 @@
 .ifdef RUNTIME
 .include "runtime.inc"
 .else
-.import intOp1, intOp2, FPBASE, currentNestingLevel
+.import intOp1, intOp2, currentNestingLevel
 .importzp sp, sreg, ptr1, ptr2, ptr3, tmp1, tmp2
 .export stackP
 .endif
 
-.import popeax, pusheax, incsp4
+.import FPBASE, popeax, pusheax, incsp4
 
 .export rtStackCleanup, rtStackInit, popAddrStack, pushIntStack, calcStackOffset, storeIntStack
 .export pushAddrStack, readIntStack, popToIntOp1, popToIntOp2, pushFromIntOp1, pushRealStack

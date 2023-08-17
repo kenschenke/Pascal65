@@ -10,9 +10,10 @@
 .ifdef RUNTIME
 .include "runtime.inc"
 .else
-.import FPBASE
 .importzp ptr1, ptr2
 .endif
+
+.import FPBASE
 
 .export ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM, CLRMEM, MOVIND, MOVIN, CALCPTR
 

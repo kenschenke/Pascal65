@@ -5,12 +5,8 @@
 ; by Robert Findley
 
 .include "float.inc"
-.ifdef RUNTIME
-.include "runtime.inc"
-.else
-.import FPBASE
-.endif
-.import ROTATR, ROTATL, COMPLM
+
+.import FPBASE, ROTATR, ROTATL, COMPLM
 
 .export FPNORM
 

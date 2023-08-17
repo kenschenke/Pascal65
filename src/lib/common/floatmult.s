@@ -6,13 +6,7 @@
 
 .include "float.inc"
 
-.ifdef RUNTIME
-.include "runtime.inc"
-.else
-.import FPBASE
-.endif
-
-.import CLRMEM, COMPLM, FPNORM, MOVIND, ADDER, ROTATR
+.import FPBASE, CLRMEM, COMPLM, FPNORM, MOVIND, ADDER, ROTATR
 
 .export FPMULT, EXMLDV, CKSIGN
 

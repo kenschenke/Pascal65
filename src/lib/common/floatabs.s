@@ -1,12 +1,6 @@
 .include "float.inc"
 
-.ifdef RUNTIME
-.include "runtime.inc"
-.else
-.import FPBASE
-.endif
-
-.import COMPLM
+.import FPBASE, COMPLM
 
 .export floatAbs
 
