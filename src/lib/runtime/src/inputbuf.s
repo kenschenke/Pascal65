@@ -145,14 +145,10 @@ L11:
 ; Reads an integer from inputBuf and returns it in A/X
 .proc readIntFromInput
     ; Clear intBuf
-    lda #<intBuf
-    sta ptr1
-    lda #>intBuf
-    sta ptr1 + 1
     ldy #6
     lda #0
 L1:
-    sta (ptr1),y
+    sta (intPtr),y
     dey
     bpl L1
 
@@ -162,7 +158,9 @@ L1:
     lda (ptr1),y
     cmp #'-'        ; Is the first character a dash?
     bne L2          ; Not a dash
-    sta intBuf      ; Store the minus sign in intBuf
+    ldy #0
+    sta (intPtr),y  ; Store the minus sign in intBuf
+    ldy inputPos    ; Load inputPos back into Y
     ldx #1          ; Start at the 2nd char in intBuf
     iny             ; Skip to the next character in the input buffer
     jmp L3          ; Start reading digits
@@ -176,7 +174,10 @@ L3:
     bcc L4          ; Done if character below '0'
     cmp #'9'+1
     bcs L4          ; Done if character after '9'
-    sta intBuf,x    ; Store the digit in intBuf
+    sty inputPos
+    txa
+    sta (intPtr),y  ; Store the digit in intBuf
+    ldy inputPos
     iny             ; Move to next character in input buffer
     inx             ; Move to next spot in intBuf
     cmp #7          ; End of intBuf?

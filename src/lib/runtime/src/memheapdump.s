@@ -2,7 +2,7 @@
 
 .include "cbm_kernal.inc"
 
-.import heapTop, writeInt16, _printz, intOp1, intBuf
+.import heapTop, writeInt16, _printz, intOp1, intPtr
 .importzp ptr1, ptr2
 
 .export dumpMAT, dumpHexByte
@@ -54,8 +54,8 @@ heapIndex: .res 1
     sta intOp1 + 1
     lda #2
     jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
+    lda intPtr
+    ldx intPtr + 1
     jsr _printz
     ; Print separators
     lda #':'
@@ -79,8 +79,8 @@ heapIndex: .res 1
     sta intOp1 + 1
     lda #4
     jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
+    lda intPtr
+    ldx intPtr + 1
     jsr _printz
     ; Print separator
     lda #' '

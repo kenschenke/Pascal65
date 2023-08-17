@@ -2,7 +2,8 @@
 
 .export _formatInt16, _leftPad, _printInt16
 
-.import intBuf, intOp1, writeInt16, _printz, popa, leftpad
+.importzp intPtr
+.import intOp1, writeInt16, _printz, popa, leftpad
 
 ; const char *formatInt16(int num)
 .proc _formatInt16
@@ -10,8 +11,8 @@
     stx intOp1 + 1
     lda #0
     jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
+    lda intPtr
+    ldx intPtr + 1
     rts
 .endproc
 
@@ -27,7 +28,7 @@
     sta intOp1
     stx intOp1 + 1
     jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
+    lda intPtr
+    ldx intPtr + 1
     jmp _printz
 .endproc

@@ -2,18 +2,25 @@
 .import geUint16, gtUint16, leUint16, ltUint16
 .import addInt16, divInt16, modInt16, multInt16, subInt16
 .import writeBool, writeChar, writeInt16, readInt16
-.import intOp1, intOp2, intBuf
+.import intOp1, intOp2
 .import getline
 .import popa, popax
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.import spcl32768
+.import spcl32768, _intBuffer
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.importzp ptr1, ptr2
+.importzp ptr1, ptr2, intPtr
 
 .export _testLt, _testEq, _testGt, _testLe, _testGe, _testGetLine
 .export _testAddInt16, _testDivInt16, _testSubInt16, _testModInt16, _testMultInt16
 .export _testWriteBool, _testWriteChar, _testWriteInt16, _testReadInt16
-.export _testUintGe, _testUintGt, _testUintLe, _testUintLt
+.export _testUintGe, _testUintGt, _testUintLe, _testUintLt, _initInt16
+
+.proc _initInt16
+    lda #<_intBuffer
+    sta intPtr
+    lda #>_intBuffer
+    sta intPtr + 1
+.endproc
 
 .proc _testAddInt16
     sta intOp2
@@ -194,16 +201,11 @@
     sta ptr2
     stx ptr2 + 1
 
-    lda #<intBuf
-    sta ptr1
-    lda #>intBuf
-    sta ptr1 + 1
-
-    ; set intBuf to 0s
+    ; set the integer buffer to 0s
     lda #0
     ldy #6
 L1:
-    sta (ptr1),y
+    sta (intPtr),y
     dey
     bne L1
 
@@ -212,7 +214,7 @@ L1:
 L2:
     lda (ptr2),y
     beq L3
-    sta (ptr1),y
+    sta (intPtr),y
     iny
     jmp L2
 

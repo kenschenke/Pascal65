@@ -1,5 +1,9 @@
 #include <stdio.h>
 
+char intBuffer[15];
+
+void initInt16(void);
+
 int testUintGe(unsigned num1, unsigned num2);
 int testUintGt(unsigned num1, unsigned num2);
 int testUintLe(unsigned num1, unsigned num2);
@@ -16,9 +20,10 @@ void testUint16(void);
 
 void main()
 {
-    // testInt16();
+    initInt16();
+    testInt16();
     // testUint16();
-    testReal();
+    // testReal();
 
 #if 0
     unsigned int ch;

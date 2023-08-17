@@ -3,7 +3,7 @@
 .import popax, FPBASE, FPBUF, FPINP, FPOUT, floatEq, floatGt, floatGte, floatLt, floatLte, MOVIND, FPSUB, CALCPTR, FPADD, FPMULT, FPDIV
 .importzp ptr1, ptr2
 
-.export _floatStrTest, _saveOps, _floatEq, _floatGt, _floatGte, _floatLt, _floatLte, _floatAdd, _floatDiv, _floatMult, _floatSub
+.export _floatStrTest, _saveOps
 
 .bss
 

@@ -1,5 +1,5 @@
-.import intBuf, intOp1, readInt16
-.importzp ptr1, ptr2
+.import intOp1, readInt16
+.importzp ptr1, intPtr
 
 .export _parseInt16
 
@@ -10,15 +10,11 @@
 .proc _parseInt16
     sta ptr1
     stx ptr1 + 1
-    lda #<intBuf
-    sta ptr2
-    lda #>intBuf
-    sta ptr2 + 1
 
     ldy #0
 L1:
     lda (ptr1),y
-    sta (ptr2),y
+    sta (intPtr),y
     beq L2
     iny
     jmp L1

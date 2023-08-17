@@ -3,6 +3,7 @@ OBJDIR := obj
 BINDIR := bin
 LIBDIR := ../../lib
 LIBCOMMONDIR := $(LIBDIR)/common
+LIBRUNTIMEDIR := $(LIBDIR)/runtime/src
 
 PROGRAM := libtest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
@@ -27,6 +28,10 @@ LDFLAGS =
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
+SOURCES += $(LIBRUNTIMEDIR)/exit.s
+SOURCES += $(LIBRUNTIMEDIR)/inputbuf.s
+SOURCES += $(LIBRUNTIMEDIR)/printz.s
+SOURCES += $(LIBRUNTIMEDIR)/rterror.s
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.c)
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.s)
 
@@ -59,6 +64,10 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath %.s $(LIBCOMMONDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.s $(LIBRUNTIMEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

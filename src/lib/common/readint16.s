@@ -1,8 +1,8 @@
 .ifdef RUNTIME
 .include "runtime.inc"
 .else
-.import intOp1, intBuf
-.importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
+.import intOp1
+.importzp ptr2, tmp1, tmp2, tmp3, tmp4, intPtr
 .endif
 .import tensTable, invertInt16
 
@@ -15,18 +15,12 @@
 ; It works by adding 1 for the number in the 1s place, 10 for the number in
 ; the 10s place, and so on.
 ;
-; ptr1 - zero page pointer to intBuf
 ; ptr2 - zero page pointer to tensTable
 ; tmp1 - contains a 1 if negative
 ; tmp2 - number of digits
 ; tmp3 - buffer index
 ; tmp4 - tensTable index
 .proc readInt16
-    ; initialize ptr1
-    lda #<intBuf
-    sta ptr1
-    lda #>intBuf
-    sta ptr1 + 1
     ; initialize ptr2
     lda #<tensTable
     sta ptr2
@@ -44,7 +38,7 @@
 
     ; look for a negative sign
     tay             ; initialize .Y to 0 as well
-    lda (ptr1),y
+    lda (intPtr),y
     cmp #'-'
     bne L1
     lda #1
@@ -56,7 +50,7 @@ L1:
     ldy tmp3
     cpy #7
     beq L2          ; maximum number of characters in number
-    lda (ptr1),y
+    lda (intPtr),y
     cmp #'0'-1
     bcc L2          ; non-digit
     cmp #'9'+1
@@ -82,7 +76,7 @@ L3:
     lda tmp2        ; check if all digits have been read
     beq L6          ; yes
     ldy tmp3        ; index into intBuf
-    lda (ptr1),y
+    lda (intPtr),y
     sec
     sbc #'0'        ; convert the character to a number
     tax             ; use the .X register to count for the loop

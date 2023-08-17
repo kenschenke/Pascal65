@@ -9,8 +9,7 @@
 .ifdef RUNTIME
 .include "runtime.inc"
 .else
-.import intBuf
-.importzp ptr1, ptr2
+.importzp ptr1, ptr2, intPtr
 .export FPBASE, FPBUF
 .endif
 .import readInt16, FPOUT, writeInt16, FPINP, MOVIND
@@ -36,22 +35,18 @@ FPBUF: .res FPBUFSZ
     sta ptr1
     lda #>FPBUF
     sta ptr1 + 1
-    lda #<intBuf
-    sta ptr2
-    lda #>intBuf
-    sta ptr2 + 1
     ldy #0
 L1:
     lda (ptr1),y
     beq L2
     cmp #'.'
     beq L2
-    sta (ptr2),y
+    sta (intPtr),y
     iny
     jmp L1
 L2:
     lda #0
-    sta (ptr2),y
+    sta (intPtr),y
     jmp readInt16
 .endproc
 
@@ -59,17 +54,13 @@ L2:
 .proc int16ToFloat
     lda #0
     jsr writeInt16
-    lda #<intBuf
-    sta ptr1
-    lda #>intBuf
-    sta ptr1 + 1
     lda #<FPBUF
     sta ptr2
     lda #>FPBUF
     sta ptr2 + 1
     ldy #0
 L1:
-    lda (ptr1),y
+    lda (intPtr),y
     beq L2
     sta (ptr2),y
     iny

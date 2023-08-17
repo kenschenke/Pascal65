@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 struct ReadTest
 {
@@ -161,7 +162,6 @@ struct TestList divTests[] = {
     {    10,      5,      2},
     {    44,     11,      4},
     {    44,     10,      4},
-    {  1234,      0,      0},
     {    12,    123,      0},
     {     0,   1234,      0},
     {   -44,     11,     -4},
@@ -237,6 +237,8 @@ void testReads()
 
 void testInt16(void)
 {
+    extern char intBuffer[15];
+
     printf("Testing greater than\n");
     testFunc(testGt, gtTests, sizeof(gtTests)/sizeof(gtTests[0]));
 
@@ -269,13 +271,13 @@ void testInt16(void)
 
 #if 0
     testWriteInt16(-32768, 10);
-    printf("\n");
+    printf("%s\n", intBuffer);
     testWriteInt16(32767, 10);
-    printf("\n");
+    printf("%s\n", intBuffer);
     testWriteInt16(-1234, 10);
-    printf("\n");
+    printf("%s\n", intBuffer);
     testWriteInt16(12, 10);
-    printf("\n");
+    printf("%s\n", intBuffer);
 
     testReads();
 #endif

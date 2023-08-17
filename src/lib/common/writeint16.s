@@ -3,8 +3,8 @@
 .ifdef RUNTIME
 .include "runtime.inc"
 .else
-.importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
-.import intBuf, intOp1, intOp2
+.importzp ptr1, ptr2, tmp1, tmp2, tmp3, tmp4, intPtr
+.import intOp1, intOp2
 .endif
 
 .import tensTable, spcl32768
@@ -39,9 +39,9 @@ NUM_WORDTBL = 8     ; four entries * 2 bytes
 .proc writeInt16
     ; See if the number is -32768 : a special case.
     sta tmp4
-    lda #<intBuf
+    lda intPtr
     sta ptr2
-    lda #>intBuf
+    lda intPtr + 1
     sta ptr2 + 1
     jsr clearbuf
     lda intOp1
@@ -155,13 +155,9 @@ NUM_WORDTBL = 8     ; four entries * 2 bytes
 
 @Done:
     ; count the length of the null-terminated string in intBuf
-    lda #<intBuf
-    sta ptr2
-    lda #>intBuf
-    sta ptr2 + 1
     ldy #0
 @L1:
-    lda (ptr2),y
+    lda (intPtr),y
     beq @PadStr
     iny
     jmp @L1

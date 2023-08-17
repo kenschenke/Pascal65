@@ -4,7 +4,8 @@
 .include "runtime.inc"
 .endif
 
-.export tensTable, spcl32768, intBuf, intOp1, intOp2, swapInt16
+.exportzp intPtr
+.export tensTable, spcl32768, intOp1, intOp2, swapInt16
 .export absInt16, swapInt16
 .export isNegInt16, invertInt16
 
@@ -21,12 +22,15 @@ spcl32768:
     .asciiz "-32768"
 
 .ifndef RUNTIME
+.zeropage
+
+intPtr: .res 2
+
 .bss
 
 ; Operands for 16-bit integer operations
 intOp1: .res 2
 intOp2: .res 2
-intBuf: .res 7
 .endif
 
 .code
