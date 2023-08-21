@@ -34,13 +34,13 @@ static TResWord rw3[] = {
 };
 
 static TResWord rw4[] = {
-    {"case", tcCASE}, {"else", tcELSE}, {"file", tcFILE},
-    {"goto", tcGOTO}, {"then", tcTHEN}, {"type", tcTYPE},
-    {"with", tcWITH}, {NULL},
+    {"case", tcCASE}, {"char", tcCHAR}, {"else", tcELSE}, {"file", tcFILE},
+    {"goto", tcGOTO}, {"real", tcREAL}, {"then", tcTHEN}, {"true", tcTRUE},
+    {"type", tcTYPE}, {"with", tcWITH}, {NULL},
 };
 
 static TResWord rw5[] = {
-    {"array", tcARRAY}, {"begin", tcBEGIN}, {"const", tcCONST},
+    {"array", tcARRAY}, {"begin", tcBEGIN}, {"const", tcCONST}, {"false", tcFALSE},
     {"label", tcLABEL}, {"until", tcUNTIL}, {"while", tcWHILE},
     {NULL},
 };
@@ -51,7 +51,7 @@ static TResWord rw6[] = {
 };
 
 static TResWord rw7[] = {
-    {"program", tcPROGRAM}, {NULL},
+    {"boolean", tcBOOLEAN}, {"integer", tcINTEGER}, {"program", tcPROGRAM}, {NULL},
 };
 
 static TResWord rw8[] = {

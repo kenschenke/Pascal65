@@ -67,10 +67,10 @@ char getChunkCopy(CHUNKNUM chunkNum, void *buffer);
 // Retrieves the data in the chunk and copies into
 // caller's buffer.  Buffer must be at least CHUNK_LEN long.
 // Zero is returned on failure.  Non-zero on success.
-char retrieveChunk(CHUNKNUM chunkNum, unsigned char *chunk);
+char retrieveChunk(CHUNKNUM chunkNum, void *chunk);
 
 // Stores the bytes in the chunk.
-char storeChunk(CHUNKNUM chunkNum, unsigned char *chunk);
+char storeChunk(CHUNKNUM chunkNum, void *chunk);
 
 void initChunkStorage(void);
 

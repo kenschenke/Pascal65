@@ -335,10 +335,6 @@ char searchSymtab(CHUNKNUM symtabChunkNum, SYMBNODE *pNode, const char *identifi
     return chunkNum ? 1 : 0;
 }
 
-void initSymtabsForParser(void) {
-    initStandardRoutines(symtabStack[0]);
-}
-
 static void setCurrentSymtab(CHUNKNUM symtabChunkNum) {
     symtabStack[currentNestingLevel] = symtabChunkNum;
 }

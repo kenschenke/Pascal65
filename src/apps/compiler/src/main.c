@@ -1,15 +1,24 @@
 #include <stdio.h>
-#include <ovrlcomp.h>
 #include <ovrlcommon.h>
 #include <cbm.h>
 #include <device.h>
 #include <conio.h>
+#include <common.h>
+#include <chunks.h>
+#include <parser.h>
+#include <semantic.h>
+#include <codegen.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
 
 void main()
 {
+    CHUNKNUM tokenId, astRoot;
+
+    initBlockStorage();
+    initCommon();
+
 #ifdef __C128__
     fast();
     videomode(VIDEOMODE_80x25);
@@ -17,9 +26,30 @@ void main()
 #endif
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
-    printf("Loading compiler overlay\n");
+    printf("Loading tokenizer overlay\n");
+
     if (loadfile("compiler.1")) {
-        overlayCompiler();
+        tokenId = tokenize("hello.pas");
+    }
+
+    printf("Loading parser overlay\n");
+    if (loadfile("compiler.2")) {
+        astRoot = parse(tokenId);
+        freeMemBuf(tokenId);
+    }
+
+    printf("Loading semantic overlay\n");
+    if (loadfile("compiler.3")) {
+        initSemantic();
+        init_scope_stack();
+        decl_resolve(astRoot, 0);
+        set_decl_offsets(astRoot, 0, 0);
+        decl_typecheck(astRoot);
+    }
+
+    printf("Loading code generation overlay\n");
+    if (loadfile("compiler.4")) {
+        genProgram(astRoot);
     }
 
     log("main", "back to main code");
@@ -38,4 +68,19 @@ unsigned char loadfile(const char *name)
 void log(const char *module, const char *message)
 {
     printf("%s: %s\n", module, message);
+}
+
+void logError(const char *message, unsigned lineNumber, TErrorCode ec)
+{
+    printf("*** ERROR: %s -- line %d -- code %d\n", message, lineNumber, ec);
+}
+
+void logFatalError(const char *message)
+{
+    printf("*** Fatal translation error: %s\n", message);
+}
+
+void logRuntimeError(const char *message, unsigned /*lineNumber*/)
+{
+    printf("*** Runtime error: %s\n", message);
 }

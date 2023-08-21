@@ -1,262 +1,269 @@
-#include <string.h>
-#include <common.h>
-#include <symtab.h>
 #include <parser.h>
-#include <parscommon.h>
+#include <ast.h>
+#include <common.h>
+#include <misc.h>
+#include <string.h>
 
-void checkForwardDeclaredParams(CHUNKNUM fwdParms, CHUNKNUM declParms) {
-    CHUNKNUM fwdChunkNum = fwdParms, declChunkNum = declParms;
-    SYMTABNODE fwdNode, declNode;
+CHUNKNUM parseBlock(void)
+{
+	struct stmt _stmt;
+	CHUNKNUM stmtChunk, decl = parseDeclarations();
 
-    while (fwdChunkNum) {
-        getChunkCopy(fwdChunkNum, &fwdNode);
-        getChunkCopy(declChunkNum, &declNode);
-        if (fwdNode.typeChunk != declNode.typeChunk) {
-            Error(errAlreadyForwarded);
-        }
+	resync(tlStatementStart, 0, 0);
+	if (parserToken != tcBEGIN) Error(errMissingBEGIN);
 
-        fwdChunkNum = fwdNode.nextNode;
-        declChunkNum = declNode.nextNode;
-    }
+	stmtChunk = stmtCreate(STMT_BLOCK, 0, parseCompound());
+	retrieveChunk(stmtChunk, &_stmt);
+	_stmt.decl = decl;
+	storeChunk(stmtChunk, &_stmt);
+	return stmtChunk;
 }
 
-void parseBlock(void) {
-    // declarations
-    parseDeclarations();
+CHUNKNUM parseFuncOrProcHeader(char isFunc)
+{
+	struct type _type;
+	CHUNKNUM name = 0, params = 0, returnChunk = 0;
 
-    // <compound-statement>   reset the icode and append BEGIN to it,
-    //                        and then parse the compound statement.
-    resync(tlStatementStart, NULL, NULL);
-    if (parserToken != tcBEGIN) Error(errMissingBEGIN);
+	getToken();
 
-    allocMemBuf(&routineNode.defn.routine.Icode);
-    saveSymbNodeDefn(&routineNode);
-    parseCompound(routineNode.defn.routine.Icode);
+	// <id>
+	if (parserToken == tcIdentifier) {
+		name = name_create(parserString);
+		getToken();
+	}
+	else {
+		Error(errMissingIdentifier);
+	}
+
+	// ( or : or ;
+	resync(isFunc ? tlFuncIdFollow : tlProgProcIdFollow,
+		tlDeclarationStart, tlStatementStart);
+
+	// Optional (<id-list>)
+	if (parserToken == tcLParen) {
+		params = parseFormalParmList();
+	}
+
+	if (isFunc) {
+		if (parserToken == tcColon) {
+			getToken();
+			if (parserToken == tcIdentifier) {
+				// The return type must be a declared type
+				returnChunk = typeCreate(TYPE_DECLARED, 0, 0, 0);
+				retrieveChunk(returnChunk, &_type);
+				_type.name = name_create(parserString);
+				storeChunk(returnChunk, &_type);
+			}
+			else {
+				// The return type should be one of the pre-defined Pascal types.
+				type_t type = 0;
+				switch (parserToken) {
+				case tcBOOLEAN: type = TYPE_BOOLEAN; break;
+				case tcCHAR: type = TYPE_CHARACTER; break;
+				case tcINTEGER: type = TYPE_INTEGER; break;
+				case tcREAL: type = TYPE_REAL; break;
+				default:
+					Error(errIncompatibleTypes);
+				}
+				returnChunk = typeCreate(type, 0, 0, 0);
+			}
+
+			getToken();
+		}
+		else {
+			Error(errMissingColon);
+		}
+	}
+
+	return declCreate(DECL_TYPE, name,
+		typeCreate(isFunc ? TYPE_FUNCTION : TYPE_PROCEDURE, 0, returnChunk, params),
+		0);
 }
 
-void parseFuncOrProcHeader(char isFunc) {
-    int parmCount;  // count of formal params
-    int totalParmSize;  // total byte size of all parameters
-    char forwardFlag = 0;
-    SYMBNODE typeId;
-    CHUNKNUM parmList;
+CHUNKNUM parseSubroutine(void)
+{
+	CHUNKNUM subChunk;
+	struct decl _decl;
+	struct type _type;
+	char isFunc;
 
-    getToken();
+	// <routine-header>
+	isFunc = parserToken == tcFUNCTION;
+	subChunk = parseFuncOrProcHeader(isFunc);
 
-    // <id>   If the routine id has already been declared in this scope,
-    //        it must have been a forward declaration.
-    if (parserToken == tcIdentifier) {
-        if (!symtabSearchLocal(&routineNode, parserString)) {
-            // Not already declared
-            symtabEnterLocal(&routineNode, parserString,
-                isFunc ? dcFunction : dcProcedure);
-            routineNode.defn.routine.totalLocalSize = 0;
-        } else {
-            if (routineNode.defn.how == isFunc ? dcFunction : dcProcedure && routineNode.defn.routine.which == rcForward) {
-                forwardFlag = 1;
-            } else {
-                Error(errRedefinedIdentifier);
-            }
-        }
+	// ;
+	resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
+	if (parserToken == tcSemicolon) {
+		getToken();
+	}
+	else if (tokenIn(parserToken, tlDeclarationStart) ||
+		tokenIn(parserToken, tlStatementStart)) {
+		Error(errMissingSemicolon);
+	}
 
-        getToken();
-    } else {
-        Error(errMissingIdentifier);
-    }
+	retrieveChunk(subChunk, &_decl);
 
-    // ( or : or ;
-    resync(isFunc ? tlFuncIdFollow : tlProgProcIdFollow,
-        tlDeclarationStart, tlStatementStart);
+	_type.flags = 0;
+	// <block> or forward
+	if (stricmp(parserString, "forward")) {
+		// Not a forward declaration
+		_decl.code = parseBlock();
+		storeChunk(subChunk, &_decl);
+	}
+	else {
+		getToken();
+		retrieveChunk(_decl.type, &_type);
+		_type.flags |= TYPE_FLAG_ISFORWARD;
+		storeChunk(_decl.type, &_type);
+	}
 
-    // Enter the next nesting level and open a new scope for the function
-    symtabStackEnterScope();
+	// If a function, add a variable to the function's local scope for the
+	// return value.
 
-    // Optional (<id-list>) : If there was a forward declaration, the
-    //                        parameter list must match with ones
-    //                        already forward-declared.
-    if (parserToken == tcLParen) {
-        parseFormalParmList(&parmList, &parmCount, &totalParmSize);
-        if (forwardFlag) {
-            if (parmCount != routineNode.defn.routine.parmCount) {
-                Error(errAlreadyForwarded);
-            }
-            checkForwardDeclaredParams(routineNode.defn.routine.locals.parmIds, parmList);
-        } else {
-            // Not forwarded
-            routineNode.defn.routine.parmCount = parmCount;
-            routineNode.defn.routine.totalParmSize = totalParmSize;
-            routineNode.defn.routine.locals.parmIds = parmList;
-        }
-    } else if (!forwardFlag) {
-        // No parameters and no forward declaration
-        routineNode.defn.routine.parmCount = 0;
-        routineNode.defn.routine.totalParmSize = 0;
-        routineNode.defn.routine.locals.parmIds = 0;
-    }
+	if (isFunc && !(_type.flags & TYPE_FLAG_ISFORWARD)) {
+		char name[CHUNK_LEN + 1];
+		CHUNKNUM declChunk, retDeclChunk, retnTypeChunk;
+		struct stmt _stmt;
+		struct decl subDecl;
+		struct type retnType;
+		retrieveChunk(_decl.code, &_stmt);
 
-    routineNode.defn.routine.locals.constantIds = 0;
-    routineNode.defn.routine.locals.typeIds = 0;
-    routineNode.defn.routine.locals.variableIds = 0;
-    routineNode.defn.routine.locals.routineIds = 0;
+		// Create a new declaration for the return variable
+		retrieveChunk(_decl.name, name);
+		retrieveChunk(_decl.type, &_type);
+		retrieveChunk(_type.subtype, &_type);
+		retnTypeChunk = typeCreate(_type.kind, 0, _type.subtype, 0);
+		retrieveChunk(retnTypeChunk, &retnType);
+		retnType.flags = TYPE_FLAG_ISRETVAL;
+		retnType.name = _type.name;
+		storeChunk(retnTypeChunk, &retnType);
+		retDeclChunk = declCreate(DECL_VARIABLE, name_create(name), retnTypeChunk, 0);
 
-    if (isFunc) {
-        // Optional <type-id> : If there was a forward declaration, there must
-        //                      not be a type id, but if there was, parse it
-        //                      anyway for error recovery.
-        if (!forwardFlag || parserToken == tcColon) {
-            condGetToken(tcColon, errMissingColon);
-            if (parserToken == tcIdentifier) {
-                symtabStackFind(parserString, &typeId);
-                if (typeId.defn.how != dcType) Error(errInvalidType);
-                if (forwardFlag) {
-                    Error(errAlreadyForwarded);
-                } else {
-                    setType(&routineNode.node.typeChunk, typeId.node.typeChunk);
-                }
+		if (_stmt.decl == 0) {
+			_stmt.decl = retDeclChunk;
+			storeChunk(_decl.code, &_stmt);
+		}
+		else {
+			declChunk = _stmt.decl;
+			while (1) {
+				retrieveChunk(declChunk, &subDecl);
+				if (!subDecl.next) {
+					subDecl.next = retDeclChunk;
+					storeChunk(declChunk, &subDecl);
+					break;
+				}
+				declChunk = subDecl.next;
+			}
+		}
+	}
 
-                getToken();
-            } else {
-                Error(errMissingIdentifier);
-                setType(&routineNode.node.typeChunk, dummyType);
-            }
-        }
-    } else {
-        setType(&routineNode.node.typeChunk, dummyType);
-    }
+	return subChunk;
 }
 
-void parseProgram(void) {
-    // <program-header>
-    parseProgramHeader();
+CHUNKNUM parseSubroutineDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
+{
+	struct decl _decl;
 
-    // ;
-    resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
-    if (parserToken == tcSemicolon) {
-        getToken();
-    } else if (tokenIn(parserToken, tlDeclarationStart) ||
-        tokenIn(parserToken, tlStatementStart)) {
-        Error(errMissingSemicolon);
-    }
+	// Loop to parse procedure and function definitions
+	while (tokenIn(parserToken, tlProcFuncStart)) {
+		CHUNKNUM subChunk = parseSubroutine();
 
-    // <block>
-    parseBlock();
-    symtabExitScope(&routineNode.defn.routine.symtab);
-    saveSymbNodeDefn(&routineNode);
+		// Link the routine to the rest of the declarations
+		if (*firstDecl) {
+			retrieveChunk(lastDecl, &_decl);
+			_decl.next = subChunk;
+			storeChunk(lastDecl, &_decl);
+		}
+		else {
+			*firstDecl = subChunk;
+		}
+		lastDecl = subChunk;
 
-    // .
-    resync(tlProgramEnd, NULL, NULL);
-    condGetTokenAppend(routineNode.defn.routine.Icode, tcPeriod, errMissingPeriod);
+		// semicolon
+		resync(tlDeclarationFollow, tlProcFuncStart, tlStatementStart);
+		if (parserToken == tcSemicolon) {
+			getToken();
+		} else if (tokenIn(parserToken, tlProcFuncStart) ||
+			tokenIn(parserToken, tlStatementStart)) {
+			Error(errMissingSemicolon);
+		}
+	}
+
+	return lastDecl;
 }
 
-void parseProgramHeader(void) {
-    SYMBNODE parmId, prevParmId;
+CHUNKNUM parseProgram(void)
+{
+	struct decl _decl;
+	CHUNKNUM progDecl = parseProgramHeader();
 
-    // PROGRAM
-    condGetToken(tcPROGRAM, errMissingPROGRAM);
+	// ;
+	resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
+	if (parserToken == tcSemicolon) {
+		getToken();
+	}
+	else if (tokenIn(parserToken, tlDeclarationStart) ||
+		tokenIn(parserToken, tlStatementStart)) {
+		Error(errMissingSemicolon);
+	}
 
-    // <id>
-    if (parserToken == tcIdentifier) {
-        symtabEnterNewLocal(&routineNode, parserString, dcProgram);
+	// <block>
+	retrieveChunk(progDecl, &_decl);
+	_decl.code = parseBlock();
+	storeChunk(progDecl, &_decl);
 
-        memset(&routineNode.defn, 0, sizeof(DEFN));
-        routineNode.defn.routine.which = rcDeclared;
-        setType(&routineNode.node.typeChunk, dummyType);
-        getToken();
-    } else {
-        Error(errMissingIdentifier);
-    }
+	// .
+	resync(tlProgramEnd, 0, 0);
+	condGetToken(tcPeriod, errMissingPeriod);
 
-    // ( or ;
-    resync(tlProgProcIdFollow, tlDeclarationStart, tlStatementStart);
-
-    // Enter the nesting level 1 and open a new scope for the program
-    symtabStackEnterScope();
-
-    // Optional (<id-list>)
-    if (parserToken == tcLParen) {
-        // Loop to parse a comma-separated identifier list.
-        do {
-            getToken();
-            if (parserToken == tcIdentifier) {
-                symtabEnterNewLocal(&parmId, parserString, dcVarParm);
-                setType(&parmId.node.typeChunk, dummyType);
-                saveSymbNodeOnly(&parmId);
-                getToken();
-
-                // Link program parm id nodes together
-                if (!routineNode.defn.routine.locals.parmIds) {
-                    routineNode.defn.routine.locals.parmIds = parmId.node.nodeChunkNum;
-                } else {
-                    prevParmId.node.nextNode = parmId.node.nodeChunkNum;
-                    saveSymbNodeOnly(&prevParmId);
-                }
-                memcpy(&prevParmId, &parmId, sizeof(SYMBNODE));
-            } else {
-                Error(errMissingIdentifier);
-            }
-        } while (parserToken == tcComma);
-
-        // )
-        resync(tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
-        condGetToken(tcRParen, errMissingRightParen);
-    }
+	return progDecl;
 }
 
-void parseSubroutineDeclarations(void) {
-    CHUNKNUM parentRtnId, childRtnId, lastId = 0;
+CHUNKNUM parseProgramHeader(void)
+{
+	CHUNKNUM paramList = 0, progName;
 
-    saveSymbNode(&routineNode);
-    parentRtnId = routineNode.node.nodeChunkNum;
+	condGetToken(tcPROGRAM, errMissingPROGRAM);
 
-    // Loop to parse procedure and function definitions
-    while (tokenIn(parserToken, tlProcFuncStart)) {
-        parseSubroutine();
-        childRtnId = routineNode.node.nodeChunkNum;
+	if (parserToken != tcIdentifier) {
+		Error(errMissingIdentifier);
+	}
 
-        // Link the routine's local (nested) routine id nodes together.
-        loadSymbNode(parentRtnId, &routineNode);
-        if (!routineNode.defn.routine.locals.routineIds) {
-            routineNode.defn.routine.locals.routineIds = childRtnId;
-            saveSymbNode(&routineNode);
-        } else {
-            ((SYMTABNODE *)getChunk(lastId))->nextNode = childRtnId;
-        }
-        lastId = childRtnId;
+	// parserString contains name of program
+	progName = name_create(parserString);
 
-        // semicolon
-        resync(tlDeclarationFollow, tlProcFuncStart, tlStatementStart);
-        if (parserToken == tcSemicolon) {
-            getToken();
-        } else if (tokenIn(parserToken, tlProcFuncStart) ||
-            tokenIn(parserToken, tlStatementStart)) {
-            Error(errMissingSemicolon);
-        }
-    }
-}
+	// ( or ;
+	getToken();
+	resync(tlProgProcIdFollow, tlDeclarationStart, tlStatementStart);
 
-void parseSubroutine(void) {
-    // <routine-header>
-    parseFuncOrProcHeader(parserToken == tcFUNCTION);
+	// Optional (file list)
+	if (parserToken == tcLParen) {
+		CHUNKNUM lastArg = 0;
+		do {
+			struct param_list param;
+			CHUNKNUM argChunk;
 
-    // ;
-    resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
-    if (parserToken == tcSemicolon) {
-        getToken();
-    } else if (tokenIn(parserToken, tlDeclarationStart) ||
-        tokenIn(parserToken, tlStatementStart)) {
-        Error(errMissingSemicolon);
-    }
+			getToken();
+			argChunk = param_list_create(parserString, 0, 0);
+			if (!paramList) {
+				paramList = argChunk;
+				lastArg = paramList;
+			}
+			else {
+				retrieveChunk(lastArg, &param);
+				param.next = argChunk;
+				storeChunk(lastArg, &param);
+				lastArg = argChunk;
+			}
+			getToken();
+		} while (parserToken == tcComma);
 
-    // <block> or forward
-    if (stricmp(parserString, "forward")) {
-        routineNode.defn.routine.which = rcDeclared;
-        saveSymbNode(&routineNode);
-        parseBlock();
-    } else {
-        getToken();
-        routineNode.defn.routine.which = rcForward;
-        saveSymbNode(&routineNode);
-    }
+		// )
+		resync(tlFormalParmsFollow, tlDeclarationStart, tlStatementStart);
+		condGetToken(tcRParen, errMissingRightParen);
+	}
 
-    symtabExitScope(&routineNode.defn.routine.symtab);
+	return declCreate(DECL_TYPE, progName,
+		typeCreate(TYPE_PROGRAM, 0, 0, paramList),
+		0);
 }

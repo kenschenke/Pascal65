@@ -10,463 +10,367 @@
  * https://opensource.org/licenses/MIT
  */
 
-#include <parser.h>
-#include <error.h>
-#include <icode.h>
-#include <parscommon.h>
 #include <string.h>
+#include <parser.h>
+#include <ast.h>
+#include <common.h>
 
-void parseAssignment(SYMBNODE *pTargetNode, CHUNKNUM Icode)
+CHUNKNUM parseAssignment(CHUNKNUM nameChunk)
 {
-    CHUNKNUM exprTypeChunk, targetTypeChunk;
+	CHUNKNUM exprChunk, target = parseVariable(nameChunk);
 
-    targetTypeChunk = parseVariable(Icode, pTargetNode);
+	// :=
+	resync(tlColonEqual, tlExpressionStart, 0);
+	condGetToken(tcColonEqual, errMissingColonEqual);
 
-    // :=
-    resync(tlColonEqual, tlExpressionStart, NULL);
-    condGetTokenAppend(Icode, tcColonEqual, errMissingColonEqual);
+	// <expr>
+	exprChunk = parseExpression();
 
-    // <expr>
-    exprTypeChunk = parseExpression(Icode);
-
-    // Check for assignment compatibility
-    checkAssignmentCompatible(targetTypeChunk, exprTypeChunk, errIncompatibleAssignment);
+	return exprCreate(EXPR_ASSIGN, target, exprChunk, 0, 0);
 }
 
-void parseCASE(CHUNKNUM Icode) {
-    TTYPE exprType;
-    int value;
-    CHUNKNUM exprTypeChunk, caseItems;
-    char caseBranchFlag;  // true if another CASE branch, else false
-    MEMBUF_LOCN locnFollow, locnBranchTable, locnBranchStmt;
-
-    allocMemBuf(&caseItems);
-
-    putLocationMarker(Icode, &locnFollow);
-    putLocationMarker(Icode, &locnBranchTable);
-
-    // <expr>
-    getTokenAppend(Icode);
-    exprTypeChunk = parseExpression(Icode);
-    retrieveChunk(exprTypeChunk, (unsigned char *)&exprType);
-    exprTypeChunk = getBaseType(&exprType);
-
-    // Verify the type of the case expression
-    if (exprTypeChunk != integerType &&
-        exprTypeChunk != charType &&
-        exprType.form != fcEnum) {
-        Error(errIncompatibleTypes);
-    }
-
-    // OF
-    resync(tlOF, tlCaseLabelStart, NULL);
-    condGetTokenAppend(Icode, tcOF, errMissingOF);
-
-    // Loop to parse CASE branches
-    caseBranchFlag = tokenIn(parserToken, tlCaseLabelStart);
-    while (caseBranchFlag) {
-        if (tokenIn(parserToken, tlCaseLabelStart)) parseCaseBranch(Icode, exprTypeChunk, caseItems);
-
-        if (parserToken == tcSemicolon) {
-            getTokenAppend(Icode);
-            caseBranchFlag = 1;
-        } else if (tokenIn(parserToken, tlCaseLabelStart)) {
-            Error(errMissingSemicolon);
-            caseBranchFlag = 1;
-        } else {
-            caseBranchFlag = 0;
-        }
-    }
-
-    // Append the branch table to the intermediate code.
-    fixupLocationMarker(Icode, &locnBranchTable);
-
-    /**
-     * At this point the case items buffer contains a list of case labels
-     * and Icode locations for their branch's code.  The code needs to loop
-     * through the buffer and write the items to the ICode then destroy the
-     * buffer.  A "zero" value needs to be written at the end of the items table.
-     */
-
-    setMemBufPos(caseItems, 0);
-    while (!isMemBufAtEnd(caseItems)) {
-        getCaseItem(caseItems, &value, &locnBranchStmt);
-        putCaseItem(Icode, value, &locnBranchStmt);
-    }
-    freeMemBuf(caseItems);
-    putCaseItem(Icode, 0, NULL);
-
-    // END
-    resync(tlEND, tlStatementStart, NULL);
-    condGetTokenAppend(Icode, tcEND, errMissingEND);
-    fixupLocationMarker(Icode, &locnFollow);
-}
-
-void parseCaseBranch(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) {
-    char caseLabelFlag;  // true if another CASE label, else false
-    MEMBUF_LOCN locn, stmtLocn;
-    unsigned thisLocn;
-    int value;
-
-    // <case-label-list>
-    do {
-        parseCaseLabel(Icode, exprTypeChunk, caseItems);
-        if (parserToken == tcComma) {
-            // Saw comma, look for another CASE label
-            getTokenAppend(Icode);
-            if (tokenIn(parserToken, tlCaseLabelStart)) caseLabelFlag = 1;
-            else {
-                Error(errMissingConstant);
-                caseLabelFlag = 0;
-            }
-        } else {
-            caseLabelFlag = 0;
-        }
-    } while (caseLabelFlag);
-
-    // :
-    resync(tlColon, tlStatementStart, NULL);
-    condGetTokenAppend(Icode, tcColon, errMissingColon);
-
-    /**
-     * The code needs to loop through the items in the case item buffer
-     * and fill in the current ICode location for each item with a
-     * "zero" location.  These were just added while parsing the labels
-     * for the current branch.
-     */
-
-    getMemBufLocn(Icode, &stmtLocn);
-    setMemBufPos(caseItems, 0);
-    while (!isMemBufAtEnd(caseItems)) {
-        thisLocn = getMemBufPos(caseItems) + sizeof(int);
-        getCaseItem(caseItems, &value, &locn);
-        if (locn.chunkNum == 0) {
-            setMemBufPos(caseItems, thisLocn);
-            writeToMemBuf(caseItems, &stmtLocn, sizeof(MEMBUF_LOCN));
-        }
-    }
-
-    // <stmt>
-    parseStatement(Icode);
-}
-
-void parseCaseLabel(CHUNKNUM Icode, CHUNKNUM exprTypeChunk, CHUNKNUM caseItems) {
-    char signFlag = 0;  // true if unary sign, else false
-    int value;
-    TTYPE labelType;
-    SYMBNODE node;
-    MEMBUF_LOCN locn;
-
-    memset(&locn, 0, sizeof(MEMBUF_LOCN));
-
-    // Unary + or -
-    if (tokenIn(parserToken, tlUnaryOps)) {
-        signFlag = 1;
-        getTokenAppend(Icode);
-    }
-
-    /**
-     * This function is called for each "label" in a case branch.
-     * i.e. Case 5, 6, 7:
-     * 
-     * It needs to parse the label and add an item to the caseItems buffer.
-     * The item will have a zero location because the code does not yet know
-     * the ICode location for the end of the case label.
-     */
-
-    switch (parserToken) {
-        // Identifier
-        case tcIdentifier:
-            if (!symtabStackSearchAll(parserString, &node)) {
-                Error(errUndefinedIdentifier);
-            }
-            retrieveChunk(node.node.typeChunk, (unsigned char *)&labelType);
-            putSymtabNodeToIcode(Icode, &node);
-
-            if (node.defn.how != dcUndefined) {
-                if (labelType.form == fcSubrange && labelType.subrange.baseType) {
-                    retrieveChunk(labelType.subrange.baseType, (unsigned char *)&labelType);
-                }
-            } else {
-                node.defn.how = dcConstant;
-                setType(&node.node.typeChunk, dummyType);
-                saveSymbNode(&node);
-                retrieveChunk(dummyType, (unsigned char *)&labelType);
-            }
-
-            if (exprTypeChunk != labelType.nodeChunkNum) {
-                Error(errIncompatibleTypes);
-            }
-
-            // Only an integer constant can have a unary sign
-            if (signFlag && labelType.nodeChunkNum != integerType) {
-                Error(errInvalidConstant);
-            }
-
-            // Set the label value into the CASE item
-            if (labelType.nodeChunkNum == integerType ||
-                labelType.form == fcEnum) {
-                value = signFlag ?
-                    -node.defn.constant.value.integer :
-                    node.defn.constant.value.integer;
-            } else {
-                value = node.defn.constant.value.character;
-            }
-
-            getTokenAppend(Icode);
-            break;
-
-        // Number - Both the label and the CASE expression must be an integer.
-        case tcNumber:
-            if (parserType != tyInteger) Error(errInvalidConstant);
-            if (exprTypeChunk != integerType) Error(errIncompatibleTypes);
-
-            if (!symtabStackSearchAll(parserString, &node)) {
-                symtabEnterLocal(&node, parserString, dcUndefined);
-                setType(&node.node.typeChunk, integerType);
-                node.defn.constant.value.integer = parserValue.integer;
-                saveSymbNode(&node);
-            }
-            putSymtabNodeToIcode(Icode, &node);
-
-            // Set the label value into the CASE item
-            value = signFlag ?
-                -node.defn.constant.value.integer :
-                node.defn.constant.value.integer;
-
-            getTokenAppend(Icode);
-            break;
-        
-        // String - must be a single character without a unary sign
-        case tcString:
-            if (signFlag || strlen(parserString) != 3) {
-                Error(errInvalidConstant);
-            }
-            if (exprTypeChunk != charType) Error(errIncompatibleTypes);
-
-            if (!symtabStackSearchAll(parserString, &node)) {
-                symtabEnterNewLocal(&node, parserString, dcUndefined);
-                setType(&node.node.typeChunk, charType);
-                node.defn.constant.value.character = parserString[1];
-                saveSymbNode(&node);
-            }
-            putSymtabNodeToIcode(Icode, &node);
-
-            // Set the label value into the CASE item
-            value = parserString[1];
-
-            getTokenAppend(Icode);
-            break;
-    }
-
-    putCaseItem(caseItems, value, &locn);
-}
-
-void parseCompound(CHUNKNUM Icode) {
-    getTokenAppend(Icode);
-
-    // <stmt-list>
-    parseStatementList(Icode, tcEND);
-
-    condGetTokenAppend(Icode, tcEND, errMissingEND);
-}
-
-void parseFOR(CHUNKNUM Icode) {
-    CHUNKNUM exprTypeChunk, expr2TypeChunk;
-    TTYPE controlType;
-    SYMBNODE node;
-    MEMBUF_LOCN locn;
-
-    putLocationMarker(Icode, &locn);
-
-    // <id>
-    getTokenAppend(Icode);
-    if (parserToken == tcIdentifier) {
-        // Verify the definition and type of the control id
-        symtabStackFind(parserString, &node);
-        memcpy(&controlType, &node.type, sizeof(TTYPE));
-        if (node.defn.how != dcUndefined) {
-            if (controlType.form == fcSubrange && controlType.subrange.baseType) {
-                retrieveChunk(controlType.subrange.baseType, (unsigned char *)&controlType);
-            }
-        } else {
-            node.defn.how = dcVariable;
-            retrieveChunk(integerType, (unsigned char *)&controlType);
-            node.node.typeChunk = integerType;
-            saveSymbNode(&node);
-        }
-        if (controlType.nodeChunkNum != integerType &&
-            controlType.nodeChunkNum != charType &&
-            controlType.form != fcEnum) {
-            Error(errIncompatibleTypes);
-            retrieveChunk(integerType, (unsigned char *)&controlType);
-        }
-
-        putSymtabNodeToIcode(Icode, &node);
-        getTokenAppend(Icode);
-    } else {
-        Error(errMissingIdentifier);
-    }
-
-    // :=
-    resync(tlColonEqual, tlExpressionStart, NULL);
-    condGetTokenAppend(Icode, tcColonEqual, errMissingColonEqual);
-
-    // <expr-1>
-    exprTypeChunk = parseExpression(Icode);
-    checkAssignmentCompatible(node.node.typeChunk, exprTypeChunk, errIncompatibleTypes);
-
-    // TO or DOWNTO
-    resync(tlTODOWNTO, tlExpressionStart, NULL);
-    if (tokenIn(parserToken, tlTODOWNTO)) getTokenAppend(Icode);
-    else Error(errMissingTOorDOWNTO);
-
-    // <expr-2>
-    expr2TypeChunk = parseExpression(Icode);
-    checkAssignmentCompatible(controlType.nodeChunkNum, expr2TypeChunk, errIncompatibleTypes);
-
-    // DO
-    resync(tlDO, tlStatementStart, NULL);
-    condGetTokenAppend(Icode, tcDO, errMissingDO);
-
-    // <stmt>
-    parseStatement(Icode);
-    fixupLocationMarker(Icode, &locn);
-}
-
-void parseIF(CHUNKNUM Icode) {
-    CHUNKNUM resultType;
-    MEMBUF_LOCN falseLocn, followLocn;
-
-    // Append a placeholder location marker for where to go to if
-    // <expr> is false and another marker for the statement following
-    // the IF statement
-    putLocationMarker(Icode, &falseLocn);
-    putLocationMarker(Icode, &followLocn);
-
-    // <expr> : must be boolean
-    getTokenAppend(Icode);
-    resultType = parseExpression(Icode);
-    checkBoolean(resultType, 0);
-
-    // THEN
-    resync(tlTHEN, tlStatementStart, NULL);
-    condGetTokenAppend(Icode, tcTHEN, errMissingTHEN);
-
-    // <stmt-1>
-    parseStatement(Icode);
-    fixupLocationMarker(Icode, &falseLocn);
-
-    if (parserToken == tcELSE) {
-        // Append a placeholder location marker for the token that
-        // follows the IF statement. Remember the location of this
-        // placeholder so it can be fixed up later.
-
-        // ELSE <stmt-2>
-        getTokenAppend(Icode);
-        parseStatement(Icode);
-        fixupLocationMarker(Icode, &followLocn);
-    }
-}
-
-void parseREPEAT(CHUNKNUM Icode) {
-    CHUNKNUM resultType;
-
-    getTokenAppend(Icode);
-
-    // <stmt-list>
-    parseStatementList(Icode, tcUNTIL);
-
-    // UNTIL
-    condGetTokenAppend(Icode, tcUNTIL, errMissingUNTIL);
-
-    // <expr>
-    insertLineMarker(Icode);
-    resultType = parseExpression(Icode);
-    checkBoolean(resultType, 0);
-}
-
-void parseStatement(CHUNKNUM Icode)
+CHUNKNUM parseCASE(void)
 {
-    SYMBNODE node;
+	char caseBranchFlag;
+	CHUNKNUM exprChunk, caseChunk = 0, firstCase = 0, lastCase = 0;
+	struct stmt _stmt;
 
-    insertLineMarker(Icode);
+	// CASE
+	getToken();
 
-    // Call the appropriate parsing function based on
-    // the statement's first token.
-    switch (parserToken) {
-        case tcIdentifier:
-            // Search for the identifier and enter it if
-            // necessary.  Append the symbol table node handle
-            // to the icode.
-            findSymtabNode(&node, parserString);
-            putSymtabNodeToIcode(Icode, &node);
+	// <expr>
+	exprChunk = parseExpression();
 
-            // Based on how the identifier is defined,
-            // parse an assignment statement or procedure call.
-            if (node.defn.how == dcUndefined) {
-                node.defn.how = dcVariable;
-                setType(&node.node.typeChunk, dummyType);
-                saveSymbNode(&node);
-                parseAssignment(&node, Icode);
-            } else if (node.defn.how == dcProcedure) {
-                parseSubroutineCall(node.node.nodeChunkNum, 1, Icode);
-            } else {
-                parseAssignment(&node, Icode);
-            }
-            break;
+	// OF
+	resync(tlOF, tlCaseLabelStart, 0);
+	condGetToken(tcOF, errMissingOF);
 
-        case tcREPEAT: parseREPEAT(Icode); break;
-        case tcWHILE: parseWHILE(Icode); break;
-        case tcIF: parseIF(Icode); break;
-        case tcFOR: parseFOR(Icode); break;
-        case tcCASE: parseCASE(Icode); break;
-        case tcBEGIN: parseCompound(Icode); break;
-    }
+	// Loop to parse CASE branches
+	caseBranchFlag = tokenIn(parserToken, tlCaseLabelStart);
+	while (caseBranchFlag) {
+		if (tokenIn(parserToken, tlCaseLabelStart)) {
+			caseChunk = parseCaseBranch();
+		}
+		else {
+			caseChunk = 0;
+		}
 
-    // Resync at a proper statement ending
-    if (parserToken != tcEndOfFile) {
-        resync(tlStatementFollow, tlStatementStart, NULL);
-    }
+		if (firstCase) {
+			retrieveChunk(lastCase, &_stmt);
+			_stmt.next = caseChunk;
+			storeChunk(lastCase, &_stmt);
+		}
+		else {
+			firstCase = caseChunk;
+		}
+		lastCase = caseChunk;
+
+		if (parserToken == tcSemicolon) {
+			caseBranchFlag = 1;
+			getToken();
+		}
+		else if (tokenIn(parserToken, tlCaseLabelStart)) {
+			Error(errMissingSemicolon);
+			caseBranchFlag = 1;
+		}
+		else {
+			caseBranchFlag = 0;
+		}
+	}
+
+	// END
+	resync(tlEND, tlStatementStart, 0);
+	condGetToken(tcEND, errMissingEND);
+
+	return stmtCreate(STMT_CASE, exprChunk, firstCase);
 }
 
-void parseStatementList(CHUNKNUM Icode, TTokenCode terminator) {
-    // Loop to parse statements and to check for and skip semicolons
+CHUNKNUM parseCaseBranch(void)
+{
+	char caseLabelFlag;
+	struct expr _expr;
+	CHUNKNUM firstLabel = 0, labelChunk = 0, lastLabel = 0;
 
-    do {
-        parseStatement(Icode);
+	// <case-label-list>
+	do {
+		labelChunk = parseCaseLabel();
+		if (firstLabel) {
+			retrieveChunk(lastLabel, &_expr);
+			_expr.right = labelChunk;
+			storeChunk(lastLabel, &_expr);
+		}
+		else {
+			firstLabel = labelChunk;
+		}
+		lastLabel = labelChunk;
+		if (parserToken == tcComma) {
+			// Saw comma, look for another case label
+			getToken();
+			if (tokenIn(parserToken, tlCaseLabelStart)) caseLabelFlag = 1;
+			else {
+				Error(errMissingConstant);
+				caseLabelFlag = 0;
+			}
+		}
+		else {
+			caseLabelFlag = 0;
+		}
+	} while (caseLabelFlag);
 
-        if (tokenIn(parserToken, tlStatementStart)) {
-            Error(errMissingSemicolon);
-        } else if (tokenIn(parserToken, tlStatementListNotAllowed)) {
-            Error(errUnexpectedToken);
-        } else while (parserToken == tcSemicolon) {
-            getTokenAppend(Icode);
-        }
-    } while (parserToken != terminator && parserToken != tcEndOfFile);
+	// :
+	resync(tlColon, tlStatementStart, 0);
+	condGetToken(tcColon, errMissingColon);
+
+	return stmtCreate(STMT_CASE_LABEL, firstLabel, parseStatement());
 }
 
-void parseWHILE(CHUNKNUM Icode) {
-    CHUNKNUM resultType;
-    MEMBUF_LOCN locn;
-    putLocationMarker(Icode, &locn);
+CHUNKNUM parseCaseLabel(void)
+{
+	struct expr _expr;
+	char signFlag = 0;  // non-zero if unary sign, else zero
+	CHUNKNUM exprChunk;
 
-    // Append a placeholder location marker for the token that
-    // follows the WHILE statement. Remember the location of this
-    // placeholder so it can be fixed up below.
+	// Unary + or -
+	if (tokenIn(parserToken, tlUnaryOps)) {
+		signFlag = 1;
+		getToken();
+	}
 
-    // <expr> : must be boolean
-    getTokenAppend(Icode);
-    resultType = parseExpression(Icode);
-    checkBoolean(resultType, 0);
+	if (parserToken == tcIdentifier && signFlag) {
+		Error(errInvalidConstant);
+	}
 
-    // DO
-    resync(tlDO, tlStatementStart, NULL);
-    condGetTokenAppend(Icode, tcDO, errMissingDO);
+	exprChunk = parseExpression();
+	retrieveChunk(exprChunk, &_expr);
+	switch (_expr.kind) {
+	case EXPR_INTEGER_LITERAL:
+		if (signFlag) {
+			_expr.value.integer = -_expr.value.integer;
+			storeChunk(exprChunk, &_expr);
+		}
+		break;
+	}
 
-    // <stmt>
-    parseStatement(Icode);
-    fixupLocationMarker(Icode, &locn);
+	return exprChunk;
 }
 
+CHUNKNUM parseCompound(void)
+{
+	CHUNKNUM code;
 
+	getToken();
+	
+	code = parseStatementList(tcEND);
+
+	condGetToken(tcEND, errMissingEND);
+
+	return code;
+}
+
+CHUNKNUM parseFOR(void)
+{
+	char isDownTo;
+	struct stmt _stmt;
+	CHUNKNUM controlChunk = 0, initExpr, exitExpr, stmtChunk;
+
+	// FOR
+	getToken();
+
+	// <id>
+	if (parserToken == tcIdentifier) {
+		controlChunk = exprCreate(EXPR_NAME, 0, 0, name_create(parserString), 0);
+		getToken();
+	}
+	else {
+		Error(errMissingIdentifier);
+	}
+
+	// :=
+	resync(tlColonEqual, tlExpressionStart, 0);
+	condGetToken(tcColonEqual, errMissingColonEqual);
+
+	// <init-expr>
+	initExpr = exprCreate(EXPR_ASSIGN, controlChunk, parseExpression(), 0, 0);
+
+	// TO or DOWNTO
+	resync(tlTODOWNTO, tlExpressionStart, 0);
+	if (parserToken == tcTO) {
+		isDownTo = 0;
+	}
+	else if (parserToken == tcDOWNTO) {
+		isDownTo = 1;
+	}
+	else {
+		Error(errMissingTOorDOWNTO);
+	}
+	getToken();
+
+	// <exit-expr>
+	exitExpr = parseExpression();
+
+	// DO
+	resync(tlDO, tlStatementStart, 0);
+	condGetToken(tcDO, errMissingDO);
+
+	// <stmt>
+	stmtChunk = stmtCreate(STMT_FOR, 0, parseStatement());
+	retrieveChunk(stmtChunk, &_stmt);
+	_stmt.init_expr = initExpr;
+	_stmt.to_expr = exitExpr;
+	_stmt.isDownTo = isDownTo;
+	storeChunk(stmtChunk, &_stmt);
+	return stmtChunk;
+}
+
+CHUNKNUM parseIF(void)
+{
+	struct stmt _stmt;
+	CHUNKNUM exprChunk, trueChunk, falseChunk=0, stmtChunk;
+
+	// IF
+	getToken();
+
+	// <expr>
+	exprChunk = parseExpression();
+
+	// THEN
+	resync(tlTHEN, tlStatementStart, 0);
+	condGetToken(tcTHEN, errMissingTHEN);
+
+	// <stmt-if-true>
+	trueChunk = parseStatement();
+
+	if (parserToken == tcELSE) {
+		// ELSE
+		getToken();
+		// <stmt-if-false>
+		falseChunk = parseStatement();
+	}
+
+	stmtChunk = stmtCreate(STMT_IF_ELSE, exprChunk, trueChunk);
+	retrieveChunk(stmtChunk, &_stmt);
+	_stmt.else_body = falseChunk;
+	storeChunk(stmtChunk, &_stmt);
+	return stmtChunk;
+}
+
+CHUNKNUM parseREPEAT(void)
+{
+	CHUNKNUM stmtList;
+
+	// REPEAT
+	getToken();
+
+	// <stmt-list>
+	stmtList = parseStatementList(tcUNTIL);
+
+	// UNTIL
+	condGetToken(tcUNTIL, errMissingUNTIL);
+
+	// <stmt>
+	return stmtCreate(STMT_REPEAT, parseExpression(), stmtList);
+}
+
+CHUNKNUM parseStatement(void)
+{
+	CHUNKNUM stmtChunk = 0;
+
+	switch (parserToken) {
+		case tcIdentifier: {
+			CHUNKNUM nameChunk = name_create(parserString);
+			getToken();
+			if (parserToken == tcLParen || parserToken == tcSemicolon) {
+				// procedure/function call
+				char isWriteWriteln =
+					(strcmp(parserString, "write") == 0 ||
+						strcmp(parserString, "writeln") == 0) ? 1 : 0;
+				stmtChunk = stmtCreate(STMT_EXPR, parseSubroutineCall(nameChunk, isWriteWriteln),
+					0);
+			}
+			else {
+				// assignment
+				stmtChunk = stmtCreate(STMT_EXPR, parseAssignment(nameChunk), 0);
+			}
+			break;
+		}
+
+		case tcBEGIN:
+			stmtChunk = parseCompound();
+			break;
+
+		case tcIF:
+			stmtChunk = parseIF();
+			break;
+
+		case tcFOR:
+			stmtChunk = parseFOR();
+			break;
+
+		case tcREPEAT:
+			stmtChunk = parseREPEAT();
+			break;
+
+		case tcWHILE:
+			stmtChunk = parseWHILE();
+			break;
+
+		case tcCASE:
+			stmtChunk = parseCASE();
+			break;
+	}
+
+	if (parserToken != tcEndOfFile) {
+		resync(tlStatementFollow, tlStatementStart, 0);
+	}
+
+	return stmtChunk;
+}
+
+CHUNKNUM parseStatementList(TTokenCode terminator)
+{
+	struct stmt _stmt;
+	CHUNKNUM lastStmt, firstStmt = 0;
+
+	do {
+		CHUNKNUM stmtChunk = parseStatement();
+
+		if (tokenIn(parserToken, tlStatementStart)) {
+			Error(errMissingSemicolon);
+		}
+		else if (tokenIn(parserToken, tlStatementListNotAllowed))
+			Error(errUnexpectedToken);
+		else while (parserToken == tcSemicolon) {
+			getToken();
+		}
+
+		if (!firstStmt) {
+			firstStmt = stmtChunk;
+		}
+		else {
+			retrieveChunk(lastStmt, &_stmt);
+			_stmt.next = stmtChunk;
+			storeChunk(lastStmt, &_stmt);
+		}
+		lastStmt = stmtChunk;
+	} while (parserToken != terminator && parserToken != tcEndOfFile);
+
+	return firstStmt;
+}
+
+CHUNKNUM parseWHILE(void)
+{
+	CHUNKNUM exprChunk;
+
+	// WHILE
+	getToken();
+
+	// <expr>
+	exprChunk = parseExpression();
+
+	// DO
+	resync(tlDO, tlStatementStart, 0);
+	condGetToken(tcDO, errMissingDO);
+
+	// <stmt>
+	return stmtCreate(STMT_WHILE, exprChunk, parseStatement());
+}

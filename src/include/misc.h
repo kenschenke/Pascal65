@@ -24,6 +24,10 @@ typedef enum {
 typedef enum {
     tcDummy, tcIdentifier, tcNumber, tcString, tcEndOfFile, tcError,
 
+    tcBOOLEAN, tcCHAR, tcINTEGER, tcREAL,
+
+    tcFALSE, tcTRUE,
+
     tcUpArrow, tcStar, tcLParen, tcRParen, tcMinus, tcPlus,
     tcEqual, tcLBracket, tcRBracket, tcColon, tcSemicolon, tcLt,
     tcGt, tcComma, tcPeriod, tcSlash, tcColonEqual, tcLe, tcGe,

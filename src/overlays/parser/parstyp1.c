@@ -1,313 +1,284 @@
-#include <common.h>
 #include <parser.h>
-#include <chunks.h>
-#include <parscommon.h>
-#include <symtab.h>
-#include <types.h>
+#include <ast.h>
+#include <common.h>
 #include <string.h>
 
-CHUNKNUM parseEnumerationType(void) {
-    TTYPE newType;
-    CHUNKNUM lastChunk = 0, newChunkNum, newTypeChunkNum;
-    SYMBNODE newNode;
-    int constValue = -1;
+CHUNKNUM parseEnumerationType(void)
+{
+	TDataValue constValue;
+	CHUNKNUM firstEnum = 0, thisEnum, lastEnum, valueChunkNum, typeChunkNum;
+	struct decl _decl;
+	struct type _type;
 
-    getToken();
-    resync(tlEnumConstStart, NULL, NULL);
+	constValue.integer = -1;
 
-    newTypeChunkNum = makeType(fcEnum, sizeof(int), 0);
-    retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
+	getToken();
+	resync(tlEnumConstStart, 0, 0);
 
-    // Loop to parse list of constant identifiers separated by commas.
-    while (parserToken == tcIdentifier) {
-        symtabEnterNewLocal(&newNode, parserString, dcUndefined);
-        ++constValue;
+	while (parserToken == tcIdentifier) {
+		TDataValue value;
 
-        if (newNode.defn.how == dcUndefined) {
-            newNode.defn.how = dcConstant;
-            newNode.defn.constant.value.integer = constValue;
-            setType(&newNode.node.typeChunk, newTypeChunkNum);
-            saveSymbNode(&newNode);
+		value.integer = ++constValue.integer;
+		valueChunkNum = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &value);
+		thisEnum = declCreate(DECL_TYPE, name_create(parserString), 0, valueChunkNum);
 
-            // Link constant identifier symbol table nodes together.
-            if (!lastChunk) {
-                newType.enumeration.constIds = lastChunk = newNode.node.nodeChunkNum;
-            } else {
-                newChunkNum = newNode.node.nodeChunkNum;
-                ((SYMTABNODE *)getChunk(lastChunk))->nextNode = newChunkNum;
-                lastChunk = newChunkNum;
-            }
-        }
+		if (firstEnum == 0) {
+			firstEnum = thisEnum;
+			lastEnum = firstEnum;
+		}
+		else {
+			retrieveChunk(lastEnum, &_decl);
+			_decl.next = thisEnum;
+			storeChunk(lastEnum, &_decl);
+			lastEnum = thisEnum;
+		}
 
-        memset(&newNode, 0, sizeof(SYMBNODE));
+		// ,
+		getToken();
+		resync(tlEnumConstFollow, NULL, NULL);
+		if (parserToken == tcComma) {
+			// Saw comma.  Skip extra commas and look for an identifier
+			do {
+				getToken();
+				resync(tlEnumConstStart, tlEnumConstFollow, NULL);
+				if (parserToken == tcComma) Error(errMissingIdentifier);
+			} while (parserToken == tcComma);
+			if (parserToken != tcIdentifier) Error(errMissingIdentifier);
+		}
+		else if (parserToken == tcIdentifier) Error(errMissingComma);
+	}
 
-        // ,
-        getToken();
-        resync(tlEnumConstFollow, NULL, NULL);
-        if (parserToken == tcComma) {
-            // Saw comma.  Skip extra commas and look for an identifier
-            do {
-                getToken();
-                resync(tlEnumConstStart, tlEnumConstFollow, NULL);
-                if (parserToken == tcComma) Error(errMissingIdentifier);
-            } while (parserToken == tcComma);
-            if (parserToken != tcIdentifier) Error(errMissingIdentifier);
-        }
-        else if (parserToken == tcIdentifier) Error(errMissingComma);
-    }
+	// )
+	condGetToken(tcRParen, errMissingRightParen);
 
-    // )
-    condGetToken(tcRParen, errMissingRightParen);
+	typeChunkNum = typeCreate(TYPE_ENUMERATION, 0, 0, firstEnum);
+	retrieveChunk(typeChunkNum, &_type);
+	_type.max = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &constValue);
+	storeChunk(typeChunkNum, &_type);
 
-    newType.enumeration.max = constValue;
-    storeChunk(newTypeChunkNum, (unsigned char *)&newType);
-
-    return newTypeChunkNum;
+	return typeChunkNum;
 }
 
-void parseIdentifierType(void) {
-    getToken();
+type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit)
+{
+	type_t limitType = 0;
+	TTokenCode sign = tcDummy;
+	TDataValue value;
+
+	if (name) {
+		*limit = exprCreate(EXPR_NAME, 0, 0, name_create(parserString), 0);
+		return TYPE_DECLARED;
+	}
+
+	// Unary + or -
+	if (tokenIn(parserToken, tlUnaryOps)) {
+		if (parserToken == tcMinus) sign = tcMinus;
+		getToken();
+	}
+
+	switch (parserToken) {
+	case tcNumber:
+		if (parserType == tyInteger) {
+			value.integer = sign == tcMinus ? -parserValue.integer :
+				parserValue.integer;
+			limitType = TYPE_INTEGER;
+			*limit = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &value);
+		}
+		else {
+			Error(errInvalidSubrangeType);
+		}
+		break;
+
+	case tcString:
+		if (sign != tcDummy) {
+			Error(errInvalidConstant);
+		}
+
+		if (strlen(parserString) != 3) {
+			// length includes quotes
+			Error(errInvalidSubrangeType);
+		}
+
+		limitType = TYPE_CHARACTER;
+		value.character = parserString[1];
+		*limit = exprCreate(EXPR_CHARACTER_LITERAL, 0, 0, 0, &value);
+		break;
+
+	case tcIdentifier:
+		*limit = exprCreate(EXPR_NAME, 0, 0, name_create(parserString), 0);
+		limitType = TYPE_DECLARED;
+		break;
+
+	default:
+		Error(errMissingConstant);
+		break;
+	}
+
+	getToken();
+
+	return limitType;
 }
 
-void parseSubrangeLimit(CHUNKNUM limitIdChunkNum, int *limit, CHUNKNUM *limitTypeChunkNum) {
-    SYMBNODE limitId;
-    TTokenCode sign = tcDummy;
+CHUNKNUM parseSubrangeType(CHUNKNUM name)
+{
+	CHUNKNUM subrangeType;
+	type_t minType, maxType;
+	struct type _type;
+	CHUNKNUM subrangeMin, subrangeMax;
 
-    *limit = 0;
-    *limitTypeChunkNum = dummyType;
+	// If name is non-zero then this function was called when an identifier
+	// was encountered.  The identifier is the low limit of the subrange
+	// and is an enumeration value.
 
-    // Unary + or -
-    if (tokenIn(parserToken, tlUnaryOps)) {
-        if (parserToken == tcMinus) sign = tcMinus;
-        getToken();
-    }
+	// <min-const>
+	minType = parseSubrangeLimit(name, &subrangeMin);
 
-    switch (parserToken) {
-        case tcNumber:
-            // Numeric constant: integer type only
-            if (parserType == tyInteger) {
-                *limit = sign == tcMinus ? -parserValue.integer :
-                    parserValue.integer;
-                *limitTypeChunkNum = integerType;
-            } else {
-                Error(errInvalidSubrangeType);
-            }
-            break;
+	// ..
+	resync(tlSubrangeLimitFollow, tlDeclarationStart, 0);
+	condGetToken(tcDotDot, errMissingDotDot);
 
-        case tcIdentifier:
-            // identifier limit: must be an integer, character, or
-            // enumeration type.
-            if (limitIdChunkNum == 0) {
-                if (findSymtabNode(&limitId, parserString) == 0) {
-                    Error(errInvalidSubrangeType);
-                    break;
-                }
-            }
-            if (limitId.defn.how == dcUndefined) {
-                limitId.defn.how = dcConstant;
-                saveSymbNodeDefn(&limitId);
-                *limitTypeChunkNum = dummyType;
-                break;
-            }
-            if (limitId.node.typeChunk == dummyType || limitId.node.typeChunk == realType) {
-                Error(errInvalidSubrangeType);
-                break;
-            }
-            if (limitId.type.form == fcArray) {
-                Error(errInvalidSubrangeType);
-                break;
-            }
-            if (limitId.defn.how == dcConstant) {
-                // Use the value of the constant identifer.
-                if (limitId.node.typeChunk == integerType) {
-                    *limit = sign == tcMinus ? -limitId.defn.constant.value.integer :
-                        limitId.defn.constant.value.integer;
-                } else if (limitId.node.typeChunk == charType) {
-                    if (sign != tcDummy) {
-                        Error(errInvalidSubrangeType);
-                        break;
-                    }
-                    *limit = limitId.defn.constant.value.character;
-                } else if (limitId.type.form == fcEnum) {
-                    if (sign != tcDummy) {
-                        Error(errInvalidSubrangeType);
-                        break;
-                    }
-                    *limit = limitId.defn.constant.value.integer;
-                }
-                *limitTypeChunkNum = limitId.node.typeChunk;
-            } else {
-                Error(errNotAConstantIdentifier);
-            }
-            break;
-        
-        case tcString:
-            // String limit: character type only
-            if (sign != tcDummy) {
-                Error(errInvalidConstant);
-            }
+	// <max-const>
+	maxType = parseSubrangeLimit(0, &subrangeMax);
 
-            if (strlen(parserString) != 3) {
-                // length inludes quotes
-                Error(errInvalidSubrangeType);
-            }
+	if (minType != maxType) {
+		Error(errIncompatibleTypes);
+	}
 
-            *limit = parserString[1];
-            *limitTypeChunkNum = charType;
-            break;
-        
-        default:
-            Error(errMissingConstant);
-            break;
-    }
+	subrangeType = typeCreate(TYPE_SUBRANGE, 0, 0, 0);
+	retrieveChunk(subrangeType, &_type);
+	_type.min = subrangeMin;
+	_type.max = subrangeMax;
+	if (name) {
+		_type.name = name;
+	}
 
-    if (limitIdChunkNum) saveSymbNode(&limitId);
+	// If the lower limit is a declared value (a constant),
+	// look up the underlying type and use that for the
+	// subrange's subtype.
+	if (minType == TYPE_DECLARED) {
+		char name[CHUNK_LEN + 1];
+		struct expr exprType;
+		struct type t;
+		retrieveChunk(subrangeMin, &exprType);
+		memset(name, 0, sizeof(name));
+		retrieveChunk(exprType.name, name);
+		_type.subtype = typeCreate(TYPE_DECLARED, 1, 0, 0);
+		retrieveChunk(_type.subtype, &t);
+		t.name = name_create(name);
+		storeChunk(_type.subtype, &t);
+	}
+	else {
+		_type.subtype = typeCreate(minType, 0, 0, 0);
+	}
+	storeChunk(subrangeType, &_type);
 
-    getToken();
+	return subrangeType;
 }
 
-CHUNKNUM parseSubrangeType(CHUNKNUM minIdChunkNum) {
-    int temp;
-    CHUNKNUM newMinChunkNum, maxTypeChunkNum, newTypeChunkNum;
-    TTYPE newType;
+CHUNKNUM parseTypeDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
+{
+	CHUNKNUM decl;
 
-    newTypeChunkNum = makeType(fcSubrange, 0, 0);
-    retrieveChunk(newTypeChunkNum, (unsigned char *)&newType);
+	// Loop to parse a list of type definitions
+	// separated by semicolons
+	while (parserToken == tcIdentifier) {
+		// <id>
+		CHUNKNUM name = name_create(parserString);
 
-    // <min-const>
-    parseSubrangeLimit(minIdChunkNum, &newType.subrange.min, &newMinChunkNum);
-    setType(&newType.subrange.baseType, newMinChunkNum);
+		// =
+		getToken();
+		condGetToken(tcEqual, errMissingEqual);
 
-    // ..
-    resync(tlSubrangeLimitFollow, tlDeclarationStart, NULL);
-    condGetToken(tcDotDot, errMissingDotDot);
+		// <type>
+		decl = declCreate(DECL_TYPE, name, parseTypeSpec(), 0);
 
-    // <max-const>
-    parseSubrangeLimit(0, &newType.subrange.max, &maxTypeChunkNum);
+		if (*firstDecl == 0) {
+			*firstDecl = decl;
+		}
+		else {
+			struct decl _decl;
+			retrieveChunk(lastDecl, &_decl);
+			_decl.next = decl;
+			storeChunk(lastDecl, &_decl);
+		}
+		lastDecl = decl;
 
-    // check limits
-    if (maxTypeChunkNum != newType.subrange.baseType) {
-        Error(errIncompatibleTypes);
-        newType.subrange.min = newType.subrange.max = 0;
-    } else if (newType.subrange.min > newType.subrange.max) {
-        Error(errMinGtMax);
+		// ;
+		resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
+		condGetToken(tcSemicolon, errMissingSemicolon);
 
-        temp = newType.subrange.min;
-        newType.subrange.min = newType.subrange.max;
-        newType.subrange.max = temp;
-    }
+		// Skip extra semicolons
+		while (parserToken == tcSemicolon) getToken();
+		resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
+	}
 
-    newType.size = ((TTYPE *)getChunk(newType.subrange.baseType))->size;
-    storeChunk(newTypeChunkNum, (unsigned char *)&newType);
-
-    return newTypeChunkNum;
+	return lastDecl;
 }
 
-void parseTypeDefinitions(void) {
-    SYMBNODE idNode;
-    CHUNKNUM newTypeChunkNum, lastId = 0;  // last type id node in local list
+CHUNKNUM parseTypeSpec(void)
+{
+	CHUNKNUM name, type;
 
-    // Loop to parse a list of type definitions
-    // separated by semicolons.
-    while (parserToken == tcIdentifier) {
-        // <id>
-        if (symtabEnterNewLocal(&idNode, parserString, dcUndefined) == 0) {
-            return;
-        }
+	switch (parserToken) {
+	case tcBOOLEAN:
+		type = typeCreate(TYPE_BOOLEAN, 0, 0, 0);
+		getToken();
+		break;
 
-        // Link the routine's local type id nodes together.
-        if (!routineNode.defn.routine.locals.typeIds) {
-            routineNode.defn.routine.locals.typeIds = idNode.node.nodeChunkNum;
-        } else {
-            ((SYMTABNODE *)getChunk(lastId))->nextNode = idNode.node.nodeChunkNum;
-        }
-        lastId = idNode.node.nodeChunkNum;
+	case tcCHAR:
+		type = typeCreate(TYPE_CHARACTER, 0, 0, 0);
+		getToken();
+		break;
 
-        // =
-        getToken();
-        condGetToken(tcEqual, errMissingEqual);
+	case tcINTEGER:
+		type = typeCreate(TYPE_INTEGER, 0, 0, 0);
+		getToken();
+		break;
 
-        // <type>
-        newTypeChunkNum = parseTypeSpec();
-        // Retrieve the idNode again because it might have changed
-        // while parsing the enumeration types
-        loadSymbNode(idNode.node.nodeChunkNum, &idNode);
-        setType(&idNode.node.typeChunk, newTypeChunkNum);
-        retrieveChunk(newTypeChunkNum, (unsigned char *)&idNode.type);
-        idNode.defn.how = dcType;
+	case tcREAL:
+		type = typeCreate(TYPE_REAL, 0, 0, 0);
+		getToken();
+		break;
 
-        // If the type object doesn't have a name yet,
-        // point it to the type id.
-        if (!idNode.type.typeId) {
-            idNode.type.typeId = idNode.node.nodeChunkNum;
-            if (storeChunk(newTypeChunkNum, (unsigned char *)&idNode.type) == 0) {
-                return;
-            }
-        }
+	case tcIdentifier:
+		name = name_create(parserString);
+		getToken();
+		if (parserToken == tcDotDot) {
+			type = parseSubrangeType(name);
+		}
+		else {
+			struct type _type;
+			type = typeCreate(TYPE_DECLARED, 0, 0, 0);
+			retrieveChunk(type, &_type);
+			_type.name = name;
+			storeChunk(type, &_type);
+		}
+		break;
 
-        saveSymbNode(&idNode);
+	case tcLParen:
+		type = parseEnumerationType();
+		break;
 
-        // ;
-        resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
-        condGetToken(tcSemicolon, errMissingSemicolon);
+	case tcARRAY:
+		type = parseArrayType();
+		break;
 
-        // Skip extra semicolons
-        while (parserToken == tcSemicolon) getToken();
-        resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
-    }
+	case tcRECORD:
+		type = parseRecordType();
+		break;
+
+	case tcPlus:
+	case tcMinus:
+	case tcNumber:
+	case tcString:
+		type = parseSubrangeType(0);
+		break;
+
+	default:
+		Error(errInvalidType);
+		type = 0;
+		break;
+	}
+
+	return type;
 }
-
-CHUNKNUM parseTypeSpec(void) {
-    CHUNKNUM newTypeChunkNum;
-    SYMBNODE node;
-
-    switch (parserToken) {
-        // type identifier
-        case tcIdentifier:
-            if (symtabStackSearchAll(parserString, &node) == 0) {
-                break;
-            }
-
-            switch (node.defn.how) {
-                case dcType:
-                    parseIdentifierType();
-                    newTypeChunkNum = node.node.typeChunk;
-                    break;
-                case dcConstant:
-                    newTypeChunkNum = parseSubrangeType(node.node.nodeChunkNum);
-                    break;
-                default:
-                    Error(errNotATypeIdentifier);
-                    getToken();
-                    break;
-            }
-            break;
-        
-        case tcLParen:
-            newTypeChunkNum = parseEnumerationType();
-            break;
-        
-        case tcARRAY:
-            newTypeChunkNum = parseArrayType();
-            break;
-        
-        case tcRECORD:
-            newTypeChunkNum = parseRecordType();
-            break;
-        
-        case tcPlus:
-        case tcMinus:
-        case tcNumber:
-        case tcString:
-            newTypeChunkNum = parseSubrangeType(0);
-            break;
-        
-        default:
-            Error(errInvalidType);
-            newTypeChunkNum = 0;
-            break;
-    }
-
-    return newTypeChunkNum;
-}
-

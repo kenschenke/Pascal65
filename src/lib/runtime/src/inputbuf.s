@@ -174,8 +174,11 @@ L3:
     bcc L4          ; Done if character below '0'
     cmp #'9'+1
     bcs L4          ; Done if character after '9'
-    sty inputPos
-    txa
+    sty inputPos    ; Save Y
+    pha             ; Save A
+    txa             ; Transfer X
+    tay             ; to Y
+    pla             ; Recover A
     sta (intPtr),y  ; Store the digit in intBuf
     ldy inputPos
     iny             ; Move to next character in input buffer

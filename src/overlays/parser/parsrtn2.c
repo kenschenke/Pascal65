@@ -1,235 +1,219 @@
-#include <string.h>
-#include <common.h>
-#include <symtab.h>
 #include <parser.h>
-#include <parscommon.h>
+#include <ast.h>
+#include <common.h>
 
-void parseFormalParmList(CHUNKNUM *pParmList, int *parmCount, int *totalParmSize) {
-    SYMBNODE node;
-    CHUNKNUM firstId, lastId, parmId;
-    CHUNKNUM prevSublistLastId = 0;
-    CHUNKNUM parmType;
-    TDefnCode parmDefn;
+CHUNKNUM parseActualParm(char isWriteWriteln)
+{
+	// Create a new expr node.  The left is an expression tree and
+	// the right is zero.  The type is EXPR_ARG.
 
-    *pParmList = 0;
-    *parmCount = *totalParmSize = 0;
-    getToken();
+	CHUNKNUM exprChunk = exprCreate(EXPR_ARG, parseExpression(), 0, 0, 0);
 
-    // Loop to parse parameter declarations separated by semicolons
-    while (parserToken == tcIdentifier || parserToken == tcVAR) {
-        parmType = 0;
-        firstId = 0;
+	if (isWriteWriteln && parserToken == tcColon) {
+		struct expr _expr;
 
-        // VAR or value parameter?
-        if (parserToken == tcVAR) {
-            parmDefn = dcVarParm;
-            getToken();
-        } else {
-            parmDefn = dcValueParm;
-        }
+		retrieveChunk(exprChunk, &_expr);
+		getToken();
+		_expr.width = parseExpression();
 
-        // Loop to parse the comma-separated sublist of parameter ids.
-        while (parserToken == tcIdentifier) {
-            symtabEnterNewLocal(&node, parserString, parmDefn);
-            parmId = node.node.nodeChunkNum;
-            ++(*parmCount);
-            if (!(*pParmList)) {
-                *pParmList = parmId;
-            }
+		if (parserToken == tcColon) {
+			getToken();
+			_expr.precision = parseExpression();
+		}
 
-            // Link the parm id nodes together
-            if (!firstId) {
-                firstId = lastId = parmId;
-            } else {
-                loadSymbNode(lastId, &node);
-                node.node.nextNode = parmId;
-                saveSymbNodeOnly(&node);
-                lastId = parmId;
-            }
+		storeChunk(exprChunk, &_expr);
+	}
 
-            // comma
-            getToken();
-            resync(tlIdentifierFollow, NULL, NULL);
-            if (parserToken == tcComma) {
-                // Saw comma.
-                // Skip extra commas and look for an identifier.
-                do {
-                    getToken();
-                    resync(tlIdentifierStart, tlIdentifierFollow, NULL);
-                    if (parserToken == tcComma) {
-                        Error(errMissingIdentifier);
-                    }
-                } while (parserToken == tcComma);
-                if (parserToken != tcIdentifier) {
-                    Error(errMissingIdentifier);
-                }
-            } else if (parserToken == tcIdentifier) {
-                Error(errMissingComma);
-            }
-        }
-
-        // colon
-        resync(tlSublistFollow, tlDeclarationFollow, NULL);
-        condGetToken(tcColon, errMissingColon);
-
-        // <type-id>
-        if (parserToken == tcIdentifier) {
-            findSymtabNode(&node, parserString);
-            if (node.defn.how != dcType) {
-                Error(errInvalidType);
-            }
-            parmType = node.node.typeChunk;
-            getToken();
-        } else {
-            Error(errMissingIdentifier);
-            parmType = dummyType;
-        }
-
-        // Loop to assign the offset and type to each
-        // parm id in the sublist.
-        for (parmId = firstId; parmId; parmId = node.node.nextNode) {
-            loadSymbNode(parmId, &node);
-            node.defn.data.offset = (*totalParmSize)++;
-            setType(&node.node.typeChunk, parmType);
-            saveSymbNode(&node);
-        }
-
-        // Link this sublist to the previous sublist.
-        if (prevSublistLastId) {
-            loadSymbNode(prevSublistLastId, &node);
-            node.node.nextNode = firstId;
-            saveSymbNodeOnly(&node);
-        }
-        prevSublistLastId = lastId;
-
-        // semicolon or )
-        resync(tlFormalParmsFollow, tlDeclarationFollow, NULL);
-        if (parserToken == tcIdentifier || parserToken == tcVAR) {
-            Error(errMissingSemicolon);
-        } else {
-            while (parserToken == tcSemicolon) {
-                getToken();
-            }
-        }
-    }
-
-    // right paren
-    condGetToken(tcRParen, errMissingRightParen);
+	return exprChunk;
 }
 
-CHUNKNUM parseSubroutineCall(CHUNKNUM callChunkNum, char parmCheckFlag, CHUNKNUM Icode) {
-    CHUNKNUM resultChunkNum;
-    CHUNKNUM routineChunkNum = routineNode.node.nodeChunkNum;
+CHUNKNUM parseActualParmList(char isWriteWriteln)
+{
+	struct expr _expr;
+	CHUNKNUM argChunk, firstArg = 0, lastArg = 0;
 
-    getTokenAppend(Icode);
+	do {
+		getToken();
 
-    saveSymbNode(&routineNode);
-    loadSymbNode(callChunkNum, &routineNode);
-    if (routineNode.defn.routine.which == rcDeclared || routineNode.defn.routine.which == rcForward || !parmCheckFlag) {
-        resultChunkNum = parseDeclaredSubroutineCall(parmCheckFlag, Icode);
-    } else {
-        resultChunkNum = parseStandardSubroutineCall(Icode);
-    }
+		if (parserToken == tcRParen) {
+			break;
+		}
 
-    loadSymbNode(routineChunkNum, &routineNode);
-    return resultChunkNum;
+		argChunk = parseActualParm(isWriteWriteln);
+		if (!firstArg) {
+			firstArg = argChunk;
+		}
+		else {
+			retrieveChunk(lastArg, &_expr);
+			_expr.right = argChunk;
+			storeChunk(lastArg, &_expr);
+		}
+		lastArg = argChunk;
+	} while (parserToken == tcComma);
+
+	if (parserToken == tcRParen) {
+		getToken();
+	}
+	else {
+		Error(errMissingRightParen);
+	}
+
+	return firstArg;
 }
 
-CHUNKNUM parseDeclaredSubroutineCall(char parmCheckFlag, CHUNKNUM Icode) {
-    parseActualParmList(1, parmCheckFlag, Icode);
-    return routineNode.node.typeChunk;
+CHUNKNUM parseFormalParmList(void)
+{
+	char isByRef;
+	struct param_list param;
+	struct type _type;
+	CHUNKNUM paramType;
+	// These are the complete list of subroutine parameters
+	CHUNKNUM firstParam = 0, lastParam = 0, paramChunk;
+	// These are the parameters in the current sublist
+	// comma separated with the same type
+	CHUNKNUM firstId, lastId;
+
+	getToken();
+
+	// Loop to parse parameter declarations separated by semicolons
+	// i, j, k : integer; a, b, c : character, r, s, t: real
+	while (parserToken == tcIdentifier || parserToken == tcVAR) {
+		if (parserToken == tcVAR) {
+			isByRef = 1;
+			getToken();
+		}
+		else {
+			isByRef = 0;
+		}
+
+		// Loop to parse the comma-separated sublist of parameter ids
+		firstId = lastId = 0;
+		while (parserToken == tcIdentifier) {
+			paramChunk = param_list_create(parserString, 0, 0);
+			if (firstId) {
+				retrieveChunk(lastId, &param);
+				param.next = paramChunk;
+				storeChunk(lastId, &param);
+			}
+			else {
+				firstId = paramChunk;
+			}
+			lastId = paramChunk;
+
+			// comma
+			getToken();
+			resync(tlIdentifierFollow, 0, 0);
+			if (parserToken == tcComma) {
+				// Saw comma.
+				// Skip extra commas and look for an identifier.
+				do {
+					getToken();
+					resync(tlIdentifierStart, tlIdentifierFollow, 0);
+					if (parserToken == tcComma) {
+						Error(errMissingIdentifier);
+					}
+				} while (parserToken == tcComma);
+				if (parserToken != tcIdentifier) {
+					Error(errMissingIdentifier);
+				}
+			}
+			else if (parserToken == tcIdentifier) {
+				Error(errMissingComma);
+			}
+		}
+
+		// colon
+		resync(tlSublistFollow, tlDeclarationFollow, 0);
+		condGetToken(tcColon, errMissingColon);
+
+		// <id-type>
+		if (parserToken == tcIdentifier) {
+			paramType = typeCreate(TYPE_DECLARED, 0, 0, 0);
+			retrieveChunk(paramType, &_type);
+			_type.name = name_create(parserString);
+			if (isByRef) {
+				_type.flags |= TYPE_FLAG_ISBYREF;
+			}
+			else {
+				_type.flags &= ~TYPE_FLAG_ISBYREF;
+			}
+			storeChunk(paramType, &_type);
+			getToken();
+		}
+		else if (parserToken == tcARRAY) {
+			paramType = parseArrayType();
+			retrieveChunk(paramType, &_type);
+			if (isByRef) {
+				_type.flags |= TYPE_FLAG_ISBYREF;
+			}
+			else {
+				_type.flags &= ~TYPE_FLAG_ISBYREF;
+			}
+			storeChunk(paramType, &_type);
+		}
+		else {
+			type_t tc = 0;
+			switch (parserToken) {
+			case tcBOOLEAN: tc = TYPE_BOOLEAN; break;
+			case tcCHAR: tc = TYPE_CHARACTER; break;
+			case tcINTEGER: tc = TYPE_INTEGER; break;
+			case tcREAL: tc = TYPE_REAL; break;
+			default:
+				Error(errInvalidType);
+				break;
+			}
+			paramType = typeCreate(tc, 0, 0, 0);
+			retrieveChunk(paramType, &_type);
+			if (isByRef) {
+				_type.flags |= TYPE_FLAG_ISBYREF;
+			}
+			else {
+				_type.flags &= ~TYPE_FLAG_ISBYREF;
+			}
+			storeChunk(paramType, &_type);
+			getToken();
+		}
+
+		// Loop to assign the offset and type to each
+		// parm id in the sublist.
+		for (paramChunk = firstId; paramChunk; paramChunk = param.next) {
+			retrieveChunk(paramChunk, &param);
+			param.type = paramType;
+			storeChunk(paramChunk, &param);
+		}
+
+		// Link this sublist to the previous sublist
+		if (firstParam) {
+			retrieveChunk(lastParam, &param);
+			param.next = firstId;
+			storeChunk(lastParam, &param);
+		}
+		else {
+			firstParam = firstId;
+		}
+		lastParam = lastId;
+
+		// Semicolon or )
+		resync(tlFormalParmsFollow, tlDeclarationFollow, 0);
+		if (parserToken == tcIdentifier || parserToken == tcVAR) {
+			Error(errMissingSemicolon);
+		}
+		else {
+			while (parserToken == tcSemicolon) {
+				getToken();
+			}
+		}
+	}
+
+	// right paren
+	condGetToken(tcRParen, errMissingRightParen);
+
+	return firstParam;
 }
 
-void parseActualParmList(char routineFlag, char parmCheckFlag, CHUNKNUM Icode) {
-    SYMBNODE node;
-    CHUNKNUM formalId = 0;
-
-    if (routineFlag) {
-        formalId = routineNode.defn.routine.locals.parmIds;
-    }
-
-    // If there are no actual parameters, there better not be any
-    // formal parameters either.
-    if (parserToken != tcLParen) {
-        if (parmCheckFlag && formalId) {
-            Error(errWrongNumberOfParams);
-        }
-        return;
-    }
-
-    // Loop to parse actual parameter expressions, separated by commas
-    do {
-        // ( or ,
-        getTokenAppend(Icode);
-
-        if (parserToken == tcRParen) {
-            if (formalId) {
-                Error(errWrongNumberOfParams);
-            }
-            break;
-        }
-
-        parseActualParm(formalId, parmCheckFlag, Icode);
-        if (formalId) {
-            loadSymbNode(formalId, &node);
-            formalId = node.node.nextNode;
-        }
-    } while (parserToken == tcComma);
-
-    // )
-    condGetTokenAppend(Icode, tcRParen, errMissingRightParen);
-
-    // There better not be any more formal parameters
-    if (parmCheckFlag && formalId) {
-        Error(errWrongNumberOfParams);
-    }
-}
-
-void parseActualParm(CHUNKNUM formalId, char parmCheckFlag, CHUNKNUM Icode) {
-    CHUNKNUM exprTypeChunk;
-    SYMBNODE node, actualNode;
-
-    // If we're not checking the actual parameters against the corresponding formal
-    // parameters (as during error recovery), just parse the actual parameter.
-    if (!parmCheckFlag) {
-        exprTypeChunk = parseExpression(Icode);
-        return;
-    }
-
-    // If we've already run out of formal parameters, we have an error.
-    // Go into error recovery mode and parse the actual parameter anyway.
-    if (!formalId) {
-        Error(errWrongNumberOfParams);
-        exprTypeChunk = parseExpression(Icode);
-        return;
-    }
-
-    // Formal value parameter: The actual parameter can be an arbitrary
-    //                         expression that is an assignment type
-    //                         compatible with the formal parameter.
-    loadSymbNode(formalId, &node);
-    if (node.defn.how == dcValueParm) {
-        exprTypeChunk = parseExpression(Icode);
-        checkAssignmentCompatible(node.node.typeChunk, exprTypeChunk, errIncompatibleTypes);
-    }
-
-    // Formal VAR parameter: The actual parameter must be a variable of
-    //                       the same type as the formal parameter.
-    else if (parserToken == tcIdentifier) {
-        findSymtabNode(&actualNode, parserString);
-        putSymtabNodeToIcode(Icode, &actualNode);
-        
-        exprTypeChunk = parseVariable(Icode, &actualNode);
-        if (node.node.typeChunk != exprTypeChunk) {
-            Error(errIncompatibleTypes);
-        }
-        resync(tlExpressionFollow, tlStatementFollow, tlStatementStart);
-    }
-
-    // Error: Parse the actual parameter anyway for error recovery.
-    else {
-        parseExpression(Icode);
-        Error(errInvalidVarParm);
-    }
+CHUNKNUM parseSubroutineCall(CHUNKNUM name, char isWriteWriteln)
+{
+	return exprCreate(EXPR_CALL, exprCreate(EXPR_NAME, 0, 0, name, 0),
+		parserToken == tcLParen ? parseActualParmList(isWriteWriteln) : 0, 0, 0);
 }
 
