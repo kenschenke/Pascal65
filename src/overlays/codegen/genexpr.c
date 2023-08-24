@@ -207,7 +207,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	case EXPR_REAL_LITERAL:
 		genRealValueEAX(chunkNum);
 		if (!noStack) {
-			genThreeAddr(JSR, RT_PUSHREAL);
+			genThreeAddr(JSR, RT_PUSHEAX);
 		}
 		break;
 
@@ -232,6 +232,15 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(SBC_IMMEDIATE, 0);
 			genTwo(STA_ZEROPAGE, ZP_PTR1H);
 		}
+		else if (rightType.kind == TYPE_ENUMERATION_VALUE) {
+			struct decl _decl;
+			struct expr value;
+			retrieveChunk(sym.decl, &_decl);
+			retrieveChunk(_decl.value, &value);
+			genTwo(LDA_IMMEDIATE, WORD_LOW(value.value.integer));
+			genTwo(LDX_IMMEDIATE, WORD_HIGH(value.value.integer));
+			genThreeAddr(JSR, RT_PUSHINT);
+		}
 		else {
 			genTwo(LDA_IMMEDIATE, (unsigned char)(sym.level));
 			genTwo(LDX_IMMEDIATE, (unsigned char)(sym.offset));
@@ -249,7 +258,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(STA_ZEROPAGE, ZP_PTR1H);
 		}
 		if (isRead) {
-			if (rightType.kind == TYPE_INTEGER) {
+			if (rightType.kind == TYPE_INTEGER || rightType.kind == TYPE_ENUMERATION) {
 				genThreeAddr(JSR, RT_READINT);
 				if (!noStack) {
 					genThreeAddr(JSR, RT_PUSHINT);

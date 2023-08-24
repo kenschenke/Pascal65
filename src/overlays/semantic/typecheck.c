@@ -536,7 +536,7 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 		break;
 
 	case rcOrd:
-		checkStdParms(argChunk, STDPARM_CHAR | STDPARM_ENUM);
+		checkStdParms(argChunk, STDPARM_CHAR | STDPARM_ENUM | STDPARM_INTEGER);
 		pRetnType->kind = TYPE_INTEGER;
 		break;
 

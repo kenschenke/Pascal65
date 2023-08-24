@@ -30,6 +30,8 @@ static void addEnumsToSymtab(CHUNKNUM chunkNum, CHUNKNUM enumType)
 		valueChunkNum = typeCreate(TYPE_ENUMERATION_VALUE, 1, enumType, 0);
 		sym.nodeChunkNum = symbol_create(SYMBOL_LOCAL, valueChunkNum, name);
 		retrieveChunk(sym.nodeChunkNum, &sym);
+		sym.decl = chunkNum;
+		storeChunk(sym.nodeChunkNum, &sym);
 		if (!scope_bind(name, &sym, 1)) {
 			freeChunk(sym.nodeChunkNum);
 			freeChunk(valueChunkNum);
@@ -584,6 +586,7 @@ void set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 			case TYPE_BOOLEAN:
 			case TYPE_CHARACTER:
 			case TYPE_INTEGER:
+			case TYPE_ENUMERATION:
 			case TYPE_REAL:
 			case TYPE_STRING:
 			case TYPE_ARRAY:

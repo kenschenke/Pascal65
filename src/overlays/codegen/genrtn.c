@@ -15,6 +15,8 @@ static void genAbsCall(CHUNKNUM argChunk);
 static void genChrCall(CHUNKNUM argChunk);
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static void genOddCall(CHUNKNUM argChunk);
+static void genOrdCall(CHUNKNUM argChunk);
+static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType);
@@ -192,6 +194,32 @@ static void genOddCall(CHUNKNUM argChunk)
 	genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
 	genTwo(AND_IMMEDIATE, 1);
 	genThreeAddr(JSR, RT_PUSHBYTE);
+}
+
+static void genOrdCall(CHUNKNUM argChunk)
+{
+	struct expr arg;
+
+	retrieveChunk(argChunk, &arg);
+
+	genExpr(arg.left, 1, 0, 0);
+	genThreeAddr(JSR, RT_PUSHINT);
+}
+
+static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
+{
+	struct expr arg;
+
+	retrieveChunk(argChunk, &arg);
+
+	genExpr(arg.left, 1, 0, 0);
+	genThreeAddr(JSR, RT_POPTOINTOP1);
+	genTwo(LDA_IMMEDIATE, 1);
+	genTwo(STA_ZEROPAGE, ZP_INTOP2L);
+	genTwo(LDA_IMMEDIATE, 0);
+	genTwo(STA_ZEROPAGE, ZP_INTOP2H);
+	genThreeAddr(JSR, rc == rcPred ? RT_SUBINT16 : RT_ADDINT16);
+	genThreeAddr(JSR, RT_PUSHINTOP1);
 }
 
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -426,6 +454,15 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	case rcOdd:
 		genOddCall(argChunk);
+		break;
+
+	case rcPred:
+	case rcSucc:
+		genPredSuccCall(rc, argChunk);
+		break;
+
+	case rcOrd:
+		genOrdCall(argChunk);
 		break;
 	}
 }
