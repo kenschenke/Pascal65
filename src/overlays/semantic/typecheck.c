@@ -464,6 +464,14 @@ static void checkRelOpOperands(struct type* pType1, struct type* pType2)
 		return;
 	}
 
+	if ((pType1->kind == TYPE_ENUMERATION || pType1->kind == TYPE_ENUMERATION_VALUE) &&
+		(pType2->kind == TYPE_ENUMERATION || pType2->kind == TYPE_ENUMERATION_VALUE)) {
+		if (pType1->subtype != pType2->subtype) {
+			Error(errIncompatibleTypes);
+		}
+		return;
+	}
+
 	if (pType1->kind != TYPE_INTEGER && pType1->kind != TYPE_REAL) {
 		Error(errIncompatibleTypes);
 	}
