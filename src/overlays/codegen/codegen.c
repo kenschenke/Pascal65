@@ -12,14 +12,33 @@
 
 #define RUNTIME_STACK_SIZE 2048
 
-#define COPYREALVAL "COPYREALVAL"
-
 static CHUNKNUM stringLiterals;
 static int numStringLiterals;
 
 CHUNKNUM codeBuf;
 unsigned short codeOffset;
 unsigned short codeBase;
+
+#ifdef COMPILERTEST
+static unsigned char chainCall[] = {
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 8,		// Offset 3: device
+	LDY_IMMEDIATE, 0xff,
+	JSR, 0xba, 0xff,		// SETLFS
+
+	LDA_IMMEDIATE, 0,		// Offset 10: strlen(name)
+	LDX_IMMEDIATE, 0x1c,	// Offset 12: lower str address
+	LDY_IMMEDIATE, 0xca,	// Offset 14: upper str address
+	JSR, 0xbd, 0xff,		// SETNAM
+
+	LDA_IMMEDIATE, 0,
+	TAX,
+	TAY,
+	JSR, 0xd5, 0xff,		// LOAD
+
+	JMP, 0x0d, 0x08,
+};
+#endif
 
 // Used when initializing nested arrays and records
 static short heapOffset;
@@ -33,6 +52,11 @@ static void genRecordInit(struct type* pType);
 static void genRuntime(void);
 int getArrayLimit(CHUNKNUM chunkNum);
 static void updateHeapOffset(short newOffset);
+
+#ifdef COMPILERTEST
+// static void copyChainCall(char* name);
+static void writeChainCall(char* name);
+#endif
 
 static int addStringLiteral(CHUNKNUM chunkNum)
 {
@@ -380,6 +404,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			switch (_type.kind) {
 			case TYPE_INTEGER:
 			case TYPE_BOOLEAN:
+			case TYPE_ENUMERATION:
 				genIntValueAX(_decl.value);
 				genThreeAddr(JSR, RT_PUSHINT);
 				break;
@@ -431,7 +456,11 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 	return num;
 }
 
-void genProgram(CHUNKNUM astRoot)
+#ifdef COMPILERTEST
+void genProgram(CHUNKNUM astRoot, const char* prgFilename, char* nextTest)
+#else
+void genProgram(CHUNKNUM astRoot, const char* prgFilename)
+#endif
 {
 	FILE* out;
 	char ch;
@@ -455,7 +484,15 @@ void genProgram(CHUNKNUM astRoot)
 	genRuntime();
 
 	linkAddressSet("INIT", codeOffset);
-	printf("INIT %04x\n", codeBase + codeOffset);
+
+	// Make a backup copy of page zero
+	genTwo(LDX_IMMEDIATE, 0);
+	genTwo(LDA_X_INDEXED_ZP, 0x02);
+	linkAddressLookup(BSS_ZPBACKUP, codeOffset + 1, 0, LINKADDR_BOTH);
+	genThreeAddr(STA_ABSOLUTEX, 0);
+	genOne(INX);
+	genTwo(CPX_IMMEDIATE, 0x1b);
+	genTwo(BNE, 0xf6);
 
 	// Save the stack pointer
 	genOne(TSX);
@@ -545,9 +582,54 @@ void genProgram(CHUNKNUM astRoot)
 	genTwo(ORA_IMMEDIATE, 1);
 	genTwo(STA_ZEROPAGE, 1);
 
+	// Copy the backup of page zero back
+	genTwo(LDX_IMMEDIATE, 0);
+	linkAddressLookup(BSS_ZPBACKUP, codeOffset + 1, 0, LINKADDR_BOTH);
+	genThreeAddr(LDA_ABSOLUTEX, 0);
+	genTwo(STA_X_INDEXED_ZP, 0x02);
+	genOne(INX);
+	genTwo(CPX_IMMEDIATE, 0x1b);
+	genTwo(BNE, 0xf6);
+
+#ifdef COMPILERTEST
+	if (nextTest) {
+		char msg[40];
+
+		linkAddressLookup("CHAINMSG", codeOffset + 1, 0, LINKADDR_LOW);
+		genTwo(LDA_IMMEDIATE, 0);
+		linkAddressLookup("CHAINMSG", codeOffset + 1, 0, LINKADDR_HIGH);
+		genTwo(LDX_IMMEDIATE, 0);
+		genThreeAddr(JSR, RT_PRINTZ);
+
+		linkAddressLookup("CHAINCALL", codeOffset + 1, 0, LINKADDR_LOW);
+		genTwo(LDA_IMMEDIATE, 0);
+		genTwo(STA_ZEROPAGE, ZP_PTR2L);
+		linkAddressLookup("CHAINCALL", codeOffset + 1, 0, LINKADDR_HIGH);
+		genTwo(LDA_IMMEDIATE, 0);
+		genTwo(STA_ZEROPAGE, ZP_PTR2H);
+		genTwo(LDA_IMMEDIATE, 0);
+		genTwo(STA_ZEROPAGE, ZP_PTR1L);
+		genTwo(LDA_IMMEDIATE, 0xca);
+		genTwo(STA_ZEROPAGE, ZP_PTR1H);
+		genTwo(LDA_IMMEDIATE, 28 + strlen(nextTest));
+		genTwo(LDX_IMMEDIATE, 0);
+		genThreeAddr(JSR, RT_MEMCOPY);
+		genThreeAddr(JMP, 0xca00);
+		writeChainCall(nextTest);	// filename of the next test in the chain
+
+		sprintf(msg, "Loading %s...", nextTest);
+		linkAddressSet("CHAINMSG", codeOffset);
+		writeToMemBuf(codeBuf, msg, strlen(msg) + 1);
+		codeOffset += strlen(msg) + 1;
+	} else {
+		genTwo(LDA_IMMEDIATE, 0);
+		genOne(RTS);
+	}
+#else
 	// Return to the OS
 	genTwo(LDA_IMMEDIATE, 0);
 	genOne(RTS);
+#endif
 
 	dumpStringLiterals();
 
@@ -563,6 +645,15 @@ void genProgram(CHUNKNUM astRoot)
 	ch = 0;
 	for (i = 0; i < 15; ++i) {
 		writeToMemBuf(codeBuf, &ch, 1);
+		++codeOffset;
+	}
+
+	// Set aside some memory to undo the changes to page zero
+	linkAddressSet(BSS_ZPBACKUP, codeOffset);
+	ch = 0;
+	for (i = 0; i < 26; ++i) {
+		writeToMemBuf(codeBuf, &ch, 1);
+		++codeOffset;
 	}
 
 	// This MUST be the last thing written to the code buffer
@@ -575,7 +666,7 @@ void genProgram(CHUNKNUM astRoot)
 	freeLinkerSymbolTable();
 
 	_filetype = 'p';
-	out = fopen("hello", "w");
+	out = fopen(prgFilename, "w");
 	ch = 1;
 	fwrite(&ch, 1, 1, out);
 	ch = 8;
@@ -664,27 +755,29 @@ void genRealValueEAX(CHUNKNUM chunkNum)
 
 static void genRuntime(void)
 {
-    int i;
-	char ch;
+    int i, read;
+	char buf[10];
 	FILE* in;
 
-	in = fopen("runtime", "rb");
-	fread(&ch, 1, 1, in);
-	fread(&ch, 1, 1, in);
-	while (!feof(in)) {
-		fread(&ch, 1, 1, in);
-		writeToMemBuf(codeBuf, &ch, 1);
-		++codeOffset;
+	in = fopen("runtime", "r");
+	fread(buf, 1, 2, in);	// discard the starting address
+	while (1) {
+		read = fread(buf, 1, sizeof(buf), in);
+		if (read < sizeof(buf)) {
+			break;
+		}
+		writeToMemBuf(codeBuf, buf, read);
+		codeOffset += read;
 	}
 
 	fclose(in);
 
 	// Write an extra 200 bytes for BSS
 
-	ch = 0;
-	for (i = 0; i < 200; ++i) {
-		writeToMemBuf(codeBuf, &ch, 1);
-		++codeOffset;
+	memset(buf, 0, sizeof(buf));
+	for (i = 0; i < 20; ++i) {
+		writeToMemBuf(codeBuf, buf, sizeof(buf));
+		codeOffset += sizeof(buf);
 	}
 }
 
@@ -731,3 +824,33 @@ static void updateHeapOffset(short newOffset)
 	}
 }
 
+#ifdef COMPILERTEST
+#if 0
+static void copyChainCall(char* name)
+{
+	unsigned char* p = (unsigned char*)0xca00;
+
+	chainCall[10] = strlen(name);
+	memcpy(p, chainCall, 28);
+	memcpy(p + 28, name, strlen(name));
+}
+#endif
+
+static void writeChainCall(char* name)
+{
+	linkAddressSet("CHAINCALL", codeOffset);
+	chainCall[10] = strlen(name);
+	writeToMemBuf(codeBuf, chainCall, 28);
+#if 0
+	linkAddressLookup("CHAINNAME", codeOffset + 12, 0, LINKADDR_LOW);
+	linkAddressLookup("CHAINNAME", codeOffset + 14, 0, LINKADDR_HIGH);
+#endif
+	codeOffset += 28;
+
+#if 0
+	linkAddressSet("CHAINNAME", codeOffset);
+#endif
+	writeToMemBuf(codeBuf, name, strlen(name));
+	codeOffset += strlen(name);
+}
+#endif

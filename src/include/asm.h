@@ -33,6 +33,7 @@
 #define ADC_ZEROPAGE	0x65	// adc $nn			2 bytes
 #define CMP_IMMEDIATE	0xc9	// cmp #$nn			2 bytes
 #define CMP_ABSOLUTE	0xcd	// cmp $nnnn		3 bytes
+#define CPX_IMMEDIATE   0xe0    // cpx #$00         2 bytes
 #define SBC_IMMEDIATE	0xe9	// sbc #$nn			2 bytes
 
 #define DEC_ABSOLUTE	0xce	// dec $nnnn		3 bytes
@@ -50,12 +51,15 @@
 
 #define LDA_IMMEDIATE	0xa9	// lda #$nn			2 bytes
 #define LDA_ABSOLUTE	0xad	// lda $nnnn		3 bytes
+#define LDA_ABSOLUTEX   0xbd    // lda $nnnn,x      3 bytes
 #define LDA_ZEROPAGE	0xa5	// lda $nn			2 bytes
+#define LDA_X_INDEXED_ZP 0xb5   // lda $nn,x        2 bytes
 #define LDA_ZPINDIRECT	0xb1	// lda ($nn),y		2 bytes
 #define LDX_IMMEDIATE	0xa2	// ldx #$nn			2 bytes
 #define LDX_ZEROPAGE	0xa6	// ldx $nn			2 bytes
 #define LDY_IMMEDIATE	0xa0	// ldy #$nn			2 bytes
 #define STA_ABSOLUTE	0x8d	// sta $nnnn		3 bytes
+#define STA_ABSOLUTEX   0x9d    // sta $nnnn,x      3 bytes
 #define STA_ZEROPAGE	0x85	// sta $nn			2 bytes
 #define STA_ZPINDIRECT	0x91	// sta ($nn),y		2 bytes
 #define STA_X_INDEXED_ZP 0x95	// sta $nn,x		2 bytes
@@ -102,6 +106,7 @@
 
 #define BSS_HEAPBOTTOM	"HEAPBOTTOM"
 #define BSS_INTBUF		"INTBUF"
+#define BSS_ZPBACKUP    "ZPBACKUP"
 
 // Data Locations
 
@@ -145,6 +150,7 @@
 #define RT_INT16TOFLOAT			(RT_BASE + 87)
 #define RT_LEFTPAD				(RT_BASE + 6)
 #define RT_LEINT16				(RT_BASE + 36)
+#define RT_LOADREAL             (RT_BASE + 201)
 #define RT_LTINT16				(RT_BASE + 39)
 #define RT_MEMCOPY				(RT_BASE + 171)
 #define RT_MODINT16				(RT_BASE + 30)

@@ -30,7 +30,11 @@ void genCharValueA(CHUNKNUM chunkNum);
 void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar);
 void genFreeVariableHeaps(short* heapOffsets);
 void genIntValueAX(CHUNKNUM chunkNum);
-void genProgram(CHUNKNUM astRoot);
+#ifdef COMPILERTEST
+void genProgram(CHUNKNUM astRoot, const char* prgFilename, char* nextTest);
+#else
+void genProgram(CHUNKNUM astRoot, const char* prgFilename);
+#endif
 void genRealValueEAX(CHUNKNUM chunkNum);
 void genRoutineDeclarations(CHUNKNUM chunkNum);
 void genStringValueAX(CHUNKNUM chunkNum);
