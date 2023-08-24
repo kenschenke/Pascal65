@@ -46,7 +46,7 @@ static void genCaseStmt(struct stmt* pStmt)
 			}
 			genExpr(exprChunk, 1, 0, 0);
 
-			if (exprType.kind == TYPE_INTEGER) {
+			if (exprType.kind == TYPE_INTEGER || exprType.kind == TYPE_ENUMERATION || exprType.kind == TYPE_CHARACTER) {
 				genThreeAddr(JSR, RT_POPTOINTOP2);
 				if (first) {
 					genThreeAddr(JSR, RT_POPTOINTOP1);
