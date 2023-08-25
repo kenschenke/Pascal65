@@ -223,6 +223,13 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		retrieveChunk(_expr.name, name);
 		scope_lookup(name, &sym);
 		retrieveChunk(sym.type, &rightType);
+		if (rightType.kind == TYPE_DECLARED) {
+			struct symbol typeSym;
+			memset(name, 0, sizeof(name));
+			retrieveChunk(rightType.name, name);
+			scope_lookup(name, &typeSym);
+			retrieveChunk(typeSym.type, &rightType);
+		}
 		if (rightType.flags & TYPE_FLAG_ISRETVAL) {
 			genTwo(LDA_ZEROPAGE, ZP_STACKFRAMEL);
 			genOne(SEC);
