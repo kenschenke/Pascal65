@@ -456,6 +456,11 @@ static void checkReadReadlnCall(CHUNKNUM argChunk)
 
 static void checkRelOpOperands(struct type* pType1, struct type* pType2)
 {
+	struct type type1, type2;
+
+	memcpy(&type1, pType1, sizeof(struct type));
+	memcpy(&type2, pType2, sizeof(struct type));
+
 	if (pType1->kind == TYPE_BOOLEAN && pType2->kind == TYPE_BOOLEAN) {
 		return;
 	}
@@ -464,9 +469,11 @@ static void checkRelOpOperands(struct type* pType1, struct type* pType2)
 		return;
 	}
 
-	if ((pType1->kind == TYPE_ENUMERATION || pType1->kind == TYPE_ENUMERATION_VALUE) &&
-		(pType2->kind == TYPE_ENUMERATION || pType2->kind == TYPE_ENUMERATION_VALUE)) {
-		if (pType1->subtype != pType2->subtype) {
+	getBaseType(&type1);
+	getBaseType(&type2);
+	if ((type1.kind == TYPE_ENUMERATION || type1.kind == TYPE_ENUMERATION_VALUE) &&
+		(type2.kind == TYPE_ENUMERATION || type2.kind == TYPE_ENUMERATION_VALUE)) {
+		if (type1.subtype != type2.subtype) {
 			Error(errIncompatibleTypes);
 		}
 		return;
