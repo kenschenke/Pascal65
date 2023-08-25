@@ -203,7 +203,6 @@ static void genOrdCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 
 	genExpr(arg.left, 1, 0, 0);
-	genThreeAddr(JSR, RT_PUSHINT);
 }
 
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
