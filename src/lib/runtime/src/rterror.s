@@ -25,85 +25,30 @@ rteInvalidUserInputMsg: .asciiz "invalid user input"
 rteUnimplementedRuntimeFeatureMsg: .asciiz "unimplemented runtime feature"
 rteOutOfMemoryMsg: .asciiz "out of memory"
 
-.bss
-
-runtimeMsgs: .res 16
+runtimeMsgs:
+    .byte <rteStackOverflowMsg,               >rteStackOverflowMsg
+    .byte <rteValueOutOfRangeMsg,             >rteValueOutOfRangeMsg
+    .byte <rteInvalidCaseValueMsg,            >rteInvalidCaseValueMsg
+    .byte <rteDivisionByZeroMsg,              >rteDivisionByZeroMsg
+    .byte <rteInvalidFunctionArgumentMsg,     >rteInvalidFunctionArgumentMsg
+    .byte <rteInvalidUserInputMsg,            >rteInvalidUserInputMsg
+    .byte <rteUnimplementedRuntimeFeatureMsg, >rteUnimplementedRuntimeFeatureMsg
+    .byte <rteOutOfMemoryMsg,                 >rteOutOfMemoryMsg
 
 .code
 
 ; Initialize the runtime error message table
 .proc runtimeErrorInit
-    ldy #0
-    lda #<runtimeMsgs
-    sta ptr1
-    lda #>runtimeMsgs
-    sta ptr1 + 1
-
-    lda #<rteStackOverflowMsg
-    sta (ptr1),y
-    iny
-    lda #>rteStackOverflowMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteValueOutOfRangeMsg
-    sta (ptr1),y
-    iny
-    lda #>rteValueOutOfRangeMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteInvalidCaseValueMsg
-    sta (ptr1),y
-    iny
-    lda #>rteInvalidCaseValueMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteDivisionByZeroMsg
-    sta (ptr1),y
-    iny
-    lda #>rteDivisionByZeroMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteInvalidFunctionArgumentMsg
-    sta (ptr1),y
-    iny
-    lda #>rteInvalidFunctionArgumentMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteInvalidUserInputMsg
-    sta (ptr1),y
-    iny
-    lda #>rteInvalidUserInputMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteUnimplementedRuntimeFeatureMsg
-    sta (ptr1),y
-    iny
-    lda #>rteUnimplementedRuntimeFeatureMsg
-    sta (ptr1),y
-    iny
-
-    lda #<rteOutOfMemoryMsg
-    sta (ptr1),y
-    iny
-    lda #>rteOutOfMemoryMsg
-    sta (ptr1),y
-    
     rts
 .endproc
 
 ; Prints runtime error message to console and exits
 ; Runtime error code in A
 .proc runtimeError
-    sta tmp1
-    dec tmp1
-    asl tmp1
-    ldy tmp1
+    sta tmp1            ; store the error number in tmp1
+    dec tmp1            ; decrement by 1 (runtimeMsgs is zero-based)
+    asl tmp1            ; multiply by 2
+    ldy tmp1            ; put the error number index in Y
     lda #<runtimeMsgs
     sta ptr1
     lda #>runtimeMsgs
