@@ -523,11 +523,13 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 		}
 		else {
 			CHUNKNUM name = _type.name;
+			char typeFlags = _type.flags;
 			retrieveChunk(declSym.type, &_type);
 			if (_type.kind == TYPE_ENUMERATION) {
 				_type.subtype = declSym.type;
 			}
 			_type.name = name;
+			_type.flags = typeFlags;
 		}
 	}
 

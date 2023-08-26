@@ -225,10 +225,12 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		retrieveChunk(sym.type, &rightType);
 		if (rightType.kind == TYPE_DECLARED) {
 			struct symbol typeSym;
+			char typeFlags = rightType.flags;
 			memset(name, 0, sizeof(name));
 			retrieveChunk(rightType.name, name);
 			scope_lookup(name, &typeSym);
 			retrieveChunk(typeSym.type, &rightType);
+			rightType.flags = typeFlags;
 		}
 		if (rightType.flags & TYPE_FLAG_ISRETVAL) {
 			genTwo(LDA_ZEROPAGE, ZP_STACKFRAMEL);
@@ -253,8 +255,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(LDX_IMMEDIATE, (unsigned char)(sym.offset));
 			genThreeAddr(JSR, RT_CALCSTACK);
 		}
-		if (rightType.kind != TYPE_ARRAY && rightType.kind != TYPE_RECORD &&
-			rightType.flags & TYPE_FLAG_ISBYREF) {
+		if (rightType.flags & TYPE_FLAG_ISBYREF) {
 			genTwo(LDY_IMMEDIATE, 1);
 			genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
 			genOne(PHA);
