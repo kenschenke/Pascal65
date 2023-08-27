@@ -469,7 +469,7 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 		}
 	}
 
-	if (_decl.kind == DECL_TYPE && _type.kind == TYPE_RECORD) {
+	if (_type.kind == TYPE_RECORD && _type.symtab == 0) {
 		struct decl fieldDecl;
 		struct symbol fieldSymbol;
 		struct type fieldType;

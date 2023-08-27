@@ -1,6 +1,7 @@
 Program VarTest;
 
 Type
+    Days = (Mon, Tue, Wed, Thu, Fri, Sat, Sun);
 	MyArray = Array[1..3] Of Integer;
 	MyRecord = Record
 		a, b : Integer;
@@ -12,6 +13,9 @@ Var
 	k, m : Integer;
 	r, s : MyRecord;
     i : Integer;
+	c, e : Char;
+    g, h : Days;
+    u, v : Real;
 
 Procedure Error(num : Integer);
 Begin
@@ -56,6 +60,30 @@ Begin
 	If u.b <> 8 Then Error(12);
 End;
 
+Procedure Proc4(m : Char; Var n : Char);
+Begin
+	If m <> 'c' Then Error(21);
+	If n <> 'd' Then Error(22);
+	m := 'f';
+	n := 'e';
+End;
+
+Procedure Proc5(o : Days; Var p : Days);
+Begin
+    If o <> Tue Then Error(25);
+    If p <> Wed Then Error(26);
+    o := Fri;
+    p := Thu;
+End;
+
+Procedure Proc6(w : Real; Var x : Real);
+Begin
+    If Abs(w - 1.23) > 0.01 Then Error(29);
+    If Abs(x - 5.45) > 0.01 Then Error(30);
+    w := 10.97;
+    x := 15.5;
+End;
+
 Begin
 	Writeln('Running');
 	
@@ -88,6 +116,24 @@ Begin
 	If r.b <> 2 Then Error(18);
 	If s.a <> 7 Then Error(19);
 	If s.b <> 8 Then Error(20);
+
+	c := 'c';
+	e := 'd';
+	Proc4(c, e);
+	If c <> 'c' Then Error(23);
+	If e <> 'e' Then Error(24);
+
+    g := Tue;
+    h := Wed;
+    Proc5(g, h);
+    If g <> Tue Then Error(27);
+    If h <> Thu Then Error(28);
+
+    u := 1.23;
+    v := 5.45;
+    Proc6(u, v);
+    If Abs(u - 1.23) > 0.01 Then Error(31);
+    If Abs(v - 15.5) > 0.01 Then Error(32);
 
     If anyErrors Then Begin
         Write('Type any number to continue: ');

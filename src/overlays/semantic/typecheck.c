@@ -72,10 +72,8 @@ static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk)
 
 static char checkAbsSqrCall(CHUNKNUM argChunk)
 {
-	char name[CHUNK_LEN + 1];
 	struct expr _expr;
 	struct type _type;
-	struct symbol sym;
 
 	// Needs to have the first parameter
 	if (!argChunk) {
@@ -91,31 +89,13 @@ static char checkAbsSqrCall(CHUNKNUM argChunk)
 	}
 
 	// Look at the argument
-	retrieveChunk(_expr.left, &_expr);
-	if (_expr.kind == EXPR_INTEGER_LITERAL) {
-		return TYPE_INTEGER;
-	}
-	if (_expr.kind == EXPR_REAL_LITERAL) {
-		return TYPE_REAL;
-	}
-	if (_expr.kind != EXPR_NAME) {
+	expr_typecheck(_expr.left, 0, &_type, 0);
+	if (_type.kind != TYPE_INTEGER && _type.kind != TYPE_REAL) {
 		Error(errInvalidType);
 		return TYPE_VOID;
 	}
-	retrieveChunk(_expr.name, name);
-	if (!scope_lookup(name, &sym)) {
-		Error(errUndefinedIdentifier);
-		return TYPE_VOID;
-	}
-	retrieveChunk(sym.type, &_type);
-	getBaseType(&_type);
 
-	if (_type.kind == TYPE_INTEGER || _type.kind == TYPE_REAL) {
-		return _type.kind;
-	}
-
-	Error(errIncompatibleTypes);
-	return TYPE_VOID;
+	return _type.kind;
 }
 
 static void checkArraysSameType(struct type* pType1, struct type* pType2)
