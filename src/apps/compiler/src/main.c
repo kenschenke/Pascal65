@@ -8,13 +8,18 @@
 #include <parser.h>
 #include <semantic.h>
 #include <codegen.h>
+#include <int16.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
 
+char intBuf[15];
+
 void main()
 {
     CHUNKNUM tokenId, astRoot;
+
+    setIntBuf(intBuf);
 
     initBlockStorage();
     initCommon();
@@ -49,7 +54,7 @@ void main()
 
     printf("Loading code generation overlay\n");
     if (loadfile("compiler.4")) {
-        genProgram(astRoot);
+        genProgram(astRoot, "hello");
     }
 
     log("main", "back to main code");
