@@ -461,6 +461,7 @@ struct symbol {
     char unused[CHUNK_LEN - 19];
 };
 
+CHUNKNUM name_clone(CHUNKNUM source);
 CHUNKNUM name_create(const char* name);
 
 CHUNKNUM declCreate(
