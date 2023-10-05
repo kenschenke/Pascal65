@@ -70,7 +70,7 @@ static void freeLinkerSymbol(CHUNKNUM chunkNum)
 {
 	struct LINKSYMBOL sym;
 
-	if (chunkNum == 0) {
+	if (chunkNum == 0 || !isChunkAllocated(chunkNum)) {
 		return;
 	}
 

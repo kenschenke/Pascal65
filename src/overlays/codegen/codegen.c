@@ -45,6 +45,7 @@ static short heapOffset;
 
 static int addStringLiteral(CHUNKNUM chunkNum);
 static void dumpStringLiterals(void);
+static void freeStringLiterals(void);
 static void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar,
 	int numElements, CHUNKNUM arrayNum);
 static void genExeHeader(void);
@@ -97,6 +98,16 @@ static void dumpStringLiterals(void)
 
 		++num;
 	}
+}
+
+static void freeStringLiterals(void)
+{
+	if (stringLiterals && isChunkAllocated(stringLiterals)) {
+		freeMemBuf(stringLiterals);
+	}
+
+	stringLiterals = 0;
+	numStringLiterals = 0;
 }
 
 void genOne(unsigned char b)
@@ -457,7 +468,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 }
 
 #ifdef COMPILERTEST
-void genProgram(CHUNKNUM astRoot, const char* prgFilename, char* nextTest)
+void genProgram(CHUNKNUM astRoot, const char*prgFilename, char* nextTest)
 #else
 void genProgram(CHUNKNUM astRoot, const char* prgFilename)
 #endif
@@ -680,6 +691,7 @@ void genProgram(CHUNKNUM astRoot, const char* prgFilename)
 
 	fclose(out);
 	freeMemBuf(codeBuf);
+	freeStringLiterals();
 }
 
 void genBoolValueA(CHUNKNUM chunkNum)

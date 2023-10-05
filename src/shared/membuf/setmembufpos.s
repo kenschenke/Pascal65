@@ -56,15 +56,6 @@ L2:
     sta hdrChunkNum
     stx hdrChunkNum + 1
 
-    ; Call reserveMemBuf for the requested position in case the caller
-    ; is trying to seek past the end of the current capacity.
-    lda hdrChunkNum
-    ldx hdrChunkNum + 1
-    jsr pushax
-    lda position
-    ldx position + 1
-    jsr _reserveMemBuf
-
     ; Call loadMemBufHeaderCache
     lda hdrChunkNum
     ldx hdrChunkNum + 1
@@ -101,12 +92,12 @@ L1:
     adc position
     sta _cachedMemBufHdr + MEMBUF::posGlobal
     lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
-    adc position + 1
+    adc #0 ; position + 1
     sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
     ; set the chunk position
     lda position
     sta _cachedMemBufHdr + MEMBUF::posChunk
-    lda position + 1
+    lda #0 ; position + 1
     sta _cachedMemBufHdr + MEMBUF::posChunk + 1
     jmp L3
 

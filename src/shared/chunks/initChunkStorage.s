@@ -13,7 +13,7 @@
 .include "blocks.inc"
 .include "chunks.inc"
 
-.import _currentBlock, _blockData, _availChunks, _getTotalBlocks
+.import _currentBlock, _blockData, _FullBlocks, _availChunks, _getTotalBlocks
 .importzp ptr1
 
 .export _initChunkStorage
@@ -34,6 +34,43 @@ numBlocks: .res 2
     sta _currentBlock + 1
     sta _blockData
     sta _blockData + 1
+
+    ; Zero out the FullBlocks array
+
+    lda #<MAX_BLOCKS
+    sta numBlocks
+    lda #>MAX_BLOCKS
+    sta numBlocks + 1
+
+    ; divide numBlocks by 8
+
+    ldy #3
+@L1:
+    lsr numBlocks + 1
+    ror numBlocks
+    dey
+    bne @L1
+
+    ; Subtract one from numBlocks (for looping)
+    jsr Sub1
+
+    ; Loop through _FullBlocks
+
+    lda #<_FullBlocks
+    sta ptr1
+    lda #>_FullBlocks
+    sta ptr1 + 1
+
+    ldy #0
+@L2:
+    lda #0
+    sta (ptr1),y
+    jsr Sub1
+    lda numBlocks
+    ora numBlocks + 1
+    bne @L2
+
+    ; Calculate avail chunks
 
     jsr _getTotalBlocks
     sta numBlocks

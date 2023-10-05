@@ -1,7 +1,7 @@
-.import _blockData, _availChunks, _retrieveBlock
+.import _FullBlocks, _blockData, _availChunks
 .importzp ptr1, ptr2, tmp1, tmp2
 
-.export extractBlockAndChunkNum, isBlockFull, isCurrentBlockFull
+.export clearBlockFull, extractBlockAndChunkNum, isBlockFull, setBlockFull
 .export clearChunkAlloc, isChunkAlloc, setChunkAlloc, packBlockAndChunkNum
 .export incAvailChunks, decAvailChunks
 
@@ -41,7 +41,7 @@ allocClearMasks:
 ; The upper nibble of the LB and both nibbles of the HB are the
 ; zero-based 12-bit block number.
 ;
-; This routine is used internally by isBlockFull
+; This routine is used internally by the clearBlockFull, isBlockFull, and setBlockFull
 ; to access the block number.  It is also available to callers from other routines to
 ; access the block number and chunk number.
 ;
@@ -147,7 +147,7 @@ allocClearMasks:
 ; Inputs:
 ;   blockNum in A (LB) and X (HB).
 ; Outputs:
-;   None. blockNum converted to index in _AllocatedBlocks and remBlock set.
+;   None. blockNum converted to index in _FullBlocks or _AllocatedBlocks and remBlock set.
 
 .proc getBlockAllocIndex
     sta blockNum
@@ -167,39 +167,114 @@ allocClearMasks:
     rts
 .endproc
 
+; This clears the bit that determines if a block is currently full.
+; The 16-bit block number value is passed in .A (LB) and .X (HB).
+; The block number is zero-based.
+.proc clearBlockFull
+    sta blockNum
+    stx blockNum + 1
+    jsr getBlockAllocIndex
+
+    lda #<_FullBlocks
+    sta ptr1
+    lda #>_FullBlocks
+    sta ptr1 + 1
+
+    ; add the index
+    clc
+    lda ptr1
+    adc blockNum
+    sta ptr1
+    lda ptr1 + 1
+    adc blockNum + 1
+    sta ptr1 + 1
+
+    ; clear the bit within the index
+    lda #<allocClearMasks
+    sta ptr2
+    lda #>allocClearMasks
+    sta ptr2 + 1
+    ldy #0
+    lda (ptr1),y
+    ldy remBlock
+    and (ptr2),y
+    ldy #0
+    sta (ptr1),y
+
+    rts
+.endproc
+
 ; This routine checks if a block is currently full.
 ; The 16-bit block number is passed in .A (LB) and .X (HB).
 ; Zero is returned in .A if not full, non-zero otherwise.
 ; The block number is zero-based.
-isBlockFull:
-    jsr _retrieveBlock
-isBlockFull2:
+.proc isBlockFull
+    sta blockNum
+    stx blockNum + 1
+    jsr getBlockAllocIndex
+
+    lda #<_FullBlocks
     sta ptr1
-    stx ptr1 + 1
+    lda #>_FullBlocks
+    sta ptr1 + 1
+
+    ; add the index
+    clc
+    lda ptr1
+    adc blockNum
+    sta ptr1
+    lda ptr1 + 1
+    adc blockNum + 1
+    sta ptr1 + 1
+
+    ; check the bit within the index
+    lda #<allocReadMasks
+    sta ptr2
+    lda #>allocReadMasks
+    sta ptr2 + 1
     ldy #0
     lda (ptr1),y
-    cmp #%11111111
-    bne @L1
-    iny
+    ldy remBlock
+    and (ptr2),y
+
+    rts
+.endproc
+
+; This routine sets a block as currently full.
+; The 16-bit block number is passed in .A (LB) and .X (HB).
+; The block number is zero-based.
+.proc setBlockFull
+    sta blockNum
+    stx blockNum + 1
+    jsr getBlockAllocIndex
+
+    lda #<_FullBlocks
+    sta ptr1
+    lda #>_FullBlocks
+    sta ptr1 + 1
+
+    ; add the index
+    clc
+    lda ptr1
+    adc blockNum
+    sta ptr1
+    lda ptr1 + 1
+    adc blockNum + 1
+    sta ptr1 + 1
+
+    ; set the bit within the index
+    lda #<allocReadMasks
+    sta ptr2
+    lda #>allocReadMasks
+    sta ptr2 + 1
+    ldy #0
     lda (ptr1),y
-    cmp #%00000111
-    bne @L1
+    ldy remBlock
+    ora (ptr2),y
+    ldy #0
+    sta (ptr1),y
 
-    lda #1
-    ldx #0
     rts
-
-@L1:
-    lda #0
-    ldx #0
-    rts
-
-; This routine checks if the current block is full.
-; Zero is returned in .A if not full, non-zero otherwise.
-.proc isCurrentBlockFull
-    lda _blockData
-    ldx _blockData + 1
-    jmp isBlockFull2
 .endproc
 
 ; This routine clears a chunk as allocated in the current block.
@@ -207,16 +282,16 @@ isBlockFull2:
 ; The current block is in _blockData.
 .proc clearChunkAlloc
     sta tmp2        ; remainder
-    cmp #8
-    bpl @SubEight   ; chunk number > 7
+    and #8
+    bne @SubEight   ; chunk number > 7
     ; Chunk number is 7 or less
     lda #0
     sta tmp1
     jmp @ClearAlloc
 @SubEight:
     ; Chunk number is 8 or more.
-    sec
-    sbc #8          ; subtract 8
+    lda tmp2
+    and #7
     sta tmp2        ; what's left is the remainder
     lda #1          ; index is 1
     sta tmp1        ; store it in tmp1
@@ -249,16 +324,16 @@ isBlockFull2:
 ; The current block is in _blockData.
 .proc isChunkAlloc
     sta tmp2        ; remainder
-    cmp #8
-    bpl @SubEight   ; chunk number > 7
+    and #8
+    bne @SubEight   ; chunk number > 7
     ; Chunk number is 7 or less
     lda #0
     sta tmp1
     jmp @IsAlloc
 @SubEight:
     ; Chunk number is 8 or more.
-    sec
-    sbc #8          ; subtract 8
+    lda tmp2
+    and #7
     sta tmp2        ; what's left is the remainder
     lda #1          ; index is 1
     sta tmp1        ; store it in tmp1
@@ -287,16 +362,16 @@ isBlockFull2:
 ; The current block is in _blockData.
 .proc setChunkAlloc
     sta tmp2        ; remainder
-    cmp #8
-    bpl @SubEight   ; chunk number > 7
+    and #8
+    bne @SubEight   ; chunk number > 7
     ; Chunk number is 7 or less
     lda #0
     sta tmp1
     jmp @SetAlloc
 @SubEight:
     ; Chunk number is 8 or more.
-    sec
-    sbc #8          ; subtract 8
+    lda tmp2
+    and #7
     sta tmp2        ; what's left is the remainder
     lda #1          ; index is 1
     sta tmp1        ; store it in tmp1

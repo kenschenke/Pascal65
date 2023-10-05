@@ -19,7 +19,6 @@
 #define MAX_LINE_LEN 80
 
 extern char eofChar;
-extern unsigned inputPosition;
 
 void tinOpen(const char *pFilename, TAbortCode ac);
 void tinClose(void);

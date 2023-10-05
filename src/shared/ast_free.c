@@ -1,11 +1,16 @@
 #include <ast.h>
 #include <chunks.h>
+#include <symtab.h>
 
 void decl_free(CHUNKNUM chunkNum)
 {
 	struct decl _decl;
 
 	while (chunkNum) {
+		if (!isChunkAllocated(chunkNum)) {
+			break;
+		}
+
 		if (!retrieveChunk(chunkNum, &_decl)) {
 			return;
 		}
@@ -17,7 +22,8 @@ void decl_free(CHUNKNUM chunkNum)
 		symtab_free(_decl.symtab);
 		symtab_free(_decl.node);
 
-		freeChunk(chunkNum);
+		if (isChunkAllocated(chunkNum))
+			freeChunk(chunkNum);
 		chunkNum = _decl.next;
 	}
 }
@@ -30,8 +36,22 @@ void expr_free(CHUNKNUM chunkNum)
 		return;
 	}
 
+	if (!isChunkAllocated(chunkNum)) {
+		return;
+	}
 	if (!retrieveChunk(chunkNum, &_expr)) {
 		return;
+	}
+
+	if (_expr.kind == EXPR_STRING_LITERAL && _expr.value.stringChunkNum) {
+		STRVALCHUNK strChunk;
+		CHUNKNUM stringChunkNum = _expr.value.stringChunkNum;
+
+		while (stringChunkNum) {
+			retrieveChunk(stringChunkNum, &strChunk);
+			freeChunk(stringChunkNum);
+			stringChunkNum = strChunk.nextChunkNum;
+		}
 	}
 
 	if (_expr.name) freeChunk(_expr.name);
@@ -90,6 +110,9 @@ void symtab_free(CHUNKNUM chunkNum)
 		return;
 	}
 
+	if (!isChunkAllocated(chunkNum)) {
+		return;
+	}
 	if (!retrieveChunk(chunkNum, &sym)) {
 		return;
 	}
@@ -98,7 +121,7 @@ void symtab_free(CHUNKNUM chunkNum)
 	symtab_free(sym.rightChild);
 	type_free(sym.type);
 
-	if (sym.name) freeChunk(sym.name);
+	if (sym.name && isChunkAllocated(sym.name)) freeChunk(sym.name);
 
 	freeChunk(chunkNum);
 }
@@ -111,6 +134,9 @@ void type_free(CHUNKNUM chunkNum)
 		return;
 	}
 
+	if (!isChunkAllocated(chunkNum)) {
+		return;
+	}
 	if (!retrieveChunk(chunkNum, &_type)) {
 		return;
 	}

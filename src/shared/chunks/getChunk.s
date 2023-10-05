@@ -28,6 +28,16 @@ chunkNum: .res 1
 ; void *getChunk(CHUNKNUM chunkNum)
 .proc _getChunk
 
+    ; Store the chunkNum in blockNum temporarily
+    sta blockNum
+    stx blockNum + 1
+
+    ; Is the input zero?
+    ora blockNum + 1
+    beq F1
+    lda blockNum
+    ldx blockNum + 1
+
     ; blockNum and chunkNum
     jsr extractBlockAndChunkNum
     sta blockNum
@@ -40,6 +50,7 @@ chunkNum: .res 1
     cmp #0
     bne CheckBlock
     ; Fall through to failure
+F1:
     jmp Failure
 
 CheckBlock:

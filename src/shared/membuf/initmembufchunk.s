@@ -109,7 +109,7 @@ hdrChunkNum: .res 2
     ldx chunkNum + 1
     jsr pushax
     lda #<_cachedMemBufData
-    ldx #>_cachedMemBufHdr
+    ldx #>_cachedMemBufData
     jsr _storeChunk
 
     ; Set the header's currentChunkNum to the new chunkNum

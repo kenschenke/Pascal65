@@ -14,8 +14,8 @@
 
 .export _freeMemBuf
 
-.import flushMemBufCache, _freeChunk
-.import loadMemBufHeaderCache, _retrieveChunk
+.import _freeChunk
+.import _retrieveChunk, _storeChunk
 .import _cachedMemBufHdr, _cachedMemBufData
 .import _cachedMemBufHdrChunkNum, _cachedMemBufDataChunkNum
 .import pushax
@@ -35,12 +35,41 @@ hdrChunkNum: .res 2
     stx chunkNum + 1
     stx hdrChunkNum + 1
 
-    jsr flushMemBufCache
+    lda _cachedMemBufHdrChunkNum
+    ora _cachedMemBufHdrChunkNum + 1
+    beq L9
+    lda _cachedMemBufHdrChunkNum
+    ldx _cachedMemBufHdrChunkNum + 1
+    jsr pushax
+    lda #<_cachedMemBufHdr
+    ldx #>_cachedMemBufHdr
+    jsr _storeChunk
+    lda #0
+    sta _cachedMemBufHdrChunkNum
+    sta _cachedMemBufHdrChunkNum + 1
 
+L9:
+    lda _cachedMemBufDataChunkNum
+    ora _cachedMemBufDataChunkNum + 1
+    beq L8
+    lda _cachedMemBufDataChunkNum
+    ldx _cachedMemBufDataChunkNum + 1
+    jsr pushax
+    lda #<_cachedMemBufData
+    ldx #>_cachedMemBufData
+    jsr _storeChunk
+    lda #0
+    sta _cachedMemBufDataChunkNum
+    sta _cachedMemBufDataChunkNum + 1
+
+L8:
     ; Call loadHeaderCache
-    lda chunkNum
-    ldx chunkNum + 1
-    jsr loadMemBufHeaderCache
+    lda hdrChunkNum
+    ldx hdrChunkNum + 1
+    jsr pushax
+    lda #<_cachedMemBufHdr
+    ldx #>_cachedMemBufHdr
+    jsr _retrieveChunk
 
     ; Store the first chunkNum
     lda _cachedMemBufHdr + MEMBUF::firstChunkNum
@@ -84,13 +113,6 @@ L2:
     lda hdrChunkNum
     ldx hdrChunkNum + 1
     jsr _freeChunk
-
-    ; Clear the cached chunk numbers
-    lda #0
-    sta _cachedMemBufHdrChunkNum
-    sta _cachedMemBufHdrChunkNum + 1
-    sta _cachedMemBufDataChunkNum
-    sta _cachedMemBufDataChunkNum + 1
 
     rts
 

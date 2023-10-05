@@ -240,6 +240,9 @@ void freeBlock(BLOCKNUM blockNum)
 
 	// Set the first two bytes to zero in the block.
 #ifdef USE_EMD
+	if (sharedBlock) {
+		em_commit();
+	}
 	p = em_use(blockNum);
 	p[0] = p[1] = 0;
 	em_commit();

@@ -15,8 +15,8 @@
 
 .export _freeChunk
 
-.import _currentBlock, _storeBlock, _blockData, _freeBlock, _retrieveBlock
-.import __chunkGetBlock, clearChunkAlloc, isChunkAlloc, extractBlockAndChunkNum
+.import _currentBlock, _storeBlock, _blockData, _FullBlocks, _freeBlock, _retrieveBlock
+.import __chunkGetBlock, clearChunkAlloc, clearBlockFull, isChunkAlloc, extractBlockAndChunkNum
 .import incAvailChunks
 .importzp ptr1
 
@@ -46,7 +46,7 @@ chunkNum: .res 1
     bne @StoreCurrentBlock  ; yes
     lda _currentBlock + 1
     cmp blockNum + 1
-    beq FreeChunk           ; no
+    beq IsChunkAlreadyFreed ; no
 
 @StoreCurrentBlock:
     ; Store the current block
@@ -67,17 +67,27 @@ GetBlock:
     ldx blockNum + 1
     jsr __chunkGetBlock
     cmp #0
-    bne FreeChunk
+    bne IsChunkAlreadyFreed
     jmp Failure             ; retrieveBlock returned NULL
 
 JmpDone:
     jmp Done
 
-FreeChunk:
+IsChunkAlreadyFreed:
+    ; Check if this chunk is already freed
+    lda chunkNum
+    jsr isChunkAlloc
+    cmp #0                  ; Is is free?
+    beq Failure             ; Yes. Nothing to do.
+
     ; Set the chunk to show free in the chunk allocation table
     ; at the beginning of the block
     lda chunkNum
     jsr clearChunkAlloc
+    ; The block is no longer full either
+    lda blockNum
+    ldx blockNum + 1
+    jsr clearBlockFull
 
     ; Check if all other chunks in this block are also freed
     lda #0
@@ -109,6 +119,7 @@ Failure:
     sta _currentBlock + 1
     sta _blockData
     sta _blockData + 1
+    rts
 
 Done:
     jmp incAvailChunks

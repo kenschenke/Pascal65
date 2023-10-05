@@ -16,7 +16,7 @@
 .importzp ptr1
 .import _allocBlock, _storeBlock, _isBlockAllocated, _retrieveBlock, _currentBlock, _blockData
 .import __chunkGetBlock, isChunkAlloc, isBlockFull, _getTotalBlocks, setChunkAlloc, packBlockAndChunkNum
-.import clearChunkAlloc, packBlockAndChunkNum, decAvailChunks, _flushChunkBlock, isCurrentBlockFull
+.import setBlockFull, clearChunkAlloc, clearBlockFull, packBlockAndChunkNum, decAvailChunks, _flushChunkBlock
 
 .export _allocChunk
 
@@ -55,7 +55,9 @@ totalBlocks: .res 2
     ; See if the current block has a free chunk
 
 @HasFreeChunk:
-    jsr isCurrentBlockFull
+    lda _currentBlock
+    ldx _currentBlock + 1
+    jsr isBlockFull
     cmp #0
     beq @J3                 ; it has a free chunk
 
@@ -193,6 +195,12 @@ totalBlocks: .res 2
     dec idx
     bpl @L3
 
+    ; Block is now full
+
+    lda _currentBlock
+    ldx _currentBlock + 1
+    jsr setBlockFull
+
 @Done:
     jsr decAvailChunks
     lda #1
@@ -231,6 +239,11 @@ totalBlocks: .res 2
     sta (ptr1),y
     iny
     sta (ptr1),y
+
+    ; Make sure the new block is not marked as full
+    lda _currentBlock
+    ldx _currentBlock + 1
+    jsr clearBlockFull
 
     lda #1                  ; Success
     rts

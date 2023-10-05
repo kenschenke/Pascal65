@@ -135,7 +135,7 @@ CHUNKNUM parseSubroutine(void)
 		retnTypeChunk = typeCreate(_type.kind, 0, _type.subtype, 0);
 		retrieveChunk(retnTypeChunk, &retnType);
 		retnType.flags = TYPE_FLAG_ISRETVAL;
-		retnType.name = _type.name;
+		retnType.name = _type.name == 0 ? 0 : name_clone(_type.name);
 		storeChunk(retnTypeChunk, &retnType);
 		retDeclChunk = declCreate(DECL_VARIABLE, name_create(name), retnTypeChunk, 0);
 

@@ -315,11 +315,17 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 		Error(errWrongNumberOfParams);
 	}
 
-	retrieveChunk(_type.subtype, &_type);
-	pRetnType->kind = _type.kind;
-	pRetnType->subtype = _type.subtype;
-	if (_type.name) {
-		pRetnType->name = _type.name;
+	if (_type.subtype) {
+		retrieveChunk(_type.subtype, &_type);
+		pRetnType->kind = _type.kind;
+		pRetnType->subtype = _type.subtype;
+		if (_type.name) {
+			pRetnType->name = _type.name;
+		}
+	} else {
+		pRetnType->kind = 0;
+		pRetnType->subtype = 0;
+		pRetnType->name = 0;
 	}
 }
 
@@ -982,10 +988,27 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			break;
 		}
 		// Grab the symbol table from the left child
-		retrieveChunk(_expr.node, &sym);
-		retrieveChunk(sym.type, &rightType);
-		expr_typecheck(_expr.right, rightType.symtab, pType, 0);
-		pType->symtab = rightType.symtab;
+		if (_expr.node == 0) {
+			struct expr exprLeft;
+			retrieveChunk(_expr.left, &exprLeft);
+			while (1) {
+				if (exprLeft.kind == EXPR_FIELD || exprLeft.kind == EXPR_SUBSCRIPT) {
+					retrieveChunk(exprLeft.left, &exprLeft);
+					continue;
+				}
+				retrieveChunk(exprLeft.node, &sym);
+				retrieveChunk(sym.type, &rightType);
+				expr_typecheck(_expr.right, rightType.symtab, pType, 0);
+				pType->symtab = rightType.symtab;
+				break;
+			}
+		}
+		else {
+			retrieveChunk(_expr.node, &sym);
+			retrieveChunk(sym.type, &rightType);
+			expr_typecheck(_expr.right, rightType.symtab, pType, 0);
+			pType->symtab = rightType.symtab;
+		}
 		break;
 
 	default:

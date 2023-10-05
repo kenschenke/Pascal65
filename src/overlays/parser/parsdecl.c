@@ -57,11 +57,10 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
     switch (parserToken) {
     case tcIdentifier: {
         struct type _type;
-        CHUNKNUM name = name_create(parserString);
         *type = typeCreate(TYPE_DECLARED, 1, 0, 0);
-        expr = exprCreate(EXPR_NAME, 0, 0, name, 0);
+        expr = exprCreate(EXPR_NAME, 0, 0, name_create(parserString), 0);
         retrieveChunk(*type, &_type);
-        _type.name = name;
+        _type.name = name_create(parserString);
         storeChunk(*type, &_type);
         getToken();
         break;

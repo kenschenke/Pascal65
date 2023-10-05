@@ -30,6 +30,21 @@ CHUNKNUM declCreate(
     return chunkNum;
 }
 
+CHUNKNUM name_clone(CHUNKNUM source) {
+    CHUNKNUM chunkNum;
+    char buf[CHUNK_LEN];
+
+    retrieveChunk(source, buf);
+
+    if (!allocChunk(&chunkNum)) {
+        return 0;
+    }
+
+    storeChunk(chunkNum, buf);
+
+    return chunkNum;
+}
+
 CHUNKNUM name_create(const char* name) {
     CHUNKNUM chunkNum;
     char buf[CHUNK_LEN];
@@ -156,7 +171,6 @@ CHUNKNUM symbol_create(symbol_t kind, CHUNKNUM type, const char* name)
     }
 
     _symbol.kind = kind;
-    _symbol.leftChild = _symbol.rightChild = 0;
     _symbol.type = type;
     _symbol.name = name_create(name);
 
