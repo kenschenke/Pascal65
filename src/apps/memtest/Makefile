@@ -18,6 +18,7 @@ SHAREDSRCDIR = ../../shared
 CHUNKSSRCDIR = ../../shared/chunks
 MEMBUFSRCDIR = ../../shared/membuf
 LIBSRCDIR = ../../lib/common
+RUNTIMESRCDIR = ../../lib/runtime/src
 
 c64_CFLAGS =
 c128_CFLAGS =
@@ -38,6 +39,10 @@ SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.c)
 SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.s)
 SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
 SOURCES += $(SHAREDSRCDIR)/tests.c
+SOURCES += $(RUNTIMESRCDIR)/exit.s
+SOURCES += $(RUNTIMESRCDIR)/inputbuf.s
+SOURCES += $(RUNTIMESRCDIR)/printz.s
+SOURCES += $(RUNTIMESRCDIR)/rterror.s
 
 ifeq ($(TARGET),mega65)
 LIBCSRCDIR = ../../mega65-libc/src
@@ -104,6 +109,10 @@ vpath %.s $(LIBCSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 endif
+
+vpath %.s $(RUNTIMESRCDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)

@@ -6,6 +6,33 @@
 #include <memory.h>
 #endif
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define RANDOM_MAX 4096
+
+static CHUNKNUM chunks[RANDOM_MAX];
+
+static void swap(CHUNKNUM *c1, CHUNKNUM *c2)
+{
+	CHUNKNUM temp = *c1;
+	*c1 = *c2;
+	*c2 = temp;
+}
+
+// This function randomizes the global chunks array, starting at
+// element 0 and for count elements.
+static void randomizeChunks(void)
+{
+	int i, j;
+
+	for (i = RANDOM_MAX - 1; i > 0; --i) {
+		// Pick a random index from 0 to i
+		j = rand() % (i + 1);
+
+		swap(chunks + i, chunks + j);
+	}
+}
 
 void testAllocateAllChunks(void)
 {
@@ -105,6 +132,74 @@ void testGetTotalChunks(void)
 	printf("Running test: Get Total Chunks\n");
 
 	assertEqualInt(getTotalBlocks() * CHUNKS_PER_BLOCK, getTotalChunks());
+}
+
+// This function allocates RANDOM_MAX chunks then frees half of them in a
+// random order then re-allocates the remaining half again.  It then frees
+// all chunks in a random order.
+void testRandomChunks(void)
+{
+	unsigned char chunk[CHUNK_LEN];
+	int i, j, run = 1, avail = getAvailChunks();
+
+	while (1) {
+		printf("Run %d\n", run);
+
+		printf("   Allocating %d chunks\n", RANDOM_MAX);
+		for (i = 0; i < RANDOM_MAX; ++i) {
+			allocChunk(chunks + i);
+			for (j = 0; j < CHUNK_LEN; j += 2) {
+				memcpy(chunk + j, chunks + i, sizeof(CHUNKNUM));
+			}
+			storeChunk(chunks[i], chunk);
+		}
+
+		printf("   Randomizing the chunks\n");
+		randomizeChunks();
+
+		printf("   Freeing %d chunks\n", RANDOM_MAX / 2);
+		for (i = 0; i < RANDOM_MAX / 2; ++i) {
+			retrieveChunk(chunks[i], chunk);
+			for (j = 0; j < CHUNK_LEN - 1; j += 2) {
+				if (memcmp(chunk + j, chunks + i, sizeof(CHUNKNUM))) {
+					printf("different i:%d j:%d\n", i, j);
+					exit(0);
+				}
+			}
+			freeChunk(chunks[i]);
+		}
+
+		printf("   Re-allocating %d chunks\n", RANDOM_MAX / 2);
+		for (i = RANDOM_MAX / 2 - 1; i >= 0 / 2; --i) {
+			allocChunk(chunks + i);
+			for (j = 0; j < CHUNK_LEN - 1; j += 2) {
+				memcpy(chunk + j, chunks + i, sizeof(CHUNKNUM));
+			}
+			storeChunk(chunks[i], chunk);
+		}
+
+		printf("   Randomizing the chunks\n");
+		randomizeChunks();
+
+		printf("   Freeing %d chunks\n", RANDOM_MAX);
+		for (i = 0; i < RANDOM_MAX; ++i) {
+			retrieveChunk(chunks[i], chunk);
+			for (j = 0; j < CHUNK_LEN - 1; j += 2) {
+				if (memcmp(chunk + j, chunks + i, sizeof(CHUNKNUM))) {
+					printf("different 2\n");
+					exit(0);
+				}
+			}
+			freeChunk(chunks[i]);
+		}
+
+		if (getAvailChunks() != avail) {
+			printf("   Used chunks = %d\n", avail - getAvailChunks());
+			exit(0);
+		}
+
+		++run;
+	}
 }
 
 void testRetrieveChunk(void)

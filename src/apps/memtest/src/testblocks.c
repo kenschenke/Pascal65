@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define MAX_STAGGERED 500
+
 void testAllocateAllBlocks(void)
 {
 	int i, j;
@@ -131,6 +133,60 @@ void testReusingFreedBlocks(void)
 		if (i == 4) value = 40;
 		for (j = 0; j < BLOCK_LEN; ++j) {
 			assertEqualByte(value, p[j]);
+		}
+	}
+}
+
+void testStaggeredAlloc(void)
+{
+	unsigned char *p;
+	int i, j;
+	char phrase[8 + 1];
+	BLOCKNUM blockNum;
+
+	printf("Allocating blocks\n");
+	for (i = 1; i < MAX_STAGGERED; ++i) {
+		sprintf(phrase, "BLK%05d", i);
+		p = allocBlock(&blockNum);
+		for (j = 0; j < BLOCK_LEN; j += 8) {
+			memcpy(p, phrase, 8);
+			p += 8;
+		}
+		storeBlock(blockNum);
+	}
+
+	printf("Freeing every 3rd block\n");
+	for (i = 1; i < MAX_STAGGERED; i += 3) {
+		freeBlock(i - 1);
+	}
+
+	printf("Reallocating every 3rd block\n");
+	for (i = 1; i < MAX_STAGGERED; i += 3) {
+		sprintf(phrase, "RAB%05d", i);
+		p = allocBlock(&blockNum);
+		if (blockNum != i - 1) {
+			printf("Gaaa!\n");
+		}
+		for (j = 0; j < BLOCK_LEN; j += 8) {
+			memcpy(p, phrase, 8);
+			p += 8;
+		}
+		storeBlock(blockNum);
+	}
+
+	printf("Checking every block\n");
+	for (i = 1; i < MAX_STAGGERED; ++i) {
+		p = retrieveBlock(i - 1);
+		if (!((i + 2) % 3)) {
+			sprintf(phrase, "RAB%05d", i);
+		} else {
+			sprintf(phrase, "BLK%05d", i);
+		}
+		for (j = 0; j < BLOCK_LEN; j += 8) {
+			if (memcmp(p, phrase, 8)) {
+				printf("Blah!\n");
+			}
+			p += 8;
 		}
 	}
 }

@@ -7,6 +7,7 @@
 void testAllocateAllBlocks(void);
 void testRetrieveBlock(void);
 void testReusingFreedBlocks(void);
+void testStaggeredAlloc(void);
 void testStoreBlock(void);
 
 // Chunks
@@ -14,6 +15,7 @@ void testAllocateAllChunks(void);
 void testFreeChunk(void);
 void testGetAvailChunks(void);
 void testGetTotalChunks(void);
+void testRandomChunks(void);
 void testRetrieveChunk(void);
 void testReusingFreedChunks(void);
 void testFreeingAllChunksInABlock(void);

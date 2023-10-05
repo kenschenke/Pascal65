@@ -3,8 +3,12 @@
 #include <chunks.h>
 #include "memtest.h"
 
+void floatToStr(FLOAT, char *, char) { }
+
 int main()
 {
+    int run = 1;
+
 #if 0
     initBlockStorage();
     testAllocateAllBlocks();
@@ -17,11 +21,27 @@ int main()
 
     initBlockStorage();
     testStoreBlock();
-
-    initBlockStorage();
-    testAllocateAllChunks();
 #endif
 
+    initBlockStorage();
+    testRandomChunks();
+    return 0;
+
+    while (1) {
+        printf("Run %d\n", run);
+
+        initBlockStorage();
+        testAllocateAllChunks();
+
+        ++run;
+    }
+
+#if 0
+    initBlockStorage();
+    testStaggeredAlloc();
+#endif
+
+#if 1
     initBlockStorage();
     testRetrieveChunk();
 
@@ -39,8 +59,9 @@ int main()
 
     initBlockStorage();
     testFreeingAllChunksInABlock();
+#endif
 
-#if 0
+#if 1
     initBlockStorage();
     testAllocateSmallBuffer(); 
     
