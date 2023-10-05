@@ -7,7 +7,7 @@
 
 .proc _floatNeg
     jsr storeFPACC
-    ldx FPLSW
+    ldx #FPLSW
     ldy #4
     jsr COMPLM
     jmp loadFPACC

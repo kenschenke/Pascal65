@@ -1,6 +1,6 @@
 ; C / ASM glue code for int16
 
-.export _formatInt16, _leftPad, _printInt16
+.export _formatInt16, _leftPad, _printInt16, _setIntBuf
 
 .importzp intPtr
 .import intOp1, writeInt16, _printz, popa, leftpad
@@ -31,4 +31,11 @@
     lda intPtr
     ldx intPtr + 1
     jmp _printz
+.endproc
+
+; void setIntBuf(char *buffer);
+.proc _setIntBuf
+    sta intPtr
+    stx intPtr + 1
+    rts
 .endproc
