@@ -10,6 +10,9 @@
 #include <semantic.h>
 #include <codegen.h>
 #include <em.h>
+#include <int16.h>
+
+static char intBuffer[16];
 
 static char *testFiles[] = {
     "ifthen",
@@ -19,6 +22,7 @@ static char *testFiles[] = {
     "scopetest",
     "vartest",
     "casetest",
+    "procfunc",
     NULL
 };
 
@@ -63,7 +67,9 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
 
 void main()
 {
-    int i = 0;
+    int i = 0, avail;
+
+    setIntBuf(intBuffer);
 
     overlay1size = (unsigned)_OVERLAY1_SIZE__;
     overlay2size = (unsigned)_OVERLAY2_SIZE__;
@@ -75,6 +81,7 @@ void main()
     overlay4blocks = overlay4size/BLOCK_LEN + (overlay4size % BLOCK_LEN ? 1 : 0);
 
     initBlockStorage();
+    avail = getAvailChunks();
     initCommon();
 
     // Allocate space in extended memory to cache the parser and parsertest overlays.
@@ -89,7 +96,7 @@ void main()
 
     printf("Loading tokenizer overlay\n");
     loadOverlayFromFile("compilertest.1", overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
-    printf("loading parser overlay\n");
+    printf("Loading parser overlay\n");
     loadOverlayFromFile("compilertest.2", overlay2size, _OVERLAY2_LOAD__, parserCache);
     printf("Loading semantic overlay\n");
     loadOverlayFromFile("compilertest.3", overlay3size, _OVERLAY3_LOAD__, semanticCache);
@@ -111,16 +118,18 @@ void main()
         sprintf(filename, "%s.pas", testFiles[i]);
 
         loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
-        printf("Tokenizing %s\n", filename);
+        puts(filename);
+        printf("   T");
         tokenId = tokenize(filename);
+        printf(" %d ", avail - getAvailChunks());
 
         loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
-        printf("Parsing %s\n", filename);
+        printf("P");
         astRoot = parse(tokenId);
         freeMemBuf(tokenId);
 
         loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, semanticCache);
-        printf("Semantic analysis and type checking\n");
+        printf("S");
         initSemantic();
         init_scope_stack();
         decl_resolve(astRoot, 0);
@@ -128,10 +137,16 @@ void main()
         decl_typecheck(astRoot);
 
         loadOverlayFromCache(overlay4size, _OVERLAY4_LOAD__, codegenCache);
-        printf("writing %s.prg\n", testFiles[i]);
+        printf("W");
         genProgram(astRoot, testFiles[i], testFiles[i+1]);
 
+        printf("F");
         decl_free(astRoot);
+        free_scope_stack();
+        printf("  %d\n", avail - getAvailChunks());
+        if (getAvailChunks() > avail) {
+            return;
+        }
 
         ++i;
     }

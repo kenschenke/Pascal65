@@ -24,7 +24,7 @@ CODEGENOVRLFILE := $(PROGRAM).4
 PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := c64
 CC65TARGET = c64
-c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
+c64_EMUCMD = x64sc -reu -warp +sound -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 mega65_EMUCMD := xmega65 -besure -8
 EMUCMD = $($(TARGET)_EMUCMD)
@@ -210,6 +210,12 @@ scopetest.petscii: scopetest.pas
 vartest.petscii: vartest.pas
 	dos2unix < vartest.pas | petcat -w2 -text -o vartest.petscii
 
+casetest.petscii: casetest.pas
+	dos2unix < casetest.pas | petcat -w2 -text -o casetest.petscii
+
+procfunc.petscii: procfunc.pas
+	dos2unix < procfunc.pas | petcat -w2 -text -o procfunc.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
@@ -226,7 +232,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write assign.pas assign.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -243,6 +249,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write recarray.petscii recarray.pas,seq \
 	-write scopetest.petscii scopetest.pas,seq \
 	-write vartest.petscii vartest.pas,seq \
+	-write casetest.petscii casetest.pas,seq \
+	-write procfunc.petscii procfunc.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 
