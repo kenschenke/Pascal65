@@ -75,8 +75,6 @@ char storeChunk(CHUNKNUM chunkNum, void *chunk);
 void initChunkStorage(void);
 
 // Functions needed for unit testing
-#ifdef __TEST__
 unsigned char isChunkAllocated(CHUNKNUM chunkNum);
-#endif
 
 #endif // end of CHUNKS_H
