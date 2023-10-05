@@ -22,7 +22,6 @@ char *pBufChar;
 
 char lineNumberChanged;
 char eofChar = 0x7f;
-unsigned inputPosition;
 
 void tinOpen(const char *pFilename, TAbortCode ac)
 {
@@ -65,7 +64,6 @@ char getChar(void)
             return eofChar;
     } else {
         pBufChar++;
-        ++inputPosition;
         ch = *pBufChar;
     }
 
@@ -122,7 +120,6 @@ char putBackChar(void)
         return eofChar;
 
     pBufChar--;
-    inputPosition--;
 
     return *pBufChar;
 }
