@@ -44,6 +44,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets);
 #if 0
 void freeVariableHeaps(short* heapOffsets);
 #endif
+void writeCodeBuf(unsigned char *buf, int len);
 
 // Linker Symbol Table
 

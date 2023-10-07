@@ -24,6 +24,59 @@ static void genSqrCall(CHUNKNUM argChunk);
 static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk);
 
+#define PARAM_BYREF1_SIZEL 1
+#define PARAM_BYREF1_SIZEH 3
+static unsigned char paramByRef1[] = {
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
+	PHA,
+	TXA,
+	PHA,
+};
+
+#define PARAM_BYREF2_SIZEL 21
+#define PARAM_BYREF2_SIZEH 23
+static unsigned char paramByRef2[] = {
+	LDY_IMMEDIATE, 0,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	STA_ZEROPAGE, ZP_PTR2L,
+	INY,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	STA_ZEROPAGE, ZP_PTR2H,
+	PLA,
+	STA_ZEROPAGE, ZP_PTR1H,
+	PLA,
+	STA_ZEROPAGE, ZP_PTR1L,
+	JSR, WORD_LOW(RT_PUSHADDRSTACK), WORD_HIGH(RT_PUSHADDRSTACK),
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_MEMCOPY), WORD_HIGH(RT_MEMCOPY),
+};
+
+#define ACTIVATE_FRAME_LEVEL 10
+static unsigned char activateFrame[] = {
+	PLA,
+	STA_ZEROPAGE, ZP_STACKFRAMEH,
+	PLA,
+	STA_ZEROPAGE, ZP_STACKFRAMEL,
+	LDA_ZEROPAGE, ZP_NESTINGLEVEL,
+	PHA,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_NESTINGLEVEL,
+};
+
+#define PRED_SUCC_JSR 12
+static unsigned char predSuccCode[] = {
+	JSR, WORD_LOW(RT_POPTOINTOP1), WORD_HIGH(RT_POPTOINTOP1),
+	LDA_IMMEDIATE, 1,
+	STA_ZEROPAGE, ZP_INTOP2L,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_INTOP2H,
+	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PUSHINTOP1), WORD_HIGH(RT_PUSHINTOP1),
+};
+
 static void genAbsCall(CHUNKNUM argChunk)
 {
 	struct expr arg;
@@ -120,27 +173,13 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY) &&
 			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Allocate a second heap and make a copy of the variable
-			genTwo(LDA_IMMEDIATE, WORD_LOW(paramType.size));
-			genTwo(LDX_IMMEDIATE, WORD_HIGH(paramType.size));
-			genThreeAddr(JSR, RT_HEAPALLOC);
-			genOne(PHA);
-			genOne(TXA);
-			genOne(PHA);
+			paramByRef1[PARAM_BYREF1_SIZEL] = WORD_LOW(paramType.size);
+			paramByRef1[PARAM_BYREF1_SIZEH] = WORD_HIGH(paramType.size);
+			writeCodeBuf(paramByRef1, 10);
 			genExpr(_expr.left, 0, 1, 0);
-			genTwo(LDY_IMMEDIATE, 0);
-			genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
-			genTwo(STA_ZEROPAGE, ZP_PTR2L);
-			genOne(INY);
-			genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
-			genTwo(STA_ZEROPAGE, ZP_PTR2H);
-			genOne(PLA);
-			genTwo(STA_ZEROPAGE, ZP_PTR1H);
-			genOne(PLA);
-			genTwo(STA_ZEROPAGE, ZP_PTR1L);
-			genThreeAddr(JSR, RT_PUSHADDRSTACK);	// Push the address onto the stack
-			genTwo(LDA_IMMEDIATE, WORD_LOW(paramType.size));
-			genTwo(LDX_IMMEDIATE, WORD_HIGH(paramType.size));
-			genThreeAddr(JSR, RT_MEMCOPY);
+			paramByRef2[PARAM_BYREF2_SIZEL] = WORD_LOW(paramType.size);
+			paramByRef2[PARAM_BYREF2_SIZEH] = WORD_HIGH(paramType.size);
+			writeCodeBuf(paramByRef2, 27);
 		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			genExpr(_expr.left, 0, 1, 0);
@@ -156,14 +195,8 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	}
 
 	// Activate the new stack frame
-	genOne(PLA);
-	genTwo(STA_ZEROPAGE, ZP_STACKFRAMEH);
-	genOne(PLA);
-	genTwo(STA_ZEROPAGE, ZP_STACKFRAMEL);
-	genTwo(LDA_ZEROPAGE, ZP_NESTINGLEVEL);
-	genOne(PHA);
-	genTwo(LDA_IMMEDIATE, (unsigned char)sym.level);
-	genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
+	activateFrame[ACTIVATE_FRAME_LEVEL] = sym.level;
+	writeCodeBuf(activateFrame, 13);
 
 	// Call the routine
 	sprintf(enterLabel, "RTN%04xENTER", declChunk);
@@ -207,18 +240,15 @@ static void genOrdCall(CHUNKNUM argChunk)
 
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
+	unsigned call = rc == rcPred ? RT_SUBINT16 : RT_ADDINT16;
 	struct expr arg;
 
 	retrieveChunk(argChunk, &arg);
 
 	genExpr(arg.left, 1, 0, 0);
-	genThreeAddr(JSR, RT_POPTOINTOP1);
-	genTwo(LDA_IMMEDIATE, 1);
-	genTwo(STA_ZEROPAGE, ZP_INTOP2L);
-	genTwo(LDA_IMMEDIATE, 0);
-	genTwo(STA_ZEROPAGE, ZP_INTOP2H);
-	genThreeAddr(JSR, rc == rcPred ? RT_SUBINT16 : RT_ADDINT16);
-	genThreeAddr(JSR, RT_PUSHINTOP1);
+	predSuccCode[PRED_SUCC_JSR] = WORD_LOW(call);
+	predSuccCode[PRED_SUCC_JSR + 1] = WORD_HIGH(call);
+	writeCodeBuf(predSuccCode, 17);
 }
 
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -233,10 +263,6 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		switch (_type.kind) {
 		case TYPE_INTEGER:
 			genThreeAddr(JSR, RT_READINTFROMINPUT);
-#if 0
-			genTwo(STA_ZEROPAGE, ZP_INTOP1L);
-			genTwo(STX_ZEROPAGE, ZP_INTOP1H);
-#endif
 			genThreeAddr(JSR, RT_PUSHINT);
 			genExpr(arg.left, 0, 0, 0);
 			genThreeAddr(JSR, RT_STOREINT);

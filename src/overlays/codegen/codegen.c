@@ -59,6 +59,69 @@ static void updateHeapOffset(short newOffset);
 static void writeChainCall(char* name);
 #endif
 
+#define PRG_HEADER_CODE_OFFSET_1 5
+#define PRG_HEADER_CODE_OFFSET_2 45
+#define PRG_HEADER_CODE_OFFSET_3 47
+#define PRG_HEADER_CODE_OFFSET_4 70
+#define PRG_HEADER_CODE_OFFSET_5 74
+static unsigned char prgHeader[] = {
+	// Make a backup copy of page zero
+	LDX_IMMEDIATE, 0,
+	LDA_X_INDEXED_ZP, 0x02,
+	STA_ABSOLUTEX, 0, 0,  // PRG_HEADER_CODE_OFFSET_1
+	INX,
+	CPX_IMMEDIATE, 0x1b,
+	BNE, 0xf6,
+
+	// Save the stack pointer
+	TSX,
+	STX_ZEROPAGE, ZP_SAVEDSTACK,
+
+	JSR, WORD_LOW(RT_ERRORINIT), WORD_HIGH(RT_ERRORINIT),
+
+	// Initialize runtime stack
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_SPL,
+	STA_ZEROPAGE, ZP_STACKFRAMEL,
+	LDA_IMMEDIATE, 0xd0,
+	STA_ZEROPAGE, ZP_SPH,
+	STA_ZEROPAGE, ZP_STACKFRAMEH,
+
+	// Set the runtime stack size and initialize the stack
+	LDA_IMMEDIATE, WORD_LOW(RUNTIME_STACK_SIZE),
+	LDX_IMMEDIATE, WORD_HIGH(RUNTIME_STACK_SIZE),
+	JSR, WORD_LOW(RT_STACKINIT), WORD_HIGH(RT_STACKINIT),
+
+	LDA_IMMEDIATE, WORD_LOW(0xd000 - RUNTIME_STACK_SIZE - 4),
+	LDX_IMMEDIATE, WORD_HIGH(0xd000 - RUNTIME_STACK_SIZE - 4),
+	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_2
+	LDX_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_3
+	JSR, WORD_LOW(RT_HEAPINIT), WORD_HIGH(RT_HEAPINIT),
+
+	// Current nesting level
+	LDA_IMMEDIATE, 1,
+	STA_ZEROPAGE, ZP_NESTINGLEVEL,
+
+	// Switch to upper/lower case character set
+	LDA_IMMEDIATE, 0x0e,
+	JSR, WORD_LOW(CHROUT), WORD_HIGH(CHROUT),
+
+	// Disable BASIC ROM
+	LDA_ZEROPAGE, 1,
+	AND_IMMEDIATE, 0xfe,
+	STA_ZEROPAGE, 1,
+
+	// Clear the input buffer
+	JSR, WORD_LOW(RT_CLRINPUT), WORD_HIGH(RT_CLRINPUT),
+
+	// Initialize the int buffer
+	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_4
+	STA_ZEROPAGE, ZP_INTPTR,
+	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_5
+	STA_ZEROPAGE, ZP_INTPTR + 1,
+};
+
 static int addStringLiteral(CHUNKNUM chunkNum)
 {
 	if (numStringLiterals == 0) {
@@ -496,66 +559,12 @@ void genProgram(CHUNKNUM astRoot, const char* prgFilename)
 
 	linkAddressSet("INIT", codeOffset);
 
-	// Make a backup copy of page zero
-	genTwo(LDX_IMMEDIATE, 0);
-	genTwo(LDA_X_INDEXED_ZP, 0x02);
-	linkAddressLookup(BSS_ZPBACKUP, codeOffset + 1, 0, LINKADDR_BOTH);
-	genThreeAddr(STA_ABSOLUTEX, 0);
-	genOne(INX);
-	genTwo(CPX_IMMEDIATE, 0x1b);
-	genTwo(BNE, 0xf6);
-
-	// Save the stack pointer
-	genOne(TSX);
-	genTwo(STX_ZEROPAGE, ZP_SAVEDSTACK);
-
-	genThreeAddr(JSR, RT_ERRORINIT);
-
-	// Initialize runtime stack
-	genTwo(LDA_IMMEDIATE, 0);
-	genTwo(STA_ZEROPAGE, ZP_SPL);
-	genTwo(STA_ZEROPAGE, ZP_STACKFRAMEL);
-	genTwo(LDA_IMMEDIATE, 0xd0);
-	genTwo(STA_ZEROPAGE, ZP_SPH);
-	genTwo(STA_ZEROPAGE, ZP_STACKFRAMEH);
-	
-	// Set the runtime stack size and initialize the stack
-	genTwo(LDA_IMMEDIATE, WORD_LOW(RUNTIME_STACK_SIZE));
-	genTwo(LDX_IMMEDIATE, WORD_HIGH(RUNTIME_STACK_SIZE));
-	genThreeAddr(JSR, RT_STACKINIT);	// Initialize runtime stack
-
-	genTwo(LDA_IMMEDIATE, WORD_LOW(0xd000 - RUNTIME_STACK_SIZE - 4));
-	genTwo(LDX_IMMEDIATE, WORD_HIGH(0xd000 - RUNTIME_STACK_SIZE - 4));
-	genThreeAddr(JSR, RT_PUSHAX);
-	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + 1, 0, LINKADDR_LOW);
-	genTwo(LDA_IMMEDIATE, 0);
-	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + 1, 0, LINKADDR_HIGH);
-	genTwo(LDX_IMMEDIATE, 0);
-	genThreeAddr(JSR, RT_HEAPINIT);		// Initialize heap
-
-	// Current nesting level
-	genTwo(LDA_IMMEDIATE, 1);
-	genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
-
-	// Switch to upper/lower case character set
-	genTwo(LDA_IMMEDIATE, 0x0e);
-	genThreeAddr(JSR, CHROUT);
-
-	// Disable BASIC ROM
-	genTwo(LDA_ZEROPAGE, 1);
-	genTwo(AND_IMMEDIATE, 0xfe);
-	genTwo(STA_ZEROPAGE, 1);
-
-	// Clear the input buffer
-	genThreeAddr(JSR, RT_CLRINPUT);
-
-	// Initialize the int buffer
-	linkAddressLookup(BSS_INTBUF, codeOffset + 1, 0, LINKADDR_LOW);
-	genTwo(LDA_IMMEDIATE, 0);
-	genTwo(STA_ZEROPAGE, ZP_INTPTR);
-	linkAddressLookup(BSS_INTBUF, codeOffset + 1, 0, LINKADDR_HIGH);
-	genTwo(LDA_IMMEDIATE, 0);
-	genTwo(STA_ZEROPAGE, ZP_INTPTR + 1);
+	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_HEADER_CODE_OFFSET_1, 0, LINKADDR_BOTH);
+	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_2, 0, LINKADDR_LOW);
+	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_3, 0, LINKADDR_HIGH);
+	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_4, 0, LINKADDR_LOW);
+	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_5, 0, LINKADDR_HIGH);
+	writeCodeBuf(prgHeader, 77);
 
 	retrieveChunk(astRoot, &_decl);
 	scope_enter_symtab(_decl.symtab);
@@ -834,6 +843,13 @@ static void updateHeapOffset(short newOffset)
 
 		heapOffset = newOffset;
 	}
+}
+
+// 16258
+void writeCodeBuf(unsigned char *buf, int len)
+{
+	writeToMemBuf(codeBuf, buf, len);
+	codeOffset += len;
 }
 
 #ifdef COMPILERTEST
