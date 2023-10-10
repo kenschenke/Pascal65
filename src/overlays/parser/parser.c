@@ -98,10 +98,6 @@ CHUNKNUM parse(CHUNKNUM Icode)
 
     setMemBufPos(Icode, 0);
     getToken();
-#if 0
-    printf("ha!\n");
-    return 0;
-#endif
     return parseProgram();
 }
 
@@ -124,14 +120,7 @@ void getToken(void)
         return;
     }
 
-#if 0
-    printf("parserIcode = %04x\n", parserIcode);
-    printf("pos = %d\n", getMemBufPos(parserIcode));
-#endif
     readFromMemBuf(parserIcode, &code, 1);
-#if 0
-    printf("token code %d\n", code);
-#endif
     switch (code) {
     case tzLineNum:
         readFromMemBuf(parserIcode, &currentLineNumber, 2);
