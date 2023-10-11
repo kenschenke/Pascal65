@@ -20,6 +20,7 @@
 #include <string.h>
 #include <chunks.h>
 #include <ctype.h>
+#include <membuf.h>
 
 unsigned errorCount = 0;
 unsigned errorArrowFlag = 1;

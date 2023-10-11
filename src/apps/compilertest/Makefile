@@ -8,7 +8,6 @@ SEMANTICOVRLSRC := ../../overlays/semantic
 CODEGENOVRLSRC := ../../overlays/codegen
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
-SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
 SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
@@ -46,8 +45,6 @@ SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
 SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
@@ -156,14 +153,6 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SHAREDCHUNKSDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath %.c $(SHAREDICODEDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath %.s $(SHAREDICODEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

@@ -41,7 +41,6 @@ void reserveMemBuf(CHUNKNUM header, unsigned size);
 void getMemBufLocn(CHUNKNUM header, MEMBUF_LOCN *pMemBufLocn);
 unsigned getMemBufPos(CHUNKNUM header);     // returns global position
 void initMemBufCache(void);
-void duplicateMemBuf(CHUNKNUM sourceHeader, CHUNKNUM *newHeader);
 char isMemBufAtEnd(CHUNKNUM header);
 void setMemBufLocn(CHUNKNUM header, MEMBUF_LOCN *pMemBufLocn);
 void setMemBufPos(CHUNKNUM header, unsigned position);

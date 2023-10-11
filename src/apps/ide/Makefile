@@ -8,7 +8,6 @@ EDITOROVRLSRC := ../../overlays/editor
 TOKENIZEROVRLSRC := ../../overlays/tokenizer
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = ../../shared/chunks
-SHAREDICODEDIR = ../../shared/icode
 SHAREDMEMBUFDIR = ../../shared/membuf
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
@@ -42,8 +41,6 @@ SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
 
@@ -192,14 +189,6 @@ $(OBJDIR)/%.o: $(SHAREDCHUNKSDIR)/%.c | $(OBJDIR)
 
 vpath $(SHAREDCHUNKSDIR)/%.s
 $(OBJDIR)/%.o: $(SHAREDCHUNKSDIR)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath $(SHAREDICODEDIR)/%.c
-$(OBJDIR)/%.o: $(SHAREDICODEDIR)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath $(SHAREDICODEDIR)/%.s
-$(OBJDIR)/%.o: $(SHAREDICODEDIR)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(SHAREDMEMBUFDIR)/%.c

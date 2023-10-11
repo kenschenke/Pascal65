@@ -11,6 +11,7 @@
 #include <codegen.h>
 #include <em.h>
 #include <int16.h>
+#include <membuf.h>
 
 static char intBuffer[16];
 

@@ -14,7 +14,6 @@
 #define COMMON_H
 
 #include <symtab.h>
-#include <icode.h>
 #include <misc.h>
 
 extern int currentNestingLevel;
