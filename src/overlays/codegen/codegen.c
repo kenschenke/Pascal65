@@ -122,6 +122,198 @@ static unsigned char prgHeader[] = {
 	STA_ZEROPAGE, ZP_INTPTR + 1,
 };
 
+#define PRG_CLEANUP_OFFSET 12
+static unsigned char prgCleanup[] = {
+	// Clean up the program's stack frame
+	JSR, WORD_LOW(RT_STACKCLEANUP), WORD_HIGH(RT_STACKCLEANUP),
+
+	// Re-enable BASIC ROM
+	LDA_ZEROPAGE, 1,
+	ORA_IMMEDIATE, 1,
+	STA_ZEROPAGE, 1,
+
+	// Copy the backup of page zero back
+	LDX_IMMEDIATE, 0,
+	LDA_ABSOLUTEX, 0, 0,
+	STA_X_INDEXED_ZP, 0x02,
+	INX,
+	CPX_IMMEDIATE, 0x1b,
+	BNE, 0xf6,
+};
+
+/*
+		linkAddressLookup("CHAINMSG", codeOffset + 1, 0, LINKADDR_LOW);
+		genTwo(LDA_IMMEDIATE, 0);
+		linkAddressLookup("CHAINMSG", codeOffset + 1, 0, LINKADDR_HIGH);
+		genTwo(LDX_IMMEDIATE, 0);
+		genThreeAddr(JSR, RT_PRINTZ);
+
+		linkAddressLookup("CHAINCALL", codeOffset + 1, 0, LINKADDR_LOW);
+		genTwo(LDA_IMMEDIATE, 0);
+		genTwo(STA_ZEROPAGE, ZP_PTR2L);
+		linkAddressLookup("CHAINCALL", codeOffset + 1, 0, LINKADDR_HIGH);
+		genTwo(LDA_IMMEDIATE, 0);
+		genTwo(STA_ZEROPAGE, ZP_PTR2H);
+		genTwo(LDA_IMMEDIATE, 0);
+		genTwo(STA_ZEROPAGE, ZP_PTR1L);
+		genTwo(LDA_IMMEDIATE, 0xca);
+		genTwo(STA_ZEROPAGE, ZP_PTR1H);
+		genTwo(LDA_IMMEDIATE, 28 + strlen(nextTest));
+		genTwo(LDX_IMMEDIATE, 0);
+		genThreeAddr(JSR, RT_MEMCOPY);
+		genThreeAddr(JMP, 0xca00);
+*/
+#ifdef COMPILERTEST
+#define CHAIN_CODE_MSGL 1
+#define CHAIN_CODE_MSGH 3
+#define CHAIN_CODE_CALLL 8
+#define CHAIN_CODE_CALLH 12
+#define CHAIN_CODE_STRLEN 24
+static unsigned char chainCode[] = {
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_PRINTZ), WORD_HIGH(RT_PRINTZ),
+
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR2L,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR2H,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR1L,
+	LDA_IMMEDIATE, 0xca,
+	STA_ZEROPAGE, ZP_PTR1H,
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_MEMCOPY), WORD_HIGH(RT_MEMCOPY),
+	JMP, 0, 0xca,
+};
+#endif
+
+#define HEAP_OFFSET_LOW 4
+#define HEAP_OFFSET_HIGH 10
+static unsigned char heapOffsetCode[] = {
+	LDA_ZEROPAGE, ZP_PTR1L,
+	CLC,
+	ADC_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR1L,
+	LDA_ZEROPAGE, ZP_PTR1H,
+	ADC_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR1H,
+};
+
+#define PARENT_ARRAY_INIT1_ELEMENTSL 1
+#define PARENT_ARRAY_INIT1_ELEMENTSH 5
+#define PARENT_ARRAY_INIT1_ELEMSIZEL 9
+#define PARENT_ARRAY_INIT1_ELEMSIZEH 11
+static unsigned char parentArrayInit1[] = {
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_TMP1,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_TMP2,
+	// Initialize this array's heap
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+};
+static unsigned char parentArrayInit2[] = {
+	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	LDA_ZEROPAGE, ZP_PTR1L,
+	LDX_ZEROPAGE, ZP_PTR1H,
+	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
+};
+#define PARENT_ARRAY_INIT3_BNE 3
+#define PARENT_ARRAY_INIT3_JMP 11
+static unsigned char parentArrayInit3[] = {
+	DEC_ZEROPAGE, ZP_TMP1,
+	BNE, 0,
+	LDA_ZEROPAGE, ZP_TMP2,
+	BEQ, 5,
+	DEC_ZEROPAGE, ZP_TMP2,
+	JMP, 0, 0,
+};
+
+#define NON_PARENT_ARRAY_INIT1_SIZEL 1
+#define NON_PARENT_ARRAY_INIT1_SIZEH 3
+static unsigned char nonParentArrayInit1[] = {
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
+	STA_ZEROPAGE, ZP_PTR1L,
+	STX_ZEROPAGE, ZP_PTR1H,
+	JSR, WORD_LOW(RT_PUSHINT), WORD_HIGH(RT_PUSHINT),
+};
+#define NON_PARENT_ARRAY_INIT2_SIZEL 4
+#define NON_PARENT_ARRAY_INIT2_SIZEH 6
+static unsigned char nonParentArrayInit2[] = {
+	// keep the heap pointer
+	PHA,
+	TXA,
+	PHA,
+	// Array element size
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+};
+static unsigned char nonParentArrayInit3[] = {
+	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	// heap address must be in A/X
+	PLA,
+	TAX,
+	PLA,
+	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
+};
+
+#define ARRAY_RECORD_INIT1_ELEMENTSL 1
+#define ARRAY_RECORD_INIT1_ELEMENTSH 5
+static unsigned char arrayRecordInit1[] = {
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_TMP1,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_TMP2,
+};
+#define ARRAY_RECORD_INIT2_BNE 3
+#define ARRAY_RECORD_INIT2_JMP 11
+static unsigned char arrayRecordInit2[] = {
+	DEC_ZEROPAGE, ZP_TMP1,
+	BNE, 0,
+	LDA_ZEROPAGE, ZP_TMP2,
+	BEQ, 5,
+	DEC_ZEROPAGE, ZP_TMP2,
+	JMP, 0, 0,
+};
+
+#define FREE_VAR_HEAPS_OFFSET 3
+static unsigned char freeVarHeapsCode[] = {
+	LDA_ZEROPAGE, ZP_NESTINGLEVEL,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_CALCSTACK), WORD_HIGH(RT_CALCSTACK),
+	LDY_IMMEDIATE, 1,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	TAX,
+	DEY,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	JSR, WORD_LOW(RT_HEAPFREE), WORD_HIGH(RT_HEAPFREE),
+};
+
+/*
+				genTwo(LDA_IMMEDIATE, WORD_LOW(_type.size));
+				genTwo(LDX_IMMEDIATE, WORD_HIGH(_type.size));
+				genThreeAddr(JSR, RT_HEAPALLOC);
+				genTwo(STA_ZEROPAGE, ZP_PTR1L);
+				genTwo(STX_ZEROPAGE, ZP_PTR1H);
+				genThreeAddr(JSR, RT_PUSHINT);
+*/
+#define RECORD_DECL_SIZEL 1
+#define RECORD_DECL_SIZEH 3
+static unsigned char recordDeclCode[] = {
+	LDA_IMMEDIATE, 0,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
+	STA_ZEROPAGE, ZP_PTR1L,
+	STX_ZEROPAGE, ZP_PTR1H,
+	JSR, WORD_LOW(RT_PUSHINT), WORD_HIGH(RT_PUSHINT),
+};
+
 static int addStringLiteral(CHUNKNUM chunkNum)
 {
 	if (numStringLiterals == 0) {
@@ -206,7 +398,7 @@ static void genArrayInit(struct type* pType, char isParentAnArray, char isParent
 	int numElements, CHUNKNUM arrayNum)
 {
 	char label[15];
-	unsigned short branchOffest;
+	unsigned short branchOffset;
 	struct type indexType, elemType;
 	short size = pType->size;
 
@@ -216,27 +408,20 @@ static void genArrayInit(struct type* pType, char isParentAnArray, char isParent
 		// Loop through and intialize each child array of the parent array
 		// Parent is an array
 		// Initialize number of elements in tmp1/tmp2
-		genTwo(LDA_IMMEDIATE, WORD_LOW(numElements));	// lda #{numElements & 0xff}
-		genTwo(STA_ZEROPAGE, ZP_TMP1);					// sta tmp1
-		genTwo(LDA_IMMEDIATE, WORD_HIGH(numElements));	// lda #{numElements >> 8}
-		genTwo(STA_ZEROPAGE, ZP_TMP2);					// sta tmp2
-		branchOffest = codeOffset;
+		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMENTSL] = WORD_LOW(numElements);
+		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMENTSH] = WORD_HIGH(numElements);
+		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMSIZEL] = WORD_LOW(elemType.size);
+		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMSIZEH] = WORD_HIGH(elemType.size);
+		branchOffset = codeOffset + 8;
 		sprintf(label, "ARRAY%04x", arrayNum);
-		linkAddressSet(label, codeOffset);
-		// Initialize this array's heap
-		genTwo(LDA_IMMEDIATE, WORD_LOW(elemType.size));	// lda #{elemType.size & 0xff}
-		genTwo(LDX_IMMEDIATE, WORD_HIGH(elemType.size));	// ldx #{elemType.size >> 8}
-		genThreeAddr(JSR, RT_PUSHAX);
+		linkAddressSet(label, branchOffset);
+		writeCodeBuf(parentArrayInit1, 15);
 		// Array upper bound
 		genExpr(indexType.max, 0, 1, 0);
 		genThreeAddr(JSR, RT_PUSHAX);
 		// Array lower bound
 		genExpr(indexType.min, 0, 1, 0);
-		genThreeAddr(JSR, RT_PUSHAX);
-		// heap address must be in A/X
-		genTwo(LDA_ZEROPAGE, ZP_PTR1L);
-		genTwo(LDX_ZEROPAGE, ZP_PTR1H);
-		genThreeAddr(JSR, RT_INITARRAYHEAP);
+		writeCodeBuf(parentArrayInit2, 10);
 		// Advance ptr1 past array header
 		updateHeapOffset(heapOffset + 6);
 
@@ -263,49 +448,31 @@ static void genArrayInit(struct type* pType, char isParentAnArray, char isParent
 		}
 
 		// Decrement tmp1/tmp2
-		genTwo(DEC_ZEROPAGE, ZP_TMP1);
-		genTwo(BNE, 256 - (codeOffset - branchOffest) - 2);
-		genTwo(LDA_ZEROPAGE, ZP_TMP2);
-		genTwo(BEQ, 5);
-		genTwo(DEC_ZEROPAGE, ZP_TMP2);
-		linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_BOTH);
-		genThreeAddr(JMP, 0);
+		parentArrayInit3[PARENT_ARRAY_INIT3_BNE] = 256 - (codeOffset - branchOffset) - 4;
+		linkAddressLookup(label, codeOffset + PARENT_ARRAY_INIT3_JMP, 0, LINKADDR_BOTH);
+		writeCodeBuf(parentArrayInit3, 13);
 	}
 	else {
 		if (!isParentHeapVar) {
 			// Allocate array heap
-			genTwo(LDA_IMMEDIATE, WORD_LOW(size));
-			genTwo(LDX_IMMEDIATE, WORD_HIGH(size));
-			genThreeAddr(JSR, RT_HEAPALLOC);
-			genTwo(STA_ZEROPAGE, ZP_PTR1L);
-			genTwo(STX_ZEROPAGE, ZP_PTR1H);
-			genThreeAddr(JSR, RT_PUSHINT);
+			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEL] = WORD_LOW(size);
+			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEH] = WORD_HIGH(size);
+			writeCodeBuf(nonParentArrayInit1, 14);
 		}
 		else {
 			// Restore ptr1 from parent heap
 			genTwo(LDA_ZEROPAGE, ZP_PTR1L);
 			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
 		}
-		// keep the heap pointer
-		genOne(PHA);
-		genOne(TXA);
-		genOne(PHA);
-
-		// Array element size
-		genTwo(LDA_IMMEDIATE, WORD_LOW(elemType.size));
-		genTwo(LDX_IMMEDIATE, WORD_HIGH(elemType.size));
-		genThreeAddr(JSR, RT_PUSHAX);
+		nonParentArrayInit2[NON_PARENT_ARRAY_INIT2_SIZEL] = WORD_LOW(elemType.size);
+		nonParentArrayInit2[NON_PARENT_ARRAY_INIT2_SIZEH] = WORD_HIGH(elemType.size);
+		writeCodeBuf(nonParentArrayInit2, 10);
 		// Array upper bound
 		genExpr(indexType.max, 0, 1, 0);
 		genThreeAddr(JSR, RT_PUSHAX);
 		// Array lower bound
 		genExpr(indexType.min, 0, 1, 0);
-		genThreeAddr(JSR, RT_PUSHAX);
-		// heap address must be in A/X
-		genOne(PLA);	// Restore ptr1 for call to initArrayHeap
-		genOne(TAX);
-		genOne(PLA);
-		genThreeAddr(JSR, RT_INITARRAYHEAP);
+		writeCodeBuf(nonParentArrayInit3, 9);
 		// Advance ptr1 past array header
 		updateHeapOffset(heapOffset + 6);
 		if (elemType.kind == TYPE_ARRAY) {
@@ -331,23 +498,18 @@ static void genArrayInit(struct type* pType, char isParentAnArray, char isParent
 			// Loop through and intialize each child array of the parent array
 			// Array element is record
 			// Store number of elements in tmp1/tmp2
-			genTwo(LDA_IMMEDIATE, WORD_LOW(numElements));
-			genTwo(STA_ZEROPAGE, ZP_TMP1);
-			genTwo(LDA_IMMEDIATE, WORD_HIGH(numElements));
-			genTwo(STA_ZEROPAGE, ZP_TMP2);
+			arrayRecordInit1[ARRAY_RECORD_INIT1_ELEMENTSL] = WORD_LOW(numElements);
+			arrayRecordInit1[ARRAY_RECORD_INIT1_ELEMENTSH] = WORD_HIGH(numElements);
+			writeCodeBuf(arrayRecordInit1, 8);
 			sprintf(label, "ARRAY%04x", arrayNum);
-			branchOffest = codeOffset;
+			branchOffset = codeOffset;
 			linkAddressSet(label, codeOffset);
 			// Initialize record
 			genRecordInit(&elemType);
 			// Decrement tmp1/tmp2
-			genTwo(DEC_ZEROPAGE, ZP_TMP1);
-			genTwo(BNE, 256 - (codeOffset - branchOffest) - 2);
-			genTwo(LDA_ZEROPAGE, ZP_TMP2);
-			genTwo(BEQ, 5);
-			genTwo(DEC_ZEROPAGE, ZP_TMP2);
-			linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_BOTH);
-			genThreeAddr(JMP, 0);
+			arrayRecordInit2[ARRAY_RECORD_INIT2_BNE] = 256 - (codeOffset - branchOffset) - 4;
+			linkAddressLookup(label, codeOffset + ARRAY_RECORD_INIT2_JMP, 0, LINKADDR_BOTH);
+			writeCodeBuf(arrayRecordInit2, 13);
 
 			heapOffset += elemType.size * numElements;
 		}
@@ -391,15 +553,8 @@ void genFreeVariableHeaps(short* heapOffsets)
 	int i = 0;
 
 	while (heapOffsets[i] >= 0) {
-		genTwo(LDA_ZEROPAGE, ZP_NESTINGLEVEL);
-		genTwo(LDX_IMMEDIATE, WORD_LOW(heapOffsets[i]));
-		genThreeAddr(JSR, RT_CALCSTACK);
-		genTwo(LDY_IMMEDIATE, 1);
-		genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
-		genOne(TAX);
-		genOne(DEY);
-		genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
-		genThreeAddr(JSR, RT_HEAPFREE);
+		freeVarHeapsCode[FREE_VAR_HEAPS_OFFSET] = heapOffsets[i];
+		writeCodeBuf(freeVarHeapsCode, 18);
 		++i;
 	}
 }
@@ -507,12 +662,9 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			}
 
 			case TYPE_RECORD:
-				genTwo(LDA_IMMEDIATE, WORD_LOW(_type.size));
-				genTwo(LDX_IMMEDIATE, WORD_HIGH(_type.size));
-				genThreeAddr(JSR, RT_HEAPALLOC);
-				genTwo(STA_ZEROPAGE, ZP_PTR1L);
-				genTwo(STX_ZEROPAGE, ZP_PTR1H);
-				genThreeAddr(JSR, RT_PUSHINT);
+				recordDeclCode[RECORD_DECL_SIZEL] = WORD_LOW(_type.size);
+				recordDeclCode[RECORD_DECL_SIZEH] = WORD_HIGH(_type.size);
+				writeCodeBuf(recordDeclCode, 14);
 				heapOffset = 0;
 				genRecordInit(&_type);
 				heapOffsets[heapVar++] = sym.offset;
@@ -594,47 +746,19 @@ void genProgram(CHUNKNUM astRoot, const char* prgFilename)
 
 	scope_exit();
 
-	// Clean up the program's stack frame
-	genThreeAddr(JSR, RT_STACKCLEANUP);
-
-	// Re-enable BASIC ROM
-	genTwo(LDA_ZEROPAGE, 1);
-	genTwo(ORA_IMMEDIATE, 1);
-	genTwo(STA_ZEROPAGE, 1);
-
-	// Copy the backup of page zero back
-	genTwo(LDX_IMMEDIATE, 0);
-	linkAddressLookup(BSS_ZPBACKUP, codeOffset + 1, 0, LINKADDR_BOTH);
-	genThreeAddr(LDA_ABSOLUTEX, 0);
-	genTwo(STA_X_INDEXED_ZP, 0x02);
-	genOne(INX);
-	genTwo(CPX_IMMEDIATE, 0x1b);
-	genTwo(BNE, 0xf6);
+	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_CLEANUP_OFFSET, 0, LINKADDR_BOTH);
+	writeCodeBuf(prgCleanup, 21);
 
 #ifdef COMPILERTEST
 	if (nextTest) {
 		char msg[40];
 
-		linkAddressLookup("CHAINMSG", codeOffset + 1, 0, LINKADDR_LOW);
-		genTwo(LDA_IMMEDIATE, 0);
-		linkAddressLookup("CHAINMSG", codeOffset + 1, 0, LINKADDR_HIGH);
-		genTwo(LDX_IMMEDIATE, 0);
-		genThreeAddr(JSR, RT_PRINTZ);
-
-		linkAddressLookup("CHAINCALL", codeOffset + 1, 0, LINKADDR_LOW);
-		genTwo(LDA_IMMEDIATE, 0);
-		genTwo(STA_ZEROPAGE, ZP_PTR2L);
-		linkAddressLookup("CHAINCALL", codeOffset + 1, 0, LINKADDR_HIGH);
-		genTwo(LDA_IMMEDIATE, 0);
-		genTwo(STA_ZEROPAGE, ZP_PTR2H);
-		genTwo(LDA_IMMEDIATE, 0);
-		genTwo(STA_ZEROPAGE, ZP_PTR1L);
-		genTwo(LDA_IMMEDIATE, 0xca);
-		genTwo(STA_ZEROPAGE, ZP_PTR1H);
-		genTwo(LDA_IMMEDIATE, 28 + strlen(nextTest));
-		genTwo(LDX_IMMEDIATE, 0);
-		genThreeAddr(JSR, RT_MEMCOPY);
-		genThreeAddr(JMP, 0xca00);
+		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGL, 0, LINKADDR_LOW);
+		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGH, 0, LINKADDR_HIGH);
+		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, 0, LINKADDR_LOW);
+		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, 0, LINKADDR_HIGH);
+		chainCode[CHAIN_CODE_STRLEN] = 28 + strlen(nextTest);
+		writeCodeBuf(chainCode, 33);
 		writeChainCall(nextTest);	// filename of the next test in the chain
 
 		sprintf(msg, "Loading %s...", nextTest);
@@ -833,19 +957,15 @@ int getArrayLimit(CHUNKNUM chunkNum)
 static void updateHeapOffset(short newOffset)
 {
 	if (newOffset != heapOffset) {
-		genTwo(LDA_ZEROPAGE, ZP_PTR1L);
-		genOne(CLC);
-		genTwo(ADC_IMMEDIATE, WORD_LOW(newOffset - heapOffset));
-		genTwo(STA_ZEROPAGE, ZP_PTR1L);
-		genTwo(LDA_ZEROPAGE, ZP_PTR1H);
-		genTwo(ADC_IMMEDIATE, WORD_HIGH(newOffset - heapOffset));
-		genTwo(STA_ZEROPAGE, ZP_PTR1H);
+		int offset = newOffset - heapOffset;
+		heapOffsetCode[HEAP_OFFSET_LOW] = WORD_LOW(offset);
+		heapOffsetCode[HEAP_OFFSET_HIGH] = WORD_HIGH(offset);
+		writeCodeBuf(heapOffsetCode, 13);
 
 		heapOffset = newOffset;
 	}
 }
 
-// 16258
 void writeCodeBuf(unsigned char *buf, int len)
 {
 	writeToMemBuf(codeBuf, buf, len);
@@ -853,31 +973,13 @@ void writeCodeBuf(unsigned char *buf, int len)
 }
 
 #ifdef COMPILERTEST
-#if 0
-static void copyChainCall(char* name)
-{
-	unsigned char* p = (unsigned char*)0xca00;
-
-	chainCall[10] = strlen(name);
-	memcpy(p, chainCall, 28);
-	memcpy(p + 28, name, strlen(name));
-}
-#endif
-
 static void writeChainCall(char* name)
 {
 	linkAddressSet("CHAINCALL", codeOffset);
 	chainCall[10] = strlen(name);
 	writeToMemBuf(codeBuf, chainCall, 28);
-#if 0
-	linkAddressLookup("CHAINNAME", codeOffset + 12, 0, LINKADDR_LOW);
-	linkAddressLookup("CHAINNAME", codeOffset + 14, 0, LINKADDR_HIGH);
-#endif
 	codeOffset += 28;
 
-#if 0
-	linkAddressSet("CHAINNAME", codeOffset);
-#endif
 	writeToMemBuf(codeBuf, name, strlen(name));
 	codeOffset += strlen(name);
 }
