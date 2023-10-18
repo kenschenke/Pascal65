@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <codegen.h>
+#include <chunks.h>
+#include <membuf.h>
+#include <asm.h>
+
+static int addStringLiteral(CHUNKNUM chunkNum);
+
+#define FREE_VAR_HEAPS_OFFSET 3
+static unsigned char freeVarHeapsCode[] = {
+	LDA_ZEROPAGE, ZP_NESTINGLEVEL,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_CALCSTACK), WORD_HIGH(RT_CALCSTACK),
+	LDY_IMMEDIATE, 1,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	TAX,
+	DEY,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	JSR, WORD_LOW(RT_HEAPFREE), WORD_HIGH(RT_HEAPFREE),
+};
+
+static int addStringLiteral(CHUNKNUM chunkNum)
+{
+	if (numStringLiterals == 0) {
+		allocMemBuf(&stringLiterals);
+	}
+
+	writeToMemBuf(stringLiterals, &chunkNum, sizeof(CHUNKNUM));
+
+	return ++numStringLiterals;
+}
+
+void genFreeVariableHeaps(short* heapOffsets)
+{
+	int i = 0;
+
+	while (heapOffsets[i] >= 0) {
+		freeVarHeapsCode[FREE_VAR_HEAPS_OFFSET] = heapOffsets[i];
+		writeCodeBuf(freeVarHeapsCode, 18);
+		++i;
+	}
+}
+
+void genStringValueAX(CHUNKNUM chunkNum)
+{
+	char label[15];
+
+	int num = addStringLiteral(chunkNum);
+	sprintf(label, "strVal%d", num);
+	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_LOW);
+	genTwo(LDA_IMMEDIATE, 0);
+	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_HIGH);
+	genTwo(LDX_IMMEDIATE, 0);
+
+}
+
+void objCodeWrite(CHUNKNUM astRoot)
+{
+	struct decl _decl;
+	struct stmt _stmt;
+	int i, numToPop;
+	short heapOffsets[MAX_LOCAL_HEAPS];
+
+	retrieveChunk(astRoot, &_decl);
+	scope_enter_symtab(_decl.symtab);
+	retrieveChunk(_decl.code, &_stmt);
+
+	// Create stack entries for the global variables
+	numToPop = genVariableDeclarations(_stmt.decl, heapOffsets);
+
+	// Skip over global function/procedure declarations and start main code
+	linkAddressLookup("MAIN", codeOffset + 1, 0, LINKADDR_BOTH);
+	genThreeAddr(JMP, 0);
+
+	genRoutineDeclarations(_stmt.decl);
+
+	// Walk the declarations tree and define setup and tear down
+	// routines for every Pascal routine at any nesting level.
+	// Also define code routines for each Pascal routine.
+
+	// Statements in main block
+	linkAddressSet("MAIN", codeOffset);
+	genStmts(_stmt.body);
+
+	// Clean up the declarations from the stack
+	for (i = 0; i < numToPop; ++i) {
+		genThreeAddr(JSR, RT_INCSP4);
+	}
+
+	scope_exit();
+}
