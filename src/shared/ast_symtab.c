@@ -110,7 +110,7 @@ short scope_level(void)
 	return currentStackLevel;  // scope levels start at 1
 }
 
-char lookup_symbol(const char* name, CHUNKNUM root, struct symbol* sym)
+static char lookup_symbol(const char* name, CHUNKNUM root, struct symbol* sym)
 {
 	int comp;
 	CHUNKNUM chunkNum = root;
