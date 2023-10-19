@@ -49,9 +49,7 @@ typedef struct TTYPE {
 
 } TTYPE;
 
-#if sizeof(struct TTYPE) != CHUNK_LEN
-#error TTYPE should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct TTYPE) == CHUNK_LEN, "TTYPE should be CHUNK_LEN bytes in size");
 
 void checkBoolean(CHUNKNUM type1ChunkNum, CHUNKNUM type2ChunkNum);
 char isTypeScalar(TTYPE *pType);

@@ -28,9 +28,7 @@ typedef struct STRVALCHUNK {
     char value[CHUNK_LEN - 2];
 } STRVALCHUNK;
 
-#if sizeof(struct STRVALCHUNK) != CHUNK_LEN
-#error STRVALCHUNK should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct STRVALCHUNK) == CHUNK_LEN, "STRVALCHUNK should be CHUNK_LEN bytes in size");
 
 // How an identifier is defined
 
@@ -94,9 +92,7 @@ typedef struct DEFN {
     char unused;  // pad to 23 bytes
 } DEFN;
 
-#if sizeof(struct DEFN) != CHUNK_LEN
-#error DEFN should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct DEFN) == CHUNK_LEN, "DEFN should be CHUNK_LEN bytes in size");
 
 typedef struct SYMTABNODE {
     CHUNKNUM nodeChunkNum;
@@ -118,9 +114,7 @@ typedef struct SYMBNODE {
     struct TTYPE type;
 } SYMBNODE;
 
-#if sizeof(struct SYMTABNODE) != CHUNK_LEN
-#error SYMTABNODE should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct SYMTABNODE) == CHUNK_LEN, "SYMTABNODE should be CHUNK_LEN bytes in size");
 
 typedef struct SYMTAB {
     CHUNKNUM symtabChunkNum;
@@ -131,9 +125,7 @@ typedef struct SYMTAB {
     char unused[CHUNK_LEN - 10];
 } SYMTAB;
 
-#if sizeof(struct SYMTAB) != CHUNK_LEN
-#error SYMTAB should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct SYMTAB) == CHUNK_LEN, "SYMTAB should be CHUNK_LEN bytes in size");
 
 void freeSymtab(CHUNKNUM symtabChunkNum);
 char makeSymtab(CHUNKNUM *symtabChunkNum);

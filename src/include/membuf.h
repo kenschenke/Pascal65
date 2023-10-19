@@ -12,9 +12,7 @@ typedef struct MEMBUF_CHUNK {
     unsigned char data[MEMBUF_CHUNK_LEN];
 } MEMBUF_CHUNK;
 
-#if sizeof(struct MEMBUF_CHUNK) != CHUNK_LEN
-#error MEMBUF_CHUNK should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct MEMBUF_CHUNK) == CHUNK_LEN, "MEMBUF_CHUNK should be CHUNK_LEN bytes in size");
 
 typedef struct MEMBUF {
     CHUNKNUM firstChunkNum;
@@ -32,9 +30,7 @@ typedef struct MEMBUF_LOCN {
     unsigned posChunk;
 } MEMBUF_LOCN;
 
-#if sizeof(struct MEMBUF) != CHUNK_LEN
-#error MEMBUF should be CHUNK_LEN bytes in size
-#endif
+_Static_assert (sizeof(struct MEMBUF) == CHUNK_LEN, "MEMBUF should be CHUNK_LEN bytes in size");
 
 void allocMemBuf(CHUNKNUM *newHeader);
 void reserveMemBuf(CHUNKNUM header, unsigned size);
