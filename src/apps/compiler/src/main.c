@@ -9,6 +9,7 @@
 #include <semantic.h>
 #include <codegen.h>
 #include <int16.h>
+#include <membuf.h>
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
@@ -52,9 +53,19 @@ void main()
         decl_typecheck(astRoot);
     }
 
-    printf("Loading code generation overlay\n");
+    printf("Loading linker overlay\n");
+    if (loadfile("compiler.5")) {
+        linkerPreWrite();
+    }
+
+    printf("Loading objcode overlay\n");
     if (loadfile("compiler.4")) {
-        genProgram(astRoot, "hello");
+        objCodeWrite(astRoot);
+    }
+
+    printf("Loading linker overlay\n");
+    if (loadfile("compiler.5")) {
+        linkerPostWrite("hello");
     }
 
     log("main", "back to main code");

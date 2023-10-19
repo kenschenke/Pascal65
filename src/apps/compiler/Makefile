@@ -5,10 +5,12 @@ DRVDIR := ../../../drv
 TOKENIZEROVRLSRC := ../../overlays/tokenizer
 PARSEROVRLSRC := ../../overlays/parser
 SEMANTICOVRLSRC := ../../overlays/semantic
-CODEGENOVRLSRC := ../../overlays/codegen
+OBJCODEOVRLSRC := ../../overlays/objcode
+LINKEROVRLSRC := ../../overlays/linker
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
 SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
+SHAREDCODEGENDIR = $(SHAREDSRCDIR)/codegen
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 LIBRUNTIMEDIR = ../../lib/runtime/src
@@ -19,11 +21,12 @@ D81FILE := $(BINDIR)/$(PROGRAM).d81
 TOKENIZEROVRLFILE := $(PROGRAM).1
 PARSEROVRLFILE := $(PROGRAM).2
 SEMANTICOVRLFILE := $(PROGRAM).3
-CODEGENOVRLFILE := $(PROGRAM).4
+OBJCODEOVRLFILE := $(PROGRAM).4
+LINKEROVRLFILE := $(PROGRAM).5
 PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := c64
 CC65TARGET = c64
-c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
+c64_EMUCMD = x64sc -reu -warp +sound -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 mega65_EMUCMD := xmega65 -besure -8
 EMUCMD = $($(TARGET)_EMUCMD)
@@ -47,6 +50,8 @@ SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.s)
 SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
 SOURCES += $(LIBRUNTIMEDIR)/exit.s
 SOURCES += $(LIBRUNTIMEDIR)/inputbuf.s
@@ -64,7 +69,9 @@ PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
 SEMANTICOVRLSRCS := $(wildcard $(SEMANTICOVRLSRC)/*.c)
 
-CODEGENOVRLSRCS := $(wildcard $(CODEGENOVRLSRC)/*.c)
+OBJCODEOVRLSRCS := $(wildcard $(OBJCODEOVRLSRC)/*.c)
+
+LINKEROVRLSRCS := $(wildcard $(LINKEROVRLSRC)/*.c)
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -72,7 +79,8 @@ OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TOKENIZEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(PARSEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SEMANTICOVRLSRCS)))))
-OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(CODEGENOVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -124,13 +132,21 @@ vpath $(SEMANTICOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(SEMANTICOVRLSRC)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath $(CODEGENOVRLSRC)/%.c
-$(OBJDIR)/%.o: $(CODEGENOVRLSRC)/%.c | $(OBJDIR)
+vpath $(OBJCODEOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
-vpath $(CODEGENOVRLSRC)/%.s
-$(OBJDIR)/%.o: $(CODEGENOVRLSRC)/%.s | $(OBJDIR)
+vpath $(OBJCODEOVRLSRC)/%.s
+$(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(LINKEROVRLSRC)/%.c
+$(OBJDIR)/%.o: $(LINKEROVRLSRC)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(LINKEROVRLSRC)/%.s
+$(OBJDIR)/%.o: $(LINKEROVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LIBCSRCDIR)/%.c
 $(OBJDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJDIR)
@@ -161,6 +177,14 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SHAREDMEMBUFDIR)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath %.c $(SHAREDCODEGENDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath %.s $(SHAREDCODEGENDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
@@ -209,7 +233,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(SEMANTICOVRLFILE) $(SEMANTICOVRLFILE) \
-	-write $(BINDIR)/$(CODEGENOVRLFILE) $(CODEGENOVRLFILE) \
+	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
+	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write runtime runtime \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
