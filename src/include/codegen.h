@@ -18,7 +18,21 @@
 #define LINKADDR_HIGH 2
 #define LINKADDR_BOTH 3
 
+struct LINKSYMBOL {
+	char name[16 + 1];
+	unsigned short address;
+	CHUNKNUM left;
+	CHUNKNUM right;
+};
+
+struct LINKTAG {
+	CHUNKNUM chunkNum;
+	unsigned short position;
+	char which;  // one of LINKADDR_*
+};
+
 // Shared global variables
+extern CHUNKNUM linkerTags;
 extern CHUNKNUM stringLiterals;
 extern int numStringLiterals;
 extern CHUNKNUM codeBuf;
@@ -113,7 +127,5 @@ char linkAddressLookup(const char* name, unsigned short position, unsigned short
 
 // Sets the code offset for a given symbol.
 void linkAddressSet(const char* name, unsigned short offset);
-
-void updateLinkerAddresses(CHUNKNUM codeBuf);
 
 #endif // end of CODEGEN_H

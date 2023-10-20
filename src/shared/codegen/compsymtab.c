@@ -6,21 +6,8 @@
 #include <chunks.h>
 #include <membuf.h>
 
-struct LINKSYMBOL {
-	char name[16 + 1];
-	unsigned short address;
-	CHUNKNUM left;
-	CHUNKNUM right;
-};
-
-struct LINKTAG {
-	CHUNKNUM chunkNum;
-	unsigned short position;
-	char which;  // one of LINKADDR_*
-};
-
 static CHUNKNUM linkerSymtab;
-static CHUNKNUM linkerTags;
+CHUNKNUM linkerTags;
 
 static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address, struct LINKSYMBOL* pSym);
 static void freeLinkerSymbol(CHUNKNUM chunkNum);
@@ -133,26 +120,3 @@ void linkAddressSet(const char* name, unsigned short offset)
 	bindLinkerSymbol(name, offset + codeBase, &sym);
 }
 
-void updateLinkerAddresses(CHUNKNUM codeBuf)
-{
-	struct LINKSYMBOL sym;
-	struct LINKTAG tag;
-
-	setMemBufPos(linkerTags, 0);
-	while (!isMemBufAtEnd(linkerTags)) {
-		readFromMemBuf(linkerTags, &tag, sizeof(struct LINKTAG));
-		retrieveChunk(tag.chunkNum, &sym);
-		setMemBufPos(codeBuf, tag.position);
-		if (tag.which == LINKADDR_LOW) {
-			unsigned char c = WORD_LOW(sym.address);
-			writeToMemBuf(codeBuf, &c, 1);
-		}
-		else if (tag.which == LINKADDR_HIGH) {
-			unsigned char c = WORD_HIGH(sym.address);
-			writeToMemBuf(codeBuf, &c, 1);
-		}
-		else if (tag.which == LINKADDR_BOTH) {
-			writeToMemBuf(codeBuf, &sym.address, sizeof(sym.address));
-		}
-	}
-}

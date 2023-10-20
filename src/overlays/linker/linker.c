@@ -157,6 +157,7 @@ static void dumpStringLiterals(void);
 static void freeStringLiterals(void);
 static void genExeHeader(void);
 static void genRuntime(void);
+static void updateLinkerAddresses(CHUNKNUM codeBuf);
 
 static void dumpStringLiterals(void)
 {
@@ -371,6 +372,30 @@ static void genRuntime(void)
 	for (i = 0; i < 20; ++i) {
 		writeToMemBuf(codeBuf, buf, sizeof(buf));
 		codeOffset += sizeof(buf);
+	}
+}
+
+static void updateLinkerAddresses(CHUNKNUM codeBuf)
+{
+	struct LINKSYMBOL sym;
+	struct LINKTAG tag;
+
+	setMemBufPos(linkerTags, 0);
+	while (!isMemBufAtEnd(linkerTags)) {
+		readFromMemBuf(linkerTags, &tag, sizeof(struct LINKTAG));
+		retrieveChunk(tag.chunkNum, &sym);
+		setMemBufPos(codeBuf, tag.position);
+		if (tag.which == LINKADDR_LOW) {
+			unsigned char c = WORD_LOW(sym.address);
+			writeToMemBuf(codeBuf, &c, 1);
+		}
+		else if (tag.which == LINKADDR_HIGH) {
+			unsigned char c = WORD_HIGH(sym.address);
+			writeToMemBuf(codeBuf, &c, 1);
+		}
+		else if (tag.which == LINKADDR_BOTH) {
+			writeToMemBuf(codeBuf, &sym.address, sizeof(sym.address));
+		}
 	}
 }
 
