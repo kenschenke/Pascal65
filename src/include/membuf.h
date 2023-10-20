@@ -34,16 +34,13 @@ _Static_assert (sizeof(struct MEMBUF) == CHUNK_LEN, "MEMBUF should be CHUNK_LEN 
 
 void allocMemBuf(CHUNKNUM *newHeader);
 void reserveMemBuf(CHUNKNUM header, unsigned size);
-void getMemBufLocn(CHUNKNUM header, MEMBUF_LOCN *pMemBufLocn);
 unsigned getMemBufPos(CHUNKNUM header);     // returns global position
 void initMemBufCache(void);
 char isMemBufAtEnd(CHUNKNUM header);
-void setMemBufLocn(CHUNKNUM header, MEMBUF_LOCN *pMemBufLocn);
 void setMemBufPos(CHUNKNUM header, unsigned position);
 void freeMemBuf(CHUNKNUM header);
 void copyFromMemBuf(CHUNKNUM header, void *buffer, unsigned offset, unsigned length);
 void copyToMemBuf(CHUNKNUM header, void *buffer, unsigned offset, unsigned length);
-void resetMemBufPosition(CHUNKNUM header);
 void readFromMemBuf(CHUNKNUM header, void *buffer, unsigned length);
 void writeToMemBuf(CHUNKNUM header, void *buffer, unsigned length);
 
