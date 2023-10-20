@@ -15,14 +15,12 @@ CHUNKNUM declCreate(
         return 0;
     }
 
+    memset(&decl, 0, sizeof(struct decl));
+
     decl.kind = kind;
     decl.name = name;
     decl.type = type;
     decl.value = value;
-    decl.code = 0;
-    decl.next = 0;
-    decl.node = 0;
-    decl.symtab = 0;
     decl.lineNumber = currentLineNumber;
 
     storeChunk(chunkNum, (unsigned char*)&decl);
@@ -74,15 +72,11 @@ CHUNKNUM stmtCreate(stmt_t kind, CHUNKNUM expr, CHUNKNUM body)
         return 0;
     }
 
+    memset(&stmt, 0, sizeof(struct stmt));
+
     stmt.kind = kind;
-    stmt.decl = 0;
-    stmt.init_expr = 0;
     stmt.expr = expr;
-    stmt.to_expr = 0;
-    stmt.isDownTo = 0;
     stmt.body = body;
-    stmt.else_body = 0;
-    stmt.next = 0;
     stmt.lineNumber = currentLineNumber;
 
     storeChunk(chunkNum, (unsigned char*)&stmt);
@@ -101,15 +95,12 @@ CHUNKNUM exprCreate(expr_t kind,
         return 0;
     }
 
+    memset(&expr, 0, sizeof(struct expr));
+
     expr.kind = kind;
     expr.left = left;
     expr.right = right;
     expr.name = name;
-    expr.neg = 0;
-    expr.node = 0;
-    expr.width = 0;
-    expr.precision = 0;
-    expr.evalType = 0;
     expr.lineNumber = currentLineNumber;
     if (value) memcpy(&expr.value, value, sizeof(TDataValue));
 
