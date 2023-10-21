@@ -1,22 +1,23 @@
 SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
-# LIBDIR := ../../lib
 LIBCOMMONDIR := ../common
 
 PROGRAM := runtime
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 
 c64_CFLAGS =
 c128_CFLAGS =
 mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
+ifeq ($(TARGET),mega65)
+ASFLAGS = -I ../../asminc -D RUNTIME -D __MEGA65__
+else
 ASFLAGS = -I ../../asminc -D RUNTIME
-# LDFLAGS = --lib c64.lib -u __EXEHDR__ --mapfile compilertest.map
+endif
 LDFLAGS = --mapfile runtime.map
 
-# SOURCES += $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(SRCDIR)/addysp.s
 SOURCES += $(SRCDIR)/array.s
 SOURCES += $(SRCDIR)/decsp4.s
@@ -35,8 +36,6 @@ SOURCES += $(SRCDIR)/pusheax.s
 SOURCES += $(SRCDIR)/record.s
 SOURCES += $(SRCDIR)/rterror.s
 SOURCES += $(SRCDIR)/rtstack.s
-# SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
-# SOURCES += $(wildcard $(LIBRUNTIMEDIR)/*.s)
 SOURCES += $(LIBCOMMONDIR)/float.s
 SOURCES += $(LIBCOMMONDIR)/floatabs.s
 SOURCES += $(LIBCOMMONDIR)/floatadd.s
@@ -62,7 +61,7 @@ SOURCES += $(LIBCOMMONDIR)/leftpad.s
 SOURCES += $(LIBCOMMONDIR)/readint16.s
 SOURCES += $(LIBCOMMONDIR)/writeint16.s
 
-CONFIG := cfg-c64.cfg
+CONFIG := cfg-$(TARGET).cfg
 
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
 
@@ -83,10 +82,6 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 vpath %.s $(LIBCOMMONDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-# vpath %.s $(LIBRUNTIMEDIR)
-# $(OBJDIR)/%.o: %.s | $(OBJDIR)
-# 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	ld65 $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)

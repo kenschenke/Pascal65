@@ -76,31 +76,35 @@
 #define TXS             0x9a
 #define TYA             0x98
 
-#define ZP_SPL			0x02
-#define ZP_SPH			0x03
-#define ZP_SREGL		0x04
-#define ZP_SREGH		0x05
-#define ZP_PTR1L		0x06
-#define ZP_PTR1H		0x07
-#define ZP_PTR2L		0x08
-#define ZP_PTR2H		0x09
-#define ZP_PTR3L		0x0a
-#define ZP_PTR3H		0x0b
-#define ZP_PTR4L		0x0c
-#define ZP_PTR4H		0x0d
-#define ZP_TMP1			0x0e
-#define ZP_TMP2			0x0f
-#define ZP_TMP3			0x10
-#define ZP_TMP4			0x11
-#define ZP_INTOP1L		0x12
-#define ZP_INTOP1H		0x13
-#define ZP_INTOP2L		0x14
-#define ZP_INTOP2H		0x15
-#define ZP_INTPTR		0x16	// 2 bytes
-#define ZP_STACKFRAMEL	0x18
-#define ZP_STACKFRAMEH	0x19
-#define ZP_SAVEDSTACK	0x1a	// Saved CPU stack pointer for exit()
-#define ZP_NESTINGLEVEL	0x1b
+// Zero page addresses
+
+#define ZP_BASE         0x02
+
+#define ZP_SPL			(ZP_BASE + 0)
+#define ZP_SPH			(ZP_BASE + 1)
+#define ZP_SREGL		(ZP_BASE + 2)
+#define ZP_SREGH		(ZP_BASE + 3)
+#define ZP_PTR1L		(ZP_BASE + 4)
+#define ZP_PTR1H		(ZP_BASE + 5)
+#define ZP_PTR2L		(ZP_BASE + 6)
+#define ZP_PTR2H		(ZP_BASE + 7)
+#define ZP_PTR3L		(ZP_BASE + 8)
+#define ZP_PTR3H		(ZP_BASE + 9)
+#define ZP_PTR4L		(ZP_BASE + 10)
+#define ZP_PTR4H		(ZP_BASE + 11)
+#define ZP_TMP1			(ZP_BASE + 12)
+#define ZP_TMP2			(ZP_BASE + 13)
+#define ZP_TMP3			(ZP_BASE + 14)
+#define ZP_TMP4			(ZP_BASE + 15)
+#define ZP_INTOP1L		(ZP_BASE + 16)
+#define ZP_INTOP1H		(ZP_BASE + 17)
+#define ZP_INTOP2L		(ZP_BASE + 18)
+#define ZP_INTOP2H		(ZP_BASE + 19)
+#define ZP_INTPTR		(ZP_BASE + 20) // 2 bytes
+#define ZP_STACKFRAMEL	(ZP_BASE + 22)
+#define ZP_STACKFRAMEH	(ZP_BASE + 23)
+#define ZP_SAVEDSTACK	(ZP_BASE + 24) // Saved CPU stack pointer for exit()
+#define ZP_NESTINGLEVEL	(ZP_BASE + 25)
 
 // BSS Locations
 
@@ -115,7 +119,13 @@
 
 // Runtime Jumptable locations
 
+#ifdef __MEGA65__
+#define RT_BASE					0x2014		// 0x2001 + 19 (exe header + jmp MAIN)
+#elif defined(__C64__)
 #define RT_BASE					0x810		// 0x801 + 15 (exe header + jmp MAIN)
+#else
+#error Platform Jumptable base not defined
+#endif
 
 #define RT_ABSINT16				(RT_BASE + 24)
 #define RT_ADDINT16				(RT_BASE + 12)
