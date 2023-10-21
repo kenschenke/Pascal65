@@ -17,7 +17,6 @@ static char intBuffer[16];
 
 static char *testFiles[] = {
     "ifthen",
-#if 1
     "loops",
     "stdroutines",
     "recarray",
@@ -25,7 +24,6 @@ static char *testFiles[] = {
     "vartest",
     "casetest",
     "procfunc",
-#endif
     NULL
 };
 
@@ -36,6 +34,7 @@ extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
 extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
 unsigned char loadfile(const char *name);
 
+#ifndef __MEGA65__
 static unsigned overlay1size, overlay2size, overlay3size, overlay4size, overlay5size;
 static unsigned overlay1blocks, overlay2blocks, overlay3blocks, overlay4blocks, overlay5blocks;
 
@@ -68,6 +67,7 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
     flushChunkBlock();
     em_copyto(&emc);
 }
+#endif
 
 void main()
 {
@@ -75,6 +75,7 @@ void main()
 
     setIntBuf(intBuffer);
 
+#ifndef __MEGA65__
     overlay1size = (unsigned)_OVERLAY1_SIZE__;
     overlay2size = (unsigned)_OVERLAY2_SIZE__;
     overlay3size = (unsigned)_OVERLAY3_SIZE__;
@@ -85,11 +86,13 @@ void main()
     overlay3blocks = overlay3size/BLOCK_LEN + (overlay3size % BLOCK_LEN ? 1 : 0);
     overlay4blocks = overlay4size/BLOCK_LEN + (overlay4size % BLOCK_LEN ? 1 : 0);
     overlay5blocks = overlay5size/BLOCK_LEN + (overlay5size % BLOCK_LEN ? 1 : 0);
+#endif
 
     initBlockStorage();
     avail = getAvailChunks();
     initCommon();
 
+#ifndef __MEGA65__
     // Allocate space in extended memory to cache the parser and parsertest overlays.
     // This is done so they don't have to be reloaded for each test.
     if (!allocBlockGroup(&tokenizerCache, overlay1blocks) ||
@@ -111,6 +114,7 @@ void main()
     loadOverlayFromFile("compilertest.4", overlay4size, _OVERLAY4_LOAD__, objcodeCache);
     printf("Loading linker overlay\n");
     loadOverlayFromFile("compilertest.5", overlay5size, _OVERLAY5_LOAD__, linkerCache);
+#endif
 
 #ifdef __C128__
     fast();
@@ -126,18 +130,39 @@ void main()
 
         sprintf(filename, "%s.pas", testFiles[i]);
 
+#ifndef __MEGA65__
         loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
+#else
+    if (!loadfile("compilertest.1")) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+#endif
         puts(filename);
         printf("   T");
         tokenId = tokenize(filename);
         printf(" %d ", avail - getAvailChunks());
 
+#ifndef __MEGA65__
         loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
+#else
+    if (!loadfile("compilertest.2")) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+#endif
         printf("P");
         astRoot = parse(tokenId);
         freeMemBuf(tokenId);
 
+#ifndef __MEGA65__
         loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, semanticCache);
+#else
+    if (!loadfile("compilertest.3")) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+#endif
         printf("S");
         initSemantic();
         init_scope_stack();
@@ -145,14 +170,34 @@ void main()
         set_decl_offsets(astRoot, 0, 0);
         decl_typecheck(astRoot);
 
+#ifndef __MEGA65__
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
+#else
+    if (!loadfile("compilertest.5")) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+#endif
         printf("W");
         linkerPreWrite();
-        // genProgram(astRoot, testFiles[i], testFiles[i+1]);
+#ifndef __MEGA65__
         loadOverlayFromCache(overlay4size, _OVERLAY4_LOAD__, objcodeCache);
+#else
+    if (!loadfile("compilertest.4")) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+#endif
         printf("W");
         objCodeWrite(astRoot);
+#ifndef __MEGA65__
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
+#else
+    if (!loadfile("compilertest.5")) {
+        printf("Unable to load overlay from disk\n");
+        exit(0);
+    }
+#endif
         printf("W");
         linkerPostWrite(testFiles[i], testFiles[i+1]);
 
