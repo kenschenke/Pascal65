@@ -24,8 +24,8 @@ SEMANTICOVRLFILE := $(PROGRAM).3
 OBJCODEOVRLFILE := $(PROGRAM).4
 LINKEROVRLFILE := $(PROGRAM).5
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c128
-CC65TARGET = c128
+TARGET := mega65
+CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp +sound -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 mega65_EMUCMD := xmega65 -besure -8
@@ -233,17 +233,26 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii assign.pas
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(SEMANTICOVRLFILE) $(SEMANTICOVRLFILE) \
-	-write $(BINDIR)/$(CODEGENOVRLFILE) $(CODEGENOVRLFILE) \
+	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
+	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
+	-write runtime runtime \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
-	-write assign.pas assign.pas,seq
+	-write stdroutines.petscii stdroutines.pas,seq \
+	-write ifthen.petscii ifthen.pas,seq \
+	-write loops.petscii loops.pas,seq \
+	-write recarray.petscii recarray.pas,seq \
+	-write scopetest.petscii scopetest.pas,seq \
+	-write vartest.petscii vartest.pas,seq \
+	-write casetest.petscii casetest.pas,seq \
+	-write procfunc.petscii procfunc.pas,seq
 else
 $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
