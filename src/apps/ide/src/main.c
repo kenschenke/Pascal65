@@ -10,6 +10,9 @@
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
 extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
+extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
+extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
+extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
 unsigned char loadfile(const char *name);
 
 void logError(const char *message, unsigned lineNumber, TErrorCode code)
@@ -61,7 +64,7 @@ void main()
     initBlockStorage();
 
 #if 1
-    if (loadfile("pascal65.4")) {
+    if (loadfile("pascal65.6")) {
         initEditor();
         editorSetDefaultStatusMessage();
         // E.cbExitRequested = handleExitRequested;
