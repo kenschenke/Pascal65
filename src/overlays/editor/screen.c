@@ -39,41 +39,8 @@ static void editorDrawMessageBar(void);
 static void editorDrawRows(void);
 static void editorDrawStatusBar(void);
 static void editorScroll(void);
-static void setCursor(unsigned char value, unsigned char color);
 
 #ifdef __MEGA65__
-void drawRow65(char row, char col, char len, char *buf, char isReversed);
-
-char * SCREEN = (char*)0x0800;
-#elif defined(__C64__)
-char * SCREEN = (char*)0x0400;
-#endif
-
-#ifdef __MEGA65__
- void clearRow(char row, char startingCol) {
-    int offset = row * 80 + startingCol;
-    memset(SCREEN+offset, ' ', 80-startingCol);
-}
-
-void drawRow65(char row, char col, char len, char *buf, char isReversed) {
-    char i;
-    int offset = row * 80 + col;
-    for (i = 0; i < len; ++i) {
-        SCREEN[offset++] = petsciitoscreencode(buf[i]) | (isReversed ? 128 : 0);
-    }
-}
-
-static void setCursor(unsigned char clear, unsigned char color) {
-    unsigned int offset;
-
-    offset = (E.cf.cy - E.cf.rowoff) * 80 + E.cf.cx - E.cf.coloff;
-    if (clear) {
-        SCREEN[offset] &= 0x7f;
-    } else {
-        SCREEN[offset] |= 0x80;
-    }
-    cellcolor(E.cf.cx - E.cf.coloff, E.cf.cy - E.cf.rowoff, color);
-}
 #elif defined(__C64__)
 void clearRow(char row, char startingCol) {
     int offset = row * 40 + startingCol;
