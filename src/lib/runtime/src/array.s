@@ -8,11 +8,12 @@
 
 .include "error.inc"
 .include "runtime.inc"
+.include "cbm_kernal.inc"
 
-.import runtimeError, ltInt16, gtInt16
-.import subInt16, addInt16, multInt16, popax
+.import runtimeError, ltInt16, gtInt16, calcStackOffset
+.import subInt16, addInt16, multInt16, popax, pushax
 
-.export calcArrayOffset, initArrayHeap
+.export calcArrayOffset, initArrayHeap, writeCharArray
 
 ; This routine calculates the address of an element in an array's
 ; heap buffer for an index. It expects the array index to be pushed
@@ -119,3 +120,84 @@ L1:
     sta (ptr1),y
     rts
 .endproc
+
+; This routine writes a character array to the console.
+; The array index minimum (16-bit) is pushed to the runtime stack,
+; followed by the index maximum (also 16-bit).
+; The variable offset on the runtime stack is passed in X
+; The variable nesting level is passed in A
+.proc writeCharArray
+    jsr calcStackOffset
+    ; Leave the array's heap address in ptr1 for a second
+    ; and store the min/max on the CPU stack
+    jsr popax           ; Pop the array max index off the runtime stack
+    pha                 ; and push it on the CPU stack
+    txa
+    pha
+    ; Now do the same for the minimum index
+    jsr popax
+    sta tmp1            ; Store the minimum in tmp1/tmp2
+    stx tmp2
+    pha
+    txa
+    pha
+    lda tmp1
+    ldx tmp2
+    jsr pushax          ; Push the min index to the runtime stack
+    ; Calculate the address of the first character in the array
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
+    jsr calcArrayOffset
+    sta ptr1            ; Store the first char's address in ptr1
+    stx ptr1 + 1
+    ; Pop the min index off the CPU stack and store in intOp2
+    pla
+    sta intOp2 + 1
+    pla
+    sta intOp2
+    ; Pop the max index off the CPU stack and store in intOp1
+    pla
+    sta intOp1 + 1
+    pla
+    sta intOp1
+    jsr subInt16        ; Subtract intOp2 from intOp1
+    ; Add 1 to the difference and store in tmp1/tmp2
+    lda intOp1
+    clc
+    adc #1
+    sta tmp1
+    lda intOp1 + 1
+    adc #0
+    sta tmp2
+    ; Loop until tmp1/tmp2 are zero
+    ldy #0
+L1:
+    lda (ptr1),y
+    jsr CHROUT
+    ; Decrement tmp1/tmp2
+    lda tmp1
+    sec
+    sbc #1
+    sta tmp1
+    lda tmp2
+    sbc #0
+    sta tmp2
+    lda tmp1
+    ora tmp2
+    beq L2
+    ; Increment ptr1
+    lda ptr1
+    clc
+    adc #1
+    sta ptr1
+    lda ptr1 + 1
+    adc #0
+    sta ptr1 + 1
+    jmp L1
+L2:
+    rts
+.endproc
+

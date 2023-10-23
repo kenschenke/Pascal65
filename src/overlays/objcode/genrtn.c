@@ -593,6 +593,27 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genThreeAddr(JSR, RT_POPEAX);
 			genThreeAddr(JSR, RT_PRINTZ);
 			break;
+
+		case TYPE_ARRAY: {
+			struct type subtype;
+			struct expr leftExpr;
+			struct symbol node;
+			retrieveChunk(_type.subtype, &subtype);
+			if (subtype.kind != TYPE_CHARACTER) {
+				break;  // can only write character arrays
+			}
+			retrieveChunk(arg.left, &leftExpr);
+			retrieveChunk(leftExpr.node, &node);
+			retrieveChunk(_type.indextype, &_type);
+			genExpr(_type.min, 1, 1, 0);
+			genThreeAddr(JSR, RT_PUSHAX);
+			genExpr(_type.max, 1, 1, 0);
+			genThreeAddr(JSR, RT_PUSHAX);
+			genTwo(LDA_IMMEDIATE, node.level);
+			genTwo(LDX_IMMEDIATE, node.offset);
+			genThreeAddr(JSR, RT_WRITECHARARRAY);
+			break;
+		}
 		}
 
 		argChunk = arg.right;

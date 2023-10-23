@@ -195,6 +195,7 @@
 #define RT_WRITEINT16			(RT_BASE + 9)
 #define RT_CALCARRAYOFFSET		(RT_BASE + 195)
 #define RT_GETFPBUF				(RT_BASE + 198)
+#define RT_WRITECHARARRAY       (RT_BASE + 201)
 
 // CBM Kernal
 

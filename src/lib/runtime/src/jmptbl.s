@@ -12,7 +12,7 @@
 .import calcStackOffset, rtStackInit, rtStackCleanup, runtimeErrorInit
 .import pushStackFrameHeader, returnFromRoutine
 .import initArrayHeap, calcRecordOffset, memcopy, heapInit, heapAlloc, heapFree
-.import clearInputBuf, readFloatFromInput, readIntFromInput, calcArrayOffset
+.import clearInputBuf, readFloatFromInput, readIntFromInput, calcArrayOffset, writeCharArray
 
 .segment "JMPTBL"
 
@@ -83,3 +83,4 @@ jmp readFloatFromInput  ; BASE + 189
 jmp readIntFromInput    ; BASE + 192
 jmp calcArrayOffset ; BASE + 195
 jmp getFPBUF    ; BASE + 198
+jmp writeCharArray  ; BASE + 201
