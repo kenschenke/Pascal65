@@ -36,7 +36,7 @@ Type
    Length = Real;
 ```
 
-## Contants
+## Constants
 
 Constants are delcared in the **Constants** section in the program.  An examine section might
 look like this:
