@@ -609,6 +609,8 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genThreeAddr(JSR, RT_PUSHAX);
 			genExpr(_type.max, 1, 1, 0);
 			genThreeAddr(JSR, RT_PUSHAX);
+			genExpr(arg.width, 1, 1, 0);
+			genThreeAddr(JSR, RT_PUSHAX);
 			genTwo(LDA_IMMEDIATE, node.level);
 			genTwo(LDX_IMMEDIATE, node.offset);
 			genThreeAddr(JSR, RT_WRITECHARARRAY);

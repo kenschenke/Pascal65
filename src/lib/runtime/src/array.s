@@ -11,7 +11,7 @@
 .include "cbm_kernal.inc"
 
 .import runtimeError, ltInt16, gtInt16, calcStackOffset
-.import subInt16, addInt16, multInt16, popax, pushax
+.import subInt16, addInt16, multInt16, popax, pushax, leftpad
 
 .export calcArrayOffset, initArrayHeap, writeCharArray
 
@@ -122,14 +122,19 @@ L1:
 .endproc
 
 ; This routine writes a character array to the console.
-; The array index minimum (16-bit) is pushed to the runtime stack,
-; followed by the index maximum (also 16-bit).
-; The variable offset on the runtime stack is passed in X
-; The variable nesting level is passed in A
+; Inputs
+;    (Runtime Stack - top to bottom)
+;       field width
+;       maximum array index
+;       minimum array index
+;    A - variable nesting level
+;    X - variable offset on runtime stack
 .proc writeCharArray
     jsr calcStackOffset
     ; Leave the array's heap address in ptr1 for a second
     ; and store the min/max on the CPU stack
+    jsr popax           ; Pop field width off stack
+    pha                 ; and push it on the CPU stack
     jsr popax           ; Pop the array max index off the runtime stack
     pha                 ; and push it on the CPU stack
     txa
@@ -172,7 +177,23 @@ L1:
     lda intOp1 + 1
     adc #0
     sta tmp2
+    ; Pull the field width back off the CPU stack
+    pla
+    sta tmp3
+    ; If field width specified and array length <= 255
+    lda tmp2            ; Look at high byte of array length
+    bne L0              ; If non-zero, skip left-padding
+    lda tmp3            ; Look at requested field width
+    beq L0              ; If it's zero, skip left-padding
+    lda tmp1            ; Array length
+    pha                 ; Save tmp1 since leftpad destroys it
+    lda tmp3
+    ldx tmp1
+    jsr leftpad
+    pla                 ; Restore the array length
+    sta tmp1
     ; Loop until tmp1/tmp2 are zero
+L0:
     ldy #0
 L1:
     lda (ptr1),y
