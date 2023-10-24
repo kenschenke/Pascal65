@@ -4,8 +4,8 @@
 
 .import getline, readInt16, FPINP, FPBUF
 
-.export clearInputBuf, isInputEndOfLine, readCharFromInput
-.export readFloatFromInput, readIntFromInput, inputBuf, inputBufUsed
+.export clearInputBuf, isInputEndOfLine, readCharFromInput, skipSpaces
+.export readFloatFromInput, readIntFromInput, inputBuf, inputBufUsed, inputPos
 
 .bss
 

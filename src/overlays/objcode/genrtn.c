@@ -274,6 +274,22 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genExpr(arg.left, 0, 0, 0);
 			genThreeAddr(JSR, RT_STOREREAL);
 			break;
+
+		case TYPE_ARRAY: {
+			struct type subtype;
+			struct expr leftExpr;
+			struct symbol node;
+			retrieveChunk(_type.subtype, &subtype);
+			if (subtype.kind != TYPE_CHARACTER) {
+				break;  // can only read into character arrays
+			}
+			retrieveChunk(arg.left, &leftExpr);
+			retrieveChunk(leftExpr.node, &node);
+			genTwo(LDA_IMMEDIATE, node.level);
+			genTwo(LDX_IMMEDIATE, node.offset);
+			genThreeAddr(JSR, RT_READCHARARRAYFROMINPUT);
+			break;
+		}
 		}
 
 		argChunk = arg.right;
@@ -604,7 +620,12 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			}
 			retrieveChunk(arg.left, &leftExpr);
 			retrieveChunk(leftExpr.node, &node);
-			genExpr(arg.width, 1, 1, 0);
+			if (arg.width) {
+				genExpr(arg.width, 1, 1, 0);
+			} else {
+				genTwo(LDA_IMMEDIATE, 0);
+				genOne(TAX);
+			}
 			genThreeAddr(JSR, RT_PUSHAX);
 			genTwo(LDA_IMMEDIATE, node.level);
 			genTwo(LDX_IMMEDIATE, node.offset);

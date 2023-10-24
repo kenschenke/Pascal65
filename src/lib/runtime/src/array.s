@@ -12,8 +12,10 @@
 
 .import runtimeError, ltInt16, gtInt16, calcStackOffset
 .import subInt16, addInt16, multInt16, popax, pushax, leftpad
+.import skipSpaces, inputPos, inputBufPos, inputBufUsed, inputBuf
 
 .export calcArrayOffset, initArrayHeap, writeCharArray
+.export readCharArrayFromInput
 
 ; This routine calculates the address of an element in an array's
 ; heap buffer for an index. It expects the array index to be pushed
@@ -219,6 +221,104 @@ L1:
     sta ptr2 + 1
     jmp L1
 L2:
+    rts
+.endproc
+
+; This routine reads a string of characters from the input
+; and stores them in a character array.  It skips spaces in
+; the input until the first non-space.  If the input is larger
+; than the array, it stops reading at the limit.  If the input
+; is smaller than the array, the remainder is space-filled.
+;
+; Inputs
+;   A - nesting level of array variable
+;   X - value offset on runtime stack
+.proc readCharArrayFromInput
+    jsr calcStackOffset
+    ldy #1                  ; Store array heap address in ptr2
+    lda (ptr1),y            ; and leave it in A/X for call
+    sta ptr2 + 1            ; to getArrayLength
+    tax
+    dey
+    lda (ptr1),y
+    sta ptr2
+    jsr getArrayLength
+    pha                     ; Store the array length on the CPU stack
+    txa
+    pha
+    jsr skipSpaces          ; Skip over spaces in the input buffer
+    ; Move ptr2 (points to array heap) to the first array element.
+    lda ptr2
+    clc
+    adc #6
+    sta ptr2
+    lda ptr2 + 1
+    adc #0
+    sta ptr2 + 1
+    ; Pull the array length from the CPU stack and store in tmp1/tmp2
+    pla
+    sta tmp2
+    pla
+    sta tmp1
+    ; Copy characters from the input buffer until the end of the
+    ; buffer is reached or the end of the array is reached.
+    ldx inputPos            ; Current position in the input buffer
+    ldy #0
+L1:
+    lda tmp1
+    ora tmp2
+    beq L2                  ; Branch if end of the array reached
+    cpx inputBufUsed
+    bcs L2                  ; Branch if end of the buffer reached
+    lda inputBuf,x
+    sta (ptr2),y
+    iny
+    inx
+    ; Decrement tmp1/tmp2
+    lda tmp1
+    sec
+    sbc #1
+    sta tmp1
+    lda tmp2
+    sbc #0
+    sta tmp2
+    jmp L1
+L2:
+    stx inputPos            ; Update the input position
+    ; Update ptr2 to the current array position
+    tya
+    clc
+    adc ptr2
+    sta ptr2
+    lda ptr2 + 1
+    adc #0
+    sta ptr2 + 1
+    ; Space-fill the remainder of the array (if any)
+    ldy #0
+L3:
+    lda tmp1
+    ora tmp2
+    beq L4                  ; Branch if tmp1/tmp2 are zero
+    lda #' '
+    sta (ptr2),y
+    ; Increment ptr2
+    lda ptr2
+    clc
+    adc #1
+    sta ptr2
+    lda ptr2 + 1
+    adc #0
+    sta ptr2 + 1
+    ; Decrement tmp1/tmp2
+    lda tmp1
+    sec
+    sbc #1
+    sta tmp1
+    lda tmp2
+    sbc #0
+    sta tmp2
+    jmp L3
+L4:
     rts
 .endproc
 
