@@ -604,11 +604,6 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			}
 			retrieveChunk(arg.left, &leftExpr);
 			retrieveChunk(leftExpr.node, &node);
-			retrieveChunk(_type.indextype, &_type);
-			genExpr(_type.min, 1, 1, 0);
-			genThreeAddr(JSR, RT_PUSHAX);
-			genExpr(_type.max, 1, 1, 0);
-			genThreeAddr(JSR, RT_PUSHAX);
 			genExpr(arg.width, 1, 1, 0);
 			genThreeAddr(JSR, RT_PUSHAX);
 			genTwo(LDA_IMMEDIATE, node.level);

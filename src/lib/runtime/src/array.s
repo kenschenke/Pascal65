@@ -85,6 +85,35 @@ L1:
     jsr runtimeError
 .endproc
 
+; This routine calculates the length of the array
+; and returns it in A/X.  intOp1, intOp2, and ptr1 are destroyed.
+; The pointer to the array heap is passed in A/X.
+.proc getArrayLength
+    sta ptr1
+    stx ptr1 + 1
+    ldy #0
+    lda (ptr1),y
+    sta intOp2
+    iny
+    lda (ptr1),y
+    sta intOp2 + 1
+    iny
+    lda (ptr1),y
+    sta intOp1
+    iny
+    lda (ptr1),y
+    sta intOp1 + 1
+    jsr subInt16
+    lda #1
+    sta intOp2
+    lda #0
+    sta intOp2 + 1
+    jsr addInt16
+    lda intOp1
+    ldx intOp1 + 1
+    rts
+.endproc
+
 ; This routine initializes an array heap, which is the
 ; following format:
 ;
@@ -123,62 +152,25 @@ L1:
 
 ; This routine writes a character array to the console.
 ; Inputs
-;    (Runtime Stack - top to bottom)
-;       field width
-;       maximum array index
-;       minimum array index
 ;    A - variable nesting level
 ;    X - variable offset on runtime stack
+;    Field width on runtime stack
 .proc writeCharArray
     jsr calcStackOffset
-    ; Leave the array's heap address in ptr1 for a second
-    ; and store the min/max on the CPU stack
-    jsr popax           ; Pop field width off stack
-    pha                 ; and push it on the CPU stack
-    jsr popax           ; Pop the array max index off the runtime stack
-    pha                 ; and push it on the CPU stack
-    txa
-    pha
-    ; Now do the same for the minimum index
-    jsr popax
-    sta tmp1            ; Store the minimum in tmp1/tmp2
-    stx tmp2
-    pha
-    txa
-    pha
-    lda tmp1
-    ldx tmp2
-    jsr pushax          ; Push the min index to the runtime stack
-    ; Calculate the address of the first character in the array
     ldy #1
-    lda (ptr1),y
-    tax
+    lda (ptr1),y        ; Look up the array heap address
+    sta ptr2 + 1
     dey
     lda (ptr1),y
-    jsr calcArrayOffset
-    sta ptr1            ; Store the first char's address in ptr1
-    stx ptr1 + 1
-    ; Pop the min index off the CPU stack and store in intOp2
-    pla
-    sta intOp2 + 1
-    pla
-    sta intOp2
-    ; Pop the max index off the CPU stack and store in intOp1
-    pla
-    sta intOp1 + 1
-    pla
-    sta intOp1
-    jsr subInt16        ; Subtract intOp2 from intOp1
-    ; Add 1 to the difference and store in tmp1/tmp2
-    lda intOp1
-    clc
-    adc #1
+    sta ptr2
+    ; Calculate the array length
+    lda ptr2
+    ldx ptr2 + 1
+    jsr getArrayLength
     sta tmp1
-    lda intOp1 + 1
-    adc #0
-    sta tmp2
-    ; Pull the field width back off the CPU stack
-    pla
+    stx tmp2
+    ; Pop the field width off the runtime stack
+    jsr popax
     sta tmp3
     ; If field width specified and array length <= 255
     lda tmp2            ; Look at high byte of array length
@@ -187,16 +179,24 @@ L1:
     beq L0              ; If it's zero, skip left-padding
     lda tmp1            ; Array length
     pha                 ; Save tmp1 since leftpad destroys it
+    tax
     lda tmp3
-    ldx tmp1
     jsr leftpad
     pla                 ; Restore the array length
     sta tmp1
     ; Loop until tmp1/tmp2 are zero
 L0:
+    ; Skip over the array header
+    lda ptr2
+    clc
+    adc #6
+    sta ptr2
+    lda ptr2 + 1
+    adc #0
+    sta ptr2 + 1
     ldy #0
 L1:
-    lda (ptr1),y
+    lda (ptr2),y
     jsr CHROUT
     ; Decrement tmp1/tmp2
     lda tmp1
@@ -209,14 +209,14 @@ L1:
     lda tmp1
     ora tmp2
     beq L2
-    ; Increment ptr1
-    lda ptr1
+    ; Increment ptr2
+    lda ptr2
     clc
     adc #1
-    sta ptr1
-    lda ptr1 + 1
+    sta ptr2
+    lda ptr2 + 1
     adc #0
-    sta ptr1 + 1
+    sta ptr2 + 1
     jmp L1
 L2:
     rts
