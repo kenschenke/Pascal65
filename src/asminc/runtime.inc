@@ -18,3 +18,4 @@ intPtr := zp_base + $14
 stackP := zp_base + $16
 savedStackPtr := zp_base + $18
 currentNestingLevel := zp_base + $19
+exitHandler := zp_base + $1a

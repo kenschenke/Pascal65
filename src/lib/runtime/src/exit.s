@@ -21,6 +21,6 @@ exiting: .asciiz "exiting."
     ; restore the stack pointer
     ldx savedStackPtr
     txs
-    ; exit back to BASIC
-    rts
+    ; call the exit handler
+    jmp (exitHandler)
 .endproc

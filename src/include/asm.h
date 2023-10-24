@@ -105,6 +105,7 @@
 #define ZP_STACKFRAMEH	(ZP_BASE + 23)
 #define ZP_SAVEDSTACK	(ZP_BASE + 24) // Saved CPU stack pointer for exit()
 #define ZP_NESTINGLEVEL	(ZP_BASE + 25)
+#define ZP_EXITHANDLER  (ZP_BASE + 26)
 
 // BSS Locations
 

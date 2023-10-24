@@ -69,11 +69,13 @@ static void writeChainCall(char* name);
 
 #ifdef __MEGA65__
 #define PRG_HEADER_CODE_OFFSET_1 5
-#define PRG_HEADER_CODE_OFFSET_2 45
-#define PRG_HEADER_CODE_OFFSET_3 47
-#define PRG_HEADER_CODE_OFFSET_4 70
-#define PRG_HEADER_CODE_OFFSET_5 74
-#define PRG_HEADER_LENGTH 77
+#define PRG_HEADER_CODE_OFFSET_2 53
+#define PRG_HEADER_CODE_OFFSET_3 55
+#define PRG_HEADER_CODE_OFFSET_4 78
+#define PRG_HEADER_CODE_OFFSET_5 82
+#define PRG_HEADER_CODE_EXIT_HANDLER_L 19
+#define PRG_HEADER_CODE_EXIT_HANDLER_H 23
+#define PRG_HEADER_LENGTH 85
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
@@ -88,6 +90,12 @@ static unsigned char prgHeader[] = {
 	STX_ZEROPAGE, ZP_SAVEDSTACK,
 
 	JSR, WORD_LOW(RT_ERRORINIT), WORD_HIGH(RT_ERRORINIT),
+
+	// Set the exit handler
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_EXITHANDLER,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_EXITHANDLER + 1,
 
 	// Initialize runtime stack
 	LDA_IMMEDIATE, 0,
@@ -133,11 +141,13 @@ static unsigned char prgHeader[] = {
 };
 #elif defined(__C64__)
 #define PRG_HEADER_CODE_OFFSET_1 5
-#define PRG_HEADER_CODE_OFFSET_2 45
-#define PRG_HEADER_CODE_OFFSET_3 47
-#define PRG_HEADER_CODE_OFFSET_4 70
-#define PRG_HEADER_CODE_OFFSET_5 74
-#define PRG_HEADER_LENGTH 77
+#define PRG_HEADER_CODE_OFFSET_2 53
+#define PRG_HEADER_CODE_OFFSET_3 55
+#define PRG_HEADER_CODE_OFFSET_4 78
+#define PRG_HEADER_CODE_OFFSET_5 82
+#define PRG_HEADER_CODE_EXIT_HANDLER_L 19
+#define PRG_HEADER_CODE_EXIT_HANDLER_H 23
+#define PRG_HEADER_LENGTH 85
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
@@ -152,6 +162,12 @@ static unsigned char prgHeader[] = {
 	STX_ZEROPAGE, ZP_SAVEDSTACK,
 
 	JSR, WORD_LOW(RT_ERRORINIT), WORD_HIGH(RT_ERRORINIT),
+
+	// Set the exit handler
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_EXITHANDLER,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_EXITHANDLER + 1,
 
 	// Initialize runtime stack
 	LDA_IMMEDIATE, 0,
@@ -416,6 +432,8 @@ void linkerPreWrite(void)
 	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_3, 0, LINKADDR_HIGH);
 	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_4, 0, LINKADDR_LOW);
 	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_5, 0, LINKADDR_HIGH);
+	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_L, 0, LINKADDR_LOW);
+	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_H, 0, LINKADDR_HIGH);
 	writeCodeBuf(prgHeader, PRG_HEADER_LENGTH);
 }
 
@@ -429,6 +447,7 @@ void linkerPostWrite(const char* prgFilename)
 	char ch;
 	int i;
 
+	linkAddressSet("EXIT_HANDLER", codeOffset);
 	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_CLEANUP_OFFSET, 0, LINKADDR_BOTH);
 	writeCodeBuf(prgCleanup, PRG_CLEANUP_LENGTH);
 
