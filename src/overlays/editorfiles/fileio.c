@@ -23,6 +23,7 @@
 
 static void addRow(efile *file, erow *row, CHUNKNUM lastRow);
 static void appendText(erow *row, CHUNKNUM *lastChunk, char *text);
+static void editorReadFileContents(efile *file, FILE *fp);
 static char editorSave(char *filename);
 static char saveToExisting(void);
 
@@ -116,7 +117,7 @@ void editorOpen(const char *filename, char readOnly) {
     updateStatusBarFilename();
 }
 
-void editorReadFileContents(efile *file, FILE *fp)
+static void editorReadFileContents(efile *file, FILE *fp)
 {
     erow row;
     CHUNKNUM lastTextChunk=0, lastRowChunk=0;
@@ -221,7 +222,7 @@ char saveAs(void) {
         strcat(prompt, " already exists. Overwrite Y/N?");
         while (1) {
             drawStatusRow(COLOR_RED, 0, prompt);
-            ch = editorReadKey();
+            ch = cgetc();
             if (ch == 'y' || ch == 'Y') {
                 break;
             } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
@@ -231,7 +232,7 @@ char saveAs(void) {
             }
         }
         
-        removeFile(filename);
+        remove(filename);
     }
 
     if (!E.cf.filenameChunk) {

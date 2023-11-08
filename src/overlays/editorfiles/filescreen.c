@@ -35,7 +35,7 @@ char handleFiles(void) {
     int key;
 
     while(1) {
-        key = editorReadKey();
+        key = cgetc();
         if (key == 'm' || key == 'M') {
             selectedFile = E.cf.fileChunk;
             filePage = 0;

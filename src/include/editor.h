@@ -170,7 +170,6 @@ char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, e
 void editorNewFile(void);
 void editorOpen(const char *filename, char readOnly);
 void editorClose(void);  // close current file
-void editorReadFileContents(efile *file, FILE *fp);
 int editorReadKey(void);
 void editorRetrieveFilename(char *buffer);
 char editorRun(void);       // returns EDITOR_LOOP_*

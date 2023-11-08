@@ -81,7 +81,7 @@ static void closeFile(void) {
 
         while (1) {
             drawStatusRow(COLOR_LIGHTRED, 0, "Save changes before closing? Y/N");
-            ch = editorReadKey();
+            ch = cgetc();
             if (ch == 'y' || ch == 'Y') {
                 break;
             } else if (ch == STOP_KEY) {
