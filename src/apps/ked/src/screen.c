@@ -40,6 +40,10 @@ static void editorDrawRows(void);
 static void editorDrawStatusBar(void);
 static void editorScroll(void);
 
+#ifdef __C64__
+char * SCREEN = (char*)0x0400;
+#endif
+
 #ifdef __MEGA65__
 #elif defined(__C64__)
 void clearRow(char row, char startingCol) {
@@ -62,45 +66,7 @@ void drawStatusRow(char color, char center, const char *msg) {
     setRowColor(E.screenrows + 1, color);
 }
 
-char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength) {
-    char msg[81];
-    size_t buflen = 0;
-    int c, x = promptLength;
-
-    buf[0] = '\0';
-
-    clearCursor();
-    while (1) {
-        strcpy(msg, prompt);
-        strcat(msg, buf);
-        drawStatusRow(COLOR_WHITE, 0, msg);
-        renderCursor(x, E.screenrows + 1);
-        c = editorReadKey();
-        if (c == DEL_KEY || c == CTRL_KEY('h') || c == CH_DEL) {
-            if (buflen != 0) {
-                buf[--buflen] = '\0';
-                --x;
-            }
-        } else if (c == 3) {
-            clearStatusRow();
-            clearCursor();
-            return 0;
-        } else if (c == CH_ENTER) {
-            if (buflen != 0) {
-                clearStatusRow();
-                clearCursor();
-                return 1;
-            }
-        } else if (buflen + 1 < bufsize && !iscntrl(c) && c < 128) {
-            buf[buflen++] = c;
-            buf[buflen] = '\0';
-            ++x;
-        }
-    }
-
-    clearCursor();
-    return 0;
-}
+void printz(char *str);
 
 #ifdef __C128__
 void setScreenBg(char bg) {
@@ -270,7 +236,10 @@ void editorRefreshScreen(void) {
     if (E.cf.fileChunk)
         editorScroll();
 
-    editorDrawRows();
+    if (E.anyDirtyRows) {
+        editorDrawRows();
+        E.anyDirtyRows = 0;
+    }
     editorDrawStatusBar();
     editorDrawMessageBar();
 
@@ -278,6 +247,14 @@ void editorRefreshScreen(void) {
         renderCursor(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
     } else {
         clearCursor();
+    }
+}
+
+void editorRetrieveFilename(char *buffer) {
+    if (E.cf.filenameChunk == 0) {
+        memset(buffer, 0, CHUNK_LEN);
+    } else {
+        retrieveChunk(E.cf.filenameChunk, (unsigned char *)buffer);
     }
 }
 

@@ -31,11 +31,8 @@ static void cycleCurrentDevice(void) {
     chdir(formatInt16(dev));
 }
 
-void handleFiles(void) {
+char handleFiles(void) {
     int key;
-
-    editorSetStatusMessage("O=Open, S=Save, N=New, C=Close, M=More");
-    editorRefreshScreen();
 
     while(1) {
         key = editorReadKey();
@@ -45,43 +42,24 @@ void handleFiles(void) {
             openFiles = 0;
             showFileScreen();
         } else if (key == 'c' || key == 'C') {
-            closeFile();
-            clearScreen();
-            editorSetAllRowsDirty();
-            return;
+            return FILESCREEN_CLOSEFILE;
         } else if (key == 'n' || key == 'N') {
-            editorNewFile();
-            clearScreen();
-            editorSetAllRowsDirty();
-            return;
+            return FILESCREEN_NEWFILE;
         } else if (key == 's' || key == 'S' || key == CTRL_KEY('s')) {
             if (saveFile()) {
-                return;
+                return FILESCREEN_SAVEFILE;
             }
         } else if (key == 'a' || key == 'A') {
             if (saveAs()) {
-                clearScreen();
-                editorSetAllRowsDirty();
-                return;
+                return FILESCREEN_SAVEASFILE;
             }
         } else if (key == 'o' || key == 'O') {
-            openFile();
-            if (E.cf.fileChunk) {
-                clearScreen();
-                editorSetAllRowsDirty();
-                return;
-            } else {
-                drawStatusRow(COLOR_RED, 1, "Unable to open file");
-            }
+            return FILESCREEN_OPENFILE;
         } else if (key == BACKARROW || key == CH_ESC) {
-            clearScreen();
-            editorSetAllRowsDirty();
-            return;
+            return FILESCREEN_BACK;
         } else if (key >= '1' && key <= '9') {
             switchToFile(key - '0');
-            clearScreen();
-            editorSetAllRowsDirty();
-            return;
+            return FILESCREEN_SWITCHTOFILE;
         } else if (key == 'd' || key == 'D') {
             cycleCurrentDevice();
             showFileScreen();
@@ -217,8 +195,6 @@ static void switchToFile(char num) {
                 storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
                 retrieveChunk(chunkNum, (unsigned char *)&E.cf);
                 clearScreen();
-                editorSetAllRowsDirty();
-                updateStatusBarFilename();
                 return;
             }
         }

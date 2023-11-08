@@ -21,34 +21,10 @@
 #include <errno.h>
 #include <int16.h>
 
-void closeFile(void) {
-    if (E.cf.dirty && E.cf.fileChunk) {
-        int ch;
-
-        while (1) {
-            drawStatusRow(COLOR_LIGHTRED, 0, "Save changes before closing? Y/N");
-            ch = editorReadKey();
-            if (ch == 'y' || ch == 'Y') {
-                break;
-            } else if (ch == STOP_KEY) {
-                clearStatusRow();
-                editorSetDefaultStatusMessage();
-                return;
-            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
-                editorClose();
-                clearStatusRow();
-                editorSetDefaultStatusMessage();
-                return;
-            }
-        }
-
-        if (saveFile() == 0) {
-            return;
-        }
-    }
-
-    editorClose();
-}
+static void addRow(efile *file, erow *row, CHUNKNUM lastRow);
+static void appendText(erow *row, CHUNKNUM *lastChunk, char *text);
+static char editorSave(char *filename);
+static char saveToExisting(void);
 
 char doesFileExist(char *filename) {
     FILE *fp;
@@ -62,63 +38,60 @@ char doesFileExist(char *filename) {
     return 0;
 }
 
-void editorClose(void) {
+static void addRow(efile *file, erow *row, CHUNKNUM lastRow)
+{
     CHUNKNUM chunkNum;
-    erow row;
-    efile file;
+    allocChunk(&chunkNum);
 
-    if (!E.cf.fileChunk) {
-        return;  // no file currently open
+    if (row->rowChunk) {
+        storeChunk(row->rowChunk, row);
     }
 
-    // Free the rows
-    chunkNum = E.cf.firstRowChunk;
-    while (chunkNum) {
-        if (retrieveChunk(chunkNum, (unsigned char *)&row) == 0) {
-            break;
+    if (lastRow) {
+        retrieveChunk(lastRow, row);
+        row->nextRowChunk = chunkNum;
+        storeChunk(lastRow, row);
+    }
+
+    if (file->firstRowChunk == 0) {
+        file->firstRowChunk = chunkNum;
+    }
+
+    memset(row, 0, sizeof(erow));
+    row->rowChunk = chunkNum;
+}
+
+static void appendText(erow *row, CHUNKNUM *lastChunk, char *text)
+{
+    char *p = text;
+    echunk chunk;
+    CHUNKNUM chunkNum;
+    int toCopy, len = strlen(text);
+
+    while (len) {
+        allocChunk(&chunkNum);
+        if (*lastChunk) {
+            retrieveChunk(*lastChunk, &chunk);
+            chunk.nextChunk = chunkNum;
+            storeChunk(*lastChunk, &chunk);
+        } else {
+            row->firstTextChunk = chunkNum;
         }
-        chunkNum = row.nextRowChunk;
-        editorFreeRow(row.firstTextChunk);
-        freeChunk(row.rowChunk);
-    }
 
-    // Remove the file from the list
-    if (E.firstFileChunk == E.cf.fileChunk) {
-        E.firstFileChunk = E.cf.nextFileChunk;
-    } else {
-        chunkNum = E.firstFileChunk;
-        while (chunkNum) {
-            retrieveChunk(chunkNum, (unsigned char *)&file);
-            if (file.nextFileChunk == E.cf.fileChunk) {
-                file.nextFileChunk = E.cf.nextFileChunk;
-                storeChunk(chunkNum, (unsigned char *)&file);
-                break;
-            }
-            chunkNum = file.nextFileChunk;
-        }
+        toCopy = len > ECHUNK_LEN ? ECHUNK_LEN : len;
+        memcpy(chunk.bytes, p, toCopy);
+        chunk.bytesUsed = toCopy;
+        chunk.nextChunk = 0;
+        storeChunk(chunkNum, &chunk);
+        row->size += toCopy;
+        len -= toCopy;
+        *lastChunk = chunkNum;
+        p += toCopy;
     }
-
-    if (E.cf.filenameChunk) {
-        freeChunk(E.cf.filenameChunk);
-    }
-    freeChunk(E.cf.fileChunk);
-    E.cf.fileChunk = 0;
-    E.cf.firstRowChunk = 0;
-    clearScreen();
-    
-    if (E.firstFileChunk) {
-        retrieveChunk(E.firstFileChunk, (unsigned char *)&E.cf);
-        editorSetAllRowsDirty();
-    }
-
-    updateStatusBarFilename();
 }
 
 void editorOpen(const char *filename, char readOnly) {
     FILE *fp;
-    erow row;
-    char buf[40], *line, *eol;
-    int buflen = 40, lastRow = -1;
 
     if (E.cf.fileChunk) {
         storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
@@ -130,52 +103,71 @@ void editorOpen(const char *filename, char readOnly) {
         return;
     }
 
-    initFile();
+    // initFile();
     E.cf.readOnly = readOnly;
-    editorStoreFilename(filename);
+    // editorStoreFilename(filename);
+
+    editorReadFileContents(&E.cf, fp);
+
+    fclose(fp);
+    E.cf.dirty = 0;
+    E.anyDirtyRows = 1;
+    editorSetDefaultStatusMessage();
+    updateStatusBarFilename();
+}
+
+void editorReadFileContents(efile *file, FILE *fp)
+{
+    erow row;
+    CHUNKNUM lastTextChunk=0, lastRowChunk=0;
+    char buf[40], *line, *eol;
+    int buflen = 40;
+
+    row.rowChunk = 0;
 
     while (!feof(fp)) {
         if (!fgets(buf, buflen, fp)) {
             break;
         }
 
-        line = buf;
+        line = buf;     // start at beginning of buffer
         while (1) {
-            eol = strchr(line, '\r');
+            eol = strchr(line, '\r');   // Look for a CR (end of line)
             if (eol == NULL) {
-                if (line != NULL) {
-                    if (lastRow >= 0) {
-                        editorRowAt(lastRow, &row);
-                        editorRowAppendString(&row, line, strlen(line));
-                    } else {
-                        editorInsertRow(E.cf.numrows, line, strlen(line));
-                    }
-                    lastRow = E.cf.numrows - 1;
+                // CR not found, so we have a partial line.
+                // Save what we have so far in the buffer.
+                if (row.rowChunk) {
+                    appendText(&row, &lastTextChunk, line);
+                } else {
+                    addRow(file, &row, lastRowChunk);
+                    appendText(&row, &lastTextChunk, line);
+                    row.idx = file->numrows++;
                 }
                 break;
             } else {
                 *eol = '\0';
-                if (line != NULL) {
-                    if (lastRow >= 0) {
-                        editorRowAt(lastRow, &row);
-                        editorRowAppendString(&row, line, strlen(line));
-                    } else {
-                        editorInsertRow(E.cf.numrows, line, strlen(line));
-                    }
-                    lastRow = -1;
+                if (row.rowChunk) {
+                    appendText(&row, &lastTextChunk, line);
+                } else {
+                    addRow(file, &row, lastRowChunk);
+                    appendText(&row, &lastTextChunk, line);
+                    row.idx = file->numrows++;
                 }
+                storeChunk(row.rowChunk, &row);
+                lastRowChunk = row.rowChunk;
+                row.rowChunk = 0;
+                lastTextChunk = 0;
                 line = eol + 1;
             }
         }
     }
 
-    fclose(fp);
-    E.cf.dirty = 0;
-    editorSetDefaultStatusMessage();
-    updateStatusBarFilename();
+    if (row.rowChunk) {
+        storeChunk(row.rowChunk, &row);
+    }
 }
 
-char editorSave(char *filename) {
+static char editorSave(char *filename) {
     FILE *fp;
     char newFile = 0;
     CHUNKNUM rowChunkNum, textChunkNum;
@@ -213,28 +205,13 @@ char editorSave(char *filename) {
     return 1;
 }
 
-void openFile(void) {
-    char filename[16+1];
-
-    clearStatusRow();
-
-    if (editorPrompt("Open file: ", filename, sizeof(filename), 11) == 0) {
-        editorSetDefaultStatusMessage();
-        return;
-    }
-
-    editorOpen(filename, 0);
-
-    renderCursor(0, 0);
-}
-
 char saveAs(void) {
     char filename[16+1], prompt[80];
     int ch;
 
     clearStatusRow();
 
-    if (editorPrompt("Save as: ", filename, sizeof(filename), 9) == 0) {
+    if (editorPrompt(filename, sizeof(filename), "Save as: ") == 0) {
         editorSetDefaultStatusMessage();
         return 0;
     }
@@ -284,13 +261,11 @@ char saveFile(void) {
     if (E.cf.filenameChunk) {
         if (saveToExisting()) {
             clearScreen();
-            editorSetAllRowsDirty();
             return 1;
         }
     } else {
         if (saveAs()) {
             clearScreen();
-            editorSetAllRowsDirty();
             return 1;
         }
     }
@@ -298,7 +273,7 @@ char saveFile(void) {
     return 0;
 }
 
-char saveToExisting(void) {
+static char saveToExisting(void) {
     char filename[CHUNK_LEN], tempFilename[16 + 1];
 
     clearStatusRow();
@@ -319,8 +294,8 @@ char saveToExisting(void) {
         return 0;
     }
 
-    removeFile(filename);
-    renameFile(tempFilename, filename);
+    remove(filename);
+    rename(tempFilename, filename);
 
     return 1;
 }

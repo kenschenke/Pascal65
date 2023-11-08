@@ -1,9 +1,9 @@
 Welcome to Pascal65
--------------------
-Copyright 2022-2023 by Ken Schenke
+-----------------------------
+Copyright 2022-23 Ken Schenke
 kenschenke@gmail.com
 
-You are viewing the help.
+This is the help page for Pascal65.
 Ctrl+N jumps to the next page and
 Ctrl+P jumps to the previous page.
 You can also use the cursor keys to
@@ -22,7 +22,20 @@ Scroll Up            Esc+V    Ctrl+V
 Scroll Down          Esc+W    Ctrl+W
 Scroll to file top   Esc+B    Ctrl+B
 Scroll to file end   Esc+E    Ctrl+E
-Open File                     Ctrl+O
-Save File                     Ctrl+S
+Open File                     F1
+Save File                     F2
+Run Pascal File               F4
+Compile Pascal File           F5
 Other File Functions      Back arrow
+View This Help File           F7
 Exit                          Ctrl+X
+
+The text editor is based on:
+
+"Build Your Own Text Editor"
+viewsourcecode.org/snaptoken/kilo/
+
+And
+
+antirez's Kilo editor
+antirez.com/news/108

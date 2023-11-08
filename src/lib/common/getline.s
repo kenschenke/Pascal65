@@ -3,7 +3,7 @@
 .include "c64.inc"
 
 .import inputBuf, inputBufUsed
-.export getline
+.export getline, getlineNoEnter
 
 .ifdef RUNTIME
 .include "runtime.inc"
@@ -31,7 +31,7 @@ L1:
 ; Non-zero is returned in A if the user presses RUN/STOP.
 ; inputBufUsed contains the number of characters read.
 ; inputBuf is not zero-terminated.
-.proc getline
+.proc getlineNoEnter
     jsr clearBuf
     ; set up the buffer pointer
     lda #<inputBuf
@@ -127,10 +127,19 @@ EnterKey:
     lda #' '
     jsr CHROUT
 .endif
-    lda #CH_ENTER
-    jsr CHROUT
     lda #0
     ldx tmp1
     stx inputBufUsed
+    rts
+.endproc
+
+.proc getline
+    jsr getlineNoEnter
+    cmp #0
+    bne L1
+    lda #CH_ENTER
+    jsr CHROUT
+    lda #0
+L1:
     rts
 .endproc

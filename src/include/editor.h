@@ -13,12 +13,28 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include <stdio.h>
 #include <stddef.h>
 #include <chunks.h>
 
 #define ECHUNK_LEN (CHUNK_LEN - 3)
 
 #define EDITOR_TAB_STOP 4
+
+#define EDITOR_LOOP_CONTINUE 0
+#define EDITOR_LOOP_QUIT 1
+#define EDITOR_LOOP_OPENFILE 2
+#define EDITOR_LOOP_FILESCREEN 3
+#define EDITOR_LOOP_SAVEFILE 4
+#define EDITOR_LOOP_OPENHELP 5
+
+#define FILESCREEN_BACK 1          // Exit file screen and return to editor
+#define FILESCREEN_OPENFILE 2
+#define FILESCREEN_CLOSEFILE 3
+#define FILESCREEN_NEWFILE 4
+#define FILESCREEN_SAVEFILE 5
+#define FILESCREEN_SAVEASFILE 6
+#define FILESCREEN_SWITCHTOFILE 7
 
 /*** callbacks ***/
 
@@ -68,11 +84,13 @@ struct editorConfig {
     CHUNKNUM firstFileChunk;
     CHUNKNUM titleChunk;            // membuf for the title screen contents
     struct efile cf;                // point to current file
-    char quit;                      // non-zero when user selects quit command
+    char loopCode;                  // non-zero when processing loop exits
+                                    // one of EDITOR_LOOP_*
     char last_key_esc;              // non-zero if last key was ESC
     char statusmsg[80];
     char statusbar[80];
     char statusmsg_dirty;
+    char anyDirtyRows;              // non-zero if any rows are dirty
     f_showHelpPage cbShowHelpPage;
     f_showWelcomePage cbShowWelcomePage;
     f_updateStatusBar cbUpdateStatusBar;
@@ -135,7 +153,6 @@ void clearCursor(void);
 void clearRow(char row, char startingCol);
 void clearScreen(void);
 void clearStatusRow(void);
-void closeFile(void);
 void cursorOff(void);
 char doesFileExist(char *filename);
 void drawRow(char row, char col, char len, const char *buf, char isReversed);
@@ -145,39 +162,44 @@ void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
 void editorFreeRow(CHUNKNUM firstTextChunk);
 void editorInsertRow(int at, char *s, size_t len);
-char editorPrompt(char *prompt, char *buf, size_t bufsize, int promptLength);
+char editorPrompt(char *buf, size_t bufsize, char *prompt);
 void editorRowAppendString(erow *row, char *s, size_t len);
 char editorRowAt(int at, erow *row);
-void editorRowDelChars(int at, int length);
-void editorRowInsertChar(int at, int c);
 char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
 char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
 void editorNewFile(void);
 void editorOpen(const char *filename, char readOnly);
 void editorClose(void);  // close current file
+void editorReadFileContents(efile *file, FILE *fp);
 int editorReadKey(void);
 void editorRetrieveFilename(char *buffer);
-void editorRun(void);
-char editorSave(char *filename);
+char editorRun(void);       // returns EDITOR_LOOP_*
 void editorSetAllRowsDirty(void);
 void editorSetRowDirty(erow *row);
 void editorSetDefaultStatusMessage(void);
 void editorSetStatusMessage(const char *msg);
 void editorStoreFilename(const char *filename);
 void editorRefreshScreen();
-void handleFiles(void);
+char handleFiles(void);
 void initEditor(void);
 void initFile(void);
 char saveAs(void);
 char saveFile(void);
-char saveToExisting(void);
 #if __C128__
 void setScreenBg(char bg);
 #endif
 void initScreen(void);
-void openFile(void);
+char promptForOpenFilename(char *filename, size_t filenameLen);
 void renderCursor(char x, char y);
 void setupScreenCols(void);
 void updateStatusBarFilename(void);
+
+void editBufInsertChar(char ch, char lineLength, char pos);
+void editBufDeleteChars(char pos, char numToDelete, char lineLength);
+void editBufCopyChars(char pos, char charsToCopy, char *buffer);
+void editBufPopulate(CHUNKNUM chunkNum);
+void editBufFlush(CHUNKNUM *firstChunkNum, char lineLength);
+void screenInsertChar(char ch, char col, char row);
+void screenDeleteChar(char ch, char col, char row);
 
 #endif // end of EDITOR_H
