@@ -204,6 +204,7 @@ static void compile(void)
 
 static void openFile(void)
 {
+    char ret;
     char filename[16+1];
 
     // prompt for filename
@@ -218,9 +219,14 @@ static void openFile(void)
     initFile();
 
     loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, editorfilesCache);
-    editorOpen(filename, 0);
-
+    ret = editorOpen(filename, 0);
     loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+    if (!ret) {
+        // The open failed.  Uninitialize the new file and pretend it never happened.
+        unInitFile();
+        return;
+    }
+
     editorStoreFilename(filename);
     editorSetDefaultStatusMessage();
     updateStatusBarFilename();

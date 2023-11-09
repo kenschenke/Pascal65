@@ -630,6 +630,17 @@ void initFile(void) {
     storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
 }
 
+void unInitFile(void)
+{
+    freeChunk(E.cf.fileChunk);
+    E.firstFileChunk = E.cf.nextFileChunk;
+    if (E.firstFileChunk) {
+        retrieveChunk(E.firstFileChunk, &E.cf);
+    } else {
+        E.cf.fileChunk = 0;
+    }
+}
+
 static void initTitleScreen(void) {
     FILE *fp;
     char buf[41];

@@ -169,7 +169,7 @@ char editorRowAt(int at, erow *row);
 char editorRowLastChunk(erow *row, CHUNKNUM *chunkNum, echunk *chunk);
 char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, echunk *chunk);
 void editorNewFile(void);
-void editorOpen(const char *filename, char readOnly);
+char editorOpen(const char *filename, char readOnly);
 void editorClose(void);  // close current file
 int editorReadKey(void);
 void editorRetrieveFilename(char *buffer);
@@ -183,6 +183,7 @@ void editorRefreshScreen();
 char handleFiles(void);
 void initEditor(void);
 void initFile(void);
+void unInitFile(void);
 char saveAs(void);
 char saveFile(void);
 #if __C128__

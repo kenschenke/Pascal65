@@ -91,7 +91,7 @@ static void appendText(erow *row, CHUNKNUM *lastChunk, char *text)
     }
 }
 
-void editorOpen(const char *filename, char readOnly) {
+char editorOpen(const char *filename, char readOnly) {
     FILE *fp;
 
     if (E.cf.fileChunk) {
@@ -101,12 +101,10 @@ void editorOpen(const char *filename, char readOnly) {
     fp = fopen(filename, "r");
     if (!fp) {
         editorSetStatusMessage("Cannot open file");
-        return;
+        return 0;
     }
 
-    // initFile();
     E.cf.readOnly = readOnly;
-    // editorStoreFilename(filename);
 
     editorReadFileContents(&E.cf, fp);
 
@@ -115,6 +113,8 @@ void editorOpen(const char *filename, char readOnly) {
     E.anyDirtyRows = 1;
     editorSetDefaultStatusMessage();
     updateStatusBarFilename();
+
+    return 1;
 }
 
 static void editorReadFileContents(efile *file, FILE *fp)
