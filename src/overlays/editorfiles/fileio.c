@@ -133,7 +133,7 @@ static void editorReadFileContents(efile *file, FILE *fp)
 
         line = buf;     // start at beginning of buffer
         while (1) {
-            eol = strchr(line, '\r');   // Look for a CR (end of line)
+            eol = strchr(line, '\n');   // Look for a CR (end of line)
             if (eol == NULL) {
                 // CR not found, so we have a partial line.
                 // Save what we have so far in the buffer.
@@ -193,7 +193,7 @@ static char editorSave(char *filename) {
             }
             textChunkNum = chunk.nextChunk;
         }
-        fputc('\r', fp);
+        fputc('\n', fp);
         rowChunkNum = row.nextRowChunk;
     }
     if (fclose(fp)) {

@@ -7,6 +7,7 @@ SEMANTICOVRLSRC := ../../overlays/semantic
 OBJCODEOVRLSRC := ../../overlays/objcode
 LINKEROVRLSRC := ../../overlays/linker
 EDITOROVRLSRC := ../../overlays/editor
+EDITORFILESOVRLSRC := ../../overlays/editorfiles
 TOKENIZEROVRLSRC := ../../overlays/tokenizer
 SHAREDSRCDIR = ../../shared
 SHAREDCHUNKSDIR = ../../shared/chunks
@@ -25,10 +26,11 @@ SEMANTICOVRLFILE := $(PROGRAM).3
 OBJCODEOVRLFILE := $(PROGRAM).4
 LINKEROVRLFILE := $(PROGRAM).5
 EDITOROVRLFILE := $(PROGRAM).6
+EDITORFILESOVRLFILE := $(PROGRAM).7
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := mega65
+TARGET := c64
 CC65TARGET = c64
-c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
+c64_EMUCMD = x64sc -reu -warp +sound -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 mega65_EMUCMD := xmega65 -besure -8
 EMUCMD = $($(TARGET)_EMUCMD)
@@ -37,9 +39,9 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
 CFLAGS = $($(TARGET)_CFLAGS) -O -I ../../include
 ifeq ($(TARGET),mega65)
-ASFLAGS = --asm-include-dir ../../asminc
-else
 ASFLAGS = --asm-include-dir ../../asminc -D __MEGA65__
+else
+ASFLAGS = --asm-include-dir ../../asminc
 endif
 LDFLAGS = --mapfile ide.map
 
@@ -76,6 +78,10 @@ ifeq ($(TARGET),mega65)
 EDITOROVRLSRCS += $(wildcard $(LIBCSRCDIR)/*.c)
 EDITOROVRLSRCS += $(wildcard $(LIBCSRCDIR)/*.s)
 endif
+
+EDITORFILESOVRLSRCS := $(wildcard $(EDITORFILESOVRLSRC)/*.c)
+EDITORFILESOVRLSRCS += $(wildcard $(EDITORFILESOVRLSRC)/*.s)
+
 SOURCES += $(LIBRUNTIMEDIR)/exit.s
 SOURCES += $(LIBRUNTIMEDIR)/inputbuf.s
 SOURCES += $(LIBRUNTIMEDIR)/printz.s
@@ -91,6 +97,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SEMANTICO
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(EDITOROVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(EDITORFILESOVRLSRCS)))))
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -174,6 +181,14 @@ vpath $(EDITOROVRLSRC)/$(TARGET)/%.s
 $(OBJDIR)/%.o: $(EDITOROVRLSRC)/$(TARGET)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath $(EDITORFILESOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(EDITORFILESOVRLSRC)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY7 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(EDITORFILESOVRLSRC)/%.s
+$(OBJDIR)/%.o: $(EDITORFILESOVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY7 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
 ifeq ($(TARGET),mega65)
 vpath $(LIBCSRCDIR)/%.c
 $(OBJDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJDIR)
@@ -252,6 +267,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \
+	-write $(BINDIR)/$(EDITORFILESOVRLFILE) $(EDITORFILESOVRLFILE) \
 	-write runtime runtime \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
@@ -268,6 +284,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \
+	-write $(BINDIR)/$(EDITORFILESOVRLFILE) $(EDITORFILESOVRLFILE) \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg \
 	-write runtime runtime \
 	-write abortmsgs.petscii abortmsgs,seq \

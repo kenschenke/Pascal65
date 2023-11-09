@@ -359,6 +359,11 @@ static char editorProcessKeypress(void) {
             editorFlushEditBuf();
             break;
 
+        case CH_F5:
+            loopCode = EDITOR_LOOP_COMPILE;
+            editorFlushEditBuf();
+            break;
+
         case CTRL_KEY('x'):
             editorFlushEditBuf();
             if (E.cbExitRequested && !E.cbExitRequested()) {

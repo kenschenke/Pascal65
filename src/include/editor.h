@@ -27,6 +27,7 @@
 #define EDITOR_LOOP_FILESCREEN 3
 #define EDITOR_LOOP_SAVEFILE 4
 #define EDITOR_LOOP_OPENHELP 5
+#define EDITOR_LOOP_COMPILE 6
 
 #define FILESCREEN_BACK 1          // Exit file screen and return to editor
 #define FILESCREEN_OPENFILE 2

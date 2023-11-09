@@ -5,7 +5,7 @@ LIBCOMMONDIR := ../common
 
 PROGRAM := runtime
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := mega65
+TARGET := c64
 CC65TARGET = c64
 
 c64_CFLAGS =
