@@ -79,6 +79,7 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
             parserType == tyInteger ? TYPE_INTEGER : TYPE_REAL,
             1, 0, 0);
         if (parserType == tyReal) {
+            parserValue.stringChunkNum = 0;
             copyRealString(parserString, &parserValue.stringChunkNum);
         }
         expr = exprCreate(

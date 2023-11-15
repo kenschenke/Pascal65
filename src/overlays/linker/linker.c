@@ -440,7 +440,7 @@ void linkerPreWrite(void)
 }
 
 #ifdef COMPILERTEST
-void linkerPostWrite(const char*prgFilename, char* nextTest)
+void linkerPostWrite(const char*filename, char* nextTest)
 #else
 void linkerPostWrite(const char* filename)
 #endif
@@ -516,6 +516,7 @@ void linkerPostWrite(const char* filename)
 
     // Generate PRG filename
 	strcpy(prgFilename, filename);
+#ifndef COMPILERTEST
     if (!stricmp(prgFilename+strlen(prgFilename)-4, ".pas")) {
 		// If the source filename ends in ".pas",
 		// drop the extension and use that for the PRG filename.
@@ -529,6 +530,7 @@ void linkerPostWrite(const char* filename)
             strcat(prgFilename, ".prg");
         }
     }
+#endif
 
 	_filetype = 'p';
 	out = fopen(prgFilename, "w");

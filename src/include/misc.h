@@ -47,7 +47,6 @@ typedef enum {
 typedef union {
     int integer;
     char character;
-    FLOAT real;
     CHUNKNUM stringChunkNum;
 } TDataValue;
 

@@ -43,7 +43,7 @@ void expr_free(CHUNKNUM chunkNum)
 		return;
 	}
 
-	if (_expr.kind == EXPR_STRING_LITERAL && _expr.value.stringChunkNum) {
+	if ((_expr.kind == EXPR_STRING_LITERAL || _expr.kind == EXPR_REAL_LITERAL) && _expr.value.stringChunkNum) {
 		STRVALCHUNK strChunk;
 		CHUNKNUM stringChunkNum = _expr.value.stringChunkNum;
 

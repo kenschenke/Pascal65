@@ -58,6 +58,7 @@ CHUNKNUM parseFactor(void)
 
 	case tcNumber:
 		if (parserType == tyReal) {
+			parserValue.stringChunkNum = 0;
 			copyRealString(parserString, &parserValue.stringChunkNum);
 		}
 		exprChunk = exprCreate(
