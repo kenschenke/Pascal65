@@ -16,6 +16,7 @@
 #include <asm.h>
 #include <membuf.h>
 #include <string.h>
+#include <int16.h>
 
 #define RUNTIME_STACK_SIZE 2048
 
@@ -311,7 +312,8 @@ static void dumpStringLiterals(void)
 			++pos;
 		}
 		value[pos] = 0;
-		sprintf(label, "strVal%d", num);
+		strcpy(label, "strVal");
+		strcat(label, formatInt16(num));
 		linkAddressSet(label, codeOffset);
 		writeToMemBuf(codeBuf, value, (short)strlen(value) + 1);
 		codeOffset += (short)strlen(value) + 1;
@@ -360,8 +362,8 @@ static void genExeHeader(void)
 	writeToMemBuf(codeBuf, buf, 1);
 
 	// Starting address of code
-	sprintf(startAddr, "%04d", codeBase + 16);
-	writeToMemBuf(codeBuf, startAddr, 4);
+	strcpy(startAddr, formatInt16(codeBase + 16));
+	writeToMemBuf(codeBuf, startAddr, strlen(startAddr));
 
 	// End of BASIC line
 	buf[0] = 0;
@@ -388,8 +390,8 @@ static void genExeHeader(void)
 	writeToMemBuf(codeBuf, buf, 1);
 
 	// Starting address of code
-	sprintf(startAddr, "%04d", codeBase + 12);
-	writeToMemBuf(codeBuf, startAddr, 4);
+	strcpy(startAddr, formatInt16(codeBase + 12));
+	writeToMemBuf(codeBuf, startAddr, strlen(startAddr));
 
 	// End of BASIC line
 	buf[0] = 0;
@@ -440,11 +442,11 @@ void linkerPreWrite(void)
 #ifdef COMPILERTEST
 void linkerPostWrite(const char*prgFilename, char* nextTest)
 #else
-void linkerPostWrite(const char* prgFilename)
+void linkerPostWrite(const char* filename)
 #endif
 {
 	FILE* out;
-	char ch;
+	char ch, prgFilename[16 + 1];
 	int i;
 
 	linkAddressSet("EXIT_HANDLER", codeOffset);
@@ -463,7 +465,8 @@ void linkerPostWrite(const char* prgFilename)
 		writeCodeBuf(chainCode, 33);
 		writeChainCall(nextTest);	// filename of the next test in the chain
 
-		sprintf(msg, "Loading %s...", nextTest);
+		strcpy(msg, "Loading ");
+		strcat(msg, nextTest);
 		linkAddressSet("CHAINMSG", codeOffset);
 		writeToMemBuf(codeBuf, msg, strlen(msg) + 1);
 		codeOffset += strlen(msg) + 1;
@@ -510,6 +513,22 @@ void linkerPostWrite(const char* prgFilename)
 
 	updateLinkerAddresses(codeBuf);
 	freeLinkerSymbolTable();
+
+    // Generate PRG filename
+	strcpy(prgFilename, filename);
+    if (!stricmp(prgFilename+strlen(prgFilename)-4, ".pas")) {
+		// If the source filename ends in ".pas",
+		// drop the extension and use that for the PRG filename.
+		prgFilename[strlen(prgFilename)-4] = 0;
+    } else {
+        if (strlen(filename) > 12) {
+			// The source filename is more than 12 characters,
+			// so use the first 12 chars and add ".prg".
+			strcpy(prgFilename+12, ".prg");
+        } else {
+            strcat(prgFilename, ".prg");
+        }
+    }
 
 	_filetype = 'p';
 	out = fopen(prgFilename, "w");

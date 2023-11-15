@@ -4,6 +4,8 @@
 #include <asm.h>
 #include <codegen.h>
 #include <common.h>
+#include <string.h>
+#include <int16.h>
 
 static void genCaseStmt(struct stmt* pStmt);
 static void genForLoop(struct stmt* pStmt);
@@ -29,10 +31,26 @@ static void genCaseStmt(struct stmt* pStmt)
 	while (labelChunk) {
 		retrieveChunk(labelChunk, &labelStmt);
 
-		sprintf(branchLabel, "CASE%d_%d", num, branch);
-		sprintf(bodyLabel, "CASE%d_%d_BODY", num, branch);
-		sprintf(nextLabel, "CASE%d_%d", num, branch + 1);
-		sprintf(endLabel, "ENDCASE%d", num);
+		strcpy(branchLabel, "CASE");
+		strcat(branchLabel, formatInt16(num));
+		strcat(branchLabel, "_");
+		strcat(branchLabel, formatInt16(branch));
+
+		strcpy(bodyLabel, "CASE");
+		strcat(bodyLabel, formatInt16(num));
+		strcat(bodyLabel, "_");
+		strcat(bodyLabel, formatInt16(branch));
+		strcat(bodyLabel, "_");
+		strcat(bodyLabel, "BODY");
+
+		strcpy(nextLabel, "CASE");
+		strcat(nextLabel, formatInt16(num));
+		strcat(nextLabel, "_");
+		strcat(nextLabel, formatInt16(branch + 1));
+
+		strcpy(endLabel, "ENDCASE");
+		strcat(endLabel, formatInt16(num));
+
 		linkAddressSet(branchLabel, codeOffset);
 
 		// Loop through the labels for this case branch
@@ -147,8 +165,11 @@ static void genIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 {
 	char elseLabel[15], endLabel[15];
 
-	sprintf(elseLabel, "ELSE%04x", chunkNum);
-	sprintf(endLabel, "ENDIF%04x", chunkNum);
+	strcpy(elseLabel, "ELSE");
+	strcat(elseLabel, formatInt16(chunkNum));
+
+	strcpy(endLabel, "ENDIF");
+	strcat(endLabel, formatInt16(chunkNum));
 
 	// Evaluate the expression
 	genExpr(pStmt->expr, 1, 0, 0);
@@ -248,7 +269,8 @@ static void genWhileStmt(struct stmt* pStmt)
 	unsigned short startAddr;
 	char endLabel[15];
 
-	sprintf(endLabel, "ENDWHILE%d", currentLineNumber);
+	strcpy(endLabel, "ENDWHILE");
+	strcat(endLabel, formatInt16(currentLineNumber));
 	startAddr = codeBase + codeOffset;
 
 	// Evaluate the expression

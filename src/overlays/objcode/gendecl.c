@@ -4,6 +4,7 @@
 #include <asm.h>
 #include <string.h>
 #include <error.h>
+#include <int16.h>
 
 static void updateHeapOffset(short newOffset);
 
@@ -130,7 +131,8 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMSIZEL] = WORD_LOW(elemType.size);
 		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMSIZEH] = WORD_HIGH(elemType.size);
 		branchOffset = codeOffset + 8;
-		sprintf(label, "ARRAY%04x", arrayNum);
+		strcpy(label, "ARRAY");
+		strcat(label, formatInt16(arrayNum));
 		linkAddressSet(label, branchOffset);
 		writeCodeBuf(parentArrayInit1, 15);
 		// Array upper bound
@@ -218,7 +220,8 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 			arrayRecordInit1[ARRAY_RECORD_INIT1_ELEMENTSL] = WORD_LOW(numElements);
 			arrayRecordInit1[ARRAY_RECORD_INIT1_ELEMENTSH] = WORD_HIGH(numElements);
 			writeCodeBuf(arrayRecordInit1, 8);
-			sprintf(label, "ARRAY%04x", arrayNum);
+			strcpy(label, "ARRAY");
+			strcat(label, formatInt16(arrayNum));
 			branchOffset = codeOffset;
 			linkAddressSet(label, codeOffset);
 			// Initialize record

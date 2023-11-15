@@ -5,7 +5,7 @@
 #include <ast.h>
 #include <symtab.h>
 #include <common.h>
-#include <real.h>
+#include <int16.h>
 
 #include <string.h>
 
@@ -125,7 +125,9 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	retrieveChunk(_decl.node, &sym);
 
 	// Set up the stack frame
-	sprintf(returnLabel, "RTN%04xRETURN", exprChunk);
+	strcpy(returnLabel, "RTN");
+	strcat(returnLabel, formatInt16(exprChunk));
+	strcat(returnLabel, "RETURN");
 	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_HIGH);
@@ -199,7 +201,9 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	writeCodeBuf(activateFrame, 13);
 
 	// Call the routine
-	sprintf(enterLabel, "RTN%04xENTER", declChunk);
+	strcpy(enterLabel, "RTN");
+	strcat(enterLabel, formatInt16(declChunk));
+	strcat(enterLabel, "ENTER");
 	linkAddressLookup(enterLabel, codeOffset + 1, 0, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
@@ -332,7 +336,9 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 
 	memset(name, 0, sizeof(name));
 	retrieveChunk(pDecl->name, name);
-	sprintf(startLabel, "RTN%04xENTER", chunkNum);
+	strcpy(startLabel, "RTN");
+	strcat(startLabel, formatInt16(chunkNum));
+	strcat(startLabel, "ENTER");
 	linkAddressSet(startLabel, codeOffset);
 
 	// Push the local variables onto the stack
@@ -520,7 +526,8 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		switch (_type.kind) {
 		case TYPE_BOOLEAN:
-			sprintf(labelBool, "LBF%04x", argChunk);
+			strcpy(labelBool, "LBF");
+			strcat(labelBool, formatInt16(argChunk));
 			if (arg.width) {
 				genExpr(arg.width, 1, 1, 0);
 				genOne(PHA);
