@@ -10,7 +10,7 @@ D81FILE := $(BINDIR)/$(PROGRAM).d81
 EDITOROVRLFILE := $(PROGRAM).1
 EDITORFILEOVRLFILE := $(PROGRAM).2
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -warp -reu +sound -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD := x128 -kernal kernal -VICIIdsize -autostart
@@ -32,11 +32,19 @@ c64_CFLAGS =
 c128_CFLAGS =
 mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include -I ../../include
 CFLAGS = $($(TARGET)_CFLAGS) -O -I ../../include
+ifeq ($(TARGET),mega65)
+ASFLAGS = --asm-include-dir ../../asminc --asm-define __MEGA65__
+else
 ASFLAGS = --asm-include-dir ../../asminc
+endif
 LDFLAGS =
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 SOURCES += $(wildcard $(SRCDIR)/*.s)
+ifeq ($(TARGET),mega65)
+SOURCES += $(wildcard $(SRCDIR)/mega65/*.c)
+SOURCES += $(wildcard $(SRCDIR)/mega65/*.s)
+endif
 SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
 SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
 SOURCES += $(wildcard $(EDITORSRCDIR)/*.c)
@@ -81,6 +89,16 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 vpath $(SRCDIR)/%.s
 $(OBJDIR)/%.o: $(SRCDIR)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+ifeq ($(TARGET),mega65)
+vpath $(SRCDIR)/mega65/%.c
+$(OBJDIR)/%.o: $(SRCDIR)/mega65/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(SRCDIR)/mega65/%.s
+$(OBJDIR)/%.o: $(SRCDIR)/mega65/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+endif
 
 vpath $(TARGETSRCDIR)/%.c
 $(OBJDIR)/%.o: $(TARGETSRCDIR)/%.c | $(OBJDIR)
@@ -162,6 +180,15 @@ title.petscii: title.txt
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
 
+ifeq ($(TARGET),mega65)
+$(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii license.petscii title.petscii
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
+	-write help.petscii help.txt,seq \
+	-write $(BINDIR)/$(EDITOROVRLFILE) $(EDITOROVRLFILE) \
+	-write $(BINDIR)/$(EDITORFILEOVRLFILE) $(EDITORFILEOVRLFILE) \
+	-write license.petscii license,seq \
+	-write title.petscii title.txt,seq
+else
 $(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii license.petscii title.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) -write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write help.petscii help.txt,seq \
@@ -170,6 +197,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) help.petscii license.petscii title.petscii
 	-write license.petscii license,seq \
 	-write title.petscii title.txt,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
+endif
 
 clean:
 	$(RM) $(OBJECTS)

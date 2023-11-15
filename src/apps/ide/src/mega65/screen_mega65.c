@@ -80,9 +80,9 @@ void initScreen(void) {
     clearScreen();
 }
 
-void renderCursor(char, char)
+void renderCursor(char x, char y)
 {
-
+    setCursor(0, COLOUR_ORANGE);
 }
 
 void setRowColor(char, char)

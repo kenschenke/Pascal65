@@ -18,6 +18,10 @@ static void cycleCurrentDevice(void);
 static void showFileScreen(void);
 static void switchToFile(char num);
 
+#ifdef __MEGA65__
+char fixAlphaCase(char);
+#endif
+
 static CHUNKNUM selectedFile;
 static char filePage;
 static int openFiles;
@@ -36,6 +40,9 @@ char handleFiles(void) {
 
     while(1) {
         key = cgetc();
+#ifdef __MEGA65__
+        key = fixAlphaCase(key);
+#endif
         if (key == 'm' || key == 'M') {
             selectedFile = E.cf.fileChunk;
             filePage = 0;

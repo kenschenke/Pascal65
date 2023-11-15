@@ -28,7 +28,7 @@ LINKEROVRLFILE := $(PROGRAM).5
 EDITOROVRLFILE := $(PROGRAM).6
 EDITORFILESOVRLFILE := $(PROGRAM).7
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp +sound -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
@@ -39,7 +39,7 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
 CFLAGS = $($(TARGET)_CFLAGS) -O -I ../../include
 ifeq ($(TARGET),mega65)
-ASFLAGS = --asm-include-dir ../../asminc -D __MEGA65__
+ASFLAGS = --asm-include-dir ../../asminc --asm-define __MEGA65__
 else
 ASFLAGS = --asm-include-dir ../../asminc
 endif
@@ -63,6 +63,8 @@ PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
 TOKENIZEROVRLSRCS := $(wildcard $(TOKENIZEROVRLSRC)/*.c)
 TOKENIZEROVRLSRCS += $(wildcard $(TOKENIZEROVRLSRC)/*.s)
+TOKENIZEROVRLSRCS += $(LIBCOMMONDIR)/parseint16.s
+TOKENIZEROVRLSRCS += $(LIBCOMMONDIR)/readint16.s
 
 SEMANTICOVRLSRCS := $(wildcard $(SEMANTICOVRLSRC)/*.c)
 
@@ -74,19 +76,21 @@ EDITOROVRLSRCS := $(wildcard $(EDITOROVRLSRC)/*.c)
 EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/*.s)
 EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/$(TARGET)/*.c)
 EDITOROVRLSRCS += $(wildcard $(EDITOROVRLSRC)/$(TARGET)/*.s)
-ifeq ($(TARGET),mega65)
-EDITOROVRLSRCS += $(wildcard $(LIBCSRCDIR)/*.c)
-EDITOROVRLSRCS += $(wildcard $(LIBCSRCDIR)/*.s)
-endif
 
 EDITORFILESOVRLSRCS := $(wildcard $(EDITORFILESOVRLSRC)/*.c)
 EDITORFILESOVRLSRCS += $(wildcard $(EDITORFILESOVRLSRC)/*.s)
 
-SOURCES += $(LIBRUNTIMEDIR)/exit.s
-SOURCES += $(LIBRUNTIMEDIR)/inputbuf.s
-SOURCES += $(LIBRUNTIMEDIR)/printz.s
-SOURCES += $(LIBRUNTIMEDIR)/rterror.s
-SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
+SOURCES += $(LIBCOMMONDIR)/_printz.s
+SOURCES += $(LIBCOMMONDIR)/getline.s
+SOURCES += $(LIBCOMMONDIR)/inputbuf.s
+SOURCES += $(LIBCOMMONDIR)/int16.s
+SOURCES += $(LIBCOMMONDIR)/int16c.s
+SOURCES += $(LIBCOMMONDIR)/leftpad.s
+SOURCES += $(LIBCOMMONDIR)/writeint16.s
+ifeq ($(TARGET),mega65)
+SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
+SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)
+endif
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -131,6 +135,14 @@ $(OBJDIR)/%.o: $(TOKENIZEROVRLSRC)/%.c | $(OBJDIR)
 
 vpath $(TOKENIZEROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(TOKENIZEROVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath parseint16.s $(LIBCOMMONDIR)
+$(OBJDIR)/parseint16.o: parseint16.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath readint16.s $(LIBCOMMONDIR)
+$(OBJDIR)/readint16.o: readint16.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(PARSEROVRLSRC)/%.c
@@ -231,8 +243,32 @@ vpath %.s $(SHAREDCODEGENDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath %.s $(LIBCOMMONDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
+vpath _printz.s $(LIBCOMMONDIR)
+$(OBJDIR)/_printz.o: _printz.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath getline.s $(LIBCOMMONDIR)
+$(OBJDIR)/getline.o: getline.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath inputbuf.s $(LIBCOMMONDIR)
+$(OBJDIR)/inputbuf.o: inputbuf.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath int16.s $(LIBCOMMONDIR)
+$(OBJDIR)/int16.o: int16.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath int16c.s $(LIBCOMMONDIR)
+$(OBJDIR)/int16c.o: int16c.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath leftpad.s $(LIBCOMMONDIR)
+$(OBJDIR)/leftpad.o: leftpad.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath writeint16.s $(LIBCOMMONDIR)
+$(OBJDIR)/writeint16.o: writeint16.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath %.s $(LIBRUNTIMEDIR)

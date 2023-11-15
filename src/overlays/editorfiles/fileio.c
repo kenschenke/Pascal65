@@ -217,6 +217,10 @@ char saveAs(void) {
         return 0;
     }
 
+#ifdef __MEGA65__
+    flushkeybuf();
+#endif
+
     if (doesFileExist(filename)) {
         strcpy(prompt, filename);
         strcat(prompt, " already exists. Overwrite Y/N?");
@@ -232,7 +236,11 @@ char saveAs(void) {
             }
         }
         
+#ifdef __MEGA65__
+        removeFile(filename);
+#else
         remove(filename);
+#endif
     }
 
     if (!E.cf.filenameChunk) {
@@ -261,12 +269,10 @@ char saveFile(void) {
 
     if (E.cf.filenameChunk) {
         if (saveToExisting()) {
-            clearScreen();
             return 1;
         }
     } else {
         if (saveAs()) {
-            clearScreen();
             return 1;
         }
     }
@@ -295,8 +301,13 @@ static char saveToExisting(void) {
         return 0;
     }
 
+#ifdef __MEGA65__
+    removeFile(filename);
+    renameFile(tempFilename, filename);
+#else
     remove(filename);
     rename(tempFilename, filename);
+#endif
 
     return 1;
 }

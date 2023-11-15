@@ -5,7 +5,7 @@ LIBCOMMONDIR := ../common
 
 PROGRAM := runtime
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 
 c64_CFLAGS =
@@ -33,6 +33,8 @@ SOURCES += $(SRCDIR)/popeax.s
 SOURCES += $(SRCDIR)/printz.s
 SOURCES += $(SRCDIR)/pushax.s
 SOURCES += $(SRCDIR)/pusheax.s
+SOURCES += $(SRCDIR)/readFloatFromInput.s
+SOURCES += $(SRCDIR)/readIntFromInput.s
 SOURCES += $(SRCDIR)/record.s
 SOURCES += $(SRCDIR)/rterror.s
 SOURCES += $(SRCDIR)/rtstack.s
@@ -43,6 +45,7 @@ SOURCES += $(LIBCOMMONDIR)/floatcomp.s
 SOURCES += $(LIBCOMMONDIR)/floatdiv.s
 SOURCES += $(LIBCOMMONDIR)/floatinput.s
 SOURCES += $(LIBCOMMONDIR)/floatmult.s
+SOURCES += $(LIBCOMMONDIR)/floatneg.s
 SOURCES += $(LIBCOMMONDIR)/floatnorm.s
 SOURCES += $(LIBCOMMONDIR)/floatoutput.s
 SOURCES += $(LIBCOMMONDIR)/floatround.s
@@ -59,6 +62,7 @@ SOURCES += $(LIBCOMMONDIR)/int16sqr.s
 SOURCES += $(LIBCOMMONDIR)/int16sub.s
 SOURCES += $(LIBCOMMONDIR)/leftpad.s
 SOURCES += $(LIBCOMMONDIR)/readint16.s
+SOURCES += $(LIBCOMMONDIR)/strtofloat.s
 SOURCES += $(LIBCOMMONDIR)/writeint16.s
 
 CONFIG := cfg-$(TARGET).cfg

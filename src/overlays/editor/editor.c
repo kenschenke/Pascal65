@@ -25,6 +25,7 @@
 
 #ifdef __MEGA65__
 #include <cbm.h>
+#include <conio.h>
 #endif
 
 extern char editBuf[80];
@@ -47,6 +48,35 @@ void fastcall setscreensize(unsigned char width, unsigned char height);
 #endif
 
 /*** editor operations ***/
+
+void closeFile(void) {
+    if (E.cf.dirty && E.cf.fileChunk) {
+        int ch;
+
+        while (1) {
+            drawStatusRow(COLOR_LIGHTRED, 0, "Save changes before closing? Y/N");
+            ch = cgetc();
+            if (ch == 'y' || ch == 'Y') {
+                break;
+            } else if (ch == STOP_KEY) {
+                clearStatusRow();
+                editorSetDefaultStatusMessage();
+                return;
+            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
+                editorClose();
+                clearStatusRow();
+                editorSetDefaultStatusMessage();
+                return;
+            }
+        }
+
+        if (saveFile() == 0) {
+            return;
+        }
+    }
+
+    editorClose();
+}
 
 void editorClose(void) {
     CHUNKNUM chunkNum;
@@ -350,16 +380,25 @@ static char editorProcessKeypress(void) {
 
         case CH_F1:
         case CTRL_KEY('o'):
+#ifdef __MEGA65__
+        case 241:
+#endif
             editorFlushEditBuf();
             loopCode = EDITOR_LOOP_OPENFILE;
             break;
 
         case CH_F2:
+#ifdef __MEGA65__
+        case 242:
+#endif
             loopCode = EDITOR_LOOP_SAVEFILE;
             editorFlushEditBuf();
             break;
 
         case CH_F5:
+#ifdef __MEGA65__
+        case 245:
+#endif
             loopCode = EDITOR_LOOP_COMPILE;
             editorFlushEditBuf();
             break;
@@ -590,7 +629,7 @@ void initEditor() {
     memset(&E.cf, 0, sizeof(efile));
 
     E.screenrows = 25;
-#ifdef __MEGA65
+#ifdef __MEGA65__
     E.screencols = 80;
 #elif defined(__C64__)
     E.screencols = 40;

@@ -18,13 +18,14 @@
 
 #ifdef __MEGA65__
 #include <cbm.h>
+
+char fixAlphaCase(char);
 #endif
 
 int editorReadKey(void) {
     int c = cgetc();
 #ifdef __MEGA65__
-    if (c >= 97 && c <= 122) c -= 32;
-    else if (c >= 65 && c <= 90) c += 128;
+    c = fixAlphaCase(c);
 #endif
 
     if (c == CH_ESC) {

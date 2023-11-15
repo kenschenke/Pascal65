@@ -1,7 +1,12 @@
 .include "float.inc"
 
-.import FPBASE, COMPLM
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
 .importzp sreg
+.endif
+
+.import FPBASE, COMPLM
 
 .export _floatNeg
 

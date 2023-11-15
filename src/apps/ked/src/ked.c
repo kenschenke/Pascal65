@@ -75,37 +75,9 @@ void editorSetDefaultStatusMessage(void) {
     editorSetStatusMessage("F1: open  Ctrl-X: quit  F7: help");
 }
 
-static void closeFile(void) {
-    if (E.cf.dirty && E.cf.fileChunk) {
-        int ch;
-
-        while (1) {
-            drawStatusRow(COLOR_LIGHTRED, 0, "Save changes before closing? Y/N");
-            ch = cgetc();
-            if (ch == 'y' || ch == 'Y') {
-                break;
-            } else if (ch == STOP_KEY) {
-                clearStatusRow();
-                editorSetDefaultStatusMessage();
-                return;
-            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
-                editorClose();
-                clearStatusRow();
-                editorSetDefaultStatusMessage();
-                return;
-            }
-        }
-
-        if (saveFile() == 0) {
-            return;
-        }
-    }
-
-    editorClose();
-}
-
 static void openFile(void)
 {
+    char ret;
     char filename[16+1];
 
     // prompt for filename
@@ -119,10 +91,24 @@ static void openFile(void)
 
     initFile();
 
+#ifdef __MEGA65__
+    loadfile("ked.2");
+#else
     loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, editorfilesCache);
-    editorOpen(filename, 0);
+#endif
+    ret = editorOpen(filename, 0);
 
+#ifdef __MEGA65__
+    loadfile("ked.1");
+#else
     loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, editorCache);
+#endif
+    if (!ret) {
+        // The open failed.  Uninitialize the new file and pretend it never happened.
+        unInitFile();
+        return;
+    }
+
     editorStoreFilename(filename);
     editorSetDefaultStatusMessage();
     updateStatusBarFilename();
@@ -144,9 +130,17 @@ static void openHelpFile(void) {
 
     initFile();
 
+#ifdef __MEGA65__
+    loadfile("ked.2");
+#else
     loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, editorfilesCache);
+#endif
     editorOpen("help.txt", 1);
+#ifdef __MEGA65__
+    loadfile("ked.1");
+#else
     loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, editorCache);
+#endif
     strcpy(buf, "Help File");
     allocChunk(&E.cf.filenameChunk);
     storeChunk(E.cf.filenameChunk, (unsigned char *)buf);
@@ -166,10 +160,18 @@ static void showFileScreen(void)
     editorSetStatusMessage("O=Open, S=Save, N=New, C=Close, M=More");
     editorRefreshScreen();
 
+#ifdef __MEGA65__
+    loadfile("ked.2");
+#else
     loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, editorfilesCache);
+#endif
     code = handleFiles();
 
+#ifdef __MEGA65__
+    loadfile("ked.1");
+#else
     loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, editorCache);
+#endif
     if (code == FILESCREEN_BACK) {
         editorSetDefaultStatusMessage();
         clearScreen();
@@ -229,9 +231,12 @@ int main(int argc, char *argv[])
 
     loadOverlayFromFile("ked.1", overlay1size, _OVERLAY1_LOAD__, editorCache);
     loadOverlayFromFile("ked.2", overlay2size, _OVERLAY2_LOAD__, editorfilesCache);
-#endif
 
     loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, editorCache);
+#else
+    loadfile("ked.1");
+#endif
+
     initEditor();
 
     while (1) {
@@ -245,9 +250,17 @@ int main(int argc, char *argv[])
         }
 
         if (loopCode == EDITOR_LOOP_SAVEFILE) {
+#ifdef __MEGA65__
+            loadfile("ked.2");
+#else
             loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, editorfilesCache);
+#endif
             saveFile();
+#ifdef __MEGA65__
+            loadfile("ked.1");
+#else
             loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, editorCache);
+#endif
             editorSetAllRowsDirty();
             editorSetDefaultStatusMessage();
         }

@@ -55,6 +55,7 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode);
 
 // Declarations
 void copyQuotedString(char *pString, CHUNKNUM *firstChunk);
+void copyRealString(char *pString, CHUNKNUM *firstChunk);
 CHUNKNUM parseArrayType(void);
 CHUNKNUM parseDeclarations(void);
 CHUNKNUM parseConstant(CHUNKNUM* type);

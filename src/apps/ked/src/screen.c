@@ -40,12 +40,9 @@ static void editorDrawRows(void);
 static void editorDrawStatusBar(void);
 static void editorScroll(void);
 
-#ifdef __C64__
-char * SCREEN = (char*)0x0400;
-#endif
-
 #ifdef __MEGA65__
 #elif defined(__C64__)
+char * SCREEN = (char*)0x0400;
 void clearRow(char row, char startingCol) {
     int offset = row * 40 + startingCol;
     memset(SCREEN+offset, ' ', 40-startingCol);

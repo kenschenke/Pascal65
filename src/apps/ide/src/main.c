@@ -17,14 +17,16 @@
 #include <int16.h>
 #include <common.h>
 
-extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
-extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
-extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
-extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
-extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
-extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
-extern void _OVERLAY7_LOAD__[], _OVERLAY7_SIZE__[];
+#define OVERLAY_TOKENIZER 0
+#define OVERLAY_PARSER 1
+#define OVERLAY_SEMANTIC 2
+#define OVERLAY_OBJCODE 3
+#define OVERLAY_LINKER 4
+#define OVERLAY_EDITOR 5
+#define OVERLAY_EDITORFILES 6
+
 unsigned char loadfile(const char *name);
+static void setupOverlayName(char *name, int num);
 
 struct editorConfig E;
 
@@ -51,42 +53,21 @@ void logRuntimeError(const char *message, unsigned lineNumber)
     printlnz(message);
 }
 
-void outputLine(const char *message)
-{
-    printlnz(message);
-}
-
 void editorSetDefaultStatusMessage(void) {
     editorSetStatusMessage("F1: open  Ctrl-X: quit  F7: help");
 }
 
-void parserOverlay(void);
-
 #ifndef __MEGA65__
-static unsigned
-    overlay1size,
-    overlay2size,
-    overlay3size,
-    overlay4size,
-    overlay5size,
-    overlay6size,
-    overlay7size;
-static unsigned
-    overlay1blocks,
-    overlay2blocks,
-    overlay3blocks,
-    overlay4blocks,
-    overlay5blocks,
-    overlay6blocks,
-    overlay7blocks;
-
-static BLOCKNUM tokenizerCache,
-    parserCache,
-    semanticCache,
-    objCodeCache,
-    linkerCache,
-    editorCache,
-    editorfilesCache;
+extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
+extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
+extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
+extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
+extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
+extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
+extern void _OVERLAY7_LOAD__[], _OVERLAY7_SIZE__[];
+static unsigned overlaySizes[7];
+static unsigned overlayBlocks[7];
+static BLOCKNUM overlayCaches[7];
 
 static void loadOverlayFromCache(unsigned size, void *buffer, unsigned cache) {
     struct em_copy emc;
@@ -103,8 +84,8 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
     struct em_copy emc;
 
     if (!loadfile(name)) {
-        printlnz(name);
-        printlnz("Unable to load overlay from disk\n");
+        printz(name);
+        printlnz(" missing");
         exit(0);
     }
 
@@ -118,33 +99,18 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
 }
 #endif
 
-static void closeFile(void) {
-    if (E.cf.dirty && E.cf.fileChunk) {
-        int ch;
+// overlayNum is zero-based
+static void loadOverlay(int overlayNum)
+{
+#ifdef __MEGA65__
+    char name[16];
 
-        while (1) {
-            drawStatusRow(COLOR_LIGHTRED, 0, "Save changes before closing? Y/N");
-            ch = cgetc();
-            if (ch == 'y' || ch == 'Y') {
-                break;
-            } else if (ch == STOP_KEY) {
-                clearStatusRow();
-                editorSetDefaultStatusMessage();
-                return;
-            } else if (ch == 'n' || ch == 'N' || ch == CH_ESC) {
-                editorClose();
-                clearStatusRow();
-                editorSetDefaultStatusMessage();
-                return;
-            }
-        }
-
-        if (saveFile() == 0) {
-            return;
-        }
-    }
-
-    editorClose();
+    setupOverlayName(name, overlayNum);
+    loadfile(name);
+#else
+    loadOverlayFromCache(overlaySizes[overlayNum],
+        _OVERLAY1_LOAD__, overlayCaches[overlayNum]);
+#endif
 }
 
 static void compile(void)
@@ -156,16 +122,16 @@ static void compile(void)
     retrieveChunk(E.cf.filenameChunk, filename);
 
     // Tokenizer
-    loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
+    loadOverlay(OVERLAY_TOKENIZER);
     tokens = tokenize(filename);
 
     // Parser
-    loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
+    loadOverlay(OVERLAY_PARSER);
     ast = parse(tokens);
     freeMemBuf(tokens);
 
     // Semantic analysis and error checking
-    loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, semanticCache);
+    loadOverlay(OVERLAY_SEMANTIC);
     initSemantic();    
     init_scope_stack();
     decl_resolve(ast, 0);
@@ -173,33 +139,22 @@ static void compile(void)
     decl_typecheck(ast);
 
     // Object code (part 1 - linker pre-write)
-    loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
+    loadOverlay(OVERLAY_LINKER);
     linkerPreWrite();
 
     // Generate object code
-    loadOverlayFromCache(overlay4size, _OVERLAY4_LOAD__, objCodeCache);
+    loadOverlay(OVERLAY_OBJCODE);
     objCodeWrite(ast);
 
-    // Generate PRG filename
-    if (!stricmp(filename+strlen(filename)-4, ".pas")) {
-        filename[strlen(filename)-4] = 0;
-    } else {
-        if (strlen(filename) > 12) {
-            strcpy(filename+12, ".prg");
-        } else {
-            strcat(filename, ".prg");
-        }
-    }
-
     // Write the PRG file
-    loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
+    loadOverlay(OVERLAY_LINKER);
     linkerPostWrite(filename);
 
     // Free the AST
     decl_free(ast);
     free_scope_stack();
 
-    loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+    loadOverlay(OVERLAY_EDITOR);
 }
 
 static void openFile(void)
@@ -218,9 +173,9 @@ static void openFile(void)
 
     initFile();
 
-    loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, editorfilesCache);
+    loadOverlay(OVERLAY_EDITORFILES);
     ret = editorOpen(filename, 0);
-    loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+    loadOverlay(OVERLAY_EDITOR);
     if (!ret) {
         // The open failed.  Uninitialize the new file and pretend it never happened.
         unInitFile();
@@ -248,9 +203,9 @@ static void openHelpFile(void) {
 
     initFile();
 
-    loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, editorfilesCache);
+    loadOverlay(OVERLAY_EDITORFILES);
     editorOpen("help.txt", 1);
-    loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+    loadOverlay(OVERLAY_EDITOR);
     strcpy(buf, "Help File");
     allocChunk(&E.cf.filenameChunk);
     storeChunk(E.cf.filenameChunk, (unsigned char *)buf);
@@ -270,78 +225,84 @@ static void showFileScreen(void)
     editorSetStatusMessage("O=Open, S=Save, N=New, C=Close, M=More");
     editorRefreshScreen();
 
-    loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, editorfilesCache);
+    loadOverlay(OVERLAY_EDITORFILES);
     code = handleFiles();
 
-    loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+    loadOverlay(OVERLAY_EDITOR);
+    editorSetDefaultStatusMessage();
     if (code == FILESCREEN_BACK) {
-        editorSetDefaultStatusMessage();
         clearScreen();
         editorSetAllRowsDirty();
         E.anyDirtyRows = 1;
     }
     else if (code == FILESCREEN_CLOSEFILE) {
-        editorSetDefaultStatusMessage();
         closeFile();
         clearScreen();
         editorSetAllRowsDirty();
     }
     else if (code == FILESCREEN_NEWFILE) {
-        editorSetDefaultStatusMessage();
         editorNewFile();
         clearScreen();
         editorSetAllRowsDirty();
     } else if (code == FILESCREEN_SAVEFILE || code == FILESCREEN_SAVEASFILE) {
-        editorSetDefaultStatusMessage();
         clearScreen();
         editorSetAllRowsDirty();
         updateStatusBarFilename();
     } else if (code == FILESCREEN_OPENFILE) {
         openFile();
     } else if (code == FILESCREEN_SWITCHTOFILE) {
-        editorSetDefaultStatusMessage();
         clearScreen();
         editorSetAllRowsDirty();
         updateStatusBarFilename();
     }
 }
 
+static void setupOverlayName(char *name, int num)
+{
+    strcpy(name, "pascal65.");
+    strcat(name, formatInt16(num + 1));
+}
+
+#ifndef __MEGA65__
+static void setupOverlays(void)
+{
+    int i;
+    char name[16];
+
+    overlaySizes[0] = (unsigned)_OVERLAY1_SIZE__;
+    overlaySizes[1] = (unsigned)_OVERLAY1_SIZE__;
+    overlaySizes[2] = (unsigned)_OVERLAY1_SIZE__;
+    overlaySizes[3] = (unsigned)_OVERLAY1_SIZE__;
+    overlaySizes[4] = (unsigned)_OVERLAY1_SIZE__;
+    overlaySizes[5] = (unsigned)_OVERLAY1_SIZE__;
+    overlaySizes[6] = (unsigned)_OVERLAY1_SIZE__;
+    for (i = 0; i < 7; ++i) {
+        overlayBlocks[i] = overlaySizes[i]/BLOCK_LEN + (overlaySizes[i] % BLOCK_LEN ? 1 : 0);
+    }
+
+    // Allocate space in extended memory to cache the parser and parsertest overlays.
+    // This is done so they don't have to be reloaded for each test.
+    for (i = 0; i < 7; ++i) {
+        if (!allocBlockGroup(&overlayCaches[i], overlayBlocks[i])) {
+            printlnz("Unable to allocate extended memory\n");
+            return;
+        }
+    }
+
+    for (i = 0; i < 7; ++i) {
+        setupOverlayName(name, i);
+        loadOverlayFromFile(name, overlaySizes[i], _OVERLAY1_LOAD__, overlayCaches[i]);
+    }
+}
+#endif
+
 void main()
 {
     char loopCode;
-#ifndef __MEGA65__
-    overlay1size = (unsigned)_OVERLAY1_SIZE__;
-    overlay2size = (unsigned)_OVERLAY2_SIZE__;
-    overlay3size = (unsigned)_OVERLAY3_SIZE__;
-    overlay4size = (unsigned)_OVERLAY4_SIZE__;
-    overlay5size = (unsigned)_OVERLAY5_SIZE__;
-    overlay6size = (unsigned)_OVERLAY6_SIZE__;
-    overlay7size = (unsigned)_OVERLAY7_SIZE__;
-    overlay1blocks = overlay1size/BLOCK_LEN + (overlay1size % BLOCK_LEN ? 1 : 0);
-    overlay2blocks = overlay2size/BLOCK_LEN + (overlay2size % BLOCK_LEN ? 1 : 0);
-    overlay3blocks = overlay3size/BLOCK_LEN + (overlay3size % BLOCK_LEN ? 1 : 0);
-    overlay4blocks = overlay4size/BLOCK_LEN + (overlay4size % BLOCK_LEN ? 1 : 0);
-    overlay5blocks = overlay5size/BLOCK_LEN + (overlay5size % BLOCK_LEN ? 1 : 0);
-    overlay6blocks = overlay6size/BLOCK_LEN + (overlay6size % BLOCK_LEN ? 1 : 0);
-    overlay7blocks = overlay7size/BLOCK_LEN + (overlay7size % BLOCK_LEN ? 1 : 0);
-#endif
-
-#ifdef __C128__
-    fast();
-    videomode(VIDEOMODE_80x25);
-    printf("Is fast mode: %s\n", isfast() ? "yes" : "no");
-#endif
-    // bgcolor(COLOR_BLUE);
-    // textcolor(COLOR_WHITE);
-    printlnz("Loading editor overlay");
-
-#ifdef __MEGA65
-    // On the Mega65, $1600 - $1fff is available to use in the heap
-    _heapadd((void *)0x1600, 0x1fff - 0x1600);
-#endif
 
 #if 0
-    printf("avail = %d\n", _heapmemavail());
+    printz("avail = ");
+    printlnz(formatInt16(_heapmemavail()));
     return;
 #endif
 
@@ -351,29 +312,10 @@ void main()
     initCommon();
 
 #ifndef __MEGA65__
-    // Allocate space in extended memory to cache the parser and parsertest overlays.
-    // This is done so they don't have to be reloaded for each test.
-    if (!allocBlockGroup(&tokenizerCache, overlay1blocks) ||
-        !allocBlockGroup(&parserCache, overlay2blocks) ||
-        !allocBlockGroup(&semanticCache, overlay3blocks) ||
-        !allocBlockGroup(&objCodeCache, overlay4blocks) ||
-        !allocBlockGroup(&linkerCache, overlay5blocks) ||
-        !allocBlockGroup(&editorCache, overlay6blocks) ||
-        !allocBlockGroup(&editorfilesCache, overlay7blocks)) {
-        printlnz("Unable to allocate extended memory\n");
-        return;
-    }
-
-    loadOverlayFromFile("pascal65.1", overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
-    loadOverlayFromFile("pascal65.2", overlay2size, _OVERLAY2_LOAD__, parserCache);
-    loadOverlayFromFile("pascal65.3", overlay3size, _OVERLAY3_LOAD__, semanticCache);
-    loadOverlayFromFile("pascal65.4", overlay4size, _OVERLAY4_LOAD__, objCodeCache);
-    loadOverlayFromFile("pascal65.5", overlay5size, _OVERLAY5_LOAD__, linkerCache);
-    loadOverlayFromFile("pascal65.6", overlay6size, _OVERLAY6_LOAD__, editorCache);
-    loadOverlayFromFile("pascal65.7", overlay7size, _OVERLAY7_LOAD__, editorfilesCache);
+    setupOverlays();
 #endif
 
-    loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+    loadOverlay(OVERLAY_EDITOR);
     initEditor();
 
     while (1) {
@@ -388,9 +330,9 @@ void main()
 
         if (loopCode == EDITOR_LOOP_SAVEFILE || loopCode == EDITOR_LOOP_COMPILE) {
             if (E.cf.dirty) {
-                loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, editorfilesCache);
+                loadOverlay(OVERLAY_EDITORFILES);
                 saveFile();
-                loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, editorCache);
+                loadOverlay(OVERLAY_EDITOR);
             }
             if (loopCode == EDITOR_LOOP_COMPILE) {
                 drawStatusRow(COLOR_WHITE, 0, "Compiling...");
@@ -413,53 +355,15 @@ void main()
 
         E.loopCode = EDITOR_LOOP_CONTINUE;
     }
-
-#if 0
-    if (loadfile("pascal65.6")) {
-        initEditor();
-        editorSetDefaultStatusMessage();
-        // E.cbExitRequested = handleExitRequested;
-        // E.cbKeyPressed = handleKeyPressed;
-        // E.cbExitRequested = handleExitRequested;
-        // if (argc >= 2) {
-        //     int i;
-        //     for (i = 1; i < argc; ++i)
-        //         editorOpen(argv[i], 0);
-        // }
-
-        updateStatusBarFilename();
-        editorRun();
-    }
-#endif
-
-#if 0
-    printf("Loading compiler overlay\n");
-    if (loadfile("pascal65.1")) {
-        parserOverlay();
-    }
-#endif
-
-    // printf("Loading interpreter overlay\n");
-    // if (loadfile("pascal65.2")) {
-    //     overlayInterpreter();
-    // }
-
-    // log("main", "back to main code");
 }
 
 unsigned char loadfile(const char *name)
 {
     if (cbm_load(name, getcurrentdevice(), NULL) == 0) {
-        log("main", "Loading overlay file failed");
+        printz(name);
+        printlnz(" missing");
         return 0;
     }
 
     return 1;
-}
-
-void log(const char *module, const char *message)
-{
-    printz(module);
-    printz(": ");
-    printlnz(message);
 }

@@ -12,18 +12,18 @@
 ; Address returned in ptr1
 .proc calcRowAddr
     inx                     ; Add one to row
-    ; Start with ptr1 at $400 (base of screen memory)
+    ; Start with ptr1 at $800 (base of screen memory)
     lda #0
     sta ptr1
-    lda #4
+    lda #8
     sta ptr1 + 1
-    ; Add 40 for every row
+    ; Add 80 for every row
 L1:
     dex                     ; Decrement row
     beq L2                  ; Branch if zero
-    lda ptr1                ; Add 40 to ptr1
+    lda ptr1                ; Add 80 to ptr1
     clc
-    adc #40
+    adc #80
     sta ptr1
     lda ptr1 + 1
     adc #0
@@ -39,9 +39,9 @@ L2:
     jsr calcRowAddr
     jsr popa                ; Pop col number off call stack
     sta tmp1                ; Store it in tmp1
-    lda #40                 ; Start at column 40
+    lda #80                 ; Start at column 80
     sec                     ; Clear for subtraction
-    sbc tmp1                ; 40 - column = # of chars to copy
+    sbc tmp1                ; 80 - column = # of chars to copy
     beq L2                  ; Branch if no chars to copy
     tax                     ; # of chars to copy in X
     ldy tmp1                ; Start at next to last column
@@ -55,7 +55,7 @@ L1:
     bne L1
 L2:
     jsr popa
-    ldy #39
+    ldy #79
     jsr petscii2Screen
     sta (ptr1),y
     rts
@@ -68,12 +68,12 @@ L2:
     jsr popa                ; Pop col number off call stack
     sta tmp1                ; Store it in tmp1
     ldy #$ff
-    lda #40                 ; Start at column 40
+    lda #80                 ; Start at column 80
     sec                     ; Clear for subtraction
-    sbc tmp1                ; 40 - column = # of chars to copy
+    sbc tmp1                ; 80 - column = # of chars to copy
     beq L2                  ; Branch if no chars to copy
     tax                     ; # of chars to copy in X
-    ldy #39                 ; Start at next to last column
+    ldy #79                 ; Start at next to last column
 L1:
     dey
     lda (ptr1),y

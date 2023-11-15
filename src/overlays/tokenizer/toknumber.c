@@ -110,8 +110,6 @@ void getNumberToken(char sawDecimalPoint)
     *ps = 0;
     if (type == tyInteger) {
         tokenValue.integer = parseInt16(tokenString);
-    } else {
-        tokenValue.real = strToFloat(tokenString);
     }
 
     tokenType = type;

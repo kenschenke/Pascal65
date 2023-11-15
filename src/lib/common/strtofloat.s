@@ -2,8 +2,14 @@
 
 .export _strToFloat
 
-.import FPINP, FPBUF, FPBASE
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import intOp1
 .importzp ptr1, sreg
+.endif
+
+.import FPINP, FPBUF, FPBASE
 
 .proc _strToFloat
     sta ptr1

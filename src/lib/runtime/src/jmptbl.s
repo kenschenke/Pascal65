@@ -3,8 +3,8 @@
 .import leftpad, printz, printlnz
 .import absInt16, addInt16, divInt16, int16Sqr, modInt16, multInt16, subInt16, writeInt16
 .import eqInt16, leInt16, ltInt16, geInt16, gtInt16
-.import copyFPACCtoFPOP, FPADD, FPDIV, FPINP, FPMULT, FPOUT, FPSUB, floatAbs, PRECRD
-.import floatEq, floatGt, floatGte, floatLt, floatLte, floatToInt16, int16ToFloat, getFPBUF
+.import copyFPACCtoFPOP, FPADD, FPDIV, _strToFloat, FPMULT, FPOUT, FPSUB, floatAbs, PRECRD
+.import floatEq, floatGt, floatGte, floatLt, floatLte, floatToInt16, int16ToFloat, getFPBUF, _floatNeg
 .import incsp4, popeax, pushax, pusheax, popToReal, popToIntOp1, popToIntOp2
 .import pushAddrStack, pushByteStack, pushIntStack, pushFromIntOp1, pushRealStack
 .import readByteStack, readIntStack, readRealStack
@@ -38,7 +38,7 @@ jmp FPADD       ; BASE + 51
 jmp FPSUB       ; BASE + 54
 jmp FPMULT      ; BASE + 57
 jmp FPDIV       ; BASE + 60
-jmp FPINP       ; BASE + 63
+jmp _strToFloat ; BASE + 63
 jmp FPOUT       ; BASE + 66
 jmp floatEq     ; BASE + 69
 jmp floatGt     ; BASE + 72
@@ -86,3 +86,4 @@ jmp calcArrayOffset ; BASE + 195
 jmp getFPBUF    ; BASE + 198
 jmp writeCharArray  ; BASE + 201
 jmp readCharArrayFromInput ; BASE + 204
+jmp _floatNeg   ; BASE + 207

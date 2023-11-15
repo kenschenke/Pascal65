@@ -146,7 +146,7 @@
 #define RT_FLOATTOINT16			(RT_BASE + 84)
 #define RT_FPADD				(RT_BASE + 51)
 #define RT_FPDIV				(RT_BASE + 60)
-#define RT_FPINP				(RT_BASE + 63)
+#define RT_STRTOFLOAT			(RT_BASE + 63)
 #define RT_FPMULT				(RT_BASE + 57)
 #define RT_FPOUT				(RT_BASE + 66)
 #define RT_FPSUB				(RT_BASE + 54)
@@ -198,6 +198,7 @@
 #define RT_GETFPBUF				(RT_BASE + 198)
 #define RT_WRITECHARARRAY       (RT_BASE + 201)
 #define RT_READCHARARRAYFROMINPUT (RT_BASE + 204)
+#define RT_FLOATNEG             (RT_BASE + 207)
 
 // CBM Kernal
 

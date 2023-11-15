@@ -154,6 +154,7 @@ void clearCursor(void);
 void clearRow(char row, char startingCol);
 void clearScreen(void);
 void clearStatusRow(void);
+void closeFile(void);
 void cursorOff(void);
 char doesFileExist(char *filename);
 void drawRow(char row, char col, char len, const char *buf, char isReversed);
