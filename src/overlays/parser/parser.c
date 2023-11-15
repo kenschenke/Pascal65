@@ -146,7 +146,6 @@ void getToken(void)
             parserType = tyInteger;
         }
         else {
-            readFromMemBuf(parserIcode, &parserValue.real, 4);
             parserType = tyReal;
         }
         parserToken = tcNumber;

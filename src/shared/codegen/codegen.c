@@ -89,32 +89,6 @@ void genIntValueAX(CHUNKNUM chunkNum)
 	genTwo(LDX_IMMEDIATE, WORD_HIGH(_expr.value.integer));
 }
 
-void genRealValueEAX(CHUNKNUM chunkNum)
-{
-	struct expr _expr;
-
-	if (!chunkNum) {
-		genTwo(LDA_IMMEDIATE, 0);
-		genOne(TAX);
-		genTwo(STA_ZEROPAGE, ZP_SREGL);
-		genTwo(STA_ZEROPAGE, ZP_SREGH);
-		return;
-	}
-
-	retrieveChunk(chunkNum, &_expr);
-
-	if (_expr.neg) {
-        _expr.value.real = floatNeg(_expr.value.real);
-	}
-
-    genTwo(LDA_IMMEDIATE, DWORD_MSB(_expr.value.real));
-    genTwo(STA_ZEROPAGE, ZP_SREGH);
-    genTwo(LDA_IMMEDIATE, DWORD_NMSB(_expr.value.real));
-    genTwo(STA_ZEROPAGE, ZP_SREGL);
-    genTwo(LDX_IMMEDIATE, DWORD_NLSB(_expr.value.real));
-    genTwo(LDA_IMMEDIATE, DWORD_LSB(_expr.value.real));
-}
-
 // 15684
 //    codegen: 5878 (5443)
 //       updateHeapOffset: 15653

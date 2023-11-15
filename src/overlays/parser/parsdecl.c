@@ -5,17 +5,24 @@
 #include <common.h>
 
 static CHUNKNUM parseIdSublist(char decl_kind);
+static void copyStringToMemBuf(char *pString, CHUNKNUM *firstChunk, int len);
 
-void copyQuotedString(char* pString, CHUNKNUM* firstChunk) {
-    int len = (int)strlen(pString) - 2;
-
+static void copyStringToMemBuf(char* pString, CHUNKNUM* firstChunk, int len) {
     if (!(*firstChunk)) {
         // Memory buffer not allocated yet
         allocMemBuf(firstChunk);
     }
 
     reserveMemBuf(*firstChunk, len);
-    copyToMemBuf(*firstChunk, pString + 1, 0, len);
+    copyToMemBuf(*firstChunk, pString, 0, len);
+}
+
+void copyQuotedString(char* pString, CHUNKNUM* firstChunk) {
+    copyStringToMemBuf(pString + 1, firstChunk, (int)strlen(pString)-2);
+}
+
+void copyRealString(char* pString, CHUNKNUM* firstChunk) {
+    copyStringToMemBuf(pString, firstChunk, (int)strlen(pString));
 }
 
 CHUNKNUM parseDeclarations(void) {
@@ -66,21 +73,22 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
         break;
     }
 
-    // Number constant: integer
+    // Number constant
     case tcNumber:
-        if (parserType == tyInteger) {
-            if (sign == tcMinus) {
-                parserValue.integer = -parserValue.integer;
-            }
-            *type = typeCreate(TYPE_INTEGER, 1, 0, 0);
-            expr = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &parserValue);
+        *type = typeCreate(
+            parserType == tyInteger ? TYPE_INTEGER : TYPE_REAL,
+            1, 0, 0);
+        if (parserType == tyReal) {
+            copyRealString(parserString, &parserValue.stringChunkNum);
         }
-        else {
-            if (sign == tcMinus) {
-                parserValue.real = floatNeg(parserValue.real);
-            }
-            *type = typeCreate(TYPE_REAL, 1, 0, 0);
-            expr = exprCreate(EXPR_REAL_LITERAL, 0, 0, 0, &parserValue);
+        expr = exprCreate(
+            parserType == tyInteger ? EXPR_INTEGER_LITERAL : EXPR_REAL_LITERAL,
+            0, 0, 0, &parserValue);
+        if (sign == tcMinus) {
+            struct expr _expr;
+            retrieveChunk(expr, &_expr);
+            _expr.neg = 1;
+            storeChunk(expr, &_expr);
         }
         getToken();
         break;

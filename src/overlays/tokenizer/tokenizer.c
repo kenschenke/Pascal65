@@ -30,7 +30,6 @@
  *    integer as a string.
  * 
  * tzReal
- *    The tzReal code is followed by the four-byte real value.
  *    This is followed by a one-byte integer string length then the
  *    float as a string.
  * 
@@ -81,7 +80,6 @@ CHUNKNUM tokenize(const char *filename) {
                 } else {
                     tzType = tzReal;
                     writeToMemBuf(Icode, &tzType, 1);
-                    writeToMemBuf(Icode, &tokenValue.real, 4);
                 }
                 writeToMemBuf(Icode, &len, 1);
                 writeToMemBuf(Icode, tokenString, len);

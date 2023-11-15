@@ -3,6 +3,8 @@
 #include <chunks.h>
 #include <membuf.h>
 #include <asm.h>
+#include <string.h>
+#include <int16.h>
 
 static int addStringLiteral(CHUNKNUM chunkNum);
 
@@ -41,12 +43,37 @@ void genFreeVariableHeaps(short* heapOffsets)
 	}
 }
 
+void genRealValueEAX(CHUNKNUM chunkNum)
+{
+	struct expr _expr;
+
+	if (!chunkNum) {
+		genTwo(LDA_IMMEDIATE, 0);
+		genOne(TAX);
+		genTwo(STA_ZEROPAGE, ZP_SREGL);
+		genTwo(STA_ZEROPAGE, ZP_SREGH);
+		return;
+	}
+
+	retrieveChunk(chunkNum, &_expr);
+
+	// Pointer to the real string in A/X
+	genStringValueAX(_expr.value.stringChunkNum);
+	// Convert to float in FPACC
+	genThreeAddr(JSR, RT_STRTOFLOAT);
+
+	if (_expr.neg) {
+		genThreeAddr(JSR, RT_FLOATNEG);
+	}
+}
+
 void genStringValueAX(CHUNKNUM chunkNum)
 {
 	char label[15];
 
 	int num = addStringLiteral(chunkNum);
-	sprintf(label, "strVal%d", num);
+	strcpy(label, "strVal");
+	strcat(label, formatInt16(num));
 	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_HIGH);
