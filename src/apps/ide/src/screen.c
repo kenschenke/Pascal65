@@ -28,12 +28,21 @@
 
 #define KILO_VERSION "0.0.1"
 
+#ifdef __MEGA65__
+#define STATUSCOL_RO 58
+#define STATUSCOL_MEM 63
+#define STATUSCOL_X 71
+#define STATUSCOL_X_LABEL 69
+#define STATUSCOL_Y 77
+#define STATUSCOL_Y_LABEL 75
+#else
 #define STATUSCOL_RO 18
 #define STATUSCOL_MEM 23
 #define STATUSCOL_X 31
 #define STATUSCOL_X_LABEL 29
 #define STATUSCOL_Y 37
 #define STATUSCOL_Y_LABEL 35
+#endif
 
 static void editorDrawMessageBar(void);
 static void editorDrawRows(void);

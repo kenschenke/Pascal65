@@ -369,6 +369,9 @@ static char editorProcessKeypress(void) {
             break;
 
         case CH_F7:
+#ifdef __MEGA65__
+        case 31:
+#endif
             editorFlushEditBuf();
             loopCode = EDITOR_LOOP_OPENHELP;
             break;
