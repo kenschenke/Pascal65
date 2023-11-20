@@ -233,36 +233,14 @@ static void openHelpFile(void) {
 
 static void restoreState(void)
 {
-    FILE *fp;
-    char filename[CHUNK_LEN + 1];
-    efile file;
-    CHUNKNUM fileChunk;
-
     if (!editorHasState()) {
         return;
     }
 
     editorLoadState();
 
-    fileChunk = E.firstFileChunk;
     loadOverlay(OVERLAY_EDITORFILES);
-    while (fileChunk) {
-        retrieveChunk(fileChunk, &file);
-        memset(filename, 0, sizeof(filename));
-        retrieveChunk(file.filenameChunk, filename);
-        if (!strcmp(filename, "Help File")) {
-            file.readOnly = 1;
-            strcpy(filename, "help.txt");
-        }
-        fp = fopen(filename, "r");
-        editorReadFileContents(&file, fp);
-        fclose(fp);
-        storeChunk(file.fileChunk, &file);
-        if (file.fileChunk == E.cf.fileChunk) {
-            memcpy(&E.cf, &file, sizeof(efile));
-        }
-        fileChunk = file.nextFileChunk;
-    }
+    loadFilesFromState();
     loadOverlay(OVERLAY_EDITOR);
 
     if (E.cf.fileChunk) {

@@ -205,6 +205,33 @@ static char editorSave(char *filename) {
     return 1;
 }
 
+void loadFilesFromState(void)
+{
+    FILE *fp;
+    char filename[CHUNK_LEN + 1];
+    efile file;
+    CHUNKNUM fileChunk;
+
+    fileChunk = E.firstFileChunk;
+    while (fileChunk) {
+        retrieveChunk(fileChunk, &file);
+        memset(filename, 0, sizeof(filename));
+        retrieveChunk(file.filenameChunk, filename);
+        if (!strcmp(filename, "Help File")) {
+            file.readOnly = 1;
+            strcpy(filename, "help.txt");
+        }
+        fp = fopen(filename, "r");
+        editorReadFileContents(&file, fp);
+        fclose(fp);
+        storeChunk(file.fileChunk, &file);
+        if (file.fileChunk == E.cf.fileChunk) {
+            memcpy(&E.cf, &file, sizeof(efile));
+        }
+        fileChunk = file.nextFileChunk;
+    }
+}
+
 char saveAs(void) {
     char filename[16+1], prompt[80];
     int ch;

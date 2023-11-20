@@ -189,6 +189,7 @@ void editorSaveState(void);
 char handleFiles(void);
 void initEditor(void);
 void initFile(void);
+void loadFilesFromState(void);
 void unInitFile(void);
 char saveAs(void);
 char saveFile(void);
