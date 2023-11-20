@@ -115,7 +115,7 @@ void objCodeWrite(CHUNKNUM astRoot);
 #ifdef COMPILERTEST
 void linkerPostWrite(const char* prgFilename, char* nextTest);
 #else
-void linkerPostWrite(const char* prgFilename);
+void linkerPostWrite(const char* prgFilename, char run);
 #endif
 
 // Returns 1 if address found in table : address is valid

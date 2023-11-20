@@ -28,6 +28,7 @@
 #define EDITOR_LOOP_SAVEFILE 4
 #define EDITOR_LOOP_OPENHELP 5
 #define EDITOR_LOOP_COMPILE 6
+#define EDITOR_LOOP_RUN 7
 
 #define FILESCREEN_BACK 1          // Exit file screen and return to editor
 #define FILESCREEN_OPENFILE 2
@@ -172,6 +173,7 @@ char editorChunkAtX(erow *row, int at, int *chunkFirstCol, CHUNKNUM *chunkNum, e
 void editorNewFile(void);
 char editorOpen(const char *filename, char readOnly);
 void editorClose(void);  // close current file
+void editorReadFileContents(efile *file, FILE *fp);
 int editorReadKey(void);
 void editorRetrieveFilename(char *buffer);
 char editorRun(void);       // returns EDITOR_LOOP_*
@@ -181,6 +183,9 @@ void editorSetDefaultStatusMessage(void);
 void editorSetStatusMessage(const char *msg);
 void editorStoreFilename(const char *filename);
 void editorRefreshScreen();
+char editorHasState(void);
+void editorLoadState(void);
+void editorSaveState(void);
 char handleFiles(void);
 void initEditor(void);
 void initFile(void);

@@ -16,6 +16,10 @@
 #include <ast.h>
 #include <int16.h>
 #include <common.h>
+#include <unistd.h>
+#ifdef __MEGA65__
+#include <doscmd.h>
+#endif
 
 #define OVERLAY_TOKENIZER 0
 #define OVERLAY_PARSER 1
@@ -26,13 +30,18 @@
 #define OVERLAY_EDITORFILES 6
 
 unsigned char loadfile(const char *name);
+static void compile(char run);
+static void restoreState(void);
 static void setupOverlayName(char *name, int num);
 
 struct editorConfig E;
 
 static char intBuffer[16];
 
-void logError(const char *message, unsigned lineNumber, TErrorCode code)
+// Device Pascal65 was loaded from
+static char prgDrive;
+
+void logError(const char *message, unsigned lineNumber, TErrorCode /*code*/)
 {
     printz("*** ERROR: ");
     printz(message);
@@ -47,7 +56,7 @@ void logFatalError(const char *message)
     printlnz(message);
 }
 
-void logRuntimeError(const char *message, unsigned lineNumber)
+void logRuntimeError(const char *message, unsigned /*lineNumber*/)
 {
     printz("*** Runtime error: ");
     printlnz(message);
@@ -117,10 +126,10 @@ static void loadOverlay(int overlayNum)
 #endif
 }
 
-static void compile(void)
+static void compile(char run)
 {
     CHUNKNUM tokens, ast;
-    char filename[16 + 1];
+    char filename[CHUNK_LEN];
 
     memset(filename, 0, sizeof(filename));
     retrieveChunk(E.cf.filenameChunk, filename);
@@ -152,7 +161,7 @@ static void compile(void)
 
     // Write the PRG file
     loadOverlay(OVERLAY_LINKER);
-    linkerPostWrite(filename);
+    linkerPostWrite(filename, run);
 
     // Free the AST
     decl_free(ast);
@@ -220,6 +229,57 @@ static void openHelpFile(void) {
         clearScreen();
         editorSetAllRowsDirty();
     }
+}
+
+static void restoreState(void)
+{
+    FILE *fp;
+    char filename[CHUNK_LEN + 1];
+    efile file;
+    CHUNKNUM fileChunk;
+
+    if (!editorHasState()) {
+        return;
+    }
+
+    editorLoadState();
+
+    fileChunk = E.firstFileChunk;
+    loadOverlay(OVERLAY_EDITORFILES);
+    while (fileChunk) {
+        retrieveChunk(fileChunk, &file);
+        memset(filename, 0, sizeof(filename));
+        retrieveChunk(file.filenameChunk, filename);
+        if (!strcmp(filename, "Help File")) {
+            file.readOnly = 1;
+            strcpy(filename, "help.txt");
+        }
+        fp = fopen(filename, "r");
+        editorReadFileContents(&file, fp);
+        fclose(fp);
+        storeChunk(file.fileChunk, &file);
+        if (file.fileChunk == E.cf.fileChunk) {
+            memcpy(&E.cf, &file, sizeof(efile));
+        }
+        fileChunk = file.nextFileChunk;
+    }
+    loadOverlay(OVERLAY_EDITOR);
+
+    if (E.cf.fileChunk) {
+        clearScreen();
+        editorSetAllRowsDirty();
+        E.cf.dirty = 0;
+        E.anyDirtyRows = 1;
+        editorSetDefaultStatusMessage();
+        updateStatusBarFilename();
+    }
+
+    // Remove the PRG that was run
+#ifdef __MEGA65__
+    removeFile("zzprg");
+#else
+    remove("zzprg");
+#endif
 }
 
 static void showFileScreen(void)
@@ -300,9 +360,13 @@ static void setupOverlays(void)
 }
 #endif
 
+void reset(void);
+
 void main()
 {
     char loopCode;
+
+    prgDrive = getcurrentdevice();
 
 #if 0
     printz("avail = ");
@@ -321,18 +385,19 @@ void main()
 
     loadOverlay(OVERLAY_EDITOR);
     initEditor();
+    restoreState();
 
     while (1) {
         loopCode = editorRun();
         if (loopCode == EDITOR_LOOP_QUIT) {
-            break;
+            reset();
         }
 
         if (loopCode == EDITOR_LOOP_OPENFILE) {
             openFile();
         }
 
-        if (loopCode == EDITOR_LOOP_SAVEFILE || loopCode == EDITOR_LOOP_COMPILE) {
+        if (loopCode == EDITOR_LOOP_SAVEFILE || loopCode == EDITOR_LOOP_COMPILE || loopCode == EDITOR_LOOP_RUN) {
             if (E.cf.dirty) {
                 loadOverlay(OVERLAY_EDITORFILES);
                 saveFile();
@@ -340,7 +405,12 @@ void main()
             }
             if (loopCode == EDITOR_LOOP_COMPILE) {
                 drawStatusRow(COLOR_WHITE, 0, "Compiling...");
-                compile();
+                compile(0);
+            }
+            if (loopCode == EDITOR_LOOP_RUN) {
+                drawStatusRow(COLOR_WHITE, 0, "Running...");
+                editorSaveState();
+                compile(1);
             }
             editorSetAllRowsDirty();
             editorSetDefaultStatusMessage();
@@ -363,10 +433,10 @@ void main()
 
 unsigned char loadfile(const char *name)
 {
-    if (cbm_load(name, getcurrentdevice(), NULL) == 0) {
+    if (cbm_load(name, prgDrive, NULL) == 0) {
         printz(name);
         printlnz(" missing");
-        return 0;
+        exit(0);
     }
 
     return 1;

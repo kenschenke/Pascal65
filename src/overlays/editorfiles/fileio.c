@@ -23,7 +23,6 @@
 
 static void addRow(efile *file, erow *row, CHUNKNUM lastRow);
 static void appendText(erow *row, CHUNKNUM *lastChunk, char *text);
-static void editorReadFileContents(efile *file, FILE *fp);
 static char editorSave(char *filename);
 static char saveToExisting(void);
 
@@ -117,7 +116,7 @@ char editorOpen(const char *filename, char readOnly) {
     return 1;
 }
 
-static void editorReadFileContents(efile *file, FILE *fp)
+void editorReadFileContents(efile *file, FILE *fp)
 {
     erow row;
     CHUNKNUM lastTextChunk=0, lastRowChunk=0;

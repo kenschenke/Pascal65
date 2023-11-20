@@ -17,8 +17,12 @@
 #include <membuf.h>
 #include <string.h>
 #include <int16.h>
+#include <device.h>
 
 #define RUNTIME_STACK_SIZE 2048
+
+#define BOOTSTRAP_CODE		"BOOTSTRAP_CODE"
+#define BSS_BOOTSTRAP_MSG	"BSS_BOOTSTRAP_MSG"
 
 #ifdef COMPILERTEST
 #ifdef __MEGA65__
@@ -287,6 +291,7 @@ static unsigned char chainCode[] = {
 
 static void dumpStringLiterals(void);
 static void freeStringLiterals(void);
+static void genBootstrap(void);
 static void genExeHeader(void);
 static void genRuntime(void);
 static void updateLinkerAddresses(CHUNKNUM codeBuf);
@@ -330,6 +335,72 @@ static void freeStringLiterals(void)
 
 	stringLiterals = 0;
 	numStringLiterals = 0;
+}
+
+static void genBootstrap(void)
+{
+#ifdef __MEGA65__
+	// Flush the keyboard buffer
+	genTwo(LDA_IMMEDIATE, 0);
+	genThreeAddr(LDX_ABSOLUTE, 0xd610);
+	genTwo(BEQ, 5);
+	genThreeAddr(STA_ABSOLUTE, 0xd610);
+	genTwo(BNE, 0xf6);
+#endif
+	// Display a message to press a key
+	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, 0, LINKADDR_LOW);
+	genTwo(LDA_IMMEDIATE, 0);
+	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, 0, LINKADDR_HIGH);
+	genTwo(LDX_IMMEDIATE, 0);
+	genThreeAddr(JSR, RT_PRINTZ);
+	// Wait for a key to get pressed
+#ifdef __MEGA65__
+	genThreeAddr(LDX_ABSOLUTE, 0xd610);
+	genTwo(BEQ, 0xfb);
+	genTwo(LDA_IMMEDIATE, 0);
+	genThreeAddr(STA_ABSOLUTE, 0xd610);
+	genOne(TXA);
+#else
+	genThreeAddr(JSR, 0xffe4);		// GETIN
+	genTwo(CMP_IMMEDIATE, 0);
+	genTwo(BEQ, 0xfa);
+#endif
+	// Copy bootstrap code to upper memory
+	linkAddressLookup(BOOTSTRAP_CODE, codeOffset + 1, 0, LINKADDR_LOW);
+	genTwo(LDA_IMMEDIATE, 0);
+	genTwo(STA_ZEROPAGE, ZP_PTR1L);
+	linkAddressLookup(BOOTSTRAP_CODE, codeOffset + 1, 0, LINKADDR_HIGH);
+	genTwo(LDA_IMMEDIATE, 0);
+	genTwo(STA_ZEROPAGE, ZP_PTR1H);
+	genTwo(LDA_IMMEDIATE, 0xd0);
+	genTwo(STA_ZEROPAGE, ZP_PTR2L);
+	genTwo(LDA_IMMEDIATE, 0x8f);
+	genTwo(STA_ZEROPAGE, ZP_PTR2H);
+	genTwo(LDY_IMMEDIATE, 44);
+	genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
+	genTwo(STA_ZPINDIRECT, ZP_PTR2L);
+	genOne(DEY);
+	genTwo(BPL, 0xf9);
+	genThreeAddr(JMP, 0x8fd0);
+	linkAddressSet(BOOTSTRAP_CODE, codeOffset);
+	genTwo(LDA_IMMEDIATE, 0);
+	genTwo(LDX_ZEROPAGE, 0xba); // current device number
+	genTwo(LDY_IMMEDIATE, 0xff);
+	genThreeAddr(JSR, 0xffba);	// SETLFS
+	genTwo(LDA_IMMEDIATE, 8);	// "pascal65" length
+	genTwo(LDX_IMMEDIATE, 0xec);
+	genTwo(LDY_IMMEDIATE, 0x8f);
+	genThreeAddr(JSR, 0xffbd);	// SETNAM
+	genTwo(LDA_IMMEDIATE, 0);
+	genOne(TAX);
+	genOne(TAY);
+	genThreeAddr(JSR, 0xffd5);	// LOAD
+#ifdef __MEGA65__
+	genThreeAddr(JMP, 0x2011);
+#else
+	genThreeAddr(JMP, 0x80d);
+#endif
+	writeCodeBuf("pascal65", 8);
 }
 
 static void genExeHeader(void)
@@ -439,10 +510,12 @@ void linkerPreWrite(void)
 	writeCodeBuf(prgHeader, PRG_HEADER_LENGTH);
 }
 
+void runPrg(void);
+
 #ifdef COMPILERTEST
 void linkerPostWrite(const char*filename, char* nextTest)
 #else
-void linkerPostWrite(const char* filename)
+void linkerPostWrite(const char* filename, char run)
 #endif
 {
 	FILE* out;
@@ -476,8 +549,12 @@ void linkerPostWrite(const char* filename)
 	}
 #else
 	// Return to the OS
-	genTwo(LDA_IMMEDIATE, 0);
-	genOne(RTS);
+	if (run) {
+		genBootstrap();
+	} else {
+		genTwo(LDA_IMMEDIATE, 0);
+		genOne(RTS);
+	}
 #endif
 
 	dumpStringLiterals();
@@ -495,6 +572,11 @@ void linkerPostWrite(const char* filename)
 	for (i = 0; i < 15; ++i) {
 		writeToMemBuf(codeBuf, &ch, 1);
 		++codeOffset;
+	}
+
+	if (run) {
+		linkAddressSet(BSS_BOOTSTRAP_MSG, codeOffset);
+		writeCodeBuf("\nPress a key...", 16);
 	}
 
 	// Set aside some memory to undo the changes to page zero
@@ -515,22 +597,26 @@ void linkerPostWrite(const char* filename)
 	freeLinkerSymbolTable();
 
     // Generate PRG filename
-	strcpy(prgFilename, filename);
+	if (run) {
+		strcpy(prgFilename, "zzprg");
+	} else {
+		strcpy(prgFilename, filename);
 #ifndef COMPILERTEST
-    if (!stricmp(prgFilename+strlen(prgFilename)-4, ".pas")) {
-		// If the source filename ends in ".pas",
-		// drop the extension and use that for the PRG filename.
-		prgFilename[strlen(prgFilename)-4] = 0;
-    } else {
-        if (strlen(filename) > 12) {
-			// The source filename is more than 12 characters,
-			// so use the first 12 chars and add ".prg".
-			strcpy(prgFilename+12, ".prg");
-        } else {
-            strcat(prgFilename, ".prg");
-        }
-    }
+		if (!stricmp(prgFilename+strlen(prgFilename)-4, ".pas")) {
+			// If the source filename ends in ".pas",
+			// drop the extension and use that for the PRG filename.
+			prgFilename[strlen(prgFilename)-4] = 0;
+		} else {
+			if (strlen(filename) > 12) {
+				// The source filename is more than 12 characters,
+				// so use the first 12 chars and add ".prg".
+				strcpy(prgFilename+12, ".prg");
+			} else {
+				strcat(prgFilename, ".prg");
+			}
+		}
 #endif
+	}
 
 	_filetype = 'p';
 	out = fopen(prgFilename, "w");
@@ -554,6 +640,10 @@ void linkerPostWrite(const char* filename)
 	fclose(out);
 	freeMemBuf(codeBuf);
 	freeStringLiterals();
+
+	if (run) {
+		runPrg();
+	}
 }
 
 static void genRuntime(void)

@@ -56,6 +56,7 @@
 #define LDA_X_INDEXED_ZP 0xb5   // lda $nn,x        2 bytes
 #define LDA_ZPINDIRECT	0xb1	// lda ($nn),y		2 bytes
 #define LDX_IMMEDIATE	0xa2	// ldx #$nn			2 bytes
+#define LDX_ABSOLUTE    0xae    // ldx $nnnn        3 bytes
 #define LDX_ZEROPAGE	0xa6	// ldx $nn			2 bytes
 #define LDY_IMMEDIATE	0xa0	// ldy #$nn			2 bytes
 #define STA_ABSOLUTE	0x8d	// sta $nnnn		3 bytes

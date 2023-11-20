@@ -398,6 +398,14 @@ static char editorProcessKeypress(void) {
             editorFlushEditBuf();
             break;
 
+        case CH_F3:
+#ifdef __MEGA65__
+        case 243:
+#endif
+            loopCode = EDITOR_LOOP_RUN;
+            editorFlushEditBuf();
+            break;
+
         case CH_F5:
 #ifdef __MEGA65__
         case 245:
