@@ -192,8 +192,10 @@ static void editorDrawRows(void) {
             clearRow(y, col);
         }
 
-        if (nextRowChunk == 0) {
-            break;
+        if (nextRowChunk == 0 && E.cf.cy != y + E.cf.rowoff) {
+            row.dirty = 0;
+            clearRow(y, 0);
+            continue;
         }
 
         retrieveChunk(nextRowChunk, (unsigned char *)&row);

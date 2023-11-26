@@ -200,7 +200,9 @@ static void switchToFile(char num) {
         if (page == filePage && i == num) {
             if (chunkNum != E.cf.fileChunk) {
                 storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+                storeChunk(E.cf.selectionChunk, &E.selection);
                 retrieveChunk(chunkNum, (unsigned char *)&E.cf);
+                retrieveChunk(E.cf.selectionChunk, &E.selection);
                 clearScreen();
                 return;
             }

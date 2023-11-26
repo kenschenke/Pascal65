@@ -22,6 +22,8 @@ Scroll Up            Esc+V    Ctrl+V
 Scroll Down          Esc+W    Ctrl+W
 Scroll to file top   Esc+B    Ctrl+B
 Scroll to file end   Esc+E    Ctrl+E
+Mark Text                     Ctrl+Y
+Paste Clipboard               Ctrl+U
 Open File                     F1
 Save File                     F2
 Run Pascal File               F4

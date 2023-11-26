@@ -76,16 +76,25 @@ typedef struct efile {
     int numrows;                    // # of lines in file (2)
     char readOnly;                  // non-zero if file is read-only (1)
     char dirty;                     // non-zero if file is modified (1)
+    char inSelection;               // non-zero if text is selected
     CHUNKNUM filenameChunk;         // (2)
-    char unused[CHUNK_LEN - 20];    // so it fills a chunk
+    CHUNKNUM selectionChunk;        // Chunk for fileselection (2)
 } efile;
+
+typedef struct fileselection {
+    int selectionX, selectionY;     // anchor point for selection
+    int startHX, startHY;           // start of selection highlighting
+    int endHX, endHY;               // end of selection highlighting
+} fileselection;
 
 struct editorConfig {
     unsigned screenrows;            // # of rows on display
     unsigned screencols;            // # of columns
     CHUNKNUM firstFileChunk;
     CHUNKNUM titleChunk;            // membuf for the title screen contents
+    CHUNKNUM clipboard;             // membuf for the clipboard contents
     struct efile cf;                // point to current file
+    struct fileselection selection; // clipboard selection for current file
     char loopCode;                  // non-zero when processing loop exits
                                     // one of EDITOR_LOOP_*
     char last_key_esc;              // non-zero if last key was ESC
@@ -160,11 +169,16 @@ void cursorOff(void);
 char doesFileExist(char *filename);
 void drawRow(char row, char col, char len, const char *buf, char isReversed);
 void drawStatusRow(char color, char center, const char *msg);
+void editorCalcSelection(void);
+void editorClearSelection(void);
+void editorCopySelection(void);
+void editorDeleteSelection(void);
 void editorDeleteToEndOfLine(void);
 void editorDeleteToStartOfLine(void);
 void editorDelRow(int at);
 void editorFreeRow(CHUNKNUM firstTextChunk);
 void editorInsertRow(int at, char *s, size_t len);
+void editorPasteClipboard(void);
 char editorPrompt(char *buf, size_t bufsize, char *prompt);
 void editorRowAppendString(erow *row, char *s, size_t len);
 char editorRowAt(int at, erow *row);
@@ -207,6 +221,7 @@ void editBufDeleteChars(char pos, char numToDelete, char lineLength);
 void editBufCopyChars(char pos, char charsToCopy, char *buffer);
 void editBufPopulate(CHUNKNUM chunkNum);
 void editBufFlush(CHUNKNUM *firstChunkNum, char lineLength);
+void editorFlushEditBuf(void);
 void screenInsertChar(char ch, char col, char row);
 void screenDeleteChar(char ch, char col, char row);
 

@@ -28,10 +28,7 @@
 #include <conio.h>
 #endif
 
-extern char editBuf[80];
-
 static void editorDelChar(void);
-static void editorFlushEditBuf(void);
 static void editorInsertChar(int c);
 static void editorInsertTab(void);
 static void editorInsertNewLine(int spaces);
@@ -42,6 +39,8 @@ static void initTitleScreen(void);
 
 static char hasEditBuf;
 static erow currentRow;
+
+extern char editBuf[80];
 
 #ifdef __MEGA65__
 void fastcall setscreensize(unsigned char width, unsigned char height);
@@ -118,6 +117,7 @@ void editorClose(void) {
         freeChunk(E.cf.filenameChunk);
     }
     freeChunk(E.cf.fileChunk);
+    freeChunk(E.cf.selectionChunk);
     E.cf.fileChunk = 0;
     E.cf.firstRowChunk = 0;
     clearScreen();
@@ -173,7 +173,7 @@ static void editorDelChar(void) {
     }
 }
 
-static void editorFlushEditBuf(void)
+void editorFlushEditBuf(void)
 {
     if (!hasEditBuf) {
         return;
@@ -205,7 +205,7 @@ static void editorInsertTab(void) {
     while (E.cf.cx % EDITOR_TAB_STOP) editorInsertChar(' ');
 }
 
-static void editorInsertNewLine(int spaces) {
+void editorInsertNewLine(int spaces) {
     erow currentRow, newRow;
     int firstCol, startAt, toCopy;
     CHUNKNUM chunkNum, nextChunk;
@@ -316,6 +316,11 @@ static void editorMoveCursor(int key, char skipClear) {
         gotoxy(E.cf.cx, E.cf.cy);
 #endif
     }
+
+    if (E.cf.inSelection) {
+        editorCalcSelection();
+        updateStatusBarFilename();
+    }
 }
 
 static char editorProcessKeypress(void) {
@@ -325,6 +330,39 @@ static char editorProcessKeypress(void) {
 
     if (E.cbKeyPressed && E.cbKeyPressed(c)) {
         return loopCode;
+    }
+
+    // Some keys have special meaning if selection mode is on.
+    if (E.cf.inSelection) {
+        switch (c) {
+            case BACKARROW:
+                editorClearSelection();
+                editorSetDefaultStatusMessage();
+                return loopCode;
+
+            case 'c':
+            case 'C':       // copy
+                editorCopySelection();
+                editorClearSelection();
+                editorSetDefaultStatusMessage();
+                return loopCode;
+            
+            case 'x':
+            case 'X':       // cut
+                editorCopySelection();
+                editorDeleteSelection();
+                editorClearSelection();
+                editorSetDefaultStatusMessage();
+                return loopCode;
+
+            case CH_DEL:
+            case CTRL_KEY('h'):
+            case DEL_KEY:
+                editorDeleteSelection();
+                editorClearSelection();
+                editorSetDefaultStatusMessage();
+                return loopCode;
+        }
     }
 
     switch (c) {
@@ -589,8 +627,24 @@ static char editorProcessKeypress(void) {
             }
             break;
 
+        case CTRL_KEY('u'):
+            editorFlushEditBuf();
+            editorPasteClipboard();
+            break;
+
+        case CTRL_KEY('y'):
+            E.selection.selectionX = E.cf.cx;
+            E.selection.selectionY = E.cf.cy;
+            E.cf.inSelection = 1;
+            editorFlushEditBuf();
+            editorSetStatusMessage("'C': copy, 'X': cut, \x1f: cancel");
+            break;
+
         case STOP_KEY:
             // do nothing
+            break;
+
+        case '\x1b':
             break;
 
         default:
@@ -638,6 +692,7 @@ void initEditor() {
 
     E.firstFileChunk = 0;
     memset(&E.cf, 0, sizeof(efile));
+    memset(&E.selection, 0, sizeof(fileselection));
 
     E.screenrows = 25;
 #ifdef __MEGA65__
@@ -652,6 +707,7 @@ void initEditor() {
     E.cbShowWelcomePage = NULL;
     E.cbUpdateStatusBar = NULL;
     E.cbExitRequested = NULL;
+    E.clipboard = 0;
 
     memset(E.statusbar, ' ', E.screencols);
 
@@ -677,12 +733,19 @@ void initFile(void) {
     E.cf.dirty = 0;
     E.cf.filenameChunk = 0;
     E.cf.readOnly = 0;
+    E.cf.inSelection = 0;
+    allocChunk(&E.cf.selectionChunk);
+    E.selection.selectionX = E.selection.selectionY = 0;
+    E.selection.startHX = E.selection.startHY = 0;
+    E.selection.endHX = E.selection.endHY = 0;
     storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
+    storeChunk(E.cf.selectionChunk, &E.selection);
 }
 
 void unInitFile(void)
 {
     freeChunk(E.cf.fileChunk);
+    freeChunk(E.cf.selectionChunk);
     E.firstFileChunk = E.cf.nextFileChunk;
     if (E.firstFileChunk) {
         retrieveChunk(E.firstFileChunk, &E.cf);

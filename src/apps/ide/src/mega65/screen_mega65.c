@@ -48,10 +48,21 @@ void clearScreen(void) {
 }
 
 static void drawRow65(char row, char col, char len, char *buf, char isReversed) {
-    char i;
-    int offset = row * 80 + col;
+    char i, rev, isRowSelected = 0;
+    int offset = row * 80 + col, fileCol, startHX = -1, endHX = -1;
+
+    if (E.cf.inSelection && row < E.screenrows) {
+        int fileRow = row + E.cf.rowoff;
+        isRowSelected = fileRow >= E.selection.startHY && fileRow <= E.selection.endHY;
+        if (isRowSelected) {
+            startHX = E.selection.startHY < fileRow ? 0 : E.selection.startHX;
+            endHX = E.selection.endHY > fileRow ? E.screencols : E.selection.endHX;
+        }
+    }
+    fileCol = col + E.cf.coloff;
     for (i = 0; i < len; ++i) {
-        SCREEN[offset++] = petsciitoscreencode(buf[i]) | (isReversed ? 128 : 0);
+        rev = isReversed || (E.cf.inSelection && i+fileCol >= startHX && i+fileCol <= endHX);
+        SCREEN[offset++] = petsciitoscreencode(buf[i]) | (rev ? 128 : 0);
     }
 }
 
