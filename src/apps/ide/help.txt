@@ -26,9 +26,9 @@ Mark Text                     Ctrl+Y
 Paste Clipboard               Ctrl+U
 Open File                     F1
 Save File                     F2
-Run Pascal File               F4
-Compile Pascal File           F5
 Other File Functions      Back arrow
+Run Pascal File               F3
+Compile Pascal File           F5
 View This Help File           F7
 Exit                          Ctrl+X
 
