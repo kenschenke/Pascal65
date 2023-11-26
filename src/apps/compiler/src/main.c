@@ -16,6 +16,8 @@ unsigned char loadfile(const char *name);
 
 char intBuf[15];
 
+void runPrg(void) {}
+
 void main()
 {
     CHUNKNUM tokenId, astRoot;
@@ -65,7 +67,7 @@ void main()
 
     printf("Loading linker overlay\n");
     if (loadfile("compiler.5")) {
-        linkerPostWrite("hello");
+        linkerPostWrite("hello", 0);
     }
 
     log("main", "back to main code");

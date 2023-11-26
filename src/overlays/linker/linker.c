@@ -291,7 +291,9 @@ static unsigned char chainCode[] = {
 
 static void dumpStringLiterals(void);
 static void freeStringLiterals(void);
+#ifndef COMPILERTEST
 static void genBootstrap(void);
+#endif
 static void genExeHeader(void);
 static void genRuntime(void);
 static void updateLinkerAddresses(CHUNKNUM codeBuf);
@@ -337,6 +339,7 @@ static void freeStringLiterals(void)
 	numStringLiterals = 0;
 }
 
+#ifndef COMPILERTEST
 static void genBootstrap(void)
 {
 #ifdef __MEGA65__
@@ -400,8 +403,9 @@ static void genBootstrap(void)
 #else
 	genThreeAddr(JMP, 0x80d);
 #endif
-	writeCodeBuf("pascal65", 8);
+	writeCodeBuf((unsigned char *)"pascal65", 8);
 }
+#endif
 
 static void genExeHeader(void)
 {
@@ -574,10 +578,12 @@ void linkerPostWrite(const char* filename, char run)
 		++codeOffset;
 	}
 
+#ifndef COMPILERTEST
 	if (run) {
 		linkAddressSet(BSS_BOOTSTRAP_MSG, codeOffset);
-		writeCodeBuf("\nPress a key...", 16);
+		writeCodeBuf((unsigned char *)"\nPress a key...", 16);
 	}
+#endif
 
 	// Set aside some memory to undo the changes to page zero
 	linkAddressSet(BSS_ZPBACKUP, codeOffset);
@@ -597,9 +603,12 @@ void linkerPostWrite(const char* filename, char run)
 	freeLinkerSymbolTable();
 
     // Generate PRG filename
+#ifndef COMPILERTEST
 	if (run) {
 		strcpy(prgFilename, "zzprg");
-	} else {
+	} else
+#endif
+	{
 		strcpy(prgFilename, filename);
 #ifndef COMPILERTEST
 		if (!stricmp(prgFilename+strlen(prgFilename)-4, ".pas")) {
@@ -641,9 +650,11 @@ void linkerPostWrite(const char* filename, char run)
 	freeMemBuf(codeBuf);
 	freeStringLiterals();
 
+#ifndef COMPILERTEST
 	if (run) {
 		runPrg();
 	}
+#endif
 }
 
 static void genRuntime(void)
