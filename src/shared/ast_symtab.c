@@ -51,6 +51,8 @@ static struct TStdRtn {
 	{"eoln", rcEoln, TYPE_FUNCTION},
 	{"odd", rcOdd, TYPE_FUNCTION},
 	{"ord", rcOrd, TYPE_FUNCTION},
+	{"peek", rcPeek, TYPE_FUNCTION},
+	{"poke", rcPoke, TYPE_PROCEDURE},
 	{"pred", rcPred, TYPE_FUNCTION},
 	{"succ", rcSucc, TYPE_FUNCTION},
 	{"round", rcRound, TYPE_FUNCTION},

@@ -48,6 +48,7 @@ static void checkBoolOperand(struct type* pType);
 static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalParams);
 static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType);
 static void checkIntegerBaseType(CHUNKNUM exprChunk);
+static void checkPokeCall(CHUNKNUM argChunk);
 static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType);
 static void checkReadReadlnCall(CHUNKNUM argChunk);
 static void checkRelOpOperands(struct type* pType1, struct type* pType2);
@@ -373,6 +374,45 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 	}
 }
 
+static void checkPokeCall(CHUNKNUM argChunk)
+{
+	struct expr arg, _expr;
+	struct type _type;
+
+	// Needs to have the first parameter
+	if (!argChunk) {
+		Error(errWrongNumberOfParams);
+		return;
+	}
+
+	// Look at the first argument
+	retrieveChunk(argChunk, &arg);
+	retrieveChunk(arg.left, &_expr);
+	retrieveChunk(_expr.evalType, &_type);
+	if (!isTypeInteger(_type.kind)) {
+		Error(errIncompatibleTypes);
+		return;
+	}
+
+	// Look at the second argument
+	if (!arg.right) {
+		Error(errIncompatibleTypes);
+		return;
+	}
+	retrieveChunk(arg.right, &arg);
+	retrieveChunk(arg.left, &_expr);
+	retrieveChunk(_expr.evalType, &_type);
+	if (!isTypeInteger(_type.kind)) {
+		Error(errIncompatibleTypes);
+		return;
+	}
+
+	// Can't have a third argument
+	if (arg.right) {
+		Error(errWrongNumberOfParams);
+	}
+}
+
 static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType)
 {
 	char name[CHUNK_LEN + 1];
@@ -569,6 +609,16 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 	case rcPred:
 	case rcSucc:
 		checkPredSuccCall(argChunk, pRetnType);
+		break;
+
+	case rcPeek:
+		checkStdParms(argChunk, STDPARM_INTEGER);
+		pRetnType->kind = TYPE_BYTE;
+		break;
+
+	case rcPoke:
+		checkPokeCall(argChunk);
+		pRetnType->kind = TYPE_VOID;
 		break;
 
 	case rcChr:

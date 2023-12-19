@@ -16,6 +16,8 @@ static void genChrCall(CHUNKNUM argChunk);
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static void genOddCall(CHUNKNUM argChunk);
 static void genOrdCall(CHUNKNUM argChunk);
+static void genPeekCall(CHUNKNUM argChunk);
+static void genPokeCall(CHUNKNUM argChunk);
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk);
@@ -202,6 +204,31 @@ static void genOrdCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 
 	genExpr(arg.left, 1, 0, 0);
+}
+
+static void genPeekCall(CHUNKNUM argChunk)
+{
+	struct expr arg;
+
+	retrieveChunk(argChunk, &arg);
+
+	genExpr(arg.left, 1, 1, 0);
+	genThreeAddr(JSR, RT_PEEK);
+	genThreeAddr(JSR, RT_PUSHBYTE);
+}
+
+static void genPokeCall(CHUNKNUM argChunk)
+{
+	struct expr arg;
+
+	retrieveChunk(argChunk, &arg);
+
+	genExpr(arg.left, 1, 0, 0);
+	genThreeAddr(JSR, RT_PUSHAX);
+
+	retrieveChunk(arg.right, &arg);
+	genExpr(arg.left, 1, 1, 0);
+	genThreeAddr(JSR, RT_POKE);
 }
 
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -474,6 +501,14 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	case rcOdd:
 		genOddCall(argChunk);
+		break;
+
+	case rcPeek:
+		genPeekCall(argChunk);
+		break;
+	
+	case rcPoke:
+		genPokeCall(argChunk);
 		break;
 
 	case rcPred:
