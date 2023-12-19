@@ -72,6 +72,14 @@ The compiler will generate an error if the program attempts to assign an integer
 to a variable that cannot accomodate it.  For example, the compiler will not let you assign
 the constant 32768 to an Integer.  The same applies for integer literals.
 
+## Hexadecimal Literals
+
+Hexadecimal literals can be declared with a dollar sign followed by the digits, such as:
+
+```
+   a := $d020;
+```
+
 ## Enumerated Types
 
 Enumerated types define a new data type with a list of acceptable values.  They are declared
