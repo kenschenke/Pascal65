@@ -256,17 +256,29 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		if (isRead) {
 			if (rightType.kind == TYPE_LONGINT || rightType.kind == TYPE_CARDINAL) {
 				genThreeAddr(JSR, RT_READINT32);
+				if (_expr.neg) {
+					genTwo(LDY_IMMEDIATE, rightType.kind);
+					genThreeAddr(JSR, RT_NEGATE);
+				}
 				if (!noStack) {
 					genThreeAddr(JSR, RT_PUSHEAX);
 				}
 			} else if (rightType.kind == TYPE_INTEGER || rightType.kind == TYPE_WORD || rightType.kind == TYPE_ENUMERATION) {
 				genThreeAddr(JSR, RT_READINT);
+				if (_expr.neg) {
+					genTwo(LDY_IMMEDIATE, rightType.kind);
+					genThreeAddr(JSR, RT_NEGATE);
+				}
 				if (!noStack) {
 					genThreeAddr(JSR, RT_PUSHINT);
 				}
 			}
 			else if (rightType.kind == TYPE_REAL) {
 				genThreeAddr(JSR, RT_READREAL);
+				if (_expr.neg) {
+					genTwo(LDY_IMMEDIATE, rightType.kind);
+					genThreeAddr(JSR, RT_NEGATE);
+				}
 				if (!noStack) {
 					genThreeAddr(JSR, RT_PUSHEAX);
 				}
@@ -274,6 +286,10 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			else if (rightType.kind == TYPE_BOOLEAN || rightType.kind == TYPE_CHARACTER ||
 				rightType.kind == TYPE_SHORTINT || rightType.kind == TYPE_BYTE) {
 				genThreeAddr(JSR, RT_READBYTE);
+				if (_expr.neg) {
+					genTwo(LDY_IMMEDIATE, rightType.kind);
+					genThreeAddr(JSR, RT_NEGATE);
+				}
 				if (!noStack) {
 					genThreeAddr(JSR, RT_PUSHBYTE);
 				}

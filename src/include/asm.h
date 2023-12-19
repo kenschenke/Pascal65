@@ -133,6 +133,7 @@
 #define RT_COMP                 (RT_BASE + 15)
 #define RT_DIVIDE               (RT_BASE + 51)
 #define RT_DIVINT				(RT_BASE + 21)
+#define RT_NEGATE               (RT_BASE + 18)
 #define RT_ERRORINIT			(RT_BASE + 183)
 #define RT_FLOATTOINT16			(RT_BASE + 84)
 #define RT_STRTOFLOAT			(RT_BASE + 63)

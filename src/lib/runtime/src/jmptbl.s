@@ -1,6 +1,6 @@
 ; Jump table at the start of the runtime library
 
-.import leftpad, printz, printlnz, writeValue, assign, divide, comp
+.import leftpad, printz, printlnz, writeValue, assign, divide, comp, negate
 .import add, divint, modulus, pred, succ, subtract, multiply
 .import _strToFloat, FPOUT, PRECRD
 .import floatToInt16, getFPBUF, floatNeg
@@ -24,7 +24,7 @@ jmp leftpad     ; BASE + 6
 jmp assign      ; BASE + 9
 jmp add         ; BASE + 12
 jmp comp        ; BASE + 15
-jmp $0000       ; BASE + 18
+jmp negate      ; BASE + 18
 jmp divint      ; BASE + 21
 jmp writeValue  ; BASE + 24
 jmp sqr         ; BASE + 27

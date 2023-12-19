@@ -38,6 +38,7 @@ SOURCES += $(SRCDIR)/memcopy.s
 SOURCES += $(SRCDIR)/memheap.s
 SOURCES += $(SRCDIR)/mod.s
 SOURCES += $(SRCDIR)/multiply.s
+SOURCES += $(SRCDIR)/negate.s
 SOURCES += $(SRCDIR)/popax.s
 SOURCES += $(SRCDIR)/popeax.s
 SOURCES += $(SRCDIR)/pred.s
