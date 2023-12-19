@@ -40,7 +40,13 @@ CHUNKNUM parseExpression(void)
 
 CHUNKNUM parseFactor(void)
 {
+	char unaryNeg = 0;
 	CHUNKNUM exprChunk = 0;
+
+	if (parserToken == tcMinus) {
+		unaryNeg = 1;
+		getToken();
+	}
 
 	switch (parserToken) {
 	case tcIdentifier: {
@@ -116,6 +122,13 @@ CHUNKNUM parseFactor(void)
 	default:
 		Error(errInvalidExpression);
 		break;
+	}
+
+	if (unaryNeg) {
+		struct expr _expr;
+		retrieveChunk(exprChunk, &_expr);
+		_expr.neg = 1;
+		storeChunk(exprChunk, &_expr);
 	}
 
 	return exprChunk;
