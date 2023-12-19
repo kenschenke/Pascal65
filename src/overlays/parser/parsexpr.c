@@ -56,16 +56,23 @@ CHUNKNUM parseFactor(void)
 		break;
 	}
 
-	case tcNumber:
+	case tcNumber: {
+		char exprKind;
 		if (parserType == tyReal) {
 			parserValue.stringChunkNum = 0;
 			copyRealString(parserString, &parserValue.stringChunkNum);
+			exprKind = EXPR_REAL_LITERAL;
+		} else if (parserType == tyByte) {
+			exprKind = EXPR_BYTE_LITERAL;
+		} else if (parserType == tyWord) {
+			exprKind = EXPR_WORD_LITERAL;
+		} else {
+			exprKind = EXPR_DWORD_LITERAL;
 		}
-		exprChunk = exprCreate(
-			parserType == tyInteger ? EXPR_INTEGER_LITERAL : EXPR_REAL_LITERAL,
-			0, 0, 0, &parserValue);
+		exprChunk = exprCreate(exprKind, 0, 0, 0, &parserValue);
 		getToken();
 		break;
+	}
 
 	case tcTRUE:
 	case tcFALSE:

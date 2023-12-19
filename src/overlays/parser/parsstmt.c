@@ -143,12 +143,23 @@ CHUNKNUM parseCaseLabel(void)
 	exprChunk = parseExpression();
 	retrieveChunk(exprChunk, &_expr);
 	switch (_expr.kind) {
-	case EXPR_INTEGER_LITERAL:
+	case EXPR_BYTE_LITERAL:
 		if (signFlag) {
-			_expr.value.integer = -_expr.value.integer;
-			storeChunk(exprChunk, &_expr);
+			_expr.value.shortInt = -_expr.value.shortInt;
 		}
 		break;
+	case EXPR_WORD_LITERAL:
+		if (signFlag) {
+			_expr.value.integer = -_expr.value.integer;
+		}
+		break;
+	case EXPR_DWORD_LITERAL:
+		if (signFlag) {
+			_expr.value.longInt = -_expr.value.longInt;
+		}
+	}
+	if (signFlag) {
+		storeChunk(exprChunk, &_expr);
 	}
 
 	return exprChunk;

@@ -137,16 +137,28 @@ void getToken(void)
         break;
     }
 
-    case tzInteger:
+    case tzByte:
+    case tzWord:
+    case tzCardinal:
     case tzReal: {
         char len;
 
-        if (code == tzInteger) {
-            readFromMemBuf(parserIcode, &parserValue.integer, 2);
-            parserType = tyInteger;
-        }
-        else {
+        if (code == tzByte) {
+            len = 1;
+            parserType = tyByte;
+        } else if (code == tzWord) {
+            len = 2;
+            parserType = tyWord;
+        } else if (code == tzCardinal) {
+            len = 4;
+            parserType = tyCardinal;
+        } else {
+            len = 0;
             parserType = tyReal;
+        }
+        parserValue.cardinal = 0;   // make sure all four bytes are zero
+        if (len) {
+            readFromMemBuf(parserIcode, &parserValue, len);
         }
         parserToken = tcNumber;
         readFromMemBuf(parserIcode, &len, 1);

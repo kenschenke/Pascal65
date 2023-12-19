@@ -4,14 +4,45 @@
 #include <symtab.h>
 #include <common.h>
 #include <string.h>
+#include <limits.h>
 
 #define STDPARM_INTEGER 0x1
 #define STDPARM_ENUM    0x2
 #define STDPARM_REAL    0x4
 #define STDPARM_CHAR    0x8
 
+static long intRanges[] = {
+	SCHAR_MAX,
+	SHRT_MAX,
+	LONG_MAX,
+};
+
+/*
+; |----------------------------------------------------------------------------------|
+; |          | Byte     | ShortInt | Word     | Integer  | Cardinal | LongInt | Real |
+; |----------|----------|----------|----------|----------|----------|----------------|
+; | Byte     | Byte     | Integer  | Word     | Integer  | Cardinal | LongInt | Real |
+; | ShortInt | Integer  | ShortInt | LongInt  | Integer  | LongInt  | LongInt | Real |
+; | Word     | Word     | Word     | Word     | LongInt  | Cardinal | LongInt | Real |
+; | Integer  | Integer  | Integer  | LongInt  | Integer  | LongInt  | LongInt | Real |
+; | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal |    -    | Real |
+; | LongInt  | LongInt  | LongInt  | LongInt  | LongInt  |    -     | LongInt | Real |
+; | Real     | Real     | Real     | Real     | Real     | Real     | Real    | Real |
+; |----------------------------------------------------------------------------------|
+*/
+
+static char typeConversions[7][7] = {
+	{ TYPE_BYTE,     TYPE_INTEGER,  TYPE_WORD,     TYPE_INTEGER,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_INTEGER,  TYPE_SHORTINT, TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_WORD,     TYPE_WORD,     TYPE_WORD,     TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_INTEGER,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_VOID,     TYPE_REAL },
+	{ TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_VOID,     TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL },
+};
+
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk);
-static char checkAbsSqrCall(CHUNKNUM argChunk);		// returns TYPE_*
+static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode);		// returns TYPE_*
 static void checkArraysSameType(struct type* pType1, struct type* pType2);
 static void checkBoolOperand(struct type* pType);
 static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalParams);
@@ -25,12 +56,15 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 static void checkWriteWritelnCall(CHUNKNUM argChunk);
 static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type* pType, char parentIsFuncCall);
 static void getArrayType(CHUNKNUM exprChunk, struct type* pType);
-static void getBaseType(struct type* pType);
 static void hoistFuncCall(CHUNKNUM chunkNum);
-static char integerOperands(struct type* pType1, struct type* pType2);
+static char integerOperands(char type1Kind, char type2Kind, short *pSize);
+static char isAssignmentCompatible(char leftKind, struct type *rightType,
+	struct expr *rightExpr);
 static char isExprAFuncCall(CHUNKNUM exprChunk);
 static char isExprATypeDeclaration(CHUNKNUM exprChunk);
-static char realOperands(struct type* pType1, struct type* pType2);
+static char isTypeOrdinal(char type);
+static char isTypeNumeric(char type);
+static char realOperands(char type1Kind, char type2Kind, short *pSize);
 
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk)
 {
@@ -57,7 +91,7 @@ static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk)
 					Error(errIncompatibleTypes);
 				}
 			}
-			else if (_type.kind != exprKind) {
+			else if (typeConversions[_type.kind-1][exprKind-1] == TYPE_VOID) {
 				Error(errIncompatibleTypes);
 			}
 
@@ -70,7 +104,7 @@ static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk)
 	}
 }
 
-static char checkAbsSqrCall(CHUNKNUM argChunk)
+static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode)
 {
 	struct expr _expr;
 	struct type _type;
@@ -90,9 +124,14 @@ static char checkAbsSqrCall(CHUNKNUM argChunk)
 
 	// Look at the argument
 	expr_typecheck(_expr.left, 0, &_type, 0);
-	if (_type.kind != TYPE_INTEGER && _type.kind != TYPE_REAL) {
+	if (!isTypeInteger(_type.kind) && _type.kind != TYPE_REAL) {
 		Error(errInvalidType);
 		return TYPE_VOID;
+	}
+
+	// If it's Sqr, the return type is a long integer
+	if (routineCode == rcSqr && _type.kind != TYPE_REAL) {
+		return TYPE_LONGINT;	// Sqr always returns a long integer
 	}
 
 	return _type.kind;
@@ -294,6 +333,11 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 		else if (paramType.kind == TYPE_ARRAY && argType.kind == TYPE_ARRAY) {
 			checkArraysSameType(&paramType, &argType);
 		}
+		else if (isTypeInteger(paramType.kind)) {
+			if (typeConversions[argType.kind-1][paramType.kind-1] == TYPE_VOID) {
+				Error(errInvalidType);
+			}
+		}
 		else if (paramType.kind != argType.kind) {
 			Error(errInvalidType);
 		}
@@ -353,7 +397,7 @@ static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType)
 
 	// Look at the argument
 	retrieveChunk(_expr.left, &_expr);
-	if (_expr.kind == EXPR_INTEGER_LITERAL) {
+	if (_expr.kind == EXPR_WORD_LITERAL) {
 		pRetnType->kind = TYPE_INTEGER;
 		return;
 	}
@@ -375,7 +419,7 @@ static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType)
 	retrieveChunk(sym.type, &_type);
 	getBaseType(&_type);
 
-	if (_type.kind == TYPE_INTEGER || _type.kind == TYPE_CHARACTER) {
+	if (isTypeInteger(_type.kind) || _type.kind == TYPE_CHARACTER) {
 		pRetnType->kind = _type.kind;
 		return;
 	}
@@ -426,7 +470,12 @@ static void checkReadReadlnCall(CHUNKNUM argChunk)
 
 		case TYPE_BOOLEAN:
 		case TYPE_CHARACTER:
+		case TYPE_BYTE:
+		case TYPE_SHORTINT:
 		case TYPE_INTEGER:
+		case TYPE_WORD:
+		case TYPE_CARDINAL:
+		case TYPE_LONGINT:
 		case TYPE_REAL:
 			if (_type.flags & TYPE_FLAG_ISCONST) {
 				Error(errIncompatibleTypes);
@@ -465,11 +514,7 @@ static void checkRelOpOperands(struct type* pType1, struct type* pType2)
 		return;
 	}
 
-	if (pType1->kind != TYPE_INTEGER && pType1->kind != TYPE_REAL) {
-		Error(errIncompatibleTypes);
-	}
-
-	if (pType2->kind != TYPE_INTEGER && pType2->kind != TYPE_REAL) {
+	if (!isTypeNumeric(pType1->kind) || !isTypeNumeric(pType2->kind)) {
 		Error(errIncompatibleTypes);
 	}
 }
@@ -490,7 +535,7 @@ static void checkStdParms(CHUNKNUM argChunk, char allowedParms)
 
 	if ((allowedParms & STDPARM_CHAR && _type.kind == TYPE_CHARACTER) ||
 		(allowedParms & STDPARM_ENUM && (_type.kind == TYPE_ENUMERATION || _type.kind == TYPE_ENUMERATION_VALUE)) ||
-		(allowedParms & STDPARM_INTEGER && _type.kind == TYPE_INTEGER) ||
+		(allowedParms & STDPARM_INTEGER && isTypeInteger(_type.kind)) ||
 		(allowedParms & STDPARM_REAL && _type.kind == TYPE_REAL)) {
 		// All good
 	}
@@ -518,7 +563,7 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 
 	case rcAbs:
 	case rcSqr:
-		pRetnType->kind = checkAbsSqrCall(argChunk);
+		pRetnType->kind = checkAbsSqrCall(argChunk, pType->routineCode);
 		break;
 
 	case rcPred:
@@ -572,58 +617,68 @@ static void checkWriteWritelnCall(CHUNKNUM argChunk)
 		storeChunk(_expr.evalType, &_type);
 		storeChunk(argChunk, &_expr);
 
-		switch (_type.kind) {
-		case TYPE_ARRAY:
+		if (_type.kind == TYPE_ARRAY) {
 			retrieveChunk(_type.subtype, &subtype);
 			getBaseType(&subtype);
 			if (subtype.kind != TYPE_CHARACTER) {
 				Error(errIncompatibleTypes);
 			}
-			// fall through
-
-		case TYPE_INTEGER:
-		case TYPE_BOOLEAN:
-		case TYPE_CHARACTER:
-		case TYPE_REAL:
 			checkIntegerBaseType(exprLeft.width);
 			checkIntegerBaseType(exprLeft.precision);
-			break;
-
-		case TYPE_STRING:
-			break;
-
-		default:
+		} else if (_type.kind == TYPE_REAL ||
+			_type.kind == TYPE_CHARACTER ||
+			_type.kind == TYPE_BOOLEAN ||
+			isTypeInteger(_type.kind)) {
+			checkIntegerBaseType(exprLeft.width);
+			checkIntegerBaseType(exprLeft.precision);
+		} else if (_type.kind != TYPE_STRING) {
 			Error(errIncompatibleTypes);
-			break;
 		}
 
 		argChunk = _expr.right;
 	}
 }
 
-static char integerOperands(struct type* pType1, struct type* pType2)
+static char integerOperands(char type1Kind, char type2Kind, short *pSize)
 {
-	if (pType1->kind != TYPE_INTEGER || pType2->kind != TYPE_INTEGER) {
+	char resultKind;
+
+	if (!isTypeInteger(type1Kind) || !isTypeInteger(type2Kind)) {
 		Error(errIncompatibleTypes);
 	}
 
-	return TYPE_INTEGER;
+	resultKind = typeConversions[type1Kind-1][type2Kind-1];
+	if (resultKind == TYPE_VOID) {
+		Error(errIncompatibleTypes);
+	}
+
+	*pSize = GET_TYPE_SIZE(getTypeMask(resultKind));
+
+	return resultKind;
 }
 
-static char realOperands(struct type* pType1, struct type* pType2)
+static char realOperands(char type1Kind, char type2Kind, short *pSize)
 {
-	if (pType1->kind != TYPE_INTEGER && pType1->kind != TYPE_REAL) {
+	char resultKind;
+
+	if (type1Kind < TYPE_BYTE || type1Kind > TYPE_REAL ||
+		type2Kind < TYPE_BYTE || type2Kind > TYPE_REAL) {
 		Error(errIncompatibleTypes);
-		pType1->kind = TYPE_INTEGER;
+		return TYPE_VOID;
 	}
 
-	if (pType2->kind != TYPE_INTEGER && pType2->kind != TYPE_REAL) {
+	resultKind = typeConversions[type1Kind-1][type2Kind-1];
+	if (resultKind == TYPE_VOID) {
 		Error(errIncompatibleTypes);
-		pType2->kind = TYPE_INTEGER;
 	}
 
-	return (pType1->kind == TYPE_INTEGER && pType2->kind == TYPE_INTEGER) ?
-		TYPE_INTEGER : TYPE_REAL;
+	if (resultKind == TYPE_REAL) {
+		*pSize = 4;
+	} else  {
+		*pSize = GET_TYPE_SIZE(getTypeMask(resultKind));
+	}
+
+	return resultKind;
 }
 
 void decl_typecheck(CHUNKNUM chunkNum)
@@ -662,9 +717,7 @@ void decl_typecheck(CHUNKNUM chunkNum)
 			if (((_decl.kind == DECL_VARIABLE && _type.name == 0) || _decl.kind == DECL_TYPE) && _type.kind == TYPE_ARRAY) {
 				retrieveChunk(_type.indextype, &_type);
 				getBaseType(&_type);
-				if (_type.kind != TYPE_INTEGER &&
-					_type.kind != TYPE_CHARACTER &&
-					_type.kind != TYPE_ENUMERATION) {
+				if (!isTypeOrdinal(_type.kind) && _type.kind != TYPE_CHARACTER) {
 					Error(errInvalidIndexType);
 				}
 			}
@@ -721,46 +774,6 @@ static void getArrayType(CHUNKNUM exprChunk, struct type* pType)
 	}
 }
 
-static void getBaseType(struct type* pType)
-{
-	struct symbol sym;
-	char name[CHUNK_LEN + 1];
-	char wasSubrange = 0;
-
-	while (1) {
-		if (pType->kind == TYPE_ENUMERATION || pType->kind == TYPE_ENUMERATION_VALUE) {
-			break;
-		}
-		else if (pType->kind == TYPE_DECLARED) {
-			if (pType->subtype) {
-				retrieveChunk(pType->subtype, pType);
-			}
-			else if (pType->name) {
-				retrieveChunk(pType->name, name);
-				if (scope_lookup(name, &sym) && sym.type) {
-					retrieveChunk(sym.type, pType);
-					if (wasSubrange && pType->kind == TYPE_ENUMERATION_VALUE) {
-						// This happens when a subrange lower limit is an enumeration.
-						// The subrange type is the type of the enumeration value, so
-						// the kind needs to be TYPE_ENUMERATION.
-						pType->kind = TYPE_ENUMERATION;
-					}
-					if (pType->kind == TYPE_ENUMERATION && pType->subtype == 0) {
-						pType->subtype = sym.type;
-					}
-				}
-			}
-		}
-		else if (pType->kind == TYPE_SUBRANGE && pType->subtype) {
-			wasSubrange = 1;
-			retrieveChunk(pType->subtype, pType);
-		}
-		else {
-			break;
-		}
-	}
-}
-
 static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type* pType, char parentIsFuncCall)
 {
 	struct expr _expr;
@@ -776,7 +789,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 
 	retrieveChunk(chunkNum, &_expr);
 
-	expr_typecheck(_expr.left, recordSymtab, &leftType, _expr.kind == TYPE_FUNCTION ? 1 : 0);
+	expr_typecheck(_expr.left, recordSymtab, &leftType, _expr.kind == EXPR_CALL ? 1 : 0);
 	if (_expr.kind == EXPR_ARG) {
 		memcpy(pType, &leftType, sizeof(struct type));
 		if (_expr.evalType) {
@@ -787,7 +800,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		storeChunk(chunkNum, &_expr);
 		return;
 	}
-	expr_typecheck(_expr.right, recordSymtab, &rightType, _expr.kind == TYPE_FUNCTION ? 1 : 0);
+	expr_typecheck(_expr.right, recordSymtab, &rightType, _expr.kind == EXPR_CALL ? 1 : 0);
 
 	switch (_expr.kind) {
 	case EXPR_BOOLEAN_LITERAL:
@@ -796,10 +809,34 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		pType->size = sizeof(char);
 		break;
 
-	case EXPR_INTEGER_LITERAL:
-		pType->kind = TYPE_INTEGER;
+	case EXPR_BYTE_LITERAL:
+		pType->kind = (!_expr.neg && _expr.value.byte > SCHAR_MAX) ? TYPE_BYTE : TYPE_SHORTINT;
 		pType->flags = TYPE_FLAG_ISCONST;
-		pType->size = sizeof(short);
+		if (_expr.neg && _expr.value.byte > SCHAR_MAX) {
+			pType->kind = TYPE_INTEGER;
+			pType->size = sizeof(short);
+			_expr.kind = EXPR_WORD_LITERAL;
+		} else {
+			pType->size = sizeof(char);
+		}
+		break;
+
+	case EXPR_WORD_LITERAL:
+		pType->kind = (!_expr.neg && _expr.value.word > SHRT_MAX) ? TYPE_WORD : TYPE_INTEGER;
+		if (_expr.neg && _expr.value.word >= SHRT_MAX) {
+			pType->kind = TYPE_LONGINT;
+			pType->size = sizeof(long);
+			_expr.kind = EXPR_DWORD_LITERAL;
+		} else {
+			pType->size = sizeof(short);
+		}
+		pType->flags = TYPE_FLAG_ISCONST;
+		break;
+
+	case EXPR_DWORD_LITERAL:
+		pType->kind = _expr.value.cardinal > LONG_MAX ? TYPE_CARDINAL : TYPE_LONGINT;
+		pType->flags = TYPE_FLAG_ISCONST;
+		pType->size = sizeof(long);
 		break;
 
 	case EXPR_STRING_LITERAL:
@@ -823,22 +860,17 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 	case EXPR_ADD:
 	case EXPR_SUB:
 	case EXPR_MUL:
-		pType->kind = realOperands(&leftType, &rightType);
-		pType->subtype = realType;
-		pType->size = sizeof(short);
+		pType->kind = realOperands(leftType.kind, rightType.kind, &pType->size);
 		break;
 
 	case EXPR_DIV:
 		pType->kind = TYPE_REAL;
-		pType->subtype = realType;
 		pType->size = sizeof(FLOAT);
 		break;
 
 	case EXPR_DIVINT:
 	case EXPR_MOD:
-		pType->kind = integerOperands(&leftType, &rightType);
-		pType->subtype = integerType;
-		pType->size = sizeof(short);
+		pType->kind = integerOperands(leftType.kind, rightType.kind, &pType->size);
 		break;
 
 	case EXPR_LT:
@@ -866,7 +898,9 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		pType->size = sizeof(char);
 		break;
 
-	case EXPR_ASSIGN:
+	case EXPR_ASSIGN: {
+		struct expr exprRight;
+		retrieveChunk(_expr.right, &exprRight);
 		if (isExprATypeDeclaration(_expr.left)) {
 			Error(errInvalidIdentifierUsage);
 			pType->kind = TYPE_VOID;
@@ -887,12 +921,8 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		getBaseType(&leftType);
 		getBaseType(&rightType);
 
-		if (leftType.kind == TYPE_INTEGER && rightType.kind == TYPE_INTEGER) {
-			pType->kind = TYPE_INTEGER;
-			pType->size = sizeof(short);
-		}
-		else if (leftType.kind == TYPE_REAL &&
-			(rightType.kind == TYPE_REAL || rightType.kind == TYPE_INTEGER)) {
+		if (leftType.kind == TYPE_REAL &&
+			(rightType.kind == TYPE_REAL || isTypeInteger(rightType.kind))) {
 			pType->kind = TYPE_REAL;
 			pType->size = sizeof(FLOAT);
 		}
@@ -903,6 +933,10 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		else if (leftType.kind == TYPE_BOOLEAN && rightType.kind == TYPE_BOOLEAN) {
 			pType->kind = TYPE_BOOLEAN;
 			pType->size = sizeof(char);
+		}
+		else if (isAssignmentCompatible(leftType.kind, &rightType, &exprRight)) {
+			pType->kind = leftType.kind;
+			pType->size = GET_TYPE_SIZE(getTypeMask(leftType.kind));
 		}
 		else if (leftType.kind == TYPE_ENUMERATION &&
 			(rightType.kind == TYPE_ENUMERATION || rightType.kind == TYPE_ENUMERATION_VALUE)) {
@@ -916,6 +950,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			pType->kind = TYPE_VOID;
 		}
 		break;
+	}
 
 	case EXPR_NAME:
 		// Look up the node
@@ -929,7 +964,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			leftType.subtype = sym.type;
 		}
 		pType->kind = leftType.kind;
-		pType->flags = leftType.flags & TYPE_FLAG_ISCONST;
+		pType->flags = leftType.flags; // | TYPE_FLAG_ISCONST;
 		pType->subtype = leftType.subtype;
 		pType->paramsFields = leftType.paramsFields;
 		pType->size = leftType.size;
@@ -971,7 +1006,13 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			}
 		}
 		else if (rightType.kind != indexType.kind) {
-			Error(errInvalidIndexType);
+			if (isTypeInteger(rightType.kind) && isTypeInteger(indexType.kind)) {
+				if (typeConversions[rightType.kind-1][indexType.kind-1] == TYPE_VOID) {
+					Error(errInvalidIndexType);
+				}
+			} else {
+				Error(errInvalidIndexType);
+			}
 		}
 		pType->kind = elemType.kind;
 		pType->flags = elemType.flags & TYPE_FLAG_ISCONST;
@@ -1042,6 +1083,43 @@ static void hoistFuncCall(CHUNKNUM chunkNum)
 	storeChunk(chunkNum, &_expr);
 }
 
+static char isAssignmentCompatible(char leftKind, struct type *rightType,
+	struct expr *rightExpr)
+{
+	char rightKind = rightType->kind;
+	char leftMask = getTypeMask(leftKind);
+	char rightMask = getTypeMask(rightKind);
+
+	if (leftKind == rightKind) {
+		return 1;
+	}
+
+	if (!isTypeInteger(leftKind) || !isTypeInteger(rightKind)) {
+		return 0;
+	}
+
+	// If the left is unsigned, the right cannot be signed
+	// unless it's a constant and between zero and the maximum
+	// signed value for that type.
+	if (!IS_TYPE_SIGNED(leftMask) && IS_TYPE_SIGNED(rightMask)) {
+		if (!(rightType->flags & TYPE_FLAG_ISCONST) ||
+			GET_TYPE_SIZE(rightMask) > GET_TYPE_SIZE(leftMask) ||
+			(rightExpr->neg || rightExpr->value.longInt > intRanges[GET_TYPE_SIZE(rightMask)/2])) {
+				return 0;
+			}
+	}
+
+	// If the left is signed and the right is unsigned, the left
+	// must be a larger data type.
+	if (IS_TYPE_SIGNED(leftMask) && !IS_TYPE_SIGNED(rightMask) &&
+		GET_TYPE_SIZE(leftMask) <= GET_TYPE_SIZE(rightMask)) {
+			return 0;
+	}
+
+	// The left must be equal to or larger in size than the right.
+	return GET_TYPE_SIZE(leftMask) >= GET_TYPE_SIZE(rightMask) ? 1 : 0;
+}
+
 static char isExprAFuncCall(CHUNKNUM exprChunk)
 {
 	struct expr _expr;
@@ -1075,6 +1153,23 @@ static char isExprATypeDeclaration(CHUNKNUM exprChunk)
 	return _decl.kind == DECL_TYPE ? 1 : 0;
 }
 
+static char isTypeOrdinal(char type)
+{
+	return isTypeInteger(type) || type == TYPE_ENUMERATION ? 1 : 0;
+}
+
+static char isTypeNumeric(char type)
+{
+	return (type == TYPE_INTEGER ||
+		type == TYPE_SHORTINT ||
+		type == TYPE_BYTE ||
+		type == TYPE_INTEGER ||
+		type == TYPE_WORD ||
+		type == TYPE_LONGINT ||
+		type == TYPE_CARDINAL ||
+		type == TYPE_REAL) ? 1 : 0;
+}
+
 void stmt_typecheck(CHUNKNUM chunkNum)
 {
 	struct stmt _stmt;
@@ -1100,11 +1195,11 @@ void stmt_typecheck(CHUNKNUM chunkNum)
 
 		case STMT_FOR:
 			expr_typecheck(_stmt.init_expr, 0, &_type, 0);
-			if (_type.kind != TYPE_INTEGER) {
+			if (!isTypeInteger(_type.kind)) {
 				Error(errInvalidType);
 			}
 			expr_typecheck(_stmt.to_expr, 0, &_type, 0);
-			if (_type.kind != TYPE_INTEGER) {
+			if (!isTypeInteger(_type.kind)) {
 				Error(errInvalidType);
 			}
 			stmt_typecheck(_stmt.body);
@@ -1121,7 +1216,7 @@ void stmt_typecheck(CHUNKNUM chunkNum)
 
 		case STMT_CASE:
 			expr_typecheck(_stmt.expr, 0, &_type, 0);
-			if (_type.kind != TYPE_INTEGER &&
+			if (!isTypeInteger(_type.kind) &&
 				_type.kind != TYPE_CHARACTER &&
 				_type.kind != TYPE_ENUMERATION) {
 				Error(errIncompatibleTypes);

@@ -1,4 +1,11 @@
-.import intOp1, intOp2, eqInt16
+.ifdef RUNTIME
+.include "runtime.inc"
+.else
+.import intOp1, intOp2
+.endif
+
+
+.import eqInt16
 
 .export geUint16, gtUint16, leUint16, ltUint16
 

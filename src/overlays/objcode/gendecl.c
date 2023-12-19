@@ -291,6 +291,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 
 		if (_decl.kind == DECL_CONST || _decl.kind == DECL_VARIABLE) {
 			retrieveChunk(_decl.type, &_type);
+			getBaseType(&_type);
 
 			if (_type.flags & TYPE_FLAG_ISRETVAL) {
 				chunkNum = _decl.next;
@@ -308,11 +309,24 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			}
 
 			switch (_type.kind) {
+			case TYPE_BYTE:
+			case TYPE_SHORTINT:
+				genIntValueAX(_decl.value);
+				genThreeAddr(JSR, RT_PUSHBYTE);
+				break;
+
 			case TYPE_INTEGER:
+			case TYPE_WORD:
 			case TYPE_BOOLEAN:
 			case TYPE_ENUMERATION:
 				genIntValueAX(_decl.value);
 				genThreeAddr(JSR, RT_PUSHINT);
+				break;
+
+			case TYPE_LONGINT:
+			case TYPE_CARDINAL:
+				genIntValueEAX(_decl.value);
+				genThreeAddr(JSR, RT_PUSHEAX);
 				break;
 
 			case TYPE_CHARACTER:
@@ -364,11 +378,27 @@ int getArrayLimit(CHUNKNUM chunkNum)
 	struct expr _expr;
 
 	retrieveChunk(chunkNum, &_expr);
-	if (_expr.kind == EXPR_INTEGER_LITERAL) {
+	if (_expr.kind == EXPR_BYTE_LITERAL) {
+		return _expr.value.shortInt;
+	}
+	else if (_expr.kind == EXPR_WORD_LITERAL) {
 		return _expr.value.integer;
 	}
+	else if (_expr.kind == EXPR_CHARACTER_LITERAL) {
+		return _expr.value.character;
+	}
+	else if (_expr.kind == EXPR_NAME) {
+		struct symbol sym;
+		struct decl _decl;
+		char name[CHUNK_LEN + 1];
+		memset(name, 0, sizeof(name));
+		retrieveChunk(_expr.name, name);
+		scope_lookup(name, &sym);
+		retrieveChunk(sym.decl, &_decl);
+		return getArrayLimit(_decl.value);
+	}
 	else {
-		Error(rteUnimplementedRuntimeFeature);
+		Error(errInvalidIndexType);
 	}
 
 	return 0;

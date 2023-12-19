@@ -15,7 +15,6 @@
 
 #include <chunks.h>
 #include <misc.h>
-#include <types.h>
 
 #define MAX_NESTING_LEVEL 8
 
@@ -111,7 +110,6 @@ typedef struct SYMTABNODE {
 typedef struct SYMBNODE {
     SYMTABNODE node;
     DEFN defn;
-    struct TTYPE type;
 } SYMBNODE;
 
 _Static_assert (sizeof(struct SYMTABNODE) == CHUNK_LEN, "SYMTABNODE should be CHUNK_LEN bytes in size");

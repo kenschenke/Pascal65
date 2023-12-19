@@ -17,9 +17,8 @@ static void genCaseStmt(struct stmt* pStmt)
 {
 	int num = currentLineNumber;
 	int branch = 1;
-	char first = 1;
 	struct expr _expr;
-	struct type exprType;
+	struct type exprType, labelType;
 	struct stmt labelStmt;
 	char branchLabel[15], bodyLabel[15], nextLabel[15], endLabel[15];
 	CHUNKNUM exprChunk, labelChunk = pStmt->body;
@@ -58,25 +57,23 @@ static void genCaseStmt(struct stmt* pStmt)
 		while (exprChunk)
 		{
 			retrieveChunk(exprChunk, &_expr);
+			retrieveChunk(_expr.evalType, &labelType);
 
-			if (first) {
-				genExpr(pStmt->expr, 1, 0, 0);
-			}
+			genExpr(pStmt->expr, 1, 0, 0);
 			genExpr(exprChunk, 1, 0, 0);
+			genTwo(LDA_IMMEDIATE, exprType.kind);	// data type of case expression
+			genTwo(LDX_IMMEDIATE, labelType.kind);	// data type of case label
+			genTwo(LDY_IMMEDIATE, EXPR_EQ);			// perform equality operation
+			genThreeAddr(JSR, RT_COMP);				// do the comparison
+			genThreeAddr(JSR, RT_POPEAX);			// pop the results off the stack
+			genTwo(CMP_IMMEDIATE, 0);
+			genTwo(BEQ, 3);							// branch to next label if not equal
 
-			if (exprType.kind == TYPE_INTEGER || exprType.kind == TYPE_ENUMERATION || exprType.kind == TYPE_CHARACTER) {
-				genThreeAddr(JSR, RT_POPTOINTOP2);
-				if (first) {
-					genThreeAddr(JSR, RT_POPTOINTOP1);
-				}
-				genThreeAddr(JSR, RT_EQINT16);
-				genTwo(BEQ, 3);		// JMP + two_byte_address = 3
-				linkAddressLookup(bodyLabel, codeOffset + 1, 0, LINKADDR_BOTH);
-				genThreeAddr(JMP, 0);
-			}
+			// If the comparison was equal, jump to the body for this case branch
+			linkAddressLookup(bodyLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+			genThreeAddr(JMP, 0);
 
 			exprChunk = _expr.right;
-			first = 0;
 		}
 
 		if (labelStmt.next) {
@@ -105,60 +102,58 @@ static void genCaseStmt(struct stmt* pStmt)
 static void genForLoop(struct stmt* pStmt)
 {
 	struct expr _expr;
+	struct type controlType, targetType;
 	CHUNKNUM controlExpr;
-	int num = currentLineNumber;
 	unsigned short startOffset;
+	char endLabel[15];
+
+	strcpy(endLabel, "FOR");
+	strcat(endLabel, formatInt16(pStmt->body));
 
 	// Look up the control variable
 	retrieveChunk(pStmt->init_expr, &_expr);
 	// Should be an assignment with the control variable on the left.
 	controlExpr = _expr.left;
+	retrieveChunk(_expr.left, &_expr);
+	retrieveChunk(_expr.evalType, &controlType);
 
 	// Emit the initialization expression
 	genExpr(pStmt->init_expr, 1, 0, 0);
 
+	// Initialize the start of each iteration
 	startOffset = codeBase + codeOffset;
+	// Push the value of the control variable onto the stack
+	genExpr(controlExpr, 1, 0, 0);
+
+	// Push the target value onto the stack
+	genExpr(pStmt->to_expr, 1, 0, 0);
+
+	// Compare the control value to the target value
+	retrieveChunk(pStmt->to_expr, &_expr);
+	retrieveChunk(_expr.evalType, &targetType);
+	genTwo(LDA_IMMEDIATE, controlType.kind);
+	genTwo(LDX_IMMEDIATE, targetType.kind);
+	genTwo(LDY_IMMEDIATE, pStmt->isDownTo ? EXPR_LT : EXPR_GT);
+	genThreeAddr(JSR, RT_COMP);
+	genThreeAddr(JSR, RT_POPEAX);
+	genTwo(CMP_IMMEDIATE, 0);
+	// If the target value has not been reached, jump to the body code
+	genTwo(BEQ, 3);		// JMP + two_byte_addr = 3
+	linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	// Target value has been reached.  Jump to end address.
+	genThreeAddr(JMP, 0);
+
 	genStmts(pStmt->body);
 
 	// Increment (or decrement) the control variable
-	genExpr(controlExpr, 0, 0, 0);
-	genThreeAddr(JSR, RT_READINT);
-	genTwo(STA_ZEROPAGE, ZP_INTOP1L);
-	genTwo(STX_ZEROPAGE, ZP_INTOP1H);
-	if (pStmt->isDownTo) {
-		genTwo(DEC_ZEROPAGE, ZP_INTOP1L);
-		genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
-		genTwo(CMP_IMMEDIATE, 0xff);
-		genTwo(BNE, 2);		// dec + zeropage = 2
-		genTwo(DEC_ZEROPAGE, ZP_INTOP1H);
-	}
-	else {
-		genTwo(INC_ZEROPAGE, ZP_INTOP1L);
-		genTwo(BNE, 2);		// inc + zeropage = 2
-		genTwo(INC_ZEROPAGE, ZP_INTOP1H);
-	}
-	// store intOp1 back in ptr1
-	genTwo(LDY_IMMEDIATE, 0);
-	genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
-	genTwo(STA_ZPINDIRECT, ZP_PTR1L);
-	genOne(INY);
-	genTwo(LDA_ZEROPAGE, ZP_INTOP1H);
-	genTwo(STA_ZPINDIRECT, ZP_PTR1L);
+	genExpr(controlExpr, 1, 0, 0);
+	genTwo(LDA_IMMEDIATE, controlType.kind);
+	genThreeAddr(JSR, pStmt->isDownTo ? RT_PRED : RT_SUCC);
+	genThreeAddr(JSR, controlType.size == 2 ? RT_STOREINT : RT_STOREINT32);
 
-	// intOp1 still contains the control variable's new value
-	// Load the "to" value into intOp2
-	genExpr(pStmt->to_expr, 0, 1, 0);
-	genTwo(STA_ZEROPAGE, ZP_INTOP2L);
-	genTwo(STX_ZEROPAGE, ZP_INTOP2H);
-
-	if (pStmt->isDownTo) {
-		genThreeAddr(JSR, RT_LTINT16);
-	}
-	else {
-		genThreeAddr(JSR, RT_GTINT16);
-	}
-	genTwo(BNE, 3);		// JMP + two_byte_addr = 3
+	// Jump back up and check the control variable for the next iteration
 	genThreeAddr(JMP, startOffset);
+	linkAddressSet(endLabel, codeOffset);
 }
 
 static void genIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)

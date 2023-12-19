@@ -14,7 +14,7 @@
 .import readInt16, FPOUT, writeInt16, FPINP, MOVIND
 
 .export floatToInt16, int16ToFloat, copyFPACCtoFPOP, FPBUF, getFPBUF
-.export FPBASE, FPBUF
+.export swapFPACCandFPOP, FPBASE, FPBUF
 
 .bss
 
@@ -74,6 +74,25 @@ L2:
     lda #FOPLSW         ; Destination is FPOP
     sta FPBASE + TOPNT
     ldx #4              ; Copy 4 bytes
+    jmp MOVIND
+.endproc
+
+.proc swapFPACCandFPOP
+    ; Copy FPOP to the work area
+    lda #FOPLSW
+    sta FPBASE + FMPNT
+    lda #WORK0
+    sta FPBASE + TOPNT
+    ldx #4
+    jsr MOVIND
+    ; Copy FPACC to FPOP
+    jsr copyFPACCtoFPOP
+    ; Copy the work area to FPACC
+    lda #WORK0
+    sta FPBASE + FMPNT
+    lda #FPLSW
+    sta FPBASE + TOPNT
+    ldx #4
     jmp MOVIND
 .endproc
 

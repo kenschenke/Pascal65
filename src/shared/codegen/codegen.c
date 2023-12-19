@@ -89,20 +89,47 @@ void genIntValueAX(CHUNKNUM chunkNum)
 	genTwo(LDX_IMMEDIATE, WORD_HIGH(_expr.value.integer));
 }
 
-// 15684
-//    codegen: 5878 (5443)
-//       updateHeapOffset: 15653
-//       parentArrayInit: 15583
-//       nonParentArrayInit: 15525
-//       arrayRecordInit: 15489
-//       freeVarHeaps: 15439
-//       prgCleanup: 15377
-//       chainCall: 15249
-//    compsymtab: 832
-//    genexpr: 3161
-//    genrtn: 3796
-//    genstmt: 1880
-//    overhead: 137
+void genIntValueEAX(CHUNKNUM chunkNum)
+{
+	struct expr _expr;
+
+	if (!chunkNum) {
+		genTwo(LDA_IMMEDIATE, 0);
+		genOne(TAX);
+		genTwo(STA_ZEROPAGE, ZP_SREGL);
+		genTwo(STA_ZEROPAGE, ZP_SREGH);
+		return;
+	}
+
+	retrieveChunk(chunkNum, &_expr);
+	if (_expr.neg) {
+		_expr.value.longInt = -_expr.value.longInt;
+	}
+	genTwo(LDA_IMMEDIATE, DWORD_NMSB(_expr.value.longInt));
+	genTwo(STA_ZEROPAGE, ZP_SREGL);
+	genTwo(LDA_IMMEDIATE, DWORD_MSB(_expr.value.longInt));
+	genTwo(STA_ZEROPAGE, ZP_SREGH);
+	genTwo(LDA_IMMEDIATE, DWORD_LSB(_expr.value.longInt));
+	genTwo(LDX_IMMEDIATE, DWORD_NLSB(_expr.value.longInt));
+}
+
+void genShortValueA(CHUNKNUM chunkNum)
+{
+	struct expr _expr;
+
+	if (!chunkNum) {
+		genTwo(LDA_IMMEDIATE, 0);
+		return;
+	}
+
+	retrieveChunk(chunkNum, &_expr);
+	if (_expr.neg) {
+		_expr.value.shortInt = -_expr.value.shortInt;
+	}
+	genTwo(LDA_IMMEDIATE, _expr.value.shortInt);
+	genTwo(LDX_IMMEDIATE, _expr.neg ? 0xff : 0);
+}
+
 void writeCodeBuf(unsigned char *buf, int len)
 {
 	writeToMemBuf(codeBuf, buf, len);

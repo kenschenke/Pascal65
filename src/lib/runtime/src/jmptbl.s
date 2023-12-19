@@ -1,10 +1,9 @@
 ; Jump table at the start of the runtime library
 
-.import leftpad, printz, printlnz
-.import absInt16, addInt16, divInt16, int16Sqr, modInt16, multInt16, subInt16, writeInt16
-.import eqInt16, leInt16, ltInt16, geInt16, gtInt16
-.import copyFPACCtoFPOP, FPADD, FPDIV, _strToFloat, FPMULT, FPOUT, FPSUB, floatAbs, PRECRD
-.import floatEq, floatGt, floatGte, floatLt, floatLte, floatToInt16, int16ToFloat, getFPBUF, _floatNeg
+.import leftpad, printz, printlnz, writeValue, assign, divide, comp
+.import add, divint, modulus, pred, succ, subtract, multiply
+.import _strToFloat, FPOUT, PRECRD
+.import floatToInt16, getFPBUF, floatNeg
 .import incsp4, popeax, pushax, pusheax, popToReal, popToIntOp1, popToIntOp2
 .import pushAddrStack, pushByteStack, pushIntStack, pushFromIntOp1, pushRealStack
 .import readByteStack, readIntStack, readRealStack
@@ -14,40 +13,42 @@
 .import initArrayHeap, calcRecordOffset, memcopy, heapInit, heapAlloc, heapFree
 .import clearInputBuf, readFloatFromInput, readIntFromInput, calcArrayOffset, writeCharArray
 .import readCharArrayFromInput
+.import popToIntOp1And2, popToIntOp32, readInt32Stack, storeInt32Stack, pushFromIntOp1And2
+.import abs, sqr
 
 .segment "JMPTBL"
 
 jmp printz      ; BASE + 0
 jmp printlnz    ; BASE + 3
 jmp leftpad     ; BASE + 6
-jmp writeInt16  ; BASE + 9
-jmp addInt16    ; BASE + 12
-jmp subInt16    ; BASE + 15
-jmp multInt16   ; BASE + 18
-jmp divInt16    ; BASE + 21
-jmp absInt16    ; BASE + 24
-jmp int16Sqr    ; BASE + 27
-jmp modInt16    ; BASE + 30
-jmp eqInt16     ; BASE + 33
-jmp leInt16     ; BASE + 36
-jmp ltInt16     ; BASE + 39
-jmp geInt16     ; BASE + 42
-jmp gtInt16     ; BASE + 45
-jmp copyFPACCtoFPOP ; BASE + 48
-jmp FPADD       ; BASE + 51
-jmp FPSUB       ; BASE + 54
-jmp FPMULT      ; BASE + 57
-jmp FPDIV       ; BASE + 60
+jmp assign      ; BASE + 9
+jmp add         ; BASE + 12
+jmp comp        ; BASE + 15
+jmp $0000       ; BASE + 18
+jmp divint      ; BASE + 21
+jmp writeValue  ; BASE + 24
+jmp sqr         ; BASE + 27
+jmp modulus     ; BASE + 30
+jmp $0000       ; BASE + 33
+jmp $0000       ; BASE + 36
+jmp $0000       ; BASE + 39
+jmp $0000       ; BASE + 42
+jmp $0000       ; BASE + 45
+jmp $0000       ; BASE + 48
+jmp divide      ; BASE + 51
+jmp $0000       ; BASE + 54
+jmp $0000       ; BASE + 57
+jmp $0000       ; BASE + 60
 jmp _strToFloat ; BASE + 63
 jmp FPOUT       ; BASE + 66
-jmp floatEq     ; BASE + 69
-jmp floatGt     ; BASE + 72
-jmp floatGte    ; BASE + 75
-jmp floatLt     ; BASE + 78
-jmp floatLte    ; BASE + 81
+jmp $0000       ; BASE + 69
+jmp $0000       ; BASE + 72
+jmp $0000       ; BASE + 75
+jmp $0000       ; BASE + 78
+jmp $0000       ; BASE + 81
 jmp floatToInt16 ; BASE + 84
-jmp int16ToFloat ; BASE + 87
-jmp floatAbs    ; BASE + 90
+jmp $0000       ; BASE + 87
+jmp $0000       ; BASE + 90
 jmp incsp4      ; BASE + 93
 jmp popeax      ; BASE + 96
 jmp pushax      ; BASE + 99
@@ -86,4 +87,32 @@ jmp calcArrayOffset ; BASE + 195
 jmp getFPBUF    ; BASE + 198
 jmp writeCharArray  ; BASE + 201
 jmp readCharArrayFromInput ; BASE + 204
-jmp _floatNeg   ; BASE + 207
+jmp floatNeg   ; BASE + 207
+jmp subtract    ; BASE + 210
+jmp $0000       ; BASE + 213
+jmp $0000       ; BASE + 216
+jmp $0000       ; BASE + 219
+jmp $0000       ; BASE + 222
+jmp pred        ; BASE + 225
+jmp succ        ; BASE + 228
+jmp multiply    ; BASE + 231
+jmp $0000       ; BASE + 234
+jmp popToIntOp1And2 ; BASE + 237
+jmp popToIntOp32    ; BASE + 240
+jmp readInt32Stack  ; BASE + 243
+jmp storeInt32Stack ; BASE + 246
+jmp pushFromIntOp1And2  ; BASE + 249
+jmp abs         ; BASE + 252
+jmp $0000       ; UNUSED 255
+jmp $0000       ; BASE + 258
+jmp $0000       ; BASE + 261
+jmp $0000       ; BASE + 264
+jmp $0000       ; BASE + 267
+jmp $0000       ; BASE + 270
+jmp $0000       ; BASE + 273
+jmp $0000       ; BASE + 276
+jmp $0000       ; BASE + 279
+jmp $0000       ; BASE + 282
+jmp $0000       ; BASE + 285
+jmp $0000       ; BASE + 288
+jmp $0000       ; BASE + 291

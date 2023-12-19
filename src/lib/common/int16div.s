@@ -18,7 +18,7 @@
 ; tmp4 - HB result
 ;
 ; This routine divides two signed 16-bit integers stored in intOp1 and intOp2.
-; The result is stored in intOp1.  It does not check for divide by zero.
+; The result is stored in intOp1.
 ;
 ; The routine first checks to see if either operand is zero and shortcuts out if so.
 ;

@@ -12,6 +12,10 @@ nav:
     - If Then Else: langref/ifelse.md
     - While: langref/while.md
   - Function Reference:
+    - Abs: funcref/abs.md
     - Chr: funcref/chr.md
+    - Pred: funcref/pred.md
     - Odd: funcref/odd.md
     - Ord: funcref/ord.md
+    - Sqr: funcref/sqr.md
+    - Succ: funcref/succ.md

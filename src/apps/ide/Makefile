@@ -86,8 +86,11 @@ SOURCES += $(LIBCOMMONDIR)/getline.s
 SOURCES += $(LIBCOMMONDIR)/inputbuf.s
 SOURCES += $(LIBCOMMONDIR)/int16.s
 SOURCES += $(LIBCOMMONDIR)/int16c.s
+SOURCES += $(LIBCOMMONDIR)/int16comp.s
+SOURCES += $(LIBCOMMONDIR)/int16sub.s
 SOURCES += $(LIBCOMMONDIR)/leftpad.s
-SOURCES += $(LIBCOMMONDIR)/writeint16.s
+SOURCES += $(LIBCOMMONDIR)/uint16comp.s
+SOURCES += $(LIBCOMMONDIR)/writeint.s
 ifeq ($(TARGET),mega65)
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)
@@ -264,12 +267,24 @@ vpath int16c.s $(LIBCOMMONDIR)
 $(OBJDIR)/int16c.o: int16c.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+vpath int16comp.s $(LIBCOMMONDIR)
+$(OBJDIR)/int16comp.o: int16comp.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath int16sub.s $(LIBCOMMONDIR)
+$(OBJDIR)/int16sub.o: int16sub.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
 vpath leftpad.s $(LIBCOMMONDIR)
 $(OBJDIR)/leftpad.o: leftpad.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath writeint16.s $(LIBCOMMONDIR)
-$(OBJDIR)/writeint16.o: writeint16.s | $(OBJDIR)
+vpath writeint.s $(LIBCOMMONDIR)
+$(OBJDIR)/writeint.o: writeint.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath uint16comp.s $(LIBCOMMONDIR)
+$(OBJDIR)/uint16comp.o: uint16comp.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath %.s $(LIBRUNTIMEDIR)

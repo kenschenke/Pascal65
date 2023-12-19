@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <ovrlcommon.h>
 #include <cbm.h>
@@ -12,6 +12,8 @@
 #include <em.h>
 #include <int16.h>
 #include <membuf.h>
+#include <libcommon.h>
+#include <int16.h>
 
 static char intBuffer[16];
 
@@ -55,7 +57,7 @@ static void loadOverlayFromFile(char *name, unsigned size, void *buffer, unsigne
     struct em_copy emc;
 
     if (!loadfile(name)) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 
@@ -100,26 +102,25 @@ void main()
         !allocBlockGroup(&semanticCache, overlay3blocks) ||
         !allocBlockGroup(&objcodeCache, overlay4blocks) ||
         !allocBlockGroup(&linkerCache, overlay5blocks)) {
-        printf("Unable to allocate extended memory\n");
+        printlnz("Unable to allocate extended memory");
         return;
     }
 
-    printf("Loading tokenizer overlay\n");
+    printlnz("Loading tokenizer overlay");
     loadOverlayFromFile("compilertest.1", overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
-    printf("Loading parser overlay\n");
+    printlnz("Loading parser overlay");
     loadOverlayFromFile("compilertest.2", overlay2size, _OVERLAY2_LOAD__, parserCache);
-    printf("Loading semantic overlay\n");
-    loadOverlayFromFile("compilertest.3", overlay3size, _OVERLAY3_LOAD__, semanticCache);
-    printf("Loading objcode overlay\n");
+    printlnz("Loading semantic overlay");
+    loadOverlayFromFile("compilertest", overlay3size, _OVERLAY3_LOAD__, semanticCache);
+    printlnz("Loading objcode overlay");
     loadOverlayFromFile("compilertest.4", overlay4size, _OVERLAY4_LOAD__, objcodeCache);
-    printf("Loading linker overlay\n");
+    printlnz("Loading linker overlay");
     loadOverlayFromFile("compilertest.5", overlay5size, _OVERLAY5_LOAD__, linkerCache);
 #endif
 
 #ifdef __C128__
     fast();
     videomode(VIDEOMODE_80x25);
-    printf("Is fast mode: %s\n", isfast() ? "yes" : "no");
 #endif
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
@@ -128,30 +129,33 @@ void main()
         char filename[16 + 1];
         CHUNKNUM tokenId, astRoot;
 
-        sprintf(filename, "%s.pas", testFiles[i]);
+        strcpy(filename, testFiles[i]);
+        strcat(filename, ".pas");
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
 #else
     if (!loadfile("compilertest.1")) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
         puts(filename);
-        printf("   T");
+        printz("   T");
         tokenId = tokenize(filename);
-        printf(" %d ", avail - getAvailChunks());
+        printz(" ");
+        printz(formatInt16(avail - getAvailChunks()));
+        printz(" ");
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
 #else
     if (!loadfile("compilertest.2")) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
-        printf("P");
+        printz("P");
         astRoot = parse(tokenId);
         freeMemBuf(tokenId);
 
@@ -159,11 +163,11 @@ void main()
         loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, semanticCache);
 #else
     if (!loadfile("compilertest.3")) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
-        printf("S");
+        printz("S");
         initSemantic();
         init_scope_stack();
         decl_resolve(astRoot, 0);
@@ -174,37 +178,38 @@ void main()
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
 #else
     if (!loadfile("compilertest.5")) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
-        printf("W");
+        printz("W");
         linkerPreWrite();
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay4size, _OVERLAY4_LOAD__, objcodeCache);
 #else
     if (!loadfile("compilertest.4")) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
-        printf("W");
+        printz("W");
         objCodeWrite(astRoot);
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
 #else
     if (!loadfile("compilertest.5")) {
-        printf("Unable to load overlay from disk\n");
+        printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
-        printf("W");
+        printz("W");
         linkerPostWrite(testFiles[i], testFiles[i+1]);
 
-        printf("F");
+        printz("F");
         decl_free(astRoot);
         free_scope_stack();
-        printf("  %d\n", avail - getAvailChunks());
+        printz("  ");
+        printlnz(formatInt16(avail - getAvailChunks()));
         if (getAvailChunks() > avail) {
             return;
         }
@@ -212,8 +217,9 @@ void main()
         ++i;
     }
 
-    printf("All tests have been generated.\n");
-    printf("Press Enter to reset then\ntype LOAD \"%s\",8", testFiles[0]);
+    printlnz("All tests have been generated.");
+    printz("Press Enter to reset then load ");
+    printlnz(testFiles[0]);
     getchar();
     __asm__ ("jmp ($fffc)");
 }
@@ -230,20 +236,29 @@ unsigned char loadfile(const char *name)
 
 void log(const char *module, const char *message)
 {
-    printf("%s: %s\n", module, message);
+    printz(module);
+    printz(": ");
+    printlnz(message);
 }
 
 void logError(const char *message, unsigned lineNumber, TErrorCode ec)
 {
-    printf("*** ERROR: %s -- line %d -- code %d\n", message, lineNumber, ec);
+    printz("*** ERROR: ");
+    printz(message);
+    printz(" -- line ");
+    printz(formatInt16(lineNumber));
+    printz(" -- code ");
+    printlnz(formatInt16(ec));
 }
 
 void logFatalError(const char *message)
 {
-    printf("*** Fatal translation error: %s\n", message);
+    printz("*** Fatal translation error: ");
+    printlnz(message);
 }
 
 void logRuntimeError(const char *message, unsigned /*lineNumber*/)
 {
-    printf("*** Runtime error: %s\n", message);
+    printz("*** Runtime error: ");
+    printlnz(message);
 }

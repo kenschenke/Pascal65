@@ -563,14 +563,6 @@ void linkerPostWrite(const char* filename, char run)
 
 	dumpStringLiterals();
 
-	linkAddressSet(DATA_BOOLTRUE, codeOffset);
-	writeToMemBuf(codeBuf, "true", 5);
-	codeOffset += 5;
-
-	linkAddressSet(DATA_BOOLFALSE, codeOffset);
-	writeToMemBuf(codeBuf, "false", 6);
-	codeOffset += 6;
-
 	linkAddressSet(BSS_INTBUF, codeOffset);
 	ch = 0;
 	for (i = 0; i < 15; ++i) {
@@ -665,13 +657,12 @@ static void genRuntime(void)
 
 	in = fopen("runtime", "r");
 	fread(buf, 1, 2, in);	// discard the starting address
-	while (1) {
+	while (!feof(in)) {
 		read = fread(buf, 1, sizeof(buf), in);
-		if (read < sizeof(buf)) {
-			break;
+		if (read) {
+			writeToMemBuf(codeBuf, buf, read);
+			codeOffset += read;
 		}
-		writeToMemBuf(codeBuf, buf, read);
-		codeOffset += read;
 	}
 
 	fclose(in);

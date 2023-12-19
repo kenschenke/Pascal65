@@ -156,7 +156,12 @@ CHUNKNUM parseFormalParmList(void)
 			switch (parserToken) {
 			case tcBOOLEAN: tc = TYPE_BOOLEAN; break;
 			case tcCHAR: tc = TYPE_CHARACTER; break;
+			case tcBYTE: tc = TYPE_BYTE; break;
+			case tcSHORTINT: tc = TYPE_SHORTINT; break;
+			case tcWORD: tc = TYPE_WORD; break;
 			case tcINTEGER: tc = TYPE_INTEGER; break;
+			case tcCARDINAL: tc = TYPE_CARDINAL; break;
+			case tcLONGINT: tc = TYPE_LONGINT; break;
 			case tcREAL: tc = TYPE_REAL; break;
 			default:
 				Error(errInvalidType);

@@ -4,7 +4,8 @@
 #include <chunks.h>
 
 typedef enum {
-    tzDummy, tzLineNum, tzIdentifier, tzToken, tzInteger, tzReal, tzChar, tzString
+    tzDummy, tzLineNum, tzIdentifier, tzToken, tzReal, tzChar, tzString,
+    tzByte, tzWord, tzCardinal
 } TTokenizerCode;
 
 // Returns membuf of intermediate code containing tokenized code

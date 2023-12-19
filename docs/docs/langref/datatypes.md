@@ -6,12 +6,22 @@ Pascal has two main classes of data types: standard data types and declared data
 
 Pascal65 defines the following standard data types.
 
-| Data Types | Description                                         |
-| ---------- | --------------------------------------------------- |
-| Integer    | Signed 16-bit integer in the range -32768 to +32767 |
-| Boolean    | True or False                                       |
-| Char       | PETSCII character                                   |
-| Real       | Signed 24-bit floating point value (see below)      |
+| Data Types | Description                                                   |
+| ---------- | ------------------------------------------------------------- |
+| ShortInt   | Signed 8-bit integer in the range -128 to +127                |
+| Byte       | Unsigned 8-bit integer in the range 0 to 255                  |
+| Integer    | Signed 16-bit integer in the range -32768 to +32767           |
+| Word       | Unsigned 16-bit integer in the range 0 to 65535               |
+| LongInt    | Signed 32-bit integer in the range -2147483648 to +2147483647 |
+| Cardinal   | Unsigned 32-bit integer in the range 0 to 4294967295          |
+| Boolean    | True or False                                                 |
+| Char       | PETSCII character                                             |
+| Real       | Signed 24-bit floating point value (see below)                |
+
+The compiler will generate an error if the program attempts to assign an integer variable
+to another variable that cannot accomodate the entire range.  This includes attempts to
+assign a signed variable to an unsigned variable of any size.  There is no error if an
+unsigned variable is assigned to a signed variable of larger size.
 
 ### Real Data Type
 
@@ -38,7 +48,7 @@ Type
 
 ## Constants
 
-Constants are delcared in the **Constants** section in the program.  An examine section might
+Constants are delcared in the **Constants** section in the program.  An example section might
 look like this:
 
 ```
@@ -46,6 +56,21 @@ Const
    Pi = 3.14159;
    MaxLength = 99.99;
 ```
+
+Integer constants are mapped to one of the integer data types based on the range.
+
+| Range                     | Mapped to Data Type |
+| ------------------------- | ------------------- |
+| -128..127                 | ShortInt            |
+| 128..255                  | Byte                |
+| -32768..32767             | Integer             |
+| 32768..65535              | Word                |
+| -2147483648 to 2147483647 | LongInt             |
+| 2147483648 to 4294967295  | Cardinal            |
+
+The compiler will generate an error if the program attempts to assign an integer constant
+to a variable that cannot accomodate it.  For example, the compiler will not let you assign
+the constant 32768 to an Integer.  The same applies for integer literals.
 
 ## Enumerated Types
 

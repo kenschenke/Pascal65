@@ -12,7 +12,7 @@
 
 #include <scanner.h>
 #include <limits.h>
-#include <int16.h>
+#include <int32.h>
 #include <real.h>
 
 #define MAX_NUMBER_LEN 15
@@ -22,15 +22,14 @@
 // decimal point but not a zero.
 void getNumberToken(char sawDecimalPoint)
 {
-    const int maxInteger = SHRT_MAX;
     char ch, *ps;
     int digitCount = 0;
     int countErrorFlag = 0;
     const int maxDigitCount = 20;
-    int value = 0;
-    TDataType type = tyInteger;
     char sawExponent = 0;    // non-zero if 'e' or 'E' encountered
     char sawExponentSign = 0;// non-zero when +|- encountered after e|E
+
+    tokenizerCode = tzDummy;
 
     ch = getCurrentChar();
     if (getCharCode(ch) != ccDigit) {
@@ -46,7 +45,7 @@ void getNumberToken(char sawDecimalPoint)
     // point needs to be preserved
     if (sawDecimalPoint) {
         *ps++ = '.';
-        type = tyReal;
+        tokenizerCode = tzReal;
         ++digitCount;
     }
 
@@ -61,10 +60,10 @@ void getNumberToken(char sawDecimalPoint)
                 break;
             }
 
-            // If type is tyReal then we have already seen
+            // If type is tzReal then we have already seen
             // a decimal point and this one is not part
             // of the number.
-            if (type == tyReal) {
+            if (tokenizerCode == tzReal) {
                 putBackChar();
                 break;
             }
@@ -79,17 +78,17 @@ void getNumberToken(char sawDecimalPoint)
                 putBackChar();
                 break;
             } else {
-               type = tyReal;
+               tokenizerCode = tzReal;
                *ps++ = '.';
             }
         } else if (ch == 'e' || ch == 'E') {
-            if (type != tyReal) {
+            if (tokenizerCode != tzReal) {
                 // This is not part of the number.
                 break;
             }
             sawExponent = 1;
         } else if (ch == '-' || ch == '+') {
-            if (type != tyReal || !sawExponent || sawExponentSign) {
+            if (tokenizerCode != tzReal || !sawExponent || sawExponentSign) {
                 // this is not part of the number.
                 break;
             }
@@ -108,10 +107,19 @@ void getNumberToken(char sawDecimalPoint)
     }
 
     *ps = 0;
-    if (type == tyInteger) {
-        tokenValue.integer = parseInt16(tokenString);
+    if (tokenizerCode == tzDummy) {
+        tokenValue.cardinal = parseInt32(tokenString);
+        if (tokenValue.cardinal < UCHAR_MAX) {
+            tokenValue.byte = tokenValue.cardinal;
+            tokenizerCode = tzByte;
+        }
+        else if (tokenValue.cardinal < USHRT_MAX) {
+            tokenValue.word = tokenValue.cardinal;
+            tokenizerCode = tzWord;
+        } else {
+            tokenizerCode = tzCardinal;
+        }
     }
 
-    tokenType = type;
     tokenCode = countErrorFlag ? tcError : tcNumber;
 }

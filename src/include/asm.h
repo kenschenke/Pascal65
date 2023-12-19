@@ -101,23 +101,19 @@
 #define ZP_INTOP1H		(ZP_BASE + 17)
 #define ZP_INTOP2L		(ZP_BASE + 18)
 #define ZP_INTOP2H		(ZP_BASE + 19)
-#define ZP_INTPTR		(ZP_BASE + 20) // 2 bytes
-#define ZP_STACKFRAMEL	(ZP_BASE + 22)
-#define ZP_STACKFRAMEH	(ZP_BASE + 23)
-#define ZP_SAVEDSTACK	(ZP_BASE + 24) // Saved CPU stack pointer for exit()
-#define ZP_NESTINGLEVEL	(ZP_BASE + 25)
-#define ZP_EXITHANDLER  (ZP_BASE + 26)
+#define ZP_INTOP32      (ZP_BASE + 20) // 4 bytes
+#define ZP_INTPTR		(ZP_BASE + 24) // 2 bytes
+#define ZP_STACKFRAMEL	(ZP_BASE + 26)
+#define ZP_STACKFRAMEH	(ZP_BASE + 27)
+#define ZP_SAVEDSTACK	(ZP_BASE + 28) // Saved CPU stack pointer for exit()
+#define ZP_NESTINGLEVEL	(ZP_BASE + 30)
+#define ZP_EXITHANDLER  (ZP_BASE + 31)
 
 // BSS Locations
 
 #define BSS_HEAPBOTTOM	"HEAPBOTTOM"
 #define BSS_INTBUF		"INTBUF"
 #define BSS_ZPBACKUP    "ZPBACKUP"
-
-// Data Locations
-
-#define DATA_BOOLFALSE	"BOOLFALSE"
-#define DATA_BOOLTRUE	"BOOLTRUE"
 
 // Runtime Jumptable locations
 
@@ -129,49 +125,35 @@
 #error Platform Jumptable base not defined
 #endif
 
-#define RT_ABSINT16				(RT_BASE + 24)
-#define RT_ADDINT16				(RT_BASE + 12)
+#define RT_ADD  				(RT_BASE + 12)
+#define RT_ASSIGN               (RT_BASE + 9)
 #define RT_CALCRECORD			(RT_BASE + 168)
 #define RT_CALCSTACK			(RT_BASE + 150)
 #define RT_CLRINPUT				(RT_BASE + 186)
-#define RT_COPYFPACC			(RT_BASE + 48)
-#define RT_DIVINT16				(RT_BASE + 21)
-#define RT_EQINT16				(RT_BASE + 33)
+#define RT_COMP                 (RT_BASE + 15)
+#define RT_DIVIDE               (RT_BASE + 51)
+#define RT_DIVINT				(RT_BASE + 21)
 #define RT_ERRORINIT			(RT_BASE + 183)
-#define RT_FLOATABS				(RT_BASE + 90)
-#define RT_FLOATEQ				(RT_BASE + 69)
-#define RT_FLOATGT				(RT_BASE + 72)
-#define RT_FLOATGTE				(RT_BASE + 75)
-#define RT_FLOATLT				(RT_BASE + 78)
-#define RT_FLOATLTE				(RT_BASE + 81)
 #define RT_FLOATTOINT16			(RT_BASE + 84)
-#define RT_FPADD				(RT_BASE + 51)
-#define RT_FPDIV				(RT_BASE + 60)
 #define RT_STRTOFLOAT			(RT_BASE + 63)
-#define RT_FPMULT				(RT_BASE + 57)
 #define RT_FPOUT				(RT_BASE + 66)
-#define RT_FPSUB				(RT_BASE + 54)
-#define RT_GEINT16				(RT_BASE + 42)
-#define RT_GTINT16				(RT_BASE + 45)
 #define RT_HEAPFREE				(RT_BASE + 180)
 #define RT_HEAPALLOC			(RT_BASE + 177)
 #define RT_HEAPINIT				(RT_BASE + 174)
 #define RT_INCSP4				(RT_BASE + 93)
 #define RT_INITARRAYHEAP		(RT_BASE + 165)
-#define RT_INT16SQR				(RT_BASE + 27)
-#define RT_INT16TOFLOAT			(RT_BASE + 87)
+#define RT_MULTIPLY             (RT_BASE + 231)
+#define RT_SQR	    			(RT_BASE + 27)
+#define RT_SUBTRACT             (RT_BASE + 210)
 #define RT_LEFTPAD				(RT_BASE + 6)
-#define RT_LEINT16				(RT_BASE + 36)
-#define RT_LOADREAL             (RT_BASE + 201)
-#define RT_LTINT16				(RT_BASE + 39)
 #define RT_MEMCOPY				(RT_BASE + 171)
-#define RT_MODINT16				(RT_BASE + 30)
-#define RT_MULTINT16			(RT_BASE + 18)
+#define RT_MOD  				(RT_BASE + 30)
 #define RT_POPEAX				(RT_BASE + 96)
 #define RT_POPTOREAL			(RT_BASE + 105)
 #define RT_POPTOINTOP1			(RT_BASE + 108)
 #define RT_POPTOINTOP2			(RT_BASE + 111)
 #define RT_PRECRD				(RT_BASE + 114)
+#define RT_PRED                 (RT_BASE + 225)
 #define RT_PRINTZ				(RT_BASE + 0)
 #define RT_PRINTLNZ				(RT_BASE + 3)
 #define RT_PUSHADDRSTACK		(RT_BASE + 117)
@@ -193,13 +175,19 @@
 #define RT_STOREBYTE			(RT_BASE + 141)
 #define RT_STOREINT				(RT_BASE + 144)
 #define RT_STOREREAL			(RT_BASE + 147)
-#define RT_SUBINT16				(RT_BASE + 15)
-#define RT_WRITEINT16			(RT_BASE + 9)
+#define RT_SUCC                 (RT_BASE + 228)
 #define RT_CALCARRAYOFFSET		(RT_BASE + 195)
 #define RT_GETFPBUF				(RT_BASE + 198)
 #define RT_WRITECHARARRAY       (RT_BASE + 201)
 #define RT_READCHARARRAYFROMINPUT (RT_BASE + 204)
 #define RT_FLOATNEG             (RT_BASE + 207)
+#define RT_WRITEVALUE           (RT_BASE + 24)
+#define RT_POPTOINTOP1AND2      (RT_BASE + 237)
+#define RT_POPTOINTOP32         (RT_BASE + 240)
+#define RT_READINT32            (RT_BASE + 243)
+#define RT_STOREINT32           (RT_BASE + 246)
+#define RT_PUSHINTOP1AND2       (RT_BASE + 249)
+#define RT_ABS                  (RT_BASE + 252)
 
 // CBM Kernal
 

@@ -78,7 +78,6 @@ void genStringValueAX(CHUNKNUM chunkNum)
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
-
 }
 
 void objCodeWrite(CHUNKNUM astRoot)

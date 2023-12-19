@@ -74,17 +74,27 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
     }
 
     // Number constant
-    case tcNumber:
-        *type = typeCreate(
-            parserType == tyInteger ? TYPE_INTEGER : TYPE_REAL,
-            1, 0, 0);
+    case tcNumber: {
+        char typeKind, exprKind;
+        if (parserType == tyByte) {
+            typeKind = TYPE_BYTE;
+            exprKind = EXPR_BYTE_LITERAL;
+        } else if (parserType == tyWord) {
+            typeKind = TYPE_WORD;
+            exprKind = EXPR_WORD_LITERAL;
+        } else if (parserType == tyReal) {
+            typeKind = TYPE_REAL;
+            exprKind = EXPR_REAL_LITERAL;
+        } else {
+            typeKind = TYPE_CARDINAL;
+            exprKind = EXPR_DWORD_LITERAL;
+        }
+        *type = typeCreate(typeKind, 1, 0, 0);
         if (parserType == tyReal) {
             parserValue.stringChunkNum = 0;
             copyRealString(parserString, &parserValue.stringChunkNum);
         }
-        expr = exprCreate(
-            parserType == tyInteger ? EXPR_INTEGER_LITERAL : EXPR_REAL_LITERAL,
-            0, 0, 0, &parserValue);
+        expr = exprCreate(exprKind, 0, 0, 0, &parserValue);
         if (sign == tcMinus) {
             struct expr _expr;
             retrieveChunk(expr, &_expr);
@@ -93,6 +103,7 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
         }
         getToken();
         break;
+    }
 
     case tcString:
         length = (int)strlen(parserString) - 2;  // skip quotes

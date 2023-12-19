@@ -4,7 +4,7 @@
 .import intOp1
 .importzp ptr2, tmp1, tmp2, tmp3, tmp4, intPtr
 .endif
-.import tensTable, invertInt16
+.import tensTable16, invertInt16
 
 .export readInt16
 
@@ -15,16 +15,16 @@
 ; It works by adding 1 for the number in the 1s place, 10 for the number in
 ; the 10s place, and so on.
 ;
-; ptr2 - zero page pointer to tensTable
+; ptr2 - zero page pointer to tensTable16
 ; tmp1 - contains a 1 if negative
 ; tmp2 - number of digits
 ; tmp3 - buffer index
-; tmp4 - tensTable index
+; tmp4 - tensTable16 index
 .proc readInt16
     ; initialize ptr2
-    lda #<tensTable
+    lda #<tensTable16
     sta ptr2
-    lda #>tensTable
+    lda #>tensTable16
     sta ptr2 + 1
 
     ; initialize a few things
@@ -32,7 +32,7 @@
     sta tmp1        ; not negative - so far
     sta tmp2        ; number of digits
     sta tmp3        ; buffer index
-    sta tmp4        ; tensTable index
+    sta tmp4        ; tensTable16 index
     sta intOp1      ; LB
     sta intOp1 + 1  ; HB
 
@@ -61,7 +61,7 @@ L1:
 
 L2:
     ; tmp2 contains the number of digits
-    ; initialize tmp4 to the correct offset in tensTable
+    ; initialize tmp4 to the correct offset in tensTable16
     sec
     lda #5
     sbc tmp2
@@ -71,7 +71,7 @@ L2:
     lda tmp1
     sta tmp3        ; tmp1 contains a 1 if minus sign
 
-    ; Loop through the digits, adding values from tensTable
+    ; Loop through the digits, adding values from tensTable16
 L3:
     lda tmp2        ; check if all digits have been read
     beq L6          ; yes

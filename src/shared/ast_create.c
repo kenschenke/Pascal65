@@ -2,6 +2,29 @@
 #include <common.h>
 #include <string.h>
 
+char getTypeMask(char type) {
+	char mask = TYPE_CHARACTER;
+
+	switch (type) {
+		case TYPE_REAL: mask=TYPE_MASK_REAL; break;
+		case TYPE_SHORTINT: mask=TYPE_MASK_SINT8; break;
+		case TYPE_BYTE: mask=TYPE_MASK_UINT8; break;
+		case TYPE_INTEGER: mask=TYPE_MASK_SINT16; break;
+		case TYPE_WORD: mask=TYPE_MASK_UINT16; break;
+		case TYPE_LONGINT: mask=TYPE_MASK_SINT32; break;
+		case TYPE_CARDINAL: mask=TYPE_MASK_UINT32; break;
+	}
+
+	return mask;
+}
+
+char isTypeInteger(char type)
+{
+	return (type == TYPE_SHORTINT || type == TYPE_BYTE ||
+		type == TYPE_INTEGER || type == TYPE_WORD ||
+		type == TYPE_LONGINT || type == TYPE_CARDINAL) ? 1 : 0;
+}
+
 CHUNKNUM name_clone(CHUNKNUM source) {
     CHUNKNUM chunkNum;
     char buf[CHUNK_LEN];

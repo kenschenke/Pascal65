@@ -2,16 +2,18 @@
 
 .ifdef RUNTIME
 .include "runtime.inc"
+.else
+.import intOp1, intOp2
 .endif
 
 .exportzp intPtr
-.export tensTable, spcl32768, intOp1, intOp2, swapInt16
+.export tensTable16, spcl32768, swapInt16
 .export absInt16, swapInt16
-.export isNegInt16, invertInt16
+.export isNegInt16, invertInt16, signExtend16To32
 
 .data
 
-tensTable:
+tensTable16:
     .word 10000
     .word 1000
     .word 100
@@ -25,12 +27,6 @@ spcl32768:
 .zeropage
 
 intPtr: .res 2
-
-.bss
-
-; Operands for 16-bit integer operations
-intOp1: .res 2
-intOp2: .res 2
 .endif
 
 .code
@@ -88,3 +84,14 @@ done:
     rts
 .endproc
 
+.proc signExtend16To32
+    ldx #0
+    lda intOp1 + 1
+    and #$80
+    beq L1
+    ldx #$ff
+L1:
+    stx intOp2
+    stx intOp2 + 1
+    rts
+.endproc

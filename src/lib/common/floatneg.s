@@ -8,12 +8,12 @@
 
 .import FPBASE, COMPLM
 
-.export _floatNeg
+.export floatNeg
 
-.proc _floatNeg
+.proc floatNeg
     jsr storeFPACC
     ldx #FPLSW
-    ldy #4
+    ldy #3
     jsr COMPLM
     jmp loadFPACC
 .endproc

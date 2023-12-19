@@ -58,9 +58,14 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc)
 				// The return type should be one of the pre-defined Pascal types.
 				type_t type = 0;
 				switch (parserToken) {
+				case tcBYTE: type = TYPE_BYTE; break;
+				case tcSHORTINT: type = TYPE_SHORTINT; break;
 				case tcBOOLEAN: type = TYPE_BOOLEAN; break;
 				case tcCHAR: type = TYPE_CHARACTER; break;
+				case tcWORD: type = TYPE_WORD; break;
 				case tcINTEGER: type = TYPE_INTEGER; break;
+				case tcLONGINT: type = TYPE_LONGINT; break;
+				case tcCARDINAL: type = TYPE_CARDINAL; break;
 				case tcREAL: type = TYPE_REAL; break;
 				default:
 					Error(errIncompatibleTypes);

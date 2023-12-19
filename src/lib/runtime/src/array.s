@@ -9,8 +9,11 @@
 .include "error.inc"
 .include "runtime.inc"
 .include "cbm_kernal.inc"
+.include "types.inc"
 
-.import runtimeError, ltInt16, gtInt16, calcStackOffset
+.import printlnz, writeValue
+
+.import runtimeError, ltInt16, gtInt16, calcStackOffset, convertType
 .import subInt16, addInt16, multInt16, popax, pushax, leftpad
 .import skipSpaces, inputPos, inputBufPos, inputBufUsed, inputBuf
 
@@ -22,12 +25,18 @@
 ; onto the runtime stack and the array heap address to be in A/X.
 ;
 ; The address in the array's heap is returned in A/X.
+; The data type of the index is passed in Y.
 .proc calcArrayOffset
     sta ptr1            ; Array heap address in ptr1
     stx ptr1 + 1
+    tya                 ; Push the index data type on the CPU stack
+    pha
     jsr popax
     sta intOp1          ; Array index in intOp1
     stx intOp1 + 1
+    pla                 ; Pop the index data type off the CPU stack
+    ldx #TYPE_INTEGER
+    jsr convertType
     jsr checkArrayBounds
     ldy #0
     lda (ptr1),y

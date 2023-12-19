@@ -141,6 +141,8 @@ struct stmt {
            +----------------+     +----------------+
 */
 
+// CAUTION. Do not rearrange this list without also changing
+// the values in expr.inc.
 typedef enum {
     EXPR_ADD,
     EXPR_SUB,
@@ -164,7 +166,9 @@ typedef enum {
     EXPR_FIELD,
     EXPR_ASSIGN,
     EXPR_BOOLEAN_LITERAL,
-    EXPR_INTEGER_LITERAL,
+    EXPR_BYTE_LITERAL,
+    EXPR_WORD_LITERAL,
+    EXPR_DWORD_LITERAL,
     EXPR_STRING_LITERAL,
     EXPR_CHARACTER_LITERAL,
     EXPR_REAL_LITERAL,
@@ -182,7 +186,7 @@ struct expr {
     CHUNKNUM evalType;  // The evaluated type from the semantic phase
     TDataValue value;
     short lineNumber;
-    char unused[CHUNK_LEN - 20];
+    char unused[CHUNK_LEN - 22];
 };
 
 /*
@@ -343,12 +347,19 @@ struct expr {
 
 */
 
+// CAUTION. Do not rearrange this list without also changing
+// the values in types.inc.
 typedef enum {
     TYPE_VOID,
+    TYPE_BYTE,
+    TYPE_SHORTINT,
+    TYPE_WORD,
+    TYPE_INTEGER,
+    TYPE_CARDINAL,
+    TYPE_LONGINT,
+    TYPE_REAL,
     TYPE_BOOLEAN,
     TYPE_CHARACTER,
-    TYPE_INTEGER,
-    TYPE_REAL,
     TYPE_STRING,
     TYPE_ARRAY,
     TYPE_FUNCTION,
@@ -360,6 +371,21 @@ typedef enum {
     TYPE_ENUMERATION_VALUE,
     TYPE_RECORD,
 } type_t;
+
+#define TYPE_MASK_UINT8  0x01
+#define TYPE_MASK_SINT8  0x11
+#define TYPE_MASK_UINT16 0x02
+#define TYPE_MASK_SINT16 0x22
+#define TYPE_MASK_UINT32 0x04
+#define TYPE_MASK_SINT32 0x44
+#define TYPE_MASK_REAL   0x08
+#define TYPE_MASK_CHAR   0x88
+
+#define IS_TYPE_SIGNED(mask) (mask & 0xf0)
+#define GET_TYPE_SIZE(mask) (mask & 0x0f)
+
+char getTypeMask(char type);
+char isTypeInteger(char type);
 
 #define TYPE_FLAG_ISCONST 1
 #define TYPE_FLAG_ISFORWARD 2
@@ -508,5 +534,7 @@ char scope_lookup_current(const char* name, struct symbol* sym);
 
 // Look up a symbol in the supplied symbol table
 char symtab_lookup(CHUNKNUM symtab, const char* name, struct symbol* sym);
+
+void getBaseType(struct type* pType);
 
 #endif // end of AST_H

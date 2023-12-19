@@ -11,12 +11,14 @@
  */
 
 #include <scanner.h>
+#include <tokenizer.h>
 #include <string.h>
 
 static void initCharCodeMap(void);
 static void skipWhiteSpace(void);
 
 TTokenCode tokenCode;
+TTokenizerCode tokenizerCode;
 TDataType tokenType;
 TDataValue tokenValue;
 char tokenString[MAX_LINE_LEN + 1];

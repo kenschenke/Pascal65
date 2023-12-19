@@ -15,6 +15,7 @@
 
 #include <buffer.h>
 #include <misc.h>
+#include <tokenizer.h>
 
 typedef struct {
     TTokenCode code;
@@ -24,7 +25,7 @@ typedef struct {
 } TOKEN;
 
 extern TTokenCode tokenCode;
-extern TDataType tokenType;
+extern TTokenizerCode tokenizerCode;
 extern TDataValue tokenValue;
 extern char tokenString[MAX_LINE_LEN + 1];
 

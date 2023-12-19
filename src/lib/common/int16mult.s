@@ -55,7 +55,7 @@
 L0:
     ; If intOp2 is zero, store zero in result
     lda intOp2
-    ora intOp2
+    ora intOp2 + 1
     bne L1
     lda #0
     sta intOp1

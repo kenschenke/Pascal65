@@ -278,8 +278,17 @@ static short getSubrangeLimit(CHUNKNUM chunkNum)
 
 	retrieveChunk(chunkNum, &_expr);
 
-	if (_expr.kind == EXPR_INTEGER_LITERAL) {
-		return _expr.value.integer;
+	if (_expr.kind == EXPR_BYTE_LITERAL) {
+		if (_expr.neg) {
+			return -_expr.value.shortInt;
+		}
+		return _expr.value.byte;
+	}
+	if (_expr.kind == EXPR_WORD_LITERAL) {
+		if (_expr.neg) {
+			return -_expr.value.integer;
+		}
+		return _expr.value.word;
 	}
 	if (_expr.kind == EXPR_CHARACTER_LITERAL) {
 		return (short)_expr.value.character;
@@ -305,9 +314,14 @@ static short getTypeSize(struct type* pType)
 
 	switch (pType->kind) {
 	case TYPE_BOOLEAN: size = sizeof(short); break;
+	case TYPE_SHORTINT:
+	case TYPE_BYTE:
 	case TYPE_CHARACTER: size = sizeof(char); break;
-	case TYPE_INTEGER: size = sizeof(short); break;
+	case TYPE_INTEGER:
+	case TYPE_WORD: size = sizeof(short); break;
 	case TYPE_REAL: size = sizeof(FLOAT); break;
+	case TYPE_LONGINT:
+	case TYPE_CARDINAL: size = sizeof(long); break;
 	case TYPE_ENUMERATION:
 	case TYPE_ENUMERATION_VALUE:
 		size = sizeof(short);
@@ -533,6 +547,15 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 		}
 	}
 
+	// Make sure the array indextype is 1 or 2 bytes
+	if (_type.kind == TYPE_ARRAY) {
+		struct type indextype;
+		retrieveChunk(_type.indextype, &indextype);
+		if (getTypeSize(&indextype) > 2) {
+			Error(errInvalidIndexType);
+		}
+	}
+
 	_type.size = getTypeSize(&_type);
 	storeChunk(_decl.type, &_type);
 
@@ -540,7 +563,9 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 
 	if (_decl.code) {
 		scope_enter();
-		param_list_resolve(_type.paramsFields);
+		if (_type.kind != TYPE_PROGRAM) {
+			param_list_resolve(_type.paramsFields);
+		}
 		stmt_resolve(_decl.code);
 		_decl.symtab = scope_exit();
 	}
@@ -587,13 +612,19 @@ void set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 			switch (_type.kind) {
 			case TYPE_BOOLEAN:
 			case TYPE_CHARACTER:
+			case TYPE_BYTE:
+			case TYPE_SHORTINT:
 			case TYPE_INTEGER:
+			case TYPE_WORD:
+			case TYPE_LONGINT:
+			case TYPE_CARDINAL:
 			case TYPE_ENUMERATION:
 			case TYPE_REAL:
 			case TYPE_STRING:
 			case TYPE_ARRAY:
 			case TYPE_DECLARED:
 			case TYPE_RECORD:
+			case TYPE_SUBRANGE:
 				retrieveChunk(_decl.node, &sym);
 				if (_decl.kind == DECL_CONST || _decl.kind == DECL_VARIABLE) {
 					sym.offset = offset++;

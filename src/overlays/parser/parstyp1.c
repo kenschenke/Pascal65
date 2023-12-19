@@ -19,7 +19,7 @@ CHUNKNUM parseEnumerationType(void)
 		TDataValue value;
 
 		value.integer = ++constValue.integer;
-		valueChunkNum = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &value);
+		valueChunkNum = exprCreate(EXPR_WORD_LITERAL, 0, 0, 0, &value);
 		thisEnum = declCreate(DECL_TYPE, name_create(parserString), 0, valueChunkNum);
 
 		if (firstEnum == 0) {
@@ -53,7 +53,7 @@ CHUNKNUM parseEnumerationType(void)
 
 	typeChunkNum = typeCreate(TYPE_ENUMERATION, 0, 0, firstEnum);
 	retrieveChunk(typeChunkNum, &_type);
-	_type.max = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &constValue);
+	_type.max = exprCreate(EXPR_WORD_LITERAL, 0, 0, 0, &constValue);
 	storeChunk(typeChunkNum, &_type);
 
 	return typeChunkNum;
@@ -61,6 +61,7 @@ CHUNKNUM parseEnumerationType(void)
 
 type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit)
 {
+	char exprKind;
 	type_t limitType = 0;
 	TTokenCode sign = tcDummy;
 	TDataValue value;
@@ -78,14 +79,52 @@ type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit)
 
 	switch (parserToken) {
 	case tcNumber:
-		if (parserType == tyInteger) {
-			value.integer = sign == tcMinus ? -parserValue.integer :
-				parserValue.integer;
-			limitType = TYPE_INTEGER;
-			*limit = exprCreate(EXPR_INTEGER_LITERAL, 0, 0, 0, &value);
+		switch (parserType) {
+			case tyByte:
+				value.byte = parserValue.byte;
+				exprKind = EXPR_BYTE_LITERAL;
+				limitType = TYPE_BYTE;
+				break;
+			case tyShortInt:
+				value.shortInt = sign == tcMinus ? -parserValue.shortInt :
+					parserValue.shortInt;
+				exprKind = EXPR_BYTE_LITERAL;
+				limitType = TYPE_SHORTINT;
+				break;
+			case tyWord:
+				value.word = parserValue.word;
+				exprKind = EXPR_WORD_LITERAL;
+				limitType = TYPE_WORD;
+				break;
+			case tyInteger:
+				value.integer = sign == tcMinus ? -parserValue.integer :
+					parserValue.integer;
+				exprKind = EXPR_WORD_LITERAL;
+				limitType = TYPE_INTEGER;
+				break;
+			case tyCardinal:
+				value.cardinal = parserValue.cardinal;
+				exprKind = EXPR_DWORD_LITERAL;
+				limitType = TYPE_CARDINAL;
+				break;
+			case tyLongInt:
+				value.longInt = sign == tcMinus ? -parserValue.longInt :
+					parserValue.longInt;
+				exprKind = EXPR_DWORD_LITERAL;
+				limitType = TYPE_LONGINT;
+				break;
+			default:
+				Error(errInvalidSubrangeType);
+				exprKind = EXPR_DWORD_LITERAL;
+				limitType = TYPE_VOID;
+				break;
 		}
-		else {
-			Error(errInvalidSubrangeType);
+		*limit = exprCreate(exprKind, 0, 0, 0, &value);
+		if (sign == tcMinus) {
+			struct expr _expr;
+			retrieveChunk(*limit, &_expr);
+			_expr.neg = 1;
+			storeChunk(*limit, &_expr);
 		}
 		break;
 
@@ -218,26 +257,43 @@ CHUNKNUM parseTypeDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 CHUNKNUM parseTypeSpec(void)
 {
 	CHUNKNUM name, type;
+	type_t typeKind = 0;
 
 	switch (parserToken) {
 	case tcBOOLEAN:
-		type = typeCreate(TYPE_BOOLEAN, 0, 0, 0);
-		getToken();
+		typeKind = TYPE_BOOLEAN;
 		break;
 
 	case tcCHAR:
-		type = typeCreate(TYPE_CHARACTER, 0, 0, 0);
-		getToken();
+		typeKind = TYPE_CHARACTER;
+		break;
+
+	case tcBYTE:
+		typeKind = TYPE_BYTE;
+		break;
+
+	case tcSHORTINT:
+		typeKind = TYPE_SHORTINT;
 		break;
 
 	case tcINTEGER:
-		type = typeCreate(TYPE_INTEGER, 0, 0, 0);
-		getToken();
+		typeKind = TYPE_INTEGER;
+		break;
+
+	case tcWORD:
+		typeKind = TYPE_WORD;
+		break;
+
+	case tcLONGINT:
+		typeKind = TYPE_LONGINT;
+		break;
+
+	case tcCARDINAL:
+		typeKind = TYPE_CARDINAL;
 		break;
 
 	case tcREAL:
-		type = typeCreate(TYPE_REAL, 0, 0, 0);
-		getToken();
+		typeKind = TYPE_REAL;
 		break;
 
 	case tcIdentifier:
@@ -276,8 +332,13 @@ CHUNKNUM parseTypeSpec(void)
 
 	default:
 		Error(errInvalidType);
-		type = 0;
+		typeKind = TYPE_VOID;
 		break;
+	}
+
+	if (typeKind) {
+		type = typeCreate(typeKind, 0, 0, 0);
+		getToken();
 	}
 
 	return type;

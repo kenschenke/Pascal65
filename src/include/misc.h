@@ -24,7 +24,7 @@ typedef enum {
 typedef enum {
     tcDummy, tcIdentifier, tcNumber, tcString, tcEndOfFile, tcError,
 
-    tcBOOLEAN, tcCHAR, tcINTEGER, tcREAL,
+    tcBOOLEAN, tcBYTE, tcCARDINAL, tcCHAR, tcINTEGER, tcLONGINT, tcREAL, tcSHORTINT, tcWORD,
 
     tcFALSE, tcTRUE,
 
@@ -41,12 +41,24 @@ typedef enum {
 } TTokenCode;
 
 typedef enum {
-    tyDummy, tyInteger, tyReal, tyCharacter, tyString,
+    tyDummy,
+    tyShortInt, // -128..127
+    tyByte,     // 0..255
+    tyInteger,  // -32768..32767
+    tyWord,     // 0..65535
+    tyLongInt,  // -2147483648..2147483647
+    tyCardinal, // 0..4294967295
+    tyReal, tyCharacter, tyString,
 } TDataType;
 
 typedef union {
-    int integer;
     char character;
+    char shortInt;
+    unsigned char byte;
+    int integer;
+    unsigned int word;
+    long longInt;
+    unsigned long cardinal;
     CHUNKNUM stringChunkNum;
 } TDataValue;
 

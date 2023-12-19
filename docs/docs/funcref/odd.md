@@ -4,7 +4,7 @@ Returns a boolean value to indicate whether the input is odd or even.
 
 ## Declaration
 
-    FUNCTION Odd(num : integer) : boolean;
+    FUNCTION Odd(num : longint) : boolean;
 
 ## Description
 

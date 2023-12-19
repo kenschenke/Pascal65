@@ -17,7 +17,7 @@ L1:
     beq L2
     jsr CHROUT
     iny
-    jmp L1
+    bne L1
 L2:
     rts
 .endproc

@@ -10,10 +10,6 @@
  * to the Pascal language tokens such as tcSemicolon or tcIf, identifiers and
  * literals are stored in the intermediate code like this:
  * 
- * TODO: Remove membuf's dependency on int16 and float shared routines.
- * 
- * TODO: Move testing code from shared code in parsertest to the parsertest overlay.
- * 
  * tzIdentifier
  *    The tzIdentifier code is followed by a one-byte integer string
  *    length followed by the string value (not null-terminated).
@@ -23,11 +19,12 @@
  * 
  * tzToken
  *    The tzToken code is followed by the one-byte TTokenCode value.
- * 
- * tzInteger
- *    The tzInteger code is followed by the two-byte integer value.
- *    This is followed by a one-byte integer string length then the
- *    integer as a string.
+ *
+ * tzByte, tzWord, tzCardinal
+ *    The code is followed by the one, two, or four-byte integer value.
+ *    Integers are always stored as unsigned. This is followed by a
+ *    one-byte integer string length then the integer as a string.
+ *    The negative sign (if present) is stored as a separate token.
  * 
  * tzReal
  *    This is followed by a one-byte integer string length then the
@@ -73,13 +70,14 @@ CHUNKNUM tokenize(const char *filename) {
 
             case tcNumber: {
                 char len = (char) strlen(tokenString);
-                if (tokenType == tyInteger) {
-                    tzType = tzInteger;
-                    writeToMemBuf(Icode, &tzType, 1);
-                    writeToMemBuf(Icode, &tokenValue.integer, 2);
-                } else {
-                    tzType = tzReal;
-                    writeToMemBuf(Icode, &tzType, 1);
+                tzType = tokenizerCode;
+                writeToMemBuf(Icode, &tzType, 1);
+                if (tzType == tzByte) {
+                    writeToMemBuf(Icode, &tokenValue.byte, 1);
+                } else if (tzType == tzWord) {
+                    writeToMemBuf(Icode, &tokenValue.word, 2);
+                } else if (tzType == tzCardinal) {
+                    writeToMemBuf(Icode, &tokenValue.cardinal, 4);
                 }
                 writeToMemBuf(Icode, &len, 1);
                 writeToMemBuf(Icode, tokenString, len);

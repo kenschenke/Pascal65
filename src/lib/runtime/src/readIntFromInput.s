@@ -3,9 +3,9 @@
 
 .export readIntFromInput
 
-.import readInt16, inputPos, skipSpaces
+.import readInt32, inputPos, skipSpaces
 
-; Reads an integer from inputBuf and returns it in A/X
+; Reads an integer from inputBuf and returns it in A/X/sreg
 .proc readIntFromInput
     ; Clear intBuf
     ldy #6
@@ -50,7 +50,11 @@ L3:
     bne L3          ; No.  Keep reading characters
 L4:
     sty inputPos    ; Remember intPos
-    jsr readInt16
+    jsr readInt32
+    lda intOp2
+    sta sreg
+    lda intOp2 + 1
+    sta sreg + 1
     lda intOp1
     ldx intOp1 + 1
     rts

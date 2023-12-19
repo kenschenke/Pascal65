@@ -5,7 +5,7 @@
 .ifdef RUNTIME
 .include "runtime.inc"
 .else
-.import intOp1, intOp2, currentNestingLevel
+.import intOp1, intOp2, intOp32, currentNestingLevel
 .importzp sp, sreg, ptr1, ptr2, ptr3, tmp1, tmp2
 .export stackP
 .endif
@@ -16,6 +16,7 @@
 .export pushAddrStack, readIntStack, popToIntOp1, popToIntOp2, pushFromIntOp1, pushRealStack
 .export storeRealStack, popToReal, readRealStack, readByteStack, pushByteStack, storeByteStack
 .export pushStackFrameHeader, returnFromRoutine
+.export popToIntOp1And2, popToIntOp32, readInt32Stack, storeInt32Stack, pushFromIntOp1And2
 
 .ifndef RUNTIME
 .zeropage
@@ -417,12 +418,28 @@ L4:
 ; to the address in ptr1
 .proc storeIntStack
     jsr popeax
-    ldy #1
-    pha
-    txa
+    ldy #0
     sta (ptr1),y
-    dey
-    pla
+    txa
+    iny
+    sta (ptr1),y
+    rts
+.endproc
+
+; Store the 32-bit integer at the top of the stack
+; to the address in ptr1
+.proc storeInt32Stack
+    jsr popeax
+    ldy #0
+    sta (ptr1),y
+    txa
+    iny
+    sta (ptr1),y
+    lda sreg
+    iny
+    sta (ptr1),y
+    lda sreg + 1
+    iny
     sta (ptr1),y
     rts
 .endproc
@@ -454,10 +471,48 @@ L4:
      rts
 .endproc
 
+; Pops the 32-bit integer at the top of the runtime
+; stack and stores it in intOp1/intOp2
+.proc popToIntOp1And2
+    jsr popeax
+    sta intOp1
+    stx intOp1 + 1
+    lda sreg
+    sta intOp2
+    lda sreg + 1
+    sta intOp2 + 1
+    rts
+.endproc
+
+; Pops the 32-bit integer at the top of the runtime
+; stack and stores it in intOp32
+.proc popToIntOp32
+    jsr popeax
+    sta intOp32
+    stx intOp32 + 1
+    lda sreg
+    sta intOp32 + 2
+    lda sreg + 1
+    sta intOp32 + 3
+    rts
+.endproc
+
 ; Pushes intOp1 onto the runtime stack
 .proc pushFromIntOp1
     lda #0
     sta sreg
+    sta sreg + 1
+    lda intOp1
+    ldx intOp1 + 1
+    jsr pusheax
+    rts
+.endproc
+
+; Pushes the 32-bit integer in intOp1/intOp2 onto the runtime stack
+.proc pushFromIntOp1And2
+    lda intOp2
+    sta sreg
+    lda intOp2 + 1
     sta sreg + 1
     lda intOp1
     ldx intOp1 + 1
@@ -478,8 +533,9 @@ L4:
     rts
 .endproc
 
-; Read the real from the address and leave in A/X/sreg
-.proc readRealStack
+; Read the real and/or 32-bit integer from the address and leave in A/X/sreg
+readRealStack:
+readInt32Stack:
     ldy #3
     lda (ptr1),y
     sta sreg + 1
@@ -492,5 +548,4 @@ L4:
     dey
     lda (ptr1),y
     rts
-.endproc
 

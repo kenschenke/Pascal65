@@ -66,17 +66,6 @@ static unsigned char activateFrame[] = {
 	STA_ZEROPAGE, ZP_NESTINGLEVEL,
 };
 
-#define PRED_SUCC_JSR 12
-static unsigned char predSuccCode[] = {
-	JSR, WORD_LOW(RT_POPTOINTOP1), WORD_HIGH(RT_POPTOINTOP1),
-	LDA_IMMEDIATE, 1,
-	STA_ZEROPAGE, ZP_INTOP2L,
-	LDA_IMMEDIATE, 0,
-	STA_ZEROPAGE, ZP_INTOP2H,
-	JSR, 0, 0,
-	JSR, WORD_LOW(RT_PUSHINTOP1), WORD_HIGH(RT_PUSHINTOP1),
-};
-
 static void genAbsCall(CHUNKNUM argChunk)
 {
 	struct expr arg;
@@ -85,18 +74,9 @@ static void genAbsCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 	retrieveChunk(arg.evalType, &argType);
 
-	if (argType.kind == TYPE_INTEGER) {
-		genExpr(arg.left, 1, 0, 0);
-		genThreeAddr(JSR, RT_POPTOINTOP1);
-		genThreeAddr(JSR, RT_ABSINT16);
-		genThreeAddr(JSR, RT_PUSHINTOP1);
-	}
-	else {
-		genExpr(arg.left, 1, 0, 0);
-		genThreeAddr(JSR, RT_POPTOREAL);
-		genThreeAddr(JSR, RT_FLOATABS);
-		genThreeAddr(JSR, RT_PUSHREAL);
-	}
+	genExpr(arg.left, 1, 0, 0);
+	genTwo(LDA_IMMEDIATE, argType.kind);
+	genThreeAddr(JSR, RT_ABS);
 }
 
 static void genChrCall(CHUNKNUM argChunk)
@@ -113,12 +93,11 @@ static void genChrCall(CHUNKNUM argChunk)
 
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
 {
-	CHUNKNUM localChunk, paramChunk = pType->paramsFields;
-	struct expr _expr, exprLeft;
-	struct decl _decl, localDecl;
-	struct stmt _stmt;
+	CHUNKNUM paramChunk = pType->paramsFields;
+	struct expr _expr;
+	struct decl _decl;
 	struct param_list param;
-	struct type argType, paramType, localType;
+	struct type argType, paramType;
 	struct symbol sym;
 
 	retrieveChunk(declChunk, &_decl);
@@ -139,28 +118,12 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	genOne(TXA);
 	genOne(PHA);
 
-	// Set up the routine's local variables
-
-	retrieveChunk(declChunk, &_decl);
-	retrieveChunk(_decl.code, &_stmt);
-	localChunk = _stmt.decl;
-	while (localChunk) {
-		retrieveChunk(localChunk, &localDecl);
-		memset(name, 0, sizeof(name));
-		retrieveChunk(localDecl.name, name);
-		retrieveChunk(localDecl.type, &localType);
-
-		localChunk = localDecl.next;
-	}
-
 	// Push the arguments onto the stack
 	while (argChunk) {
 		retrieveChunk(argChunk, &_expr);
 		retrieveChunk(_expr.evalType, &argType);
 		retrieveChunk(paramChunk, &param);
 		retrieveChunk(param.type, &paramType);
-
-		retrieveChunk(_expr.left, &exprLeft);
 
 		if (paramType.kind == TYPE_DECLARED) {
 			struct symbol sym;
@@ -191,7 +154,6 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 			genExpr(_expr.left, 1, 0, 0);
 		}
 
-		// How do I match this up to the param_list for the routine?
 		argChunk = _expr.right;
 		paramChunk = param.next;
 	}
@@ -244,15 +206,19 @@ static void genOrdCall(CHUNKNUM argChunk)
 
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
-	unsigned call = rc == rcPred ? RT_SUBINT16 : RT_ADDINT16;
 	struct expr arg;
+	struct type _type;
 
 	retrieveChunk(argChunk, &arg);
+	retrieveChunk(arg.evalType, &_type);
+	getBaseType(&_type);
 
 	genExpr(arg.left, 1, 0, 0);
-	predSuccCode[PRED_SUCC_JSR] = WORD_LOW(call);
-	predSuccCode[PRED_SUCC_JSR + 1] = WORD_HIGH(call);
-	writeCodeBuf(predSuccCode, 17);
+	if (_type.kind == TYPE_ENUMERATION_VALUE) {
+		_type.kind = TYPE_WORD;
+	}
+	genTwo(LDA_IMMEDIATE, _type.kind);
+	genThreeAddr(JSR, rc == rcPred ? RT_PRED : RT_SUCC);
 }
 
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -265,11 +231,28 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(arg.evalType, &_type);
 
 		switch (_type.kind) {
+		case TYPE_BYTE:
+		case TYPE_SHORTINT:
+			genThreeAddr(JSR, RT_READINTFROMINPUT);
+			genThreeAddr(JSR, RT_PUSHBYTE);
+			genExpr(arg.left, 0, 0, 0);
+			genThreeAddr(JSR, RT_STOREINT);
+			break;
+
 		case TYPE_INTEGER:
+		case TYPE_WORD:
 			genThreeAddr(JSR, RT_READINTFROMINPUT);
 			genThreeAddr(JSR, RT_PUSHINT);
 			genExpr(arg.left, 0, 0, 0);
 			genThreeAddr(JSR, RT_STOREINT);
+			break;
+		
+		case TYPE_CARDINAL:
+		case TYPE_LONGINT:
+			genThreeAddr(JSR, RT_READINTFROMINPUT);
+			genThreeAddr(JSR, RT_PUSHEAX);
+			genExpr(arg.left, 0, 0, 0);
+			genThreeAddr(JSR, RT_STOREINT32);
 			break;
 
 		case TYPE_REAL:
@@ -436,19 +419,9 @@ static void genSqrCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 	retrieveChunk(arg.evalType, &argType);
 
-	if (argType.kind == TYPE_INTEGER) {
-		genExpr(arg.left, 1, 0, 0);
-		genThreeAddr(JSR, RT_POPTOINTOP1);
-		genThreeAddr(JSR, RT_INT16SQR);
-		genThreeAddr(JSR, RT_PUSHINTOP1);
-	}
-	else {
-		genExpr(arg.left, 1, 0, 0);
-		genThreeAddr(JSR, RT_POPTOREAL);
-		genThreeAddr(JSR, RT_COPYFPACC);
-		genThreeAddr(JSR, RT_FPMULT);
-		genThreeAddr(JSR, RT_PUSHREAL);
-	}
+	genExpr(arg.left, 1, 0, 0);
+	genTwo(LDA_IMMEDIATE, argType.kind);
+	genThreeAddr(JSR, RT_SQR);
 }
 
 void genSubroutineCall(CHUNKNUM chunkNum)
@@ -516,7 +489,6 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
-	char labelBool[15];
 	struct expr arg;
 	struct type _type;
 
@@ -526,66 +498,22 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		switch (_type.kind) {
 		case TYPE_BOOLEAN:
-			strcpy(labelBool, "LBF");
-			strcat(labelBool, formatInt16(argChunk));
-			if (arg.width) {
-				genExpr(arg.width, 1, 1, 0);
-				genOne(PHA);
-			}
-			genExpr(arg.left, 1, 0, 0);
-			genThreeAddr(JSR, RT_POPTOINTOP1);
-			if (arg.width) {
-				genTwo(LDX_IMMEDIATE, 5);
-				genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
-				genTwo(BEQ, 2);		// boolean value is false - value width is 5
-				genTwo(LDX_IMMEDIATE, 4);
-				genOne(PLA);
-				genThreeAddr(JSR, RT_LEFTPAD);
-			}
-			genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
-			genTwo(BEQ, 7);		// boolean value is false - load "false" in ptr1
-			linkAddressLookup(DATA_BOOLTRUE, codeOffset + 1, 0, LINKADDR_LOW);
-			genTwo(LDA_IMMEDIATE, 0);
-			linkAddressLookup(DATA_BOOLTRUE, codeOffset + 1, 0, LINKADDR_HIGH);
-			genTwo(LDX_IMMEDIATE, 0);
-			linkAddressLookup(labelBool, codeOffset + 1, 0, LINKADDR_BOTH);
-			genThreeAddr(JMP, 0);	// skip to printing the boolean value
-			// Boolean value is false
-			linkAddressLookup(DATA_BOOLFALSE, codeOffset + 1, 0, LINKADDR_LOW);
-			genTwo(LDA_IMMEDIATE, 0);
-			linkAddressLookup(DATA_BOOLFALSE, codeOffset + 1, 0, LINKADDR_HIGH);
-			genTwo(LDX_IMMEDIATE, 0);
-			linkAddressSet(labelBool, codeOffset);
-			genThreeAddr(JSR, RT_PRINTZ);
-			break;
-
 		case TYPE_CHARACTER:
-			if (arg.width) {
-				genExpr(arg.width, 1, 1, 0);
-				genTwo(LDX_IMMEDIATE, 1);
-				genThreeAddr(JSR, RT_LEFTPAD);
-			}
-			genExpr(arg.left, 1, 1, 0);
-			genThreeAddr(JSR, CHROUT);
-			break;
-
+		case TYPE_BYTE:
+		case TYPE_SHORTINT:
 		case TYPE_INTEGER:
+		case TYPE_WORD:
+		case TYPE_LONGINT:
+		case TYPE_CARDINAL:
+			genExpr(arg.left, 1, 0, 0);
 			if (arg.width) {
 				genExpr(arg.width, 1, 1, 0);
-				genOne(PHA);
+				genOne(TAX);
+			} else {
+				genTwo(LDX_IMMEDIATE, 0);
 			}
-			genExpr(arg.left, 1, 0, 0);
-			genThreeAddr(JSR, RT_POPTOINTOP1);
-			if (arg.width) {
-				genOne(PLA);
-			}
-			else {
-				genTwo(LDA_IMMEDIATE, 0);	// field width
-			}
-			genThreeAddr(JSR, RT_WRITEINT16);
-			genTwo(LDA_ZEROPAGE, ZP_INTPTR);
-			genTwo(LDX_ZEROPAGE, ZP_INTPTR + 1);
-			genThreeAddr(JSR, RT_PRINTZ);
+			genTwo(LDA_IMMEDIATE, _type.kind);
+			genThreeAddr(JSR, RT_WRITEVALUE);
 			break;
 
 		case TYPE_REAL:
