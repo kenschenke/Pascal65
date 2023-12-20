@@ -251,7 +251,13 @@ L2:
     sta ptr1
     lda stackP + 1
     sta ptr1 + 1
-    jsr sub8
+    lda ptr1
+    sec
+    sbc #12
+    sta ptr1
+    lda ptr1 + 1
+    sbc #0
+    sta ptr1 + 1
     ldy #1
     lda (ptr1),y
     tax
