@@ -16,7 +16,6 @@
 #include <symtab.h>
 #include <misc.h>
 
-extern int currentNestingLevel;
 extern short cntSymtabs;
 extern CHUNKNUM firstSymtabChunk;
 extern CHUNKNUM globalSymtab;

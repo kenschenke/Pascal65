@@ -14,7 +14,6 @@ static void initSymtabs(void)
 #if 0
     int i;
 
-    currentNestingLevel = 0;
     for (i = 1; i < MAX_NESTING_LEVEL; ++i) symtabStack[i] = 0;
 
     makeSymtab(&globalSymtab);

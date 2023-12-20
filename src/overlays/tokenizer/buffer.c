@@ -72,7 +72,6 @@ char getChar(void)
 
 char getLine(void)
 {
-    extern int currentNestingLevel;
     int i, n;
 
     if (isFatalError)
