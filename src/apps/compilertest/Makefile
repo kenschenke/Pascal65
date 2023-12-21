@@ -205,6 +205,9 @@ errormsgs.petscii: $(SHAREDSRCDIR)/errormsgs.txt
 runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 	dos2unix < $(SHAREDSRCDIR)/runtimemsgs.txt | petcat -w2 -text -o runtimemsgs.petscii
 
+add.petscii: add.pas
+	dos2unix < add.pas | petcat -w2 -text -o add.petscii
+
 ifthen.petscii: ifthen.pas
 	dos2unix < ifthen.pas | petcat -w2 -text -o ifthen.petscii
 
@@ -229,11 +232,14 @@ casetest.petscii: casetest.pas
 procfunc.petscii: procfunc.pas
 	dos2unix < procfunc.pas | petcat -w2 -text -o procfunc.petscii
 
+subtract.petscii: subtract.pas
+	dos2unix < subtract.pas | petcat -w2 -text -o subtract.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -245,6 +251,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
+	-write add.petscii add.pas,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write ifthen.petscii ifthen.pas,seq \
 	-write loops.petscii loops.pas,seq \
@@ -252,9 +259,10 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write scopetest.petscii scopetest.pas,seq \
 	-write vartest.petscii vartest.pas,seq \
 	-write casetest.petscii casetest.pas,seq \
-	-write procfunc.petscii procfunc.pas,seq
+	-write procfunc.petscii procfunc.pas,seq \
+	-write subtract.petscii subtract.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -265,6 +273,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtime runtime \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
+	-write add.petscii add.pas,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write ifthen.petscii ifthen.pas,seq \
@@ -274,6 +283,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write vartest.petscii vartest.pas,seq \
 	-write casetest.petscii casetest.pas,seq \
 	-write procfunc.petscii procfunc.pas,seq \
+	-write subtract.petscii subtract.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

@@ -18,6 +18,7 @@
 static char intBuffer[16];
 
 static char *testFiles[] = {
+    "add",
     "ifthen",
     "loops",
     "stdroutines",
@@ -26,6 +27,7 @@ static char *testFiles[] = {
     "vartest",
     "casetest",
     "procfunc",
+    "subtract",
     NULL
 };
 
