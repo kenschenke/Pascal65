@@ -69,11 +69,11 @@ L2:
     cmp #' '        ; Is it a space?
     bne L4          ; Not a space
     iny             ; Go to the next character
-    jmp L2
+    bne L2
 L3:
     jsr getline     ; read another input line
     ldy #0          ; Reset buffer position
-    jmp L1
+    beq L1
 L4:
     sty inputPos    ; Put Y back into inputPos
     rts

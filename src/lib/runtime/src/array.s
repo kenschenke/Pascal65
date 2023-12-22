@@ -228,7 +228,8 @@ L1:
     lda ptr2 + 1
     adc #0
     sta ptr2 + 1
-    jmp L1
+    clc
+    bcc L1
 L2:
     rts
 .endproc
@@ -291,7 +292,8 @@ L1:
     lda tmp2
     sbc #0
     sta tmp2
-    jmp L1
+    clc
+    bcc L1
 L2:
     stx inputPos            ; Update the input position
     ; Update ptr2 to the current array position
@@ -326,7 +328,8 @@ L3:
     lda tmp2
     sbc #0
     sta tmp2
-    jmp L3
+    clc
+    bcc L3
 L4:
     rts
 .endproc

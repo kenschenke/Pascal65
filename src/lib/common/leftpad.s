@@ -26,7 +26,8 @@ Loop:
     dey
     bmi Done
     jsr CHROUT
-    jmp Loop
+    clc
+    bcc Loop
 
 Done:
     rts
