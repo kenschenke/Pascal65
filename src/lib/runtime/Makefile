@@ -99,7 +99,9 @@ SOURCES += $(LIBCOMMONDIR)/readint16.s
 SOURCES += $(LIBCOMMONDIR)/readint32.s
 SOURCES += $(LIBCOMMONDIR)/strtofloat.s
 SOURCES += $(LIBCOMMONDIR)/uint16comp.s
+SOURCES += $(LIBCOMMONDIR)/uint16mult.s
 SOURCES += $(LIBCOMMONDIR)/uint32comp.s
+SOURCES += $(LIBCOMMONDIR)/uint32mult.s
 SOURCES += $(LIBCOMMONDIR)/writeint.s
 
 CONFIG := cfg-$(TARGET).cfg

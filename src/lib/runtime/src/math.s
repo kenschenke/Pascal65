@@ -63,6 +63,7 @@ resultType: .res 1
     lda oper1Type
     ldx resultType
     jsr convertType
+    ; brk
     rts
 .endproc
 
@@ -77,7 +78,8 @@ resultType: .res 1
     lda oper2Type
     ldx resultType
     jsr convertType         ; Convert it to real
-    jmp L2
+    clc
+    bcc L2
 L1:
     jsr popeax              ; Pop <operand-2> off the stack
                             ; It didn't need to be converted
@@ -94,7 +96,8 @@ L2:
     cmp #TYPE_REAL          ; Is it real?
     bne L3                  ; If not, skip to converting it to real
     jsr popToReal           ; Pop <operand-1> off the stack
-    jmp L4                  ; Skip over converting it
+    clc
+    bcc L4                  ; Skip over converting it
 L3:
     jsr popToIntOp1And2     ; Pop <operand-1> off the stack
     lda oper1Type

@@ -59,22 +59,12 @@ done:
     eor #$ff
     sta intOp2 + 1
     ; add 1
-    clc
-    lda intOp1
-    adc #1
-    sta intOp1
-    bcc L1
-    lda intOp1 + 1
-    adc #0
-    bcc L1
-    sta intOp1 + 1
-    lda intOp2
-    adc #0
-    bcc L1
-    sta intOp2
-    lda intOp2 + 1
-    adc #0
-    sta intOp2 + 1
+    ldx #0
+:   inc intOp1,x
+    bne L1
+    inx
+    cpx #4
+    bne :-
 L1:
     rts
 .endproc
