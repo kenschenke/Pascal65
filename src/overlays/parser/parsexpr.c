@@ -162,11 +162,6 @@ CHUNKNUM parseSimpleExpression(void)
 	CHUNKNUM exprChunk;
 	char unaryNeg = 0;
 
-	if (parserToken == tcMinus) {
-		getToken();
-		unaryNeg = 1;
-	}
-
 	exprChunk = parseTerm();
 	if (unaryNeg) {
 		struct expr _expr;
