@@ -728,6 +728,23 @@ static char realOperands(char type1Kind, char type2Kind, short *pSize)
 		*pSize = GET_TYPE_SIZE(getTypeMask(resultKind));
 	}
 
+	// If both operands are integers and one or both operands are signed,
+	// the result must be one size higher than the largest operand.
+	if (isTypeInteger(type1Kind) && isTypeInteger(type2Kind)) {
+		char leftMask = getTypeMask(type1Kind);
+		char rightMask = getTypeMask(type2Kind);
+		char resultMask = getTypeMask(resultKind);
+		char leftSize = GET_TYPE_SIZE(leftMask);
+		char rightSize = GET_TYPE_SIZE(rightMask);
+		if ((IS_TYPE_SIGNED(leftMask) || IS_TYPE_SIGNED(rightMask)) && !IS_TYPE_SIGNED(resultKind)) {
+			if (resultKind == TYPE_BYTE) {
+				resultKind = TYPE_INTEGER;
+			} else if (resultKind == TYPE_WORD) {
+				resultKind = TYPE_LONGINT;
+			}
+		}
+	}
+
 	return resultKind;
 }
 

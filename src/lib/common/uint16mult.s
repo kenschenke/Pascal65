@@ -35,13 +35,12 @@
 :
     ; Is intOp1 < intOp2
     jsr ltUint16
-    bne :+         ; swap them
+    beq :+         ; swap them
     ; Swap intOp1 and intOp2
     jsr swapInt16
 
-:
     ; Zero out the result
-    lda #0
+:   lda #0
     sta tmp3
     sta tmp4
 

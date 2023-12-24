@@ -27,6 +27,7 @@ static char *testFiles[] = {
     "vartest",
     "casetest",
     "procfunc",
+    "multiply",
     "subtract",
     NULL
 };

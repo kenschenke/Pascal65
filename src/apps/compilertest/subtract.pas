@@ -21,7 +21,7 @@ Begin
 	b2 := 190;
 	b3 := 5;
 	b := b2 - b3;
-	If b <> 185 Then Error(10);
+	If b <> 185 Then Error(1);
 	If 190 - 5 <> 185 Then Error(2);
 	If b2 - 5 <> 185 Then Error(3);
 	If 190 - b3 <> 185 Then Error(4);

@@ -63,7 +63,6 @@ resultType: .res 1
     lda oper1Type
     ldx resultType
     jsr convertType
-    ; brk
     rts
 .endproc
 
