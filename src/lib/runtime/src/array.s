@@ -138,26 +138,26 @@ L1:
 ;    Lower bound pushed onto runtime stack
 ;    Array heap address in A/X
 .proc initArrayHeap
-    sta ptr1
-    stx ptr1 + 1
+    sta ptr2
+    stx ptr2 + 1
     jsr popax
     ldy #0
-    sta (ptr1),y        ; Store lower array bound
+    sta (ptr2),y        ; Store lower array bound
     ldy #1
     txa
-    sta (ptr1),y
+    sta (ptr2),y
     jsr popax
     ldy #2
-    sta (ptr1),y        ; Store upper array bound
+    sta (ptr2),y        ; Store upper array bound
     txa
     ldy #3
-    sta (ptr1),y
+    sta (ptr2),y
     jsr popax
     ldy #4
-    sta (ptr1),y        ; Store element size
+    sta (ptr2),y        ; Store element size
     txa
     ldy #5
-    sta (ptr1),y
+    sta (ptr2),y
     rts
 .endproc
 
