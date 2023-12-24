@@ -29,6 +29,7 @@ static char *testFiles[] = {
     "procfunc",
     "multiply",
     "subtract",
+    "divint",
     NULL
 };
 
