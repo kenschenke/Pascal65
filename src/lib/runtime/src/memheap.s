@@ -7,7 +7,10 @@
 
 .export heapAlloc, heapFree, heapInit, _heapPtr
 
-; The memory heap goes from $A800 to $CFFF.
+; The memory heap starts at the end of program code going to the top of the
+; runtime stack (the runtime stack grows downward). Assuming a 2K stack
+; size, the heap would go from the end of program code to $C800 on a
+; C64 and $B800 on a MEGA65.
 
 ; Memory Allocation Table (MAT)
 ; Each entry in the MAT is four bytes.
@@ -203,11 +206,11 @@ NewEntry:               ; Add a new entry to the MAT
     lda ptr3            ; Check if ptr3 is non-zero.
     ora ptr3 + 1        ; If so, use it to calculate the address of the next heap block
     bne L6
-    lda #<heapBottom    ; Store the memory pointer
+    lda heapBottom    ; Store the memory pointer
     sta (ptr1),y        ; in the next two bytes of the MAT entry.
     sta tmp1            ; Also store the pointer in tmp1/tmp2.
     iny
-    lda #>heapBottom
+    lda heapBottom + 1
     sta (ptr1),y
     sta tmp2
     jmp L7
