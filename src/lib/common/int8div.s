@@ -135,7 +135,7 @@ L5:
     lda #0
     sta tmp1
     ; Go again
-    jmp L5
+    beq L5
 
 L6:
     ; Store the result in intOp1

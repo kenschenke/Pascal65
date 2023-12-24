@@ -8,15 +8,9 @@
 .endif
 
 .import absInt32, invertInt32, isNegInt32, ltInt32, swapInt32
-.import runtimeError, exit
+.import runtimeError
 
 .export divInt32
-
-.import popeax
-.export _testDivInt32
-.ifndef RUNTIME
-.importzp sreg
-.endif
 
 ; tmp1 - intOpt1 is -32768
 ; tmp2 - result is negative
@@ -40,30 +34,6 @@
 ; The number of subtractions becomes the result.
 ;
 ; Finally, if the result is negative, it inverts the sign on the result.
-
-.proc _testDivInt32
-    sta intOp32
-    stx intOp32 + 1
-    lda sreg
-    sta intOp32 + 2
-    lda sreg + 1
-    sta intOp32 + 3
-    jsr popeax
-    sta intOp1
-    stx intOp1 + 1
-    lda sreg
-    sta intOp2
-    lda sreg + 1
-    sta intOp2 + 1
-    jsr divInt32
-    lda intOp2
-    sta sreg
-    lda intOp2 + 1
-    sta sreg + 1
-    lda intOp1
-    ldx intOp1 + 1
-    rts
-.endproc
 
 .proc divInt32
     ; Check for divide by zero
@@ -137,19 +107,12 @@ L3:
     lda #1
     sta tmp1            ; store 1 in tmp1
     ; Add one to intOp1/intOp2
-    clc
-    lda intOp1
-    adc #1
-    sta intOp1
-    lda intOp1 + 1
-    adc #0
-    sta intOp1 + 1
-    lda intOp2
-    adc #0
-    sta intOp2
-    lda intOp2 + 1
-    adc #0
-    sta intOp2 + 1
+    ldx #0
+:   inc intOp1,x
+    bne L4
+    inx
+    cpx #4
+    bne :-
 
 L4:
     ; Take the absolute values of intOp1/intOp2 and intOp32
@@ -172,53 +135,35 @@ L5:
     bne L6              ; It is.
     ; Subtract op32 from op1/op2
     sec
-    lda intOp1
-    sbc intOp32
-    sta intOp1
-    lda intOp1 + 1
-    sbc intOp32 + 1
-    sta intOp1 + 1
-    lda intOp2
-    sbc intOp32 + 2
-    sta intOp2
-    lda intOp2 + 1
-    sbc intOp32 + 3
-    sta intOp2 + 1
+    ldx #0
+    ldy #4
+:   lda intOp1,x
+    sbc intOp32,x
+    sta intOp1,x
+    inx
+    dey
+    bne :-
     ; Increment ptr1/ptr2
-    clc
-    lda ptr1
-    adc #1
-    sta ptr1
-    lda ptr1 + 1
-    adc #0
-    sta ptr1 + 1
-    lda ptr2
-    adc #0
-    sta ptr2
-    lda ptr2 + 1
-    adc #0
-    sta ptr2 + 2
+    ldx #0
+:   inc ptr1,x
+    bne :+
+    inx
+    cpx #4
+    bne :-
     ; Is tmp1 non-zero?
-    lda tmp1
+:   lda tmp1
     beq L5
     ; Add one to intOp1/intOp2
-    clc
-    lda intOp1
-    adc #1
-    sta intOp1
-    lda intOp1 + 1
-    adc #0
-    sta intOp1 + 1
-    lda intOp2
-    adc #0
-    sta intOp2
-    lda intOp2 + 1
-    adc #0
-    sta intOp2 + 1
-    lda #0
+    ldx #0
+:   inc intOp1,x
+    bne :+
+    inx
+    cpx #4
+    bne :-
+:   lda #0
     sta tmp1
     ; Go again
-    jmp L5
+    beq L5
 
 L6:
     ; Store the result in intOp1/intOp2
