@@ -9,13 +9,12 @@
 
 .export multInt8
 
-.proc reloadIntOps
+.macro reloadIntOps
     lda tmp1
     sta intOp1
     lda tmp3
     sta intOp2
-    rts
-.endproc
+.endmacro
 
 ; tmp2 - op2 is negative
 ; tmp3 - LB result
@@ -41,14 +40,14 @@
     ; If intOp1 is zero result is zero
     lda intOp1
     bne L0
-    jmp Done
+    beq Done
 L0:
     ; If intOp2 is zero, store zero in result
     lda intOp2
     bne L1
     lda #0
     sta intOp1
-    jmp Done
+    beq Done
     ; Take the absolute value of intOp1
 L1:
     jsr absInt8
@@ -62,11 +61,12 @@ L1:
     ; Is intOp1 < intOp2
     jsr ltInt8
     beq L2         ; swap them
-    jsr reloadIntOps
-    jmp L3
+    reloadIntOps
+    clc
+    bcc L3
 L2:
     ; Swap intOp1 and intOp2
-    jsr reloadIntOps
+    reloadIntOps
     jsr swapInt8
 L3:
     ; Is intOp2 negative?

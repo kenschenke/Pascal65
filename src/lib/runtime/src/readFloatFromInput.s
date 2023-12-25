@@ -42,7 +42,7 @@ L1:
     sta FPBUF       ; Store the minus sign in intBuf
     ldx #1          ; Start at the 2nd char in intBuf
     iny             ; Skip to the next character in the input buffer
-    jmp L3          ; Start reading digits
+    bne L3          ; Start reading digits
 L2:
     ldx #0          ; Use X as an offset into the floating point string buffer
 L3:
@@ -57,7 +57,7 @@ L3:
     sta FPBUF,x     ; Store the decimal point in FPBUF
     lda #1
     sta sawDecimalPoint
-    jmp L10         ; Move to the next character
+    bne L10         ; Move to the next character
 L4:
     cmp #'e'        ; Is the char 'e'?
     beq L5          ; Yes
@@ -70,7 +70,7 @@ L5:                 ; Character is 'e' or 'E'
     sta FPBUF,x     ; Store it in FPBUF
     lda #1
     sta sawExponent
-    jmp L10         ; Move to the next character
+    bne L10         ; Move to the next character
 L6:
     cmp #'-'        ; Is the char '-'?
     beq L7          ; Yes
@@ -85,7 +85,7 @@ L7:                 ; Character is '-' or '+'
     sta FPBUF,x     ; Store it in FPBUF
     lda #1
     sta sawExponentSign
-    jmp L10
+    bne L10
 L9:
     cmp #'0'
     bcc L11         ; Done if character below '0'

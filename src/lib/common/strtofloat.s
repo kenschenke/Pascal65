@@ -22,7 +22,7 @@ L1:
     beq L2
     inx
     iny
-    jmp L1
+    bne L1
 L2:
     jsr FPINP
     lda FPBASE + FPMSW

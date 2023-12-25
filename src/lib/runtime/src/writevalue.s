@@ -59,37 +59,43 @@ UINT8:
     jsr popToIntOp1
     pla
     jsr writeUint8
-    jmp writeIntBuf
+    clc
+    bcc writeIntBuf
 
 SINT8:
     jsr popToIntOp1
     pla
     jsr writeInt8
-    jmp writeIntBuf
+    clc
+    bcc writeIntBuf
 
 UINT16:
     jsr popToIntOp1
     pla
     jsr writeUint16
-    jmp writeIntBuf
+    clc
+    bcc writeIntBuf
 
 SINT16:
     jsr popToIntOp1
     pla
     jsr writeInt16
-    jmp writeIntBuf
+    clc
+    bcc writeIntBuf
 
 UINT32:
     jsr popToIntOp1And2
     pla
     jsr writeUint32
-    jmp writeIntBuf
+    clc
+    bcc writeIntBuf
 
 SINT32:
     jsr popToIntOp1And2
     pla
     jsr writeInt32
-    jmp writeIntBuf
+    clc
+    bcc writeIntBuf
 
 writeIntBuf:
     lda intPtr

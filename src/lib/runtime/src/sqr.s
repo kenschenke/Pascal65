@@ -41,21 +41,25 @@
 L8:
     jsr popToIntOp1
     jsr signExtend8To32
-    jmp Finish
+    clc
+    bcc Finish
 
 L8U:
     jsr popToIntOp1
-    jmp Finish
+    clc
+    bcc Finish
 
     ; 16-bit
 L16:
     jsr popToIntOp1
     jsr signExtend16To32
-    jmp Finish
+    clc
+    bcc Finish
 
 L16U:
     jsr popToIntOp1
-    jmp Finish
+    clc
+    bcc Finish
 
     ; 32-bit
 L32:

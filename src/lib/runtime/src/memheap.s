@@ -99,15 +99,11 @@ L2:
     bpl L2
     ; End of MAT reached
     ; If ptr3 is zero, this is the first heap entry
-    ; lda #'3'
-    ; jsr $ffd2
     lda ptr3
     ora ptr3 + 1
     bne L3
     ; First entry in heap
-    ; lda #'z'
-    ; jsr $ffd2
-    jmp NewEntry
+    beq NewEntry
 L3:
     ; Reached the end of the MAT. Check if ptr2 is non-zero.
     ; It points to the smallest available MAT entry.
@@ -117,16 +113,13 @@ L3:
     ; ptr2 is zero which means there are no available blocks
     ; in the MAT that can hold the requested allocation.
     ; jsr incMATPtr
-    jmp NewEntry
+    beq NewEntry
 L31:
-    ; lda #'r'
-    ; jsr $ffd2
     ; ptr2 is non-zero which means it points to the MAT entry
     ; for the smallest block that can hold the requested allocation.
-    jmp ReUseEntry
+    clc
+    bcc ReUseEntry
 L4:
-    ; lda #'x'
-    ; jsr $ffd2
     ldy #1
     lda (ptr1),y        ; Look at second byte of size of allocation
     and #$80            ; Isolate the high bit
@@ -155,7 +148,8 @@ L4:
     sta ptr2            ; in ptr2 for future reference
     lda ptr1 + 1
     sta ptr2 + 1
-    jmp L5              ; Move on to the next MAT entry.
+    clc
+    bcc L5              ; Move on to the next MAT entry.
 L41:
     ; Ptr2 contains a previously-seen block that was
     ; big enough.  Compare the current block's size
@@ -171,15 +165,11 @@ L41:
     beq L5              ; It is not.  Ignore this block.
     ; The current block is smaller than previously-examined
     ; blocks.  Remember this block as the new smallest one.
-    ; lda #'2'
-    ; jsr $ffd2
     lda ptr1
     sta ptr2
     lda ptr1 + 1
     sta ptr2 + 1
 L5:
-    ; lda #'i'
-    ; jsr $ffd2
     ldy #2
     lda ptr1
     sta ptr3
@@ -187,14 +177,26 @@ L5:
     lda ptr1 + 1
     sta ptr3 + 1
     jsr incMATPtr       ; Move to the next block in the MAT
-    jmp L1
+    clc
+    bcc L1
 L99:
     lda tmp1
     ldx tmp2
     rts
+ReUseEntry:
+    ldy #1              ; Second byte in MAT entry
+    lda (ptr2),y        ; Load it
+    ora #$80            ; Set the high bit
+    sta (ptr2),y        ; Save it back
+    ldy #2              ; Third byte in MAT entry
+    lda (ptr2),y        ; Load low byte of address block
+    sta tmp1            ; Store it in tmp1
+    iny                 ; Fourth byte in MAT entry
+    lda (ptr2),y        ; Load high byte of address block
+    sta tmp2            ; Store it in tmp2
+    clc
+    bcc L99             ; Done
 NewEntry:               ; Add a new entry to the MAT
-    ; lda #'n'
-    ; jsr $ffd2
     ldy #0
     lda tmp1            ; Load the requested buffer size
     sta (ptr1),y        ; Store it in the first two bytes
@@ -213,7 +215,8 @@ NewEntry:               ; Add a new entry to the MAT
     lda heapBottom + 1
     sta (ptr1),y
     sta tmp2
-    jmp L7
+    clc
+    bcc L7
 L6:
     ; Add the last block's pointer and its size
     ldy #2
@@ -240,47 +243,13 @@ L6:
     sta (ptr1),y
 L7:
     jsr incMATPtr       ; Move to the next entry in the MAT
-    ; lda #$f8
-    ; sta ptr1
-    ; lda #$cf
-    ; sta ptr1 + 1
     lda #0              ; Store zeros in all four bytes
-    ; sta $cff8
-    ; sta $cff9
-    ; sta $cffa
-    ; sta $cffb
-    ; rts
     ldy #3
 L98:
-    ; lda #'0'
-    ; jsr $ffd2
-    ; lda #0
     sta (ptr1),y
     dey
-    ; rts
-    ; sta (ptr1),y
-    ; dey
-    ; sta (ptr1),y
-    ; dey
-    ; sta (ptr1),y
-    ; ldy #0
-    ; sta (ptr1),y
-    ; rts
-    ; jmp L99
     bmi L99
-    jmp L98
-ReUseEntry:
-    ldy #1              ; Second byte in MAT entry
-    lda (ptr2),y        ; Load it
-    ora #$80            ; Set the high bit
-    sta (ptr2),y        ; Save it back
-    ldy #2              ; Third byte in MAT entry
-    lda (ptr2),y        ; Load low byte of address block
-    sta tmp1            ; Store it in tmp1
-    iny                 ; Fourth byte in MAT entry
-    lda (ptr2),y        ; Load high byte of address block
-    sta tmp2            ; Store it in tmp2
-    jmp L99             ; Done
+    bpl L98
 .endproc
 
 .proc incMATPtr
@@ -291,8 +260,6 @@ ReUseEntry:
     bcc L1
     rts
 L1:
-    ; lda #'d'
-    ; jsr $ffd2
     dec ptr1 + 1
     rts
 .endproc
@@ -321,7 +288,7 @@ L11:
     bne L2              ; This byte is non-zero
     dey
     bmi L4              ; All four bytes were zero. No more MAT entries.
-    jmp L11
+    bpl L11
 L2:
     ldy #2              ; Compare this entry's address to ptr2
     lda (ptr1),y
@@ -331,10 +298,11 @@ L2:
     lda (ptr1),y
     cmp ptr2 + 1
     bne L21             ; The address matches
-    jmp L3
+    beq L3
 L21:
     jsr incMATPtr       ; Move to the next MAT entry
-    jmp L1
+    clc
+    bcc L1
 L3:
     ; Found it.
     ldy #1
@@ -342,9 +310,8 @@ L3:
     and #$7f
     sta (ptr1),y
 L4:
-    ; lda #'4'
-    ; jsr $ffd2
-    jmp trimFreeBlocks
+    clc
+    bcc trimFreeBlocks
 .endproc
 
 ; This routine trims free blocks from the end of the MAT.
@@ -367,7 +334,7 @@ L2:
     bne L3
     dey
     bpl L2
-    jmp L4
+    bmi L4
 L3:
     ; This entry is used.
     ; Go to the next one.
@@ -378,7 +345,7 @@ L3:
     lda ptr1 + 1
     sbc #0
     sta ptr1 + 1
-    jmp L1
+    beq L1
 L4:
     ; Found the last entry.  Work backwards setting entries to zero until
     ; (1) We're at the first entry.
@@ -411,7 +378,7 @@ L6:
     lda ptr1 + 1
     adc #0
     sta ptr1 + 1
-    jmp L4
+    beq L4
 L9:
     rts
 .endproc

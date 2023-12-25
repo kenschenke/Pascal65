@@ -41,7 +41,8 @@ NUM_WORDTBL = 36     ; nine entries * 4 bytes
     pha
     jsr signExtend8To32
     pla
-    jmp writeInt32
+    clc
+    bcc writeInt32
 .endproc
 
 ; This routine converts the unsigned 8-bit value in intOp1
@@ -54,14 +55,16 @@ L1:
     dex
     bpl L1
     pla
-    jmp writeUint32
+    clc
+    bcc writeUint32
 .endproc
 
 .proc writeInt16
     pha
     jsr signExtend16To32
     pla
-    jmp writeInt32
+    clc
+    bcc writeInt32
 .endproc
 
 .proc writeUint16
@@ -75,7 +78,8 @@ L1:
 
 writeUint32:
     jsr setup
-    jmp NotNeg
+    clc
+    bcc NotNeg
 
 setup:
     sta tmp4
@@ -113,7 +117,7 @@ LSpecl:
     beq JmpDone
     sta (ptr2),y
     iny
-    jmp LSpecl
+    bne LSpecl
 
 NotSpecl:
     ; Number is not -2,147,483,648
@@ -130,10 +134,12 @@ NotSpecl:
     adc #0
     sta ptr2 + 1
     jsr invertInt32      ; Make it a positive number
-    jmp NotNeg
+    clc
+    bcc NotNeg
 
 JmpDone:
-    jmp Done
+    clc
+    bcc Done
 
 NotNeg:
     ; Loop through tensTable32, comparing values until intOp1/intOp2 is less.
@@ -173,7 +179,7 @@ LoopComp:
     dey
     dey
     inc tmp1
-    jmp LoopSub
+    bne LoopSub
 
 IsDigitZero:
     clc
@@ -198,7 +204,8 @@ IsDigitZero:
     lda ptr2 + 1
     adc #0
     sta ptr2 + 1
-    jmp LoopTbl
+    clc
+    bcc LoopTbl
 
 PrintLastDigit:
     ; Print last digit
@@ -215,7 +222,7 @@ L1:
     lda (intPtr),y
     beq PadStr
     iny
-    jmp L1
+    bne L1
 PadStr:
     tya
     tax

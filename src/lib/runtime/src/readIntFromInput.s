@@ -26,7 +26,7 @@ L1:
     ldy inputPos    ; Load inputPos back into Y
     ldx #1          ; Start at the 2nd char in intBuf
     iny             ; Skip to the next character in the input buffer
-    jmp L3          ; Start reading digits
+    bne L3          ; Start reading digits
 L2:
     ldx #0          ; Use X as an offset into the integer buffer
 L3:

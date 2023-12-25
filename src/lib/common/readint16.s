@@ -57,7 +57,7 @@ L1:
     bcs L2          ; non-digit
     inc tmp2
     inc tmp3
-    jmp L1
+    bne L1
 
 L2:
     ; tmp2 contains the number of digits
@@ -94,14 +94,15 @@ L4:
     adc (ptr2),y
     sta intOp1 + 1
     dex
-    jmp L4
+    clc
+    bcc L4
 L5:
     ; Move on to the next digit
     dec tmp2
     inc tmp3
     inc tmp4
     inc tmp4
-    jmp L3
+    bne L3
 
 L6:
     ; If the number was negative, negate it
