@@ -15,53 +15,128 @@
 .export _setMemBufPos
 
 .import loadMemBufDataCache, loadMemBufHeaderCache, _retrieveChunk
-.import _cachedMemBufData, _cachedMemBufHdr, _reserveMemBuf
+.import _cachedMemBufHdr, _reserveMemBuf, flushMemBufCache
 .import popax, pushax
 
 .bss
 
-hdrChunkNum: .res 2
-position: .res 2
+remaining: .res 2
+chunk: .res CHUNK_LEN
 
 .code
 
-.proc isPosLtChunkLen
-    ; If high byte of position set, it's definitely
-    ; not less than the chunk length.
-    ; Compare the high bytes first
-    lda position + 1
-    bne L1
+; This routine uses the index of chunks to jump ahead
+; by BYTES_PER_INDEX
+.proc jumpUsingIndex
+    ; Load the first index chunk
+    lda _cachedMemBufHdr + MEMBUF::firstIndexChunk
+    ldx _cachedMemBufHdr + MEMBUF::firstIndexChunk + 1
+    jsr pushax
+    lda #<chunk
+    ldx #>chunk
+    jsr _retrieveChunk
 
-    ; Compare the lower byte of position
-    lda position
-    cmp #MEMBUF_CHUNK_LEN
-    bcc L2
-
+    ; Check if remaining is less than CHUNKS_PER_INDEX
 L1:
-    lda #0
-    rts
-
+    lda remaining + 1
+    bne L2          ; not less than CHUNKS_PER_INDEX
+    lda remaining
+    cmp #BYTES_PER_INDEX
+    bcc L3          ; branch if BYTES_PER_INDEX > remaining
 L2:
-    lda #1
+    ; Decrement remaining by BYTES_PER_INDEX
+    lda remaining
+    sec
+    sbc #BYTES_PER_INDEX
+    sta remaining
+    lda remaining + 1
+    sbc #0
+    sta remaining + 1
+    ; Increment global position by BYTES_PER_INDEX
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
+    clc
+    adc #BYTES_PER_INDEX
+    sta _cachedMemBufHdr + MEMBUF::posGlobal
+    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    adc #0
+    sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    ; Move to the next index chunk
+    lda chunk
+    ldx chunk + 1
+    jsr pushax
+    lda #<chunk
+    ldx #>chunk
+    jsr _retrieveChunk
+    jmp L1
+L3:
+    rts
+.endproc
+
+; This routine uses the index in the current _cachedMemBufData
+; to load the chunk the caller is looking for.
+.proc advanceToChunk
+    ldx #2          ; index in _cachedMemBufData
+L1:
+    ; Check if remaining is less than MEMBUF_CHUNK_LEN
+    lda remaining
+    cmp #MEMBUF_CHUNK_LEN
+    bcc L2          ; branch if MEMBUF_CHUNK_LEN > remaining
+    ; Subtract MEMBUF_CHUNK_LEN from remaining
+    lda remaining
+    sec
+    sbc #MEMBUF_CHUNK_LEN
+    sta remaining
+    ; Add MEMBUF_CHUNK_LEN to global position
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
+    clc
+    adc #MEMBUF_CHUNK_LEN
+    sta _cachedMemBufHdr + MEMBUF::posGlobal
+    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    adc #0
+    sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    ; Move to the next chunk in the index
+    inx             ; increment index in chunk
+    inx             ; by two
+    jmp L1
+L2:
+    lda chunk,x
+    sta _cachedMemBufHdr + MEMBUF::currentChunkNum
+    inx
+    tay
+    lda chunk,x
+    sta _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
+    tax
+    tya
+    jsr pushax
+    lda #<chunk
+    ldx #>chunk
+    jsr _retrieveChunk
+    ; Add remaining to the global position
+    lda _cachedMemBufHdr + MEMBUF::posGlobal
+    clc
+    adc remaining
+    sta _cachedMemBufHdr + MEMBUF::posGlobal
+    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    adc #0
+    sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
+    ; Set the chunk position to remaining
+    lda remaining
+    sta _cachedMemBufHdr + MEMBUF::posChunk
     rts
 .endproc
 
 ; void setMemBufPos(CHUNKNUM hdrChunkNum, unsigned position)
 .proc _setMemBufPos
     ; Store the second parameter
-    sta position
-    stx position + 1
+    sta remaining
+    stx remaining + 1
     ; Store the first parameter
-    jsr popax
-    sta hdrChunkNum
-    stx hdrChunkNum + 1
 
-    ; Call loadMemBufHeaderCache
-    lda hdrChunkNum
-    ldx hdrChunkNum + 1
+    jsr flushMemBufCache
+
+    jsr popax
     jsr loadMemBufHeaderCache
 
-L0:
     ; Reset the buffer position
     lda #0
     sta _cachedMemBufHdr + MEMBUF::posGlobal
@@ -69,66 +144,20 @@ L0:
     sta _cachedMemBufHdr + MEMBUF::posChunk
     sta _cachedMemBufHdr + MEMBUF::posChunk + 1
 
-    ; Copy the firstChunkNum to currentChunkNum
+    lda remaining
+    ora remaining + 1
+    bne :+
+
+    ; Load the first chunk
     lda _cachedMemBufHdr + MEMBUF::firstChunkNum
     sta _cachedMemBufHdr + MEMBUF::currentChunkNum
-    lda _cachedMemBufHdr + MEMBUF::firstChunkNum + 1
-    sta _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
+    ldx _cachedMemBufHdr + MEMBUF::firstChunkNum + 1
+    stx _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
+    jmp loadMemBufDataCache
 
-    ; Loop until we get to the position we want
-L1:
-    ; Retrieve the chunk
-    lda _cachedMemBufHdr + MEMBUF::currentChunkNum
-    ldx _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
-    jsr loadMemBufDataCache
+    ; Jump ahead using the index
+:   jsr jumpUsingIndex
 
-    ; If position < MEMBUF_CHUNK_LEN, this is the chunk we want
-    jsr isPosLtChunkLen
-    beq L2      ; greater than or equal
-
-    ; This is the chunk we want - set the buffer header positions
-    clc
-    lda _cachedMemBufHdr + MEMBUF::posGlobal
-    adc position
-    sta _cachedMemBufHdr + MEMBUF::posGlobal
-    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
-    adc #0 ; position + 1
-    sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
-    ; set the chunk position
-    lda position
-    sta _cachedMemBufHdr + MEMBUF::posChunk
-    lda #0 ; position + 1
-    sta _cachedMemBufHdr + MEMBUF::posChunk + 1
-    jmp L3
-
-L2:
-    ; Increment the global position
-    clc
-    lda _cachedMemBufHdr + MEMBUF::posGlobal
-    adc #MEMBUF_CHUNK_LEN
-    sta _cachedMemBufHdr + MEMBUF::posGlobal
-    lda _cachedMemBufHdr + MEMBUF::posGlobal + 1
-    adc #0
-    sta _cachedMemBufHdr + MEMBUF::posGlobal + 1
-
-    ; Decrement position
-    sec
-    lda position
-    sbc #MEMBUF_CHUNK_LEN
-    sta position
-    lda position + 1
-    sbc #0
-    sta position + 1
-
-    ; Set the next chunkNum
-    lda _cachedMemBufData + MEMBUF_CHUNK::nextChunk
-    sta _cachedMemBufHdr + MEMBUF::currentChunkNum
-    lda _cachedMemBufData + MEMBUF_CHUNK::nextChunk + 1
-    sta _cachedMemBufHdr + MEMBUF::currentChunkNum + 1
-
-    jmp L1
-
-L3:
-    rts
-
+    ; Advance to the chunk
+    jmp advanceToChunk
 .endproc

@@ -24,15 +24,6 @@ static char errors;
 
 void runPrg(void) {}
 
-void testWriteInt8(char);
-void testWriteUint8(unsigned char);
-void testWriteInt16(int);
-void testWriteUint16(unsigned);
-void testWriteInt32(long);
-void testWriteUint32(unsigned long);
-long testMultInt32(long num1, long num2);
-long testDivInt32(long num1, long num2);
-
 void main()
 {
     CHUNKNUM tokenId, astRoot;
@@ -51,17 +42,16 @@ void main()
 #ifdef __C128__
     fast();
     videomode(VIDEOMODE_80x25);
-    printf("Is fast mode: %s\n", isfast() ? "yes" : "no");
 #endif
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
-    printf("Loading tokenizer overlay\n");
+    printlnz("Loading tokenizer overlay");
 
     if (loadfile("compiler.1")) {
         tokenId = tokenize("hello.pas");
     }
 
-    printf("Loading parser overlay\n");
+    printlnz("Loading parser overlay");
     if (loadfile("compiler.2")) {
         astRoot = parse(tokenId);
         freeMemBuf(tokenId);
@@ -71,7 +61,7 @@ void main()
         return;
     }
 
-    printf("Loading semantic overlay\n");
+    printlnz("Loading semantic overlay");
     if (loadfile("compiler.3")) {
         initSemantic();
         init_scope_stack();
@@ -84,7 +74,7 @@ void main()
         return;
     }
 
-    printf("Loading linker overlay\n");
+    printlnz("Loading linker overlay");
     if (loadfile("compiler.5")) {
         linkerPreWrite();
     }
@@ -93,7 +83,7 @@ void main()
         return;
     }
 
-    printf("Loading objcode overlay\n");
+    printlnz("Loading objcode overlay");
     if (loadfile("compiler.4")) {
         objCodeWrite(astRoot);
     }
@@ -102,7 +92,7 @@ void main()
         return;
     }
 
-    printf("Loading linker overlay\n");
+    printlnz("Loading linker overlay");
     if (loadfile("compiler.5")) {
         linkerPostWrite("hello", 0);
     }
@@ -122,24 +112,33 @@ unsigned char loadfile(const char *name)
 
 void log(const char *module, const char *message)
 {
-    printf("%s: %s\n", module, message);
+    printz(module);
+    printz(": ");
+    printlnz(message);
 }
 
 void logError(const char *message, unsigned lineNumber, TErrorCode ec)
 {
-    printf("*** ERROR: %s -- line %d -- code %d\n", message, lineNumber, ec);
+    printz("*** ERROR: ");
+    printz(message);
+    printz(" -- line ");
+    printz(formatInt16(lineNumber));
+    printz(" -- code ");
+    printlnz(formatInt16(ec));
     ++errors;
     exit(0);
 }
 
 void logFatalError(const char *message)
 {
-    printf("*** Fatal translation error: %s\n", message);
+    printz("*** Fatal translation error: ");
+    printlnz(message);
     ++errors;
 }
 
 void logRuntimeError(const char *message, unsigned /*lineNumber*/)
 {
-    printf("*** Runtime error: %s\n", message);
+    printz("*** Runtime error: ");
+    printlnz(message);
     ++errors;
 }

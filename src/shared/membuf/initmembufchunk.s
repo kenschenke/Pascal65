@@ -16,6 +16,7 @@
 
 .import _allocChunk, flushMemBufCache
 .import loadMemBufDataCache, loadMemBufHeaderCache, _retrieveChunk, _storeChunk
+.import addChunkToIndex
 .import _cachedMemBufData, _cachedMemBufHdr
 .import pushax
 .importzp ptr1
@@ -133,6 +134,6 @@ hdrChunkNum: .res 2
     ; Load the data cache with the new data chunk
     lda chunkNum
     ldx chunkNum + 1
-    jmp loadMemBufDataCache
+    jmp addChunkToIndex
 
 .endproc

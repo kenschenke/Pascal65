@@ -27,6 +27,37 @@ hdrChunkNum: .res 2
 
 .code
 
+.proc freeIndexChunks
+    lda _cachedMemBufHdr + MEMBUF::firstIndexChunk
+    sta chunkNum
+    lda _cachedMemBufHdr + MEMBUF::firstIndexChunk + 1
+    sta chunkNum + 1
+
+L1:
+    lda chunkNum
+    ora chunkNum + 1
+    beq L2
+    lda chunkNum
+    ldx chunkNum + 1
+    jsr pushax
+    lda #<_cachedMemBufData
+    ldx #>_cachedMemBufData
+    jsr _retrieveChunk
+
+    lda chunkNum
+    ldx chunkNum + 1
+    jsr _freeChunk
+
+    lda _cachedMemBufData
+    sta chunkNum
+    lda _cachedMemBufData + 1
+    sta chunkNum + 1
+    jmp L1
+
+L2:
+    rts
+.endproc
+
 ; void freeMemBuf(CHUNKNUM chunkNum)
 .proc _freeMemBuf
     ; Store the parameter
@@ -109,6 +140,8 @@ L1:
     jmp L1
 
 L2:
+    jsr freeIndexChunks
+    
     ; Free the header chunk
     lda hdrChunkNum
     ldx hdrChunkNum + 1
