@@ -9,8 +9,15 @@ nav:
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
     - Data Types: langref/datatypes.md
+    - Arrays: langref/arrays.md
+    - Records: langref/records.md
+    - Operators: langref/operators.md
+    - For Loops: langref/for.md
     - If Then Else: langref/ifelse.md
+    - Repeat-Until: langref/repeat.md
     - While: langref/while.md
+    - Case: langref/case.md
+    - Functions and Procedures: langref/funcproc.md
   - Function Reference:
     - Abs: funcref/abs.md
     - Chr: funcref/chr.md
