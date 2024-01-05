@@ -35,9 +35,10 @@ typedef enum {
 
     tcAND, tcARRAY, tcBEGIN, tcCASE, tcCONST, tcDIV,
     tcDO, tcDOWNTO, tcELSE, tcEND, tcFILE, tcFOR, tcFUNCTION,
-    tcGOTO, tcIF, tcIN, tcLABEL, tcMOD, tcNIL, tcNOT, tcOF, tcOR,
-    tcPACKED, tcPROCEDURE, tcPROGRAM, tcRECORD, tcREPEAT, tcSET,
-    tcTHEN, tcTO, tcTYPE, tcUNTIL, tcVAR, tcWHILE, tcWITH,
+    tcGOTO, tcIF, tcIMPLEMENTATION, tcIN, tcINTERFACE, tcLABEL,
+    tcMOD, tcNIL, tcNOT, tcOF, tcOR, tcPACKED, tcPROCEDURE,
+    tcPROGRAM, tcRECORD, tcREPEAT, tcSET, tcTHEN, tcTO, tcTYPE,
+    tcUNIT, tcUNTIL, tcUSES, tcVAR, tcWHILE, tcWITH,
 } TTokenCode;
 
 typedef enum {

@@ -4,8 +4,41 @@
 #include <ast.h>
 #include <common.h>
 
+static void addUnit(void);
 static CHUNKNUM parseIdSublist(char decl_kind);
 static void copyStringToMemBuf(char *pString, CHUNKNUM *firstChunk, int len);
+
+static void addUnit(void)
+{
+    struct unit _unit;
+    CHUNKNUM lastChunkNum = 0, chunkNum = units;
+
+    while (chunkNum) {
+        retrieveChunk(chunkNum, &_unit);
+        if (!strcmp(parserString, _unit.name)) {
+            break;
+        }
+
+        lastChunkNum = chunkNum;
+        chunkNum = _unit.next;
+    }
+
+    if (!chunkNum) {
+        allocChunk(&chunkNum);
+        memset(&_unit, 0, sizeof(struct unit));
+        strcpy(_unit.name, parserString);
+        storeChunk(chunkNum, &_unit);
+
+        if (lastChunkNum) {
+            retrieveChunk(lastChunkNum, &_unit);
+            _unit.next = chunkNum;
+            storeChunk(lastChunkNum, &_unit);
+        }
+        else {
+            units = chunkNum;
+        }
+    }
+}
 
 static void copyStringToMemBuf(char* pString, CHUNKNUM* firstChunk, int len) {
     if (!(*firstChunk)) {
@@ -25,12 +58,17 @@ void copyRealString(char* pString, CHUNKNUM* firstChunk) {
     copyStringToMemBuf(pString, firstChunk, (int)strlen(pString));
 }
 
-CHUNKNUM parseDeclarations(void) {
+CHUNKNUM parseDeclarations(char isProgramOrUnitBlock) {
     CHUNKNUM firstDecl = 0, lastDecl = 0;
+
+    if (isProgramOrUnitBlock && parserToken == tcUSES) {
+        getToken();
+        lastDecl = parseUsesReferences(&firstDecl);
+    }
 
     if (parserToken == tcCONST) {
         getToken();
-        lastDecl = parseConstantDefinitions(&firstDecl);
+        lastDecl = parseConstantDefinitions(&firstDecl, lastDecl);
     }
 
     if (parserToken == tcTYPE) {
@@ -140,11 +178,10 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
     return expr;
 }
 
-CHUNKNUM parseConstantDefinitions(CHUNKNUM* firstDecl) {
+CHUNKNUM parseConstantDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl) {
     // Loop to parse a list of constant definitions
     // separated by semicolons.
 
-    CHUNKNUM lastDecl = 0;
     while (parserToken == tcIdentifier) {
         CHUNKNUM expr, decl, type, name = name_create(parserString);
 
@@ -234,6 +271,45 @@ CHUNKNUM parseFieldDeclarations(void)
     parseVarOrFieldDecls(&firstField, 0, 0);
 
     return firstField;
+}
+
+CHUNKNUM parseUsesReferences(CHUNKNUM *firstDecl)
+{
+    CHUNKNUM decl, lastDecl = 0;
+
+    // Loop to parse a list of units
+    while (parserToken == tcIdentifier) {
+        decl = declCreate(DECL_USES, name_create(parserString), 
+            typeCreate(TYPE_UNIT, 0, 0, 0), 0);
+
+        addUnit();
+
+        if (*firstDecl == 0) {
+            *firstDecl = decl;
+        }
+        else {
+            struct decl _decl;
+            retrieveChunk(lastDecl, &_decl);
+            _decl.next = decl;
+            storeChunk(lastDecl, &_decl);
+        }
+        lastDecl = decl;
+
+        getToken();
+        if (parserToken == tcComma) {
+            getToken();
+        }
+    }
+
+    // ;
+    resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
+    condGetToken(tcSemicolon, errMissingSemicolon);
+
+    // skip extra semicolons
+    while (parserToken == tcSemicolon) getToken();
+    // resync(tlDeclarationFollow, tlDeclarationStart, tlStatementStart);
+
+    return lastDecl;
 }
 
 CHUNKNUM parseVariableDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)

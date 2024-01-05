@@ -1,17 +1,19 @@
 #include <ast.h>
 #include <symtab.h>
-#include <semantic.h>
+#include <resolver.h>
 #include <error.h>
 #include <common.h>
 #include <membuf.h>
 #include <string.h>
 
 static void addEnumsToSymtab(CHUNKNUM firstChunkNum, CHUNKNUM enumType);
+static void fixGlobalOffset(CHUNKNUM symtab);
 static short getSubrangeLimit(CHUNKNUM chunkNum);
 static short getTypeSize(struct type* pType);
 static CHUNKNUM getEmbeddedArraySymtab(CHUNKNUM chunkNum, CHUNKNUM symtab);
 static CHUNKNUM getEmbeddedRecordSymtab(CHUNKNUM recordExprChunk, CHUNKNUM fieldExprChunk, CHUNKNUM symtab);
 static CHUNKNUM getRecordSymtab(CHUNKNUM exprChunk, CHUNKNUM symtab);
+static void injectUnit(CHUNKNUM name);
 static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *symtab, char failIfExists);
 
 static void addEnumsToSymtab(CHUNKNUM chunkNum, CHUNKNUM enumType)
@@ -124,6 +126,63 @@ void expr_resolve(CHUNKNUM chunkNum, CHUNKNUM symtab, char isRtnCall)
 		expr_resolve(_expr.left, symtab, _expr.kind == EXPR_CALL ? 1 : 0);
 		expr_resolve(_expr.right, leftSymtab, 0);
 	}
+}
+
+static void fixGlobalOffset(CHUNKNUM symtab)
+{
+	struct decl _decl;
+	struct type _type;
+	struct symbol sym, unitSym;
+
+	if (!symtab) {
+		return;
+	}
+
+	retrieveChunk(symtab, &sym);
+	retrieveChunk(sym.decl, &_decl);
+	retrieveChunk(_decl.type, &_type);
+	if (_type.kind != TYPE_FUNCTION && _type.kind != TYPE_PROCEDURE &&
+	    sym.offset == 0 && sym.level == 0) {
+		char name[CHUNK_LEN + 1];
+		CHUNKNUM chunkNum = units;
+		struct unit _unit;
+
+		memset(name, 0, sizeof(name));
+		retrieveChunk(sym.name, name);
+		while (chunkNum) {
+			retrieveChunk(chunkNum, &_unit);
+			retrieveChunk(_unit.astRoot, &_decl);
+			if (symtab_lookup(_decl.symtab, name, &unitSym)) {
+				sym.level = unitSym.level;
+				sym.offset = unitSym.offset;
+				storeChunk(sym.nodeChunkNum, &sym);
+				break;
+			}
+
+			chunkNum = _unit.next;
+		}
+	}
+
+	fixGlobalOffset(sym.leftChild);
+	fixGlobalOffset(sym.rightChild);
+}
+
+/*
+* This function fixes offsets for unit interface variables that been injected
+* into the global namespace.  Since these injected symbol table entries were
+* done without a declaration, their offsets are set by set_decl_offsets().
+* 
+* This function walks the global symbol table and if it finds any symbols
+* with level and offset values of 0 it looks through the units for any
+* matching variables in the interface declaration.  If it finds a match
+* it updates the offset and level.
+*/
+void fix_global_offsets(CHUNKNUM astRoot)
+{
+	struct decl _decl;
+
+	retrieveChunk(astRoot, &_decl);
+	fixGlobalOffset(_decl.symtab);
 }
 
 // This function looks up the symbol table of a record within an array
@@ -414,6 +473,50 @@ static short getTypeSize(struct type* pType)
 	return size;
 }
 
+/*
+*	This function injects a unit's interface declarations into the current
+*	scope.  It does this by looping through the unit's interface symbol table
+*	and looking up the corresponding entry in the unit's implementation
+*	symbol table then adding those into the current scope's symbol table.
+*/
+static void injectUnit(CHUNKNUM nameChunk)
+{
+	CHUNKNUM declChunkNum, symChunkNum;
+	struct unit _unit;
+	char name[CHUNK_LEN + 1];
+	struct stmt _stmt;
+	struct type _type;
+	struct symbol sym, newSym;
+	struct decl usesDecl, _decl;
+
+	if (!findUnit(nameChunk, &_unit)) {
+		return;
+	}
+	retrieveChunk(_unit.astRoot, &usesDecl);
+
+	retrieveChunk(usesDecl.code, &_stmt);
+
+	declChunkNum = _stmt.interfaceDecl;
+	while (declChunkNum) {
+		retrieveChunk(declChunkNum, &_decl);
+		retrieveChunk(_decl.type, &_type);
+		memset(name, 0, sizeof(name));
+		retrieveChunk(_decl.name, name);
+		if (!symtab_lookup(usesDecl.symtab, name, &sym)) {
+			Error(errMissingUnitDeclaration);
+		}
+		else {
+			symChunkNum = symbol_create(SYMBOL_GLOBAL, sym.type, name);
+			retrieveChunk(symChunkNum, &newSym);
+			newSym.decl = sym.decl;
+			storeChunk(symChunkNum, &newSym);
+			scope_bind(name, &newSym, 1);
+		}
+
+		declChunkNum = _decl.next;
+	}
+}
+
 void param_list_resolve(CHUNKNUM chunkNum)
 {
 	char name[CHUNK_LEN + 1];
@@ -444,6 +547,20 @@ void param_list_resolve(CHUNKNUM chunkNum)
 	}
 }
 
+void resolve_units(void)
+{
+	struct unit _unit;
+	CHUNKNUM chunkNum = units;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_unit);
+
+		decl_resolve(_unit.astRoot, 0);
+
+		chunkNum = _unit.next;
+	}
+}
+
 static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *symtab, char failIfExists)
 {
 	char name[CHUNK_LEN + 1];
@@ -463,6 +580,15 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 		if ((_type.kind == TYPE_PROCEDURE || _type.kind == TYPE_FUNCTION) &&
 			scope_lookup(name, &sym)) {
 			// Forward declaration : nothing to do.
+			if (_decl.code) {
+				sym.decl = chunkNum;
+				storeChunk(sym.nodeChunkNum, &sym);
+				_decl.node = sym.nodeChunkNum;
+				storeChunk(chunkNum, &_decl);
+			}
+		}
+		else if (_type.kind == TYPE_UNIT) {
+			// Unit declaration: nothing to do.
 		}
 		else {
 			_decl.node = symbol_create(kind, _decl.type, name);
@@ -561,6 +687,11 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 
 	expr_resolve(_decl.value, 0, 0);
 
+	if (_decl.kind == DECL_USES) {
+		// Inject the unit's interface declarations into the current scope
+		injectUnit(_decl.name);
+	}
+
 	if (_decl.code) {
 		scope_enter();
 		if (_type.kind != TYPE_PROGRAM) {
@@ -573,14 +704,15 @@ static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *sy
 	storeChunk(chunkNum, &_decl);
 }
 
-void set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
+short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 {
 	struct decl _decl;
 	struct type _type;
 	struct stmt _stmt;
 	struct symbol sym;
+	struct unit _unit;
 	struct param_list param;
-	CHUNKNUM paramChunk;
+	CHUNKNUM paramChunk, rootChunk = chunkNum;
 	short childOffset;
 
 	while (chunkNum) {
@@ -589,7 +721,15 @@ void set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 
 		if (_type.kind == TYPE_PROGRAM) {
 			retrieveChunk(_decl.code, &_stmt);
-			set_decl_offsets(_stmt.decl, 0, level + 1);
+			offset += set_decl_offsets(_stmt.decl, 0, level + 1);
+		}
+		else if (_type.kind == TYPE_UNIT) {
+			struct decl unitDecl;
+			findUnit(_decl.name, &_unit);
+			retrieveChunk(_unit.astRoot, &unitDecl);
+			retrieveChunk(unitDecl.code, &_stmt);
+			childOffset = set_decl_offsets(_stmt.decl, offset, level + 1);
+			set_decl_offsets(_stmt.interfaceDecl, childOffset, level + 1);
 		}
 		else if ((_type.kind == TYPE_FUNCTION || _type.kind == TYPE_PROCEDURE)
 			&& !(_type.flags & TYPE_FLAG_ISFORWARD)) {
@@ -601,9 +741,11 @@ void set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 				paramChunk = param.next;
 			}
 
-			retrieveChunk(_decl.node, &sym);
-			sym.level = level + 1;
-			storeChunk(_decl.node, &sym);
+			if (_decl.code) {
+				retrieveChunk(_decl.node, &sym);
+				sym.level = level + 1;
+				storeChunk(_decl.node, &sym);
+			}
 
 			retrieveChunk(_decl.code, &_stmt);
 			set_decl_offsets(_stmt.decl, childOffset, level + 1);
@@ -636,6 +778,20 @@ void set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 		}
 
 		chunkNum = _decl.next;
+	}
+
+	return offset;
+}
+
+void set_unit_offsets(CHUNKNUM firstUnit, short rootOffset)
+{
+	struct unit _unit;
+	CHUNKNUM chunkNum = firstUnit;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_unit);
+		rootOffset = set_decl_offsets(_unit.astRoot, rootOffset, 0);
+		chunkNum = _unit.next;
 	}
 }
 
@@ -674,6 +830,7 @@ void stmt_resolve(CHUNKNUM chunkNum)
 		}
 		else {
 			decl_resolve(_stmt.decl, NULL);
+			decl_resolve(_stmt.interfaceDecl, NULL);
 			expr_resolve(_stmt.expr, 0, 0);
 			expr_resolve(_stmt.init_expr, 0, 0);
 			expr_resolve(_stmt.to_expr, 0, 0);

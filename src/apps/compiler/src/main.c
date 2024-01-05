@@ -7,7 +7,8 @@
 #include <common.h>
 #include <chunks.h>
 #include <parser.h>
-#include <semantic.h>
+#include <resolver.h>
+#include <typecheck.h>
 #include <codegen.h>
 #include <int16.h>
 #include <membuf.h>
@@ -24,9 +25,44 @@ static char errors;
 
 void runPrg(void) {}
 
+static void tokenizeAndParseUnits(void)
+{
+    char any, filename[16 + 1];
+    struct unit _unit;
+    CHUNKNUM chunkNum, unitTokens;
+
+    while (1) {
+        chunkNum = units;
+        any = 0;
+        while (chunkNum) {
+            retrieveChunk(chunkNum, &_unit);
+            if (!_unit.astRoot) {
+                any = 1;
+                strcpy(filename, _unit.name);
+                strcat(filename, ".pas");
+
+                loadfile("compiler.1");
+                unitTokens = tokenize(filename);
+
+                loadfile("compiler.2");
+                _unit.astRoot = parse(unitTokens);
+                freeMemBuf(unitTokens);
+                storeChunk(chunkNum, &_unit);
+            }
+
+            chunkNum = _unit.next;
+        }
+
+        if (!any) {
+            break;
+        }
+    }
+}
+
 void main()
 {
     CHUNKNUM tokenId, astRoot;
+    short offset = 0;
 
     setIntBuf(intBuf);
 
@@ -61,13 +97,26 @@ void main()
         return;
     }
 
-    printlnz("Loading semantic overlay");
+    tokenizeAndParseUnits();
+
+    if (errors) {
+        return;
+    }
+
+    printlnz("Loading resolver overlay");
     if (loadfile("compiler.3")) {
-        initSemantic();
         init_scope_stack();
+        resolve_units();
         decl_resolve(astRoot, 0);
-        set_decl_offsets(astRoot, 0, 0);
+        offset = set_decl_offsets(astRoot, 0, 0);
+        set_unit_offsets(units, offset);
+        fix_global_offsets(astRoot);
+    }
+
+    printlnz("Loading typecheck overlay");
+    if (loadfile("compiler.4")) {
         decl_typecheck(astRoot);
+        typecheck_units();
     }
 
     if (errors) {
@@ -75,7 +124,7 @@ void main()
     }
 
     printlnz("Loading linker overlay");
-    if (loadfile("compiler.5")) {
+    if (loadfile("compiler.6")) {
         linkerPreWrite();
     }
 
@@ -84,7 +133,7 @@ void main()
     }
 
     printlnz("Loading objcode overlay");
-    if (loadfile("compiler.4")) {
+    if (loadfile("compiler.5")) {
         objCodeWrite(astRoot);
     }
 
@@ -93,9 +142,13 @@ void main()
     }
 
     printlnz("Loading linker overlay");
-    if (loadfile("compiler.5")) {
+    if (loadfile("compiler.6")) {
         linkerPostWrite("hello", 0);
     }
+
+    decl_free(astRoot);
+    free_scope_stack();
+    freeCommon();
 
     log("main", "back to main code");
 }

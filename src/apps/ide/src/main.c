@@ -11,7 +11,8 @@
 #include <tokenizer.h>
 #include <parser.h>
 #include <membuf.h>
-#include <semantic.h>
+#include <resolver.h>
+#include <typecheck.h>
 #include <codegen.h>
 #include <ast.h>
 #include <int16.h>
@@ -78,9 +79,10 @@ extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
 extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
 extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
 extern void _OVERLAY7_LOAD__[], _OVERLAY7_SIZE__[];
-static unsigned overlaySizes[7];
-static unsigned overlayBlocks[7];
-static BLOCKNUM overlayCaches[7];
+extern void _OVERLAY8_LOAD__[], _OVERLAY8_SIZE__[];
+static unsigned overlaySizes[8];
+static unsigned overlayBlocks[8];
+static BLOCKNUM overlayCaches[8];
 
 static void loadOverlayFromCache(unsigned size, void *buffer, unsigned cache) {
     struct em_copy emc;
@@ -144,11 +146,12 @@ static void compile(char run)
     freeMemBuf(tokens);
 
     // Semantic analysis and error checking
-    loadOverlay(OVERLAY_SEMANTIC);
-    initSemantic();    
+    loadOverlay(OVERLAY_RESOLVER);
     init_scope_stack();
     decl_resolve(ast, 0);
     set_decl_offsets(ast, 0, 0);
+
+    loadOverlay(OVERLAY_TYPECHECK);
     decl_typecheck(ast);
 
     // Object code (part 1 - linker pre-write)

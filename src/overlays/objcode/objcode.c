@@ -5,8 +5,11 @@
 #include <asm.h>
 #include <string.h>
 #include <int16.h>
+#include <common.h>
 
 static int addStringLiteral(CHUNKNUM chunkNum);
+static int genUnitDeclarations(short* heapOffsets);
+static void genUnitRoutines(void);
 
 #define FREE_VAR_HEAPS_OFFSET 3
 static unsigned char freeVarHeapsCode[] = {
@@ -80,6 +83,45 @@ void genStringValueAX(CHUNKNUM chunkNum)
 	genTwo(LDX_IMMEDIATE, 0);
 }
 
+static int genUnitDeclarations(short* heapOffsets)
+{
+	int numToPop = 0;
+	struct unit _unit;
+	struct decl _decl;
+	struct stmt _stmt;
+	CHUNKNUM chunkNum = units;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_unit);
+		retrieveChunk(_unit.astRoot, &_decl);
+		retrieveChunk(_decl.code, &_stmt);
+		numToPop += genVariableDeclarations(_stmt.decl, heapOffsets);
+		numToPop += genVariableDeclarations(_stmt.interfaceDecl, heapOffsets);
+
+		chunkNum = _unit.next;
+	}
+
+	return numToPop;
+}
+
+static void genUnitRoutines(void)
+{
+	struct decl _decl;
+	struct stmt _stmt;
+	struct unit _unit;
+	CHUNKNUM chunkNum = units;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_unit);
+		retrieveChunk(_unit.astRoot, &_decl);
+		retrieveChunk(_decl.code, &_stmt);
+
+		genRoutineDeclarations(_stmt.decl);
+
+		chunkNum = _unit.next;
+	}
+}
+
 void objCodeWrite(CHUNKNUM astRoot)
 {
 	struct decl _decl;
@@ -93,12 +135,15 @@ void objCodeWrite(CHUNKNUM astRoot)
 
 	// Create stack entries for the global variables
 	numToPop = genVariableDeclarations(_stmt.decl, heapOffsets);
+	numToPop += genUnitDeclarations(heapOffsets);
 
 	// Skip over global function/procedure declarations and start main code
 	linkAddressLookup("MAIN", codeOffset + 1, 0, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
 	genRoutineDeclarations(_stmt.decl);
+
+	genUnitRoutines();
 
 	// Walk the declarations tree and define setup and tear down
 	// routines for every Pascal routine at any nesting level.

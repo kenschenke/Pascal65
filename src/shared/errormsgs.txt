@@ -55,3 +55,6 @@ Missing variable
 Code segment overflow
 Unimplemented feature
 Identifier too long
+Missing INTERFACE
+Missing IMPLEMENTATION
+Missing Unit Decl

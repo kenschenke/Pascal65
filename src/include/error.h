@@ -94,6 +94,9 @@ typedef enum {
     errCodeSegmentOverflow,
     errUnimplementedFeature,
     errIdentifierTooLong,
+    errMissingINTERFACE,
+    errMissingIMPLEMENTATION,
+    errMissingUnitDeclaration,
     numParserErrors,
 } TErrorCode;
 

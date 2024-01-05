@@ -7,7 +7,8 @@
 #include <common.h>
 #include <chunks.h>
 #include <parser.h>
-#include <semantic.h>
+#include <resolver.h>
+#include <typecheck.h>
 #include <codegen.h>
 #include <em.h>
 #include <int16.h>
@@ -172,7 +173,6 @@ void main()
     }
 #endif
         printz("S");
-        initSemantic();
         init_scope_stack();
         decl_resolve(astRoot, 0);
         set_decl_offsets(astRoot, 0, 0);

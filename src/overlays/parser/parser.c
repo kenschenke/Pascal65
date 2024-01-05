@@ -21,6 +21,8 @@ CHUNKNUM parserIcode;
 TTokenCode parserToken;
 TDataValue parserValue;
 TDataType parserType;
+type_t parserModuleType;
+char isInUnitInterface;
 char parserString[MAX_LINE_LEN + 1];
 
 #if 0
@@ -98,7 +100,7 @@ CHUNKNUM parse(CHUNKNUM Icode)
 
     setMemBufPos(Icode, 0);
     getToken();
-    return parseProgram();
+    return parseModule();
 }
 
 void condGetToken(TTokenCode tc, TErrorCode ec) {

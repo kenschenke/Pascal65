@@ -7,6 +7,7 @@
 typedef enum {
     DECL_CONST,             // Declared constant (Const section)
     DECL_TYPE,              // Defined type (Type section)
+    DECL_USES,              // Unit identifier (Uses clause)
     DECL_VARIABLE,          // Variable (Var section)
 } decl_t;
 
@@ -19,12 +20,14 @@ struct decl {
     CHUNKNUM symtab;        // The root symbol table for this scope
     CHUNKNUM code;          // The first statement in a function/procedure (stmt)
     CHUNKNUM next;          // The next declaration in a linked list
+    char isLibrary;         // Non-zero if this is a library unit
     short lineNumber;
     char unused[CHUNK_LEN - 17];
 };
 
 /*
-    The decl structure represents a declaration (variable, function/procedure, or the program itself).
+    The decl structure represents a declaration (variable, function/procedure,
+        a unit, or the program itself).
 
     Variable:
         name  : chunk containing variable name
@@ -44,6 +47,69 @@ struct decl {
         type  : type (see below)
         code  : first statement in program code block
         next  : global variable declarations in chain
+    
+    When a decl structure represents a program, the type is TYPE_PROGRAM and code
+    links to a STMT_BLOCK node.  The stmt node contains global declarations,
+    functions and procedures, declared types, constants, and any unit references.
+    This would be the root of the AST and might look like this:
+
+    +-----------------+
+    |  TYPE_PROGRAM   |
+    |        |  code  |
+    +-----------------+
+                   \
+                    \
+                   +-----------------+
+                   |    STMT_BLOCK   |
+                   |  decl  |  body  |
+                   +-----------------+
+                     /           \
+                    /             \
+     global declarations       stmts in main procedure
+       and functions
+       and procedures
+    
+    When a decl structure represents a unit, the type is TYPE_UNIT and code
+    links to a STMT_BLOCK node.  Like a TYPE_PROGRAM declaration, the stmt node
+    contains declarations, types, constants, additional unit references, plus
+    the unit's external interface consisting of types, constants, variables,
+    and procedures and functions.  The main difference is that a unit does not
+    have a "main" procedure body.  The statement node's decl links to the unit's
+    private declarations, and interfaceDecl links to declarations for the unit's
+    public interface.
+
+    +-----------------+
+    |   TYPE_UNIT     |
+    |        |  code  |
+    +-----------------+
+                   \
+                    \
+                   +--------------------------+
+                   |        STMT_BLOCK        |
+                   |  decl  |  interfaceDecl  |
+                   +--------------------------+
+                     /           \
+                    /             \
+     private declarations       declarations for the unit's
+       and functions            public interface
+       and procedures
+    
+    A unit is parsed as an entire AST and is added to the DECL_UNIT node, like this:
+
+    +---------------+
+    |   DECL_UNIT   |
+    |      |  code  |
+    +---------------+
+                 \
+                  \
+                +-----------------+
+                |   STMT_BLOCK    |
+                |        |  decl  |
+                +-----------------+
+                              \
+                               \
+                            links to TYPE_UNIT
+                            declaration
 */
 
 typedef enum {
@@ -60,6 +126,7 @@ typedef enum {
 struct stmt {
     char kind;              // The kind of statement (from stmt_t)
     CHUNKNUM decl;          // First local declaration
+    CHUNKNUM interfaceDecl; // First unit interface declaration
     CHUNKNUM init_expr;     // Starting value for loop
     CHUNKNUM expr;          // Loop expression for While or expression for Case
     CHUNKNUM to_expr;       // Ending value for loop
@@ -68,7 +135,7 @@ struct stmt {
     CHUNKNUM else_body;     // statement for If false
     CHUNKNUM next;          // next statement in sequence
     short lineNumber;
-    char unused[CHUNK_LEN - 18];
+    char unused[CHUNK_LEN - 20];
 };
 
 /*
@@ -365,12 +432,15 @@ typedef enum {
     TYPE_FUNCTION,
     TYPE_PROCEDURE,
     TYPE_PROGRAM,
+    TYPE_UNIT,
     TYPE_DECLARED,
     TYPE_SUBRANGE,
     TYPE_ENUMERATION,
     TYPE_ENUMERATION_VALUE,
     TYPE_RECORD,
 } type_t;
+// CAUTION. Do not rearrange this list without also changing
+// the values in types.inc.
 
 #define TYPE_MASK_UINT8  0x01
 #define TYPE_MASK_SINT8  0x11
@@ -485,6 +555,13 @@ struct symbol {
     short offset;           // Offset from stack frame base
     short level;            // Nesting level
     char unused[CHUNK_LEN - 19];
+};
+
+struct unit {
+    char name[12 + 1];
+    CHUNKNUM astRoot;
+    CHUNKNUM next;
+    char unused[CHUNK_LEN - 17];
 };
 
 CHUNKNUM name_clone(CHUNKNUM source);

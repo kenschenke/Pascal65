@@ -1,4 +1,4 @@
-#include <semantic.h>
+#include <typecheck.h>
 #include <ast.h>
 #include <error.h>
 #include <symtab.h>
@@ -1298,5 +1298,19 @@ void stmt_typecheck(CHUNKNUM chunkNum)
 		}
 
 		chunkNum = _stmt.next;
+	}
+}
+
+
+void typecheck_units(void)
+{
+	struct unit _unit;
+	CHUNKNUM chunkNum = units;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_unit);
+		decl_typecheck(_unit.astRoot);
+
+		chunkNum = _unit.next;
 	}
 }

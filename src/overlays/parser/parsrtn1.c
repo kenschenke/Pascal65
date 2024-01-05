@@ -3,18 +3,52 @@
 #include <common.h>
 #include <misc.h>
 #include <string.h>
+#include <parscommon.h>
 
-CHUNKNUM parseBlock(void)
+CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary)
 {
+	char dummy;
 	struct stmt _stmt;
-	CHUNKNUM stmtChunk, decl = parseDeclarations();
+	CHUNKNUM stmtChunk, body = 0;
+	CHUNKNUM interfaceDecl = 0, decl = parseDeclarations(isProgramOrUnitBlock);
 
-	resync(tlStatementStart, 0, 0);
-	if (parserToken != tcBEGIN) Error(errMissingBEGIN);
+	// So callers can pass NULL for second parameter
+	if (isLibrary == 0) {
+		isLibrary = &dummy;
+	}
 
-	stmtChunk = stmtCreate(STMT_BLOCK, 0, parseCompound());
+	*isLibrary = 0;
+
+	if (isProgramOrUnitBlock && isInUnitInterface) {
+		if (parserToken != tcIMPLEMENTATION) {
+			Error(errMissingIMPLEMENTATION);
+		}
+		isInUnitInterface = 0;
+		interfaceDecl = decl;
+		getToken();
+		if (!stricmp(parserString, "library")) {
+			getToken();
+			*isLibrary = 1;
+			decl = 0;
+		} else {
+			decl = parseDeclarations(1);
+		}
+	}
+
+	if (!(*isLibrary)) {
+		if (parserModuleType == TYPE_UNIT && parserToken == tcEND) {
+			body = 0;
+		} else {
+			resync(tlStatementStart, 0, 0);
+			if (parserToken != tcBEGIN) Error(errMissingBEGIN);
+			body = parseCompound();
+		}
+	}
+
+	stmtChunk = stmtCreate(STMT_BLOCK, 0, body);
 	retrieveChunk(stmtChunk, &_stmt);
 	_stmt.decl = decl;
+	_stmt.interfaceDecl = interfaceDecl;
 	storeChunk(stmtChunk, &_stmt);
 	return stmtChunk;
 }
@@ -110,16 +144,17 @@ CHUNKNUM parseSubroutine(void)
 
 	_type.flags = 0;
 	// <block> or forward
-	if (stricmp(parserString, "forward")) {
-		// Not a forward declaration
-		_decl.code = parseBlock();
-		storeChunk(subChunk, &_decl);
-	}
-	else {
-		getToken();
+	if (isInUnitInterface || !stricmp(parserString, "forward")) {
+		if (!isInUnitInterface) {
+			getToken();
+		}
 		retrieveChunk(_decl.type, &_type);
 		_type.flags |= TYPE_FLAG_ISFORWARD;
 		storeChunk(_decl.type, &_type);
+	} else {
+		// Not a forward declaration
+		_decl.code = parseBlock(0, 0);
+		storeChunk(subChunk, &_decl);
 	}
 
 	// If a function, add a variable to the function's local scope for the
@@ -184,12 +219,16 @@ CHUNKNUM parseSubroutineDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 		}
 		lastDecl = subChunk;
 
+		if (isInUnitInterface && parserToken == tcIMPLEMENTATION) {
+			break;
+		}
+
 		// semicolon
 		resync(tlDeclarationFollow, tlProcFuncStart, tlStatementStart);
 		if (parserToken == tcSemicolon) {
 			getToken();
-		} else if (tokenIn(parserToken, tlProcFuncStart) ||
-			tokenIn(parserToken, tlStatementStart)) {
+		} else if (!isInUnitInterface && (tokenIn(parserToken, tlProcFuncStart) ||
+			tokenIn(parserToken, tlStatementStart))) {
 			Error(errMissingSemicolon);
 		}
 	}
@@ -197,10 +236,10 @@ CHUNKNUM parseSubroutineDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 	return lastDecl;
 }
 
-CHUNKNUM parseProgram(void)
+CHUNKNUM parseModule(void)
 {
 	struct decl _decl;
-	CHUNKNUM progDecl = parseProgramHeader();
+	CHUNKNUM progDecl = parseModuleHeader();
 
 	// ;
 	resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
@@ -212,10 +251,19 @@ CHUNKNUM parseProgram(void)
 		Error(errMissingSemicolon);
 	}
 
+	if (parserModuleType == TYPE_UNIT) {
+		condGetToken(tcINTERFACE, errMissingINTERFACE);
+		isInUnitInterface = 1;
+	}
+
 	// <block>
 	retrieveChunk(progDecl, &_decl);
-	_decl.code = parseBlock();
+	_decl.code = parseBlock(1, &_decl.isLibrary);
 	storeChunk(progDecl, &_decl);
+
+	if (parserModuleType == TYPE_UNIT) {
+		condGetToken(tcEND, errMissingEND);
+	}
 
 	// .
 	resync(tlProgramEnd, 0, 0);
@@ -224,25 +272,35 @@ CHUNKNUM parseProgram(void)
 	return progDecl;
 }
 
-CHUNKNUM parseProgramHeader(void)
+CHUNKNUM parseModuleHeader(void)
 {
-	CHUNKNUM paramList = 0, progName;
+	CHUNKNUM paramList = 0, moduleName;
 
-	condGetToken(tcPROGRAM, errMissingPROGRAM);
+	isInUnitInterface = 0;
+
+	if (parserToken == tcPROGRAM) {
+		parserModuleType = TYPE_PROGRAM;
+	} else if (parserToken == tcUNIT) {
+		parserModuleType = TYPE_UNIT;
+	} else {
+		Error(errMissingPROGRAM);
+	}
+
+	getToken();
 
 	if (parserToken != tcIdentifier) {
 		Error(errMissingIdentifier);
 	}
 
 	// parserString contains name of program
-	progName = name_create(parserString);
+	moduleName = name_create(parserString);
 
 	// ( or ;
 	getToken();
 	resync(tlProgProcIdFollow, tlDeclarationStart, tlStatementStart);
 
 	// Optional (file list)
-	if (parserToken == tcLParen) {
+	if (parserModuleType == TYPE_PROGRAM && parserToken == tcLParen) {
 		CHUNKNUM lastArg = 0;
 		do {
 			struct param_list param;
@@ -268,7 +326,7 @@ CHUNKNUM parseProgramHeader(void)
 		condGetToken(tcRParen, errMissingRightParen);
 	}
 
-	return declCreate(DECL_TYPE, progName,
-		typeCreate(TYPE_PROGRAM, 0, 0, paramList),
+	return declCreate(DECL_TYPE, moduleName,
+		typeCreate(parserModuleType, 0, 0, paramList),
 		0);
 }

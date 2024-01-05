@@ -15,7 +15,7 @@
 #include <ctype.h>
 
 const int minResWordLength = 2;
-const int maxResWordLength = 9;
+const int maxResWordLength = 14;
 
 typedef struct {
     const char *pString;
@@ -36,7 +36,8 @@ static TResWord rw3[] = {
 static TResWord rw4[] = {
     {"byte", tcBYTE}, {"case", tcCASE}, {"char", tcCHAR}, {"else", tcELSE},
     {"file", tcFILE}, {"goto", tcGOTO}, {"real", tcREAL}, {"then", tcTHEN},
-    {"true", tcTRUE}, {"type", tcTYPE}, {"with", tcWITH}, {"word", tcWORD}, {NULL},
+    {"true", tcTRUE}, {"type", tcTYPE}, {"unit", tcUNIT}, {"uses", tcUSES},
+    {"with", tcWITH}, {"word", tcWORD}, {NULL},
 };
 
 static TResWord rw5[] = {
@@ -60,11 +61,32 @@ static TResWord rw8[] = {
 };
 
 static TResWord rw9[] = {
-    {"procedure", tcPROCEDURE}, {NULL},
+    {"interface", tcINTERFACE}, {"procedure", tcPROCEDURE}, {NULL},
+};
+
+static TResWord rw10[] = {
+    {NULL},
+};
+
+static TResWord rw11[] = {
+    {NULL},
+};
+
+static TResWord rw12[] = {
+    {NULL},
+};
+
+static TResWord rw13[] = {
+    {NULL},
+};
+
+static TResWord rw14[] = {
+    {"implementation", tcIMPLEMENTATION}, {NULL},
 };
 
 static TResWord *rwTable[] = {
     NULL, NULL, rw2, rw3, rw4, rw5, rw6, rw7, rw8, rw9,
+    rw10, rw11, rw12, rw13, rw14,
 };
 
 static void checkForReservedWord(void)

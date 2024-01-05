@@ -15,10 +15,12 @@
 
 #include <symtab.h>
 #include <misc.h>
+#include <ast.h>
 
 extern short cntSymtabs;
 extern CHUNKNUM firstSymtabChunk;
 extern CHUNKNUM globalSymtab;
+extern CHUNKNUM units;
 extern short currentLineNumber;
 
 extern const TTokenCode tlDeclarationStart[], tlDeclarationFollow[],
@@ -41,7 +43,11 @@ extern const TTokenCode tlProgProcIdFollow[], tlFuncIdFollow[],
 
 extern char isFatalError;       // non-zero if fatal parsing error encountered
 
+// Returns 0 if unit not found
+char findUnit(CHUNKNUM name, struct unit* pUnit);
+
 void initCommon(void);
+void freeCommon(void);
 char isStopKeyPressed(void);
 
 #endif // end of COMMON_H

@@ -17,12 +17,35 @@
 #include <conio.h>
 #include <membuf.h>
 #include <ast.h>
+#include <string.h>
 
 short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
 CHUNKNUM globalSymtab;
+CHUNKNUM units;
 char isFatalError;
 short currentLineNumber;
+
+// Returns 0 if unit not found
+char findUnit(CHUNKNUM name, struct unit* pUnit)
+{
+	CHUNKNUM chunkNum = units;
+	char buf[CHUNK_LEN + 1];
+
+	memset(buf, 0, sizeof(buf));
+	retrieveChunk(name, buf);
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, pUnit);
+		if (!strcmp(buf, pUnit->name)) {
+			return 1;
+		}
+
+		chunkNum = pUnit->next;
+	}
+
+	return 0;
+}
 
 void initCommon(void)
 {
@@ -31,6 +54,20 @@ void initCommon(void)
     isFatalError = 0;
 
     initMemBufCache();
+}
+
+void freeCommon(void)
+{
+	struct unit _unit;
+	CHUNKNUM chunkNum = units;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_unit);
+		decl_free(_unit.astRoot);
+		chunkNum = _unit.next;
+	}
+
+	units = 0;
 }
 
 char isStopKeyPressed()

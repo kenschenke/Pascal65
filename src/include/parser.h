@@ -23,6 +23,8 @@
 extern TTokenCode parserToken;
 extern TDataValue parserValue;
 extern TDataType parserType;
+extern type_t parserModuleType;
+extern char isInUnitInterface;
 extern CHUNKNUM parserIdentifier;
 extern char parserString[MAX_LINE_LEN + 1];
 
@@ -37,13 +39,12 @@ char tokenIn(TTokenCode tc, const TTokenCode* pList);
 // Routines
 CHUNKNUM parseActualParm(char isWriteWriteln);
 CHUNKNUM parseActualParmList(char isWriteWriteln);
-CHUNKNUM parseBlock(void);
+CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary);
 CHUNKNUM parseDeclaredSubroutineCall(char parmCheckFlag, CHUNKNUM Icode);
 CHUNKNUM parseFormalParmList(void);
 CHUNKNUM parseFuncOrProcHeader(char isFunc);
-CHUNKNUM parseProgram(void);
-CHUNKNUM parseProgramHeader(void);
-CHUNKNUM parseStandardSubroutineCall(CHUNKNUM Icode);
+CHUNKNUM parseModule(void);
+CHUNKNUM parseModuleHeader(void);
 CHUNKNUM parseSubroutine(void);
 CHUNKNUM parseSubroutineCall(CHUNKNUM name, char isWriteWriteln);
 CHUNKNUM parseSubroutineDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
@@ -57,9 +58,9 @@ CHUNKNUM parseEofEolnCall(CHUNKNUM Icode);
 void copyQuotedString(char *pString, CHUNKNUM *firstChunk);
 void copyRealString(char *pString, CHUNKNUM *firstChunk);
 CHUNKNUM parseArrayType(void);
-CHUNKNUM parseDeclarations(void);
+CHUNKNUM parseDeclarations(char isProgramOrUnitBlock);
 CHUNKNUM parseConstant(CHUNKNUM* type);
-CHUNKNUM parseConstantDefinitions(CHUNKNUM* firstDecl);
+CHUNKNUM parseConstantDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseEnumerationType(void);
 CHUNKNUM parseFieldDeclarations(void);
 CHUNKNUM parseRecordType(void);
@@ -67,6 +68,7 @@ type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit);
 CHUNKNUM parseSubrangeType(CHUNKNUM name);
 CHUNKNUM parseTypeDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseTypeSpec(void);
+CHUNKNUM parseUsesReferences(CHUNKNUM *firstDecl);
 CHUNKNUM parseVariableDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseVarOrFieldDecls(CHUNKNUM* firstDecl, CHUNKNUM lastDecl, char isVarDecl);
 

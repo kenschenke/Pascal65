@@ -340,6 +340,10 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 	struct param_list param;
 	struct type paramType;
 
+	if (pDeclType->flags & TYPE_FLAG_ISFORWARD) {
+		return;
+	}
+
 	retrieveChunk(pDecl->code, &_stmt);
 
 	genRoutineDeclarations(_stmt.decl);
