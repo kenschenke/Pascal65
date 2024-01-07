@@ -4,7 +4,8 @@ BINDIR := bin
 DRVDIR := ../../../drv
 TOKENIZEROVRLSRC := ../../overlays/tokenizer
 PARSEROVRLSRC := ../../overlays/parser
-SEMANTICOVRLSRC := ../../overlays/semantic
+RESOLVEROVRLSRC := ../../overlays/resolver
+TYPECHECKOVRLSRC := ../../overlays/typecheck
 OBJCODEOVRLSRC := ../../overlays/objcode
 LINKEROVRLSRC := ../../overlays/linker
 SHAREDSRCDIR = ../../shared
@@ -20,9 +21,10 @@ PROGRAM := compilertest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
 TOKENIZEROVRLFILE := $(PROGRAM).1
 PARSEROVRLFILE := $(PROGRAM).2
-SEMANTICOVRLFILE := $(PROGRAM).3
-OBJCODEOVRLFILE := $(PROGRAM).4
-LINKEROVRLFILE := $(PROGRAM).5
+RESOLVEROVRLFILE := $(PROGRAM).3
+TYPECHECKOVRLFILE := $(PROGRAM).4
+OBJCODEOVRLFILE := $(PROGRAM).5
+LINKEROVRLFILE := $(PROGRAM).6
 PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := mega65
 CC65TARGET = c64
@@ -67,7 +69,9 @@ TOKENIZEROVRLSRCS += $(wildcard $(TOKENIZEROVRLSRC)/*.s)
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
 PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
-SEMANTICOVRLSRCS := $(wildcard $(SEMANTICOVRLSRC)/*.c)
+RESOLVEROVRLSRCS := $(wildcard $(RESOLVEROVRLSRC)/*.c)
+
+TYPECHECKOVRLSRCS := $(wildcard $(TYPECHECKOVRLSRC)/*.c)
 
 OBJCODEOVRLSRCS := $(wildcard $(OBJCODEOVRLSRC)/*.c)
 
@@ -78,7 +82,8 @@ CONFIG := cfg-$(TARGET).cfg
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TOKENIZEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(PARSEROVRLSRCS)))))
-OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SEMANTICOVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(RESOLVEROVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECKOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
@@ -124,29 +129,37 @@ vpath $(PARSEROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(PARSEROVRLSRC)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath $(SEMANTICOVRLSRC)/%.c
-$(OBJDIR)/%.o: $(SEMANTICOVRLSRC)/%.c | $(OBJDIR)
+vpath $(RESOLVEROVRLSRC)/%.c
+$(OBJDIR)/%.o: $(RESOLVEROVRLSRC)/%.c | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
-vpath $(SEMANTICOVRLSRC)/%.s
-$(OBJDIR)/%.o: $(SEMANTICOVRLSRC)/%.s | $(OBJDIR)
+vpath $(RESOLVEROVRLSRC)/%.s
+$(OBJDIR)/%.o: $(RESOLVEROVRLSRC)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(TYPECHECKOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(TYPECHECKOVRLSRC)/%.c | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+
+vpath $(TYPECHECKOVRLSRC)/%.s
+$(OBJDIR)/%.o: $(TYPECHECKOVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(OBJCODEOVRLSRC)/%.c
 $(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(OBJCODEOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.c
 $(OBJDIR)/%.o: $(LINKEROVRLSRC)/%.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(LINKEROVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LIBCSRCDIR)/%.c
 $(OBJDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJDIR)
@@ -250,7 +263,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
-	-write $(BINDIR)/$(SEMANTICOVRLFILE) $(SEMANTICOVRLFILE) \
+	-write $(BINDIR)/$(RESOLVEROVRLFILE) $(RESOLVEROVRLFILE) \
+	-write $(BINDIR)/$(TYPECHECKOVRLFILE) $(TYPECHECKOVRLFILE) \
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write runtime runtime \
@@ -275,7 +289,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
-	-write $(BINDIR)/$(SEMANTICOVRLFILE) $(SEMANTICOVRLFILE) \
+	-write $(BINDIR)/$(RESOLVEROVRLFILE) $(RESOLVEROVRLFILE) \
+	-write $(BINDIR)/$(TYPECHECKOVRLFILE) $(TYPECHECKOVRLFILE) \
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write runtime runtime \
