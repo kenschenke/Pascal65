@@ -140,26 +140,28 @@ static void fixGlobalOffset(CHUNKNUM symtab)
 
 	retrieveChunk(symtab, &sym);
 	retrieveChunk(sym.decl, &_decl);
-	retrieveChunk(_decl.type, &_type);
-	if (_type.kind != TYPE_FUNCTION && _type.kind != TYPE_PROCEDURE &&
-	    sym.offset == 0 && sym.level == 0) {
-		char name[CHUNK_LEN + 1];
-		CHUNKNUM chunkNum = units;
-		struct unit _unit;
+	if (_decl.type) {
+		retrieveChunk(_decl.type, &_type);
+		if (_type.kind != TYPE_FUNCTION && _type.kind != TYPE_PROCEDURE &&
+			sym.offset == 0 && sym.level == 0) {
+			char name[CHUNK_LEN + 1];
+			CHUNKNUM chunkNum = units;
+			struct unit _unit;
 
-		memset(name, 0, sizeof(name));
-		retrieveChunk(sym.name, name);
-		while (chunkNum) {
-			retrieveChunk(chunkNum, &_unit);
-			retrieveChunk(_unit.astRoot, &_decl);
-			if (symtab_lookup(_decl.symtab, name, &unitSym)) {
-				sym.level = unitSym.level;
-				sym.offset = unitSym.offset;
-				storeChunk(sym.nodeChunkNum, &sym);
-				break;
+			memset(name, 0, sizeof(name));
+			retrieveChunk(sym.name, name);
+			while (chunkNum) {
+				retrieveChunk(chunkNum, &_unit);
+				retrieveChunk(_unit.astRoot, &_decl);
+				if (symtab_lookup(_decl.symtab, name, &unitSym)) {
+					sym.level = unitSym.level;
+					sym.offset = unitSym.offset;
+					storeChunk(sym.nodeChunkNum, &sym);
+					break;
+				}
+
+				chunkNum = _unit.next;
 			}
-
-			chunkNum = _unit.next;
 		}
 	}
 

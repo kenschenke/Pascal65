@@ -239,6 +239,9 @@ static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 	retrieveChunk(arg.evalType, &_type);
 	getBaseType(&_type);
+	if (_type.kind == TYPE_ENUMERATION || _type.kind == TYPE_ENUMERATION_VALUE) {
+		_type.kind = TYPE_WORD;
+	}
 
 	genExpr(arg.left, 1, 0, 0);
 	if (_type.kind == TYPE_ENUMERATION_VALUE) {
