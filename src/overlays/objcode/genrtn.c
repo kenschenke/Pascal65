@@ -12,15 +12,14 @@
 static 	char name[CHUNK_LEN + 1], enterLabel[15], returnLabel[15];
 
 static void genAbsCall(CHUNKNUM argChunk);
-static void genChrCall(CHUNKNUM argChunk);
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
-static void genOddCall(CHUNKNUM argChunk);
+static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static void genOrdCall(CHUNKNUM argChunk);
-static void genPeekCall(CHUNKNUM argChunk);
-static void genPokeCall(CHUNKNUM argChunk);
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk);
+static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
+static void genRoutineCleanup(short *heapOffsets, int numHeap, struct type* pDeclType, int numLocals);
 static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType);
 static void genSqrCall(CHUNKNUM argChunk);
 static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk);
@@ -81,50 +80,52 @@ static void genAbsCall(CHUNKNUM argChunk)
 	genThreeAddr(JSR, RT_ABS);
 }
 
-static void genChrCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-
-	retrieveChunk(argChunk, &arg);
-
-	genExpr(arg.left, 1, 0, 0);
-	genThreeAddr(JSR, RT_POPTOINTOP1);
-	genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
-	genThreeAddr(JSR, RT_PUSHBYTE);
-}
-
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
 {
-	CHUNKNUM paramChunk = pType->paramsFields;
-	struct expr _expr;
-	struct decl _decl;
+	genRoutineCall(exprChunk, declChunk, pType, argChunk);
+
+	// Call the routine
+	strcpy(enterLabel, "RTN");
+	strcat(enterLabel, formatInt16(declChunk));
+	strcat(enterLabel, "ENTER");
+	linkAddressLookup(enterLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	genThreeAddr(JMP, 0);
+
+	linkAddressSet(returnLabel, codeOffset);
+
+	if (pType->kind == TYPE_PROCEDURE) {
+		// Clean the un-used return value off the stack
+		genThreeAddr(JSR, RT_INCSP4);
+	}
+
+	genOne(PLA);
+	genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
+}
+
+static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
+{
+	CHUNKNUM paramChunk;
 	struct param_list param;
-	struct type argType, paramType;
-	struct symbol sym;
+	struct type paramType;
+	short heapOffsets[MAX_LOCAL_HEAPS];
+	int numHeap = 0, offset = -1;
 
-	retrieveChunk(declChunk, &_decl);
-	retrieveChunk(_decl.node, &sym);
+	genRoutineCall(exprChunk, declChunk, pType, argChunk);
 
-	// Set up the stack frame
-	strcpy(returnLabel, "RTN");
-	strcat(returnLabel, formatInt16(exprChunk));
-	strcat(returnLabel, "RETURN");
-	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_LOW);
-	genTwo(LDA_IMMEDIATE, 0);
-	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_HIGH);
-	genTwo(LDX_IMMEDIATE, 0);
-	genTwo(LDY_IMMEDIATE, (unsigned char)sym.level);
-	genThreeAddr(JSR, RT_PUSHSTACKFRAMEHEADER);
-	// Save the new stack frame pointer
-	genOne(PHA);
-	genOne(TXA);
-	genOne(PHA);
+	// Call the routine
+	strcpy(enterLabel, "RTN");
+	strcat(enterLabel, formatInt16(declChunk));
+	strcat(enterLabel, "ENTER");
+	linkAddressLookup(enterLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	genThreeAddr(JSR, 0);
 
-	// Push the arguments onto the stack
-	while (argChunk) {
-		retrieveChunk(argChunk, &_expr);
-		retrieveChunk(_expr.evalType, &argType);
+	linkAddressSet(returnLabel, codeOffset);
+
+	paramChunk = pType->paramsFields;
+	while (paramChunk) {
 		retrieveChunk(paramChunk, &param);
+		++offset;
+
 		retrieveChunk(param.type, &paramType);
 
 		if (paramType.kind == TYPE_DECLARED) {
@@ -139,41 +140,17 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 
 		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY) &&
 			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
-			// Allocate a second heap and make a copy of the variable
-			paramByRef1[PARAM_BYREF1_SIZEL] = WORD_LOW(paramType.size);
-			paramByRef1[PARAM_BYREF1_SIZEH] = WORD_HIGH(paramType.size);
-			writeCodeBuf(paramByRef1, 10);
-			genExpr(_expr.left, 0, 1, 0);
-			paramByRef2[PARAM_BYREF2_SIZEL] = WORD_LOW(paramType.size);
-			paramByRef2[PARAM_BYREF2_SIZEH] = WORD_HIGH(paramType.size);
-			writeCodeBuf(paramByRef2, 27);
-		}
-		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
-			genExpr(_expr.left, 0, 1, 0);
-			genThreeAddr(JSR, RT_PUSHADDRSTACK);
-		}
-		else {
-			genExpr(_expr.left, 1, 0, 0);
+			heapOffsets[numHeap++] = offset;
 		}
 
-		argChunk = _expr.right;
 		paramChunk = param.next;
 	}
 
-	// Activate the new stack frame
-	activateFrame[ACTIVATE_FRAME_LEVEL] = sym.level;
-	writeCodeBuf(activateFrame, 13);
+	// Tear down the routine's stack frame and free parameters
 
-	// Call the routine
-	strcpy(enterLabel, "RTN");
-	strcat(enterLabel, formatInt16(declChunk));
-	strcat(enterLabel, "ENTER");
-	linkAddressLookup(enterLabel, codeOffset + 1, 0, LINKADDR_BOTH);
-	genThreeAddr(JMP, 0);
+	genRoutineCleanup(heapOffsets, numHeap, pType, 0);
 
-	linkAddressSet(returnLabel, codeOffset);
-
-	// Tear down the routine's stack frame and free local variables
+	genThreeAddr(JSR, RT_INCSP4);	// Pop the return address of the stack
 
 	if (pType->kind == TYPE_PROCEDURE) {
 		// Clean the un-used return value off the stack
@@ -184,19 +161,6 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
 }
 
-static void genOddCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-
-	retrieveChunk(argChunk, &arg);
-
-	genExpr(arg.left, 1, 0, 0);
-	genThreeAddr(JSR, RT_POPTOINTOP1);
-	genTwo(LDA_ZEROPAGE, ZP_INTOP1L);
-	genTwo(AND_IMMEDIATE, 1);
-	genThreeAddr(JSR, RT_PUSHBYTE);
-}
-
 static void genOrdCall(CHUNKNUM argChunk)
 {
 	struct expr arg;
@@ -204,31 +168,6 @@ static void genOrdCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 
 	genExpr(arg.left, 1, 0, 0);
-}
-
-static void genPeekCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-
-	retrieveChunk(argChunk, &arg);
-
-	genExpr(arg.left, 1, 1, 0);
-	genThreeAddr(JSR, RT_PEEK);
-	genThreeAddr(JSR, RT_PUSHBYTE);
-}
-
-static void genPokeCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-
-	retrieveChunk(argChunk, &arg);
-
-	genExpr(arg.left, 1, 0, 0);
-	genThreeAddr(JSR, RT_PUSHAX);
-
-	retrieveChunk(arg.right, &arg);
-	genExpr(arg.left, 1, 1, 0);
-	genThreeAddr(JSR, RT_POKE);
 }
 
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -333,40 +272,85 @@ static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
 	genThreeAddr(JSR, RT_PUSHINTOP1);
 }
 
-static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType)
+static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
 {
-	short heapOffsets[MAX_LOCAL_HEAPS];
-	char name[CHUNK_LEN + 1], startLabel[15];
-	struct stmt _stmt;
-	int numLocals, offset = -1, numHeap = 0;
+	CHUNKNUM paramChunk = pType->paramsFields;
+	struct expr _expr;
+	struct decl _decl;
+	struct param_list param;
+	struct type argType, paramType;
+	struct symbol sym;
+
+	retrieveChunk(declChunk, &_decl);
+	retrieveChunk(_decl.node, &sym);
+
+	// Set up the stack frame
+	strcpy(returnLabel, "RTN");
+	strcat(returnLabel, formatInt16(exprChunk));
+	strcat(returnLabel, "RETURN");
+	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_LOW);
+	genTwo(LDA_IMMEDIATE, 0);
+	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_HIGH);
+	genTwo(LDX_IMMEDIATE, 0);
+	genTwo(LDY_IMMEDIATE, (unsigned char)sym.level);
+	genThreeAddr(JSR, RT_PUSHSTACKFRAMEHEADER);
+	// Save the new stack frame pointer
+	genOne(PHA);
+	genOne(TXA);
+	genOne(PHA);
+
+	// Push the arguments onto the stack
+	while (argChunk) {
+		retrieveChunk(argChunk, &_expr);
+		retrieveChunk(_expr.evalType, &argType);
+		retrieveChunk(paramChunk, &param);
+		retrieveChunk(param.type, &paramType);
+
+		if (paramType.kind == TYPE_DECLARED) {
+			struct symbol sym;
+			char flags = paramType.flags;
+			memset(name, 0, sizeof(name));
+			retrieveChunk(paramType.name, name);
+			scope_lookup(name, &sym);
+			retrieveChunk(sym.type, &paramType);
+			paramType.flags = flags;
+		}
+
+		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY) &&
+			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
+			// Allocate a second heap and make a copy of the variable
+			paramByRef1[PARAM_BYREF1_SIZEL] = WORD_LOW(paramType.size);
+			paramByRef1[PARAM_BYREF1_SIZEH] = WORD_HIGH(paramType.size);
+			writeCodeBuf(paramByRef1, 10);
+			genExpr(_expr.left, 0, 1, 0);
+			paramByRef2[PARAM_BYREF2_SIZEL] = WORD_LOW(paramType.size);
+			paramByRef2[PARAM_BYREF2_SIZEH] = WORD_HIGH(paramType.size);
+			writeCodeBuf(paramByRef2, 27);
+		}
+		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
+			genExpr(_expr.left, 0, 1, 0);
+			genThreeAddr(JSR, RT_PUSHADDRSTACK);
+		}
+		else {
+			genExpr(_expr.left, 1, 0, 0);
+		}
+
+		argChunk = _expr.right;
+		paramChunk = param.next;
+	}
+
+	// Activate the new stack frame
+	activateFrame[ACTIVATE_FRAME_LEVEL] = sym.level;
+	writeCodeBuf(activateFrame, 13);
+}
+
+static void genRoutineCleanup(short *heapOffsets, int numHeap, struct type* pDeclType,
+	int numLocals)
+{
 	CHUNKNUM paramChunk;
 	struct param_list param;
 	struct type paramType;
-
-	if (pDeclType->flags & TYPE_FLAG_ISFORWARD) {
-		return;
-	}
-
-	retrieveChunk(pDecl->code, &_stmt);
-
-	genRoutineDeclarations(_stmt.decl);
-
-	memset(name, 0, sizeof(name));
-	retrieveChunk(pDecl->name, name);
-	strcpy(startLabel, "RTN");
-	strcat(startLabel, formatInt16(chunkNum));
-	strcat(startLabel, "ENTER");
-	linkAddressSet(startLabel, codeOffset);
-
-	// Push the local variables onto the stack
-	numLocals = genVariableDeclarations(_stmt.decl, heapOffsets);
-
-	genStmts(_stmt.body);
-
-	// Count of the number of heap offsets already declared
-	while (heapOffsets[numHeap] >= 0) {
-		numHeap++;
-	}
+	int offset = -1;
 
 	paramChunk = pDeclType->paramsFields;
 	while (paramChunk) {
@@ -417,6 +401,43 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 	genTwo(STX_ZEROPAGE, ZP_STACKFRAMEH);
 
 	genThreeAddr(JSR, RT_INCSP4);	// Pop the static link off the stack
+}
+
+static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType)
+{
+	short heapOffsets[MAX_LOCAL_HEAPS];
+	char name[CHUNK_LEN + 1], startLabel[15];
+	struct stmt _stmt;
+	int numLocals, numHeap = 0;
+
+	if (pDeclType->flags & TYPE_FLAG_ISFORWARD) {
+		return;
+	}
+
+	retrieveChunk(pDecl->code, &_stmt);
+
+	genRoutineDeclarations(_stmt.decl);
+
+	memset(name, 0, sizeof(name));
+	retrieveChunk(pDecl->name, name);
+	strcpy(startLabel, "RTN");
+	strcat(startLabel, formatInt16(chunkNum));
+	strcat(startLabel, "ENTER");
+	linkAddressSet(startLabel, codeOffset);
+
+	// Push the local variables onto the stack
+	numLocals = genVariableDeclarations(_stmt.decl, heapOffsets);
+
+	genStmts(_stmt.body);
+
+	// Count of the number of heap offsets already declared
+	while (heapOffsets[numHeap] >= 0) {
+		numHeap++;
+	}
+
+	// Tear down the routine's stack frame and free local variables
+
+	genRoutineCleanup(heapOffsets, numHeap, pDeclType, numLocals);
 
 	// Return from the routine
 	genThreeAddr(JMP, RT_RETURNFROMROUTINE);
@@ -460,6 +481,7 @@ static void genSqrCall(CHUNKNUM argChunk)
 
 void genSubroutineCall(CHUNKNUM chunkNum)
 {
+	struct decl _decl;
 	struct expr _expr, rtnExpr;
 	struct symbol sym;
 	struct type rtnType;
@@ -468,7 +490,15 @@ void genSubroutineCall(CHUNKNUM chunkNum)
 	retrieveChunk(_expr.left, &rtnExpr);
 	retrieveChunk(rtnExpr.node, &sym);
 	retrieveChunk(sym.type, &rtnType);
-	if (rtnType.flags & TYPE_FLAG_ISSTD) {
+	if (sym.decl) {
+		retrieveChunk(sym.decl, &_decl);
+	} else {
+		_decl.isLibrary = 0;
+	}
+	if (_decl.isLibrary) {
+		genLibrarySubroutineCall(chunkNum, sym.decl, &rtnType, _expr.right);
+	}
+	else if (rtnType.flags & TYPE_FLAG_ISSTD) {
 		genStdRoutineCall(rtnType.routineCode, _expr.right);
 	}
 	else {
@@ -493,10 +523,6 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 		genAbsCall(argChunk);
 		break;
 
-	case rcChr:
-		genChrCall(argChunk);
-		break;
-
 	case rcSqr:
 		genSqrCall(argChunk);
 		break;
@@ -504,18 +530,6 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 	case rcRound:
 	case rcTrunc:
 		genRoundTruncCall(rc, argChunk);
-		break;
-
-	case rcOdd:
-		genOddCall(argChunk);
-		break;
-
-	case rcPeek:
-		genPeekCall(argChunk);
-		break;
-	
-	case rcPoke:
-		genPokeCall(argChunk);
 		break;
 
 	case rcPred:

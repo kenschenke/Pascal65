@@ -481,7 +481,7 @@ static void genExeHeader(void)
 #endif
 }
 
-void linkerPreWrite(void)
+void linkerPreWrite(CHUNKNUM astRoot)
 {
 #ifdef __MEGA65__
 	codeBase = 0x2001;
@@ -501,6 +501,7 @@ void linkerPreWrite(void)
 	genThreeAddr(JMP, 0);
 
 	genRuntime();
+	loadLibraries(astRoot);
 
 	linkAddressSet("INIT", codeOffset);
 
@@ -544,6 +545,7 @@ void linkerPostWrite(const char* filename, char run)
 
 		strcpy(msg, "Loading ");
 		strcat(msg, nextTest);
+		strcat(msg, " ");
 		linkAddressSet("CHAINMSG", codeOffset);
 		writeToMemBuf(codeBuf, msg, strlen(msg) + 1);
 		codeOffset += strlen(msg) + 1;

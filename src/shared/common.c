@@ -64,6 +64,7 @@ void freeCommon(void)
 	while (chunkNum) {
 		retrieveChunk(chunkNum, &_unit);
 		decl_free(_unit.astRoot);
+		freeChunk(chunkNum);
 		chunkNum = _unit.next;
 	}
 

@@ -1,7 +1,7 @@
 ; Jump table at the start of the runtime library
 
 .import leftpad, printz, printlnz, writeValue, assign, divide, comp, negate
-.import add, divint, modulus, pred, succ, subtract, multiply, peek, poke
+.import add, divint, modulus, pred, succ, subtract, multiply
 .import _strToFloat, FPOUT, PRECRD
 .import floatToInt16, getFPBUF, floatNeg
 .import incsp4, popeax, pushax, pusheax, popToReal, popToIntOp1, popToIntOp2
@@ -29,8 +29,8 @@ jmp divint      ; BASE + 21
 jmp writeValue  ; BASE + 24
 jmp sqr         ; BASE + 27
 jmp modulus     ; BASE + 30
-jmp peek        ; BASE + 33
-jmp poke        ; BASE + 36
+jmp $0000       ; BASE + 33
+jmp $0000       ; BASE + 36
 jmp $0000       ; BASE + 39
 jmp $0000       ; BASE + 42
 jmp $0000       ; BASE + 45

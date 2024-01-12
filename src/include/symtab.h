@@ -43,10 +43,8 @@ typedef enum {
 typedef enum {
     rcDeclared, rcForward,
     rcRead, rcReadln, rcWrite, rcWriteln,
-    rcAbs, rcArctan, rcChr, rcCos, rcEof, rcEoln,
-    rcExp, rcLn, rcOdd, rcOrd, rcPeek, rcPoke,
-    rcPred, rcRound, rcSin, rcSqr, rcSqrt, rcSucc,
-    rcTrunc,
+    rcAbs, rcEof, rcEoln, rcOrd,
+    rcPred, rcRound, rcSqr, rcSucc, rcTrunc,
 } TRoutineCode;
 
 // Local identifier lists structure.

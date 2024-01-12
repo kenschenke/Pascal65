@@ -249,9 +249,10 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write hello.petscii hello.pas,seq \
 	-write system.petscii system.pas,seq \
+	-write system.lib system.lib,prg \
 	-write calcarea.petscii calcarea.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -265,6 +266,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write hello.petscii hello.pas,seq \
+	-write system.petscii system.pas,seq \
+	-write system.lib system.lib,prg \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

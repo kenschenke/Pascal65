@@ -125,7 +125,7 @@ void main()
 
     printlnz("Loading linker overlay");
     if (loadfile("compiler.6")) {
-        linkerPreWrite();
+        linkerPreWrite(astRoot);
     }
 
     if (errors) {

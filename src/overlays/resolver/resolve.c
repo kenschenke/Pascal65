@@ -489,7 +489,7 @@ static void injectUnit(CHUNKNUM nameChunk)
 	struct stmt _stmt;
 	struct type _type;
 	struct symbol sym, newSym;
-	struct decl usesDecl, _decl;
+	struct decl usesDecl, _decl, symDecl;
 
 	if (!findUnit(nameChunk, &_unit)) {
 		return;
@@ -510,6 +510,9 @@ static void injectUnit(CHUNKNUM nameChunk)
 		else {
 			symChunkNum = symbol_create(SYMBOL_GLOBAL, sym.type, name);
 			retrieveChunk(symChunkNum, &newSym);
+			retrieveChunk(sym.decl, &symDecl);
+			symDecl.isLibrary = 1;
+			storeChunk(sym.decl, &symDecl);
 			newSym.decl = sym.decl;
 			storeChunk(symChunkNum, &newSym);
 			scope_bind(name, &newSym, 1);

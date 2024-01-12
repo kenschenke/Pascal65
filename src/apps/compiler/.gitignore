@@ -2,4 +2,5 @@ bin/*
 obj/*
 *.petscii
 runtime
+system.lib
 *.map

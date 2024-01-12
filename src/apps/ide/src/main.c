@@ -156,7 +156,7 @@ static void compile(char run)
 
     // Object code (part 1 - linker pre-write)
     loadOverlay(OVERLAY_LINKER);
-    linkerPreWrite();
+    linkerPreWrite(ast);
 
     // Generate object code
     loadOverlay(OVERLAY_OBJCODE);
@@ -169,6 +169,7 @@ static void compile(char run)
     // Free the AST
     decl_free(ast);
     free_scope_stack();
+    freeCommon();
 
     loadOverlay(OVERLAY_EDITOR);
 }

@@ -68,7 +68,7 @@ type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit);
 CHUNKNUM parseSubrangeType(CHUNKNUM name);
 CHUNKNUM parseTypeDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseTypeSpec(void);
-CHUNKNUM parseUsesReferences(CHUNKNUM *firstDecl);
+CHUNKNUM parseUsesReferences(CHUNKNUM *firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseVariableDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseVarOrFieldDecls(CHUNKNUM* firstDecl, CHUNKNUM lastDecl, char isVarDecl);
 

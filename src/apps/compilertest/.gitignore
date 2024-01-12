@@ -4,3 +4,4 @@ obj/*
 *.map
 src/main.s
 runtime
+system.lib

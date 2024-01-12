@@ -244,7 +244,7 @@ void main()
     }
 #endif
         printz("W");
-        linkerPreWrite();
+        linkerPreWrite(astRoot);
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, objcodeCache);
 #else
@@ -269,6 +269,7 @@ void main()
         printz("F");
         decl_free(astRoot);
         free_scope_stack();
+        freeCommon();
         printz("  ");
         printlnz(formatInt16(avail - getAvailChunks()));
         if (getAvailChunks() > avail) {

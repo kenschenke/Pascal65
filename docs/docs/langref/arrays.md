@@ -45,3 +45,42 @@ Elements can be accessed in one of two ways:
 arr1[3,5] := 1234;
 arr1[3][5] := 1234;
 ```
+
+## Array Storage
+
+This section describes how Pascal65 stores arrays in computer memory.  It is not
+necessary to know this information to write Pascal programs.  This is here
+primarily for developers writing libraries and for those curious.
+
+Arrays consist of a six byte header followed directly by the array elements.  The
+header is as follows.
+
+| Size    | Description                    |
+| ------- | ------------------------------ |
+| 2 bytes | Lower bound of the array index |
+| 2 bytes | Upper bound of the array index |
+| 2 bytes | Size of each array element     |
+
+Each value in the header is a 16-bit signed value.
+
+An array declared as
+
+```
+Array[1..10] Of Integer;
+```
+
+with the values
+
+```
+[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+```
+
+would look like this in memory
+
+```
+$01 $00 $0a $00 $02 $00 $01 $00 $02 $00 $03 $00 $04 $00 $05 $00
+$06 $00 $07 $00 $08 $00 $09 $00 $0a $00
+```
+
+If the array element is a record the record values are stored directly
+within the array's memory.

@@ -66,3 +66,35 @@ Begin
     Writeln('Student is in grade ', s.grade);
 End;
 ```
+
+## Record Storage
+
+This section describes how Pascal65 stores records in computer memory.  It is not
+necessary to know this information to write Pascal programs.  This is here
+primarily for developers writing libraries and for those curious.
+
+Records fields are stored directly in a block of memory with no padding or
+packing.  For example, a record defined as follows:
+
+```
+Record
+    month, day, year : Integer;
+End;
+```
+
+and declared as:
+
+```
+    date.month := 10;
+    date.day := 15;
+    date.year := 1970;
+```
+
+would be stored in memory as:
+
+```
+$0a $00 $0f $00 $b2 $07
+```
+
+If a record contains an array the array is stored directly within the record's
+memory.

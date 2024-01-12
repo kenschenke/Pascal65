@@ -112,7 +112,7 @@ void writeCodeBuf(unsigned char *buf, int len);
 void freeLinkerSymbolTable(void);
 void initLinkerSymbolTable(void);
 
-void linkerPreWrite(void);
+void linkerPreWrite(CHUNKNUM astRoot);
 void objCodeWrite(CHUNKNUM astRoot);
 #ifdef COMPILERTEST
 void linkerPostWrite(const char* prgFilename, char* nextTest);
@@ -129,5 +129,7 @@ char linkAddressLookup(const char* name, unsigned short position, unsigned short
 
 // Sets the code offset for a given symbol.
 void linkAddressSet(const char* name, unsigned short offset);
+
+void loadLibraries(CHUNKNUM astRoot);
 
 #endif // end of CODEGEN_H

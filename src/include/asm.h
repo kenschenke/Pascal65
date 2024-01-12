@@ -144,8 +144,6 @@
 #define RT_INCSP4				(RT_BASE + 93)
 #define RT_INITARRAYHEAP		(RT_BASE + 165)
 #define RT_MULTIPLY             (RT_BASE + 231)
-#define RT_PEEK                 (RT_BASE + 33)
-#define RT_POKE                 (RT_BASE + 36)
 #define RT_SQR	    			(RT_BASE + 27)
 #define RT_SUBTRACT             (RT_BASE + 210)
 #define RT_LEFTPAD				(RT_BASE + 6)

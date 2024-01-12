@@ -91,6 +91,7 @@ void stmt_free(CHUNKNUM chunkNum)
 		retrieveChunk(chunkNum, &_stmt);
 
 		decl_free(_stmt.decl);
+		decl_free(_stmt.interfaceDecl);
 		expr_free(_stmt.expr);
 		expr_free(_stmt.init_expr);
 		expr_free(_stmt.to_expr);

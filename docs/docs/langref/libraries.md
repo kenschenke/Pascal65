@@ -22,7 +22,7 @@ Interface
 Function Cos(num : Real) : Real;
 Function Sin(num : Real) : Real;
 
-Implementation Library;
+Implementation Library
 
 End.
 ```
@@ -104,14 +104,14 @@ Consider thefollowing example routine.
     Function Multiply(num1, num2 : Integer) : Integer;
 ```
 
-Assuming the base of the stack frame is $BF00, the stack frame would
+Assuming the base of the stack frame is $BFF0, the stack frame would
 look like the below.  Recall that runtime stacks grow downward.
 
-| Address | Description            |
-| ------- | ---------------------- |
-| $BFEC   | Function return value  |
-| $BFE8   | Routine return address |
-| $BFE4   | Static link            |
-| $BF00   | Dynamic link           |
-| $BFEC   | num1                   |
-| $BFE8   | num2                   |
+| Address | Offset From Stack Pointer | Description            |
+| ------- | ------------------------- | ---------------------- |
+| $BFEC   | -4                        | Function return value  |
+| $BFE8   | -8                        | Routine return address |
+| $BFE4   | -12                       | Static link            |
+| $BFE0   | -16                       | Dynamic link           |
+| $BFDC   | -20                       | num1                   |
+| $BFD8   | -24                       | num2                   |
