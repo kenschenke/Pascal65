@@ -257,11 +257,17 @@ subtract.petscii: subtract.pas
 system.petscii: system.pas
 	dos2unix < system.pas | petcat -w2 -text -o system.petscii
 
+unit.petscii: unit.pas
+	dos2unix < unit.pas | petcat -w2 -text -o unit.petscii
+
+unit1.petscii: unit1.pas
+	dos2unix < unit1.pas | petcat -w2 -text -o unit1.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.lib system.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.lib system.petscii unit.petscii unit1.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -287,9 +293,11 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write divint.petscii divint.pas,seq \
 	-write subtract.petscii subtract.pas,seq \
 	-write system.petscii system.pas,seq \
-	-write system.lib system.lib,seq
+	-write system.lib system.lib,seq \
+	-write unit.petscii unit.pas,seq \
+	-write unit1.petscii unit1.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.petscii unit.petscii unit1.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -316,6 +324,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write subtract.petscii subtract.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write system.lib system.lib,seq \
+	-write unit.petscii unit.pas,seq \
+	-write unit1.petscii unit1.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

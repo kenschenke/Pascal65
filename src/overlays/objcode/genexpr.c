@@ -220,8 +220,15 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	case EXPR_NAME:
 		memset(name, 0, sizeof(name));
 		retrieveChunk(_expr.name, name);
-		scope_lookup(name, &sym);
-		retrieveChunk(sym.type, &rightType);
+		if (scope_lookup_parent(name, &sym)) {
+			retrieveChunk(sym.type, &rightType);
+		} else {
+			rightType.flags = 0;
+		}
+		if (!rightType.flags) {
+			scope_lookup(name, &sym);
+			retrieveChunk(sym.type, &rightType);
+		}
 		if (rightType.kind == TYPE_DECLARED) {
 			struct symbol typeSym;
 			char typeFlags = rightType.flags;

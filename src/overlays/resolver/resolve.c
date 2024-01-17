@@ -15,6 +15,7 @@ static CHUNKNUM getEmbeddedRecordSymtab(CHUNKNUM recordExprChunk, CHUNKNUM field
 static CHUNKNUM getRecordSymtab(CHUNKNUM exprChunk, CHUNKNUM symtab);
 static void injectUnit(CHUNKNUM name);
 static void resolveDeclaration(CHUNKNUM chunkNum, CHUNKNUM* memBuf, CHUNKNUM *symtab, char failIfExists);
+static void setUnitDecl(CHUNKNUM declChunkNum, CHUNKNUM unitChunkNum);
 
 static void addEnumsToSymtab(CHUNKNUM chunkNum, CHUNKNUM enumType)
 {
@@ -511,11 +512,15 @@ static void injectUnit(CHUNKNUM nameChunk)
 			symChunkNum = symbol_create(SYMBOL_GLOBAL, sym.type, name);
 			retrieveChunk(symChunkNum, &newSym);
 			retrieveChunk(sym.decl, &symDecl);
-			symDecl.isLibrary = 1;
+			symDecl.isLibrary = usesDecl.isLibrary;
 			storeChunk(sym.decl, &symDecl);
 			newSym.decl = sym.decl;
 			storeChunk(symChunkNum, &newSym);
 			scope_bind(name, &newSym, 1);
+
+			if (_type.kind == TYPE_ENUMERATION) {
+				addEnumsToSymtab(_type.paramsFields, _decl.type);
+			}
 		}
 
 		declChunkNum = _decl.next;
@@ -554,6 +559,8 @@ void param_list_resolve(CHUNKNUM chunkNum)
 
 void resolve_units(void)
 {
+	struct decl _decl;
+	struct stmt _stmt;
 	struct unit _unit;
 	CHUNKNUM chunkNum = units;
 
@@ -561,6 +568,10 @@ void resolve_units(void)
 		retrieveChunk(chunkNum, &_unit);
 
 		decl_resolve(_unit.astRoot, 0);
+
+		retrieveChunk(_unit.astRoot, &_decl);
+		retrieveChunk(_decl.code, &_stmt);
+		setUnitDecl(_stmt.decl, _decl.symtab);
 
 		chunkNum = _unit.next;
 	}
@@ -746,7 +757,7 @@ short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 				paramChunk = param.next;
 			}
 
-			if (_decl.code) {
+			if (_decl.node) {
 				retrieveChunk(_decl.node, &sym);
 				sym.level = level + 1;
 				storeChunk(_decl.node, &sym);
@@ -786,6 +797,18 @@ short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 	}
 
 	return offset;
+}
+
+static void setUnitDecl(CHUNKNUM declChunkNum, CHUNKNUM unitSymtab)
+{
+	struct decl _decl;
+	while (declChunkNum) {
+		retrieveChunk(declChunkNum, &_decl);
+		_decl.unitSymtab = unitSymtab;
+		storeChunk(declChunkNum, &_decl);
+
+		declChunkNum = _decl.next;
+	}
 }
 
 void set_unit_offsets(CHUNKNUM firstUnit, short rootOffset)
@@ -834,8 +857,8 @@ void stmt_resolve(CHUNKNUM chunkNum)
 			}
 		}
 		else {
-			decl_resolve(_stmt.decl, NULL);
 			decl_resolve(_stmt.interfaceDecl, NULL);
+			decl_resolve(_stmt.decl, NULL);
 			expr_resolve(_stmt.expr, 0, 0);
 			expr_resolve(_stmt.init_expr, 0, 0);
 			expr_resolve(_stmt.to_expr, 0, 0);

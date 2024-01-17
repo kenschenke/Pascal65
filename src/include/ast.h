@@ -20,9 +20,10 @@ struct decl {
     CHUNKNUM symtab;        // The root symbol table for this scope
     CHUNKNUM code;          // The first statement in a function/procedure (stmt)
     CHUNKNUM next;          // The next declaration in a linked list
+    CHUNKNUM unitSymtab;    // Unit symtab if this is a routine in a unit/library
     char isLibrary;         // Non-zero if this is a library unit
     short lineNumber;
-    char unused[CHUNK_LEN - 17];
+    char unused[CHUNK_LEN - 19];
 };
 
 /*

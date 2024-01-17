@@ -31,6 +31,7 @@ static char *testFiles[] = {
     "multiply",
     "subtract",
     "divint",
+    "unit",
     NULL
 };
 

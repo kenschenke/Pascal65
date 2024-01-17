@@ -418,6 +418,10 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 
 	genRoutineDeclarations(_stmt.decl);
 
+	if (pDecl->unitSymtab) {
+		scope_enter_symtab(pDecl->unitSymtab);
+	}
+
 	memset(name, 0, sizeof(name));
 	retrieveChunk(pDecl->name, name);
 	strcpy(startLabel, "RTN");
@@ -429,6 +433,10 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 	numLocals = genVariableDeclarations(_stmt.decl, heapOffsets);
 
 	genStmts(_stmt.body);
+
+	if (pDecl->unitSymtab) {
+		scope_exit();
+	}
 
 	// Count of the number of heap offsets already declared
 	while (heapOffsets[numHeap] >= 0) {
