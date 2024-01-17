@@ -68,7 +68,11 @@ static void getMessage(CHUNKNUM chunkNum, int msgNum)
 {
     char chunk[CHUNK_LEN];
 
-    setMemBufPos(chunkNum, msgNum * CHUNK_LEN);
+    setMemBufPos(chunkNum, 0);
+    while (msgNum) {
+        readFromMemBuf(chunkNum, chunk, CHUNK_LEN);
+        --msgNum;
+    }
     readFromMemBuf(chunkNum, chunk, CHUNK_LEN);
     strncpy(msgbuf, chunk, CHUNK_LEN);
 }
