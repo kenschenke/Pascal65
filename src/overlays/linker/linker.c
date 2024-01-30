@@ -18,6 +18,7 @@
 #include <string.h>
 #include <int16.h>
 #include <device.h>
+#include <inputbuf.h>
 
 #define RUNTIME_STACK_SIZE 2048
 
@@ -76,25 +77,35 @@ static void writeChainCall(char* name);
 #define PRG_HEADER_CODE_OFFSET_1 5
 #define PRG_HEADER_CODE_OFFSET_2 53
 #define PRG_HEADER_CODE_OFFSET_3 55
-#define PRG_HEADER_CODE_OFFSET_4 78
-#define PRG_HEADER_CODE_OFFSET_5 82
+#define PRG_HEADER_CODE_OFFSET_4 86
+#define PRG_HEADER_CODE_OFFSET_5 90
+#define PRG_HEADER_CODE_OFFSET_6 94
+#define PRG_HEADER_CODE_OFFSET_7 96
+#define PRG_HEADER_CODE_OFFSET_8 98
+#define PRG_HEADER_CODE_OFFSET_9 75
+#define PRG_HEADER_CODE_OFFSET_10 79
+#define PRG_HEADER_CODE_OFFSET_11 83
+#define PRG_HEADER_CODE_OFFSET_12 57
+#define PRG_HEADER_CODE_OFFSET_13 43
+#define PRG_HEADER_CODE_OFFSET_14 16
+#define PRG_HEADER_CODE_OFFSET_15 50
 #define PRG_HEADER_CODE_EXIT_HANDLER_L 19
 #define PRG_HEADER_CODE_EXIT_HANDLER_H 23
-#define PRG_HEADER_LENGTH 85
+#define PRG_HEADER_LENGTH 100
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
 	LDA_X_INDEXED_ZP, 0x02,
 	STA_ABSOLUTEX, 0, 0,  // PRG_HEADER_CODE_OFFSET_1
 	INX,
-	CPX_IMMEDIATE, 0x1b,
+	CPX_IMMEDIATE, 0x5d,
 	BNE, 0xf6,
 
 	// Save the stack pointer
 	TSX,
 	STX_ZEROPAGE, ZP_SAVEDSTACK,
 
-	JSR, WORD_LOW(RT_ERRORINIT), WORD_HIGH(RT_ERRORINIT),
+	JSR, 0, 0,  // rtErrorInit
 
 	// Set the exit handler
 	LDA_IMMEDIATE, 0,
@@ -113,14 +124,14 @@ static unsigned char prgHeader[] = {
 	// Set the runtime stack size and initialize the stack
 	LDA_IMMEDIATE, WORD_LOW(RUNTIME_STACK_SIZE),
 	LDX_IMMEDIATE, WORD_HIGH(RUNTIME_STACK_SIZE),
-	JSR, WORD_LOW(RT_STACKINIT), WORD_HIGH(RT_STACKINIT),
+	JSR, 0, 0,	// PRG_HEADER_CODE_OFFSET_13
 
 	LDA_IMMEDIATE, WORD_LOW(0xc000 - RUNTIME_STACK_SIZE - 4),
 	LDX_IMMEDIATE, WORD_HIGH(0xc000 - RUNTIME_STACK_SIZE - 4),
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	JSR, 0, 0,		   // PRG_HEADER_CODE_OFFSET_15
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_2
 	LDX_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_3
-	JSR, WORD_LOW(RT_HEAPINIT), WORD_HIGH(RT_HEAPINIT),
+	JSR, 0, 0,         // PRG_HEADER_CODE_OFFSET_12
 
 	// Current nesting level
 	LDA_IMMEDIATE, 1,
@@ -135,38 +146,65 @@ static unsigned char prgHeader[] = {
 	AND_IMMEDIATE, 0xfe,
 	STA_ZEROPAGE, 1,
 
+	// Set the input buffer pointer
+	// PRG_HEADER_CODE_OFFSET_9
+	LDA_IMMEDIATE, 0,	// BSS_INPUTBUF low
+	STA_ZEROPAGE, ZP_INPUTBUFPTRL,
+	// PRG_HEADER_CODE_OFFSET_10
+	LDA_IMMEDIATE, 0,	// BSS_INPUTBUF high
+	STA_ZEROPAGE, ZP_INPUTBUFPTRH,
+
 	// Clear the input buffer
-	JSR, WORD_LOW(RT_CLRINPUT), WORD_HIGH(RT_CLRINPUT),
+	// PRG_HEADER_CODE_OFFSET_11
+	JSR, 0, 0,
 
 	// Initialize the int buffer
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_4
 	STA_ZEROPAGE, ZP_INTPTR,
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_5
 	STA_ZEROPAGE, ZP_INTPTR + 1,
+
+	// Initialize integer/ascii table
+	// PRG_HEADER_CODE_OFFSET_6
+	LDA_IMMEDIATE, 0,	// BSS_TENSTABLE low
+	// PRG_HEADER_CODE_OFFSET_7
+	LDX_IMMEDIATE, 0,	// BSS_TENSTABLE high
+	// PRG_HEADER_CODE_OFFSET_8
+	JSR, 0, 0,
 };
 #elif defined(__C64__)
 #define PRG_HEADER_CODE_OFFSET_1 5
 #define PRG_HEADER_CODE_OFFSET_2 53
 #define PRG_HEADER_CODE_OFFSET_3 55
-#define PRG_HEADER_CODE_OFFSET_4 78
-#define PRG_HEADER_CODE_OFFSET_5 82
+#define PRG_HEADER_CODE_OFFSET_4 86
+#define PRG_HEADER_CODE_OFFSET_5 90
+#define PRG_HEADER_CODE_OFFSET_6 94
+#define PRG_HEADER_CODE_OFFSET_7 96
+#define PRG_HEADER_CODE_OFFSET_8 98
+#define PRG_HEADER_CODE_OFFSET_9 75
+#define PRG_HEADER_CODE_OFFSET_10 79
+#define PRG_HEADER_CODE_OFFSET_11 83
+#define PRG_HEADER_CODE_OFFSET_12 57
+#define PRG_HEADER_CODE_OFFSET_13 43
+#define PRG_HEADER_CODE_OFFSET_14 16
+#define PRG_HEADER_CODE_OFFSET_15 50
 #define PRG_HEADER_CODE_EXIT_HANDLER_L 19
 #define PRG_HEADER_CODE_EXIT_HANDLER_H 23
-#define PRG_HEADER_LENGTH 85
+#define PRG_HEADER_LENGTH 100
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
 	LDA_X_INDEXED_ZP, 0x02,
 	STA_ABSOLUTEX, 0, 0,  // PRG_HEADER_CODE_OFFSET_1
 	INX,
-	CPX_IMMEDIATE, 0x1b,
+	CPX_IMMEDIATE, 0x62,
 	BNE, 0xf6,
 
 	// Save the stack pointer
 	TSX,
 	STX_ZEROPAGE, ZP_SAVEDSTACK,
 
-	JSR, WORD_LOW(RT_ERRORINIT), WORD_HIGH(RT_ERRORINIT),
+	JSR, 0, 0,  // rtErrorInit
 
 	// Set the exit handler
 	LDA_IMMEDIATE, 0,
@@ -185,14 +223,14 @@ static unsigned char prgHeader[] = {
 	// Set the runtime stack size and initialize the stack
 	LDA_IMMEDIATE, WORD_LOW(RUNTIME_STACK_SIZE),
 	LDX_IMMEDIATE, WORD_HIGH(RUNTIME_STACK_SIZE),
-	JSR, WORD_LOW(RT_STACKINIT), WORD_HIGH(RT_STACKINIT),
+	JSR, 0, 0,
 
 	LDA_IMMEDIATE, WORD_LOW(0xd000 - RUNTIME_STACK_SIZE - 4),
 	LDX_IMMEDIATE, WORD_HIGH(0xd000 - RUNTIME_STACK_SIZE - 4),
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	JSR, 0, 0,		   // PRG_HEADER_CODE_OFFSET_15
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_2
 	LDX_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_3
-	JSR, WORD_LOW(RT_HEAPINIT), WORD_HIGH(RT_HEAPINIT),
+	JSR, 0, 0,
 
 	// Current nesting level
 	LDA_IMMEDIATE, 1,
@@ -207,14 +245,31 @@ static unsigned char prgHeader[] = {
 	AND_IMMEDIATE, 0xfe,
 	STA_ZEROPAGE, 1,
 
+	// Set the input buffer pointer
+	// PRG_HEADER_CODE_OFFSET_9
+	LDA_IMMEDIATE, 0,	// BSS_INPUTBUF low
+	STA_ZEROPAGE, ZP_INPUTBUFPTRL,
+	// PRG_HEADER_CODE_OFFSET_10
+	LDA_IMMEDIATE, 0,	// BSS_INPUTBUF high
+	STA_ZEROPAGE, ZP_INPUTBUFPTRH,
+
 	// Clear the input buffer
-	JSR, WORD_LOW(RT_CLRINPUT), WORD_HIGH(RT_CLRINPUT),
+	// PRG_HEADER_CODE_OFFSET_11
+	JSR, 0, 0,
 
 	// Initialize the int buffer
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_4
 	STA_ZEROPAGE, ZP_INTPTR,
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_5
 	STA_ZEROPAGE, ZP_INTPTR + 1,
+
+	// Initialize integer/ascii table
+	// PRG_HEADER_CODE_OFFSET_6
+	LDA_IMMEDIATE, 0,	// BSS_TENSTABLE low
+	// PRG_HEADER_CODE_OFFSET_7
+	LDX_IMMEDIATE, 0,	// BSS_TENSTABLE high
+	// PRG_HEADER_CODE_OFFSET_8
+	JSR, 0, 0,
 };
 #else
 #error Program header and footer not defined for this platform
@@ -222,9 +277,10 @@ static unsigned char prgHeader[] = {
 
 #define PRG_CLEANUP_OFFSET 12
 #define PRG_CLEANUP_LENGTH 21
+#define PRG_CLEANUP_CALL 1
 static unsigned char prgCleanup[] = {
 	// Clean up the program's stack frame
-	JSR, WORD_LOW(RT_STACKCLEANUP), WORD_HIGH(RT_STACKCLEANUP),
+	JSR, 0, 0,
 
 	// Re-enable BASIC ROM
 	LDA_ZEROPAGE, 1,
@@ -236,21 +292,23 @@ static unsigned char prgCleanup[] = {
 	LDA_ABSOLUTEX, 0, 0,
 	STA_X_INDEXED_ZP, 0x02,
 	INX,
-	CPX_IMMEDIATE, 0x1b,
+	CPX_IMMEDIATE, 0x62,
 	BNE, 0xf6,
 };
 
 #ifdef COMPILERTEST
 #define CHAIN_CODE_MSGL 1
 #define CHAIN_CODE_MSGH 3
+#define CHAIN_CODE_PRINTZ 5
 #define CHAIN_CODE_CALLL 8
 #define CHAIN_CODE_CALLH 12
 #define CHAIN_CODE_STRLEN 24
+#define CHAIN_CODE_MEMCOPY 28
 #ifdef __MEGA65__
 static unsigned char chainCode[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_PRINTZ), WORD_HIGH(RT_PRINTZ),
+	JSR, 0, 0,
 
 	LDA_IMMEDIATE, 0,
 	STA_ZEROPAGE, ZP_PTR2L,
@@ -262,14 +320,14 @@ static unsigned char chainCode[] = {
 	STA_ZEROPAGE, ZP_PTR1H,
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_MEMCOPY), WORD_HIGH(RT_MEMCOPY),
+	JSR, 0, 0,
 	JMP, 0, 0x7a,
 };
 #elif defined (__C64__)
 static unsigned char chainCode[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_PRINTZ), WORD_HIGH(RT_PRINTZ),
+	JSR, 0, 0,
 
 	LDA_IMMEDIATE, 0,
 	STA_ZEROPAGE, ZP_PTR2L,
@@ -281,7 +339,7 @@ static unsigned char chainCode[] = {
 	STA_ZEROPAGE, ZP_PTR1H,
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_MEMCOPY), WORD_HIGH(RT_MEMCOPY),
+	JSR, 0, 0,
 	JMP, 0, 0xca,
 };
 #else
@@ -295,7 +353,9 @@ static void freeStringLiterals(void);
 static void genBootstrap(void);
 #endif
 static void genExeHeader(void);
+#if 0
 static void genRuntime(void);
+#endif
 static void updateLinkerAddresses(CHUNKNUM codeBuf);
 
 static void dumpStringLiterals(void)
@@ -355,7 +415,7 @@ static void genBootstrap(void)
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, 0, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
-	genThreeAddr(JSR, RT_PRINTZ);
+	genRuntimeCall(rtPrintz);
 	// Wait for a key to get pressed
 #ifdef __MEGA65__
 	genThreeAddr(LDX_ABSOLUTE, 0xd610);
@@ -500,7 +560,9 @@ void linkerPreWrite(CHUNKNUM astRoot)
 	linkAddressLookup("INIT", codeOffset + 1, 0, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
+#if 0
 	genRuntime();
+#endif
 	loadLibraries(astRoot);
 
 	linkAddressSet("INIT", codeOffset);
@@ -510,6 +572,16 @@ void linkerPreWrite(CHUNKNUM astRoot)
 	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_3, 0, LINKADDR_HIGH);
 	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_4, 0, LINKADDR_LOW);
 	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_5, 0, LINKADDR_HIGH);
+	linkAddressLookup(BSS_TENSTABLE, codeOffset + PRG_HEADER_CODE_OFFSET_6, 0, LINKADDR_LOW);
+	linkAddressLookup(BSS_TENSTABLE, codeOffset + PRG_HEADER_CODE_OFFSET_7, 0, LINKADDR_HIGH);
+	setRuntimeRef(rtInitTensTable32, codeOffset + PRG_HEADER_CODE_OFFSET_8);
+	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_9, 0, LINKADDR_LOW);
+	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_10, 0, LINKADDR_HIGH);
+	setRuntimeRef(rtClearInputBuf, codeOffset + PRG_HEADER_CODE_OFFSET_11);
+	setRuntimeRef(rtHeapInit, codeOffset + PRG_HEADER_CODE_OFFSET_12);
+	setRuntimeRef(rtStackInit, codeOffset + PRG_HEADER_CODE_OFFSET_13);
+	setRuntimeRef(rtErrorInit, codeOffset + PRG_HEADER_CODE_OFFSET_14);
+	setRuntimeRef(rtPushAx, codeOffset + PRG_HEADER_CODE_OFFSET_15);
 	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_L, 0, LINKADDR_LOW);
 	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_H, 0, LINKADDR_HIGH);
 	writeCodeBuf(prgHeader, PRG_HEADER_LENGTH);
@@ -529,6 +601,7 @@ void linkerPostWrite(const char* filename, char run)
 
 	linkAddressSet("EXIT_HANDLER", codeOffset);
 	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_CLEANUP_OFFSET, 0, LINKADDR_BOTH);
+	setRuntimeRef(rtStackCleanup, codeOffset + PRG_CLEANUP_CALL);
 	writeCodeBuf(prgCleanup, PRG_CLEANUP_LENGTH);
 
 #ifdef COMPILERTEST
@@ -539,6 +612,8 @@ void linkerPostWrite(const char* filename, char run)
 		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGH, 0, LINKADDR_HIGH);
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, 0, LINKADDR_LOW);
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, 0, LINKADDR_HIGH);
+		setRuntimeRef(rtMemCopy, codeOffset + CHAIN_CODE_MEMCOPY);
+		setRuntimeRef(rtPrintz, codeOffset + CHAIN_CODE_PRINTZ);
 		chainCode[CHAIN_CODE_STRLEN] = 28 + strlen(nextTest);
 		writeCodeBuf(chainCode, 33);
 		writeChainCall(nextTest);	// filename of the next test in the chain
@@ -563,6 +638,8 @@ void linkerPostWrite(const char* filename, char run)
 	}
 #endif
 
+	linkerWriteRuntime();
+
 	dumpStringLiterals();
 
 	linkAddressSet(BSS_INTBUF, codeOffset);
@@ -582,7 +659,23 @@ void linkerPostWrite(const char* filename, char run)
 	// Set aside some memory to undo the changes to page zero
 	linkAddressSet(BSS_ZPBACKUP, codeOffset);
 	ch = 0;
-	for (i = 0; i < 26; ++i) {
+	for (i = 0; i < 97; ++i) {
+		writeToMemBuf(codeBuf, &ch, 1);
+		++codeOffset;
+	}
+
+	// Set aside memory for the integer/ascii table
+	linkAddressSet(BSS_TENSTABLE, codeOffset);
+	ch = 0;
+	for (i = 0; i < 40; ++i) {
+		writeToMemBuf(codeBuf, &ch, 1);
+		++codeOffset;
+	}
+
+	// Set aside memory for the input buffer
+	linkAddressSet(BSS_INPUTBUF, codeOffset);
+	ch = 0;
+	for (i = 0; i < INPUTBUFLEN; ++i) {
 		writeToMemBuf(codeBuf, &ch, 1);
 		++codeOffset;
 	}
@@ -651,6 +744,7 @@ void linkerPostWrite(const char* filename, char run)
 #endif
 }
 
+#if 0
 static void genRuntime(void)
 {
     int i, read;
@@ -677,6 +771,7 @@ static void genRuntime(void)
 		codeOffset += sizeof(buf);
 	}
 }
+#endif
 
 static void updateLinkerAddresses(CHUNKNUM codeBuf)
 {

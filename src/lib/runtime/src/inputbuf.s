@@ -1,5 +1,10 @@
 .include "inputbuf.inc"
+
+.ifdef RUNTIME
 .include "runtime.inc"
+.else
+.importzp ptr1
+.endif
 
 .import getline
 

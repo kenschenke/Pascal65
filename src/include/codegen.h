@@ -97,6 +97,7 @@ void genIntValueAX(CHUNKNUM chunkNum);
 void genIntValueEAX(CHUNKNUM chunkNum);
 void genRealValueEAX(CHUNKNUM chunkNum);
 void genRoutineDeclarations(CHUNKNUM chunkNum);
+void genRuntimeCall(unsigned char routine);
 void genStringValueAX(CHUNKNUM chunkNum);
 void genSubroutineCall(CHUNKNUM chunkNum);
 void genStmts(CHUNKNUM chunkNum);
@@ -131,5 +132,9 @@ char linkAddressLookup(const char* name, unsigned short position, unsigned short
 void linkAddressSet(const char* name, unsigned short offset);
 
 void loadLibraries(CHUNKNUM astRoot);
+
+void readRuntimeDefFile(void);
+void setRuntimeRef(unsigned char exportNum, unsigned short offset);
+void linkerWriteRuntime(void);
 
 #endif // end of CODEGEN_H

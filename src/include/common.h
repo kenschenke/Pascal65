@@ -16,12 +16,26 @@
 #include <symtab.h>
 #include <misc.h>
 #include <ast.h>
+#include <chunks.h>
+
+#define MAX_LIBS 80
+
+struct rtroutine {
+    unsigned char routineNum;
+    char routineSeq;
+    char libNum;
+    CHUNKNUM left;
+    CHUNKNUM right;
+    char unused[CHUNK_LEN - 7];
+};
 
 extern short cntSymtabs;
 extern CHUNKNUM firstSymtabChunk;
 extern CHUNKNUM globalSymtab;
 extern CHUNKNUM units;
+extern CHUNKNUM exports;
 extern short currentLineNumber;
+extern unsigned char libsNeeded[MAX_LIBS / 8];
 
 extern const TTokenCode tlDeclarationStart[], tlDeclarationFollow[],
     tlIdentifierStart[], tlIdentifierFollow[],

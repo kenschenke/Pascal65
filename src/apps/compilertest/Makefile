@@ -16,6 +16,7 @@ LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 LIBRUNTIMEDIR = ../../lib/runtime/src
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
+RUNTIMEDEF = ../../shared/runtime.def
 
 PROGRAM := compilertest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
@@ -263,11 +264,14 @@ unit.petscii: unit.pas
 unit1.petscii: unit1.pas
 	dos2unix < unit1.pas | petcat -w2 -text -o unit1.petscii
 
+runtime.petscii: $(RUNTIMEDEF)
+	dos2unix < $(RUNTIMEDEF) | petcat -w -text -o runtime.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.lib system.petscii unit.petscii unit1.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) runtime.lib runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.lib system.petscii unit.petscii unit1.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -277,6 +281,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write runtime runtime \
+	-write runtime.lib runtime.lib \
+	-write runtime.petscii runtime.def,seq \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
@@ -297,7 +303,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write unit.petscii unit.pas,seq \
 	-write unit1.petscii unit1.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.petscii unit.petscii unit1.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) runtime.lib runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii stdroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii system.petscii unit.petscii unit1.petscii
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -307,6 +313,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write runtime runtime \
+	-write runtime.lib runtime.lib \
+	-write runtime.petscii runtime.def,seq \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write add.petscii add.pas,seq \

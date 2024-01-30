@@ -18,13 +18,20 @@
 #include <membuf.h>
 #include <ast.h>
 #include <string.h>
+#include <codegen.h>
+#include <error.h>
+#include <int16.h>
 
 short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
 CHUNKNUM globalSymtab;
 CHUNKNUM units;
+CHUNKNUM exports;
 char isFatalError;
 short currentLineNumber;
+unsigned char libsNeeded[MAX_LIBS / 8];
+
+static void saveLib(char num);
 
 // Returns 0 if unit not found
 char findUnit(CHUNKNUM name, struct unit* pUnit)
@@ -120,5 +127,38 @@ void getBaseType(struct type* pType)
 			break;
 		}
 	}
+}
+
+static void saveLib(char num)
+{
+    if (num > MAX_LIBS) {
+        abortTranslation(abortRuntimeError);
+    }
+
+    libsNeeded[num / 8] |= (1 << (num % 8));
+}
+
+void setRuntimeRef(unsigned char exportNum, unsigned short offset)
+{
+    char name[15];
+    struct rtroutine routine;
+    CHUNKNUM chunkNum = exports;
+
+    while (chunkNum) {
+        retrieveChunk(chunkNum, &routine);
+
+        if (exportNum == routine.routineNum) {
+            break;
+        }
+
+        chunkNum = exportNum < routine.routineNum ? routine.left : routine.right;
+    }
+
+    if (chunkNum) {
+        saveLib(routine.libNum);
+        strcpy(name, "rt_");
+        strcat(name, formatInt16(exportNum));
+        linkAddressLookup(name, offset, 0, LINKADDR_BOTH);
+    }
 }
 

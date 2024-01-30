@@ -4,7 +4,7 @@
 .include "types.inc"
 .include "runtime.inc"
 
-.import FPBASE, swapFPACCandFPOP, copyFPACCtoFPOP, popToReal
+.import swapFPACCandFPOP, copyFPACCtoFPOP, popToReal
 .import convertType, popToIntOp1, popToIntOp1And2, popToReal, popeax, pusheax
 .import swapInt8, swapInt16, swapInt32
 

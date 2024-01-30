@@ -12,16 +12,18 @@ static int genUnitDeclarations(short* heapOffsets);
 static void genUnitRoutines(void);
 
 #define FREE_VAR_HEAPS_OFFSET 3
+#define FREE_VAR_HEAPS_CALCSTACK 5
+#define FREE_VAR_HEAPS_HEAPFREE 16
 static unsigned char freeVarHeapsCode[] = {
 	LDA_ZEROPAGE, ZP_NESTINGLEVEL,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_CALCSTACK), WORD_HIGH(RT_CALCSTACK),
+	JSR, 0, 0,
 	LDY_IMMEDIATE, 1,
 	LDA_ZPINDIRECT, ZP_PTR1L,
 	TAX,
 	DEY,
 	LDA_ZPINDIRECT, ZP_PTR1L,
-	JSR, WORD_LOW(RT_HEAPFREE), WORD_HIGH(RT_HEAPFREE),
+	JSR, 0, 0,
 };
 
 static int addStringLiteral(CHUNKNUM chunkNum)
@@ -41,6 +43,8 @@ void genFreeVariableHeaps(short* heapOffsets)
 
 	while (heapOffsets[i] >= 0) {
 		freeVarHeapsCode[FREE_VAR_HEAPS_OFFSET] = heapOffsets[i];
+		setRuntimeRef(rtCalcStack, codeOffset + FREE_VAR_HEAPS_CALCSTACK);
+		setRuntimeRef(rtHeapFree, codeOffset + FREE_VAR_HEAPS_HEAPFREE);
 		writeCodeBuf(freeVarHeapsCode, 18);
 		++i;
 	}
@@ -63,10 +67,10 @@ void genRealValueEAX(CHUNKNUM chunkNum)
 	// Pointer to the real string in A/X
 	genStringValueAX(_expr.value.stringChunkNum);
 	// Convert to float in FPACC
-	genThreeAddr(JSR, RT_STRTOFLOAT);
+	genRuntimeCall(rtStrToFloat);
 
 	if (_expr.neg) {
-		genThreeAddr(JSR, RT_FLOATNEG);
+		genRuntimeCall(rtFloatNeg);
 	}
 }
 
@@ -155,7 +159,7 @@ void objCodeWrite(CHUNKNUM astRoot)
 
 	// Clean up the declarations from the stack
 	for (i = 0; i < numToPop; ++i) {
-		genThreeAddr(JSR, RT_INCSP4);
+		genRuntimeCall(rtIncSp4);
 	}
 
 	scope_exit();

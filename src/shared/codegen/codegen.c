@@ -130,6 +130,12 @@ void genShortValueA(CHUNKNUM chunkNum)
 	genTwo(LDX_IMMEDIATE, _expr.neg ? 0xff : 0);
 }
 
+void genRuntimeCall(unsigned char routine)
+{
+	setRuntimeRef(routine, codeOffset + 1);
+	genThreeAddr(JSR, 0);
+}
+
 void writeCodeBuf(unsigned char *buf, int len)
 {
 	writeToMemBuf(codeBuf, buf, len);

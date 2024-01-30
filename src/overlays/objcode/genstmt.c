@@ -64,8 +64,8 @@ static void genCaseStmt(struct stmt* pStmt)
 			genTwo(LDA_IMMEDIATE, exprType.kind);	// data type of case expression
 			genTwo(LDX_IMMEDIATE, labelType.kind);	// data type of case label
 			genTwo(LDY_IMMEDIATE, EXPR_EQ);			// perform equality operation
-			genThreeAddr(JSR, RT_COMP);				// do the comparison
-			genThreeAddr(JSR, RT_POPEAX);			// pop the results off the stack
+			genRuntimeCall(rtComp);					// do the comparison
+			genRuntimeCall(rtPopEax);				// pop the results off the stack
 			genTwo(CMP_IMMEDIATE, 0);
 			genTwo(BEQ, 3);							// branch to next label if not equal
 
@@ -134,8 +134,8 @@ static void genForLoop(struct stmt* pStmt)
 	genTwo(LDA_IMMEDIATE, controlType.kind);
 	genTwo(LDX_IMMEDIATE, targetType.kind);
 	genTwo(LDY_IMMEDIATE, pStmt->isDownTo ? EXPR_LT : EXPR_GT);
-	genThreeAddr(JSR, RT_COMP);
-	genThreeAddr(JSR, RT_POPEAX);
+	genRuntimeCall(rtComp);
+	genRuntimeCall(rtPopEax);
 	genTwo(CMP_IMMEDIATE, 0);
 	// If the target value has not been reached, jump to the body code
 	genTwo(BEQ, 3);		// JMP + two_byte_addr = 3
@@ -148,8 +148,8 @@ static void genForLoop(struct stmt* pStmt)
 	// Increment (or decrement) the control variable
 	genExpr(controlExpr, 1, 0, 0);
 	genTwo(LDA_IMMEDIATE, controlType.kind);
-	genThreeAddr(JSR, pStmt->isDownTo ? RT_PRED : RT_SUCC);
-	genThreeAddr(JSR, controlType.size == 2 ? RT_STOREINT : RT_STOREINT32);
+	genRuntimeCall(pStmt->isDownTo ? rtPred : rtSucc);
+	genRuntimeCall(controlType.size == 2 ? rtStoreInt : rtStoreInt32);
 
 	// Jump back up and check the control variable for the next iteration
 	genThreeAddr(JMP, startOffset);
@@ -168,7 +168,7 @@ static void genIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 
 	// Evaluate the expression
 	genExpr(pStmt->expr, 1, 0, 0);
-	genThreeAddr(JSR, RT_POPEAX);
+	genRuntimeCall(rtPopEax);
 	genTwo(AND_IMMEDIATE, 1);
 
 	// Dump the true block
@@ -207,7 +207,7 @@ static void genRepeatStmt(struct stmt* pStmt)
 
 	// Evaluate the expression
 	genExpr(pStmt->expr, 1, 0, 0);
-	genThreeAddr(JSR, RT_POPEAX);
+	genRuntimeCall(rtPopEax);
 	genTwo(AND_IMMEDIATE, 1);
 	genTwo(BNE, 3);		// JMP + address_two_bytes = 3
 	genThreeAddr(JMP, startAddr);
@@ -270,7 +270,7 @@ static void genWhileStmt(struct stmt* pStmt)
 
 	// Evaluate the expression
 	genExpr(pStmt->expr, 1, 0, 0);
-	genThreeAddr(JSR, RT_POPEAX);
+	genRuntimeCall(rtPopEax);
 	genTwo(AND_IMMEDIATE, 1);
 	genTwo(BNE, 3);	// JMP + two_address_bytes = 3
 	linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);

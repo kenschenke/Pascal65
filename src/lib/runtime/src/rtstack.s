@@ -10,7 +10,7 @@
 .export stackP
 .endif
 
-.import FPBASE, popeax, pusheax, incsp4
+.import popeax, pusheax, incsp4
 
 .export rtStackCleanup, rtStackInit, popAddrStack, pushIntStack, calcStackOffset, storeIntStack
 .export pushAddrStack, readIntStack, popToIntOp1, popToIntOp2, pushFromIntOp1, pushRealStack

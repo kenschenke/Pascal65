@@ -245,6 +245,7 @@ void main()
     }
 #endif
         printz("W");
+        readRuntimeDefFile();
         linkerPreWrite(astRoot);
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, objcodeCache);

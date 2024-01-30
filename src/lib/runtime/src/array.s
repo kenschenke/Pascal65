@@ -15,7 +15,7 @@
 
 .import runtimeError, ltInt16, gtInt16, calcStackOffset, convertType
 .import subInt16, addInt16, multInt16, popax, pushax, leftpad
-.import skipSpaces, inputPos, inputBufPos, inputBufUsed, inputBuf
+.import skipSpaces, inputPos, inputBufUsed, inputBuf
 
 .export calcArrayOffset, initArrayHeap, writeCharArray
 .export readCharArrayFromInput

@@ -4,7 +4,7 @@
 
 .export readFloatFromInput
 
-.import FPINP, FPBUF, inputPos, skipSpaces
+.import FPINP, inputPos, skipSpaces
 
 .bss
 

@@ -108,12 +108,19 @@
 #define ZP_SAVEDSTACK	(ZP_BASE + 28) // Saved CPU stack pointer for exit()
 #define ZP_NESTINGLEVEL	(ZP_BASE + 30)
 #define ZP_EXITHANDLER  (ZP_BASE + 31)
+#define ZP_FPBASE       (ZP_BASE + 33)
+#define ZP_FPBUF        (ZP_BASE + 77)
+#define ZP_TENSTABLE32  (ZP_BASE + 92)
+#define ZP_INPUTBUFPTRL (ZP_BASE + 94)
+#define ZP_INPUTBUFPTRH (ZP_BASE + 95)
 
 // BSS Locations
 
 #define BSS_HEAPBOTTOM	"HEAPBOTTOM"
 #define BSS_INTBUF		"INTBUF"
 #define BSS_ZPBACKUP    "ZPBACKUP"
+#define BSS_TENSTABLE   "TENSTABLE"
+#define BSS_INPUTBUF    "INPUTBUF"
 
 // Runtime Jumptable locations
 
@@ -125,66 +132,41 @@
 #error Platform Jumptable base not defined
 #endif
 
-#define RT_ABS                  (RT_BASE + 33)
-#define RT_ADD  				(RT_BASE + 12)
-#define RT_ASSIGN               (RT_BASE + 9)
-#define RT_CALCRECORD			(RT_BASE + 168)
-#define RT_CALCSTACK			(RT_BASE + 150)
-#define RT_CLRINPUT				(RT_BASE + 78)
-#define RT_COMP                 (RT_BASE + 15)
-#define RT_DIVIDE               (RT_BASE + 51)
-#define RT_DIVINT				(RT_BASE + 21)
-#define RT_NEGATE               (RT_BASE + 18)
-#define RT_ERRORINIT			(RT_BASE + 90)
-#define RT_FLOATTOINT16			(RT_BASE + 87)
-#define RT_STRTOFLOAT			(RT_BASE + 63)
-#define RT_FPOUT				(RT_BASE + 66)
-#define RT_HEAPFREE				(RT_BASE + 171)
-#define RT_HEAPALLOC			(RT_BASE + 177)
-#define RT_HEAPINIT				(RT_BASE + 174)
-#define RT_INCSP4				(RT_BASE + 93)
-#define RT_INITARRAYHEAP		(RT_BASE + 165)
-#define RT_MULTIPLY             (RT_BASE + 42)
-#define RT_SQR	    			(RT_BASE + 27)
-#define RT_SUBTRACT             (RT_BASE + 54)
-#define RT_LEFTPAD				(RT_BASE + 6)
-#define RT_MEMCOPY				(RT_BASE + 141)
-#define RT_MOD  				(RT_BASE + 30)
-#define RT_POPEAX				(RT_BASE + 96)
-#define RT_POPTOREAL			(RT_BASE + 105)
-#define RT_POPTOINTOP1			(RT_BASE + 108)
-#define RT_POPTOINTOP2			(RT_BASE + 111)
-#define RT_PRECRD				(RT_BASE + 114)
-#define RT_PRED                 (RT_BASE + 45)
-#define RT_PRINTZ				(RT_BASE + 0)
-#define RT_PRINTLNZ				(RT_BASE + 3)
-#define RT_PUSHADDRSTACK		(RT_BASE + 117)
-#define RT_PUSHAX				(RT_BASE + 99)
-#define RT_PUSHBYTE				(RT_BASE + 120)
-#define RT_PUSHEAX				(RT_BASE + 102)
-#define RT_PUSHINT				(RT_BASE + 123)
-#define RT_PUSHINTOP1			(RT_BASE + 126)
-#define RT_PUSHREAL				(RT_BASE + 129)
-#define RT_PUSHSTACKFRAMEHEADER	(RT_BASE + 159)
-#define RT_READBYTE				(RT_BASE + 132)
-#define RT_READFLOATFROMINPUT	(RT_BASE + 81)
-#define RT_READINT				(RT_BASE + 135)
-#define RT_READINTFROMINPUT		(RT_BASE + 84)
-#define RT_READREAL				(RT_BASE + 138)
-#define RT_RETURNFROMROUTINE	(RT_BASE + 162)
-#define RT_STACKINIT			(RT_BASE + 153)
-#define RT_STACKCLEANUP			(RT_BASE + 156)
-#define RT_STOREINT				(RT_BASE + 144)
-#define RT_STOREREAL			(RT_BASE + 147)
-#define RT_SUCC                 (RT_BASE + 48)
-#define RT_CALCARRAYOFFSET		(RT_BASE + 75)
-#define RT_GETFPBUF				(RT_BASE + 60)
-#define RT_WRITECHARARRAY       (RT_BASE + 72)
-#define RT_READCHARARRAYFROMINPUT (RT_BASE + 69)
-#define RT_FLOATNEG             (RT_BASE + 57)
-#define RT_WRITEVALUE           (RT_BASE + 24)
-#define RT_READINT32            (RT_BASE + 36)
-#define RT_STOREINT32           (RT_BASE + 39)
+// DO NOT REMOVE OR REORDER THESE!!!
+// These routine numbers are used in runtime.def and all hell will break loose.
+enum RuntimeRoutines {
+    // These are used by the code generator for the executable
+    rtAbs, rtAdd, rtAssign, rtCalcArrayOffset, rtCalcRecord, rtCalcStack,
+    rtClrInput, rtComp, rtDivide, rtDivInt, rtErrorInit, rtFloatNeg,
+    rtFloatToInt16, rtFpOut, rtGetFpBuf, rtHeapAlloc, rtHeapFree, rtHeapInit,
+    rtIncSp4, rtInitArrayHeap, rtLeftPad, rtMemCopy, rtMod, rtMultiply,
+    rtNegate, rtPopEax, rtPopToIntOp1, rtPopToIntOp2, rtPopToReal, rtPrecRd,
+    rtPred, rtPrintz, rtPrintlnz, rtPushAddrStack, rtPushAx, rtPushByte,
+    rtPushEax, rtPushInt, rtPushIntOp1, rtPushReal, rtPushStackFrameHeader,
+    rtReadByte, rtReadCharArrayFromInput, rtReadFloatFromInput, rtReadInt,
+    rtReadInt32Stack, rtReadIntFromInput, rtReadReal, rtReturnFromRoutine,
+    rtSqr, rtStackCleanup, rtStackInit, rtStoreInt, rtStoreInt32, rtStoreReal,
+    rtStrToFloat, rtSubtract, rtSucc, rtWriteCharArray, rtWriteValue,
+
+    // These routines are used internally by the runtime routines
+    rtRuntimeError, ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM,
+    CLRMEM, MOVIND, MOVIN, CALCPTR, FPNORM, FPADD, FPMULT, EXMLDV,
+    CKSIGN, FPSUB, rtFloatAbs, FPDIV, FPINP, DECBIN, FPD10, FPX10,
+    floatSqr, rtFloatEq, rtFloatGt, rtFloatGte, rtFloatLt, rtFloatLte, addysp,
+    decsp4, storeByteStack, popToIntOp1And2, popToIntOp32, pushIntOp1And2,
+    writeBool, writeChar, absInt8, invertInt8, isNegInt8, signExtend8To16,
+    signExtend8To32, swapInt8, addInt8, ltInt8, divInt8, exit, multInt8, subInt8,
+    absInt16, swapInt16, isNegInt16, invertInt16, signExtend16To32, addInt16,
+    eqInt16, leInt16, ltInt16, geInt16, gtInt16, divInt16, ltUint16, multUint16,
+    multInt16, subInt16, rtInitTensTable32, absInt32, invertInt32, isNegInt32,
+    swapInt32, addInt32, eqInt32, leInt32, ltInt32, geInt32, gtInt32, divInt32,
+    multInt32, multUint32, geUint32, gtUint32, leUint32, ltUint32, writeInt8,
+    writeUint8, writeInt16, writeUint16, writeInt32, writeUint32, rtPopAx,
+    subInt32, int32Sqr, prepOperands8, prepOperands16, prepOperands32,
+    prepOperandsReal, readInt16, copyFPACCtoFPOP, swapFPACCandFPOP,
+    convertType, getline, getlineNoEnter, rtClearInputBuf, rtIsInputEndOfLine,
+    rtReadCharFromInput, skipSpaces, readInt32, 
+};
 
 // CBM Kernal
 

@@ -16,6 +16,7 @@ LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 LIBRUNTIMEDIR = ../../lib/runtime/src
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
+RUNTIMEDEF = ../../shared/runtime.def
 
 PROGRAM := compiler
 D81FILE := $(BINDIR)/$(PROGRAM).d81
@@ -230,11 +231,14 @@ routines.petscii: routines.pas
 calcarea.petscii: calcarea.pas
 	dos2unix < calcarea.pas | petcat -w2 -text -o calcarea.petscii
 
+runtime.petscii: $(RUNTIMEDEF)
+	dos2unix < $(RUNTIMEDEF) | petcat -w -text -o runtime.petscii
+
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.petscii calcarea.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.petscii calcarea.petscii runtime.petscii runtime.lib
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -250,9 +254,11 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write hello.petscii hello.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write system.lib system.lib,prg \
-	-write calcarea.petscii calcarea.pas,seq
+	-write calcarea.petscii calcarea.pas,seq \
+	-write runtime.petscii runtime.def,seq \
+	-write runtime.lib runtime.lib,prg
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii runtime.petscii runtime.lib
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -268,6 +274,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write hello.petscii hello.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write system.lib system.lib,prg \
+	-write runtime.petscii runtime.def,seq \
+	-write runtime.lib runtime.lib,prg \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
 endif
 

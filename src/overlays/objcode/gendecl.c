@@ -10,19 +10,22 @@ static void updateHeapOffset(short newOffset);
 
 #define RECORD_DECL_SIZEL 1
 #define RECORD_DECL_SIZEH 3
+#define RECORD_DECL_ALLOC 5
+#define RECORD_DECL_PUSHINT 12
 static unsigned char recordDeclCode[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
+	JSR, 0, 0,
 	STA_ZEROPAGE, ZP_PTR1L,
 	STX_ZEROPAGE, ZP_PTR1H,
-	JSR, WORD_LOW(RT_PUSHINT), WORD_HIGH(RT_PUSHINT),
+	JSR, 0, 0,
 };
 
 #define PARENT_ARRAY_INIT1_ELEMENTSL 1
 #define PARENT_ARRAY_INIT1_ELEMENTSH 5
 #define PARENT_ARRAY_INIT1_ELEMSIZEL 9
 #define PARENT_ARRAY_INIT1_ELEMSIZEH 11
+#define PARENT_ARRAY_INIT1_PUSHAX 13
 static unsigned char parentArrayInit1[] = {
 	LDA_IMMEDIATE, 0,
 	STA_ZEROPAGE, ZP_TMP1,
@@ -31,13 +34,15 @@ static unsigned char parentArrayInit1[] = {
 	// Initialize this array's heap
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	JSR, 0, 0,
 };
+#define PARENT_ARRAY_INIT2_1 1  // PushAx
+#define PARENT_ARRAY_INIT2_2 8  // InitArrayHeap
 static unsigned char parentArrayInit2[] = {
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	JSR, 0, 0,
 	LDA_ZEROPAGE, ZP_PTR1L,
 	LDX_ZEROPAGE, ZP_PTR1H,
-	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
+	JSR, 0, 0,
 };
 #define PARENT_ARRAY_INIT3_BNE 3
 #define PARENT_ARRAY_INIT3_JMP 11
@@ -52,16 +57,19 @@ static unsigned char parentArrayInit3[] = {
 
 #define NON_PARENT_ARRAY_INIT1_SIZEL 1
 #define NON_PARENT_ARRAY_INIT1_SIZEH 3
+#define NON_PARENT_ARRAY_INIT1_ALLOC 5
+#define NON_PARENT_ARRAY_INIT1_PUSHINT 12
 static unsigned char nonParentArrayInit1[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
+	JSR, 0, 0,
 	STA_ZEROPAGE, ZP_PTR1L,
 	STX_ZEROPAGE, ZP_PTR1H,
-	JSR, WORD_LOW(RT_PUSHINT), WORD_HIGH(RT_PUSHINT),
+	JSR, 0, 0,
 };
 #define NON_PARENT_ARRAY_INIT2_SIZEL 4
 #define NON_PARENT_ARRAY_INIT2_SIZEH 6
+#define NON_PARENT_ARRAY_INIT2_PUSHAX 8
 static unsigned char nonParentArrayInit2[] = {
 	// keep the heap pointer
 	PHA,
@@ -70,15 +78,17 @@ static unsigned char nonParentArrayInit2[] = {
 	// Array element size
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	JSR, 0, 0,
 };
+#define NON_PARENT_ARRAY_INIT3_1 1  // pushAx
+#define NON_PARENT_ARRAY_INIT3_2 7 // initArrayHeap
 static unsigned char nonParentArrayInit3[] = {
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
+	JSR, 0, 0,
 	// heap address must be in A/X
 	PLA,
 	TAX,
 	PLA,
-	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
+	JSR, 0, 0,
 };
 
 #define ARRAY_RECORD_INIT1_ELEMENTSL 1
@@ -134,12 +144,16 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 		strcpy(label, "ARRAY");
 		strcat(label, formatInt16(arrayNum));
 		linkAddressSet(label, branchOffset);
+		setRuntimeRef(rtPushAx, codeOffset + PARENT_ARRAY_INIT1_PUSHAX);
 		writeCodeBuf(parentArrayInit1, 15);
 		// Array upper bound
 		genExpr(indexType.max, 0, 1, 0);
-		genThreeAddr(JSR, RT_PUSHAX);
+		genRuntimeCall(rtPushAx);
 		// Array lower bound
 		genExpr(indexType.min, 0, 1, 0);
+		// setRuntimeRef(rtPushAx, codeOffset + PARENT_ARRAY_INIT2_1);
+		setRuntimeRef(rtPushAx, codeOffset + PARENT_ARRAY_INIT2_1);
+		setRuntimeRef(rtInitArrayHeap, codeOffset + PARENT_ARRAY_INIT2_2);
 		writeCodeBuf(parentArrayInit2, 10);
 		// Advance ptr1 past array header
 		updateHeapOffset(heapOffset + 6);
@@ -176,6 +190,8 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 			// Allocate array heap
 			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEL] = WORD_LOW(size);
 			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEH] = WORD_HIGH(size);
+			setRuntimeRef(rtHeapAlloc, codeOffset + NON_PARENT_ARRAY_INIT1_ALLOC);
+			setRuntimeRef(rtPushInt, codeOffset + NON_PARENT_ARRAY_INIT1_PUSHINT);
 			writeCodeBuf(nonParentArrayInit1, 14);
 		}
 		else {
@@ -185,12 +201,15 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 		}
 		nonParentArrayInit2[NON_PARENT_ARRAY_INIT2_SIZEL] = WORD_LOW(elemType.size);
 		nonParentArrayInit2[NON_PARENT_ARRAY_INIT2_SIZEH] = WORD_HIGH(elemType.size);
+		setRuntimeRef(rtPushAx, codeOffset + NON_PARENT_ARRAY_INIT2_PUSHAX);
 		writeCodeBuf(nonParentArrayInit2, 10);
 		// Array upper bound
 		genExpr(indexType.max, 0, 1, 0);
-		genThreeAddr(JSR, RT_PUSHAX);
+		genRuntimeCall(rtPushAx);
 		// Array lower bound
 		genExpr(indexType.min, 0, 1, 0);
+		setRuntimeRef(rtPushAx, codeOffset + NON_PARENT_ARRAY_INIT3_1);
+		setRuntimeRef(rtInitArrayHeap, codeOffset + NON_PARENT_ARRAY_INIT3_2);
 		writeCodeBuf(nonParentArrayInit3, 9);
 		// Advance ptr1 past array header
 		updateHeapOffset(heapOffset + 6);
@@ -312,7 +331,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_BYTE:
 			case TYPE_SHORTINT:
 				genIntValueAX(_decl.value);
-				genThreeAddr(JSR, RT_PUSHBYTE);
+				genRuntimeCall(rtPushByte);
 				break;
 
 			case TYPE_INTEGER:
@@ -320,24 +339,24 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_BOOLEAN:
 			case TYPE_ENUMERATION:
 				genIntValueAX(_decl.value);
-				genThreeAddr(JSR, RT_PUSHINT);
+				genRuntimeCall(rtPushInt);
 				break;
 
 			case TYPE_LONGINT:
 			case TYPE_CARDINAL:
 				genIntValueEAX(_decl.value);
-				genThreeAddr(JSR, RT_PUSHEAX);
+				genRuntimeCall(rtPushEax);
 				break;
 
 			case TYPE_CHARACTER:
 				genCharValueA(_decl.value);
 				genTwo(LDX_IMMEDIATE, 0);
-				genThreeAddr(JSR, RT_PUSHINT);
+				genRuntimeCall(rtPushInt);
 				break;
 
 			case TYPE_REAL:
 				genRealValueEAX(_decl.value);
-				genThreeAddr(JSR, RT_PUSHREAL);
+				genRuntimeCall(rtPushReal);
 				break;
 
 			case TYPE_ARRAY: {
@@ -355,6 +374,8 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_RECORD:
 				recordDeclCode[RECORD_DECL_SIZEL] = WORD_LOW(_type.size);
 				recordDeclCode[RECORD_DECL_SIZEH] = WORD_HIGH(_type.size);
+				setRuntimeRef(rtHeapAlloc, codeOffset + RECORD_DECL_ALLOC);
+				setRuntimeRef(rtPushInt, codeOffset + RECORD_DECL_PUSHINT);
 				writeCodeBuf(recordDeclCode, 14);
 				heapOffset = 0;
 				genRecordInit(&_type);

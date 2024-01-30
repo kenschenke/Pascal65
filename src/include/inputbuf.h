@@ -3,6 +3,8 @@
 
 #include <real.h>
 
+#define INPUTBUFLEN 80
+
 void clearInputBuf(void);
 char isInputEndOfLine(void);
 char readCharFromInput(void);

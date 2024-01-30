@@ -91,6 +91,9 @@ static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk)
 					Error(errIncompatibleTypes);
 				}
 			}
+			else if (_type.kind == TYPE_CHARACTER && exprKind == TYPE_CHARACTER) {
+				// do nothing
+			}
 			else if (typeConversions[_type.kind-1][exprKind-1] == TYPE_VOID) {
 				Error(errIncompatibleTypes);
 			}
