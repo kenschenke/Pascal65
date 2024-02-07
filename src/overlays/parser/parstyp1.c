@@ -296,6 +296,10 @@ CHUNKNUM parseTypeSpec(void)
 		typeKind = TYPE_REAL;
 		break;
 
+	case tcSTRING:
+		typeKind = TYPE_STRING_VAR;
+		break;
+
 	case tcIdentifier:
 		name = name_create(parserString);
 		getToken();

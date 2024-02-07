@@ -4,6 +4,7 @@
 #include <codegen.h>
 #include <asm.h>
 #include <ast.h>
+#include <common.h>
 
 static void genIntOrRealMath(struct expr* pExpr, char noStack);
 static void getExprType(CHUNKNUM chunkNum, struct type* pType);
@@ -80,6 +81,26 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 
 	switch (_expr.kind) {
 	case EXPR_ADD:
+		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
+			getExprType(_expr.left, &leftType);
+			getExprType(_expr.right, &rightType);
+			genExpr(_expr.left, 1, 1, 0);
+			genTwo(STA_ZEROPAGE, ZP_PTR1L);
+			genTwo(STX_ZEROPAGE, ZP_PTR1H);
+			genExpr(_expr.right, 1, 1, 0);
+			genTwo(STA_ZEROPAGE, ZP_PTR2L);
+			genTwo(STX_ZEROPAGE, ZP_PTR2H);
+			genTwo(LDA_IMMEDIATE, leftType.kind);
+			genTwo(LDX_IMMEDIATE, rightType.kind);
+			genRuntimeCall(rtConcatString);
+			if (!noStack) {
+				genRuntimeCall(rtPushEax);
+			}
+		} else {
+			genIntOrRealMath(&_expr, noStack);
+		}
+		break;
+
 	case EXPR_SUB:
 	case EXPR_MUL:
 		genIntOrRealMath(&_expr, noStack);
@@ -176,6 +197,20 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		getExprType(_expr.right, &rightType);
 		getBaseType(&leftType);
 		getBaseType(&rightType);
+
+		if (leftType.kind == TYPE_STRING_VAR) {
+			// Address to variable's storage on stack in left in ptr1
+			genTwo(LDA_IMMEDIATE, rightType.kind);
+			genRuntimeCall(rtPushAx);
+			genExpr(_expr.left, 0, 1, 0);
+			genTwo(LDA_ZEROPAGE, ZP_PTR1L);
+			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
+			genRuntimeCall(rtPushAx);
+			genExpr(_expr.right, 1, 1, 0);
+			genRuntimeCall(assignString);
+			break;
+		}
+		
 		genExpr(_expr.right, 1, 0, 0);
 		genExpr(_expr.left, 0, 0, 0);		// push the variable's address next
 		genTwo(LDA_IMMEDIATE, rightType.kind);
@@ -309,6 +344,10 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 					genRuntimeCall(rtPushByte);
 				}
 			}
+			else if (rightType.kind == TYPE_STRING_VAR ||
+				rightType.kind == TYPE_ARRAY) {
+				genRuntimeCall(rtReadInt);
+			}
 		}
 		break;
 
@@ -319,6 +358,16 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		// First, look up the left expression.  If it's also a subscript or a field,
 		// it needs to be processed first.
 		retrieveChunk(_expr.left, &exprLeft);
+		retrieveChunk(exprLeft.evalType, &leftType);
+		getBaseType(&leftType);
+		if (leftType.kind == TYPE_STRING_VAR) {
+			genExpr(_expr.right, 1, 0, 0);
+			genExpr(_expr.left, 1, 1, 0);
+			genRuntimeCall(rtStringSubscript);
+			genRuntimeCall(rtPushByte);
+			break;
+		}
+
 		if (exprLeft.kind != EXPR_NAME) {
 			genExpr(_expr.left, 0, 0, 1);
 			// Look up the array index

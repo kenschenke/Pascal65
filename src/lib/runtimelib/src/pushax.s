@@ -7,6 +7,7 @@
 ; exports
 
 jmp pushax
+jmp pusha
 
 ; end of exports
 .byte $00, $00, $00
@@ -36,6 +37,20 @@ L1:
     sta (sp),y
     pla
     dey
+    sta (sp),y
+    rts
+.endproc
+
+.proc pusha
+    ldy sp
+    beq L1
+    dec sp
+    ldy #0
+    sta (sp),y
+    rts
+L1:
+    dec sp + 1
+    dec sp
     sta (sp),y
     rts
 .endproc

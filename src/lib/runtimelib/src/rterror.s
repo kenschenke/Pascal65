@@ -37,6 +37,7 @@ rteInvalidFunctionArgumentMsg: .asciiz "invalid function argument"
 rteInvalidUserInputMsg: .asciiz "invalid user input"
 rteUnimplementedRuntimeFeatureMsg: .asciiz "unimplemented runtime feature"
 rteOutOfMemoryMsg: .asciiz "out of memory"
+rteStringOverflowMsg: .asciiz "string overflow"
 
 ; Initialize the runtime error message table
 .proc runtimeErrorInit

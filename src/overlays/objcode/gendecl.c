@@ -381,6 +381,21 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				genRecordInit(&_type);
 				heapOffsets[heapVar++] = sym.offset;
 				break;
+
+			case TYPE_STRING_VAR:
+				// Allocate an empty string
+				genTwo(LDA_IMMEDIATE, 1);
+				genTwo(LDX_IMMEDIATE, 0);
+				genRuntimeCall(rtHeapAlloc);
+				genTwo(STA_ZEROPAGE, ZP_PTR1L);
+				genTwo(STX_ZEROPAGE, ZP_PTR1H);
+				genTwo(LDY_IMMEDIATE, 0);
+				genTwo(LDA_IMMEDIATE, 0);
+				genTwo(STA_X_INDEXED_ZP, ZP_PTR1L);
+				genTwo(LDA_ZEROPAGE, ZP_PTR1L);
+				genTwo(LDX_ZEROPAGE, ZP_PTR1H);
+				genRuntimeCall(rtPushInt);
+				break;
 			}
 
 			++num;

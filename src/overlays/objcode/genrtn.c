@@ -249,6 +249,17 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genRuntimeCall(rtReadCharArrayFromInput);
 			break;
 		}
+
+		case TYPE_STRING_VAR: {
+			struct expr leftExpr;
+			struct symbol node;
+			retrieveChunk(arg.left, &leftExpr);
+			retrieveChunk(leftExpr.node, &node);
+			genTwo(LDA_IMMEDIATE, node.level);
+			genTwo(LDX_IMMEDIATE, node.offset);
+			genRuntimeCall(rtReadStringFromInput);
+			break;
+		}
 		}
 
 		argChunk = arg.right;
@@ -611,10 +622,24 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genRuntimeCall(rtPrintz);
 			break;
 
-		case TYPE_STRING:
+		case TYPE_STRING_LITERAL:
 			genExpr(arg.left, 1, 0, 0);
 			genRuntimeCall(rtPopEax);
 			genRuntimeCall(rtPrintz);
+			break;
+
+		case TYPE_STRING_VAR:
+		case TYPE_STRING_OBJ:
+			genExpr(arg.left, 1, 0, 0);
+			genRuntimeCall(rtPushEax);
+			if (arg.width) {
+				genExpr(arg.width, 1, 1, 0);
+				genOne(TAX);
+			} else {
+				genTwo(LDX_IMMEDIATE, 0);
+			}
+			genTwo(LDA_IMMEDIATE, _type.kind);
+			genRuntimeCall(rtWriteValue);
 			break;
 
 		case TYPE_ARRAY: {

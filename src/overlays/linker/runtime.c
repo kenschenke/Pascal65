@@ -436,7 +436,7 @@ static void readRuntimeLib(FILE *fh, int libLength, char libNum)
     }
     ++pos;
     while (pos < libLength) {
-        n = (pos + BUFLEN < libLength ? (BUFLEN - 1) : libLength - pos);
+        n = (pos + BUFLEN < (libLength+1) ? (BUFLEN - 1) : libLength - pos);
         if (fread(buffer + 1, 1, n, fh) != n) {
             abortTranslation(abortRuntimeError);
         }

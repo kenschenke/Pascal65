@@ -388,7 +388,7 @@ static short getTypeSize(struct type* pType)
 	case TYPE_ENUMERATION_VALUE:
 		size = sizeof(short);
 		break;
-	case TYPE_STRING: size = sizeof(CHUNKNUM); break;
+	case TYPE_STRING_LITERAL: size = sizeof(CHUNKNUM); break;
 
 	case TYPE_ARRAY: {
 		struct type _type, indexType;
@@ -778,7 +778,8 @@ short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 			case TYPE_CARDINAL:
 			case TYPE_ENUMERATION:
 			case TYPE_REAL:
-			case TYPE_STRING:
+			case TYPE_STRING_LITERAL:
+			case TYPE_STRING_VAR:
 			case TYPE_ARRAY:
 			case TYPE_DECLARED:
 			case TYPE_RECORD:

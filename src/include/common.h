@@ -63,5 +63,6 @@ char findUnit(CHUNKNUM name, struct unit* pUnit);
 void initCommon(void);
 void freeCommon(void);
 char isStopKeyPressed(void);
+char isConcatOperand(CHUNKNUM exprChunk);
 
 #endif // end of COMMON_H

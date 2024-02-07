@@ -7,6 +7,7 @@
 ; exports
 
 jmp popax
+jmp popa
 
 ; end of exports
 .byte $00, $00, $00
@@ -37,5 +38,16 @@ L1:
     inc sp
 L2:
     inc sp + 1
+    rts
+.endproc
+
+.proc popa
+    ldy #0
+    lda (sp),y
+    inc sp
+    beq @L1
+    rts
+@L1:
+    inc sp+1
     rts
 .endproc

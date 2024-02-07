@@ -48,7 +48,7 @@ static TResWord rw5[] = {
 
 static TResWord rw6[] = {
     {"downto", tcDOWNTO}, {"packed", tcPACKED}, {"record", tcRECORD},
-    {"repeat", tcREPEAT}, {NULL},
+    {"repeat", tcREPEAT}, {"string", tcSTRING}, {NULL},
 };
 
 static TResWord rw7[] = {

@@ -33,6 +33,7 @@ writeInt16: jmp $0000
 writeUint32: jmp $0000
 writeInt32: jmp $0000
 printz: jmp $0000
+writeString: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -43,19 +44,10 @@ printz: jmp $0000
 
 .code
 
-.macro popWidth
-    tay                 ; Save the value in Y
-    pla                 ; Pop the field width off the CPU stack
-    tax                 ; Transfer it to X
-    tya                 ; Transfer the value back to A
-.endmacro
+width: .res 1
 
 .proc writeValue
-    ; Save the width on the CPU stack
-    tay                 ; Save the data type in Y
-    txa                 ; Move the field width to A
-    pha                 ; Push it onto the CPU stack
-    tya                 ; Transfer data type back to A
+    stx width           ; save width
 
     cmp #TYPE_BOOLEAN
     beq BOOL
@@ -73,55 +65,64 @@ printz: jmp $0000
     beq UINT32
     cmp #TYPE_LONGINT
     beq SINT32
+    cmp #TYPE_STRING_VAR
+    beq STR
+    cmp #TYPE_STRING_OBJ
+    beq STR
 
 BOOL:
     jsr popeax
-    popWidth
+    ldx width
     jmp writeBool
 
 CHAR:
     jsr popeax
-    popWidth
+    ldx width
     jmp writeChar
+
+STR:
+    jsr popeax
+    ldy width
+    jmp writeString
 
 UINT8:
     jsr popToIntOp1
-    pla
+    lda width
     jsr writeUint8
     clc
     bcc writeIntBuf
 
 SINT8:
     jsr popToIntOp1
-    pla
+    lda width
     jsr writeInt8
     clc
     bcc writeIntBuf
 
 UINT16:
     jsr popToIntOp1
-    pla
+    lda width
     jsr writeUint16
     clc
     bcc writeIntBuf
 
 SINT16:
     jsr popToIntOp1
-    pla
+    lda width
     jsr writeInt16
     clc
     bcc writeIntBuf
 
 UINT32:
     jsr popToIntOp1And2
-    pla
+    lda width
     jsr writeUint32
     clc
     bcc writeIntBuf
 
 SINT32:
     jsr popToIntOp1And2
-    pla
+    lda width
     jsr writeInt32
     clc
     bcc writeIntBuf

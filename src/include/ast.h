@@ -428,7 +428,7 @@ typedef enum {
     TYPE_REAL,
     TYPE_BOOLEAN,
     TYPE_CHARACTER,
-    TYPE_STRING,
+    TYPE_STRING_LITERAL,
     TYPE_ARRAY,
     TYPE_FUNCTION,
     TYPE_PROCEDURE,
@@ -439,6 +439,8 @@ typedef enum {
     TYPE_ENUMERATION,
     TYPE_ENUMERATION_VALUE,
     TYPE_RECORD,
+    TYPE_STRING_VAR,
+    TYPE_STRING_OBJ,
 } type_t;
 // CAUTION. Do not rearrange this list without also changing
 // the values in types.inc.

@@ -101,6 +101,7 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc)
 				case tcLONGINT: type = TYPE_LONGINT; break;
 				case tcCARDINAL: type = TYPE_CARDINAL; break;
 				case tcREAL: type = TYPE_REAL; break;
+				case tcSTRING: type = TYPE_STRING_LITERAL; break;
 				default:
 					Error(errIncompatibleTypes);
 				}

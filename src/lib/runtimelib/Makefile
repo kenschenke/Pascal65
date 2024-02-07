@@ -257,6 +257,9 @@ $(OBJDIR)/rtstack.o: $(SRCDIR)/rtstack.s $(CFGDIR)/rtstack.cfg $(OBJDIR)
 $(OBJDIR)/sqr.o: $(SRCDIR)/sqr.s $(CFGDIR)/sqr.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
+$(OBJDIR)/string.o: $(SRCDIR)/string.s $(CFGDIR)/string.cfg $(OBJDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
+
 $(OBJDIR)/strtofloat.o: $(SRCDIR)/strtofloat.s $(CFGDIR)/strtofloat.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
@@ -493,6 +496,9 @@ $(LIBDIR)/rtstack.lib: $(OBJDIR)/rtstack.o
 
 $(LIBDIR)/sqr.lib: $(OBJDIR)/sqr.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/sqr.cfg $<
+
+$(LIBDIR)/string.lib: $(OBJDIR)/string.o
+	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/string.cfg $<
 
 $(LIBDIR)/strtofloat.lib: $(OBJDIR)/strtofloat.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strtofloat.cfg $<

@@ -112,6 +112,7 @@ typedef enum {
     rteInvalidUserInput,
     rteUnimplementedRuntimeFeature,
     rteOutOfMemory,
+    rteStringOverflow,
     numRuntimeErrors,
 } TRuntimeErrorCode;
 

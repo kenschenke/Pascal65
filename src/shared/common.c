@@ -129,6 +129,32 @@ void getBaseType(struct type* pType)
 	}
 }
 
+char isConcatOperand(CHUNKNUM exprChunk)
+{
+	struct expr _expr;
+	struct type _type;
+
+	if (!exprChunk) {
+		return 0;
+	}
+
+	retrieveChunk(exprChunk, &_expr);
+	if (!_expr.evalType) {
+		return 0;
+	}
+	retrieveChunk(_expr.evalType, &_type);
+	getBaseType(&_type);
+	if (_type.kind == TYPE_ARRAY) {
+		retrieveChunk(_type.subtype, &_type);
+		getBaseType(&_type);
+	}
+
+	return (_type.kind == TYPE_CHARACTER ||
+		_type.kind == TYPE_STRING_LITERAL ||
+		_type.kind == TYPE_STRING_OBJ ||
+		_type.kind == TYPE_STRING_VAR) ? 1 : 0;
+}
+
 static void saveLib(char num)
 {
     if (num > MAX_LIBS) {

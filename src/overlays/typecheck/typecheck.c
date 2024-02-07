@@ -479,6 +479,7 @@ static void checkReadReadlnCall(CHUNKNUM argChunk)
 		case TYPE_WORD:
 		case TYPE_CARDINAL:
 		case TYPE_LONGINT:
+		case TYPE_STRING_VAR:
 		case TYPE_REAL:
 			if (_type.flags & TYPE_FLAG_ISCONST) {
 				Error(errIncompatibleTypes);
@@ -624,7 +625,9 @@ static void checkWriteWritelnCall(CHUNKNUM argChunk)
 			isTypeInteger(_type.kind)) {
 			checkIntegerBaseType(exprLeft.width);
 			checkIntegerBaseType(exprLeft.precision);
-		} else if (_type.kind != TYPE_STRING) {
+		} else if (_type.kind != TYPE_STRING_LITERAL &&
+			_type.kind != TYPE_STRING_VAR &&
+			_type.kind != TYPE_STRING_OBJ) {
 			Error(errIncompatibleTypes);
 		}
 
@@ -850,7 +853,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_STRING_LITERAL:
-		pType->kind = TYPE_STRING;
+		pType->kind = TYPE_STRING_LITERAL;
 		pType->flags = TYPE_FLAG_ISCONST;
 		pType->size = sizeof(char*);
 		break;
@@ -868,6 +871,14 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_ADD:
+		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
+			pType->kind = TYPE_STRING_OBJ;
+			pType->size = 2;
+		} else {
+			pType->kind = realOperands(leftType.kind, rightType.kind, &pType->size);
+		}
+		break;
+
 	case EXPR_SUB:
 	case EXPR_MUL:
 		pType->kind = realOperands(leftType.kind, rightType.kind, &pType->size);
@@ -944,6 +955,25 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			pType->kind = TYPE_BOOLEAN;
 			pType->size = sizeof(char);
 		}
+		else if (leftType.kind == TYPE_STRING_VAR) {
+			if (rightType.kind == TYPE_ARRAY) {
+				retrieveChunk(rightType.subtype, &rightType);
+				if (rightType.kind != TYPE_CHARACTER) {
+					Error(errIncompatibleAssignment);
+					pType->kind = TYPE_VOID;
+					break;
+				}
+			}
+			else if (rightType.kind != TYPE_STRING_VAR &&
+				rightType.kind != TYPE_STRING_LITERAL &&
+				rightType.kind != TYPE_STRING_OBJ) {
+				Error(errIncompatibleAssignment);
+				pType->kind = TYPE_VOID;
+				break;
+			}
+			pType->kind = leftType.kind;
+			pType->size = 2;
+		}
 		else if (isAssignmentCompatible(leftType.kind, &rightType, &exprRight)) {
 			pType->kind = leftType.kind;
 			pType->size = GET_TYPE_SIZE(getTypeMask(leftType.kind));
@@ -1000,7 +1030,20 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		struct type arrayType, indexType, elemType;
 		getArrayType(_expr.left, &arrayType);
 		getBaseType(&arrayType);
-		if (arrayType.kind != TYPE_ARRAY) {
+		if (arrayType.kind == TYPE_STRING_VAR) {
+			struct expr rightExpr;
+			struct type subscriptType;
+			retrieveChunk(_expr.right, &rightExpr);
+			retrieveChunk(rightExpr.evalType, &subscriptType);
+			getBaseType(&subscriptType);
+			if (!isTypeInteger(subscriptType.kind)) {
+				Error(errInvalidIndexType);
+				pType->kind = TYPE_VOID;
+			}
+			pType->kind = TYPE_CHARACTER;
+			break;
+		}
+		else if (arrayType.kind != TYPE_ARRAY) {
 			Error(errInvalidType);
 			pType->kind = TYPE_VOID;
 			break;

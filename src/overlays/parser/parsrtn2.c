@@ -163,6 +163,7 @@ CHUNKNUM parseFormalParmList(void)
 			case tcCARDINAL: tc = TYPE_CARDINAL; break;
 			case tcLONGINT: tc = TYPE_LONGINT; break;
 			case tcREAL: tc = TYPE_REAL; break;
+			case tcSTRING: tc = TYPE_STRING_LITERAL; break;
 			default:
 				Error(errInvalidType);
 				break;
