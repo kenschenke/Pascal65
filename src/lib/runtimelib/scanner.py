@@ -1,3 +1,4 @@
+import math
 import sys
 
 if len(sys.argv) < 2:
@@ -12,7 +13,16 @@ file.close()
 
 used = [0] * 256
 
+pages = math.floor(len(data) / 256)
+if len(data) % 256 != 0:
+    pages += 1
+pagesMsg = str(pages) + " page"
+if pages != 1:
+    pagesMsg += "s"
+pagesMsg += " needed"
+
 print("Object file is", len(data), "bytes.")
+print(pagesMsg)
 print("Assembled start address", "${:x}{:02x}".format(data[1], data[0]))
 
 for b in data[2:]:  # Skip first two items (the start address)
