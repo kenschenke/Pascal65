@@ -51,18 +51,16 @@ heapBottom: .res 2
 
 ; This routine initializes the heap MAT.  The caller passes the pointer to the
 ; top and bottom of the heap.  The bottom is passed in A/X and the top is
-; pushed to the runtime stack.
+; passed in ptr1.
 .proc heapInit
     sta heapBottom
     stx heapBottom + 1
-    jsr popax
-; L0: jmp L0
+    lda ptr1
     sta heapTop
-    sta ptr1
     sta heapPtr
-    stx heapTop + 1
-    stx ptr1 + 1
-    stx heapPtr + 1
+    lda ptr1 + 1
+    sta heapTop + 1
+    sta heapPtr + 1
     lda #0
     ldy #3
 L1:
