@@ -79,7 +79,9 @@ type2: .res 1
     ; Keep a copy of ptr1
     jsr popax
     sta strPtr
+    sta ptr1
     stx strPtr + 1
+    stx ptr1 + 1
     ; Free the existing string for the variable
     ldy #1
     lda (ptr1),y

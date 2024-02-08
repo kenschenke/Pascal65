@@ -155,6 +155,16 @@ char isConcatOperand(CHUNKNUM exprChunk)
 		_type.kind == TYPE_STRING_VAR) ? 1 : 0;
 }
 
+char isStringConcat(CHUNKNUM exprChunk)
+{
+	struct expr _expr;
+
+	retrieveChunk(exprChunk, &_expr);
+	return (_expr.kind == EXPR_ADD &&
+		isConcatOperand(_expr.left) &&
+		isConcatOperand(_expr.right)) ? 1 : 0;
+}
+
 static void saveLib(char num)
 {
     if (num > MAX_LIBS) {

@@ -58,6 +58,11 @@ static unsigned char exprField1[] = {
 	STX_ZEROPAGE, ZP_PTR1H,
 };
 
+#define EXPR_FREE_STRING1_LEN 5
+static unsigned char exprFreeString1[] = {
+	TAY, PHA, TXA, PHA, TYA,
+};
+
 // isRead is non-zero when this expression appears on the right
 // side of an assignment and the data value being read needs
 // to be on the top of the stack.
@@ -82,12 +87,21 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	switch (_expr.kind) {
 	case EXPR_ADD:
 		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
+			char stringConcats = 0;
 			getExprType(_expr.left, &leftType);
 			getExprType(_expr.right, &rightType);
 			genExpr(_expr.left, 1, 1, 0);
 			genTwo(STA_ZEROPAGE, ZP_PTR1L);
 			genTwo(STX_ZEROPAGE, ZP_PTR1H);
+			if (isStringConcat(_expr.left)) {
+				++stringConcats;
+				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
+			}
 			genExpr(_expr.right, 1, 1, 0);
+			if (isStringConcat(_expr.right)) {
+				++stringConcats;
+				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
+			}
 			genTwo(STA_ZEROPAGE, ZP_PTR2L);
 			genTwo(STX_ZEROPAGE, ZP_PTR2H);
 			genTwo(LDA_IMMEDIATE, leftType.kind);
@@ -95,6 +109,19 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genRuntimeCall(rtConcatString);
 			if (!noStack) {
 				genRuntimeCall(rtPushEax);
+			}
+			if (stringConcats) {
+				genTwo(STA_ZEROPAGE, ZP_FPBUF);
+				genTwo(STX_ZEROPAGE, ZP_FPBUF + 1);
+				while (stringConcats) {
+					genOne(PLA);
+					genOne(TAX);
+					genOne(PLA);
+					genRuntimeCall(rtHeapFree);
+					--stringConcats;
+				}
+				genTwo(LDA_ZEROPAGE, ZP_FPBUF);
+				genTwo(LDX_ZEROPAGE, ZP_FPBUF + 1);
 			}
 		} else {
 			genIntOrRealMath(&_expr, noStack);
@@ -200,6 +227,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 
 		if (leftType.kind == TYPE_STRING_VAR) {
 			// Address to variable's storage on stack in left in ptr1
+			char isRightConcat = 0;
 			genTwo(LDA_IMMEDIATE, rightType.kind);
 			genRuntimeCall(rtPushAx);
 			genExpr(_expr.left, 0, 1, 0);
@@ -207,7 +235,21 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
 			genRuntimeCall(rtPushAx);
 			genExpr(_expr.right, 1, 1, 0);
+			if (isStringConcat(_expr.right)) {
+				// The right side is a string concatentation which leaves
+				// a string object on the stack.  Save the pointer so it can
+				// be freed after the assignment.
+				isRightConcat = 1;
+				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
+			}
 			genRuntimeCall(assignString);
+			if (isRightConcat) {
+				// Pull the string object pointer back off the stack and free it.
+				genOne(PLA);
+				genOne(TAX);
+				genOne(PLA);
+				genRuntimeCall(rtHeapFree);
+			}
 			break;
 		}
 		

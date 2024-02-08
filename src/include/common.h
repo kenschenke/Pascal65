@@ -64,5 +64,6 @@ void initCommon(void);
 void freeCommon(void);
 char isStopKeyPressed(void);
 char isConcatOperand(CHUNKNUM exprChunk);
+char isStringConcat(CHUNKNUM exprChunk);
 
 #endif // end of COMMON_H
