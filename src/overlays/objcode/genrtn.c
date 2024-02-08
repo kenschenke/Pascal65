@@ -631,6 +631,9 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_STRING_VAR:
 		case TYPE_STRING_OBJ:
 			genExpr(arg.left, 1, 0, 0);
+			if (_type.kind == TYPE_STRING_OBJ) {
+				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
+			}
 			genRuntimeCall(rtPushEax);
 			if (arg.width) {
 				genExpr(arg.width, 1, 1, 0);
@@ -640,6 +643,12 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			}
 			genTwo(LDA_IMMEDIATE, _type.kind);
 			genRuntimeCall(rtWriteValue);
+			if (_type.kind == TYPE_STRING_OBJ) {
+				genOne(PLA);
+				genOne(TAX);
+				genOne(PLA);
+				genRuntimeCall(rtHeapFree);
+			}
 			break;
 
 		case TYPE_ARRAY: {

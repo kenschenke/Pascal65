@@ -84,6 +84,9 @@ extern short heapOffset;
 			Write program file from codeBuf
 */
 
+#define EXPR_FREE_STRING1_LEN 5
+extern unsigned char exprFreeString1[];
+
 void genOne(unsigned char b);
 void genTwo(unsigned char b1, unsigned char b2);
 void genThreeAddr(unsigned char b, unsigned short addr);

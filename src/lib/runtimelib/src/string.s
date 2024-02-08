@@ -468,6 +468,13 @@ LP: ldy tmp1
     sta strPtr
     lda ptr1 + 1
     sta strPtr + 1
+    ; Free existing heap for string
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
+    jsr heapFree
     jsr skipSpaces          ; Skip over spaces in the input buffer
     ; Calculate length of input
     lda inputBufUsed

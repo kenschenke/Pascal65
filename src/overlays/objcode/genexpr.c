@@ -58,8 +58,7 @@ static unsigned char exprField1[] = {
 	STX_ZEROPAGE, ZP_PTR1H,
 };
 
-#define EXPR_FREE_STRING1_LEN 5
-static unsigned char exprFreeString1[] = {
+unsigned char exprFreeString1[] = {
 	TAY, PHA, TXA, PHA, TYA,
 };
 
