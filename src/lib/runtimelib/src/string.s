@@ -224,12 +224,9 @@ SK: ldy #0
     lda (ptr1),y
     tax
     beq DN
-    ldy #0
+LP: iny
     lda (ptr1),y
-    iny
-LP: lda (ptr1),y
     jsr CHROUT
-    iny
     dex
     bne LP
 DN: rts
@@ -284,6 +281,7 @@ DN: rts
     lda #rteStringOverflow
     jsr runtimeError
 :   lda intOp1
+    pha
     clc
     adc #1
     ldx #0
@@ -293,7 +291,7 @@ DN: rts
     stx strPtr + 1
     stx ptr2 + 1
     ldy #0
-    lda intOp1
+    pla
     sta (ptr2),y
     lda concat1
     sta ptr1
