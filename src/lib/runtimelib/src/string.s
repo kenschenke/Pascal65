@@ -16,6 +16,7 @@ jmp writeString
 jmp concatString
 jmp readStringFromInput
 jmp stringSubscript
+jmp duplicateString
 
 ; end of exports
 .byte $00, $00, $00
@@ -534,5 +535,37 @@ LP: ldy tmp1
 :   ldy tmp1
     ldx #0
     lda (ptr1),y
+    rts
+.endproc
+
+.proc duplicateString
+    sta srcPtr
+    sta ptr1
+    stx srcPtr + 1
+    stx ptr1 + 1
+    ldy #0
+    lda (ptr1),y
+    pha
+    ldx #0
+    jsr heapAlloc
+    sta strPtr
+    sta ptr2
+    stx strPtr + 1
+    stx ptr2 + 1
+    lda srcPtr
+    sta ptr1
+    lda srcPtr + 1
+    sta ptr1 + 1
+    ldy #0
+    pla
+    sta (ptr2),y
+    tax
+:   iny
+    lda (ptr1),y
+    sta (ptr2),y
+    dex
+    bne :-
+    lda strPtr
+    ldx strPtr + 1
     rts
 .endproc

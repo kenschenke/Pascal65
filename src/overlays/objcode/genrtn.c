@@ -58,6 +58,19 @@ static unsigned char paramByRef2[] = {
 	JSR, 0, 0,
 };
 
+#define STRING_BY_REF1_LEN 14
+#define STRING_BY_REF1_DUPSTRING 9
+#define STRING_BY_REF1_PUSHEAX 12
+static unsigned char stringByRef1[] = {
+	LDY_IMMEDIATE, 1,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	TAX,
+	DEY,
+	LDA_ZPINDIRECT, ZP_PTR1L,
+	JSR, 0, 0,		// rtDuplicateString
+	JSR, 0, 0,		// rtPushEax
+};
+
 #define ACTIVATE_FRAME_LEVEL 10
 static unsigned char activateFrame[] = {
 	PLA,
@@ -344,6 +357,14 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 			setRuntimeRef(rtPushAddrStack, codeOffset + PARAM_BYREF2_PUSHADDR);
 			writeCodeBuf(paramByRef2, 27);
 		}
+		else if (paramType.kind == TYPE_STRING_VAR &&
+		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
+			// Allocate a second heap and make a copy of the string
+			genExpr(_expr.left, 0, 1, 0);
+			setRuntimeRef(rtDuplicateString, codeOffset + STRING_BY_REF1_DUPSTRING);
+			setRuntimeRef(rtPushEax, codeOffset + STRING_BY_REF1_PUSHEAX);
+			writeCodeBuf(stringByRef1, STRING_BY_REF1_LEN);
+		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			genExpr(_expr.left, 0, 1, 0);
 			genRuntimeCall(rtPushAddrStack);
@@ -387,7 +408,8 @@ static void genRoutineCleanup(short *heapOffsets, int numHeap, struct type* pDec
 			paramType.flags = flags;
 		}
 
-		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY) &&
+		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY ||
+			paramType.kind == TYPE_STRING_VAR) &&
 			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			heapOffsets[numHeap++] = offset;
 		}

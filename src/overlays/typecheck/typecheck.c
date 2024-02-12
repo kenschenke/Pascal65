@@ -341,6 +341,10 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 				Error(errInvalidType);
 			}
 		}
+		else if ((argType.kind == TYPE_STRING_OBJ || argType.kind == TYPE_STRING_VAR)
+			&& paramType.kind == TYPE_STRING_VAR) {
+				// This is okay
+		}
 		else if (paramType.kind != argType.kind) {
 			Error(errInvalidType);
 		}

@@ -8,6 +8,7 @@
 
 static void genIntOrRealMath(struct expr* pExpr, char noStack);
 static void getExprType(CHUNKNUM chunkNum, struct type* pType);
+static char isStringFunc(CHUNKNUM exprChunk);
 
 #define EXPR_AND_OR_CODE 8
 #define EXPR_AND_OR_POPTOINTOP2 1
@@ -226,7 +227,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 
 		if (leftType.kind == TYPE_STRING_VAR) {
 			// Address to variable's storage on stack in left in ptr1
-			char isRightConcat = 0;
+			char isRightStringObj = 0;
 			genTwo(LDA_IMMEDIATE, rightType.kind);
 			genRuntimeCall(rtPushAx);
 			genExpr(_expr.left, 0, 1, 0);
@@ -234,15 +235,18 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
 			genRuntimeCall(rtPushAx);
 			genExpr(_expr.right, 1, 1, 0);
-			if (isStringConcat(_expr.right)) {
+			if (isStringConcat(_expr.right) || isStringFunc(_expr.right)) {
 				// The right side is a string concatentation which leaves
 				// a string object on the stack.  Save the pointer so it can
 				// be freed after the assignment.
-				isRightConcat = 1;
+				isRightStringObj = 1;
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
 			}
+			if (isStringFunc(_expr.right)) {
+				genRuntimeCall(rtPopEax);
+			}
 			genRuntimeCall(assignString);
-			if (isRightConcat) {
+			if (isRightStringObj) {
 				// Pull the string object pointer back off the stack and free it.
 				genOne(PLA);
 				genOne(TAX);
@@ -587,5 +591,25 @@ static void getExprType(CHUNKNUM chunkNum, struct type* pType)
 
 	retrieveChunk(chunkNum, &_expr);
 	retrieveChunk(_expr.evalType, pType);
+}
+
+static char isStringFunc(CHUNKNUM chunkNum)
+{
+	struct expr _expr;
+	struct symbol node;
+	struct type _type;
+
+	retrieveChunk(chunkNum, &_expr);
+	if (_expr.kind != EXPR_CALL) {
+		return 0;
+	}
+
+	retrieveChunk(_expr.left, &_expr);
+	retrieveChunk(_expr.node, &node);
+	retrieveChunk(node.type, &_type);
+	retrieveChunk(_type.subtype, &_type);
+	getBaseType(&_type);
+
+	return _type.kind == TYPE_STRING_VAR ? 1 : 0;
 }
 
