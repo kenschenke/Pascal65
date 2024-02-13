@@ -109,6 +109,7 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 void genRecordInit(struct type* pType);
 int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets);
 int getArrayLimit(CHUNKNUM chunkNum);
+char isStringFunc(CHUNKNUM exprChunk);
 void writeCodeBuf(unsigned char *buf, int len);
 
 // Linker Symbol Table

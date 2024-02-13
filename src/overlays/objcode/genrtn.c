@@ -653,6 +653,9 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_STRING_VAR:
 		case TYPE_STRING_OBJ:
 			genExpr(arg.left, 1, 0, 0);
+			if (isStringFunc(arg.left)) {
+				genRuntimeCall(rtPopEax);
+			}
 			if (_type.kind == TYPE_STRING_OBJ) {
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
 			}

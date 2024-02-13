@@ -164,3 +164,24 @@ void objCodeWrite(CHUNKNUM astRoot)
 
 	scope_exit();
 }
+
+char isStringFunc(CHUNKNUM chunkNum)
+{
+	struct expr _expr;
+	struct symbol node;
+	struct type _type;
+
+	retrieveChunk(chunkNum, &_expr);
+	if (_expr.kind != EXPR_CALL) {
+		return 0;
+	}
+
+	retrieveChunk(_expr.left, &_expr);
+	retrieveChunk(_expr.node, &node);
+	retrieveChunk(node.type, &_type);
+	retrieveChunk(_type.subtype, &_type);
+	getBaseType(&_type);
+
+	return _type.kind == TYPE_STRING_VAR ? 1 : 0;
+}
+

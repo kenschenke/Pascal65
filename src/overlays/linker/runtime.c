@@ -9,6 +9,7 @@
 #include <int16.h>
 
 #define BUFLEN 20
+#define MAX_IMPORT_STACK 36
 
 // Page number of the library
 static unsigned char page;
@@ -22,7 +23,14 @@ static CHUNKNUM libBuf;
 // Referenced imports
 static CHUNKNUM imports;
 
+// For addImportLibNums and getLibNum
+struct rtroutine _routine;
+static CHUNKNUM importStack[MAX_IMPORT_STACK];
+static char importStackTop;
+
 static void addImportLibNums(CHUNKNUM chunkNum);
+static void pushImportStack(CHUNKNUM chunkNum);
+static CHUNKNUM popImportStack(void);
 static int compExportRoutine(struct rtroutine *r1, struct rtroutine *r2);
 static int compImportRoutine(struct rtroutine *r1, struct rtroutine *r2);
 static void freeRoutines(CHUNKNUM chunkNum);
@@ -48,11 +56,33 @@ static void addImportLibNums(CHUNKNUM chunkNum)
         return;
     }
 
-    retrieveChunk(chunkNum, &routine);
-    libNum = getLibNum(exports, routine.routineNum);
-    libsNeeded[libNum / 8] |= (1 << (libNum % 8));
-    addImportLibNums(routine.left);
-    addImportLibNums(routine.right);
+    importStackTop = 0;
+    pushImportStack(chunkNum);
+    do {
+        chunkNum = popImportStack();
+        retrieveChunk(chunkNum, &routine);
+        if (routine.left) {
+            pushImportStack(routine.left);
+        }
+        if (routine.right) {
+            pushImportStack(routine.right);
+        }
+        libNum = getLibNum(exports, routine.routineNum);
+        libsNeeded[libNum / 8] |= (1 << (libNum % 8));
+    } while (importStackTop);
+}
+
+static void pushImportStack(CHUNKNUM chunkNum)
+{
+    if (importStackTop >= MAX_IMPORT_STACK) {
+        runtimeError(rteStackOverflow);
+    }
+    importStack[importStackTop++] = chunkNum;
+}
+
+static CHUNKNUM popImportStack(void)
+{
+    return importStack[--importStackTop];
 }
 
 static int compExportRoutine(struct rtroutine *r1, struct rtroutine *r2)
@@ -131,21 +161,24 @@ static char getRoutineNum(CHUNKNUM chunkNum, char libNum, char routineSeq)
 static char getLibNum(CHUNKNUM chunkNum, char routineNum)
 {
     char libNum;
-    struct rtroutine routine;
+    CHUNKNUM left, right;
 
     if (!chunkNum) {
         return 0;
     }
 
-    retrieveChunk(chunkNum, &routine);
-    if (routine.routineNum == routineNum) {
-        return routine.libNum;
+    retrieveChunk(chunkNum, &_routine);
+    if (_routine.routineNum == routineNum) {
+        return _routine.libNum;
     }
 
-    if (libNum = getLibNum(routine.left, routineNum)) {
+    left = _routine.left;
+    right = _routine.right;
+
+    if (libNum = getLibNum(left, routineNum)) {
         return libNum;
     }
-    if (libNum = getLibNum(routine.right, routineNum)) {
+    if (libNum = getLibNum(right, routineNum)) {
         return libNum;
     }
 
