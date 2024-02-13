@@ -407,7 +407,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		if (leftType.kind == TYPE_STRING_VAR) {
 			genExpr(_expr.right, 1, 0, 0);
 			genExpr(_expr.left, 1, 1, 0);
-			genRuntimeCall(rtStringSubscript);
+			genRuntimeCall(rtStringSubscriptRead);
 			genRuntimeCall(rtPushByte);
 			break;
 		}
