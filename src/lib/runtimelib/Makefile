@@ -242,6 +242,21 @@ $(OBJDIR)/sqr.o: $(SRCDIR)/sqr.s $(CFGDIR)/sqr.cfg $(OBJDIR)
 $(OBJDIR)/string.o: $(SRCDIR)/string.s $(CFGDIR)/string.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
+$(OBJDIR)/strassign.o: $(SRCDIR)/strassign.s $(CFGDIR)/strassign.cfg $(OBJDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
+
+$(OBJDIR)/strconcat.o: $(SRCDIR)/strconcat.s $(CFGDIR)/strconcat.cfg $(OBJDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
+
+$(OBJDIR)/strconvert.o: $(SRCDIR)/strconvert.s $(CFGDIR)/strconvert.cfg $(OBJDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
+
+$(OBJDIR)/strinput.o: $(SRCDIR)/strinput.s $(CFGDIR)/strinput.cfg $(OBJDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
+
+$(OBJDIR)/strsubscript.o: $(SRCDIR)/strsubscript.s $(CFGDIR)/strsubscript.cfg $(OBJDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
+
 $(OBJDIR)/strtofloat.o: $(SRCDIR)/strtofloat.s $(CFGDIR)/strtofloat.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
@@ -454,6 +469,21 @@ $(LIBDIR)/sqr.lib: $(OBJDIR)/sqr.o
 
 $(LIBDIR)/string.lib: $(OBJDIR)/string.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/string.cfg $<
+
+$(LIBDIR)/strassign.lib: $(OBJDIR)/strassign.o
+	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strassign.cfg $<
+
+$(LIBDIR)/strconcat.lib: $(OBJDIR)/strconcat.o
+	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strconcat.cfg $<
+
+$(LIBDIR)/strconvert.lib: $(OBJDIR)/strconvert.o
+	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strconvert.cfg $<
+
+$(LIBDIR)/strinput.lib: $(OBJDIR)/strinput.o
+	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strinput.cfg $<
+
+$(LIBDIR)/strsubscript.lib: $(OBJDIR)/strsubscript.o
+	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strsubscript.cfg $<
 
 $(LIBDIR)/strtofloat.lib: $(OBJDIR)/strtofloat.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/strtofloat.cfg $<

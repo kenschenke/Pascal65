@@ -58,6 +58,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 static void getArrayType(CHUNKNUM exprChunk, struct type* pType);
 static void hoistFuncCall(CHUNKNUM chunkNum);
 static char integerOperands(char type1Kind, char type2Kind, short *pSize);
+static char isAssignableToString(char rightKind, CHUNKNUM rightSubType);
 static char isAssignmentCompatible(char leftKind, struct type *rightType,
 	struct expr *rightExpr);
 static char isExprAFuncCall(CHUNKNUM exprChunk);
@@ -341,9 +342,14 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 				Error(errInvalidType);
 			}
 		}
-		else if ((argType.kind == TYPE_STRING_OBJ || argType.kind == TYPE_STRING_VAR)
-			&& paramType.kind == TYPE_STRING_VAR) {
-				// This is okay
+		else if (paramType.kind == TYPE_STRING_VAR) {
+			if ((paramType.flags & TYPE_FLAG_ISBYREF) && 
+				argType.kind != TYPE_STRING_VAR) {
+				Error(errInvalidType);
+			}
+			else if (!isAssignableToString(argType.kind, argType.subtype)) {
+				Error(errInvalidType);
+			}
 		}
 		else if (paramType.kind != argType.kind) {
 			Error(errInvalidType);
@@ -960,17 +966,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			pType->size = sizeof(char);
 		}
 		else if (leftType.kind == TYPE_STRING_VAR) {
-			if (rightType.kind == TYPE_ARRAY) {
-				retrieveChunk(rightType.subtype, &rightType);
-				if (rightType.kind != TYPE_CHARACTER) {
-					Error(errIncompatibleAssignment);
-					pType->kind = TYPE_VOID;
-					break;
-				}
-			}
-			else if (rightType.kind != TYPE_STRING_VAR &&
-				rightType.kind != TYPE_STRING_LITERAL &&
-				rightType.kind != TYPE_STRING_OBJ) {
+			if (!isAssignableToString(rightType.kind, rightType.subtype)) {
 				Error(errIncompatibleAssignment);
 				pType->kind = TYPE_VOID;
 				break;
@@ -1138,6 +1134,26 @@ static void hoistFuncCall(CHUNKNUM chunkNum)
 	_expr.right = 0;
 	_expr.node = 0;
 	storeChunk(chunkNum, &_expr);
+}
+
+static char isAssignableToString(char rightKind, CHUNKNUM rightSubType)
+{
+	struct type rightType;
+
+	if (rightKind == TYPE_ARRAY) {
+		retrieveChunk(rightSubType, &rightType);
+		if (rightType.kind == TYPE_CHARACTER) {
+			return 1;
+		}
+	}
+	else if (rightKind == TYPE_STRING_VAR ||
+		rightKind == TYPE_STRING_LITERAL ||
+		rightKind == TYPE_STRING_OBJ ||
+		rightKind == TYPE_CHARACTER) {
+			return 1;
+	}
+
+	return 0;
 }
 
 static char isAssignmentCompatible(char leftKind, struct type *rightType,

@@ -79,4 +79,9 @@
 <3 <19 <58 <42 >117 >119 >159 >124 >114 >123 >34 >165 # array.s
 <4 # record.s
 <21 # memcopy.s
-<167 <171 <173 <174 <175 <176 >124 >20 >114 >170 >165 # string.s
+<175 # string.s
+<174 <176 # strsubscript.s
+<173 >165 # strinput.s
+<167 >177 # strassign.s
+<171 >124 >114 # strconcat.s
+<177 >124 # strconvert.s

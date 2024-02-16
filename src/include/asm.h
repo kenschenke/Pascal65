@@ -206,7 +206,8 @@ enum RuntimeRoutines {
     convertType, getline, getlineNoEnter, rtDummy162, rtIsInputEndOfLine,
     rtReadCharFromInput, skipSpaces, readInt32, assignString, writeString,
     rtHeapReAlloc, rtPopA, rtConcatString, rtPushA, rtReadStringFromInput,
-    rtStringSubscriptRead, rtDuplicateString, rtStringSubscriptWrite, 
+    rtStringSubscriptRead, rtDuplicateString, rtStringSubscriptWrite,
+    rtConvertString,  
 };
 
 // CBM Kernal
