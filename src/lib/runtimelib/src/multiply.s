@@ -7,6 +7,7 @@
 ;    X - data type of <operand-2>
 ;    Y - data type of result
 
+.include "runtime.inc"
 .include "types.inc"
 
 .export __LOADADDR__: absolute = 1
@@ -32,9 +33,6 @@ multUint16: jmp $0000
 multInt32: jmp $0000
 multUint32: jmp $0000
 FPMULT: jmp $0000
-pushFromIntOp1: jmp $0000
-pushFromIntOp1And2: jmp $0000
-pushRealStack: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -66,35 +64,35 @@ pushRealStack: jmp $0000
 .proc mult8
     jsr prepOperands8
     jsr multInt8
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 .endproc
 
 .proc mult16
     jsr prepOperands16
     jsr multInt16
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 .endproc
 
 .proc multU16
     jsr prepOperands16
     jsr multUint16
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 .endproc
 
 .proc mult32
     jsr prepOperands32
     jsr multInt32
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc
 
 .proc multU32
     jsr prepOperands32
     jsr multUint32
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc
 
 .proc multReal
     jsr prepOperandsReal
     jsr FPMULT
-    jmp pushRealStack
+    jmp rtPushReal
 .endproc

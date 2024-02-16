@@ -28,11 +28,6 @@ int32Sqr: jmp $0000
 floatSqr: jmp $0000
 signExtend8To32: jmp $0000
 signExtend16To32: jmp $0000
-popToIntOp1: jmp $0000
-popToIntOp1And2: jmp $0000
-popToReal: jmp $0000
-pushFromIntOp1And2: jmp $0000
-pushRealStack: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -58,39 +53,39 @@ pushRealStack: jmp $0000
     beq L32
 
     ; Real
-    jsr popToReal
+    jsr rtPopToReal
     jsr floatSqr
-    jmp pushRealStack
+    jmp rtPushReal
 
     ; 8-bit
 L8:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     jsr signExtend8To32
     clc
     bcc Finish
 
 L8U:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     clc
     bcc Finish
 
     ; 16-bit
 L16:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     jsr signExtend16To32
     clc
     bcc Finish
 
 L16U:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     clc
     bcc Finish
 
     ; 32-bit
 L32:
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
 
 Finish:
     jsr int32Sqr
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc

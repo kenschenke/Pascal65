@@ -7,7 +7,6 @@
 
 ; exports
 
-jmp clearInputBuf
 jmp isInputEndOfLine
 jmp readCharFromInput
 jmp skipSpaces
@@ -27,13 +26,6 @@ getline: jmp $0000
 .addr *+2
 
 .code
-
-.proc clearInputBuf
-    lda #0
-    sta inputBufUsed
-    sta inputPos
-    rts
-.endproc
 
 .proc isInputEndOfLine
     lda #1

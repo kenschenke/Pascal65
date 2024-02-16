@@ -14,7 +14,6 @@ SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
 SHAREDCODEGENDIR = $(SHAREDSRCDIR)/codegen
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
-LIBRUNTIMEDIR = ../../lib/runtime/src
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
 RUNTIMEDEF = ../../shared/runtime.def
 
@@ -56,10 +55,6 @@ SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.s)
 SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
-SOURCES += $(LIBRUNTIMEDIR)/exit.s
-SOURCES += $(LIBRUNTIMEDIR)/inputbuf.s
-SOURCES += $(LIBRUNTIMEDIR)/printz.s
-SOURCES += $(LIBRUNTIMEDIR)/rterror.s
 ifeq ($(TARGET),mega65)
 SOURCES += $(LIBCSRCDIR)/memory.c
 endif
@@ -203,10 +198,6 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath %.s $(LIBCOMMONDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath %.s $(LIBRUNTIMEDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 

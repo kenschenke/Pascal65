@@ -16,10 +16,6 @@ jmp succ
 
 ; imports
 
-popToIntOp1: jmp $0000
-popToIntOp1And2: jmp $0000
-pushFromIntOp1: jmp $0000
-pushFromIntOp1And2: jmp $0000
 addInt8: jmp $0000
 addInt16: jmp $0000
 addInt32: jmp $0000
@@ -54,25 +50,25 @@ addInt32: jmp $0000
     rts
 
 INT8:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda #1
     sta intOp2
     lda #0
     sta intOp2 + 1
     jsr addInt8
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 
 INT16:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda #1
     sta intOp2
     lda #0
     sta intOp2 + 1
     jsr addInt16
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 
 INT32:
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
     lda #1
     sta intOp32
     lda #0
@@ -81,5 +77,5 @@ INT32:
     dex
     bpl :-
     jsr addInt32
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc

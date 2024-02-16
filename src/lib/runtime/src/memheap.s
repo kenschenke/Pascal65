@@ -3,9 +3,9 @@
 .include "error.inc"
 .include "runtime.inc"
 
-.import runtimeError, geInt16, ltInt16, popax
+.export heapAlloc, heapFree, heapInit
 
-.export heapAlloc, heapFree, heapInit, _heapPtr
+.import runtimeError, geInt16, ltInt16, popax
 
 ; The memory heap starts at the end of program code going to the top of the
 ; runtime stack (the runtime stack grows downward). Assuming a 2K stack
@@ -20,28 +20,22 @@
 ; The MAT is at the high end of the heap and grows downward until the heap is full.
 ; The end of the MAT is signaled by $00000000.
 
-.bss
-
-_heapPtr: .res 2
+heapPtr: .res 2
 heapTop: .res 2
 heapBottom: .res 2
 
-.code
-
 ; This routine initializes the heap MAT.  The caller passes the pointer to the
 ; top and bottom of the heap.  The bottom is passed in A/X and the top is
-; pushed to the runtime stack.
+; passed in ptr1.
 .proc heapInit
     sta heapBottom
     stx heapBottom + 1
-    jsr popax
-; L0: jmp L0
+    lda ptr1
     sta heapTop
-    sta ptr1
-    sta _heapPtr
-    stx heapTop + 1
-    stx ptr1 + 1
-    stx _heapPtr + 1
+    sta heapPtr
+    lda ptr1 + 1
+    sta heapTop + 1
+    sta heapPtr + 1
     lda #0
     ldy #3
 L1:

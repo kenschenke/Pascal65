@@ -7,6 +7,7 @@
 ;    X - data type of <operand-2>
 ;    Y - data type of result
 
+.include "runtime.inc"
 .include "types.inc"
 
 .export __LOADADDR__: absolute = 1
@@ -29,9 +30,6 @@ prepOperandsReal: jmp $0000
 divInt8: jmp $0000
 divInt16: jmp $0000
 divInt32: jmp $0000
-pushFromIntOp1: jmp $0000
-pushFromIntOp1And2: jmp $0000
-pushRealStack: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -61,18 +59,18 @@ pushRealStack: jmp $0000
 .proc div8
     jsr prepOperands8
     jsr divInt8
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 .endproc
 
 .proc div16
     jsr prepOperands16
     jsr divInt16
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 .endproc
 
 .proc div32
     jsr prepOperands32
     jsr divInt32
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc
 

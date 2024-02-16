@@ -27,8 +27,6 @@ jmp memcopy
 
 ; imports
 
-popeax: jmp $0000
-
 ; end of imports
 .byte $00, $00, $00
 
@@ -59,7 +57,7 @@ L1:
     beq L2
 memcpyPStack:
     pha
-    jsr popeax
+    jsr rtPopEax
     sta ptr2
     stx ptr2 + 1
     ; Add 4 to ptr2

@@ -28,7 +28,6 @@ ROTATL: jmp $0000
 ROTL: jmp $0000
 MOVIND: jmp $0000
 CKSIGN: jmp $0000
-runtimeError: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -88,7 +87,7 @@ DIVIDE:
     jmp QUOROT
 DERROR:
     lda #rteDivisionByZero
-    jmp runtimeError
+    jmp rtRuntimeError
 NOGO:
     clc                 ; Negative result, clear carry
 QUOROT:

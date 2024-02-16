@@ -132,39 +132,75 @@
 #error Platform Jumptable base not defined
 #endif
 
+#define RT_STACKCLEANUP         (RT_BASE + 0)
+#define RT_STACKINIT            (RT_BASE + 3)
+#define RT_PUSHINTSTACK         (RT_BASE + 6)
+#define RT_CALCSTACKOFFSET      (RT_BASE + 9)
+#define RT_STOREINTSTACK        (RT_BASE + 12)
+#define RT_PUSHADDRSTACK        (RT_BASE + 15)
+#define RT_READINTSTACK         (RT_BASE + 18)
+#define RT_POPTOINTOP1          (RT_BASE + 21)
+#define RT_POPTOINTOP2          (RT_BASE + 24)
+#define RT_PUSHFROMINTOP1       (RT_BASE + 27)
+#define RT_PUSHREALSTACK        (RT_BASE + 30)
+#define RT_STOREREALSTACK       (RT_BASE + 33)
+#define RT_POPTOREAL            (RT_BASE + 36)
+#define RT_READREALSTACK        (RT_BASE + 39)
+#define RT_READBYTESTACK        (RT_BASE + 42)
+#define RT_PUSHBYTESTACK        (RT_BASE + 45)
+#define RT_STOREBYTESTACK       (RT_BASE + 48)
+#define RT_PUSHSTACKFRAMEHEADER (RT_BASE + 51)
+#define RT_RETURNFROMROUTINE    (RT_BASE + 54)
+#define RT_POPTOINTOP1AND2      (RT_BASE + 57)
+#define RT_POPTOINTOP32         (RT_BASE + 60)
+#define RT_READINT32STACK       (RT_BASE + 63)
+#define RT_STOREINT32STACK      (RT_BASE + 66)
+#define RT_PUSHFROMINTOP1AND2   (RT_BASE + 69)
+#define RT_RUNTIMEERROR         (RT_BASE + 72)
+#define RT_RUNTIMEERRORINIT     (RT_BASE + 75)
+#define RT_POPA                 (RT_BASE + 78)
+#define RT_POPAX                (RT_BASE + 81)
+#define RT_HEAPINIT             (RT_BASE + 84)
+#define RT_HEAPALLOC            (RT_BASE + 87)
+#define RT_HEAPFREE             (RT_BASE + 90)
+#define RT_INITTENSTABLE32      (RT_BASE + 93)
+#define RT_CLEARINPUTBUF        (RT_BASE + 96)
+#define RT_POPEAX               (RT_BASE + 99)
+#define RT_INCSP4               (RT_BASE + 102)
+
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
 enum RuntimeRoutines {
     // These are used by the code generator for the executable
-    rtAbs, rtAdd, rtAssign, rtCalcArrayOffset, rtCalcRecord, rtCalcStack,
-    rtClrInput, rtComp, rtDivide, rtDivInt, rtErrorInit, rtFloatNeg,
-    rtFloatToInt16, rtFpOut, rtGetFpBuf, rtHeapAlloc, rtHeapFree, rtHeapInit,
-    rtIncSp4, rtInitArrayHeap, rtLeftPad, rtMemCopy, rtMod, rtMultiply,
-    rtNegate, rtPopEax, rtPopToIntOp1, rtPopToIntOp2, rtPopToReal, rtPrecRd,
-    rtPred, rtPrintz, rtPrintlnz, rtPushAddrStack, rtPushAx, rtPushByte,
-    rtPushEax, rtPushInt, rtPushIntOp1, rtPushReal, rtPushStackFrameHeader,
-    rtReadByte, rtReadCharArrayFromInput, rtReadFloatFromInput, rtReadInt,
-    rtReadInt32Stack, rtReadIntFromInput, rtReadReal, rtReturnFromRoutine,
-    rtSqr, rtStackCleanup, rtStackInit, rtStoreInt, rtStoreInt32, rtStoreReal,
+    rtAbs, rtAdd, rtAssign, rtCalcArrayOffset, rtCalcRecord, rtDummy5,
+    rtClrInput, rtComp, rtDivide, rtDivInt, rtDummy10, rtFloatNeg,
+    rtFloatToInt16, rtFpOut, rtGetFpBuf, rtDummy15, rtDummy16, rtDummy17,
+    rtDummy18, rtInitArrayHeap, rtLeftPad, rtMemCopy, rtMod, rtMultiply,
+    rtNegate, rtDummy25, rtDummy26, rtDummy27, rtDummy28, rtPrecRd,
+    rtPred, rtPrintz, rtPrintlnz, rtDummy33, rtPushAx, rtDummy35,
+    rtPushEax, rtDummy37, rtDummy38, rtDummy39, rtDummy40,
+    rtDummy41, rtReadCharArrayFromInput, rtReadFloatFromInput, rtDummy44,
+    rtDummy45, rtReadIntFromInput, rtDummy47, rtDummy48,
+    rtSqr, rtDummy50, rtDummy51, rtDummy52, rtDummy53, rtDummy54,
     rtStrToFloat, rtSubtract, rtSucc, rtWriteCharArray, rtWriteValue,
 
     // These routines are used internally by the runtime routines
-    rtRuntimeError, ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM,
+    rtDummy60, ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM,
     CLRMEM, MOVIND, MOVIN, CALCPTR, FPNORM, FPADD, FPMULT, EXMLDV,
     CKSIGN, FPSUB, rtFloatAbs, FPDIV, FPINP, DECBIN, FPD10, FPX10,
-    floatSqr, rtFloatEq, rtFloatGt, rtFloatGte, rtFloatLt, rtFloatLte, addysp,
-    decsp4, storeByteStack, popToIntOp1And2, popToIntOp32, pushIntOp1And2,
+    floatSqr, rtFloatEq, rtFloatGt, rtFloatGte, rtFloatLt, rtFloatLte, rtDummy89,
+    decsp4, rtDummy91, rtDummy92, rtDummy93, rtDummy94,
     writeBool, writeChar, absInt8, invertInt8, isNegInt8, signExtend8To16,
     signExtend8To32, swapInt8, addInt8, ltInt8, divInt8, exit, multInt8, subInt8,
     absInt16, swapInt16, isNegInt16, invertInt16, signExtend16To32, addInt16,
     eqInt16, leInt16, ltInt16, geInt16, gtInt16, divInt16, ltUint16, multUint16,
-    multInt16, subInt16, rtInitTensTable32, absInt32, invertInt32, isNegInt32,
+    multInt16, subInt16, rtDummy125, absInt32, invertInt32, isNegInt32,
     swapInt32, addInt32, eqInt32, leInt32, ltInt32, geInt32, gtInt32, divInt32,
     multInt32, multUint32, geUint32, gtUint32, leUint32, ltUint32, writeInt8,
     writeUint8, writeInt16, writeUint16, writeInt32, writeUint32, rtPopAx,
     subInt32, int32Sqr, prepOperands8, prepOperands16, prepOperands32,
     prepOperandsReal, readInt16, copyFPACCtoFPOP, swapFPACCandFPOP,
-    convertType, getline, getlineNoEnter, rtClearInputBuf, rtIsInputEndOfLine,
+    convertType, getline, getlineNoEnter, rtDummy162, rtIsInputEndOfLine,
     rtReadCharFromInput, skipSpaces, readInt32, assignString, writeString,
     rtHeapReAlloc, rtPopA, rtConcatString, rtPushA, rtReadStringFromInput,
     rtStringSubscriptRead, rtDuplicateString, rtStringSubscriptWrite, 

@@ -1,80 +1,76 @@
 ; Jump table at the start of the runtime library
 
-.import leftpad, printz, printlnz, writeValue, assign, divide, comp, negate
-.import add, divint, modulus, pred, succ, subtract, multiply
-.import _strToFloat, FPOUT, PRECRD
-.import floatToInt16, getFPBUF, floatNeg
-.import incsp4, popeax, pushax, pusheax, popToReal, popToIntOp1, popToIntOp2
-.import pushAddrStack, pushByteStack, pushIntStack, pushFromIntOp1, pushRealStack
-.import readByteStack, readIntStack, readRealStack
-.import storeIntStack, storeRealStack
-.import calcStackOffset, rtStackInit, rtStackCleanup, runtimeErrorInit
-.import pushStackFrameHeader, returnFromRoutine
-.import initArrayHeap, calcRecordOffset, memcopy, heapInit, heapAlloc, heapFree
-.import clearInputBuf, readFloatFromInput, readIntFromInput, calcArrayOffset, writeCharArray
-.import readCharArrayFromInput
-.import readInt32Stack, storeInt32Stack
-.import abs, sqr
+.import rtStackCleanup, rtStackInit, pushIntStack, calcStackOffset
+.import storeIntStack, pushAddrStack, readIntStack, popToIntOp1
+.import popToIntOp2, pushFromIntOp1, pushRealStack, storeRealStack
+.import popToReal, readRealStack, readByteStack, pushByteStack
+.import storeByteStack, pushStackFrameHeader, returnFromRoutine
+.import popToIntOp1And2, popToIntOp32, readInt32Stack
+.import storeInt32Stack, pushFromIntOp1And2
+
+.import runtimeError, runtimeErrorInit, popa, popax, popeax, incsp4
+
+.import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
 
 .segment "JMPTBL"
 
-jmp printz      ; BASE + 0
-jmp printlnz    ; BASE + 3
-jmp leftpad     ; BASE + 6
-jmp assign      ; BASE + 9
-jmp add         ; BASE + 12
-jmp comp        ; BASE + 15
-jmp negate      ; BASE + 18
-jmp divint      ; BASE + 21
-jmp writeValue  ; BASE + 24
-jmp sqr         ; BASE + 27
-jmp modulus     ; BASE + 30
-jmp abs         ; BASE + 33
-jmp readInt32Stack       ; BASE + 36
-jmp storeInt32Stack       ; BASE + 39
-jmp multiply    ; BASE + 42
-jmp pred        ; BASE + 45
-jmp succ        ; BASE + 48
-jmp divide      ; BASE + 51
-jmp subtract    ; BASE + 54
-jmp floatNeg    ; BASE + 57
-jmp getFPBUF    ; BASE + 60
-jmp _strToFloat ; BASE + 63
-jmp FPOUT       ; BASE + 66
-jmp readCharArrayFromInput       ; BASE + 69
-jmp writeCharArray       ; BASE + 72
-jmp calcArrayOffset       ; BASE + 75
-jmp clearInputBuf ; BASE + 78
-jmp readFloatFromInput ; BASE + 81
-jmp readIntFromInput   ; BASE + 84
-jmp floatToInt16 ; BASE + 87
-jmp runtimeErrorInit ; BASE + 90
-jmp incsp4      ; BASE + 93
-jmp popeax      ; BASE + 96
-jmp pushax      ; BASE + 99
-jmp pusheax     ; BASE + 102
-jmp popToReal   ; BASE + 105
-jmp popToIntOp1 ; BASE + 108
-jmp popToIntOp2 ; BASE + 111
-jmp PRECRD      ; BASE + 114
-jmp pushAddrStack ; BASE + 117
-jmp pushByteStack ; BASE + 120
-jmp pushIntStack ; BASE + 123
-jmp pushFromIntOp1 ; BASE + 126
-jmp pushRealStack ; BASE + 129
-jmp readByteStack ; BASE + 132
-jmp readIntStack ; BASE + 135
-jmp readRealStack ; BASE + 138
-jmp memcopy       ; BASE + 141
-jmp storeIntStack ; BASE + 144
-jmp storeRealStack ; BASE + 147
-jmp calcStackOffset ; BASE + 150
-jmp rtStackInit ; BASE + 153
-jmp rtStackCleanup ; BASE + 156
-jmp pushStackFrameHeader ; BASE + 159
-jmp returnFromRoutine ; BASE + 162
-jmp initArrayHeap   ; BASE + 165
-jmp calcRecordOffset ; BASE + 168
-jmp heapFree    ; BASE + 171
-jmp heapInit    ; BASE + 174
-jmp heapAlloc   ; BASE + 177
+jmp rtStackCleanup       ; BASE + 0
+jmp rtStackInit          ; BASE + 3
+jmp pushIntStack         ; BASE + 6
+jmp calcStackOffset      ; BASE + 9
+jmp storeIntStack        ; BASE + 12
+jmp pushAddrStack        ; BASE + 15
+jmp readIntStack         ; BASE + 18
+jmp popToIntOp1          ; BASE + 21
+jmp popToIntOp2          ; BASE + 24
+jmp pushFromIntOp1       ; BASE + 27
+jmp pushRealStack        ; BASE + 30
+jmp storeRealStack       ; BASE + 33
+jmp popToReal            ; BASE + 36
+jmp readRealStack        ; BASE + 39
+jmp readByteStack        ; BASE + 42
+jmp pushByteStack        ; BASE + 45
+jmp storeByteStack       ; BASE + 48
+jmp pushStackFrameHeader ; BASE + 51
+jmp returnFromRoutine    ; BASE + 54
+jmp popToIntOp1And2      ; BASE + 57
+jmp popToIntOp32         ; BASE + 60
+jmp readInt32Stack       ; BASE + 63
+jmp storeInt32Stack      ; BASE + 66
+jmp pushFromIntOp1And2   ; BASE + 69
+jmp runtimeError         ; BASE + 72
+jmp runtimeErrorInit     ; BASE + 75
+jmp popa                 ; BASE + 78
+jmp popax                ; BASE + 81
+jmp heapInit             ; BASE + 84
+jmp heapAlloc            ; BASE + 87
+jmp heapFree             ; BASE + 90
+jmp rtInitTensTable32    ; BASE + 93
+jmp clearInputBuf        ; BASE + 96
+jmp popeax               ; BASE + 99
+jmp incsp4               ; BASE + 102
+jmp $0000       ; BASE + 105
+jmp $0000       ; BASE + 108
+jmp $0000       ; BASE + 111
+jmp $0000       ; BASE + 114
+jmp $0000       ; BASE + 117
+jmp $0000       ; BASE + 120
+jmp $0000       ; BASE + 123
+jmp $0000       ; BASE + 126
+jmp $0000       ; BASE + 129
+jmp $0000       ; BASE + 132
+jmp $0000       ; BASE + 135
+jmp $0000       ; BASE + 138
+jmp $0000       ; BASE + 141
+jmp $0000       ; BASE + 144
+jmp $0000       ; BASE + 147
+jmp $0000       ; BASE + 150
+jmp $0000       ; BASE + 153
+jmp $0000       ; BASE + 156
+jmp $0000       ; BASE + 159
+jmp $0000       ; BASE + 162
+jmp $0000       ; BASE + 165
+jmp $0000       ; BASE + 168
+jmp $0000       ; BASE + 171
+jmp $0000       ; BASE + 174
+jmp $0000       ; BASE + 177

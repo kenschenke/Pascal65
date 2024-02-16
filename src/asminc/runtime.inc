@@ -26,3 +26,28 @@ tensTable32Ptr = zp_base + $5c          ; 2 bytes
 inputBuf = zp_base + $5e             ; 2 bytes
 inputPos = zp_base + $60             ; 1 byte
 inputBufUsed = zp_base + $61            ; 1 byte
+
+; Jump table for runtime routines assembled at a fixed address
+
+.ifdef __MEGA65__
+rt_base = $2014         ; 0x2001 + 19 (exe header + jmp MAIN)
+.else
+rt_base = $810          ; 0x801 + 15 (exe header + jmp MAIN)
+.endif
+
+rtCalcStackOffset       = rt_base + 9
+rtStoreInt              = rt_base + 12
+rtPopToIntOp1           = rt_base + 21
+rtPushFromIntOp1        = rt_base + 27
+rtPushReal              = rt_base + 30
+rtStoreReal             = rt_base + 33
+rtPopToReal             = rt_base + 36
+rtStoreByte             = rt_base + 48
+rtPopToIntOp1And2       = rt_base + 57
+rtStoreInt32            = rt_base + 66
+rtPushFromIntOp1And2    = rt_base + 69
+rtRuntimeError          = rt_base + 72
+rtPopAx                 = rt_base + 81
+rtHeapAlloc             = rt_base + 87
+rtHeapFree              = rt_base + 90
+rtPopEax                = rt_base + 99

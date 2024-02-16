@@ -21,9 +21,6 @@ jmp writeValue
 
 ; imports
 
-popeax: jmp $0000
-popToIntOp1: jmp $0000
-popToIntOp1And2: jmp $0000
 writeBool: jmp $0000
 writeChar: jmp $0000
 writeUint8: jmp $0000
@@ -71,57 +68,57 @@ width: .res 1
     beq STR
 
 BOOL:
-    jsr popeax
+    jsr rtPopEax
     ldx width
     jmp writeBool
 
 CHAR:
-    jsr popeax
+    jsr rtPopEax
     ldx width
     jmp writeChar
 
 STR:
-    jsr popeax
+    jsr rtPopEax
     ldy width
     jmp writeString
 
 UINT8:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda width
     jsr writeUint8
     clc
     bcc writeIntBuf
 
 SINT8:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda width
     jsr writeInt8
     clc
     bcc writeIntBuf
 
 UINT16:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda width
     jsr writeUint16
     clc
     bcc writeIntBuf
 
 SINT16:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda width
     jsr writeInt16
     clc
     bcc writeIntBuf
 
 UINT32:
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
     lda width
     jsr writeUint32
     clc
     bcc writeIntBuf
 
 SINT32:
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
     lda width
     jsr writeInt32
     clc

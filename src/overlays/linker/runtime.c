@@ -28,7 +28,8 @@ struct rtroutine _routine;
 static CHUNKNUM importStack[MAX_IMPORT_STACK];
 static char importStackTop;
 
-static void addImportLibNums(CHUNKNUM chunkNum);
+static void addImportLibNums(void);
+static char addImportsForLibNum(char libNum);
 static void pushImportStack(CHUNKNUM chunkNum);
 static CHUNKNUM popImportStack(void);
 static int compExportRoutine(struct rtroutine *r1, struct rtroutine *r2);
@@ -47,13 +48,40 @@ static void saveRoutine(unsigned char exportNum, char libNum,
     char routineSeq, CHUNKNUM *root,
     int (*comp)(struct rtroutine *, struct rtroutine *));
 
-static void addImportLibNums(CHUNKNUM chunkNum)
+/*
+    This function walks through the runtime libraries that have
+    been marked as needed. For each, it looks through the imports
+    tree and marks the libraries needed by that library.
+*/
+static void addImportLibNums(void)
 {
+    char any;
     char libNum;
-    struct rtroutine routine;
 
-    if (!chunkNum) {
-        return;
+    while (1) {
+        any = 0;
+        for (libNum = 0; libNum < MAX_LIBS; ++libNum) {
+            if (isLibNeeded(libNum)) {
+                if (addImportsForLibNum(libNum)) {
+                    any = 1;
+                }
+            }
+        }
+        if (!any) {
+            break;
+        }
+    }
+}
+
+static char addImportsForLibNum(char libNum)
+{
+    char any = 0;
+    char neededLibNum;
+    struct rtroutine routine;
+    CHUNKNUM chunkNum = imports;
+
+    if (!imports) {
+        return 0;
     }
 
     importStackTop = 0;
@@ -67,9 +95,16 @@ static void addImportLibNums(CHUNKNUM chunkNum)
         if (routine.right) {
             pushImportStack(routine.right);
         }
-        libNum = getLibNum(exports, routine.routineNum);
-        libsNeeded[libNum / 8] |= (1 << (libNum % 8));
+        if (routine.libNum == libNum) {
+            neededLibNum = getLibNum(exports, routine.routineNum);
+            if (!isLibNeeded(neededLibNum)) {
+                libsNeeded[neededLibNum / 8] |= (1 << (neededLibNum % 8));
+                any = 1;
+            }
+        }
     } while (importStackTop);
+
+    return any;
 }
 
 static void pushImportStack(CHUNKNUM chunkNum)
@@ -246,7 +281,7 @@ void linkerWriteRuntime(void)
     int modLength;  // length of module in runtime.lib
     char libNum = 0; // module number
 
-    addImportLibNums(imports);
+    addImportLibNums();
 
     fh = fopen("runtime.lib", "rb");
     if (!fh) {

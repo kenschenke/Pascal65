@@ -1,32 +1,21 @@
 ; Runtime Stack
 
 .include "float.inc"
-
-.ifdef RUNTIME
 .include "runtime.inc"
-.else
-.import intOp1, intOp2, intOp32, currentNestingLevel
-.importzp sp, sreg, ptr1, ptr2, ptr3, tmp1, tmp2
-.export stackP
-.endif
+
+; exports
+
+.export rtStackCleanup, rtStackInit, pushIntStack, calcStackOffset
+.export storeIntStack, pushAddrStack, readIntStack, popToIntOp1
+.export popToIntOp2, pushFromIntOp1, pushRealStack, storeRealStack
+.export popToReal, readRealStack, readByteStack, pushByteStack
+.export storeByteStack, pushStackFrameHeader, returnFromRoutine
+.export popToIntOp1And2, popToIntOp32, readInt32Stack
+.export storeInt32Stack, pushFromIntOp1And2
+
+; imports
 
 .import popeax, pusheax, incsp4
-
-.export rtStackCleanup, rtStackInit, popAddrStack, pushIntStack, calcStackOffset, storeIntStack
-.export pushAddrStack, readIntStack, popToIntOp1, popToIntOp2, pushFromIntOp1, pushRealStack
-.export storeRealStack, popToReal, readRealStack, readByteStack, pushByteStack, storeByteStack
-.export pushStackFrameHeader, returnFromRoutine
-.export popToIntOp1And2, popToIntOp32, readInt32Stack, storeInt32Stack, pushFromIntOp1And2
-
-.ifndef RUNTIME
-.zeropage
-
-stackP: .res 2
-.endif
-
-.bss
-
-stackSize: .res 2
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -68,8 +57,6 @@ stackSize: .res 2
 ;;  Each variable on the stack frame takes up 4 bytes to ease stack math.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-.code
 
 ; Calculate stack offset
 ; value offset in X
@@ -164,9 +151,6 @@ L2:
 ; Initialize the runtime stack
 ; Stack size is passed in A/X
 .proc rtStackInit
-    ; Save the stack size
-    sta stackSize
-    stx stackSize + 1
     ; Initialize the program's stack frame at the bottom
     lda #0
     tax
@@ -331,13 +315,6 @@ L4:
     tya                 ; Transfer low byte back to A
     pha                 ; Push low byte to stack
     rts                 ; Go to the return address
-.endproc
-
-.proc popAddrStack
-    jsr popeax
-    sta ptr1
-    stx ptr1 + 1
-    rts
 .endproc
 
 ; Push the byte in A to the runtime stack

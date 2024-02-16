@@ -27,11 +27,10 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk);
 
 #define PARAM_BYREF1_SIZEL 1
 #define PARAM_BYREF1_SIZEH 3
-#define PARAM_BYREF1_ALLOC 5
 static unsigned char paramByRef1[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
 	PHA,
 	TXA,
 	PHA,
@@ -40,7 +39,6 @@ static unsigned char paramByRef1[] = {
 #define PARAM_BYREF2_SIZEL 21
 #define PARAM_BYREF2_SIZEH 23
 #define PARAM_BYREF2_MEMCOPY 25
-#define PARAM_BYREF2_PUSHADDR 18
 static unsigned char paramByRef2[] = {
 	LDY_IMMEDIATE, 0,
 	LDA_ZPINDIRECT, ZP_PTR1L,
@@ -52,7 +50,7 @@ static unsigned char paramByRef2[] = {
 	STA_ZEROPAGE, ZP_PTR1H,
 	PLA,
 	STA_ZEROPAGE, ZP_PTR1L,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PUSHADDRSTACK), WORD_HIGH(RT_PUSHADDRSTACK),
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, 0, 0,
@@ -111,7 +109,7 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 
 	if (pType->kind == TYPE_PROCEDURE) {
 		// Clean the un-used return value off the stack
-		genRuntimeCall(rtIncSp4);
+		genThreeAddr(JSR, RT_INCSP4);
 	}
 
 	genOne(PLA);
@@ -166,11 +164,11 @@ static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, str
 
 	genRoutineCleanup(heapOffsets, numHeap, pType, 0);
 
-	genRuntimeCall(rtIncSp4);	// Pop the return address of the stack
+	genThreeAddr(JSR, RT_INCSP4);	// Pop the return address of the stack
 
 	if (pType->kind == TYPE_PROCEDURE) {
 		// Clean the un-used return value off the stack
-		genRuntimeCall(rtIncSp4);
+		genThreeAddr(JSR, RT_INCSP4);
 	}
 
 	genOne(PLA);
@@ -219,17 +217,17 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_BYTE:
 		case TYPE_SHORTINT:
 			genRuntimeCall(rtReadIntFromInput);
-			genRuntimeCall(rtPushByte);
+			genThreeAddr(JSR, RT_PUSHBYTESTACK);
 			genExpr(arg.left, 0, 0, 0);
-			genRuntimeCall(rtStoreInt);
+			genThreeAddr(JSR, RT_STOREINTSTACK);
 			break;
 
 		case TYPE_INTEGER:
 		case TYPE_WORD:
 			genRuntimeCall(rtReadIntFromInput);
-			genRuntimeCall(rtPushInt);
+			genThreeAddr(JSR, RT_PUSHINTSTACK);
 			genExpr(arg.left, 0, 0, 0);
-			genRuntimeCall(rtStoreInt);
+			genThreeAddr(JSR, RT_STOREINTSTACK);
 			break;
 		
 		case TYPE_CARDINAL:
@@ -237,14 +235,14 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genRuntimeCall(rtReadIntFromInput);
 			genRuntimeCall(rtPushEax);
 			genExpr(arg.left, 0, 0, 0);
-			genRuntimeCall(rtStoreInt32);
+			genThreeAddr(JSR, RT_STOREINT32STACK);
 			break;
 
 		case TYPE_REAL:
 			genRuntimeCall(rtReadFloatFromInput);
-			genRuntimeCall(rtPushReal);
+			genThreeAddr(JSR, RT_PUSHREALSTACK);
 			genExpr(arg.left, 0, 0, 0);
-			genRuntimeCall(rtStoreReal);
+			genThreeAddr(JSR, RT_STOREREALSTACK);
 			break;
 
 		case TYPE_ARRAY: {
@@ -279,7 +277,7 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 	}
 
 	if (rc == rcReadln) {
-		genRuntimeCall(rtClearInputBuf);
+		genThreeAddr(JSR, RT_CLEARINPUTBUF);
 	}
 }
 
@@ -290,13 +288,13 @@ static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 
 	genExpr(arg.left, 1, 0, 0);
-	genRuntimeCall(rtPopToReal);
+	genThreeAddr(JSR, RT_POPTOREAL);
 	if (rc == rcRound) {
 		genTwo(LDA_IMMEDIATE, 0);	// Round to 0 decimal places
 		genRuntimeCall(rtPrecRd);
 	}
 	genRuntimeCall(rtFloatToInt16);
-	genRuntimeCall(rtPushIntOp1);
+	genThreeAddr(JSR, RT_PUSHFROMINTOP1);
 }
 
 static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
@@ -320,7 +318,7 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
 	genTwo(LDY_IMMEDIATE, (unsigned char)sym.level);
-	genRuntimeCall(rtPushStackFrameHeader);
+	genThreeAddr(JSR, RT_PUSHSTACKFRAMEHEADER);
 	// Save the new stack frame pointer
 	genOne(PHA);
 	genOne(TXA);
@@ -348,13 +346,11 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 			// Allocate a second heap and make a copy of the variable
 			paramByRef1[PARAM_BYREF1_SIZEL] = WORD_LOW(paramType.size);
 			paramByRef1[PARAM_BYREF1_SIZEH] = WORD_HIGH(paramType.size);
-			setRuntimeRef(rtHeapAlloc, codeOffset + PARAM_BYREF1_ALLOC);
 			writeCodeBuf(paramByRef1, 10);
 			genExpr(_expr.left, 0, 1, 0);
 			paramByRef2[PARAM_BYREF2_SIZEL] = WORD_LOW(paramType.size);
 			paramByRef2[PARAM_BYREF2_SIZEH] = WORD_HIGH(paramType.size);
 			setRuntimeRef(rtMemCopy, codeOffset + PARAM_BYREF2_MEMCOPY);
-			setRuntimeRef(rtPushAddrStack, codeOffset + PARAM_BYREF2_PUSHADDR);
 			writeCodeBuf(paramByRef2, 27);
 		}
 		else if (paramType.kind == TYPE_STRING_VAR &&
@@ -367,7 +363,7 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			genExpr(_expr.left, 0, 1, 0);
-			genRuntimeCall(rtPushAddrStack);
+			genThreeAddr(JSR, RT_PUSHADDRSTACK);
 		}
 		else {
 			genExpr(_expr.left, 1, 0, 0);
@@ -427,7 +423,7 @@ static void genRoutineCleanup(short *heapOffsets, int numHeap, struct type* pDec
 		genTwo(LDX_IMMEDIATE, WORD_LOW(numLocals));
 		genOne(TXA);
 		genOne(PHA);	// Store the current number on the stack
-		genRuntimeCall(rtIncSp4);
+		genThreeAddr(JSR, RT_INCSP4);
 		genOne(PLA);
 		genOne(TAX);
 		genOne(DEX);
@@ -435,11 +431,11 @@ static void genRoutineCleanup(short *heapOffsets, int numHeap, struct type* pDec
 	}
 
 	// Restore the caller's stack frame base pointer
-	genRuntimeCall(rtPopEax);
+	genThreeAddr(JSR, RT_POPEAX);
 	genTwo(STA_ZEROPAGE, ZP_STACKFRAMEL);
 	genTwo(STX_ZEROPAGE, ZP_STACKFRAMEH);
 
-	genRuntimeCall(rtIncSp4);	// Pop the static link off the stack
+	genThreeAddr(JSR, RT_INCSP4);	// Pop the static link off the stack
 }
 
 static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType)
@@ -487,8 +483,7 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 	genRoutineCleanup(heapOffsets, numHeap, pDeclType, numLocals);
 
 	// Return from the routine
-	setRuntimeRef(rtReturnFromRoutine, codeOffset + 1);
-	genThreeAddr(JMP, 0);
+	genThreeAddr(JMP, RT_RETURNFROMROUTINE);
 }
 
 void genRoutineDeclarations(CHUNKNUM chunkNum)
@@ -622,7 +617,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		case TYPE_REAL:
 			genExpr(arg.left, 1, 0, 0);
-			genRuntimeCall(rtPopToReal);
+			genThreeAddr(JSR, RT_POPTOREAL);
 			if (arg.precision) {
 				genExpr(arg.precision, 1, 1, 0);
 			}
@@ -646,7 +641,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		case TYPE_STRING_LITERAL:
 			genExpr(arg.left, 1, 0, 0);
-			genRuntimeCall(rtPopEax);
+			genThreeAddr(JSR, RT_POPEAX);
 			genRuntimeCall(rtPrintz);
 			break;
 
@@ -654,7 +649,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_STRING_OBJ:
 			genExpr(arg.left, 1, 0, 0);
 			if (isStringFunc(arg.left)) {
-				genRuntimeCall(rtPopEax);
+				genThreeAddr(JSR, RT_POPEAX);
 			}
 			if (_type.kind == TYPE_STRING_OBJ) {
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
@@ -672,7 +667,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				genOne(PLA);
 				genOne(TAX);
 				genOne(PLA);
-				genRuntimeCall(rtHeapFree);
+				genThreeAddr(JSR, RT_HEAPFREE);
 			}
 			break;
 

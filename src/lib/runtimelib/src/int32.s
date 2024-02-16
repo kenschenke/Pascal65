@@ -12,7 +12,6 @@ jmp absInt32
 jmp invertInt32
 jmp isNegInt32
 jmp swapInt32
-jmp rtInitTensTable32
 
 ; end of exports
 .byte $00, $00, $00
@@ -106,23 +105,5 @@ L3:
     sta intOp32,x
     dex
     bpl L3
-    rts
-.endproc
-
-; This routine is called by the generated code during initialization.
-; A pointer to a 40-byte BSS block is passed in A/X. The routine sets
-; the zero page pointer and then copies tensTable32 into the memory block.
-; The zero page pointer is used anywhere else in code that needs the table.
-.proc rtInitTensTable32
-    sta tensTable32Ptr
-    stx tensTable32Ptr + 1
-    ldx #0
-    ldy #0
-:   lda tensTable32,x
-    sta (tensTable32Ptr),y
-    iny
-    inx
-    cpx #40
-    bne :-
     rts
 .endproc

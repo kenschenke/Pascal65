@@ -6,6 +6,7 @@
 ;    A - data type of <operand-1>
 ;    X - data type of <operand-2>
 
+.include "runtime.inc"
 .include "types.inc"
 
 .export __LOADADDR__: absolute = 1
@@ -23,7 +24,6 @@ jmp divide
 
 prepOperandsReal: jmp $0000
 FPDIV: jmp $0000
-pushRealStack: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -38,6 +38,6 @@ pushRealStack: jmp $0000
     ldy #TYPE_REAL
     jsr prepOperandsReal
     jsr FPDIV
-    jmp pushRealStack
+    jmp rtPushReal
     rts
 .endproc

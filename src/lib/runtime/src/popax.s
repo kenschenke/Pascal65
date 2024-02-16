@@ -1,6 +1,6 @@
 .include "runtime.inc"
 
-.export popax
+.export popax, popa
 
 .proc popax
     ldy #1
@@ -8,9 +8,6 @@
     tax
     dey
     lda (sp),y
-.endproc
-
-.proc incsp2
     inc sp
     beq L1
     inc sp
@@ -20,5 +17,16 @@ L1:
     inc sp
 L2:
     inc sp + 1
+    rts
+.endproc
+
+.proc popa
+    ldy #0
+    lda (sp),y
+    inc sp
+    beq @L1
+    rts
+@L1:
+    inc sp+1
     rts
 .endproc

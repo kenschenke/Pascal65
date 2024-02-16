@@ -12,18 +12,16 @@ static int genUnitDeclarations(short* heapOffsets);
 static void genUnitRoutines(void);
 
 #define FREE_VAR_HEAPS_OFFSET 3
-#define FREE_VAR_HEAPS_CALCSTACK 5
-#define FREE_VAR_HEAPS_HEAPFREE 16
 static unsigned char freeVarHeapsCode[] = {
 	LDA_ZEROPAGE, ZP_NESTINGLEVEL,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_CALCSTACKOFFSET), WORD_HIGH(RT_CALCSTACKOFFSET),
 	LDY_IMMEDIATE, 1,
 	LDA_ZPINDIRECT, ZP_PTR1L,
 	TAX,
 	DEY,
 	LDA_ZPINDIRECT, ZP_PTR1L,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_HEAPFREE), WORD_HIGH(RT_HEAPFREE),
 };
 
 static int addStringLiteral(CHUNKNUM chunkNum)
@@ -43,8 +41,6 @@ void genFreeVariableHeaps(short* heapOffsets)
 
 	while (heapOffsets[i] >= 0) {
 		freeVarHeapsCode[FREE_VAR_HEAPS_OFFSET] = heapOffsets[i];
-		setRuntimeRef(rtCalcStack, codeOffset + FREE_VAR_HEAPS_CALCSTACK);
-		setRuntimeRef(rtHeapFree, codeOffset + FREE_VAR_HEAPS_HEAPFREE);
 		writeCodeBuf(freeVarHeapsCode, 18);
 		++i;
 	}
@@ -159,7 +155,7 @@ void objCodeWrite(CHUNKNUM astRoot)
 
 	// Clean up the declarations from the stack
 	for (i = 0; i < numToPop; ++i) {
-		genRuntimeCall(rtIncSp4);
+		genThreeAddr(JSR, RT_INCSP4);
 	}
 
 	scope_exit();

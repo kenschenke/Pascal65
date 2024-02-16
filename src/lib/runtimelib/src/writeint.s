@@ -22,7 +22,6 @@ jmp writeUint32
 isNegInt32: jmp $0000
 invertInt32: jmp $0000
 leftpad: jmp $0000
-popax: jmp $0000
 geUint32: jmp $0000
 subInt32: jmp $0000
 signExtend8To32: jmp $0000

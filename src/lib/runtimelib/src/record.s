@@ -13,8 +13,6 @@ jmp calcRecordOffset
 
 ; imports
 
-popax: jmp $0000
-
 ; end of imports
 .byte $00, $00, $00
 
@@ -32,7 +30,7 @@ popax: jmp $0000
 .proc calcRecordOffset
     sta ptr1
     stx ptr1 + 1
-    jsr popax
+    jsr rtPopAx
     sta tmp1
     stx tmp2
     lda ptr1

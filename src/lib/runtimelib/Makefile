@@ -59,9 +59,6 @@ $(OBJDIR)/abs.o: $(SRCDIR)/abs.s $(CFGDIR)/abs.cfg $(OBJDIR)
 $(OBJDIR)/add.o: $(SRCDIR)/add.s $(CFGDIR)/add.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(OBJDIR)/addysp.o: $(SRCDIR)/addysp.s $(CFGDIR)/addysp.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
 $(OBJDIR)/array.o: $(SRCDIR)/array.s $(CFGDIR)/array.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
@@ -81,9 +78,6 @@ $(OBJDIR)/divide.o: $(SRCDIR)/divide.s $(CFGDIR)/divide.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/divint.o: $(SRCDIR)/divint.s $(CFGDIR)/divint.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/exit.o: $(SRCDIR)/exit.s $(CFGDIR)/exit.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/float.o: $(SRCDIR)/float.s $(CFGDIR)/float.cfg $(OBJDIR)
@@ -129,9 +123,6 @@ $(OBJDIR)/floatutil.o: $(SRCDIR)/floatutil.s $(CFGDIR)/floatutil.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/getline.o: $(SRCDIR)/getline.s $(CFGDIR)/getline.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/incsp4.o: $(SRCDIR)/incsp4.s $(CFGDIR)/incsp4.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/inputbuf.o: $(SRCDIR)/inputbuf.s $(CFGDIR)/inputbuf.cfg $(OBJDIR)
@@ -206,9 +197,6 @@ $(OBJDIR)/math.o: $(SRCDIR)/math.s $(CFGDIR)/math.cfg $(OBJDIR)
 $(OBJDIR)/memcopy.o: $(SRCDIR)/memcopy.s $(CFGDIR)/memcopy.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(OBJDIR)/memheap.o: $(SRCDIR)/memheap.s $(CFGDIR)/memheap.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
 $(OBJDIR)/multiply.o: $(SRCDIR)/multiply.s $(CFGDIR)/multiply.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
@@ -216,9 +204,6 @@ $(OBJDIR)/negate.o: $(SRCDIR)/negate.s $(CFGDIR)/negate.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/popax.o: $(SRCDIR)/popax.s $(CFGDIR)/popax.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/popeax.o: $(SRCDIR)/popeax.s $(CFGDIR)/popeax.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/pred.o: $(SRCDIR)/pred.s $(CFGDIR)/pred.cfg $(OBJDIR)
@@ -246,9 +231,6 @@ $(OBJDIR)/readintfrominput.o: $(SRCDIR)/readintfrominput.s $(CFGDIR)/readintfrom
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/record.o: $(SRCDIR)/record.s $(CFGDIR)/record.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/rterror.o: $(SRCDIR)/rterror.s $(CFGDIR)/rterror.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(OBJDIR)/rtstack.o: $(SRCDIR)/rtstack.s $(CFGDIR)/rtstack.cfg $(OBJDIR)
@@ -299,9 +281,6 @@ $(LIBDIR)/abs.lib: $(OBJDIR)/abs.o
 $(LIBDIR)/add.lib: $(OBJDIR)/add.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/add.cfg $<
 
-$(LIBDIR)/addysp.lib: $(OBJDIR)/addysp.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/addysp.cfg $<
-
 $(LIBDIR)/array.lib: $(OBJDIR)/array.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/array.cfg $<
 
@@ -322,9 +301,6 @@ $(LIBDIR)/divide.lib: $(OBJDIR)/divide.o
 
 $(LIBDIR)/divint.lib: $(OBJDIR)/divint.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/divint.cfg $<
-
-$(LIBDIR)/exit.lib: $(OBJDIR)/exit.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/exit.cfg $<
 
 $(LIBDIR)/float.lib: $(OBJDIR)/float.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/float.cfg $<
@@ -370,9 +346,6 @@ $(LIBDIR)/floatutil.lib: $(OBJDIR)/floatutil.o
 
 $(LIBDIR)/getline.lib: $(OBJDIR)/getline.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/getline.cfg $<
-
-$(LIBDIR)/incsp4.lib: $(OBJDIR)/incsp4.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/incsp4.cfg $<
 
 $(LIBDIR)/inputbuf.lib: $(OBJDIR)/inputbuf.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/inputbuf.cfg $<
@@ -443,9 +416,6 @@ $(LIBDIR)/math.lib: $(OBJDIR)/math.o
 $(LIBDIR)/memcopy.lib: $(OBJDIR)/memcopy.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/memcopy.cfg $<
 
-$(LIBDIR)/memheap.lib: $(OBJDIR)/memheap.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/memheap.cfg $<
-
 $(LIBDIR)/mod.lib: $(OBJDIR)/mod.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/mod.cfg $<
 
@@ -457,9 +427,6 @@ $(LIBDIR)/negate.lib: $(OBJDIR)/negate.o
 
 $(LIBDIR)/popax.lib: $(OBJDIR)/popax.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/popax.cfg $<
-
-$(LIBDIR)/popeax.lib: $(OBJDIR)/popeax.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/popeax.cfg $<
 
 $(LIBDIR)/pred.lib: $(OBJDIR)/pred.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/pred.cfg $<
@@ -487,9 +454,6 @@ $(LIBDIR)/readintfrominput.lib: $(OBJDIR)/readintfrominput.o
 
 $(LIBDIR)/record.lib: $(OBJDIR)/record.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/record.cfg $<
-
-$(LIBDIR)/rterror.lib: $(OBJDIR)/rterror.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/rterror.cfg $<
 
 $(LIBDIR)/rtstack.lib: $(OBJDIR)/rtstack.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/rtstack.cfg $<

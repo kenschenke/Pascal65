@@ -24,16 +24,11 @@ jmp stringSubscriptWrite
 
 ; imports
 
-heapAlloc: jmp $0000
-heapFree: jmp $0000
-popax: jmp $0000
 subInt16: jmp $0000
-runtimeError: jmp $0000
 leftpad: jmp $0000
 addInt16: jmp $0000
 popa: jmp $0000
 skipSpaces: jmp $0000
-calcStackOffset: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -79,7 +74,7 @@ type2: .res 1
     sta srcPtr
     stx srcPtr + 1
     ; Keep a copy of ptr1
-    jsr popax
+    jsr rtPopAx
     sta strPtr
     sta ptr1
     stx strPtr + 1
@@ -90,8 +85,8 @@ type2: .res 1
     tax
     dey
     lda (ptr1),y
-    jsr heapFree
-    jsr popax
+    jsr rtHeapFree
+    jsr rtPopAx
     cmp #TYPE_STRING_VAR
     beq assignStrVar
     cmp #TYPE_STRING_OBJ
@@ -119,7 +114,7 @@ type2: .res 1
     lda intOp1 + 1          ; Look at high byte of array length
     beq :+                  ; Branch if array <= 255
     lda #rteStringOverflow
-    jsr runtimeError
+    jsr rtRuntimeError
 :   inc intOp1              ; Length is actually upper - lower + 1
     lda ptr3                ; Adjust srcPtr to first array element
     clc
@@ -173,7 +168,7 @@ type2: .res 1
     ldx #0
     clc
     adc #1
-    jsr heapAlloc   ; Allocate memory for the destination
+    jsr rtHeapAlloc ; Allocate memory for the destination
     sta ptr4        ; Save it in ptr4
     stx ptr4 + 1
     lda srcPtr      ; Set ptr3 again because heapAlloc changes it
@@ -281,13 +276,13 @@ DN: rts
     lda intOp1 + 1
     beq :+
     lda #rteStringOverflow
-    jsr runtimeError
+    jsr rtRuntimeError
 :   lda intOp1
     pha
     clc
     adc #1
     ldx #0
-    jsr heapAlloc
+    jsr rtHeapAlloc
     sta strPtr
     sta ptr2
     stx strPtr + 1
@@ -371,7 +366,7 @@ DN: tya
     lda intOp1 + 1          ; Look at high byte of array length
     beq :+                  ; Branch if array <= 255
     lda #rteStringOverflow
-    jsr runtimeError
+    jsr rtRuntimeError
 :   inc intOp1              ; Length is actually upper - lower + 1
     lda intOp1
     rts
@@ -463,7 +458,7 @@ LP: ldy tmp1
 ;   A - nesting level of string variable
 ;   X - value offset on runtime stack
 .proc readStringFromInput
-    jsr calcStackOffset
+    jsr rtCalcStackOffset
     lda ptr1
     sta strPtr
     lda ptr1 + 1
@@ -474,7 +469,7 @@ LP: ldy tmp1
     tax
     dey
     lda (ptr1),y
-    jsr heapFree
+    jsr rtHeapFree
     jsr skipSpaces          ; Skip over spaces in the input buffer
     ; Calculate length of input
     lda inputBufUsed
@@ -483,7 +478,7 @@ LP: ldy tmp1
     ldx #0
     pha                     ; Save length of string buffer
     adc #1                  ; Add 1 for string length
-    jsr heapAlloc
+    jsr rtHeapAlloc
     sta ptr2
     stx ptr2 + 1
     ldy #0
@@ -517,12 +512,12 @@ LP: ldy tmp1
 .proc stringSubscriptRead
     sta strPtr
     stx strPtr + 1
-    jsr popax
+    jsr rtPopAx
     sta tmp1
     txa
     beq :+
     lda #rteValueOutOfRange
-    jsr runtimeError
+    jsr rtRuntimeError
 :   lda strPtr
     sta ptr1
     lda strPtr + 1
@@ -532,7 +527,7 @@ LP: ldy tmp1
     cmp tmp1
     bcs :+
     lda #rteValueOutOfRange
-    jsr runtimeError
+    jsr rtRuntimeError
 :   ldy tmp1
     ldx #0
     lda (ptr1),y
@@ -548,12 +543,12 @@ LP: ldy tmp1
     sta ptr1                    ; Save heap address in ptr1
     stx ptr1 + 1
     sty tmp1                    ; Store character in tmp1
-    jsr popax                   ; Pop string index off stack
+    jsr rtPopAx                 ; Pop string index off stack
     sta tmp2                    ; Save lower byte to tmp2
     txa                         ; Copy high byte to A
     beq :+                      ; Branch if high byte is zero
 RO: lda #rteValueOutOfRange     ; Index out of range
-    jsr runtimeError
+    jsr rtRuntimeError
 :   lda tmp2                    ; Load lower byte of index
     beq RO                      ; Branch if zero
     ldy #0
@@ -576,7 +571,7 @@ RO: lda #rteValueOutOfRange     ; Index out of range
     lda (ptr1),y
     pha
     ldx #0
-    jsr heapAlloc
+    jsr rtHeapAlloc
     sta strPtr
     sta ptr2
     stx strPtr + 1

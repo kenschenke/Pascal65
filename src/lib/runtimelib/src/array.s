@@ -27,15 +27,12 @@ jmp readCharArrayFromInput
 
 ; imports
 
-runtimeError: jmp $0000
 ltInt16: jmp $0000
 gtInt16: jmp $0000
-calcStackOffset: jmp $0000
 convertType: jmp $0000
 subInt16: jmp $0000
 addInt16: jmp $0000
 multInt16: jmp $0000
-popax: jmp $0000
 pushax: jmp $0000
 leftpad: jmp $0000
 skipSpaces: jmp $0000
@@ -60,7 +57,7 @@ skipSpaces: jmp $0000
     stx ptr1 + 1
     tya                 ; Push the index data type on the CPU stack
     pha
-    jsr popax
+    jsr rtPopAx
     sta intOp1          ; Array index in intOp1
     stx intOp1 + 1
     pla                 ; Pop the index data type off the CPU stack
@@ -122,7 +119,7 @@ skipSpaces: jmp $0000
     rts
 L1:
     lda #rteValueOutOfRange
-    jsr runtimeError
+    jsr rtRuntimeError
 .endproc
 
 ; This routine calculates the length of the array
@@ -169,19 +166,19 @@ L1:
 .proc initArrayHeap
     sta ptr2
     stx ptr2 + 1
-    jsr popax
+    jsr rtPopAx
     ldy #0
     sta (ptr2),y        ; Store lower array bound
     ldy #1
     txa
     sta (ptr2),y
-    jsr popax
+    jsr rtPopAx
     ldy #2
     sta (ptr2),y        ; Store upper array bound
     txa
     ldy #3
     sta (ptr2),y
-    jsr popax
+    jsr rtPopAx
     ldy #4
     sta (ptr2),y        ; Store element size
     txa
@@ -196,7 +193,7 @@ L1:
 ;    X - variable offset on runtime stack
 ;    Field width on runtime stack
 .proc writeCharArray
-    jsr calcStackOffset
+    jsr rtCalcStackOffset
     ldy #1
     lda (ptr1),y        ; Look up the array heap address
     sta ptr2 + 1
@@ -210,7 +207,7 @@ L1:
     sta tmp1
     stx tmp2
     ; Pop the field width off the runtime stack
-    jsr popax
+    jsr rtPopAx
     sta tmp3
     ; If field width specified and array length <= 255
     lda tmp2            ; Look at high byte of array length
@@ -273,7 +270,7 @@ L2:
 ;   A - nesting level of array variable
 ;   X - value offset on runtime stack
 .proc readCharArrayFromInput
-    jsr calcStackOffset
+    jsr rtCalcStackOffset
     ldy #1                  ; Store array heap address in ptr2
     lda (ptr1),y            ; and leave it in A/X for call
     sta ptr2 + 1            ; to getArrayLength

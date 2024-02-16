@@ -19,8 +19,6 @@ invertInt16: jmp $0000
 isNegInt16: jmp $0000
 ltInt16: jmp $0000
 swapInt16: jmp $0000
-runtimeError: jmp $0000
-exit: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -60,7 +58,7 @@ exit: jmp $0000
     bne DividendCheck
     ; Divide by zero
     lda #rteDivisionByZero
-    jmp runtimeError
+    jmp rtRuntimeError
 
 DividendCheck:
     ; Special case - dividend is zero

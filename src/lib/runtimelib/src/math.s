@@ -22,11 +22,7 @@ jmp prepOperandsReal
 
 swapFPACCandFPOP: jmp $0000
 copyFPACCtoFPOP: jmp $0000
-popToReal: jmp $0000
 convertType: jmp $0000
-popToIntOp1: jmp $0000
-popToIntOp1And2: jmp $0000
-popeax: jmp $0000
 pusheax: jmp $0000
 swapInt8: jmp $0000
 swapInt16: jmp $0000
@@ -51,12 +47,12 @@ resultType: .res 1
     sta oper1Type
     stx oper2Type
     sty resultType
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda oper2Type
     ldx resultType
     jsr convertType
     jsr swapInt8
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda oper1Type
     ldx resultType
     jsr convertType
@@ -67,12 +63,12 @@ resultType: .res 1
     sta oper1Type
     stx oper2Type
     sty resultType
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda oper2Type
     ldx resultType
     jsr convertType
     jsr swapInt16
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     lda oper1Type
     ldx resultType
     jsr convertType
@@ -83,12 +79,12 @@ resultType: .res 1
     sta oper1Type
     stx oper2Type
     sty resultType
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
     lda oper2Type
     ldx resultType
     jsr convertType
     jsr swapInt32
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
     lda oper1Type
     ldx resultType
     jsr convertType
@@ -102,14 +98,14 @@ resultType: .res 1
     lda oper2Type           ; Look at the second operand's type
     cmp #TYPE_REAL          ; Is it real?
     beq L1                  ; If so, skip converting
-    jsr popToIntOp1And2     ; Pop the top value off the stack
+    jsr rtPopToIntOp1And2     ; Pop the top value off the stack
     lda oper2Type
     ldx resultType
     jsr convertType         ; Convert it to real
     clc
     bcc L2
 L1:
-    jsr popeax              ; Pop <operand-2> off the stack
+    jsr rtPopEax            ; Pop <operand-2> off the stack
                             ; It didn't need to be converted
 L2:
     ; <operand-2> in A/X/sreg needs to be saved to the CPU stack
@@ -123,11 +119,11 @@ L2:
     lda oper1Type           ; Look at the first operand's type
     cmp #TYPE_REAL          ; Is it real?
     bne L3                  ; If not, skip to converting it to real
-    jsr popToReal           ; Pop <operand-1> off the stack
+    jsr rtPopToReal         ; Pop <operand-1> off the stack
     clc
     bcc L4                  ; Skip over converting it
 L3:
-    jsr popToIntOp1And2     ; Pop <operand-1> off the stack
+    jsr rtPopToIntOp1And2     ; Pop <operand-1> off the stack
     lda oper1Type
     ldx resultType
     jsr convertType         ; Convert it to real

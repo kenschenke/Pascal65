@@ -26,12 +26,6 @@ absInt8: jmp $0000
 absInt16: jmp $0000
 absInt32: jmp $0000
 floatAbs: jmp $0000
-popToIntOp1: jmp $0000
-popToIntOp1And2: jmp $0000
-popToReal: jmp $0000
-pushFromIntOp1: jmp $0000
-pushFromIntOp1And2: jmp $0000
-pushRealStack: jmp $0000
 pusheax: jmp $0000
 
 ; end of imports
@@ -52,26 +46,26 @@ pusheax: jmp $0000
     beq L32
 
     ; Real
-    jsr popToReal
+    jsr rtPopToReal
     jsr floatAbs
-    jmp pushRealStack
+    jmp rtPushReal
     rts
 
     ; 8-bit
 L8:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     jsr absInt8
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 
     ; 16-bit
 L16:
-    jsr popToIntOp1
+    jsr rtPopToIntOp1
     jsr absInt16
-    jmp pushFromIntOp1
+    jmp rtPushFromIntOp1
 
     ; 32-bit
 L32:
-    jsr popToIntOp1And2
+    jsr rtPopToIntOp1And2
     jsr absInt32
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc

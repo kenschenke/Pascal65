@@ -10,15 +10,13 @@ static void updateHeapOffset(short newOffset);
 
 #define RECORD_DECL_SIZEL 1
 #define RECORD_DECL_SIZEH 3
-#define RECORD_DECL_ALLOC 5
-#define RECORD_DECL_PUSHINT 12
 static unsigned char recordDeclCode[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
 	STA_ZEROPAGE, ZP_PTR1L,
 	STX_ZEROPAGE, ZP_PTR1H,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PUSHINTSTACK), WORD_HIGH(RT_PUSHINTSTACK),
 };
 
 #define PARENT_ARRAY_INIT1_ELEMENTSL 1
@@ -57,15 +55,13 @@ static unsigned char parentArrayInit3[] = {
 
 #define NON_PARENT_ARRAY_INIT1_SIZEL 1
 #define NON_PARENT_ARRAY_INIT1_SIZEH 3
-#define NON_PARENT_ARRAY_INIT1_ALLOC 5
-#define NON_PARENT_ARRAY_INIT1_PUSHINT 12
 static unsigned char nonParentArrayInit1[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
 	STA_ZEROPAGE, ZP_PTR1L,
 	STX_ZEROPAGE, ZP_PTR1H,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PUSHINTSTACK), WORD_HIGH(RT_PUSHINTSTACK),
 };
 #define NON_PARENT_ARRAY_INIT2_SIZEL 4
 #define NON_PARENT_ARRAY_INIT2_SIZEH 6
@@ -190,8 +186,6 @@ void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar
 			// Allocate array heap
 			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEL] = WORD_LOW(size);
 			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEH] = WORD_HIGH(size);
-			setRuntimeRef(rtHeapAlloc, codeOffset + NON_PARENT_ARRAY_INIT1_ALLOC);
-			setRuntimeRef(rtPushInt, codeOffset + NON_PARENT_ARRAY_INIT1_PUSHINT);
 			writeCodeBuf(nonParentArrayInit1, 14);
 		}
 		else {
@@ -331,7 +325,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_BYTE:
 			case TYPE_SHORTINT:
 				genIntValueAX(_decl.value);
-				genRuntimeCall(rtPushByte);
+				genThreeAddr(JSR, RT_PUSHBYTESTACK);
 				break;
 
 			case TYPE_INTEGER:
@@ -339,7 +333,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_BOOLEAN:
 			case TYPE_ENUMERATION:
 				genIntValueAX(_decl.value);
-				genRuntimeCall(rtPushInt);
+				genThreeAddr(JSR, RT_PUSHINTSTACK);
 				break;
 
 			case TYPE_LONGINT:
@@ -351,12 +345,12 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_CHARACTER:
 				genCharValueA(_decl.value);
 				genTwo(LDX_IMMEDIATE, 0);
-				genRuntimeCall(rtPushInt);
+				genThreeAddr(JSR, RT_PUSHINTSTACK);
 				break;
 
 			case TYPE_REAL:
 				genRealValueEAX(_decl.value);
-				genRuntimeCall(rtPushReal);
+				genThreeAddr(JSR, RT_PUSHREALSTACK);
 				break;
 
 			case TYPE_ARRAY: {
@@ -374,8 +368,6 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_RECORD:
 				recordDeclCode[RECORD_DECL_SIZEL] = WORD_LOW(_type.size);
 				recordDeclCode[RECORD_DECL_SIZEH] = WORD_HIGH(_type.size);
-				setRuntimeRef(rtHeapAlloc, codeOffset + RECORD_DECL_ALLOC);
-				setRuntimeRef(rtPushInt, codeOffset + RECORD_DECL_PUSHINT);
 				writeCodeBuf(recordDeclCode, 14);
 				heapOffset = 0;
 				genRecordInit(&_type);
@@ -386,7 +378,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				// Allocate an empty string
 				genTwo(LDA_IMMEDIATE, 1);
 				genTwo(LDX_IMMEDIATE, 0);
-				genRuntimeCall(rtHeapAlloc);
+				genThreeAddr(JSR, RT_HEAPALLOC);
 				genTwo(STA_ZEROPAGE, ZP_PTR1L);
 				genTwo(STX_ZEROPAGE, ZP_PTR1H);
 				genTwo(LDY_IMMEDIATE, 0);
@@ -394,7 +386,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				genTwo(STA_X_INDEXED_ZP, ZP_PTR1L);
 				genTwo(LDA_ZEROPAGE, ZP_PTR1L);
 				genTwo(LDX_ZEROPAGE, ZP_PTR1H);
-				genRuntimeCall(rtPushInt);
+				genThreeAddr(JSR, RT_PUSHINTSTACK);
 				break;
 			}
 

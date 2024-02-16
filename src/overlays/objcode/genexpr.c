@@ -10,16 +10,13 @@ static void genIntOrRealMath(struct expr* pExpr, char noStack);
 static void getExprType(CHUNKNUM chunkNum, struct type* pType);
 
 #define EXPR_AND_OR_CODE 8
-#define EXPR_AND_OR_POPTOINTOP2 1
-#define EXPR_AND_OR_POPTOINTOP1 4
-#define EXPR_AND_OR_PUSHBYTE 13
 static unsigned char exprAndOr[] = {
-	JSR, 0, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_POPTOINTOP2), WORD_HIGH(RT_POPTOINTOP2),
+	JSR, WORD_LOW(RT_POPTOINTOP1), WORD_HIGH(RT_POPTOINTOP1),
 	LDA_ZEROPAGE, ZP_INTOP1L,
 	0, ZP_INTOP2L,
 	STA_ZEROPAGE, ZP_INTOP1L,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PUSHBYTESTACK), WORD_HIGH(RT_PUSHBYTESTACK),
 };
 
 static unsigned char nameIsRetVal[] = {
@@ -116,7 +113,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 					genOne(PLA);
 					genOne(TAX);
 					genOne(PLA);
-					genRuntimeCall(rtHeapFree);
+					genThreeAddr(JSR, RT_HEAPFREE);
 					--stringConcats;
 				}
 				genTwo(LDA_ZEROPAGE, ZP_FPBUF);
@@ -148,7 +145,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		genTwo(LDY_IMMEDIATE, resultType.kind);
 		genRuntimeCall(rtDivInt);
 		if (noStack) {
-			genRuntimeCall(rtPopEax);
+			genThreeAddr(JSR, RT_POPEAX);
 		}
 		break;
 
@@ -190,7 +187,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		genTwo(LDX_IMMEDIATE, rightType.kind);
 		genRuntimeCall(rtMod);
 		if (noStack) {
-			genRuntimeCall(rtPopEax);
+			genThreeAddr(JSR, RT_POPEAX);
 		}
 		break;
 
@@ -200,9 +197,6 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		genExpr(_expr.right, 1, 0, 0);
 		exprAndOr[EXPR_AND_OR_CODE] =
 			(_expr.kind == EXPR_AND ? AND_ZEROPAGE : ORA_ZEROPAGE);
-		setRuntimeRef(rtPopToIntOp1, codeOffset + EXPR_AND_OR_POPTOINTOP1);
-		setRuntimeRef(rtPopToIntOp2, codeOffset + EXPR_AND_OR_POPTOINTOP2);
-		setRuntimeRef(rtPushByte, codeOffset + EXPR_AND_OR_PUSHBYTE);
 		writeCodeBuf(exprAndOr, 15);
 		break;
 
@@ -210,7 +204,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		genExpr(_expr.left, 1, 0, 0);
 		genTwo(AND_IMMEDIATE, 1);
 		genTwo(EOR_IMMEDIATE, 1);
-		genRuntimeCall(rtPushByte);
+		genThreeAddr(JSR, RT_PUSHBYTESTACK);
 		break;
 
 	case EXPR_ASSIGN:
@@ -242,7 +236,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
 			}
 			if (isStringFunc(_expr.right)) {
-				genRuntimeCall(rtPopEax);
+				genThreeAddr(JSR, RT_POPEAX);
 			}
 			genRuntimeCall(assignString);
 			if (isRightStringObj) {
@@ -250,7 +244,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 				genOne(PLA);
 				genOne(TAX);
 				genOne(PLA);
-				genRuntimeCall(rtHeapFree);
+				genThreeAddr(JSR, RT_HEAPFREE);
 			}
 			break;
 		}
@@ -265,21 +259,21 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	case EXPR_BOOLEAN_LITERAL:
 		genBoolValueA(chunkNum);
 		if (!noStack) {
-			genRuntimeCall(rtPushByte);
+			genThreeAddr(JSR, RT_PUSHBYTESTACK);
 		}
 		break;
 	
 	case EXPR_BYTE_LITERAL:
 		genShortValueA(chunkNum);
 		if (!noStack) {
-			genRuntimeCall(rtPushByte);
+			genThreeAddr(JSR, RT_PUSHBYTESTACK);
 		}
 		break;
 
 	case EXPR_WORD_LITERAL:
 		genIntValueAX(chunkNum);
 		if (!noStack) {
-			genRuntimeCall(rtPushInt);
+			genThreeAddr(JSR, RT_PUSHINTSTACK);
 		}
 		break;
 
@@ -300,7 +294,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	case EXPR_CHARACTER_LITERAL:
 		genCharValueA(chunkNum);
 		if (!noStack) {
-			genRuntimeCall(rtPushByte);
+			genThreeAddr(JSR, RT_PUSHBYTESTACK);
 		}
 		break;
 
@@ -336,20 +330,20 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(LDA_IMMEDIATE, WORD_LOW(value.value.integer));
 			genTwo(LDX_IMMEDIATE, WORD_HIGH(value.value.integer));
 			if (!noStack) {
-				genRuntimeCall(rtPushInt);
+				genThreeAddr(JSR, RT_PUSHINTSTACK);
 			}
 		}
 		else {
 			genTwo(LDA_IMMEDIATE, (unsigned char)(sym.level));
 			genTwo(LDX_IMMEDIATE, (unsigned char)(sym.offset));
-			genRuntimeCall(rtCalcStack);
+			genThreeAddr(JSR, RT_CALCSTACKOFFSET);
 		}
 		if (rightType.flags & TYPE_FLAG_ISBYREF) {
 			writeCodeBuf(nameIsByRef, 13);
 		}
 		if (isRead) {
 			if (rightType.kind == TYPE_LONGINT || rightType.kind == TYPE_CARDINAL) {
-				genRuntimeCall(rtReadInt32Stack);
+				genThreeAddr(JSR, RT_READINT32STACK);
 				if (_expr.neg) {
 					genTwo(LDY_IMMEDIATE, rightType.kind);
 					genRuntimeCall(rtNegate);
@@ -358,17 +352,17 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 					genRuntimeCall(rtPushEax);
 				}
 			} else if (rightType.kind == TYPE_INTEGER || rightType.kind == TYPE_WORD || rightType.kind == TYPE_ENUMERATION) {
-				genRuntimeCall(rtReadInt);
+				genThreeAddr(JSR, RT_READINTSTACK);
 				if (_expr.neg) {
 					genTwo(LDY_IMMEDIATE, rightType.kind);
 					genRuntimeCall(rtNegate);
 				}
 				if (!noStack) {
-					genRuntimeCall(rtPushInt);
+					genThreeAddr(JSR, RT_PUSHINTSTACK);
 				}
 			}
 			else if (rightType.kind == TYPE_REAL) {
-				genRuntimeCall(rtReadReal);
+				genThreeAddr(JSR, RT_READREALSTACK);
 				if (_expr.neg) {
 					genTwo(LDY_IMMEDIATE, rightType.kind);
 					genRuntimeCall(rtNegate);
@@ -379,18 +373,18 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			}
 			else if (rightType.kind == TYPE_BOOLEAN || rightType.kind == TYPE_CHARACTER ||
 				rightType.kind == TYPE_SHORTINT || rightType.kind == TYPE_BYTE) {
-				genRuntimeCall(rtReadByte);
+				genThreeAddr(JSR, RT_READBYTESTACK);
 				if (_expr.neg) {
 					genTwo(LDY_IMMEDIATE, rightType.kind);
 					genRuntimeCall(rtNegate);
 				}
 				if (!noStack) {
-					genRuntimeCall(rtPushByte);
+					genThreeAddr(JSR, RT_PUSHBYTESTACK);
 				}
 			}
 			else if (rightType.kind == TYPE_STRING_VAR ||
 				rightType.kind == TYPE_ARRAY) {
-				genRuntimeCall(rtReadInt);
+				genThreeAddr(JSR, RT_READINTSTACK);
 			}
 		}
 		break;
@@ -408,7 +402,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genExpr(_expr.right, 1, 0, 0);
 			genExpr(_expr.left, 1, 1, 0);
 			genRuntimeCall(rtStringSubscriptRead);
-			genRuntimeCall(rtPushByte);
+			genThreeAddr(JSR, RT_PUSHBYTESTACK);
 			break;
 		}
 
@@ -452,20 +446,20 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 				getBaseType(&leftType);
 				if (leftType.kind == TYPE_BOOLEAN || leftType.kind == TYPE_CHARACTER ||
 					leftType.kind == TYPE_BYTE || leftType.kind == TYPE_SHORTINT) {
-					genRuntimeCall(rtReadByte);
-					genRuntimeCall(rtPushByte);
+					genThreeAddr(JSR, RT_READBYTESTACK);
+					genThreeAddr(JSR, RT_PUSHBYTESTACK);
 				}
 				else if (leftType.kind == TYPE_REAL) {
-					genRuntimeCall(rtReadReal);
-					genRuntimeCall(rtPushReal);
+					genThreeAddr(JSR, RT_READREALSTACK);
+					genThreeAddr(JSR, RT_PUSHREALSTACK);
 				}
 				else if (leftType.kind == TYPE_CARDINAL || leftType.kind == TYPE_LONGINT) {
-					genRuntimeCall(rtReadInt32Stack);
+					genThreeAddr(JSR, RT_READINT32STACK);
 					genRuntimeCall(rtPushEax);
 				}
 				else {
-					genRuntimeCall(rtReadInt);
-					genRuntimeCall(rtPushInt);
+					genThreeAddr(JSR, RT_READINTSTACK);
+					genThreeAddr(JSR, RT_PUSHINTSTACK);
 				}
 			}
 		}
@@ -524,20 +518,20 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			if (isRead) {
 				getExprType(_expr.right, &rightType);
 				if (rightType.kind == TYPE_BOOLEAN || rightType.kind == TYPE_CHARACTER) {
-					genRuntimeCall(rtReadByte);
-					genRuntimeCall(rtPushByte);
+					genThreeAddr(JSR, RT_READBYTESTACK);
+					genThreeAddr(JSR, RT_PUSHBYTESTACK);
 				}
 				else if (rightType.kind == TYPE_REAL) {
-					genRuntimeCall(rtReadReal);
-					genRuntimeCall(rtPushReal);
+					genThreeAddr(JSR, RT_READREALSTACK);
+					genThreeAddr(JSR, RT_PUSHREALSTACK);
 				}
 				else if (rightType.kind == TYPE_CARDINAL || rightType.kind == TYPE_LONGINT) {
-					genRuntimeCall(rtReadInt32Stack);
+					genThreeAddr(JSR, RT_READINT32STACK);
 					genRuntimeCall(rtPushEax);
 				}
 				else {
-					genRuntimeCall(rtReadInt);
-					genRuntimeCall(rtPushInt);
+					genThreeAddr(JSR, RT_READINTSTACK);
+					genThreeAddr(JSR, RT_PUSHINTSTACK);
 				}
 			}
 		}
@@ -546,7 +540,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	case EXPR_STRING_LITERAL:
 		genStringValueAX(_expr.value.stringChunkNum);
 		if (!noStack) {
-			genRuntimeCall(rtPushInt);
+			genThreeAddr(JSR, RT_PUSHINTSTACK);
 		}
 		break;
 	}
@@ -580,7 +574,7 @@ static void genIntOrRealMath(struct expr* pExpr, char noStack)
 	}
 
 	if (noStack) {
-		genRuntimeCall(rtPopEax);
+		genThreeAddr(JSR, RT_POPEAX);
 	}
 }
 

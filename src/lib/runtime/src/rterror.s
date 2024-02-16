@@ -1,21 +1,13 @@
 ; Handle runtime error
 
 .include "cbm_kernal.inc"
-
-.import exit
-
-.ifdef RUNTIME
 .include "runtime.inc"
-.import printz
-.else
-.import _printz
-.importzp ptr1, tmp1
-.endif
 
 .export runtimeError, runtimeErrorInit
 
-.data
+.import exit
 
+runtimeMsgs:
 rteStackOverflowMsg: .asciiz "stack overflow"
 rteValueOutOfRangeMsg: .asciiz "value out of range"
 rteInvalidCaseValueMsg: .asciiz "invalid case value"
@@ -24,18 +16,7 @@ rteInvalidFunctionArgumentMsg: .asciiz "invalid function argument"
 rteInvalidUserInputMsg: .asciiz "invalid user input"
 rteUnimplementedRuntimeFeatureMsg: .asciiz "unimplemented runtime feature"
 rteOutOfMemoryMsg: .asciiz "out of memory"
-
-runtimeMsgs:
-    .byte <rteStackOverflowMsg,               >rteStackOverflowMsg
-    .byte <rteValueOutOfRangeMsg,             >rteValueOutOfRangeMsg
-    .byte <rteInvalidCaseValueMsg,            >rteInvalidCaseValueMsg
-    .byte <rteDivisionByZeroMsg,              >rteDivisionByZeroMsg
-    .byte <rteInvalidFunctionArgumentMsg,     >rteInvalidFunctionArgumentMsg
-    .byte <rteInvalidUserInputMsg,            >rteInvalidUserInputMsg
-    .byte <rteUnimplementedRuntimeFeatureMsg, >rteUnimplementedRuntimeFeatureMsg
-    .byte <rteOutOfMemoryMsg,                 >rteOutOfMemoryMsg
-
-.code
+rteStringOverflowMsg: .asciiz "string overflow"
 
 ; Initialize the runtime error message table
 .proc runtimeErrorInit
@@ -46,22 +27,23 @@ runtimeMsgs:
 ; Runtime error code in A
 .proc runtimeError
     sta tmp1            ; store the error number in tmp1
+    ldx #0              ; use X as index for runtimeMsgs
     dec tmp1            ; decrement by 1 (runtimeMsgs is zero-based)
-    asl tmp1            ; multiply by 2
-    ldy tmp1            ; put the error number index in Y
-    lda #<runtimeMsgs
-    sta ptr1
-    lda #>runtimeMsgs
-    sta ptr1 + 1
-    iny
-    lda (ptr1),y
-    tax
-    dey
-    lda (ptr1),y
-.ifdef RUNTIME
-    jsr printz
-.else
-    jsr _printz
-.endif
-    jmp exit
+    ; If tmp1 is zero, print this error message
+LL: lda tmp1            ; check if this is the message to print
+    beq LP              ; it is - print it
+    ; Look for the null terminator
+LZ: lda runtimeMsgs,x   ; load the next character
+    beq LN              ; branch if zero
+    inx                 ; increment index
+    bne LZ              ; go to the next character
+LN: dec tmp1            ; decrement message number
+    inx                 ; increment past the null terminator
+    bne LL              ; branch if not the right message number yet
+LP: lda runtimeMsgs,x   ; load the next character
+    beq LD              ; if zero, branch because done
+    jsr CHROUT          ; output the character
+    inx                 ; increment the index
+    bne LP              ; go to the next character
+LD: jmp exit            ; exit back to BASIC
 .endproc

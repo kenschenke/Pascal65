@@ -17,15 +17,7 @@ jmp assign
 ; imports
 
 convertType: jmp $0000
-storeIntStack: jmp $0000
-storeInt32Stack: jmp $0000
-storeByteStack: jmp $0000
-popeax: jmp $0000
 pusheax: jmp $0000
-storeRealStack: jmp $0000
-pushFromIntOp1: jmp $0000
-pushFromIntOp1And2: jmp $0000
-pushRealStack: jmp $0000
 signExtend8To16: jmp $0000
 
 ; end of imports
@@ -47,7 +39,7 @@ rightType: .res 1
     pha
     txa
     pha
-    jsr popeax
+    jsr rtPopEax
     sta intOp1
     stx intOp1 + 1
     lda sreg
@@ -82,16 +74,16 @@ rightType: .res 1
 @Int8:
     jsr signExtend8To16
 @Int16:
-    jsr pushFromIntOp1
-    jmp storeIntStack
+    jsr rtPushFromIntOp1
+    jmp rtStoreInt
 @Int32:
-    jsr pushFromIntOp1And2
-    jmp storeInt32Stack
+    jsr rtPushFromIntOp1And2
+    jmp rtStoreInt32
 @Bool:
-    jsr pushFromIntOp1
-    jmp storeByteStack
+    jsr rtPushFromIntOp1
+    jmp rtStoreByte
 @Real:
-    jsr pushRealStack
-    jmp storeRealStack
+    jsr rtPushReal
+    jmp rtStoreReal
 .endproc
 

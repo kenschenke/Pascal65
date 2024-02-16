@@ -19,9 +19,7 @@ divInt32: jmp $0000
 multInt32: jmp $0000
 swapInt32: jmp $0000
 subInt32: jmp $0000
-runtimeError: jmp $0000
 prepOperands32: jmp $0000
-pushFromIntOp1And2: jmp $0000
 
 ; end of imports
 .byte $00, $00, $00
@@ -60,7 +58,7 @@ divisor: .res 4
     ora intOp32 + 3
     bne L1
     lda #rteDivisionByZero
-    jmp runtimeError
+    jmp rtRuntimeError
 L1:
     ; Copy intOp1/intOp2 to dividend
     ldx #3
@@ -95,5 +93,5 @@ L1:
     ; Step 3
     jsr subInt32
     ; Step 4 - remainder is pushed back onto stack
-    jmp pushFromIntOp1And2
+    jmp rtPushFromIntOp1And2
 .endproc
