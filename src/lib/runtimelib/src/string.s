@@ -12,7 +12,6 @@
 ; exports
 
 jmp assignString
-jmp writeString
 jmp concatString
 jmp readStringFromInput
 jmp stringSubscriptRead
@@ -198,35 +197,6 @@ type2: .res 1
 DN: lda ptr4        ; Load the destination into A/X
     ldx ptr4 + 1
     rts
-.endproc
-
-; field width in a
-; value width in x
-
-; Pointer to string heap in A/X
-; Field width in Y
-.proc writeString
-    sta ptr1
-    stx ptr1 + 1
-    cpy #0
-    beq SK
-    tya
-    pha
-    ldy #0
-    lda (ptr1),y
-    tax
-    pla
-    jsr leftpad
-SK: ldy #0
-    lda (ptr1),y
-    tax
-    beq DN
-LP: iny
-    lda (ptr1),y
-    jsr CHROUT
-    dex
-    bne LP
-DN: rts
 .endproc
 
 ; This routine concatenates strings, char arrays, and characters

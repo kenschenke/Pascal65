@@ -285,7 +285,6 @@ static unsigned char prgCleanup[] = {
 #ifdef COMPILERTEST
 #define CHAIN_CODE_MSGL 1
 #define CHAIN_CODE_MSGH 3
-#define CHAIN_CODE_PRINTZ 5
 #define CHAIN_CODE_CALLL 8
 #define CHAIN_CODE_CALLH 12
 #define CHAIN_CODE_STRLEN 24
@@ -294,7 +293,7 @@ static unsigned char prgCleanup[] = {
 static unsigned char chainCode[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PRINTZ), WORD_HIGH(RT_PRINTZ),
 
 	LDA_IMMEDIATE, 0,
 	STA_ZEROPAGE, ZP_PTR2L,
@@ -399,7 +398,7 @@ static void genBootstrap(void)
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, 0, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
-	genRuntimeCall(rtPrintz);
+	genThreeAddr(JSR, RT_PRINTZ);
 	// Wait for a key to get pressed
 #ifdef __MEGA65__
 	genThreeAddr(LDX_ABSOLUTE, 0xd610);
@@ -588,7 +587,6 @@ void linkerPostWrite(const char* filename, char run)
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, 0, LINKADDR_LOW);
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, 0, LINKADDR_HIGH);
 		setRuntimeRef(rtMemCopy, codeOffset + CHAIN_CODE_MEMCOPY);
-		setRuntimeRef(rtPrintz, codeOffset + CHAIN_CODE_PRINTZ);
 		chainCode[CHAIN_CODE_STRLEN] = 28 + strlen(nextTest);
 		writeCodeBuf(chainCode, 33);
 		writeChainCall(nextTest);	// filename of the next test in the chain

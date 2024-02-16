@@ -263,16 +263,7 @@ $(OBJDIR)/uint32comp.o: $(SRCDIR)/uint32comp.s $(CFGDIR)/uint32comp.cfg $(OBJDIR
 $(OBJDIR)/uint32mult.o: $(SRCDIR)/uint32mult.s $(CFGDIR)/uint32mult.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(OBJDIR)/writebool.o: $(SRCDIR)/writebool.s $(CFGDIR)/writebool.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/writechar.o: $(SRCDIR)/writechar.s $(CFGDIR)/writechar.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
 $(OBJDIR)/writeint.o: $(SRCDIR)/writeint.s $(CFGDIR)/writeint.cfg $(OBJDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
-$(OBJDIR)/writevalue.o: $(SRCDIR)/writevalue.s $(CFGDIR)/writevalue.cfg $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
 $(LIBDIR)/abs.lib: $(OBJDIR)/abs.o
@@ -485,17 +476,8 @@ $(LIBDIR)/uint32comp.lib: $(OBJDIR)/uint32comp.o
 $(LIBDIR)/uint32mult.lib: $(OBJDIR)/uint32mult.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/uint32mult.cfg $<
 
-$(LIBDIR)/writebool.lib: $(OBJDIR)/writebool.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/writebool.cfg $<
-
-$(LIBDIR)/writechar.lib: $(OBJDIR)/writechar.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/writechar.cfg $<
-
 $(LIBDIR)/writeint.lib: $(OBJDIR)/writeint.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/writeint.cfg $<
-
-$(LIBDIR)/writevalue.lib: $(OBJDIR)/writevalue.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/writevalue.cfg $<
 
 ###
 # $(BINDIR)/$(PROGRAM): $(OBJECTS)

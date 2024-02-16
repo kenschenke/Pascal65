@@ -8,38 +8,10 @@
 .include "runtime.inc"
 .include "types.inc"
 
-.export __LOADADDR__: absolute = 1
+.export writeValue
 
-.segment "JMPTBL"
-
-; exports
-
-jmp writeValue
-
-; end of exports
-.byte $00, $00, $00
-
-; imports
-
-writeBool: jmp $0000
-writeChar: jmp $0000
-writeUint8: jmp $0000
-writeInt8: jmp $0000
-writeUint16: jmp $0000
-writeInt16: jmp $0000
-writeUint32: jmp $0000
-writeInt32: jmp $0000
-printz: jmp $0000
-writeString: jmp $0000
-
-; end of imports
-.byte $00, $00, $00
-
-.segment "LOADADDR"
-
-.addr *+2
-
-.code
+.import writeBool, writeChar, writeUint8, writeInt8, writeUint16, writeInt16
+.import writeUint32, writeInt32, printz, writeString
 
 width: .res 1
 

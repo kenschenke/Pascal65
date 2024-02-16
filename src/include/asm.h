@@ -167,6 +167,9 @@
 #define RT_CLEARINPUTBUF        (RT_BASE + 96)
 #define RT_POPEAX               (RT_BASE + 99)
 #define RT_INCSP4               (RT_BASE + 102)
+#define RT_WRITEVALUE           (RT_BASE + 105)
+#define RT_LEFTPAD              (RT_BASE + 108)
+#define RT_PRINTZ               (RT_BASE + 111)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
@@ -175,14 +178,14 @@ enum RuntimeRoutines {
     rtAbs, rtAdd, rtAssign, rtCalcArrayOffset, rtCalcRecord, rtDummy5,
     rtClrInput, rtComp, rtDivide, rtDivInt, rtDummy10, rtFloatNeg,
     rtFloatToInt16, rtFpOut, rtGetFpBuf, rtDummy15, rtDummy16, rtDummy17,
-    rtDummy18, rtInitArrayHeap, rtLeftPad, rtMemCopy, rtMod, rtMultiply,
+    rtDummy18, rtInitArrayHeap, rtDummy20, rtMemCopy, rtMod, rtMultiply,
     rtNegate, rtDummy25, rtDummy26, rtDummy27, rtDummy28, rtPrecRd,
-    rtPred, rtPrintz, rtPrintlnz, rtDummy33, rtPushAx, rtDummy35,
+    rtPred, rtDummy31, rtPrintlnz, rtDummy33, rtPushAx, rtDummy35,
     rtPushEax, rtDummy37, rtDummy38, rtDummy39, rtDummy40,
     rtDummy41, rtReadCharArrayFromInput, rtReadFloatFromInput, rtDummy44,
     rtDummy45, rtReadIntFromInput, rtDummy47, rtDummy48,
     rtSqr, rtDummy50, rtDummy51, rtDummy52, rtDummy53, rtDummy54,
-    rtStrToFloat, rtSubtract, rtSucc, rtWriteCharArray, rtWriteValue,
+    rtStrToFloat, rtSubtract, rtSucc, rtWriteCharArray, rtDummy59,
 
     // These routines are used internally by the runtime routines
     rtDummy60, ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM,

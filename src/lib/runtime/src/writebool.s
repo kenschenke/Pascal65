@@ -1,30 +1,9 @@
 .include "runtime.inc"
 .include "cbm_kernal.inc"
 
-.export __LOADADDR__: absolute = 1
+.export writeBool
 
-.segment "JMPTBL"
-
-; exports
-
-jmp writeBool
-
-; end of exports
-.byte $00, $00, $00
-
-; imports
-
-leftpad: jmp $0000
-printz: jmp $0000
-
-; end of imports
-.byte $00, $00, $00
-
-.segment "LOADADDR"
-
-.addr *+2
-
-.code
+.import leftpad, printz
 
 .data
 

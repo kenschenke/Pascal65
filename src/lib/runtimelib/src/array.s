@@ -34,7 +34,6 @@ subInt16: jmp $0000
 addInt16: jmp $0000
 multInt16: jmp $0000
 pushax: jmp $0000
-leftpad: jmp $0000
 skipSpaces: jmp $0000
 
 ; end of imports
@@ -218,7 +217,7 @@ L1:
     pha                 ; Save tmp1 since leftpad destroys it
     tax
     lda tmp3
-    jsr leftpad
+    jsr rtLeftPad
     pla                 ; Restore the array length
     sta tmp1
     ; Loop until tmp1/tmp2 are zero

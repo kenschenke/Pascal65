@@ -612,7 +612,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				genTwo(LDX_IMMEDIATE, 0);
 			}
 			genTwo(LDA_IMMEDIATE, _type.kind);
-			genRuntimeCall(rtWriteValue);
+			genThreeAddr(JSR, RT_WRITEVALUE);
 			break;
 
 		case TYPE_REAL:
@@ -632,17 +632,17 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				genOne(PLA);	// Pull value width from stack
 				genOne(TAX);	// Value width in X
 				genOne(TYA);	// Field width in A
-				genRuntimeCall(rtLeftPad);
+				genThreeAddr(JSR, RT_LEFTPAD);
 			}
 			genTwo(LDA_IMMEDIATE, ZP_FPBUF);
 			genTwo(LDX_IMMEDIATE, 0);
-			genRuntimeCall(rtPrintz);
+			genThreeAddr(JSR, RT_PRINTZ);
 			break;
 
 		case TYPE_STRING_LITERAL:
 			genExpr(arg.left, 1, 0, 0);
 			genThreeAddr(JSR, RT_POPEAX);
-			genRuntimeCall(rtPrintz);
+			genThreeAddr(JSR, RT_PRINTZ);
 			break;
 
 		case TYPE_STRING_VAR:
@@ -662,7 +662,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				genTwo(LDX_IMMEDIATE, 0);
 			}
 			genTwo(LDA_IMMEDIATE, _type.kind);
-			genRuntimeCall(rtWriteValue);
+			genThreeAddr(JSR, RT_WRITEVALUE);
 			if (_type.kind == TYPE_STRING_OBJ) {
 				genOne(PLA);
 				genOne(TAX);
