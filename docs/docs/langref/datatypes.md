@@ -17,6 +17,7 @@ Pascal65 defines the following standard data types.
 | Boolean    | True or False                                                 |
 | Char       | PETSCII character                                             |
 | Real       | Signed 24-bit floating point value (see below)                |
+| String     | A string of PETSCII characters (see below)                    |
 
 The compiler will generate an error if the program attempts to assign an integer variable
 to another variable that cannot accomodate the entire range.  This includes attempts to
@@ -28,6 +29,21 @@ unsigned variable is assigned to a signed variable of larger size.
 The **Real** data type is a signed 24-bit floating point value with an signed 8-bit exponent.
 Real values can be expressed in standard format such as *1.234* or scientific notation such as
 *1.2e+8*.
+
+## String Data Type
+
+The **String** data type is a string consisting of up to 255 PETSCII characters.
+Strings can be assigned to other strings, character literals, string literals,
+and arrays of characters.  When a string is assigned to the value of another string
+the new string is a copy of the original string and can be modified independently.
+Functions and Procedures that accept string parameters can be passed strings variables,
+character literals, string literals, or character arrays.
+
+The **Plus** operator concatenates strings and literals.  For example:
+
+```
+str := 'hello' + ' ' + 'world';
+```
 
 ## Declared Data Types
 

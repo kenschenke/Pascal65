@@ -6,7 +6,7 @@ Pascal offers the usual operators in other languages, with only a few minor diff
 
 | Operator | Description                          |
 | -------- | -------------------------------------|
-| +        | Addition                             |
+| +        | Addition and string concatenation    |
 | -        | Subtraction                          |
 | *        | Multiplication                       |
 | /        | Division (real data types)           |

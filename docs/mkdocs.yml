@@ -23,6 +23,7 @@ nav:
   - Function Reference:
     - Abs: funcref/abs.md
     - Chr: funcref/chr.md
+    - Length: funcref/length.md
     - Odd: funcref/odd.md
     - Ord: funcref/ord.md
     - Peek: funcref/peek.md
@@ -30,3 +31,4 @@ nav:
     - Pred: funcref/pred.md
     - Sqr: funcref/sqr.md
     - Succ: funcref/succ.md
+    - Trim: funcref/trim.md

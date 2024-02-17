@@ -38,12 +38,12 @@ Parameters of different types are separated by a semicolon.  Consecutive paramet
 
 ### By Value
 
-Parameters passed by value are provided to the procedure or function for its own private use.  A copy is made and can be modified without affecting the caller's data.  For records and arrays, a local copy is made and discarded on exit.
+Parameters passed by value are provided to the procedure or function for its own private use.  A copy is made and can be modified without affecting the caller's data.  For records, arrays, and strings, a local copy is made and discarded on exit.
 
 
 ### By Reference
 
-Parameters passed by reference, called **Var** parameters, are references to the caller's copy of the data.  Any changes made to the parameter are made to the caller's value.  This includes arrays and records.
+Parameters passed by reference, called **Var** parameters, are references to the caller's copy of the data.  Any changes made to the parameter are made to the caller's value.  This includes arrays, records, and strings.
 
 ```
 Procedure Double(Var num : Integer);
