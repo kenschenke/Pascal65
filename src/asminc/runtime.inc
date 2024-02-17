@@ -52,3 +52,4 @@ rtHeapAlloc             = rt_base + 87
 rtHeapFree              = rt_base + 90
 rtPopEax                = rt_base + 99
 rtLeftPad               = rt_base + 108
+rtStrCase               = rt_base + 114

@@ -170,6 +170,7 @@
 #define RT_WRITEVALUE           (RT_BASE + 105)
 #define RT_LEFTPAD              (RT_BASE + 108)
 #define RT_PRINTZ               (RT_BASE + 111)
+#define RT_STRCASE              (RT_BASE + 114)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
