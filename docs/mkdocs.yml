@@ -24,6 +24,7 @@ nav:
     - Abs: funcref/abs.md
     - Chr: funcref/chr.md
     - Length: funcref/length.md
+    - LowerCase: funcref/lowercase.md
     - Odd: funcref/odd.md
     - Ord: funcref/ord.md
     - Peek: funcref/peek.md
@@ -33,3 +34,4 @@ nav:
     - StringOfChar: funcref/strofchar.md
     - Succ: funcref/succ.md
     - Trim: funcref/trim.md
+    - UpCase: funcref/upcase.md
