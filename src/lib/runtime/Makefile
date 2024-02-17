@@ -64,6 +64,7 @@ SOURCES += $(SRCDIR)/rtstack.s
 # SOURCES += $(SRCDIR)/subtract.s
 SOURCES += $(SRCDIR)/strcase.s
 SOURCES += $(SRCDIR)/tenstable.s
+SOURCES += $(SRCDIR)/trim.s
 SOURCES += $(SRCDIR)/uint32comp.s
 SOURCES += $(SRCDIR)/writebool.s
 SOURCES += $(SRCDIR)/writechar.s

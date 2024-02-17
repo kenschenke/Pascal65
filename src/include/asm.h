@@ -171,6 +171,7 @@
 #define RT_LEFTPAD              (RT_BASE + 108)
 #define RT_PRINTZ               (RT_BASE + 111)
 #define RT_STRCASE              (RT_BASE + 114)
+#define TR_TRIM                 (RT_BASE + 117)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

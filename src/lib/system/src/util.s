@@ -1,6 +1,6 @@
 .include "runtime.inc"
 
-.export loadParam, returnVal, copyString
+.export loadParam, returnVal
 
 ; This routine calculates the address of a parameter and
 ; leaves it in ptr1.
@@ -71,41 +71,5 @@ DN: rts
     lda sreg + 1
     iny
     sta (ptr1),y
-    rts
-.endproc
-
-; This routine allocates a string object and copies the source.
-; The source is passed in A/X.
-; The length to copy is passed in Y.
-; The new string is returned in A/X.
-.proc copyString
-    pha
-    txa
-    pha
-    tya
-    pha
-    ldx #0
-    clc
-    adc #1
-    jsr rtHeapAlloc
-    sta ptr2
-    stx ptr2 + 1
-    pla
-    tax
-    pla
-    sta ptr1 + 1
-    pla
-    sta ptr1
-    ldy #0
-    txa
-    sta (ptr2),y
-    beq DN
-:   lda (ptr1),y
-    iny
-    sta (ptr2),y
-    dex
-    bne :-
-DN: lda ptr2
-    ldx ptr2 + 1
     rts
 .endproc

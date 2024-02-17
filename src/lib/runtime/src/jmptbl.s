@@ -11,7 +11,7 @@
 .import runtimeError, runtimeErrorInit, popa, popax, popeax, incsp4
 
 .import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
-.import writeValue, leftpad, printz, strCase
+.import writeValue, leftpad, printz, strCase, trim
 
 .segment "JMPTBL"
 
@@ -54,7 +54,7 @@ jmp writeValue           ; BASE + 105
 jmp leftpad              ; BASE + 108
 jmp printz               ; BASE + 111
 jmp strCase              ; BASE + 114
-jmp $0000       ; BASE + 117
+jmp trim                 ; BASE + 117
 jmp $0000       ; BASE + 120
 jmp $0000       ; BASE + 123
 jmp $0000       ; BASE + 126
