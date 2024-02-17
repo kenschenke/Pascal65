@@ -30,5 +30,6 @@ nav:
     - Poke: funcref/poke.md
     - Pred: funcref/pred.md
     - Sqr: funcref/sqr.md
+    - StringOfChar: funcref/strofchar.md
     - Succ: funcref/succ.md
     - Trim: funcref/trim.md
