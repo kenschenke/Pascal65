@@ -93,6 +93,7 @@ static void skipWhiteSpace(void)
             ch = getChar();
             if (ch == '/') {
                 ch = getLine();
+                continue;
             } else {
                 putBackChar();
                 break;
