@@ -2,7 +2,7 @@
 
 .export writeChar
 
-.import leftpad
+.import leftpad, writeByte
 
 ; Write character output.
 ; Character in .A
@@ -13,6 +13,6 @@
     ldx #1
     jsr leftpad
     pla
-    jsr CHROUT
+    jsr writeByte
     rts
 .endproc

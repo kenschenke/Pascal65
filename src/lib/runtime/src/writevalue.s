@@ -1,4 +1,4 @@
-; This routine is used by write and writeln to write a value.
+; This routine is used by write, writeln, and writestr to write a value.
 ; It expects the value to be at the top of the runtime stack
 ;
 ; Inputs:

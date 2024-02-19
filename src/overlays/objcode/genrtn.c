@@ -547,6 +547,7 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	case rcWrite:
 	case rcWriteln:
+	case rcWriteStr:
 		genWriteWritelnCall(rc, argChunk);
 		break;
 
@@ -578,6 +579,13 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
 	struct expr arg;
 	struct type _type;
+
+	genTwo(LDA_IMMEDIATE, rc == rcWriteStr ? FH_STRING : FH_STDIO);
+	genThreeAddr(JSR, RT_SETFH);
+
+	if (rc == rcWriteStr) {
+		genThreeAddr(JSR, RT_RESETSTRBUFFER);
+	}
 
 	while (argChunk) {
 		retrieveChunk(argChunk, &arg);
@@ -629,8 +637,12 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		case TYPE_STRING_LITERAL:
 			genExpr(arg.left, 1, 0, 0);
-			genThreeAddr(JSR, RT_POPEAX);
-			genThreeAddr(JSR, RT_PRINTZ);
+			if (arg.width) {
+				genExpr(arg.width, 1, 1, 0);
+			} else {
+				genTwo(LDA_IMMEDIATE, 0);
+			}
+			genThreeAddr(JSR, RT_WRITESTRLITERAL);
 			break;
 
 		case TYPE_STRING_VAR:
@@ -689,5 +701,9 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 	if (rc == rcWriteln) {
 		genTwo(LDA_IMMEDIATE, 13);	// carriage return
 		genThreeAddr(JSR, CHROUT);
+	}
+
+	if (rc == rcWriteStr) {
+		genThreeAddr(JSR, RT_GETSTRBUFFER);
 	}
 }

@@ -94,3 +94,4 @@ rteInvalidUserInput = 6
 rteUnimplementedRuntimeFeature = 7
 rteOutOfMemory = 8
 rteStringOverflow = 9
+rteInvalidFileHandle = 10

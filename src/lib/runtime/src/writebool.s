@@ -3,7 +3,7 @@
 
 .export writeBool
 
-.import leftpad, printz
+.import leftpad, writeByte
 
 .data
 
@@ -12,10 +12,14 @@ FALSE: .asciiz "false"
 
 .code
 
+buffer: .res 1
+
 ; Write boolean TRUE or FALSE to output.
 ; Boolean value in .A
 ; Field width in .X
 .proc writeBool
+    ldy #' '
+    sty buffer
     stx tmp1            ; field width in tmp1
     ldx #5              ; start with value width of 5
     cmp #0              ; is boolean value false?
@@ -30,14 +34,14 @@ L1:
     ldx #0
 :   lda FALSE,x
     beq L3
-    jsr CHROUT
+    jsr writeByte
     inx
     bne :-
 L2:
     ldx #0
 :   lda TRUE,x
     beq L3
-    jsr CHROUT
+    jsr writeByte
     inx
     bne :-
 L3:

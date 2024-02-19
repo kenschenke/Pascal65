@@ -571,8 +571,10 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 
 	case rcWrite:
 	case rcWriteln:
+	case rcWriteStr:
 		checkWriteWritelnCall(argChunk);
-		pRetnType->kind = TYPE_VOID;
+		pRetnType->kind = pType->routineCode == rcWriteStr ?
+			TYPE_STRING_OBJ : TYPE_VOID;
 		break;
 
 	case rcAbs:

@@ -8,3 +8,4 @@ Invalid user input
 Unimplemented feature
 Out of memory
 String overflow
+Invalid File Handle

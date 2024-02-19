@@ -54,7 +54,8 @@ CHUNKNUM parseFactor(void)
 		getToken();
 		if (parserToken == tcLParen) {
 			// Function / procecure call
-			exprChunk = parseSubroutineCall(nameChunk, 0);
+			exprChunk = parseSubroutineCall(nameChunk,
+				strcmp(parserString, "writestr") == 0 ? 1 : 0);
 		}
 		else {
 			return parseVariable(nameChunk);

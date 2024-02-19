@@ -232,7 +232,7 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.petscii calcarea.petscii runtime.petscii runtime.lib debug.petscii debug.lib
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.petscii calcarea.petscii runtime.petscii runtime runtime.lib debug.petscii debug.lib
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -254,7 +254,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtime.petscii runtime.def,seq \
 	-write runtime.lib runtime.lib,prg
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii runtime.petscii runtime.lib debug.petscii debug.lib
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii runtime.petscii runtime runtime.lib debug.petscii debug.lib
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \

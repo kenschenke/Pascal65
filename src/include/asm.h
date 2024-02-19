@@ -122,6 +122,11 @@
 #define BSS_TENSTABLE   "TENSTABLE"
 #define BSS_INPUTBUF    "INPUTBUF"
 
+// Magic File Handles
+// Used by read/write routines that are called by read/readln/write/writeln
+#define FH_STDIO        0x80    // Use screen/keyboard for IO
+#define FH_STRING       0x81    // Use string for IO
+
 // Runtime Jumptable locations
 
 #ifdef __MEGA65__
@@ -171,7 +176,12 @@
 #define RT_LEFTPAD              (RT_BASE + 108)
 #define RT_PRINTZ               (RT_BASE + 111)
 #define RT_STRCASE              (RT_BASE + 114)
-#define TR_TRIM                 (RT_BASE + 117)
+#define RT_TRIM                 (RT_BASE + 117)
+#define RT_INITFILEIO           (RT_BASE + 120)
+#define RT_SETFH                (RT_BASE + 123)
+#define RT_RESETSTRBUFFER       (RT_BASE + 126)
+#define RT_GETSTRBUFFER         (RT_BASE + 129)
+#define RT_WRITESTRLITERAL      (RT_BASE + 132)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

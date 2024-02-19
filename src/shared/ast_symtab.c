@@ -43,8 +43,10 @@ static struct TStdRtn {
 } stdRtnList[] = {
 	{"read", rcRead, TYPE_PROCEDURE},
 	{"readln", rcReadln, TYPE_PROCEDURE},
+	{"readstr", rcReadStr, TYPE_PROCEDURE},
 	{"write", rcWrite, TYPE_PROCEDURE},
 	{"writeln", rcWriteln, TYPE_PROCEDURE},
+	{"writestr", rcWriteStr, TYPE_FUNCTION},
 	{"abs", rcAbs, TYPE_FUNCTION},
 	{"eof", rcEof, TYPE_FUNCTION},
 	{"eoln", rcEoln, TYPE_FUNCTION},

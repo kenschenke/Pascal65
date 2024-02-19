@@ -1,7 +1,8 @@
-.include "cbm_kernal.inc"
 .include "runtime.inc"
 
 .export leftpad
+
+.import writeByte
 
 ; Left pad a field with spaces.
 ; Field width in .A
@@ -20,7 +21,7 @@
 Loop:
     dey
     bmi Done
-    jsr CHROUT
+    jsr writeByte
     clc
     bcc Loop
 

@@ -27,6 +27,11 @@ inputBuf = zp_base + $5e             ; 2 bytes
 inputPos = zp_base + $60             ; 1 byte
 inputBufUsed = zp_base + $61            ; 1 byte
 
+; File Handles
+; Used by read/write routines that are called by read/readln/write/writeln/writestr
+fhStdio = $80                   ; Use screen/keyboard for IO
+fhString = $81                  ; Use string for IO
+
 ; Jump table for runtime routines assembled at a fixed address
 
 .ifdef __MEGA65__
@@ -54,3 +59,4 @@ rtPopEax                = rt_base + 99
 rtLeftPad               = rt_base + 108
 rtStrCase               = rt_base + 114
 rtTrim                  = rt_base + 117
+rtSetFh                 = rt_base + 123
