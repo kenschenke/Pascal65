@@ -35,3 +35,6 @@ nav:
     - Succ: funcref/succ.md
     - Trim: funcref/trim.md
     - UpCase: funcref/upcase.md
+    - Write: funcref/write.md
+    - WriteLn: funcref/write.md
+    - WriteStr: funcref/write.md
