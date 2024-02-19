@@ -87,8 +87,9 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			getExprType(_expr.left, &leftType);
 			getExprType(_expr.right, &rightType);
 			genExpr(_expr.left, 1, 1, 0);
-			genTwo(STA_ZEROPAGE, ZP_PTR1L);
-			genTwo(STX_ZEROPAGE, ZP_PTR1H);
+			genOne(PHA);
+			genOne(TXA);
+			genOne(PHA);
 			if (isStringConcat(_expr.left)) {
 				++stringConcats;
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
@@ -100,6 +101,10 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			}
 			genTwo(STA_ZEROPAGE, ZP_PTR2L);
 			genTwo(STX_ZEROPAGE, ZP_PTR2H);
+			genOne(PLA);
+			genTwo(STA_ZEROPAGE, ZP_PTR1H);
+			genOne(PLA);
+			genTwo(STA_ZEROPAGE, ZP_PTR1L);
 			genTwo(LDA_IMMEDIATE, leftType.kind);
 			genTwo(LDX_IMMEDIATE, rightType.kind);
 			genRuntimeCall(rtConcatString);
