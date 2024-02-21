@@ -43,8 +43,10 @@ static char typeConversions[7][7] = {
 
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk);
 static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode);		// returns TYPE_*
+static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk);
 static void checkArraysSameType(struct type* pType1, struct type* pType2);
 static void checkBoolOperand(struct type* pType);
+static void checkForStringFields(CHUNKNUM firstField);
 static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalParams);
 static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType);
 static void checkIntegerBaseType(CHUNKNUM exprChunk);
@@ -141,6 +143,25 @@ static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode)
 	return _type.kind;
 }
 
+static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk)
+{
+	struct type indexType, elemType;
+
+	retrieveChunk(indexChunk, &indexType);
+	getBaseType(&indexType);
+	if (!isTypeOrdinal(indexType.kind) && indexType.kind != TYPE_CHARACTER) {
+		Error(errInvalidIndexType);
+	}
+	retrieveChunk(elemChunk, &elemType);
+	getBaseType(&elemType);
+	if (elemType.kind == TYPE_STRING_VAR) {
+		Error(errInvalidSTRINGUse);
+	}
+	else if (elemType.kind == TYPE_ARRAY) {
+		checkArray(elemType.indextype, elemType.subtype);
+	}
+}
+
 static void checkArraysSameType(struct type* pType1, struct type* pType2)
 {
 	struct expr min1, min2, max1, max2;
@@ -184,6 +205,30 @@ static void checkBoolOperand(struct type* pType)
 {
 	if (pType->kind != TYPE_BOOLEAN) {
 		Error(errIncompatibleTypes);
+	}
+}
+
+static void checkForStringFields(CHUNKNUM firstField)
+{
+	struct decl _decl;
+	struct type _type;
+	CHUNKNUM chunkNum = firstField;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &_decl);
+		retrieveChunk(_decl.type, &_type);
+		getBaseType(&_type);
+		if (_type.kind == TYPE_STRING_VAR) {
+			Error(errInvalidSTRINGUse);
+		}
+		else if (_type.kind == TYPE_RECORD) {
+			checkForStringFields(_type.paramsFields);
+		}
+		else if (_type.kind == TYPE_ARRAY) {
+			checkArray(_type.indextype, _type.subtype);
+		}
+
+		chunkNum = _decl.next;
 	}
 }
 
@@ -735,16 +780,17 @@ void decl_typecheck(CHUNKNUM chunkNum)
 			retrieveChunk(_decl.type, &_type);
 
 			// If this is an array make sure the index type is
-			// an integer, enum, or character.
+			// an integer, enum, or character and the element type is not a string.
 			// Only do the check if this is a variable and the type
 			// is an anonymous type (defined inline) or this declaration
 			// is the array type (Type section).
 			if (((_decl.kind == DECL_VARIABLE && _type.name == 0) || _decl.kind == DECL_TYPE) && _type.kind == TYPE_ARRAY) {
-				retrieveChunk(_type.indextype, &_type);
-				getBaseType(&_type);
-				if (!isTypeOrdinal(_type.kind) && _type.kind != TYPE_CHARACTER) {
-					Error(errInvalidIndexType);
-				}
+				checkArray(_type.indextype, _type.subtype);
+			}
+
+			// If this is a record, make sure none of the fields are string types.
+			if (((_decl.kind == DECL_VARIABLE && _type.name == 0) || _decl.kind == DECL_TYPE) && _type.kind == TYPE_RECORD) {
+				checkForStringFields(_type.paramsFields);
 			}
 
 			// If this is a function or procedure, check for a forward declaration and make

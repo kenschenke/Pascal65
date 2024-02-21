@@ -97,6 +97,7 @@ typedef enum {
     errMissingINTERFACE,
     errMissingIMPLEMENTATION,
     errMissingUnitDeclaration,
+    errInvalidSTRINGUse,
     numParserErrors,
 } TErrorCode;
 
