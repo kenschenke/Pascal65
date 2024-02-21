@@ -2,7 +2,7 @@
 
 A library is a way to put object code into a program during the compile and
 linking process.  Libraries are compiled or assembled into object code
-ahead of time can greatly speed up compilation time.
+ahead of time and can greatly speed up compilation time.
 
 ## Library Interface
 
@@ -58,10 +58,10 @@ and procedures in the library.  Just like the Commodore Kernal, each jump table
 entry is three bytes: a JMP instruction, followed by the internal address within
 the library for the routine's entry point.  The table is also used for public
 variables declared in the library's interface.  The appropriate number of bytes
-need to be reserved in the table to accommodate the variable.  For arrays and
-records, the table entry will be the address within the heap.  The heap address
+need to be reserved in the table to accommodate the variable.  For arrays, strings,
+and records, the table entry will be the address within the heap.  The heap address
 will be populated during program initialization.  It is not necessary for the
-library to take any action to initialize this.  See the pages on arrays and
+library to take any action to initialize this.  See the pages on arrays, strings, and
 records for more information on how Pascal 65 organizes the data in memory.
 
 The entries in the jump table must appear in the same order in which they are

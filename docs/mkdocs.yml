@@ -10,6 +10,7 @@ nav:
     - Pascal Syntax: langref/syntax.md
     - Comments: langref/comments.md
     - Data Types: langref/datatypes.md
+    - Strings: langref/strings.md
     - Arrays: langref/arrays.md
     - Records: langref/records.md
     - Operators: langref/operators.md

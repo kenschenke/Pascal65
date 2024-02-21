@@ -34,16 +34,7 @@ Real values can be expressed in standard format such as *1.234* or scientific no
 
 The **String** data type is a string consisting of up to 255 PETSCII characters.
 Strings can be assigned to other strings, character literals, string literals,
-and arrays of characters.  When a string is assigned to the value of another string
-the new string is a copy of the original string and can be modified independently.
-Functions and Procedures that accept string parameters can be passed strings variables,
-character literals, string literals, or character arrays.
-
-The **Plus** operator concatenates strings and literals.  For example:
-
-```
-str := 'hello' + ' ' + 'world';
-```
+and arrays of characters. Please see the [strings](strings.md) topic for more information.
 
 ## Declared Data Types
 
