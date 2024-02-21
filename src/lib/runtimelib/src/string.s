@@ -27,6 +27,9 @@ jmp duplicateString
 srcPtr: .res 2
 strPtr: .res 2
 
+; This routine makes a copy of the string in A/X.
+; The new string is returned in A/X.
+; ptr1 and ptr2 are destroyed.
 .proc duplicateString
     sta srcPtr
     sta ptr1
