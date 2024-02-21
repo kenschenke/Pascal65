@@ -16,6 +16,8 @@ LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
 RUNTIMEDEF = ../../shared/runtime.def
+SYSTEM_PAS = ../../lib/system/system.pas
+DEBUG_PAS = ../../lib/debug/debug.pas
 
 PROGRAM := compiler
 D81FILE := $(BINDIR)/$(PROGRAM).d81
@@ -213,11 +215,11 @@ runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 hello.petscii: hello.pas
 	dos2unix < hello.pas | petcat -w2 -text -o hello.petscii
 
-system.petscii: system.pas
-	dos2unix < system.pas | petcat -w2 -text -o system.petscii
+system.petscii: $(SYSTEM_PAS)
+	dos2unix < $(SYSTEM_PAS) | petcat -w2 -text -o system.petscii
 
-debug.petscii: debug.pas
-	dos2unix < debug.pas | petcat -w2 -text -o debug.petscii
+debug.petscii: $(DEBUG_PAS)
+	dos2unix < $(DEBUG_PAS) | petcat -w2 -text -o debug.petscii
 
 routines.petscii: routines.pas
 	dos2unix < routines.pas | petcat -w2 -text -o routines.petscii
@@ -232,7 +234,7 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.petscii calcarea.petscii runtime.petscii runtime runtime.lib debug.petscii debug.lib
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.petscii calcarea.petscii runtime.petscii runtime runtime.lib debug.petscii debug.lib $(SYSTEM_PAS) $(DEBUG_PAS)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -254,7 +256,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs
 	-write runtime.petscii runtime.def,seq \
 	-write runtime.lib runtime.lib,prg
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii runtime.petscii runtime runtime.lib debug.petscii debug.lib
+$(D81FILE): $(BINDIR)/$(PROGRAM) abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii hello.petscii system.lib system.petscii runtime.petscii runtime runtime.lib debug.petscii debug.lib $(SYSTEM_PAS) $(DEBUG_PAS)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \

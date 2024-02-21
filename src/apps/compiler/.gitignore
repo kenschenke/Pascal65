@@ -4,4 +4,5 @@ obj/*
 runtime
 runtime.lib
 system.lib
+debug.lib
 *.map
