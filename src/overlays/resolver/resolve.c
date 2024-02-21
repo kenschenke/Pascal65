@@ -390,6 +390,11 @@ static short getTypeSize(struct type* pType)
 		break;
 	case TYPE_STRING_LITERAL: size = sizeof(CHUNKNUM); break;
 
+	case TYPE_STRING_OBJ:
+	case TYPE_STRING_VAR:
+		size = 2;
+		break;
+
 	case TYPE_ARRAY: {
 		struct type _type, indexType;
 		short min = 0, max = 0;

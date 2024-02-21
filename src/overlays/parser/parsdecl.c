@@ -175,7 +175,7 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
         else {
             parserValue.stringChunkNum = 0;
             copyQuotedString(parserString, &parserValue.stringChunkNum);
-            *type = typeCreate(TYPE_STRING_LITERAL, 1, 0, 0);
+            *type = typeCreate(TYPE_STRING_VAR, 1, 0, 0);
             expr = exprCreate(EXPR_STRING_LITERAL, 0, 0, 0, &parserValue);
         }
         getToken();

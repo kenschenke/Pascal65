@@ -118,6 +118,18 @@ static unsigned char heapOffsetCode[] = {
 	STA_ZEROPAGE, ZP_PTR1H,
 };
 
+#define STR_ALLOC_LEN 17
+static unsigned char strAlloc[] = {
+	LDA_IMMEDIATE, 1,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
+	STA_ZEROPAGE, ZP_PTR1L,
+	STX_ZEROPAGE, ZP_PTR1H,
+	LDY_IMMEDIATE, 0,
+	LDA_IMMEDIATE, 0,
+	STA_X_INDEXED_ZP, ZP_PTR1L,
+};
+
 void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar,
 	int numElements, CHUNKNUM arrayNum)
 {
@@ -375,18 +387,28 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				break;
 
 			case TYPE_STRING_VAR:
-				// Allocate an empty string
-				genTwo(LDA_IMMEDIATE, 1);
-				genTwo(LDX_IMMEDIATE, 0);
-				genThreeAddr(JSR, RT_HEAPALLOC);
-				genTwo(STA_ZEROPAGE, ZP_PTR1L);
-				genTwo(STX_ZEROPAGE, ZP_PTR1H);
-				genTwo(LDY_IMMEDIATE, 0);
-				genTwo(LDA_IMMEDIATE, 0);
-				genTwo(STA_X_INDEXED_ZP, ZP_PTR1L);
-				genTwo(LDA_ZEROPAGE, ZP_PTR1L);
-				genTwo(LDX_ZEROPAGE, ZP_PTR1H);
-				genThreeAddr(JSR, RT_PUSHINTSTACK);
+				if (_decl.kind == DECL_CONST) {
+					// Allocate a string object
+					// To do this, I'm gonna cheat a little and use the "WriteStr"
+					// code to construct a string object.
+					struct expr strExpr;
+					genTwo(LDA_IMMEDIATE, FH_STRING);
+					genThreeAddr(JSR, RT_SETFH);
+					genThreeAddr(JSR, RT_RESETSTRBUFFER);
+					retrieveChunk(_decl.value, &strExpr);
+					genStringValueAX(strExpr.value.stringChunkNum);
+					genThreeAddr(JSR, RT_PUSHINTSTACK);
+					genTwo(LDA_IMMEDIATE, 0);
+					genThreeAddr(JSR, RT_WRITESTRLITERAL);
+					genThreeAddr(JSR, RT_GETSTRBUFFER);
+					genThreeAddr(JSR, RT_PUSHINTSTACK);
+				} else {
+					// Allocate an empty string
+					writeCodeBuf(strAlloc, STR_ALLOC_LEN);
+					genTwo(LDA_ZEROPAGE, ZP_PTR1L);
+					genTwo(LDX_ZEROPAGE, ZP_PTR1H);
+					genThreeAddr(JSR, RT_PUSHINTSTACK);
+				}
 				break;
 			}
 
