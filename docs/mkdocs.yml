@@ -8,6 +8,7 @@ nav:
   - Limitations: limits.md
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
+    - Comments: langref/comments.md
     - Data Types: langref/datatypes.md
     - Arrays: langref/arrays.md
     - Records: langref/records.md
