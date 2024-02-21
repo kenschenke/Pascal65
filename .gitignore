@@ -1,7 +1,4 @@
 bin/*
-cruncher/*
 drv/*
-lister/*
-tokeniz1/*
 xref1/*
 .vscode/*
