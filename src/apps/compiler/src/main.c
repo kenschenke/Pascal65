@@ -16,6 +16,10 @@
 #include <string.h>
 #include <libcommon.h>
 
+#ifdef __MEGA65__
+#include <doscmd.h>
+#endif
+
 #define AUTOSRC "autosrc"
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
@@ -52,6 +56,11 @@ static void readAutoSrc(void)
 
     fgets(buffer, sizeof(buffer), fp);
     fclose(fp);
+#ifdef __MEGA65__
+    removeFile(AUTOSRC);
+#else
+    remove(AUTOSRC);
+#endif
 
     p = buffer + strlen(buffer) - 1;
     while (*p == '\n') {
