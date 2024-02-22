@@ -1,6 +1,0 @@
-number := 5;
-
-a := number + 6;
-b := number + 1;
-output := a + b * 3;
-.
