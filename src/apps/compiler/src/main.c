@@ -16,14 +16,50 @@
 #include <string.h>
 #include <libcommon.h>
 
+#define AUTOSRC "autosrc"
+
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
+static void checkSrcFn(const char *str);
+static void readAutoSrc(void);
 
+char srcFn[16 + 1]; // source filename
 char intBuf[15];
 
 static char errors;
 
 void runPrg(void) {}
+
+static void checkSrcFn(const char *str)
+{
+    if (strlen(str) > sizeof(srcFn)) {
+        printlnz("Source filename too long");
+        abortTranslation(abortSourceLineTooLong);
+        exit(5);
+    }
+
+    strcpy(srcFn, str);
+}
+
+static void readAutoSrc(void)
+{
+    char *p, buffer[50];
+
+    FILE *fp = fopen(AUTOSRC, "r");
+    if (fp == NULL) {
+        return;
+    }
+
+    fgets(buffer, sizeof(buffer), fp);
+    fclose(fp);
+
+    p = buffer + strlen(buffer) - 1;
+    while (*p == '\n') {
+        if (p > buffer) *(p--) = 0; else break;
+    }
+
+    checkSrcFn(buffer);
+}
 
 static void tokenizeAndParseUnits(void)
 {
@@ -59,10 +95,30 @@ static void tokenizeAndParseUnits(void)
     }
 }
 
-void main()
+void main(int argc, char *argv[])
 {
     CHUNKNUM tokenId, astRoot;
     short offset = 0;
+
+    srcFn[0] = 0;
+    // Check command line first
+    if (argc > 1) {
+        checkSrcFn(argv[1]);
+    }
+
+    // If no filename supplied on the command line, try the autosrc.
+    if (!srcFn[0]) {
+        readAutoSrc();
+    }
+
+    // If a source file was not provided on the command line or autosrc, prompt for one.
+    if (!srcFn[0]) {
+        char buffer[50];
+
+        printz("Source file: ");
+        gets(buffer);
+        checkSrcFn(buffer);
+    }
 
     setIntBuf(intBuf);
 
@@ -84,7 +140,7 @@ void main()
     printlnz("Loading tokenizer overlay");
 
     if (loadfile("compiler.1")) {
-        tokenId = tokenize("hello.pas");
+        tokenId = tokenize(srcFn);
     }
 
     printlnz("Loading parser overlay");
@@ -144,7 +200,7 @@ void main()
 
     printlnz("Loading linker overlay");
     if (loadfile("compiler.6")) {
-        linkerPostWrite("hello", 0);
+        linkerPostWrite(srcFn, 0);
     }
 
     decl_free(astRoot);
