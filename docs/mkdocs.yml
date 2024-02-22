@@ -6,6 +6,7 @@ nav:
   - System Requirements: sysreqs.md
   - Notable Differences: notablediffs.md
   - Limitations: limits.md
+  - Usage: usage.md
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
     - Comments: langref/comments.md
