@@ -1,9 +1,9 @@
 all:
-	cd compiler && $(MAKE) all
-	cd interpreter && $(MAKE) all
-	cd ide && $(MAKE) all
+	cd compiler && $(MAKE) TARGET=$(TARGET) all
+	cd ide && $(MAKE) TARGET=$(TARGET) all
+	cd lib && $(MAKE) TARGET=$(TARGET) all
 
 clean:
-	cd compiler && $(MAKE) clean
-	cd interpreter && $(MAKE) clean
-	cd ide && $(MAKE) clean
+	cd compiler && $(MAKE) TARGET=$(TARGET) clean
+	cd ide && $(MAKE) TARGET=$(TARGET) clean
+	cd lib && $(MAKE) TARGET=$(TARGET) clean

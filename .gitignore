@@ -2,3 +2,4 @@ bin/*
 drv/*
 xref1/*
 .vscode/*
+*.petscii

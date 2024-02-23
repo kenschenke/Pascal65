@@ -8,13 +8,7 @@
 #include <libcommon.h>
 #include <conio.h>
 #include <em.h>
-#include <tokenizer.h>
-#include <parser.h>
 #include <membuf.h>
-#include <resolver.h>
-#include <typecheck.h>
-#include <codegen.h>
-#include <ast.h>
 #include <int16.h>
 #include <common.h>
 #include <unistd.h>
@@ -22,25 +16,45 @@
 #include <doscmd.h>
 #endif
 
-#define OVERLAY_TOKENIZER 0
-#define OVERLAY_PARSER 1
-#define OVERLAY_SEMANTIC 2
-#define OVERLAY_OBJCODE 3
-#define OVERLAY_LINKER 4
-#define OVERLAY_EDITOR 5
-#define OVERLAY_EDITORFILES 6
+#define OVERLAY_EDITOR 0
+#define OVERLAY_EDITORFILES 1
+
+#define AUTORUN "autorun"
+#define AUTOSRC "autosrc"
 
 unsigned char loadfile(const char *name);
+static void loadOverlay(int overlayNum);
 static void compile(char run);
 static void restoreState(void);
 static void setupOverlayName(char *name, int num);
 
 struct editorConfig E;
 
-static char intBuffer[16];
-
 // Device Pascal65 was loaded from
 static char prgDrive;
+
+void loadproghelper(const char *prg);
+
+static void compile(char run)
+{
+    FILE *fp;
+    char newline = '\n', filename[CHUNK_LEN];
+
+    memset(filename, 0, sizeof(filename));
+    retrieveChunk(E.cf.filenameChunk, filename);
+
+    if (fp = fopen(run ? AUTORUN : AUTOSRC, "w")) {
+        fwrite(filename, 1, strlen(filename), fp);
+        fwrite(&newline, 1, 1, fp);
+        fclose(fp);
+    }
+
+    loadOverlay(OVERLAY_EDITOR);
+    editorSaveState();
+
+    loadfile("loadprog");
+    loadproghelper("compiler");
+}
 
 void logError(const char *message, unsigned lineNumber, TErrorCode /*code*/)
 {
@@ -74,15 +88,9 @@ void editorSetDefaultStatusMessage(void) {
 #ifndef __MEGA65__
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
-extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
-extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
-extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
-extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
-extern void _OVERLAY7_LOAD__[], _OVERLAY7_SIZE__[];
-extern void _OVERLAY8_LOAD__[], _OVERLAY8_SIZE__[];
-static unsigned overlaySizes[8];
-static unsigned overlayBlocks[8];
-static BLOCKNUM overlayCaches[8];
+static unsigned overlaySizes[2];
+static unsigned overlayBlocks[2];
+static BLOCKNUM overlayCaches[2];
 
 static void loadOverlayFromCache(unsigned size, void *buffer, unsigned cache) {
     struct em_copy emc;
@@ -126,52 +134,6 @@ static void loadOverlay(int overlayNum)
     loadOverlayFromCache(overlaySizes[overlayNum],
         _OVERLAY1_LOAD__, overlayCaches[overlayNum]);
 #endif
-}
-
-static void compile(char run)
-{
-    CHUNKNUM tokens, ast;
-    char filename[CHUNK_LEN];
-
-    memset(filename, 0, sizeof(filename));
-    retrieveChunk(E.cf.filenameChunk, filename);
-
-    // Tokenizer
-    loadOverlay(OVERLAY_TOKENIZER);
-    tokens = tokenize(filename);
-
-    // Parser
-    loadOverlay(OVERLAY_PARSER);
-    ast = parse(tokens);
-    freeMemBuf(tokens);
-
-    // Semantic analysis and error checking
-    loadOverlay(OVERLAY_RESOLVER);
-    init_scope_stack();
-    decl_resolve(ast, 0);
-    set_decl_offsets(ast, 0, 0);
-
-    loadOverlay(OVERLAY_TYPECHECK);
-    decl_typecheck(ast);
-
-    // Object code (part 1 - linker pre-write)
-    loadOverlay(OVERLAY_LINKER);
-    linkerPreWrite(ast);
-
-    // Generate object code
-    loadOverlay(OVERLAY_OBJCODE);
-    objCodeWrite(ast);
-
-    // Write the PRG file
-    loadOverlay(OVERLAY_LINKER);
-    linkerPostWrite(filename, run);
-
-    // Free the AST
-    decl_free(ast);
-    free_scope_stack();
-    freeCommon();
-
-    loadOverlay(OVERLAY_EDITOR);
 }
 
 static void openFile(void)
@@ -317,12 +279,7 @@ static void setupOverlays(void)
 
     overlaySizes[0] = (unsigned)_OVERLAY1_SIZE__;
     overlaySizes[1] = (unsigned)_OVERLAY1_SIZE__;
-    overlaySizes[2] = (unsigned)_OVERLAY1_SIZE__;
-    overlaySizes[3] = (unsigned)_OVERLAY1_SIZE__;
-    overlaySizes[4] = (unsigned)_OVERLAY1_SIZE__;
-    overlaySizes[5] = (unsigned)_OVERLAY1_SIZE__;
-    overlaySizes[6] = (unsigned)_OVERLAY1_SIZE__;
-    for (i = 0; i < 7; ++i) {
+    for (i = 0; i < 2; ++i) {
         overlayBlocks[i] = overlaySizes[i]/BLOCK_LEN + (overlaySizes[i] % BLOCK_LEN ? 1 : 0);
     }
 
@@ -335,7 +292,7 @@ static void setupOverlays(void)
         }
     }
 
-    for (i = 0; i < 7; ++i) {
+    for (i = 0; i < 2; ++i) {
         setupOverlayName(name, i);
         loadOverlayFromFile(name, overlaySizes[i], _OVERLAY1_LOAD__, overlayCaches[i]);
     }
@@ -355,8 +312,6 @@ void main()
     printlnz(formatInt16(_heapmemavail()));
     return;
 #endif
-
-    setIntBuf(intBuffer);
 
     initBlockStorage();
     initCommon();

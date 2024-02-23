@@ -1,22 +1,18 @@
 SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
-LIBCOMMONDIR := ../common
 
-PROGRAM := system
+PROGRAM := loadprog
 CC65TARGET = c64
 
-BINTARGETDIR := $(BINDIR)/$(TARGET)
-PRGFILE := $(BINTARGETDIR)/$(PROGRAM)
-OBJTARGETDIR := $(OBJDIR)/$(TARGET)
+BINTARGETDIR = $(BINDIR)/$(TARGET)
+OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 
-c64_CFLAGS =
-c128_CFLAGS =
-mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
+PRGFILE := $(BINTARGETDIR)/$(PROGRAM)
+
+ASFLAGS = -I ../../asminc
 ifeq ($(TARGET),mega65)
 ASFLAGS = -I ../../asminc -D __MEGA65__
-else
-ASFLAGS = -I ../../asminc
 endif
 LDFLAGS =
 
@@ -46,11 +42,11 @@ vpath %.s $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(PRGFILE): $(OBJECTS)
+$(PRGFILE): $(OBJECTS) $(BINTARGETDIR)
 	ld65 $(LDFLAGS) -o $(PRGFILE) -C $(CONFIG) $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS)
-	$(RM) $(PRGFILE)
+	$(RM) $(PROGRAM)
 	$(RM) $(BINTARGETDIR)/*

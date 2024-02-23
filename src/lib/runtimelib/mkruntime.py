@@ -12,6 +12,10 @@
 
 import sys
 
+if len(sys.argv) < 2:
+    print("Usage: ", sys.argv[0], "<target>")
+    sys.exit(0)
+
 libs = []
 file = open("mkruntime.cfg", "r")
 while True:
@@ -21,10 +25,10 @@ while True:
     libs.append(content.strip())
 file.close()
 
-runtimefh = open("bin/runtime.lib", "wb")
+runtimefh = open("bin/" + sys.argv[1] + "/runtime.lib", "wb")
 
 for lib in libs:
-    libfh = open("lib/" + lib + ".lib", "rb")
+    libfh = open("lib/" + sys.argv[1] + "/" + lib + ".lib", "rb")
     data = list(libfh.read())
     libfh.close()
     runtimefh.write(bytearray([len(data) % 256, len(data) // 256]))

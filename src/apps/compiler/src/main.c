@@ -12,6 +12,7 @@
 #include <codegen.h>
 #include <int16.h>
 #include <membuf.h>
+#include <codegen.h>
 
 #include <string.h>
 #include <libcommon.h>
@@ -20,19 +21,20 @@
 #include <doscmd.h>
 #endif
 
+#define AUTORUN "autorun"
 #define AUTOSRC "autosrc"
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
 static void checkSrcFn(const char *str);
 static void readAutoSrc(void);
+static void relaunchIde(void);
 
+char isAutoRun;     // non-zero to run program after compiling
 char srcFn[16 + 1]; // source filename
 char intBuf[15];
 
 static char errors;
-
-void runPrg(void) {}
 
 static void checkSrcFn(const char *str)
 {
@@ -47,19 +49,33 @@ static void checkSrcFn(const char *str)
 
 static void readAutoSrc(void)
 {
+    FILE *fp;
     char *p, buffer[50];
 
-    FILE *fp = fopen(AUTOSRC, "r");
+    fp = fopen(AUTORUN, "r");
     if (fp == NULL) {
-        return;
+        fp = fopen(AUTOSRC, "r");
+        if (fp == NULL) {
+            return;
+        }
+    } else {
+        isAutoRun = 1;
     }
 
     fgets(buffer, sizeof(buffer), fp);
     fclose(fp);
 #ifdef __MEGA65__
-    removeFile(AUTOSRC);
+    if (isAutoRun) {
+        removeFile(AUTORUN);
+    } else {
+        removeFile(AUTOSRC);
+    }
 #else
-    remove(AUTOSRC);
+    if (isAutoRun) {
+        remove(AUTORUN);
+    } else {
+        remove(AUTOSRC);
+    }
 #endif
 
     p = buffer + strlen(buffer) - 1;
@@ -68,6 +84,21 @@ static void readAutoSrc(void)
     }
 
     checkSrcFn(buffer);
+}
+
+void loadproghelper(const char *prg);
+
+static void relaunchIde(void)
+{
+    FILE *fp = fopen("zzstate", "r");
+
+    if (fp == NULL) {
+        return;
+    }
+    fclose(fp);
+
+    loadfile("loadprog");
+    loadproghelper("pascal65");
 }
 
 static void tokenizeAndParseUnits(void)
@@ -209,7 +240,7 @@ void main(int argc, char *argv[])
 
     printlnz("Loading linker overlay");
     if (loadfile("compiler.6")) {
-        linkerPostWrite(srcFn, 0);
+        linkerPostWrite(srcFn, isAutoRun);
     }
 
     decl_free(astRoot);
@@ -217,6 +248,8 @@ void main(int argc, char *argv[])
     freeCommon();
 
     log("main", "back to main code");
+
+    relaunchIde();
 }
 
 unsigned char loadfile(const char *name)

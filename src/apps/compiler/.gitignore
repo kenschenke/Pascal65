@@ -1,8 +1,8 @@
 bin/*
 obj/*
-*.petscii
 runtime
 runtime.lib
 system.lib
 debug.lib
+loadide
 *.map
