@@ -79,7 +79,7 @@
 
 // Zero page addresses
 
-#define ZP_BASE         0x02
+#define ZP_BASE         0x04
 
 #define ZP_SPL			(ZP_BASE + 0)
 #define ZP_SPH			(ZP_BASE + 1)
