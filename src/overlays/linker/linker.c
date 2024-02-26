@@ -89,7 +89,7 @@ static void writeChainCall(char* name);
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
-	LDA_X_INDEXED_ZP, 0x02,
+	LDA_X_INDEXED_ZP, 0x04,
 	STA_ABSOLUTEX, 0, 0,  // PRG_HEADER_CODE_OFFSET_1
 	INX,
 	CPX_IMMEDIATE, 0x5d,
@@ -282,7 +282,7 @@ static unsigned char prgCleanup[] = {
 	// Copy the backup of page zero back
 	LDX_IMMEDIATE, 0,
 	LDA_ABSOLUTEX, 0, 0,
-	STA_X_INDEXED_ZP, 0x02,
+	STA_X_INDEXED_ZP, 0x04,
 	INX,
 	CPX_IMMEDIATE, 0x62,
 	BNE, 0xf6,
