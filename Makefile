@@ -11,14 +11,19 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 BINTARGETDIR := $(BINDIR)/$(TARGET)
 D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 
+RUNTIME = src/lib/runtime/bin/$(TARGET)/runtime
+RUNTIMELIB = src/lib/runtimelib/bin/$(TARGET)/runtime.lib
+SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
+LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
+
 BINFILES := $(wildcard src/apps/ide/bin/$(TARGET)/pascal65*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
-BINFILES += src/lib/system/bin/$(TARGET)/system
-BINFILES += src/lib/loadprog/bin/$(TARGET)/loadprog
+BINFILES += $(SYSTEMLIB)
+BINFILES += $(LOADPROG)
 
 TXTFILES := runtime.petscii help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii
 
-all: runtime runtimelib ide compiler system $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) $(RUNTIMELIB) ide compiler $(SYSTEMLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -26,10 +31,10 @@ help.petscii: src/shared/help.txt
 title.petscii: src/shared/title.txt
 	dos2unix < src/shared/title.txt | petcat -w2 -text -o title.petscii
 
-runtime: src/lib/runtime/bin/$(TARGET)/runtime
+$(RUNTIME):
 	cd src/lib/runtime && $(MAKE) TARGET=$(TARGET)
 
-runtimelib: src/lib/runtimelib/bin/$(TARGET)/runtime.lib
+$(RUNTIMELIB):
 	cd src/lib/runtimelib && $(MAKE) TARGET=$(TARGET)
 
 runtime.petscii: src/shared/runtime.def
@@ -44,7 +49,7 @@ errormsgs.petscii: src/shared/errormsgs.txt
 runtimemsgs.petscii: src/shared/runtimemsgs.txt
 	dos2unix < src/shared/runtimemsgs.txt | petcat -w2 -text -o runtimemsgs.petscii
 
-loadprog: src/lib/loadprog/bin/$(TARGET)/loadprog
+$(LOADPROG):
 	cd src/lib/loadprog && $(MAKE) TARGET=$(TARGET)
 
 ide:
@@ -53,7 +58,7 @@ ide:
 compiler:
 	cd src/apps/compiler && $(MAKE) TARGET=$(TARGET)
 
-system: src/lib/system/bin/$(TARGET)/system
+$(SYSTEMLIB):
 	cd src/lib/system && $(MAKE) TARGET=$(TARGET)
 
 $(BINDIR):
@@ -93,7 +98,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 
 clean:
 	cd src/apps && $(MAKE) TARGET=$(TARGET) clean
+	cd src/lib && $(MAKE) TARGET=$(TARGET) clean
+	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
-run: runtime runtimelib ide compiler system $(BINTARGETDIR) $(D81FILE)
+run: $(RUNTIME) $(RUNTIMELIB) ide compiler $(SYSTEMLIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
