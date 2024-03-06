@@ -58,6 +58,8 @@ rightType: .res 1
     ldx rightType
     cpx #TYPE_BYTE
     beq @Int8
+    cpx #TYPE_CHARACTER
+    beq @Int8
     cpx #TYPE_SHORTINT
     beq @Int8
     cpx #TYPE_WORD
@@ -71,14 +73,13 @@ rightType: .res 1
     cpx #TYPE_REAL
     beq @Real
 
-@Int8:
-    jsr signExtend8To16
 @Int16:
     jsr rtPushFromIntOp1
     jmp rtStoreInt
 @Int32:
     jsr rtPushFromIntOp1And2
     jmp rtStoreInt32
+@Int8:
 @Bool:
     jsr rtPushFromIntOp1
     jmp rtStoreByte
