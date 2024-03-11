@@ -188,20 +188,12 @@ L1:
 
 ; This routine writes a character array to the console.
 ; Inputs
-;    A - variable nesting level
-;    X - variable offset on runtime stack
+;    A/X - pointer to array heap
 ;    Field width on runtime stack
 .proc writeCharArray
-    jsr rtCalcStackOffset
-    ldy #1
-    lda (ptr1),y        ; Look up the array heap address
-    sta ptr2 + 1
-    dey
-    lda (ptr1),y
     sta ptr2
+    stx ptr2 + 1
     ; Calculate the array length
-    lda ptr2
-    ldx ptr2 + 1
     jsr getArrayLength
     sta tmp1
     stx tmp2

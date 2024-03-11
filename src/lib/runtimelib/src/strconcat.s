@@ -51,16 +51,16 @@ type2: .res 1
 ;   c) A string object
 ;   d) An array of chars
 ;   e) A character
-; A new string is allocated and returned in A/X.
+; A new string is allocated and returned in A/X.  Any string object
+; passed in will be freed.
 ;   ptr1 - pointer to string variable's position on stack
 ;   srcPtr - pointer to source
 ;   ptr4 - pointer to destination
 ; Inputs:
-;   Pushed onto runtime stack in this order:
-;       1) Data type of first string (pusha)
-;       2) First string
-;       3) Data type of second string
-;   Second string in A/X
+;   A - data type of first string
+;   X - data type of second string
+;   ptr1 - first string
+;   ptr2 - second string
 
 .proc concatString
     sta type1
@@ -264,4 +264,3 @@ LP: ldy tmp1
     ldy tmp2
     rts
 .endproc
-

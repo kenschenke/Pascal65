@@ -9,7 +9,7 @@
 
 #include <string.h>
 
-static 	char name[CHUNK_LEN + 1], enterLabel[15], returnLabel[15];
+static 	char name[CHUNK_LEN + 1], enterLabel[15];
 
 static void genAbsCall(CHUNKNUM argChunk);
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
@@ -18,7 +18,7 @@ static void genOrdCall(CHUNKNUM argChunk);
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk);
-static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
+static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char *returnLabel);
 static void genRoutineCleanup(short *heapOffsets, int numHeap, struct type* pDeclType, int numLocals);
 static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType);
 static void genSqrCall(CHUNKNUM argChunk);
@@ -83,7 +83,9 @@ static void genAbsCall(CHUNKNUM argChunk)
 
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
 {
-	genRoutineCall(exprChunk, declChunk, pType, argChunk);
+	char returnLabel[15];
+
+	genRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel);
 
 	// Call the routine
 	strcpy(enterLabel, "RTN");
@@ -110,8 +112,9 @@ static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, str
 	struct type paramType;
 	short heapOffsets[MAX_LOCAL_HEAPS];
 	int numHeap = 0, offset = -1;
+	char returnLabel[15];
 
-	genRoutineCall(exprChunk, declChunk, pType, argChunk);
+	genRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel);
 
 	// Call the routine
 	strcpy(enterLabel, "RTN");
@@ -284,8 +287,9 @@ static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
 	genThreeAddr(JSR, RT_PUSHFROMINTOP1);
 }
 
-static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
+static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char *returnLabel)
 {
+	char stringObjHeaps = 0;
 	CHUNKNUM paramChunk = pType->paramsFields;
 	struct expr _expr;
 	struct decl _decl;
@@ -344,7 +348,11 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Convert the parameter into a string object
 			// Allocate a second heap and make a copy of the string
-			genExpr(_expr.left, 1, 1, 0);
+			genExpr(_expr.left, argType.kind == TYPE_ARRAY ? 0 : 1, 1, 0);
+			if (argType.kind == TYPE_STRING_OBJ) {
+				++stringObjHeaps;
+				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
+			}
 			genTwo(LDY_IMMEDIATE, argType.kind);
 			genRuntimeCall(rtConvertString);
 			genRuntimeCall(rtPushEax);
@@ -359,6 +367,15 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 
 		argChunk = _expr.right;
 		paramChunk = param.next;
+	}
+
+	// Free string objects passed as arguments
+	while (stringObjHeaps) {
+		genOne(PLA);
+		genOne(TAX);
+		genOne(PLA);
+		genThreeAddr(JSR, RT_HEAPFREE);
+		--stringObjHeaps;
 	}
 
 	// Activate the new stack frame
@@ -674,13 +691,13 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_ARRAY: {
 			struct type subtype;
 			struct expr leftExpr;
-			struct symbol node;
+			// struct symbol node;
 			retrieveChunk(_type.subtype, &subtype);
 			if (subtype.kind != TYPE_CHARACTER) {
 				break;  // can only write character arrays
 			}
 			retrieveChunk(arg.left, &leftExpr);
-			retrieveChunk(leftExpr.node, &node);
+			// retrieveChunk(leftExpr.node, &node);
 			if (arg.width) {
 				genExpr(arg.width, 1, 1, 0);
 			} else {
@@ -688,8 +705,10 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				genOne(TAX);
 			}
 			genRuntimeCall(rtPushAx);
-			genTwo(LDA_IMMEDIATE, node.level);
-			genTwo(LDX_IMMEDIATE, node.offset);
+			// If the argument is an array in an array, it needs to be
+			// resolved one layer deeper.
+			genExpr(arg.left,
+				leftExpr.kind == EXPR_NAME ? 1 : 0, 1, 0);
 			genRuntimeCall(rtWriteCharArray);
 			break;
 		}

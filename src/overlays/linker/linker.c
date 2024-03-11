@@ -20,6 +20,10 @@
 #include <device.h>
 #include <inputbuf.h>
 
+#ifdef __MEGA65__
+#include <memory.h>
+#endif
+
 #define RUNTIME_STACK_SIZE 2048
 
 #define BOOTSTRAP_CODE		"BOOTSTRAP_CODE"
@@ -532,6 +536,9 @@ static void genExeHeader(void)
 
 void linkerPreWrite(CHUNKNUM astRoot)
 {
+	int i;
+	unsigned char ch = 0xba;
+
 #ifdef __MEGA65__
 	codeBase = 0x2001;
 #elif defined(__C64__)
@@ -548,6 +555,13 @@ void linkerPreWrite(CHUNKNUM astRoot)
 
 	linkAddressLookup("INIT", codeOffset + 1, 0, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
+
+#ifdef __MEGA65__
+	// Dedicate 20 bytes for the Mega65 DMA command block
+	for (i = 0; i < sizeof(struct dmagic_dmalist); ++i) {
+		writeCodeBuf(&ch, 1);
+	}
+#endif
 
 	genRuntime();
 	loadLibraries(astRoot);

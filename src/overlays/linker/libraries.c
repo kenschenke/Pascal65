@@ -163,6 +163,7 @@ static void loadLibrary(const char* library, CHUNKNUM libRoot)
         if (buffer[0] >= page && buffer[0] <= page + pages) {
             short relocAddr = relocate(buffer[0], lastByte);
             buffer[0] = WORD_HIGH(relocAddr);
+            lastByte = WORD_LOW(relocAddr);
         }
         if (first) {
             first = 0;

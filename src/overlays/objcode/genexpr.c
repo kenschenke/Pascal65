@@ -55,8 +55,14 @@ static unsigned char exprField1[] = {
 	STX_ZEROPAGE, ZP_PTR1H,
 };
 
+// These instructions push A/X to the stack,
+// leaving both intact.  Y is destroyed.
 unsigned char exprFreeString1[] = {
-	TAY, PHA, TXA, PHA, TYA,
+	TAY,		// Preserve A
+	PHA,		// Push A
+	TXA,
+	PHA,		// Push X
+	TYA,		// Restore A
 };
 
 // isRead is non-zero when this expression appears on the right
@@ -83,24 +89,17 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 	switch (_expr.kind) {
 	case EXPR_ADD:
 		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
-			char stringConcats = 0;
 			getExprType(_expr.left, &leftType);
 			getExprType(_expr.right, &rightType);
 			genExpr(_expr.left, 1, 1, 0);
+			// Save first string
 			genOne(PHA);
 			genOne(TXA);
 			genOne(PHA);
-			if (isStringConcat(_expr.left)) {
-				++stringConcats;
-				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
-			}
 			genExpr(_expr.right, 1, 1, 0);
-			if (isStringConcat(_expr.right)) {
-				++stringConcats;
-				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
-			}
 			genTwo(STA_ZEROPAGE, ZP_PTR2L);
 			genTwo(STX_ZEROPAGE, ZP_PTR2H);
+			// Store first string in ptr1
 			genOne(PLA);
 			genTwo(STA_ZEROPAGE, ZP_PTR1H);
 			genOne(PLA);
@@ -110,19 +109,6 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genRuntimeCall(rtConcatString);
 			if (!noStack) {
 				genRuntimeCall(rtPushEax);
-			}
-			if (stringConcats) {
-				genTwo(STA_ZEROPAGE, ZP_FPBUF);
-				genTwo(STX_ZEROPAGE, ZP_FPBUF + 1);
-				while (stringConcats) {
-					genOne(PLA);
-					genOne(TAX);
-					genOne(PLA);
-					genThreeAddr(JSR, RT_HEAPFREE);
-					--stringConcats;
-				}
-				genTwo(LDA_ZEROPAGE, ZP_FPBUF);
-				genTwo(LDX_ZEROPAGE, ZP_FPBUF + 1);
 			}
 		} else {
 			genIntOrRealMath(&_expr, noStack);
@@ -136,6 +122,9 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 
 	case EXPR_CALL:
 		genSubroutineCall(chunkNum);
+		if (noStack) {
+			genThreeAddr(JSR, RT_POPEAX);
+		}
 		break;
 
 	case EXPR_DIVINT:
@@ -232,7 +221,8 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(LDA_ZEROPAGE, ZP_PTR1L);
 			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
 			genRuntimeCall(rtPushAx);
-			genExpr(_expr.right, 1, 1, 0);
+			genExpr(_expr.right, 1, 
+				isStringFunc(_expr.right) ? 0 : 1, 0);  // works for string func
 			if (isStringConcat(_expr.right) || isStringFunc(_expr.right)) {
 				// The right side is a string concatentation which leaves
 				// a string object on the stack.  Save the pointer so it can
