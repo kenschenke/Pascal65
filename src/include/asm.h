@@ -130,7 +130,7 @@
 // Runtime Jumptable locations
 
 #ifdef __MEGA65__
-#define RT_BASE					0x2014		// 0x2001 + 19 (exe header + jmp MAIN)
+#define RT_BASE					0x2028		// 0x2001 + 19 (exe header + jmp MAIN)
 #elif defined(__C64__)
 #define RT_BASE					0x810		// 0x801 + 15 (exe header + jmp MAIN)
 #else

@@ -35,7 +35,7 @@ fhString = $81                  ; Use string for IO
 ; Jump table for runtime routines assembled at a fixed address
 
 .ifdef __MEGA65__
-rt_base = $2014         ; 0x2001 + 19 (exe header + jmp MAIN)
+rt_base = $2028         ; 0x2001 + 19 + 20 (exe header + DMA command block + jmp MAIN)
 .else
 rt_base = $810          ; 0x801 + 15 (exe header + jmp MAIN)
 .endif
