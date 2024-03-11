@@ -41,3 +41,17 @@ nav:
     - Write: funcref/write.md
     - WriteLn: funcref/write.md
     - WriteStr: funcref/write.md
+  - Screen Library:
+    - ClearScreen: screen/clearscreen.md
+    - DrawChar: screen/drawchar.md
+    - DrawCharRaw: screen/drawcharraw.md
+    - DrawText: screen/drawtext.md
+    - DrawTextRaw: screen/drawtextraw.md
+    - GetScreenSize: screen/getscreensize.md
+    - SetBackgroundColor: screen/setbackgroundcolor.md
+    - SetBorderColor: screen/setbordercolor.md
+    - SetLowerCase: screen/setlowercase.md
+    - SetReverse: screen/setreverse.md
+    - SetScreenSize: screen/setscreensize.md
+    - SetTextColor: screen/settextcolor.md
+    - SetUpperCase: screen/setuppercase.md
