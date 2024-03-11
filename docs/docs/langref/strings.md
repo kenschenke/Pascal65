@@ -50,10 +50,10 @@ by the characters in the string.
 
 The runtime library has a few functions and procedures to handle strings.
 
-|Function                            |Description                             |
-|------------------------------------|----------------------------------------|
-|[Length](../funcref/length.md)      |Returns the string length               |
-|[LowerCase](../funcref/lowercase.md)|Returns a lower-case string             |
-|[StrOfChar](../funcref/strofchar.md)|Returns a string filled with a character|
-|[Trim](../funcref/trim.md)          |Removes leading and trailing spaces     |
-|[UpCase](../funcref/upcase.md)      |Returns a lower-case string             |
+|Function                               |Description                             |
+|---------------------------------------|----------------------------------------|
+|[Length](../funcref/length.md)         |Returns the string length               |
+|[LowerCase](../funcref/lowercase.md)   |Returns a lower-case string             |
+|[StringOfChar](../funcref/strofchar.md)|Returns a string filled with a character|
+|[Trim](../funcref/trim.md)             |Removes leading and trailing spaces     |
+|[UpCase](../funcref/upcase.md)         |Returns a lower-case string             |
