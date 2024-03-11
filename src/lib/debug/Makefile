@@ -2,9 +2,10 @@ SRCDIR := src
 OBJDIR := obj
 BINDIR := bin
 
-PROGRAM := debug
-PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := mega65
+PROGRAM := debug
+BINTARGETDIR := $(BINDIR)/$(TARGET)
+PRGFILE := $(BINTARGETDIR)/$(PROGRAM)
 CC65TARGET = c64
 
 c64_CFLAGS =
@@ -23,9 +24,12 @@ OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES))
 
 DEPENDS := $(OBJECTS:.o=.d)
 
-all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(PROGRAM)
+all: $(BINTARGETDIR) $(OBJDIR) $(PRGFILE)
 
 $(BINDIR):
+	mkdir -p $@
+
+$(BINTARGETDIR): $(BINDIR)
 	mkdir -p $@
 
 $(OBJDIR):
@@ -35,11 +39,11 @@ vpath %.s $(SRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(BINDIR)/$(PROGRAM): $(OBJECTS) debug.cfg
-	ld65 $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C debug.cfg $(OBJECTS)
+$(PRGFILE): $(OBJECTS) debug.cfg
+	ld65 $(LDFLAGS) -o $(PRGFILE) -C debug.cfg $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS)
 	$(RM) $(PROGRAM)
-	$(RM) $(BINDIR)/*
+	$(RM) $(BINTARGETDIR)/*
