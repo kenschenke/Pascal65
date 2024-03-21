@@ -46,60 +46,13 @@ L1:
     rts
 .endproc
 
-.ifdef __MEGA65__
-.proc _fixAlphaCase
-;     if (c >= 97 && c <= 122) c -= 32;
-;     else if (c >= 65 && c <= 90) c += 128;
-    cmp #96
-    bcc L1      ; branch if char <= 96
-    cmp #122
-    bcs L2      ; branch if char > 122
-    sec
-    sbc #32     ; subtract 32 from char
-    jmp L2
-L1:
-    cmp #64
-    bcc L2      ; branch if char <= 64
-    cmp #90
-    bcs L2      ; branch if char > 90
-    clc
-    adc #128    ; add 128 to char
-L2:
-    ldx #0
-    rts
-.endproc
-
-.proc getCharMega65
-L1:
-    ldx $d610
-    beq L1
-    lda #0
-    sta $d610
-    txa
-    rts
-.endproc
-
-.proc flushKeyBufMega65
-    lda #0
-L1:
-    ldx $d610
-    beq L2
-    sta $d610
-    bne L1
-L2:
-    rts
-.endproc
-.endif
-
 ; Read an input line from the keyboard into inputBuf.
 ; Non-zero is returned in A if the user presses RUN/STOP.
 ; inputBufUsed contains the number of characters read.
 ; inputBuf is not zero-terminated.
 .proc getlineNoEnter
     jsr clearBuf
-.ifdef __MEGA65__
-    jsr flushKeyBufMega65
-.endif
+    jsr rtClearKeyBuf
     ; turn the cursor on
 .ifdef __MEGA65__
     lda #CH_UNDERSCORE
@@ -114,12 +67,7 @@ L2:
 Loop:
     jsr STOP
     beq StopKey
-.ifdef __MEGA65__
-    jsr getCharMega65
-    jsr _fixAlphaCase
-.else
-    jsr GETIN
-.endif
+    jsr rtGetKey
     cmp #CH_ENTER
     beq EnterKey
     cmp #CH_DEL
@@ -197,9 +145,7 @@ EnterKey:
     lda #' '
     jsr CHROUT
 .endif
-.ifdef __MEGA65__
-    jsr flushKeyBufMega65
-.endif
+    jsr rtClearKeyBuf
     lda #0
     ldx tmp1
     stx inputBufUsed

@@ -182,6 +182,8 @@
 #define RT_RESETSTRBUFFER       (RT_BASE + 126)
 #define RT_GETSTRBUFFER         (RT_BASE + 129)
 #define RT_WRITESTRLITERAL      (RT_BASE + 132)
+#define RT_CLEARKEYBUF          (RT_BASE + 135)
+#define RT_GETKEY               (RT_BASE + 138)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
@@ -206,7 +208,7 @@ enum RuntimeRoutines {
     floatSqr, rtFloatEq, rtFloatGt, rtFloatGte, rtFloatLt, rtFloatLte, rtDummy89,
     decsp4, rtDummy91, rtDummy92, rtDummy93, rtDummy94,
     writeBool, writeChar, absInt8, invertInt8, isNegInt8, signExtend8To16,
-    signExtend8To32, swapInt8, addInt8, ltInt8, divInt8, exit, multInt8, subInt8,
+    signExtend8To32, swapInt8, addInt8, ltInt8, divInt8, rtExit, multInt8, subInt8,
     absInt16, swapInt16, isNegInt16, invertInt16, signExtend16To32, addInt16,
     eqInt16, leInt16, ltInt16, geInt16, gtInt16, divInt16, ltUint16, multUint16,
     multInt16, subInt16, rtDummy125, absInt32, invertInt32, isNegInt32,

@@ -6,7 +6,7 @@
 .import popToReal, readRealStack, readByteStack, pushByteStack
 .import storeByteStack, pushStackFrameHeader, returnFromRoutine
 .import popToIntOp1And2, popToIntOp32, readInt32Stack
-.import storeInt32Stack, pushFromIntOp1And2
+.import storeInt32Stack, pushFromIntOp1And2, getKey, clearKeyBuf
 
 .import runtimeError, runtimeErrorInit, popa, popax, popeax, incsp4
 
@@ -61,8 +61,8 @@ jmp setFh                ; BASE + 123
 jmp resetStringBuffer    ; BASE + 126
 jmp getStringBuffer      ; BASE + 129
 jmp writeStringLiteral   ; BASE + 132
-jmp $0000       ; BASE + 135
-jmp $0000       ; BASE + 138
+jmp clearKeyBuf          ; BASE + 135
+jmp getKey               ; BASE + 138
 jmp $0000       ; BASE + 141
 jmp $0000       ; BASE + 144
 jmp $0000       ; BASE + 147

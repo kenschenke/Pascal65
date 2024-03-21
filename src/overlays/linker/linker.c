@@ -89,7 +89,7 @@ static void writeChainCall(char* name);
 #define PRG_HEADER_CODE_OFFSET_10 80
 #define PRG_HEADER_CODE_EXIT_HANDLER_L 19
 #define PRG_HEADER_CODE_EXIT_HANDLER_H 23
-#define PRG_HEADER_LENGTH 104
+#define PRG_HEADER_LENGTH 107
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
@@ -171,6 +171,9 @@ static unsigned char prgHeader[] = {
 
 	// Initialize file i/o
 	JSR, WORD_LOW(RT_INITFILEIO), WORD_HIGH(RT_INITFILEIO),
+
+	// Clear the keyboard buffer
+	JSR, WORD_LOW(RT_CLEARKEYBUF), WORD_HIGH(RT_CLEARKEYBUF),
 };
 #elif defined(__C64__)
 #define PRG_HEADER_CODE_OFFSET_1 5
@@ -185,7 +188,7 @@ static unsigned char prgHeader[] = {
 #define PRG_HEADER_CODE_OFFSET_14 16
 #define PRG_HEADER_CODE_EXIT_HANDLER_L 19
 #define PRG_HEADER_CODE_EXIT_HANDLER_H 23
-#define PRG_HEADER_LENGTH 104
+#define PRG_HEADER_LENGTH 107
 static unsigned char prgHeader[] = {
 	// Make a backup copy of page zero
 	LDX_IMMEDIATE, 0,
@@ -267,6 +270,9 @@ static unsigned char prgHeader[] = {
 
 	// Initialize file i/o
 	JSR, WORD_LOW(RT_INITFILEIO), WORD_HIGH(RT_INITFILEIO),
+
+	// Clear the keyboard buffer
+	JSR, WORD_LOW(RT_CLEARKEYBUF), WORD_HIGH(RT_CLEARKEYBUF),
 };
 #else
 #error Program header and footer not defined for this platform

@@ -25,6 +25,7 @@ SOURCES += $(SRCDIR)/clearinputbuf.s
 SOURCES += $(SRCDIR)/decsp4.s
 SOURCES += $(SRCDIR)/exit.s
 SOURCES += $(SRCDIR)/fileio.s
+SOURCES += $(SRCDIR)/getkey.s
 SOURCES += $(SRCDIR)/incsp4.s
 SOURCES += $(SRCDIR)/int8.s
 SOURCES += $(SRCDIR)/int16.s
