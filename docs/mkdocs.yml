@@ -26,6 +26,7 @@ nav:
   - Function Reference:
     - Abs: funcref/abs.md
     - Chr: funcref/chr.md
+    - CompareStr: funcref/comparestr.md
     - GetKey : funcref/getkey.md
     - Length: funcref/length.md
     - LowerCase: funcref/lowercase.md

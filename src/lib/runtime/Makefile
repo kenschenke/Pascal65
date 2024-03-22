@@ -45,6 +45,7 @@ SOURCES += $(SRCDIR)/pusheax.s
 SOURCES += $(SRCDIR)/rterror.s
 SOURCES += $(SRCDIR)/rtstack.s
 SOURCES += $(SRCDIR)/strcase.s
+SOURCES += $(SRCDIR)/strcompare.s
 SOURCES += $(SRCDIR)/tenstable.s
 SOURCES += $(SRCDIR)/trim.s
 SOURCES += $(SRCDIR)/uint32comp.s

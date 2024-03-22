@@ -21,7 +21,7 @@ Val
 *)
 
 Function Chr(Num : Integer) : Char;
-// Function CompareStr(s1, s2 : String) : ShortInt;
+Function CompareStr(s1, s2 : String) : ShortInt;
 Function GetKey : Char;
 Function GetKeyNoWait : Char;
 Function Odd(Num : LongInt) : Boolean;

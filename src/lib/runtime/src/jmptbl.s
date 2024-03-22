@@ -13,6 +13,7 @@
 .import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
 .import writeValue, leftpad, printz, strCase, trim, initFileIo, setFh
 .import resetStringBuffer, getStringBuffer, writeStringLiteral
+.import strCompare
 
 .segment "JMPTBL"
 
@@ -63,7 +64,7 @@ jmp getStringBuffer      ; BASE + 129
 jmp writeStringLiteral   ; BASE + 132
 jmp clearKeyBuf          ; BASE + 135
 jmp getKey               ; BASE + 138
-jmp $0000       ; BASE + 141
+jmp strCompare           ; BASE + 141
 jmp $0000       ; BASE + 144
 jmp $0000       ; BASE + 147
 jmp $0000       ; BASE + 150

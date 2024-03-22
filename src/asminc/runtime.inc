@@ -62,4 +62,5 @@ rtTrim                  = rt_base + 117
 rtSetFh                 = rt_base + 123
 rtClearKeyBuf           = rt_base + 135
 rtGetKey                = rt_base + 138
+rtStrCompare            = rt_base + 141
 

@@ -184,6 +184,7 @@
 #define RT_WRITESTRLITERAL      (RT_BASE + 132)
 #define RT_CLEARKEYBUF          (RT_BASE + 135)
 #define RT_GETKEY               (RT_BASE + 138)
+#define RT_STRCOMPARE           (RT_BASE + 141)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

@@ -23,6 +23,7 @@ static char *testFiles[] = {
     "ifthen",
     "loops",
     "stdroutines",
+    "strroutines",
     "recarray",
     "scopetest",
     "vartest",
