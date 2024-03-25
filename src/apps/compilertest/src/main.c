@@ -24,6 +24,7 @@ static char *testFiles[] = {
     "loops",
     "stdroutines",
     "strroutines",
+    "strtests",
     "recarray",
     "scopetest",
     "vartest",

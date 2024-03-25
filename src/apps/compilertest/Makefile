@@ -87,7 +87,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECK
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii 
+TXTFILES := runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii 
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -231,6 +231,9 @@ stdroutines.petscii: stdroutines.pas
 strroutines.petscii: strroutines.pas
 	dos2unix < strroutines.pas | petcat -w2 -text -o strroutines.petscii
 
+strtests.petscii: strtests.pas
+	dos2unix < strtests.pas | petcat -w2 -text -o strtests.petscii
+
 recarray.petscii: recarray.pas
 	dos2unix < recarray.pas | petcat -w2 -text -o recarray.petscii
 
@@ -289,6 +292,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write add.petscii add.pas,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
+	-write strtests.petscii strtests.pas,seq \
 	-write ifthen.petscii ifthen.pas,seq \
 	-write loops.petscii loops.pas,seq \
 	-write recarray.petscii recarray.pas,seq \
@@ -322,6 +326,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
+	-write strtests.petscii strtests.pas,seq \
 	-write ifthen.petscii ifthen.pas,seq \
 	-write loops.petscii loops.pas,seq \
 	-write recarray.petscii recarray.pas,seq \
