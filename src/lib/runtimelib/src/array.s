@@ -33,7 +33,6 @@ convertType: jmp $0000
 subInt16: jmp $0000
 addInt16: jmp $0000
 multInt16: jmp $0000
-pushax: jmp $0000
 skipSpaces: jmp $0000
 
 ; end of imports

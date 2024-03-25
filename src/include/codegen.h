@@ -104,8 +104,6 @@ void genRuntimeCall(unsigned char routine);
 void genStringValueAX(CHUNKNUM chunkNum);
 void genSubroutineCall(CHUNKNUM chunkNum);
 void genStmts(CHUNKNUM chunkNum);
-void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar,
-	int numElements, CHUNKNUM arrayNum);
 void genRecordInit(struct type* pType);
 int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets);
 int getArrayLimit(CHUNKNUM chunkNum);

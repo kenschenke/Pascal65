@@ -26,7 +26,6 @@
 <84 <85 <86 <87 <88 >76 # floatcomp.s
 <149 <170 # popax.s
 <90 # decsp4.s
-<34 <172 # pushax.s
 <36 >90 # pusheax.s
 <20 # leftpad.s
 <97 <98 <99 <100 <101 <102 # int8.s
@@ -76,7 +75,7 @@
 <166 >127 # readint32.s
 <46 >166 >165 # readintfrominput.s
 <43 >79 >165 # readfloatfrominput.s
-<3 <19 <58 <42 >117 >119 >159 >124 >114 >123 >34 >165 # array.s
+<3 <19 <58 <42 >117 >119 >159 >124 >114 >123 >165 # array.s
 <4 # record.s
 <21 # memcopy.s
 <175 # string.s

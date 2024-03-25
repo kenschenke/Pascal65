@@ -207,9 +207,6 @@ $(OBJTARGETDIR)/popax.o: $(SRCDIR)/popax.s $(CFGDIR)/popax.cfg $(OBJTARGETDIR)
 $(OBJTARGETDIR)/pred.o: $(SRCDIR)/pred.s $(CFGDIR)/pred.cfg $(OBJTARGETDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(OBJTARGETDIR)/pushax.o: $(SRCDIR)/pushax.s $(CFGDIR)/pushax.cfg $(OBJTARGETDIR)
-	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
-
 $(OBJTARGETDIR)/pusheax.o: $(SRCDIR)/pusheax.s $(CFGDIR)/pusheax.cfg $(OBJTARGETDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
@@ -434,9 +431,6 @@ $(LIBTARGETDIR)/popax.lib: $(OBJTARGETDIR)/popax.o
 
 $(LIBTARGETDIR)/pred.lib: $(OBJTARGETDIR)/pred.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/pred.cfg $<
-
-$(LIBTARGETDIR)/pushax.lib: $(OBJTARGETDIR)/pushax.o
-	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/pushax.cfg $<
 
 $(LIBTARGETDIR)/pusheax.lib: $(OBJTARGETDIR)/pusheax.o
 	ld65 $(LDFLAGS) -o $@ -C $(CFGDIR)/pusheax.cfg $<

@@ -185,6 +185,7 @@
 #define RT_CLEARKEYBUF          (RT_BASE + 135)
 #define RT_GETKEY               (RT_BASE + 138)
 #define RT_STRCOMPARE           (RT_BASE + 141)
+#define RT_PUSHAX               (RT_BASE + 144)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
@@ -195,7 +196,7 @@ enum RuntimeRoutines {
     rtFloatToInt16, rtFpOut, rtGetFpBuf, rtDummy15, rtDummy16, rtDummy17,
     rtDummy18, rtInitArrayHeap, rtDummy20, rtMemCopy, rtMod, rtMultiply,
     rtNegate, rtDummy25, rtDummy26, rtDummy27, rtDummy28, rtPrecRd,
-    rtPred, rtDummy31, rtPrintlnz, rtDummy33, rtPushAx, rtDummy35,
+    rtPred, rtDummy31, rtPrintlnz, rtDummy33, rtDummy34, rtDummy35,
     rtPushEax, rtDummy37, rtDummy38, rtDummy39, rtDummy40,
     rtDummy41, rtReadCharArrayFromInput, rtReadFloatFromInput, rtDummy44,
     rtDummy45, rtReadIntFromInput, rtDummy47, rtDummy48,

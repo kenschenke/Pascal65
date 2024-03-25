@@ -8,7 +8,7 @@
 .import popToIntOp1And2, popToIntOp32, readInt32Stack
 .import storeInt32Stack, pushFromIntOp1And2, getKey, clearKeyBuf
 
-.import runtimeError, runtimeErrorInit, popa, popax, popeax, incsp4
+.import runtimeError, runtimeErrorInit, popa, popax, popeax, incsp4, pushax
 
 .import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
 .import writeValue, leftpad, printz, strCase, trim, initFileIo, setFh
@@ -65,7 +65,7 @@ jmp writeStringLiteral   ; BASE + 132
 jmp clearKeyBuf          ; BASE + 135
 jmp getKey               ; BASE + 138
 jmp strCompare           ; BASE + 141
-jmp $0000       ; BASE + 144
+jmp pushax               ; BASE + 144
 jmp $0000       ; BASE + 147
 jmp $0000       ; BASE + 150
 jmp $0000       ; BASE + 153

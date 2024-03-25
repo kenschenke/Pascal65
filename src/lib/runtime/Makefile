@@ -41,6 +41,7 @@ SOURCES += $(SRCDIR)/memheap.s
 SOURCES += $(SRCDIR)/popax.s
 SOURCES += $(SRCDIR)/popeax.s
 SOURCES += $(SRCDIR)/printz.s
+SOURCES += $(SRCDIR)/pushax.s
 SOURCES += $(SRCDIR)/pusheax.s
 SOURCES += $(SRCDIR)/rterror.s
 SOURCES += $(SRCDIR)/rtstack.s

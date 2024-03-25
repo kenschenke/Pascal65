@@ -63,4 +63,5 @@ rtSetFh                 = rt_base + 123
 rtClearKeyBuf           = rt_base + 135
 rtGetKey                = rt_base + 138
 rtStrCompare            = rt_base + 141
+rtPushAx                = rt_base + 144
 

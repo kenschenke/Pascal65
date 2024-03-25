@@ -348,7 +348,7 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Convert the parameter into a string object
 			// Allocate a second heap and make a copy of the string
-			genExpr(_expr.left, argType.kind == TYPE_ARRAY ? 0 : 1, 1, 0);
+			genExpr(_expr.left, argType.kind == TYPE_ARRAY ? 1 : 1, 1, 0);
 			if (argType.kind == TYPE_STRING_OBJ) {
 				++stringObjHeaps;
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
@@ -704,7 +704,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				genTwo(LDA_IMMEDIATE, 0);
 				genOne(TAX);
 			}
-			genRuntimeCall(rtPushAx);
+			genThreeAddr(JSR, RT_PUSHAX);
 			// If the argument is an array in an array, it needs to be
 			// resolved one layer deeper.
 			genExpr(arg.left,
@@ -724,5 +724,6 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	if (rc == rcWriteStr) {
 		genThreeAddr(JSR, RT_GETSTRBUFFER);
+		genRuntimeCall(rtPushEax);
 	}
 }

@@ -42,12 +42,11 @@ static unsigned char nameIsByRef[] = {
 
 #define EXPR_FIELD_OFFSETL 1
 #define EXPR_FIELD_OFFSETH 3
-#define EXPR_FIELD_PUSHAX 5
 #define EXPR_FIELD_OFFSET_RECORD 12
 static unsigned char exprField1[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
 	LDA_ZEROPAGE, ZP_PTR1L,
 	LDX_ZEROPAGE, ZP_PTR1H,
 	JSR, 0, 0,
@@ -216,11 +215,11 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			// Address to variable's storage on stack in left in ptr1
 			char isRightStringObj = 0;
 			genTwo(LDA_IMMEDIATE, rightType.kind);
-			genRuntimeCall(rtPushAx);
+			genThreeAddr(JSR, RT_PUSHAX);
 			genExpr(_expr.left, 0, 1, 0);
 			genTwo(LDA_ZEROPAGE, ZP_PTR1L);
 			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
-			genRuntimeCall(rtPushAx);
+			genThreeAddr(JSR, RT_PUSHAX);
 			genExpr(_expr.right, 1, 
 				isStringFunc(_expr.right) ? 0 : 1, 0);  // works for string func
 			if (isStringConcat(_expr.right) || isStringFunc(_expr.right)) {
@@ -409,7 +408,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			genTwo(LDA_ZEROPAGE, ZP_PTR1H);
 			genOne(PHA);
 			genExpr(_expr.right, 1, 1, 1);
-			genRuntimeCall(rtPushAx);
+			genThreeAddr(JSR, RT_PUSHAX);
 			genOne(PLA);
 			genOne(TAX);
 			genOne(PLA);
@@ -417,7 +416,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		else {
 			// Look up the array index
 			genExpr(_expr.right, 1, 1, 1);
-			genRuntimeCall(rtPushAx);
+			genThreeAddr(JSR, RT_PUSHAX);
 			// Put the address of the array variable into ptr1
 			genExpr(_expr.left, 0, 1, 0);
 			genTwo(LDY_IMMEDIATE, 1);
@@ -483,7 +482,6 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			// Look up the record index
 			if (sym.offset) {
 				setRuntimeRef(rtCalcRecord, codeOffset + EXPR_FIELD_OFFSET_RECORD);
-				setRuntimeRef(rtPushAx, codeOffset + EXPR_FIELD_PUSHAX);
 				exprField1[EXPR_FIELD_OFFSETL] = WORD_LOW(sym.offset);
 				exprField1[EXPR_FIELD_OFFSETH] = WORD_HIGH(sym.offset);
 				writeCodeBuf(exprField1, 18);
@@ -494,7 +492,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 			if (sym.offset) {
 				genTwo(LDA_IMMEDIATE, WORD_LOW(sym.offset));
 				genTwo(LDX_IMMEDIATE, WORD_HIGH(sym.offset));
-				genRuntimeCall(rtPushAx);
+				genThreeAddr(JSR, RT_PUSHAX);
 			}
 			genExpr(_expr.left, 0, 1, 1);
 			genTwo(LDY_IMMEDIATE, 1);
