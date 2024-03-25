@@ -339,7 +339,7 @@ L3:
     lda ptr1 + 1
     sbc #0
     sta ptr1 + 1
-    beq L1
+    jmp L1
 L4:
     ; Found the last entry.  Work backwards setting entries to zero until
     ; (1) We're at the first entry.
@@ -372,7 +372,7 @@ L6:
     lda ptr1 + 1
     adc #0
     sta ptr1 + 1
-    beq L4
+    jmp L4
 L9:
     rts
 .endproc
