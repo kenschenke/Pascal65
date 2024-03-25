@@ -881,7 +881,8 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_BYTE_LITERAL:
-		pType->kind = _expr.neg ? TYPE_SHORTINT : TYPE_BYTE;
+		// pType->kind = _expr.neg ? TYPE_SHORTINT : TYPE_BYTE;
+		pType->kind = (!_expr.neg && _expr.value.byte > SCHAR_MAX) ? TYPE_BYTE : TYPE_SHORTINT;
 		pType->flags = TYPE_FLAG_ISCONST;
 		if (_expr.neg && _expr.value.byte > SCHAR_MAX) {
 			pType->kind = TYPE_INTEGER;
