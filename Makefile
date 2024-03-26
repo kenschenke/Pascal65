@@ -13,20 +13,45 @@ D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 
 RUNTIME = src/lib/runtime/bin/$(TARGET)/runtime
 RUNTIMELIB = src/lib/runtimelib/bin/$(TARGET)/runtime.lib
+SCREENLIB = src/lib/screen/bin/$(TARGET)/screen
 SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
+DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 
 BINFILES := $(wildcard src/apps/ide/bin/$(TARGET)/pascal65*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
+BINFILES += $(SCREENLIB)
 BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
+BINFILES += $(DEBUGLIB)
 
-TXTFILES := runtime.petscii help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii
+TXTFILES := runtime.petscii help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii autosrc.petscii hello.petscii debug.petscii fivedice.petscii
 
-all: $(RUNTIME) $(RUNTIMELIB) ide compiler $(SYSTEMLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) $(RUNTIMELIB) ide compiler $(SCREENLIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
+
+screen.petscii: src/lib/screen/screen.pas
+	dos2unix < src/lib/screen/screen.pas | petcat -w2 -text -o screen.petscii
+
+autosrc.petscii: autosrc.txt
+	dos2unix < autosrc.txt | petcat -w2 -text -o autosrc.petscii
+
+screendemo.petscii: examples/screendemo.pas
+	dos2unix < examples/screendemo.pas | petcat -w2 -text -o screendemo.petscii
+
+fivedice.petscii: examples/fivedice.pas
+	dos2unix < examples/fivedice.pas | petcat -w2 -text -o fivedice.petscii
+
+hello.petscii: hello.pas
+	dos2unix < hello.pas | petcat -w2 -text -o hello.petscii
+
+system.petscii: src/lib/system/system.pas
+	dos2unix < src/lib/system/system.pas | petcat -w2 -text -o system.petscii
+
+debug.petscii: src/lib/debug/debug.pas
+	dos2unix < src/lib/debug/debug.pas | petcat -w2 -text -o debug.petscii
 
 title.petscii: src/shared/title.txt
 	dos2unix < src/shared/title.txt | petcat -w2 -text -o title.petscii
@@ -58,8 +83,14 @@ ide:
 compiler:
 	cd src/apps/compiler && $(MAKE) TARGET=$(TARGET)
 
+$(SCREENLIB):
+	cd src/lib/screen && $(MAKE) TARGET=$(TARGET)
+
 $(SYSTEMLIB):
 	cd src/lib/system && $(MAKE) TARGET=$(TARGET)
+
+$(DEBUGLIB):
+	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
 
 $(BINDIR):
 	mkdir -p $@
@@ -85,8 +116,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/apps/compiler/bin/$(TARGET)/compiler.6 compiler.6,prg \
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/runtimelib/bin/$(TARGET)/runtime.lib runtime.lib,prg \
-	-write src/lib/system/system.pas system.pas,seq \
+	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
 	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \
+	-write src/lib/debug/bin/$(TARGET)/debug debug.lib,prg \
 	$(DRVWRITE) \
 	-write runtime.petscii runtime.def,seq \
 	-write abortmsgs.petscii abortmsgs,seq \
@@ -94,6 +126,13 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write src/lib/loadprog/bin/$(TARGET)/loadprog loadprog,prg \
 	-write help.petscii help.txt,seq \
+	-write screen.petscii screen.pas,seq \
+	-write screendemo.petscii screendemo.pas,seq \
+	-write fivedice.petscii fivedice.pas,seq \
+	-write hello.petscii hello.pas,seq \
+	-write autosrc.petscii autosrc,seq \
+	-write system.petscii system.pas,seq \
+	-write debug.petscii debug.pas,seq \
 	-write title.petscii title.txt,seq \
 
 clean:
@@ -102,5 +141,5 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
-run: $(RUNTIME) $(RUNTIMELIB) ide compiler $(SYSTEMLIB) $(BINTARGETDIR) $(D81FILE)
+run: $(RUNTIME) $(RUNTIMELIB) ide compiler $(SYSTEMLIB) $(SCREENLIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
