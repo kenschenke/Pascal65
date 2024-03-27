@@ -304,7 +304,6 @@ static unsigned char prgCleanup[] = {
 #define CHAIN_CODE_CALLL 8
 #define CHAIN_CODE_CALLH 12
 #define CHAIN_CODE_STRLEN 24
-#define CHAIN_CODE_MEMCOPY 28
 #ifdef __MEGA65__
 static unsigned char chainCode[] = {
 	LDA_IMMEDIATE, 0,
@@ -321,7 +320,7 @@ static unsigned char chainCode[] = {
 	STA_ZEROPAGE, ZP_PTR1H,
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_MEMCOPY), WORD_HIGH(RT_MEMCOPY),
 	JMP, 0, 0x7a,
 };
 #elif defined (__C64__)
@@ -612,7 +611,6 @@ void linkerPostWrite(const char* filename, char run)
 		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGH, 0, LINKADDR_HIGH);
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, 0, LINKADDR_LOW);
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, 0, LINKADDR_HIGH);
-		setRuntimeRef(rtMemCopy, codeOffset + CHAIN_CODE_MEMCOPY);
 		chainCode[CHAIN_CODE_STRLEN] = 28 + strlen(nextTest);
 		writeCodeBuf(chainCode, 33);
 		writeChainCall(nextTest);	// filename of the next test in the chain
@@ -636,8 +634,6 @@ void linkerPostWrite(const char* filename, char run)
 		genOne(RTS);
 	}
 #endif
-
-	linkerWriteRuntime();
 
 	dumpStringLiterals();
 

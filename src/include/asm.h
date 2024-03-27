@@ -186,22 +186,54 @@
 #define RT_GETKEY               (RT_BASE + 138)
 #define RT_STRCOMPARE           (RT_BASE + 141)
 #define RT_PUSHAX               (RT_BASE + 144)
+#define RT_ABS                  (RT_BASE + 147)
+#define RT_ADD                  (RT_BASE + 150)
+#define RT_ASSIGN               (RT_BASE + 153)
+#define RT_MULTIPLY             (RT_BASE + 156)
+#define RT_DIVIDE               (RT_BASE + 159)
+#define RT_DIVINT               (RT_BASE + 162)
+#define RT_COMP                 (RT_BASE + 165)
+#define RT_SUBTRACT             (RT_BASE + 168)
+#define RT_MOD                  (RT_BASE + 171)
+#define RT_SQR                  (RT_BASE + 174)
+#define RT_FLOATNEG             (RT_BASE + 177)
+#define RT_NEGATE               (RT_BASE + 180)
+#define RT_PRED                 (RT_BASE + 183)
+#define RT_SUCC                 (RT_BASE + 186)
+#define RT_PRECRD               (RT_BASE + 189)
+#define RT_CALCARRAYOFFSET      (RT_BASE + 192)
+#define RT_CALCRECORD           (RT_BASE + 195)
+#define RT_PUSHEAX              (RT_BASE + 198)
+#define RT_INITARRAYHEAP        (RT_BASE + 201)
+#define RT_WRITECHARARRAY       (RT_BASE + 204)
+#define RT_READCHARARRAYFROMINPUT (RT_BASE + 207)
+#define RT_FLOATTOINT16         (RT_BASE + 210)
+#define RT_FPOUT                (RT_BASE + 213)
+#define RT_MEMCOPY              (RT_BASE + 216)
+#define RT_READFLOATFROMINPUT   (RT_BASE + 219)
+#define RT_READINTFROMINPUT     (RT_BASE + 222)
+#define RT_STRTOFLOAT           (RT_BASE + 225)
+#define RT_CONCATSTRING         (RT_BASE + 228)
+#define RT_ASSIGNSTRING         (RT_BASE + 231)
+#define RT_CONVERTSTRING        (RT_BASE + 234)
+#define RT_READSTRINGFROMINPUT  (RT_BASE + 237)
+#define RT_STRINGSUBSCRIPTREAD  (RT_BASE + 240)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
 enum RuntimeRoutines {
     // These are used by the code generator for the executable
-    rtAbs, rtAdd, rtAssign, rtCalcArrayOffset, rtCalcRecord, rtDummy5,
-    rtClrInput, rtComp, rtDivide, rtDivInt, rtDummy10, rtFloatNeg,
-    rtFloatToInt16, rtFpOut, rtGetFpBuf, rtDummy15, rtDummy16, rtDummy17,
-    rtDummy18, rtInitArrayHeap, rtDummy20, rtMemCopy, rtMod, rtMultiply,
-    rtNegate, rtDummy25, rtDummy26, rtDummy27, rtDummy28, rtPrecRd,
-    rtPred, rtDummy31, rtPrintlnz, rtDummy33, rtDummy34, rtDummy35,
-    rtPushEax, rtDummy37, rtDummy38, rtDummy39, rtDummy40,
-    rtDummy41, rtReadCharArrayFromInput, rtReadFloatFromInput, rtDummy44,
-    rtDummy45, rtReadIntFromInput, rtDummy47, rtDummy48,
-    rtSqr, rtDummy50, rtDummy51, rtDummy52, rtDummy53, rtDummy54,
-    rtStrToFloat, rtSubtract, rtSucc, rtWriteCharArray, rtDummy59,
+    rtDummy0, rtDummy1, rtDummy2, rtDummy3, rtDummy4, rtDummy5,
+    rtDummy6, rtDummy7, rtDummy8, rtDummy9, rtDummy10, rtDummy11,
+    rtDummy12, rtDummy13, rtDummy14, rtDummy15, rtDummy16, rtDummy17,
+    rtDummy18, rtDummy19, rtDummy20, rtDummy21, rtDummy22, rtDummy23,
+    rtDummy24, rtDummy25, rtDummy26, rtDummy27, rtDummy28, rtDummy29,
+    rtDummy30, rtDummy31, rtDummy32, rtDummy33, rtDummy34, rtDummy35,
+    rtDummy36, rtDummy37, rtDummy38, rtDummy39, rtDummy40,
+    rtDummy41, rtDummy42, rtDummy43, rtDummy44,
+    rtDummy45, rtDummy46, rtDummy47, rtDummy48,
+    rtDummy49, rtDummy50, rtDummy51, rtDummy52, rtDummy53, rtDummy54,
+    rtDummy55, rtDummy56, rtDummy57, rtDummy58, rtDummy59,
 
     // These routines are used internally by the runtime routines
     rtDummy60, ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM,
@@ -220,8 +252,8 @@ enum RuntimeRoutines {
     subInt32, int32Sqr, prepOperands8, prepOperands16, prepOperands32,
     prepOperandsReal, readInt16, copyFPACCtoFPOP, swapFPACCandFPOP,
     convertType, getline, getlineNoEnter, rtDummy162, rtIsInputEndOfLine,
-    rtReadCharFromInput, skipSpaces, readInt32, assignString, writeString,
-    rtHeapReAlloc, rtPopA, rtConcatString, rtPushA, rtReadStringFromInput,
+    rtReadCharFromInput, skipSpaces, readInt32, rtDummy167, writeString,
+    rtHeapReAlloc, rtPopA, rtDummy171, rtPushA, rtDummy173,
     rtStringSubscriptRead, rtDuplicateString, rtStringSubscriptWrite,
     rtConvertString,  
 };

@@ -36,12 +36,11 @@ static unsigned char parentArrayInit1[] = {
 	LDX_IMMEDIATE, 0,
 	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
 };
-#define PARENT_ARRAY_INIT2_2 8  // InitArrayHeap
 static unsigned char parentArrayInit2[] = {
 	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
 	LDA_ZEROPAGE, ZP_PTR1L,
 	LDX_ZEROPAGE, ZP_PTR1H,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
 };
 #define PARENT_ARRAY_INIT3_BNE 3
 #define PARENT_ARRAY_INIT3_JMP 11
@@ -76,14 +75,13 @@ static unsigned char nonParentArrayInit2[] = {
 	LDX_IMMEDIATE, 0,
 	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
 };
-#define NON_PARENT_ARRAY_INIT3_2 7 // initArrayHeap
 static unsigned char nonParentArrayInit3[] = {
 	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
 	// heap address must be in A/X
 	PLA,
 	TAX,
 	PLA,
-	JSR, 0, 0,
+	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
 };
 
 #define ARRAY_RECORD_INIT1_ELEMENTSL 1
@@ -161,7 +159,6 @@ static void genArrayInit(struct type* pType, char isParentAnArray, char isParent
 		genThreeAddr(JSR, RT_PUSHAX);
 		// Array lower bound
 		genExpr(indexType.min, 0, 1, 0);
-		setRuntimeRef(rtInitArrayHeap, codeOffset + PARENT_ARRAY_INIT2_2);
 		writeCodeBuf(parentArrayInit2, 10);
 		// Advance ptr1 past array header
 		updateHeapOffset(heapOffset + 6);
@@ -217,7 +214,6 @@ static void genArrayInit(struct type* pType, char isParentAnArray, char isParent
 		genThreeAddr(JSR, RT_PUSHAX);
 		// Array lower bound
 		genExpr(indexType.min, 0, 1, 0);
-		setRuntimeRef(rtInitArrayHeap, codeOffset + NON_PARENT_ARRAY_INIT3_2);
 		writeCodeBuf(nonParentArrayInit3, 9);
 		// Advance ptr1 past array header
 		updateHeapOffset(heapOffset + 6);
@@ -348,7 +344,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 			case TYPE_LONGINT:
 			case TYPE_CARDINAL:
 				genIntValueEAX(_decl.value);
-				genRuntimeCall(rtPushEax);
+				genThreeAddr(JSR, RT_PUSHEAX);
 				break;
 
 			case TYPE_CHARACTER:

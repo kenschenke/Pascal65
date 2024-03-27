@@ -7,6 +7,8 @@
 
 .import exit
 
+.data
+
 runtimeMsgs:
 rteStackOverflowMsg: .asciiz "stack overflow"
 rteValueOutOfRangeMsg: .asciiz "value out of range"
@@ -17,6 +19,8 @@ rteInvalidUserInputMsg: .asciiz "invalid user input"
 rteUnimplementedRuntimeFeatureMsg: .asciiz "unimplemented runtime feature"
 rteOutOfMemoryMsg: .asciiz "out of memory"
 rteStringOverflowMsg: .asciiz "string overflow"
+
+.code
 
 ; Initialize the runtime error message table
 .proc runtimeErrorInit

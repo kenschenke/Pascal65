@@ -63,10 +63,10 @@ void genRealValueEAX(CHUNKNUM chunkNum)
 	// Pointer to the real string in A/X
 	genStringValueAX(_expr.value.stringChunkNum);
 	// Convert to float in FPACC
-	genRuntimeCall(rtStrToFloat);
+	genThreeAddr(JSR, RT_STRTOFLOAT);
 
 	if (_expr.neg) {
-		genRuntimeCall(rtFloatNeg);
+		genThreeAddr(JSR, RT_FLOATNEG);
 	}
 }
 

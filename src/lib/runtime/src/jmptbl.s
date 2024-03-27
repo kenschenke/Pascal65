@@ -13,7 +13,13 @@
 .import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
 .import writeValue, leftpad, printz, strCase, trim, initFileIo, setFh
 .import resetStringBuffer, getStringBuffer, writeStringLiteral
-.import strCompare
+.import strCompare, abs, add, assign, multiply, divide, divint, comp
+.import subtract, modulus, sqr, floatNeg, negate, pred, succ, PRECRD
+.import calcArrayOffset, calcRecordOffset, pusheax, initArrayHeap
+.import writeCharArray, readCharArrayFromInput, floatToInt16, FPOUT
+.import memcopy, readFloatFromInput, readIntFromInput, _strToFloat
+.import concatString, assignString, convertString, readStringFromInput
+.import stringSubscriptRead
 
 .segment "JMPTBL"
 
@@ -66,14 +72,35 @@ jmp clearKeyBuf          ; BASE + 135
 jmp getKey               ; BASE + 138
 jmp strCompare           ; BASE + 141
 jmp pushax               ; BASE + 144
-jmp $0000       ; BASE + 147
-jmp $0000       ; BASE + 150
-jmp $0000       ; BASE + 153
-jmp $0000       ; BASE + 156
-jmp $0000       ; BASE + 159
-jmp $0000       ; BASE + 162
-jmp $0000       ; BASE + 165
-jmp $0000       ; BASE + 168
-jmp $0000       ; BASE + 171
-jmp $0000       ; BASE + 174
-jmp $0000       ; BASE + 177
+jmp abs                  ; BASE + 147
+jmp add                  ; BASE + 150
+jmp assign               ; BASE + 153
+jmp multiply             ; BASE + 156
+jmp divide               ; BASE + 159
+jmp divint               ; BASE + 162
+jmp comp                 ; BASE + 165
+jmp subtract             ; BASE + 168
+jmp modulus              ; BASE + 171
+jmp sqr                  ; BASE + 174
+jmp floatNeg             ; BASE + 177
+jmp negate               ; BASE + 180
+jmp pred                 ; BASE + 183
+jmp succ                 ; BASE + 186
+jmp PRECRD               ; BASE + 189
+jmp calcArrayOffset      ; BASE + 192
+jmp calcRecordOffset     ; BASE + 195
+jmp pusheax              ; BASE + 198
+jmp initArrayHeap        ; BASE + 201
+jmp writeCharArray       ; BASE + 204
+jmp readCharArrayFromInput ; BASE + 207
+jmp floatToInt16         ; BASE + 210
+jmp FPOUT                ; BASE + 213
+jmp memcopy              ; BASE + 216
+jmp readFloatFromInput   ; BASE + 219
+jmp readIntFromInput     ; BASE + 222
+jmp _strToFloat          ; BASE + 225
+jmp concatString         ; BASE + 228
+jmp assignString         ; BASE + 231
+jmp convertString        ; BASE + 234
+jmp readStringFromInput  ; BASE + 237
+jmp stringSubscriptRead  ; BASE + 240

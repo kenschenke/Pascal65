@@ -64,7 +64,7 @@ static void genCaseStmt(struct stmt* pStmt)
 			genTwo(LDA_IMMEDIATE, exprType.kind);	// data type of case expression
 			genTwo(LDX_IMMEDIATE, labelType.kind);	// data type of case label
 			genTwo(LDY_IMMEDIATE, EXPR_EQ);			// perform equality operation
-			genRuntimeCall(rtComp);					// do the comparison
+			genThreeAddr(JSR, RT_COMP);				// do the comparison
 			genThreeAddr(JSR, RT_POPEAX);			// pop the results off the stack
 			genTwo(CMP_IMMEDIATE, 0);
 			genTwo(BEQ, 3);							// branch to next label if not equal
@@ -134,7 +134,7 @@ static void genForLoop(struct stmt* pStmt)
 	genTwo(LDA_IMMEDIATE, controlType.kind);
 	genTwo(LDX_IMMEDIATE, targetType.kind);
 	genTwo(LDY_IMMEDIATE, pStmt->isDownTo ? EXPR_LT : EXPR_GT);
-	genRuntimeCall(rtComp);
+	genThreeAddr(JSR, RT_COMP);
 	genThreeAddr(JSR, RT_POPEAX);
 	genTwo(CMP_IMMEDIATE, 0);
 	// If the target value has not been reached, jump to the body code
@@ -148,7 +148,7 @@ static void genForLoop(struct stmt* pStmt)
 	// Increment (or decrement) the control variable
 	genExpr(controlExpr, 1, 0, 0);
 	genTwo(LDA_IMMEDIATE, controlType.kind);
-	genRuntimeCall(pStmt->isDownTo ? rtPred : rtSucc);
+	genThreeAddr(JSR, pStmt->isDownTo ? RT_PRED : RT_SUCC);
 	genThreeAddr(JSR, controlType.size == 2 ? RT_STOREINTSTACK : RT_STOREINT32STACK);
 
 	// Jump back up and check the control variable for the next iteration
