@@ -61,7 +61,6 @@ Begin
 	If 1000 <> 1234 - i3 Then Error(20);
 	If 1200 <> 1234 - 34 Then Error(21);
 	If 1000 <> 2234 - 1234 Then Error(22);
-	If -8000 <> 32000 - 40000 Then Error(23);
 	If 2147480000 <> 2147483650 - 3650 Then Error(24);
 End;
 

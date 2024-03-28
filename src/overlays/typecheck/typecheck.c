@@ -21,25 +21,34 @@ static long intRanges[] = {
 ; |----------------------------------------------------------------------------------|
 ; |          | Byte     | ShortInt | Word     | Integer  | Cardinal | LongInt | Real |
 ; |----------|----------|----------|----------|----------|----------|----------------|
-; | Byte     | Byte     | Integer  | Word     | Integer  | Cardinal | LongInt | Real |
-; | ShortInt | Integer  | ShortInt | LongInt  | Integer  | LongInt  | LongInt | Real |
-; | Word     | Word     | Word     | Word     | LongInt  | Cardinal | LongInt | Real |
-; | Integer  | Integer  | Integer  | LongInt  | Integer  | LongInt  | LongInt | Real |
-; | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal |    -    | Real |
-; | LongInt  | LongInt  | LongInt  | LongInt  | LongInt  |    -     | LongInt | Real |
+; | Byte     | Byte     | Byte     | Word     | Integer  | Cardinal | LongInt | Real |
+; | ShortInt | Byte     | ShortInt | LongInt  | Integer  | LongInt  | LongInt | Real |
+; | Word     | Word     | LongInt  | Word     | Word     | Cardinal | LongInt | Real |
+; | Integer  | Integer  | Integer  | Word     | Integer  | LongInt  | LongInt | Real |
+; | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal | Cardinal| Real |
+; | LongInt  | LongInt  | LongInt  | LongInt  | LongInt  | Cardinal | LongInt | Real |
 ; | Real     | Real     | Real     | Real     | Real     | Real     | Real    | Real |
 ; |----------------------------------------------------------------------------------|
 */
 
 static char typeConversions[7][7] = {
-	{ TYPE_BYTE,     TYPE_INTEGER,  TYPE_WORD,     TYPE_INTEGER,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
-	{ TYPE_INTEGER,  TYPE_SHORTINT, TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
-	{ TYPE_WORD,     TYPE_WORD,     TYPE_WORD,     TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
-	{ TYPE_INTEGER,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
-	{ TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_VOID,     TYPE_REAL },
-	{ TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_VOID,     TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_BYTE,     TYPE_BYTE,     TYPE_WORD,     TYPE_INTEGER,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_BYTE,     TYPE_SHORTINT, TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_WORD,     TYPE_LONGINT,  TYPE_WORD,     TYPE_WORD,     TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_INTEGER,  TYPE_INTEGER,  TYPE_WORD,     TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
+	{ TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_REAL },
+	{ TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
 	{ TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL },
 };
+// static char typeConversions[7][7] = {
+// 	{ TYPE_BYTE,     TYPE_INTEGER,  TYPE_WORD,     TYPE_INTEGER,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
+// 	{ TYPE_INTEGER,  TYPE_SHORTINT, TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
+// 	{ TYPE_WORD,     TYPE_WORD,     TYPE_WORD,     TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
+// 	{ TYPE_INTEGER,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
+// 	{ TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_VOID,     TYPE_REAL },
+// 	{ TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_VOID,     TYPE_LONGINT,  TYPE_REAL },
+// 	{ TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL },
+// };
 
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk);
 static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode);		// returns TYPE_*
@@ -731,23 +740,6 @@ static char realOperands(char type1Kind, char type2Kind, short *pSize)
 		*pSize = GET_TYPE_SIZE(getTypeMask(resultKind));
 	}
 
-	// If both operands are integers and one or both operands are signed,
-	// the result must be one size higher than the largest operand.
-	if (isTypeInteger(type1Kind) && isTypeInteger(type2Kind)) {
-		char leftMask = getTypeMask(type1Kind);
-		char rightMask = getTypeMask(type2Kind);
-		char resultMask = getTypeMask(resultKind);
-		char leftSize = GET_TYPE_SIZE(leftMask);
-		char rightSize = GET_TYPE_SIZE(rightMask);
-		if ((IS_TYPE_SIGNED(leftMask) || IS_TYPE_SIGNED(rightMask)) && !IS_TYPE_SIGNED(resultKind)) {
-			if (resultKind == TYPE_BYTE) {
-				resultKind = TYPE_INTEGER;
-			} else if (resultKind == TYPE_WORD) {
-				resultKind = TYPE_LONGINT;
-			}
-		}
-	}
-
 	return resultKind;
 }
 
@@ -881,7 +873,6 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_BYTE_LITERAL:
-		// pType->kind = _expr.neg ? TYPE_SHORTINT : TYPE_BYTE;
 		pType->kind = (!_expr.neg && _expr.value.byte > SCHAR_MAX) ? TYPE_BYTE : TYPE_SHORTINT;
 		pType->flags = TYPE_FLAG_ISCONST;
 		if (_expr.neg && _expr.value.byte > SCHAR_MAX) {
@@ -906,7 +897,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_DWORD_LITERAL:
-		pType->kind = _expr.value.cardinal > LONG_MAX ? TYPE_CARDINAL : TYPE_LONGINT;
+		pType->kind = (!_expr.neg && _expr.value.cardinal > LONG_MAX) ? TYPE_CARDINAL : TYPE_LONGINT;
 		pType->flags = TYPE_FLAG_ISCONST;
 		pType->size = sizeof(long);
 		break;
