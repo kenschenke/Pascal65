@@ -32,8 +32,9 @@ Var
         DiceToRoll : Array[1..5] Of Boolean;
         TotalUpper : Integer;
         TotalScore : Integer;
+        RollInHand : Integer;  (* 1, 2, or 3 *)
     End;
-    Scores : Array[0..14] Of Byte;
+    Scores : Array[0..14] Of Integer;
     Dice : Array[1..6] Of
         Array[1..3] Of Array[1..3] Of Char;
 
@@ -42,14 +43,17 @@ Var
     i : Integer;
 Begin
     Game.TotalScore := 0;
-    For i := Aces To Sixes Do Game.TotalScore := Game.TotalScore + Scores[i];
+    Scores[UpperBonus] := 0;
+    For i := Aces To Sixes Do
+        If Scores[i] >= 0 Then Game.TotalScore := Game.TotalScore + Scores[i];
     If Game.TotalScore >= UpperBonusCeiling Then
         Scores[UpperBonus] := UpperBonusScore;
     Game.TotalScore := Game.TotalScore + Scores[UpperBonus];
     Game.TotalUpper := Game.TotalScore;
     i := UpperBonus;
     While i <= FiveBonus Do Begin
-        Game.TotalScore := Game.TotalScore + Scores[i];
+        If Scores[i] >= 0 Then
+            Game.TotalScore := Game.TotalScore + Scores[i];
         i := i + 1;
     End;
 End;
@@ -77,6 +81,47 @@ Begin
     DrawTextRaw(col, row+3, Chr($42) + Dice[num,3] + Chr($42));
     *)
     DrawTextRaw(col, row+4, Chr($4a) + StringOfChar(Chr($43), 5) + Chr($4b));
+End;
+
+Procedure DrawInstructions;
+Var
+    ch : Char;
+    fill : String;
+    i : Byte;
+Begin
+    DrawText(3, 5, 'welcome to five dice!');
+    
+    DrawText(5, 7, 'this game is inspired by the popular');
+    DrawText(5, 8, 'board game where the player rolls five');
+    DrawText(5, 9, 'dice and attempts to build poker hands.');
+
+(*
+    DrawText(5, 11, 'the scorecard is shown at the right.');
+    DrawText(5, 12, 'each hand is started by rolling all dice.');
+
+    DrawText(5, 14, 'the player decides which dice to keep');
+    DrawText(5, 15, 'and which to roll for a better hand.');
+    DrawText(5, 16, 'at any time the player can decide to');
+    DrawText(5, 17, 'play their hand in one of the scores');
+    DrawText(5, 18, 'on the right. up to three roles per hand');
+    DrawText(5, 19, 'are allowed to build the strongest');
+    DrawText(5, 20, 'possible hand. the game is over once all');
+    DrawText(5, 21, 'scores are filled in.');
+*)
+
+    DrawText(5, 23, 'press a key to begin.');
+
+    ch := GetKey;
+    fill := StringOfChar(' ', 43);
+    For i := 5 To 21 Do DrawText(3, i, fill);
+End;
+
+Procedure DrawScore(col, row : Byte; score : Integer);
+Begin
+    If score < 0 Then
+        DrawText(col, row, '  -')
+    Else
+        DrawText(col, row, WriteStr(score:3));
 End;
 
 Procedure DrawGameBoard;
@@ -112,37 +157,37 @@ Begin
     CalcScore;
 
     SetTextColor(GetScoreColor(Aces));
-    DrawText(col, 5, WriteStr(Scores[Aces]:3));
+    DrawScore(col, 5, Scores[Aces]);
     SetTextColor(GetScoreColor(Twos));
-    DrawText(col, 6, WriteStr(Scores[Twos]:3));
+    DrawScore(col, 6, Scores[Twos]);
     SetTextColor(GetScoreColor(Threes));
-    DrawText(col, 7, WriteStr(Scores[Threes]:3));
+    DrawScore(col, 7, Scores[Threes]);
     SetTextColor(GetScoreColor(Fours));
-    DrawText(col, 8, WriteStr(Scores[Fours]:3));
+    DrawScore(col, 8, Scores[Fours]);
     SetTextColor(GetScoreColor(Fives));
-    DrawText(col, 9, WriteStr(Scores[Fives]:3));
+    DrawScore(col, 9, Scores[Fives]);
     SetTextColor(GetScoreColor(Sixes));
-    DrawText(col, 10, WriteStr(Scores[Sixes]:3));
+    DrawScore(col, 10, Scores[Sixes]);
     SetTextColor(7);
-    DrawText(col, 11, WriteStr(Scores[UpperBonus]:3));
-    Drawtext(col, 12, WriteStr(Game.TotalUpper:3));
+    DrawScore(col, 11, Scores[UpperBonus]);
+    DrawScore(col, 12, Game.TotalUpper);
 
     SetTextColor(GetScoreColor(ThreeOfAKind));
-    DrawText(col, 14, WriteStr(Scores[ThreeOfAKind]:3));
+    DrawScore(col, 14, Scores[ThreeOfAKind]);
     SetTextColor(GetScoreColor(FourOfAKind));
-    DrawText(col, 15, WriteStr(Scores[FourOfAKind]:3));
+    DrawScore(col, 15, Scores[FourOfAKind]);
     SetTextColor(GetScoreColor(FullHouse));
-    DrawText(col, 16, WriteStr(Scores[FullHouse]:3));
+    DrawScore(col, 16, Scores[FullHouse]);
     SetTextColor(GetScoreColor(SmStraight));
-    DrawText(col, 17, WriteStr(Scores[SmStraight]:3));
+    DrawScore(col, 17, Scores[SmStraight]);
     SetTextColor(GetScoreColor(LgStraight));
-    DrawText(col, 18, WriteStr(Scores[LgStraight]:3));
+    DrawScore(col, 18, Scores[LgStraight]);
     SetTextColor(GetScoreColor(FiveOfAKind));
-    DrawText(col, 19, WriteStr(Scores[FiveOfAKind]:3));
+    DrawScore(col, 19, Scores[FiveOfAKind]);
     SetTextColor(GetScoreColor(Chance));
-    DrawText(col, 20, WriteStr(Scores[Chance]:3));
+    DrawScore(col, 20, Scores[Chance]);
     SetTextColor(GetScoreColor(FiveBonus));
-    DrawText(col, 21, WriteStr(Scores[FiveBonus]:3));
+    DrawScore(col, 21, Scores[FiveBonus]);
 
     SetTextColor(7);
     DrawText(col, 23, WriteStr(Game.TotalScore:3));
@@ -157,9 +202,10 @@ Procedure ResetGame;
 Var
     i : Byte;
 Begin
-    For i := 0 To NumScores-1 Do Scores[i] := 0;
+    For i := 0 To NumScores-1 Do Scores[i] := -1;
     Game.TotalScore := 0;
     Game.TotalUpper := 0;
+    Game.RollInHand := 0;
     For i := 1 To 5 Do Game.DiceToRoll[i] := false;
 End;
 
@@ -207,9 +253,34 @@ Begin
     Dice[6,1,3] := Chr($51);
     Dice[6,3,1] := Chr($51);
     Dice[6,3,2] := Chr($51);
-(*
     Dice[6,3,3] := Chr($51);
-*)
+End;
+
+Procedure ShowDice;
+Var
+    i : Integer;
+Begin
+    For i := 1 To 5 Do Begin
+        DrawDie(Game.DiceValues[i], i*8+3, 5);
+    End;
+End;
+
+Procedure RunGame;
+Var
+    ch : Char;
+    i : Integer;
+Begin
+    DrawText(5, 20, 'press space to roll dice');
+    For i := 1 To 5 Do Game.DiceToRoll[i] := True;
+    Repeat
+        ch := GetKey;
+        Case ch Of
+            ' ': Begin
+                RollDice;
+                ShowDice;
+            End;
+        End;
+    Until False;
 End;
 
 Begin
@@ -222,6 +293,8 @@ Begin
     SetBorderColor(0);
 
     DrawGameBoard;
+    DrawInstructions;
+    RunGame;
     DrawDie(1, 5, 5);
     DrawDie(2, 13, 5);
     DrawDie(3, 21, 5);
