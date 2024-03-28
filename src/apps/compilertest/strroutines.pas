@@ -38,6 +38,9 @@ Begin
 
     If CompareStr(UpCase('Hello'), 'HELLO') <> 0 Then Error(15);
 
+    If CompareStr(WriteStr(123:5, ' ', 1.358:6:2), '  123   1.36') <> 0
+        Then Error(16);
+
     If anyErrors Then Begin
         Write('Press a key to continue: ');
         ch := GetKey();
