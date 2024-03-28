@@ -87,7 +87,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECK
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii 
+TXTFILES := runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -219,6 +219,9 @@ runtimemsgs.petscii: $(SHAREDSRCDIR)/runtimemsgs.txt
 add.petscii: add.pas
 	dos2unix < add.pas | petcat -w2 -text -o add.petscii
 
+assign.petscii: assign.pas
+	dos2unix < assign.pas | petcat -w2 -text -o assign.petscii
+
 ifthen.petscii: ifthen.pas
 	dos2unix < ifthen.pas | petcat -w2 -text -o ifthen.petscii
 
@@ -290,6 +293,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write add.petscii add.pas,seq \
+	-write assign.petscii assign.pas,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
 	-write strtests.petscii strtests.pas,seq \
@@ -323,6 +327,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write add.petscii add.pas,seq \
+	-write assign.petscii assign.pas,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
