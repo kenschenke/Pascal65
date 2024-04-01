@@ -17,16 +17,12 @@ varPtr: .res 2
 
 ; This routine assigns one string to another.
 ; The left side will always be a newly allocated string.
-; The routine expects ptr1 to contain a pointer to the
-; variable's position on the runtime stack. The heap 
-; pointed to by that position will be free'd and a new
-; heap allocated.
 ; The right side can be one of:
 ;   a) Another string (variable or object)
 ;   b) A string literal
 ;   c) An array of char
 ;   d) A character literal
-; The right type is pushed onto the stack
+; The right type is pushed onto the stack with pushax
 ; and then the pointer to the variable on the stack is pushed onto the stack.
 ; The pointer to the right value is passed in A/X
 ;   srcPtr - pointer to source
