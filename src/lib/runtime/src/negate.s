@@ -1,3 +1,13 @@
+;
+; negate.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 ; This routine negates the number in A/X/sreg
 
 ; The data type in passed in Y

@@ -1,3 +1,15 @@
+/**
+ * asm.h
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Definitions and declarations for assembly
+ * 
+ * Copyright (c) 2024
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #ifndef ASM_H
 #define ASM_H
 

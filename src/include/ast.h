@@ -1,3 +1,15 @@
+/**
+ * ast.h
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Definitions and declarations for AST
+ * 
+ * Copyright (c) 2024
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #ifndef AST_H
 #define AST_H
 

@@ -1,3 +1,15 @@
+/**
+ * parsdecl.c
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * Parse identifier declarations
+ * 
+ * Copyright (c) 2024
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+ */
+
 #include <parser.h>
 #include <membuf.h>
 #include <string.h>

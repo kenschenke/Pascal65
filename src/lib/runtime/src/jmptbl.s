@@ -1,3 +1,15 @@
+;
+; jmptbl.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Runtime library entry points
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 ; Jump table at the start of the runtime library
 
 .import rtStackCleanup, rtStackInit, pushIntStack, calcStackOffset

@@ -1,8 +1,14 @@
-
-; void __fastcall__ clearScreen80(void);
-; void __fastcall__ initScreen80(void);
-; void __fastcall__ setScreenBg80(char bg);
-; void __fastcall__ drawRow80(char row, char len, char *buf);
+;
+; screen80.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; 80 column screen code for editor
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
 
     .export     _drawRow80, _initScreen80, _setScreenBg80, _clearScreen80
     .import     popa, popax, incRow, petscii2Screen

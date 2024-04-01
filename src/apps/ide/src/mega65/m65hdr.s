@@ -1,3 +1,14 @@
+;
+; m65hdr.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; BASIC header for MEGA65 PRGs
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 ; The following symbol is used by linker config to force the module
 ; to get included into the output file
         .export         __M65HDR__: absolute = 1

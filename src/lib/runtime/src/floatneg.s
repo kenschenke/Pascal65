@@ -1,3 +1,16 @@
+;
+; floatneg.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; Based on floating point routines published in the book
+; 6502 Software Gourmet Guide & Cookbook
+; by Robert Findley
+
 .include "float.inc"
 .include "runtime.inc"
 

@@ -1,6 +1,15 @@
+;
+; screen40.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; 40 column screen code for editor
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
 
-; void __fastcall__ clearScreen40(void);
-; void __fastcall__ drawRow40(char row, char len, char *buf);
 
     .export     _drawRow40, _clearScreen40, _setScreenBg40, _initScreen40
     .import     popa, popax, incRow, petscii2Screen

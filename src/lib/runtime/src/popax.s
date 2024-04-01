@@ -1,3 +1,9 @@
+;
+; Ullrich von Bassewitz, 25.10.2000
+;
+; CC65 runtime: Increment the stackpointer by 4
+;
+
 .include "runtime.inc"
 
 .export popax, popa

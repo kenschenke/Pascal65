@@ -1,3 +1,14 @@
+;
+; parseint32.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Convert a PETSCII string into a 32-bit integer
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 .import intOp1, intOp2, readInt32
 .importzp ptr1, intPtr, sreg
 

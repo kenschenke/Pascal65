@@ -1,3 +1,14 @@
+;
+; readint16.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Convert a PETSCII string into a 16-bit integer
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 .ifdef RUNTIME
 .include "runtime.inc"
 .else

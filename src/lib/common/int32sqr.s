@@ -1,3 +1,14 @@
+;
+; int32sqr.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Calculate square of two 32-bit integers
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 .ifdef RUNTIME
 .include "runtime.inc"
 .else

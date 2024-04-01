@@ -1,3 +1,15 @@
+;
+; run.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Code to chain PRGs
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 .include "cbm_kernal.inc"
 .include "c64.inc"
 

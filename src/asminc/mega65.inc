@@ -1,3 +1,15 @@
+;;;
+ ; mega65.inc
+ ; Ken Schenke (kenschenke@gmail.com)
+ ; 
+ ; MEGA65 DMA definitions and constants
+ ; 
+ ; Copyright (c) 2024
+ ; Use of this source code is governed by an MIT-style
+ ; license that can be found in the LICENSE file or at
+ ; https://opensource.org/licenses/MIT
+;;;
+
 ; Mega65 DMA command
 
 DMAGIC_DMALIST_SIZE = 20

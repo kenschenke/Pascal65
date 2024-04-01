@@ -1,3 +1,15 @@
+;
+; subtract.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Integer subtraction
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 ; This routine subtracts two numbers, <operand-2> from <operand-1>.
 ; Both operands are expected on the runtime stack with <operand-1>
 ; pushed first before <operand-2>.  The result is left at the top of the stack.

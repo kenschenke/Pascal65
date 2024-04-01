@@ -1,3 +1,13 @@
+;
+; writevalue.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 ; This routine is used by write, writeln, and writestr to write a value.
 ; It expects the value to be at the top of the runtime stack
 ;

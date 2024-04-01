@@ -1,3 +1,12 @@
+;
+; loadprog.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 ; This bit of code is used by the IDE and compiler for loading
 ; and transferring control to another program.  The IDE uses it
 ; to launch the compiler and the compiler uses it to launch

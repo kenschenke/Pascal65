@@ -1,3 +1,12 @@
+;
+; comp.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 ; This routine performs a comparison between two values:
 ; <operand-1> and <operand-2> which are on the runtime stack.
 ; <operand-2> is on the top of the stack. When the routine

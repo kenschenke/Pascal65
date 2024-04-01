@@ -1,3 +1,15 @@
+;
+; tenstable.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Powers of 10 for integer/PETSCII conversions
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 .include "runtime.inc"
 
 .export rtInitTensTable32

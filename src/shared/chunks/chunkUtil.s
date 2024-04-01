@@ -1,3 +1,15 @@
+;;;
+ ; chunkUtil.s
+ ; Ken Schenke (kenschenke@gmail.com)
+ ; 
+ ; Chunk utility routines
+ ; 
+ ; Copyright (c) 2024
+ ; Use of this source code is governed by an MIT-style
+ ; license that can be found in the LICENSE file or at
+ ; https://opensource.org/licenses/MIT
+;;;
+
 .import _FullBlocks, _blockData, _availChunks
 .importzp ptr1, ptr2, tmp1, tmp2
 

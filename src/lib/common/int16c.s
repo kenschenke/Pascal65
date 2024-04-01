@@ -1,3 +1,14 @@
+;
+; int16c.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; 16-bit integer C/asm glue code
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 ; C / ASM glue code for int16
 
 .export _formatInt16, _formatUint16, _leftPad, _printInt16, _setIntBuf

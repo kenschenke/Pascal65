@@ -1,5 +1,15 @@
-; void __fastcall__ clearScreen(void);
-; void __fastcall__ drawRow(char row, char len, char *buf);
+;
+; screen_c64.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Editor screen routines for C64
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 
     .export     _drawRow, _clearScreen, _initScreen
     .export     _renderCursor, _clearCursor, _setRowColor

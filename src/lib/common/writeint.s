@@ -1,3 +1,14 @@
+;
+; writeint.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Converts an integer into a PETSCII string
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 .include "int.inc"
 
 .ifdef RUNTIME

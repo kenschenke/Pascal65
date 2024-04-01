@@ -1,3 +1,13 @@
+;
+; writetostring.s
+; Ken Schenke (kenschenke@gmail.com)
+;
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+
 ; These routines write to a string.
 ;
 ; They use the input buffer as temporary storage and when it

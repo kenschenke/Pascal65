@@ -1,3 +1,14 @@
+;
+; uint32comp.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Unsigned 32-bit integer comparison
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 .ifdef RUNTIME
 .include "runtime.inc"
 .else

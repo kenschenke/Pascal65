@@ -1,3 +1,14 @@
+;
+; leftpad.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Left padding for console output
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 .include "cbm_kernal.inc"
 
 .ifdef RUNTIME
