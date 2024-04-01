@@ -3,6 +3,7 @@
 
 #include <chunks.h>
 #include <ast.h>
+#include <stdio.h>
 
 #define WORD_LOW(a) ((unsigned char)((a) & 0xff))
 #define WORD_HIGH(a) ((unsigned char)((a) >> 8))
@@ -35,7 +36,7 @@ struct LINKTAG {
 extern CHUNKNUM linkerTags;
 extern CHUNKNUM stringLiterals;
 extern int numStringLiterals;
-extern CHUNKNUM codeBuf;
+extern FILE *codeFh;
 extern unsigned short codeOffset;
 extern unsigned short codeBase;		// base address of code
 extern short heapOffset;
@@ -138,5 +139,7 @@ void loadLibraries(CHUNKNUM astRoot);
 void readRuntimeDefFile(void);
 void setRuntimeRef(unsigned char exportNum, unsigned short offset);
 void linkerWriteRuntime(void);
+
+void sortLinkerTags(void);
 
 #endif // end of CODEGEN_H

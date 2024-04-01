@@ -19,6 +19,10 @@
 #include <int16.h>
 #include <device.h>
 #include <inputbuf.h>
+#include <doscmd.h>
+
+#define BUFLEN 20
+#define TEMP_PROG "zztmp"
 
 #ifdef __MEGA65__
 #include <memory.h>
@@ -354,7 +358,7 @@ static void genBootstrap(void);
 #endif
 static void genExeHeader(void);
 static void genRuntime(void);
-static void updateLinkerAddresses(CHUNKNUM codeBuf);
+static void writePrgFile(FILE *out);
 
 static void dumpStringLiterals(void)
 {
@@ -380,7 +384,7 @@ static void dumpStringLiterals(void)
 		strcpy(label, "strVal");
 		strcat(label, formatInt16(num));
 		linkAddressSet(label, codeOffset);
-		writeToMemBuf(codeBuf, value, (short)strlen(value) + 1);
+		fwrite(value, 1, strlen(value) + 1, codeFh);
 		codeOffset += (short)strlen(value) + 1;
 
 		++num;
@@ -473,65 +477,65 @@ static void genExeHeader(void)
 	// Link to next line
 	buf[0] = WORD_LOW(codeBase + 14);
 	buf[1] = WORD_HIGH(codeBase + 14);
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	// Line number
 	buf[0] = 10;
 	buf[1] = 0;
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	// BANK token
 	buf[0] = 0xfe;
 	buf[1] = 0x02;
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	// BANK argument
 	buf[0] = '0';
 	buf[1] = ':';
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	// SYS token
 	buf[0] = 0x9e;  // SYS
-	writeToMemBuf(codeBuf, buf, 1);
+	fwrite(buf, 1, 1, codeFh);
 
 	// Starting address of code
 	strcpy(startAddr, formatInt16(codeBase + 16));
-	writeToMemBuf(codeBuf, startAddr, strlen(startAddr));
+	fwrite(startAddr, 1, strlen(startAddr), codeFh);
 
 	// End of BASIC line
 	buf[0] = 0;
-	writeToMemBuf(codeBuf, buf, 1);
+	fwrite(buf, 1, 1, codeFh);
 
 	// End of BASIC program marker
 	buf[1] = 0;
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	codeOffset = 16;
 #elif defined(__C64__)
 	// Link to next line
 	buf[0] = WORD_LOW(codeBase + 10);
 	buf[1] = WORD_HIGH(codeBase + 10);
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	// Line number
 	buf[0] = 10;
 	buf[1] = 0;
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	// SYS token
 	buf[0] = 0x9e;  // SYS
-	writeToMemBuf(codeBuf, buf, 1);
+	fwrite(buf, 1, 1, codeFh);
 
 	// Starting address of code
 	strcpy(startAddr, formatInt16(codeBase + 12));
-	writeToMemBuf(codeBuf, startAddr, strlen(startAddr));
+	fwrite(startAddr, 1, strlen(startAddr), codeFh);
 
 	// End of BASIC line
 	buf[0] = 0;
-	writeToMemBuf(codeBuf, buf, 1);
+	fwrite(buf, 1, 1, codeFh);
 
 	// End of BASIC program marker
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 
 	codeOffset = 12;
 #else
@@ -551,7 +555,8 @@ void linkerPreWrite(CHUNKNUM astRoot)
 #else
 #error Platform start address not defined
 #endif
-	allocMemBuf(&codeBuf);
+	_filetype = 'p';
+	codeFh = fopen(TEMP_PROG, "w");
 	initLinkerSymbolTable();
 
 	// Write the BASIC stub to start the program code
@@ -619,7 +624,7 @@ void linkerPostWrite(const char* filename, char run)
 		strcat(msg, nextTest);
 		strcat(msg, " ");
 		linkAddressSet("CHAINMSG", codeOffset);
-		writeToMemBuf(codeBuf, msg, strlen(msg) + 1);
+		fwrite(msg, 1, strlen(msg)+1, codeFh);
 		codeOffset += strlen(msg) + 1;
 	} else {
 		genTwo(LDA_IMMEDIATE, 0);
@@ -640,7 +645,7 @@ void linkerPostWrite(const char* filename, char run)
 	linkAddressSet(BSS_INTBUF, codeOffset);
 	ch = 0;
 	for (i = 0; i < 15; ++i) {
-		writeToMemBuf(codeBuf, &ch, 1);
+		fwrite(&ch, 1, 1, codeFh);
 		++codeOffset;
 	}
 
@@ -655,7 +660,7 @@ void linkerPostWrite(const char* filename, char run)
 	linkAddressSet(BSS_ZPBACKUP, codeOffset);
 	ch = 0;
 	for (i = 0; i < 97; ++i) {
-		writeToMemBuf(codeBuf, &ch, 1);
+		fwrite(&ch, 1, 1, codeFh);
 		++codeOffset;
 	}
 
@@ -663,7 +668,7 @@ void linkerPostWrite(const char* filename, char run)
 	linkAddressSet(BSS_TENSTABLE, codeOffset);
 	ch = 0;
 	for (i = 0; i < 40; ++i) {
-		writeToMemBuf(codeBuf, &ch, 1);
+		fwrite(&ch, 1, 1, codeFh);
 		++codeOffset;
 	}
 
@@ -671,18 +676,21 @@ void linkerPostWrite(const char* filename, char run)
 	linkAddressSet(BSS_INPUTBUF, codeOffset);
 	ch = 0;
 	for (i = 0; i < INPUTBUFLEN; ++i) {
-		writeToMemBuf(codeBuf, &ch, 1);
+		fwrite(&ch, 1, 1, codeFh);
 		++codeOffset;
 	}
 
 	// This MUST be the last thing written to the code buffer
 	linkAddressSet(BSS_HEAPBOTTOM, codeOffset);
 	ch = 0;
-	writeToMemBuf(codeBuf, &ch, 1);
-	writeToMemBuf(codeBuf, &ch, 1);
+	fwrite(&ch, 1, 1, codeFh);
+	fwrite(&ch, 1, 1, codeFh);
 
-	updateLinkerAddresses(codeBuf);
-	freeLinkerSymbolTable();
+	sortLinkerTags();
+	
+	// Close the temporary program file and re-open it in read-only mode.
+	fclose(codeFh);
+	codeFh = fopen(TEMP_PROG, "r");
 
     // Generate PRG filename
 #ifndef COMPILERTEST
@@ -722,15 +730,14 @@ void linkerPostWrite(const char* filename, char run)
 #endif
 	fwrite(&ch, 1, 1, out);
 
-	setMemBufPos(codeBuf, 0);
-	while (!isMemBufAtEnd(codeBuf)) {
-		readFromMemBuf(codeBuf, &ch, 1);
-		fwrite(&ch, 1, 1, out);
-	}
+	writePrgFile(out);
 
 	fclose(out);
-	freeMemBuf(codeBuf);
 	freeStringLiterals();
+	freeLinkerSymbolTable();
+
+	fclose(codeFh);
+	removeFile(TEMP_PROG);
 
 #ifndef COMPILERTEST
 	if (run) {
@@ -750,7 +757,7 @@ static void genRuntime(void)
 	while (!feof(in)) {
 		read = fread(buf, 1, sizeof(buf), in);
 		if (read) {
-			writeToMemBuf(codeBuf, buf, read);
+			fwrite(buf, 1, read, codeFh);
 			codeOffset += read;
 		}
 	}
@@ -761,32 +768,8 @@ static void genRuntime(void)
 
 	memset(buf, 0, sizeof(buf));
 	for (i = 0; i < 20; ++i) {
-		writeToMemBuf(codeBuf, buf, sizeof(buf));
+		fwrite(buf, 1, sizeof(buf), codeFh);
 		codeOffset += sizeof(buf);
-	}
-}
-
-static void updateLinkerAddresses(CHUNKNUM codeBuf)
-{
-	struct LINKSYMBOL sym;
-	struct LINKTAG tag;
-
-	setMemBufPos(linkerTags, 0);
-	while (!isMemBufAtEnd(linkerTags)) {
-		readFromMemBuf(linkerTags, &tag, sizeof(struct LINKTAG));
-		retrieveChunk(tag.chunkNum, &sym);
-		setMemBufPos(codeBuf, tag.position);
-		if (tag.which == LINKADDR_LOW) {
-			unsigned char c = WORD_LOW(sym.address);
-			writeToMemBuf(codeBuf, &c, 1);
-		}
-		else if (tag.which == LINKADDR_HIGH) {
-			unsigned char c = WORD_HIGH(sym.address);
-			writeToMemBuf(codeBuf, &c, 1);
-		}
-		else if (tag.which == LINKADDR_BOTH) {
-			writeToMemBuf(codeBuf, &sym.address, sizeof(sym.address));
-		}
 	}
 }
 
@@ -795,10 +778,70 @@ static void writeChainCall(char* name)
 {
 	linkAddressSet("CHAINCALL", codeOffset);
 	chainCall[10] = strlen(name);
-	writeToMemBuf(codeBuf, chainCall, 28);
+	fwrite(chainCall, 1, 28, codeFh);
 	codeOffset += 28;
 
-	writeToMemBuf(codeBuf, name, strlen(name));
+	fwrite(name, 1, strlen(name), codeFh);
 	codeOffset += strlen(name);
 }
 #endif
+
+static void writePrgFile(FILE *out)
+{
+	struct LINKTAG tag;
+	struct LINKSYMBOL sym;
+	int pos = 0, n, toGo = -1;  // toGo is -1 if no addresses to fix
+	unsigned char buffer[BUFLEN];
+
+	setMemBufPos(linkerTags, 0);
+	if (!isMemBufAtEnd(linkerTags)) {
+		readFromMemBuf(linkerTags, &tag, sizeof(struct LINKTAG));
+		toGo = tag.position;
+	}
+
+    while (!feof(codeFh)) {
+		// As long as toGo is non-zero, keep reading code from the file.
+		while (!feof(codeFh) && toGo) {
+			n = BUFLEN;
+			if (toGo > 0 && BUFLEN > toGo) {
+				n = toGo;
+			}
+			n = fread(buffer, 1, n, codeFh);
+			if (n) {
+				fwrite(buffer, 1, n, out);
+				pos += n;
+				if (toGo >= 0) {
+					toGo -= n;
+				}
+			}
+		}
+
+		// If toGo is still -1, the end of the file has been reached.
+		if (feof(codeFh)) {
+			break;
+		}
+
+		// This is an address to fix.
+		n = tag.which == LINKADDR_BOTH ? 2 : 1;
+		n = fread(buffer, 1, n, codeFh);
+		retrieveChunk(tag.chunkNum, &sym);
+		if (tag.which == LINKADDR_LOW) {
+			buffer[0] = WORD_LOW(sym.address);
+		}
+		else if (tag.which == LINKADDR_HIGH) {
+			buffer[0] = WORD_HIGH(sym.address);
+		}
+		else if (tag.which == LINKADDR_BOTH) {
+			memcpy(buffer, &sym.address, 2);
+		}
+		fwrite(buffer, 1, n, out);
+		pos += n;
+
+		if (isMemBufAtEnd(linkerTags)) {
+			toGo = -1;
+		} else {
+			readFromMemBuf(linkerTags, &tag, sizeof(struct LINKTAG));
+			toGo = tag.position - pos;
+		}
+    }
+}

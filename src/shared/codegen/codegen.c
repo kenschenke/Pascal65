@@ -8,7 +8,7 @@
 CHUNKNUM stringLiterals;
 int numStringLiterals;
 
-CHUNKNUM codeBuf;
+FILE *codeFh;
 unsigned short codeOffset;
 unsigned short codeBase;
 
@@ -17,7 +17,7 @@ short heapOffset;
 
 void genOne(unsigned char b)
 {
-	writeToMemBuf(codeBuf, &b, 1);
+	fwrite(&b, 1, 1, codeFh);
 	++codeOffset;
 }
 
@@ -28,7 +28,7 @@ void genTwo(unsigned char b1, unsigned char b2)
     buf[0] = b1;
     buf[1] = b2;
 
-	writeToMemBuf(codeBuf, buf, 2);
+	fwrite(buf, 1, 2, codeFh);
 	codeOffset += 2;
 }
 
@@ -40,7 +40,7 @@ void genThreeAddr(unsigned char b, unsigned short addr)
     buf[1] = WORD_LOW(addr);
     buf[2] = WORD_HIGH(addr);
 
-	writeToMemBuf(codeBuf, buf, 3);
+	fwrite(buf, 1, 3, codeFh);
 	codeOffset += 3;
 }
 
@@ -138,7 +138,7 @@ void genRuntimeCall(unsigned char routine)
 
 void writeCodeBuf(unsigned char *buf, int len)
 {
-	writeToMemBuf(codeBuf, buf, len);
+	fwrite(buf, 1, len, codeFh);
 	codeOffset += len;
 }
 
