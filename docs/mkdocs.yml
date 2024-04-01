@@ -3,10 +3,10 @@ theme: readthedocs
 nav:
   - Home: index.md
   - Why Pascal: whypascal.md
-  - System Requirements: sysreqs.md
   - Notable Differences: notablediffs.md
   - Limitations: limits.md
   - Usage: usage.md
+  - Building Pascal65: building.md
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
     - Comments: langref/comments.md

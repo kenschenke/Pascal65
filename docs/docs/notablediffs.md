@@ -5,7 +5,6 @@ notable differences.
 
 * Sets are not implemented
 * Pointers are missing
-* There is no data type for strings.  String literals are implemented as arrays of characters.
 
 ## Code Comments ##
 
@@ -20,4 +19,5 @@ brace characters.*
 Support for some of these features is planned for future releases.  Of note:
 
 * Pointers
-* Add a data type for strings
+* A math library
+* Support for strings in records and arrays
