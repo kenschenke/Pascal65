@@ -15,9 +15,7 @@ SHAREDCODEGENDIR = $(SHAREDSRCDIR)/codegen
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
-RUNTIMEDEF = ../../shared/runtime.def
 RUNTIME = ../../lib/runtime/bin/$(TARGET)/runtime
-RUNTIMELIB = ../../lib/runtimelib/bin/$(TARGET)/runtime.lib
 SCREENLIB = ../../lib/screen/bin/$(TARGET)/screen
 SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
 
@@ -87,7 +85,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECK
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := runtime.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -270,14 +268,11 @@ unit.petscii: unit.pas
 unit1.petscii: unit1.pas
 	dos2unix < unit1.pas | petcat -w2 -text -o unit1.petscii
 
-runtime.petscii: $(RUNTIMEDEF)
-	dos2unix < $(RUNTIMEDEF) | petcat -w -text -o runtime.petscii
-
 $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILES)
+$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -287,8 +282,6 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write $(RUNTIME) runtime \
-	-write $(RUNTIMELIB) runtime.lib \
-	-write runtime.petscii runtime.def,seq \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
@@ -312,7 +305,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write unit.petscii unit.pas,seq \
 	-write unit1.petscii unit1.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILES)
+$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -322,8 +315,6 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(RUNTIMELIB) $(SYSTEMLIB) $(TXTFILE
 	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write $(RUNTIME) runtime \
-	-write $(RUNTIMELIB) runtime.lib \
-	-write runtime.petscii runtime.def,seq \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
 	-write add.petscii add.pas,seq \
