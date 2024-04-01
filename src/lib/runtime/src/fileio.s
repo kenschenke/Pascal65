@@ -25,20 +25,26 @@ buffer: .res 1
     rts
 .endproc
 
+; New FH in A
+; Previous FH returned in A
 .proc setFh
+    ldx currentFh
+    stx tmp1
     sta currentFh
     cmp #fhString
     beq DN
     cmp #fhStdio
     bne :+
-    jmp CLRCHN
+    jsr CLRCHN
+    jmp DN
 :   tax
     lda files,x
     bne :+
     lda #rteInvalidFileHandle
     jmp runtimeError
-:   jmp CHKOUT
-DN: rts
+:   jsr CHKOUT
+DN: lda tmp1
+    rts
 .endproc
 
 ; This routine writes one byte to the current output.

@@ -597,6 +597,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	genTwo(LDA_IMMEDIATE, rc == rcWriteStr ? FH_STRING : FH_STDIO);
 	genThreeAddr(JSR, RT_SETFH);
+	genOne(PHA);	// push previous FH to stack
 
 	if (rc == rcWriteStr) {
 		genThreeAddr(JSR, RT_RESETSTRBUFFER);
@@ -719,6 +720,9 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		genTwo(LDA_IMMEDIATE, 13);	// carriage return
 		genThreeAddr(JSR, CHROUT);
 	}
+
+	genOne(PLA);
+	genThreeAddr(JSR, RT_SETFH);
 
 	if (rc == rcWriteStr) {
 		genThreeAddr(JSR, RT_GETSTRBUFFER);
