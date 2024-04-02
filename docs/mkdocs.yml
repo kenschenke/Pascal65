@@ -7,6 +7,7 @@ nav:
   - Limitations: limits.md
   - Usage: usage.md
   - Building Pascal65: building.md
+  - Future Wishlist: future.md
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
     - Comments: langref/comments.md
