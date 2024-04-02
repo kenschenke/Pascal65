@@ -13,6 +13,7 @@
 #include <scanner.h>
 #include <tokenizer.h>
 #include <string.h>
+#include <error.h>
 
 static void initCharCodeMap(void);
 static void skipWhiteSpace(void);
@@ -50,6 +51,11 @@ void getNextToken(void)
 
         case ccEndOfFile:
             tokenCode = tcEndOfFile;
+            break;
+
+        case ccError:
+            Error(errUnexpectedToken);
+            getChar();  // move past the bad character
             break;
     }
 }
