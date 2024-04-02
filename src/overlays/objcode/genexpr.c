@@ -404,10 +404,23 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		retrieveChunk(exprLeft.evalType, &leftType);
 		getBaseType(&leftType);
 		if (leftType.kind == TYPE_STRING_VAR) {
-			genExpr(_expr.right, 1, 0, 0);
-			genExpr(_expr.left, 1, 1, 0);
-			genThreeAddr(JSR, RT_STRINGSUBSCRIPTREAD);
-			genThreeAddr(JSR, RT_PUSHBYTESTACK);
+			if (isRead) {
+				genExpr(_expr.right, 1, 0, 0);
+				genExpr(_expr.left, 1, 1, 0);
+				genThreeAddr(JSR, RT_STRINGSUBSCRIPTREAD);
+				genThreeAddr(JSR, RT_PUSHBYTESTACK);
+			} else {
+				genExpr(_expr.left, 1, 1, 0);
+				genOne(PHA);
+				genOne(TXA);
+				genOne(PHA);
+				genExpr(_expr.right, 1, 1, 1);
+				genOne(TAY);
+				genOne(PLA);
+				genOne(TAX);
+				genOne(PLA);
+				genThreeAddr(JSR, RT_STRINGSUBSCRIPTCALC);
+			}
 			break;
 		}
 
