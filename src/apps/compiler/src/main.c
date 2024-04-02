@@ -189,13 +189,13 @@ void main(int argc, char *argv[])
 #endif
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
-    printlnz("Loading tokenizer overlay");
+    printlnz("Tokenizing");
 
     if (loadfile("compiler.1")) {
         tokenId = tokenize(srcFn);
     }
 
-    printlnz("Loading parser overlay");
+    printlnz("Parsing");
     if (loadfile("compiler.2")) {
         astRoot = parse(tokenId);
         freeMemBuf(tokenId);
@@ -211,7 +211,7 @@ void main(int argc, char *argv[])
         return;
     }
 
-    printlnz("Loading resolver overlay");
+    printlnz("Resolving");
     if (loadfile("compiler.3")) {
         init_scope_stack();
         resolve_units();
@@ -221,7 +221,7 @@ void main(int argc, char *argv[])
         fix_global_offsets(astRoot);
     }
 
-    printlnz("Loading typecheck overlay");
+    printlnz("Type checking");
     if (loadfile("compiler.4")) {
         decl_typecheck(astRoot);
         typecheck_units();
@@ -231,7 +231,6 @@ void main(int argc, char *argv[])
         return;
     }
 
-    printlnz("Loading linker overlay");
     if (loadfile("compiler.6")) {
         linkerPreWrite(astRoot);
     }
@@ -240,7 +239,7 @@ void main(int argc, char *argv[])
         return;
     }
 
-    printlnz("Loading objcode overlay");
+    printlnz("Writing code");
     if (loadfile("compiler.5")) {
         objCodeWrite(astRoot);
     }
@@ -249,7 +248,7 @@ void main(int argc, char *argv[])
         return;
     }
 
-    printlnz("Loading linker overlay");
+    printlnz("Linking code");
     if (loadfile("compiler.6")) {
         linkerPostWrite(srcFn, isAutoRun);
     }
