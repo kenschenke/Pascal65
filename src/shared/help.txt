@@ -1,6 +1,6 @@
 Welcome to Pascal65
 -----------------------------
-Copyright 2022-23 Ken Schenke
+Copyright 2022-24 Ken Schenke
 kenschenke@gmail.com
 
 This is the help page for Pascal65.

@@ -1,11 +1,19 @@
-Welcome To Pascal65 Version XXX
+Welcome To Pascal65 Version 0.24
 
-Copyright 2022-2023 by Ken Schenke
+Copyright 2022-2024 by Ken Schenke
 kenschenke@gmail.com
 github.com/kenschenke/Pascal65
 
-Pascal compiler based on the book
+Pascal compiler based on
+
 "Writing Compilers and Interpreters:
 A Software Engineering Approach"
 Second Edition
 by Ronald Mak
+
+and
+
+"Introduction to Compilers and
+Language Design"
+Second Edition
+by Prof. Douglas Thain
