@@ -31,7 +31,7 @@
 .import writeCharArray, readCharArrayFromInput, floatToInt16, FPOUT
 .import memcopy, readFloatFromInput, readIntFromInput, _strToFloat
 .import concatString, assignString, convertString, readStringFromInput
-.import stringSubscriptRead
+.import stringSubscriptRead, stringSubscriptCalc
 
 .segment "JMPTBL"
 
@@ -116,3 +116,4 @@ jmp assignString         ; BASE + 231
 jmp convertString        ; BASE + 234
 jmp readStringFromInput  ; BASE + 237
 jmp stringSubscriptRead  ; BASE + 240
+jmp stringSubscriptCalc  ; BASE + 243

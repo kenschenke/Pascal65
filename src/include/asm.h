@@ -230,6 +230,7 @@
 #define RT_CONVERTSTRING        (RT_BASE + 234)
 #define RT_READSTRINGFROMINPUT  (RT_BASE + 237)
 #define RT_STRINGSUBSCRIPTREAD  (RT_BASE + 240)
+#define RT_STRINGSUBSCRIPTCALC  (RT_BASE + 243)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

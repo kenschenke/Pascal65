@@ -13,7 +13,7 @@
 .include "runtime.inc"
 .include "error.inc"
 
-.export stringSubscriptRead, stringSubscriptWrite
+.export stringSubscriptRead, stringSubscriptCalc
 
 ; This routine returns the string character at the given subscript.
 ;
@@ -42,31 +42,32 @@
     rts
 .endproc
 
-; This routine writes a character to the string at a subscript
+; This routine calculates the address of a string's character
+; at a given index.
 ;
 ; Pointer to string heap in A/X
-; Character to write in Y
-; String index on runtime stack
-.proc stringSubscriptWrite
+; String index in Y
+; Address of character returned in ptr1
+.proc stringSubscriptCalc
     sta ptr1                    ; Save heap address in ptr1
     stx ptr1 + 1
-    sty tmp1                    ; Store character in tmp1
-    jsr rtPopAx                 ; Pop string index off stack
-    sta tmp2                    ; Save lower byte to tmp2
-    txa                         ; Copy high byte to A
-    beq :+                      ; Branch if high byte is zero
+    tya                         ; Transfer index to A (for Z flag)
+    beq RO                      ; Index cannot be 0
+    sta tmp1                    ; Save index to tmp1
+    ldy #0
+    lda (ptr1),y                ; Load string length into A
+    cmp tmp1                    ; Is index <= string length?
+    bcc RO                      ; Branch if not
+    ; Add the index to the string heap address
+    lda ptr1
+    clc
+    adc tmp1
+    sta ptr1
+    lda ptr1 + 1
+    adc #0
+    sta ptr1 + 1
+    rts
 RO: lda #rteValueOutOfRange     ; Index out of range
     jsr rtRuntimeError
-:   lda tmp2                    ; Load lower byte of index
-    beq RO                      ; Branch if zero
-    ldy #0
-    lda (ptr1),y                ; Load string length
-    cmp tmp2                    ; Compare string length to index
-    bcc RO                      ; Branch if index > string length
-    lda tmp2                    ; Load index
-    tay                         ; Transfer it to Y
-    lda tmp1                    ; Load character
-    sta (ptr1),y                ; Store it in the string
-    rts
 .endproc
 
