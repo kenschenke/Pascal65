@@ -257,6 +257,8 @@ void main(int argc, char *argv[])
     free_scope_stack();
     freeCommon();
 
+    printlnz("Done");
+
     log("main", "back to main code");
 
     relaunchIde();
