@@ -31,7 +31,7 @@
 static void editorDelChar(void);
 static void editorInsertChar(int c);
 static void editorInsertTab(void);
-static void editorInsertNewLine(int spaces);
+static void editorInsertNewLine(void);
 static void editorMoveCursor(int key, char skipClear);
 static char editorProcessKeypress(void);
 static void editorSetupEditBuf(void);
@@ -205,7 +205,7 @@ static void editorInsertTab(void) {
     while (E.cf.cx % EDITOR_TAB_STOP) editorInsertChar(' ');
 }
 
-void editorInsertNewLine(int spaces) {
+static void editorInsertNewLine(void) {
     erow currentRow, newRow;
     int firstCol, startAt, toCopy;
     CHUNKNUM chunkNum, nextChunk;
@@ -237,10 +237,7 @@ void editorInsertNewLine(int spaces) {
         editorSetRowDirty(&newRow);
     }
     E.cf.cy++;
-    if (E.cf.cx) {
-        E.cf.cx = 0;
-        while (spaces--) editorInsertChar(' ');
-    }
+    E.cf.cx = 0;
 }
 
 /*** input ***/
@@ -368,30 +365,7 @@ static char editorProcessKeypress(void) {
     switch (c) {
         case CH_ENTER:
             if (E.cf.fileChunk && !E.cf.readOnly) {
-                // Count the number of spaces at the beginning of this line
-                erow row;
-                int i, spaces = 0;
-                echunk chunk;
-                CHUNKNUM chunkNum;
-                editorFlushEditBuf();
-                editorRowAt(E.cf.cy, &row);
-                if (E.cf.cx < row.size) editorSetRowDirty(&row);
-                chunkNum = row.firstTextChunk;
-                while (chunkNum) {
-                    retrieveChunk(chunkNum, (unsigned char *)&chunk);
-                    for (i = 0; i < chunk.bytesUsed; ++i) {
-                        if (chunk.bytes[i] == ' ') {
-                            ++spaces;
-                        } else {
-                            break;
-                        }
-                    }
-                    if (i < chunk.bytesUsed) {
-                        break;
-                    }
-                    chunkNum = chunk.nextChunk;
-                }
-                editorInsertNewLine(spaces);
+                editorInsertNewLine();
             }
             break;
         
@@ -531,7 +505,7 @@ static char editorProcessKeypress(void) {
                 clearCursor();
                 editorFlushEditBuf();
                 E.cf.cx = 0;
-                editorInsertNewLine(0);
+                editorInsertNewLine();
                 E.cf.cy--;
             }
             break;
