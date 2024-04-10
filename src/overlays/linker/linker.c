@@ -605,9 +605,9 @@ void linkerPreWrite(CHUNKNUM astRoot)
 void runPrg(void);
 
 #ifdef COMPILERTEST
-void linkerPostWrite(const char*filename, char* nextTest)
+void linkerPostWrite(const char*filename, char* nextTest, CHUNKNUM astRoot)
 #else
-void linkerPostWrite(const char* filename, char run)
+void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 #endif
 {
 	FILE* out;
@@ -695,6 +695,8 @@ void linkerPostWrite(const char* filename, char run)
 	ch = 0;
 	fwrite(&ch, 1, 1, codeFh);
 	fwrite(&ch, 1, 1, codeFh);
+
+	decl_free(astRoot);
 
 	sortLinkerTags();
 	

@@ -280,10 +280,9 @@ void main()
     }
 #endif
         printz("W");
-        linkerPostWrite(testFiles[i], testFiles[i+1]);
+        linkerPostWrite(testFiles[i], testFiles[i+1], astRoot);
 
         printz("F");
-        decl_free(astRoot);
         free_scope_stack();
         freeCommon();
         printz("  ");

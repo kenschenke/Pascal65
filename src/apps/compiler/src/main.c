@@ -250,10 +250,9 @@ void main(int argc, char *argv[])
 
     printlnz("Linking code");
     if (loadfile("compiler.6")) {
-        linkerPostWrite(srcFn, isAutoRun);
+        linkerPostWrite(srcFn, isAutoRun, astRoot);
     }
 
-    decl_free(astRoot);
     free_scope_stack();
     freeCommon();
 

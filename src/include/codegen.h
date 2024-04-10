@@ -131,9 +131,9 @@ void initLinkerSymbolTable(void);
 void linkerPreWrite(CHUNKNUM astRoot);
 void objCodeWrite(CHUNKNUM astRoot);
 #ifdef COMPILERTEST
-void linkerPostWrite(const char* prgFilename, char* nextTest);
+void linkerPostWrite(const char* prgFilename, char* nextTest, CHUNKNUM astRoot);
 #else
-void linkerPostWrite(const char* prgFilename, char run);
+void linkerPostWrite(const char* prgFilename, char run, CHUNKNUM astRoot);
 #endif
 
 // Returns 1 if address found in table : address is valid
