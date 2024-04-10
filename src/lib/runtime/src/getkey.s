@@ -32,7 +32,7 @@ L2:
 ;     else if (c >= 65 && c <= 90) c += 128;
     cmp #96
     bcc L1      ; branch if char <= 96
-    cmp #122
+    cmp #123
     bcs L2      ; branch if char > 122
     sec
     sbc #32     ; subtract 32 from char
@@ -40,7 +40,7 @@ L2:
 L1:
     cmp #64
     bcc L2      ; branch if char <= 64
-    cmp #90
+    cmp #91
     bcs L2      ; branch if char > 90
     clc
     adc #128    ; add 128 to char
