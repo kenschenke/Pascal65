@@ -119,9 +119,7 @@ void editorInsertRow(int at, char *s, size_t len) {
 
     if (at < 0 || at > E.cf.numrows) return;
 
-    if (allocChunk(&newRowChunk) == 0) {
-        return;
-    }
+    allocChunk(&newRowChunk);
     newRow.rowChunk = newRowChunk;
     newRow.idx = at;
     newRow.size = 0;   // this is set later when the text is added

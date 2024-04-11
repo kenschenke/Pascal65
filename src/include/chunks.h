@@ -32,8 +32,8 @@ typedef unsigned short CHUNKNUM;
 
 // Allocates a new chunk.
 // Chunk number returned by ref.
-// Zero returned on failure.  Non-zero on success.
-char allocChunk(CHUNKNUM *chunkNum);
+// A runtime error is generated if no more memory.
+void allocChunk(CHUNKNUM *chunkNum);
 
 // Flushes the chunk's current block and writes it
 // to extended memory.

@@ -12,11 +12,13 @@
 
 .include "blocks.inc"
 .include "chunks.inc"
+.include "error.inc"
 
 .importzp ptr1
 .import _allocBlock, _storeBlock, _isBlockAllocated, _retrieveBlock, _currentBlock, _blockData
 .import __chunkGetBlock, isChunkAlloc, isBlockFull, _getTotalBlocks, setChunkAlloc, packBlockAndChunkNum
 .import setBlockFull, clearChunkAlloc, clearBlockFull, packBlockAndChunkNum, decAvailChunks, _flushChunkBlock
+.import runtimeError
 
 .export _allocChunk
 
@@ -211,7 +213,8 @@ totalBlocks: .res 2
     lda #0
     sta _blockData
     sta _blockData + 1
-    rts
+    lda #rteOutOfMemory
+    jmp runtimeError
 
 .endproc
 

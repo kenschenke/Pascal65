@@ -23,9 +23,7 @@ CHUNKNUM declCreate(
     CHUNKNUM chunkNum;
     struct decl decl;
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     memset(&decl, 0, sizeof(struct decl));
 
@@ -45,9 +43,7 @@ CHUNKNUM stmtCreate(stmt_t kind, CHUNKNUM expr, CHUNKNUM body)
     CHUNKNUM chunkNum;
     struct stmt stmt;
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     memset(&stmt, 0, sizeof(struct stmt));
 
@@ -68,9 +64,7 @@ CHUNKNUM exprCreate(expr_t kind,
     CHUNKNUM chunkNum;
     struct expr expr;
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     memset(&expr, 0, sizeof(struct expr));
 
@@ -91,9 +85,7 @@ CHUNKNUM param_list_create(char* name, CHUNKNUM type, CHUNKNUM next)
     CHUNKNUM chunkNum;
     struct param_list param_list;
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     param_list.name = name_create(name);
     param_list.type = type;

@@ -54,9 +54,11 @@ EDITORFILESOVRLSRCS := $(wildcard $(EDITORFILESOVRLSRC)/*.c)
 EDITORFILESOVRLSRCS += $(wildcard $(EDITORFILESOVRLSRC)/*.s)
 
 SOURCES += $(LIBCOMMONDIR)/_printz.s
+SOURCES += $(LIBCOMMONDIR)/exit.s
 SOURCES += $(LIBCOMMONDIR)/getline.s
 SOURCES += $(LIBCOMMONDIR)/inputbuf.s
 SOURCES += $(LIBCOMMONDIR)/leftpad.s
+SOURCES += $(LIBCOMMONDIR)/rterror.s
 ifeq ($(TARGET),mega65)
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
 SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)

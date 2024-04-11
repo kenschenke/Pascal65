@@ -43,9 +43,7 @@ CHUNKNUM name_clone(CHUNKNUM source) {
 
     retrieveChunk(source, buf);
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     storeChunk(chunkNum, buf);
 
@@ -63,9 +61,7 @@ CHUNKNUM name_create(const char* name) {
     memset(buf, 0, CHUNK_LEN);
     memcpy(buf, name, strlen(name));
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     storeChunk(chunkNum, (unsigned char*)buf);
 
@@ -78,9 +74,7 @@ CHUNKNUM typeCreate(type_t kind, char isConst,
     CHUNKNUM chunkNum;
     struct type type;
 
-    if (!allocChunk(&chunkNum)) {
-        return 0;
-    }
+    allocChunk(&chunkNum);
 
     memset(&type, 0, sizeof(struct type));
     type.kind = kind;
@@ -101,9 +95,7 @@ CHUNKNUM symbol_create(symbol_t kind, CHUNKNUM type, const char* name)
     struct symbol _symbol;
 
     memset(&_symbol, 0, sizeof(struct symbol));
-    if (!allocChunk(&_symbol.nodeChunkNum)) {
-        return 0;
-    }
+    allocChunk(&_symbol.nodeChunkNum);
 
     _symbol.kind = kind;
     _symbol.type = type;

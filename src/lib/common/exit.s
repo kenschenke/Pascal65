@@ -15,6 +15,10 @@
 .import _printlnz
 .export exit
 
+.ifndef RUNTIME
+.import _exit
+.endif
+
 .data
 
 exiting: .asciiz "exiting."
@@ -29,9 +33,15 @@ exiting: .asciiz "exiting."
     lda #<exiting
     ldx #>exiting
     jsr _printlnz
+.ifdef RUNTIME
     ; restore the stack pointer
     ldx savedStackPtr
     txs
     ; call the exit handler
     jmp (exitHandler)
+.else
+    lda #5
+    ldx #0
+    jmp _exit
+.endif
 .endproc
