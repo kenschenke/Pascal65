@@ -365,6 +365,7 @@ static char editorProcessKeypress(void) {
     switch (c) {
         case CH_ENTER:
             if (E.cf.fileChunk && !E.cf.readOnly) {
+                editorFlushEditBuf();
                 editorInsertNewLine();
             }
             break;
