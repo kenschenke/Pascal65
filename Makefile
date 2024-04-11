@@ -24,7 +24,7 @@ BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(DEBUGLIB)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii autosrc.petscii hello.petscii debug.petscii fivedice.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii
 
 all: $(RUNTIME) ide compiler $(SCREENLIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
 
@@ -33,9 +33,6 @@ help.petscii: src/shared/help.txt
 
 screen.petscii: src/lib/screen/screen.pas
 	dos2unix < src/lib/screen/screen.pas | petcat -w2 -text -o screen.petscii
-
-autosrc.petscii: autosrc.txt
-	dos2unix < autosrc.txt | petcat -w2 -text -o autosrc.petscii
 
 screendemo.petscii: examples/screendemo.pas
 	dos2unix < examples/screendemo.pas | petcat -w2 -text -o screendemo.petscii
@@ -110,7 +107,6 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
 	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \
-	-write src/lib/debug/bin/$(TARGET)/debug debug.lib,prg \
 	$(DRVWRITE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
@@ -119,10 +115,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write screen.petscii screen.pas,seq \
 	-write screendemo.petscii screendemo.pas,seq \
 	-write fivedice.petscii fivedice.pas,seq \
-	-write hello.petscii hello.pas,seq \
-	-write autosrc.petscii autosrc,seq \
 	-write system.petscii system.pas,seq \
-	-write debug.petscii debug.pas,seq \
 	-write title.petscii title.txt,seq \
 
 clean:
