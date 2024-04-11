@@ -233,7 +233,7 @@ void genStmts(CHUNKNUM chunkNum)
 		retrieveChunk(chunkNum, &_stmt);
 		currentLineNumber = _stmt.lineNumber;
 
-#if 1
+#if 0
 		genOne(NOP);
 		genOne(PHA);
 		genTwo(LDA_IMMEDIATE, (char)_stmt.lineNumber);
