@@ -66,8 +66,8 @@ static char *p2sbuf = (char*) 0x334;
 
 // static ESCAPE_CODE escapeCode[255];
 static unsigned char g_curTextColor = COLOUR_WHITE;
-static unsigned char g_curX = 0;
-static unsigned char g_curY = 0;
+// static unsigned char g_curX = 0;
+// static unsigned char g_curY = 0;
 static unsigned char g_curScreenW = 0;
 static unsigned char g_curScreenH = 0;
 #if 0
@@ -105,6 +105,7 @@ static unsigned char hash(const unsigned char *str, const unsigned char maxLen)
 }
 #endif
 
+#if 0
 static void clrscr_(unsigned char)
 {
     clrscr();
@@ -115,6 +116,7 @@ static void gohome_(unsigned char) { gohome(); } // Callable from Escape Code ta
 static void escNOP(unsigned char)
 { /* do nothing */
 }
+#endif
 
 void conioinit(void)
 {
@@ -447,12 +449,12 @@ void clearattr(void)
 }
 #endif
 
+#if 0
 void gohome(void)
 {
     gotoxy(0, 0);
 }
 
-#if 1
 void gotoxy(unsigned char x, unsigned char y)
 {
     g_curX = x;

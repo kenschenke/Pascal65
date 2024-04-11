@@ -55,6 +55,12 @@ static void compile(char run)
     memset(filename, 0, sizeof(filename));
     retrieveChunk(E.cf.filenameChunk, filename);
 
+    __asm__ ("lda #147");
+    __asm__ ("jsr $ffd2");
+    printz("\nCompiling ");
+    printlnz(filename);
+    printlnz("");
+
     if (fp = fopen(run ? AUTORUN : AUTOSRC, "w")) {
         fwrite(filename, 1, strlen(filename), fp);
         fwrite(&newline, 1, 1, fp);

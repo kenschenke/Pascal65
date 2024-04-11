@@ -309,9 +309,6 @@ static void editorMoveCursor(int key, char skipClear) {
 
     if (E.cf.cx < E.cf.coloff + E.screencols && E.cf.cy < E.cf.rowoff + E.screenrows) {
         renderCursor(E.cf.cx-E.cf.coloff, E.cf.cy-E.cf.rowoff);
-#ifdef __MEGA65__
-        gotoxy(E.cf.cx, E.cf.cy);
-#endif
     }
 
     if (E.cf.inSelection) {
@@ -641,7 +638,6 @@ char editorRun(void) {
 
     if (E.loopCode == EDITOR_LOOP_QUIT) {
         clearScreen();
-        gotoxy(0, 0);
     }
 
     return E.loopCode;
