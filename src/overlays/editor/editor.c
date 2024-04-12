@@ -171,6 +171,9 @@ static void editorDelChar(void) {
         E.cf.cy--;
         E.anyDirtyRows = 1;
     }
+
+    E.cf.dirty = 1;
+    updateStatusBarFilename();
 }
 
 void editorFlushEditBuf(void)
