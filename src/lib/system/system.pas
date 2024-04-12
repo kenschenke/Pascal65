@@ -1,10 +1,20 @@
+(*
+ * Ken Schenke (kenschenke@gmail.com)
+ * 
+ * System Library (included automatically)
+ * 
+ * Copyright (c) 2024
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT
+*)
+
 Unit System;
 
 Interface
 
 (*
-String Routines in system.lib:
-All indexes are 1-based
+Future string routines
 Function BeginsWith(str, sub : String) : Boolean;
 Function Contains(str, sub : String) : Boolean;
 Function Copy(str : String; index, count : Byte) : String;
@@ -12,12 +22,6 @@ Procedure Delete(Var str : String; index, count : Byte);
 Function EndsWith(str, sub : String) : Boolean;
 Procedure Insert(source : String; Var str : String; index : Byte);
 Function Pos(substr : String; str : String; offset : Byte) : Byte;
-ShortCompareText?
-
-In Runtime:
-Function Concat(s1, s2, s3, s4, ... : String) : String;
-Str
-Val
 *)
 
 Function Chr(Num : Integer) : Char;
