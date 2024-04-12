@@ -35,12 +35,17 @@
 
 #define AUTORUN "autorun"
 #define AUTOSRC "autosrc"
+#define EDITOR_STATE "zzstate"
 
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
 static void checkSrcFn(const char *str);
+static void handleErrors(void);
+static char hasEditorState(void);
 static void readAutoSrc(void);
 static void relaunchIde(void);
+
+void waitforkey(void);
 
 char isAutoRun;     // non-zero to run program after compiling
 char srcFn[16 + 1]; // source filename
@@ -57,6 +62,28 @@ static void checkSrcFn(const char *str)
     }
 
     strcpy(srcFn, str);
+}
+
+static void handleErrors(void)
+{
+    if (hasEditorState()) {
+        printz("\nPress a key...");
+        waitforkey();
+        relaunchIde();
+    }
+}
+
+static char hasEditorState(void)
+{
+    FILE *fh;
+
+    fh = fopen(EDITOR_STATE, "r");
+    if (fh == NULL) {
+        return 0;
+    }
+
+    fclose(fh);
+    return 1;
 }
 
 static void readAutoSrc(void)
@@ -102,7 +129,7 @@ void loadproghelper(const char *prg);
 
 static void relaunchIde(void)
 {
-    FILE *fp = fopen("zzstate", "r");
+    FILE *fp = fopen(EDITOR_STATE, "r");
 
     if (fp == NULL) {
         return;
@@ -202,12 +229,14 @@ void main(int argc, char *argv[])
     }
 
     if (errors) {
+        handleErrors();
         return;
     }
 
     tokenizeAndParseUnits();
 
     if (errors) {
+        handleErrors();
         return;
     }
 
@@ -221,6 +250,11 @@ void main(int argc, char *argv[])
         fix_global_offsets(astRoot);
     }
 
+    if (errors) {
+        handleErrors();
+        return;
+    }
+
     printlnz("Type checking");
     if (loadfile("compiler.4")) {
         decl_typecheck(astRoot);
@@ -228,6 +262,7 @@ void main(int argc, char *argv[])
     }
 
     if (errors) {
+        handleErrors();
         return;
     }
 
@@ -236,6 +271,7 @@ void main(int argc, char *argv[])
     }
 
     if (errors) {
+        handleErrors();
         return;
     }
 
@@ -245,6 +281,7 @@ void main(int argc, char *argv[])
     }
 
     if (errors) {
+        handleErrors();
         return;
     }
 
@@ -280,16 +317,13 @@ void log(const char *module, const char *message)
     printlnz(message);
 }
 
-void logError(const char *message, unsigned lineNumber, TErrorCode ec)
+void logError(const char *message, unsigned lineNumber, TErrorCode /*ec*/)
 {
     printz("*** ERROR: ");
     printz(message);
     printz(" -- line ");
-    printz(formatInt16(lineNumber));
-    printz(" -- code ");
-    printlnz(formatInt16(ec));
+    printlnz(formatInt16(lineNumber));
     ++errors;
-    exit(0);
 }
 
 void logFatalError(const char *message)
