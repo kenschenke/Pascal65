@@ -97,7 +97,7 @@ void logRuntimeError(const char *message, unsigned /*lineNumber*/)
 
 void editorSetDefaultStatusMessage(void) {
 #ifdef __MEGA65__
-    editorSetStatusMessage("F1: open  F2: save  F5: compile  \x1f: files  Ctrl-X: quit");
+    editorSetStatusMessage("F1: open  F2: save  F3: run  F5: compile  \x1f: files  Ctrl-X: quit");
 #else
     editorSetStatusMessage("F1: open  Ctrl-X: quit  F7: help");
 #endif
