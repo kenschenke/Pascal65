@@ -2,7 +2,7 @@
 
 .export getScreenSize
 
-.import is80Cols, is50Rows, storeVarParam
+.import is80Cols, is50Rows
 
 .proc getScreenSize
     lda #0
@@ -16,7 +16,7 @@
     bne SC
 C8: lda #80
 SC: ldy #0
-    jsr storeVarParam
+    jsr rtLibStoreVarParam
     ldx #0
     jsr is50Rows
     cmp #0
@@ -25,5 +25,5 @@ SC: ldy #0
     bne SR
 R5: lda #50
 SR: ldy #1
-    jmp storeVarParam
+    jmp rtLibStoreVarParam
 .endproc

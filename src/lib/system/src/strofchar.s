@@ -4,17 +4,15 @@
 
 .export stringOfChar
 
-.import loadParam, returnVal
-
 ch = tmp1
 count = tmp2
 
 .proc stringOfChar
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     pha
     lda #1
-    jsr loadParam
+    jsr rtLibLoadParam
     pha
     clc
     adc #1
@@ -41,5 +39,5 @@ DN: lda #0
     sta sreg + 1
     lda ptr1
     ldx ptr1 + 1
-    jmp returnVal
+    jmp rtLibReturnValue
 .endproc

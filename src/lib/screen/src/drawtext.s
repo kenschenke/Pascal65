@@ -4,7 +4,7 @@
 
 .export drawChar, drawCharRaw, drawText, drawTextRaw
 
-.import loadParam, calcScreen, toScreenCode, is80Cols
+.import calcScreen, toScreenCode, is80Cols
 .import lfill, lpoke, textColor
 .ifdef __MEGA65__
 .import dma_addr, dma_count, dma_value
@@ -78,10 +78,10 @@ AX: ldx tmp1
 ;   : non-0 if character is PETSCII
 .proc drawCharX
     lda #0                  ; Get the first parameter (column)
-    jsr loadParam
+    jsr rtLibLoadParam
     pha
     lda #1                  ; Get the second parameter (row)
-    jsr loadParam
+    jsr rtLibLoadParam
     tay
     pla
     tax
@@ -92,7 +92,7 @@ AX: ldx tmp1
     sta ptr2
     stx ptr2 + 1
     lda #2                  ; Get the third parameter (character)
-    jsr loadParam
+    jsr rtLibLoadParam
     ldx isRaw
     beq :+
     jsr toScreenCode
@@ -124,10 +124,10 @@ AX: ldx tmp1
 ;   : non-0 if character is PETSCII
 .proc drawTextX
     lda #0                  ; Get the first parameter (column)
-    jsr loadParam
+    jsr rtLibLoadParam
     pha
     lda #1                  ; Get the second parameter (row)
-    jsr loadParam
+    jsr rtLibLoadParam
     tay
     pla
     tax
@@ -138,7 +138,7 @@ AX: ldx tmp1
     sta ptr2
     stx ptr2 + 1
     lda #2                  ; Get the third parameter (string)
-    jsr loadParam
+    jsr rtLibLoadParam
     sta ptr1
     stx ptr1 + 1
     ldy #0

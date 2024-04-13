@@ -1,13 +1,12 @@
+.include "runtime.inc"
 
 .export setReverse, reverse
-
-.import loadParam
 
 reverse: .byte 0
 
 .proc setReverse
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     beq :+
     lda #$80
 :   sta reverse

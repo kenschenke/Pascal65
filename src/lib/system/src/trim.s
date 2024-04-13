@@ -2,11 +2,9 @@
 
 .export trim
 
-.import loadParam, returnVal
-
 .proc trim
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     jsr rtTrim
     pha
     txa
@@ -17,5 +15,5 @@
     pla
     tax
     pla
-    jmp returnVal
+    jmp rtLibReturnValue
 .endproc

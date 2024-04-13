@@ -4,11 +4,9 @@
 
 .export upCase
 
-.import loadParam, returnVal
-
 .proc upCase
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     ldy #1
     jsr rtStrCase
     pha
@@ -20,5 +18,5 @@
     pla
     tax
     pla
-    jmp returnVal
+    jmp rtLibReturnValue
 .endproc

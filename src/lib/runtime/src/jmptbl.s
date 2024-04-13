@@ -32,6 +32,7 @@
 .import memcopy, readFloatFromInput, readIntFromInput, _strToFloat
 .import concatString, assignString, convertString, readStringFromInput
 .import stringSubscriptRead, stringSubscriptCalc
+.import loadParam, storeVarParam, returnVal
 
 .segment "JMPTBL"
 
@@ -117,3 +118,6 @@ jmp convertString        ; BASE + 234
 jmp readStringFromInput  ; BASE + 237
 jmp stringSubscriptRead  ; BASE + 240
 jmp stringSubscriptCalc  ; BASE + 243
+jmp loadParam            ; BASE + 246
+jmp returnVal            ; BASE + 249
+jmp storeVarParam        ; BASE + 252

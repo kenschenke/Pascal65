@@ -1,11 +1,10 @@
+.include "runtime.inc"
 
 .export setScreenSize
 
-.import loadParam
-
 .proc setScreenSize
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     cmp #80                 ; Set to 80 columns?
     bne C4                  ; Branch if A != 80
     lda $d031
@@ -22,7 +21,7 @@ C4: cmp #40                 ; Set to 40 columns?
     lda #$4e
     sta $d04c
 DY: lda #1
-    jsr loadParam
+    jsr rtLibLoadParam
     cmp #50                 ; Set to 50 rows?
     bne C2                  ; Branch if A != 50
     lda $d031

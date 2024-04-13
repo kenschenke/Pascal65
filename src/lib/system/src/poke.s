@@ -2,8 +2,6 @@
 
 .include "runtime.inc"
 
-.import loadParam
-
 .export poke
 
 ; This routine stores the value from the second parameter
@@ -11,11 +9,11 @@
 
 .proc poke
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     sta ptr2
     stx ptr2 + 1
     lda #1
-    jsr loadParam
+    jsr rtLibLoadParam
     ldy #0
     sta (ptr2),y
     rts

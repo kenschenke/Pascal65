@@ -231,6 +231,9 @@
 #define RT_READSTRINGFROMINPUT  (RT_BASE + 237)
 #define RT_STRINGSUBSCRIPTREAD  (RT_BASE + 240)
 #define RT_STRINGSUBSCRIPTCALC  (RT_BASE + 243)
+#define RT_LIBLOADPARAM         (RT_BASE + 246)
+#define RT_LIBRETURNVALUE       (RT_BASE + 249)
+#define RT_LIBSTOREVARPARAM     (RT_BASE + 252)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

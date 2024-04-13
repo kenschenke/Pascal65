@@ -1,6 +1,18 @@
+;
+; libutil.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; Utility routines for shared libraries to process
+; parameters and return values.
+
 .include "runtime.inc"
 
-.export loadParam, returnVal
+.export storeVarParam, loadParam, returnVal
 
 ; This routine calculates the address of a parameter and
 ; leaves it in ptr1.
@@ -26,6 +38,40 @@
     dex
     bne :-
 DN: rts
+.endproc
+
+; Stores the value into a Var parameter.
+; Value in A/X/sreg
+; Parameter number (0-based) in Y
+.proc storeVarParam
+    pha
+    txa
+    pha
+    tya
+    jsr calcParam
+    ldy #0
+    lda (ptr1),y
+    sta ptr2
+    iny
+    lda (ptr1),y
+    sta ptr2 + 1
+    pla
+    sta (ptr2),y
+    dey
+    pla
+    sta (ptr2),y
+    ldy #2
+    lda sreg
+    sta (ptr2),y
+    iny
+    lda sreg + 1
+    sta (ptr2),y
+    nop
+    nop
+    nop
+    nop
+    nop
+    rts
 .endproc
 
 ; This routine loads a parameter off the runtime stack
@@ -73,3 +119,4 @@ DN: rts
     sta (ptr1),y
     rts
 .endproc
+

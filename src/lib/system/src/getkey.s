@@ -3,8 +3,6 @@
 
 .export getkey, getkeynowait
 
-.import returnVal
-
 getkey:
     lda #1
     jsr rtGetKey
@@ -18,4 +16,4 @@ DN:
     ldx #0
     stx sreg
     stx sreg + 1
-    jmp returnVal
+    jmp rtLibReturnValue

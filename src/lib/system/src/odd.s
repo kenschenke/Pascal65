@@ -4,13 +4,11 @@
 
 .export odd
 
-.import loadParam, returnVal
-
 ; This routine returns a non-zero value if the paramater is odd
 
 .proc odd
     lda #0
-    jsr loadParam
+    jsr rtLibLoadParam
     ; Isolate the 1 bit
     and #1
     pha
@@ -19,5 +17,5 @@
     sta sreg
     stx sreg + 1
     pla
-    jmp returnVal
+    jmp rtLibReturnValue
 .endproc
