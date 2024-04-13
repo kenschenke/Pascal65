@@ -127,11 +127,10 @@ static int readLibrary(FILE* fp)
 // The libRoot parameter is the AST for the library.
 static void loadLibrary(const char* library, CHUNKNUM libRoot)
 {
-    char first = 1;
     int i, n, pos, numRead;
     char pages;             // number of pages in the library file
     FILE* fp;
-    unsigned char lastByte = 0, buffer[BUFLEN];
+    unsigned char buffer[BUFLEN];
 
     libBase = codeBase + codeOffset;
 
@@ -166,37 +165,29 @@ static void loadLibrary(const char* library, CHUNKNUM libRoot)
     // a read cycle.  For this reason it always retains the
     // last byte from the previous cycle.
     pos = getMemBufPos(libBuf);
+    // prime the buffer
+    readFromMemBuf(libBuf, buffer, 1);
+    ++pos;
     while (pos < numRead) {
-        n = (pos + BUFLEN < numRead ? BUFLEN : numRead - pos);
-        readFromMemBuf(libBuf, buffer, n);
+        n = (pos + BUFLEN < (numRead+1) ? (BUFLEN-1) : numRead - pos);
+        readFromMemBuf(libBuf, buffer+1, n);
 
-        if (buffer[0] >= page && buffer[0] <= page + pages) {
-            short relocAddr = relocate(buffer[0], lastByte);
-            buffer[0] = WORD_HIGH(relocAddr);
-            lastByte = WORD_LOW(relocAddr);
-        }
-        if (first) {
-            first = 0;
-        } else {
-            writeCodeBuf(&lastByte, 1);
-        }
-
-        for (i = 0; i < n; ++i) {
-            if (i < n - 1 && buffer[i + 1] >= page && buffer[i + 1] <= page + pages) {
+        for (i = 0; i <= n; ++i) {
+            if (i < n && buffer[i + 1] >= page && buffer[i + 1] <= page + pages - 1) {
                 short relocAddr = relocate(buffer[i + 1], buffer[i]);
                 buffer[i] = WORD_LOW(relocAddr);
                 buffer[i + 1] = WORD_HIGH(relocAddr);
                 ++i;
             }
         }
-        writeCodeBuf(buffer, n - 1);
+        writeCodeBuf(buffer, n);
 
-        lastByte = buffer[n - 1];
+        buffer[0] = buffer[n];
         pos += n;
     }
 
     freeMemBuf(libBuf);
-    writeCodeBuf(&lastByte, 1);
+    writeCodeBuf(buffer, 1);
 }
 
 void loadLibraries(CHUNKNUM astRoot)
