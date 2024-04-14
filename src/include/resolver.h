@@ -25,5 +25,6 @@ void stmt_resolve(CHUNKNUM chunkNum);
 void fix_global_offsets(CHUNKNUM astRoot);
 short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level);
 void set_unit_offsets(CHUNKNUM firstUnit, short rootOffset);
+void verify_fwd_declarations(CHUNKNUM astRoot);
 
 #endif // end of RESOLVER_H

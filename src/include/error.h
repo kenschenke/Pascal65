@@ -98,6 +98,7 @@ typedef enum {
     errMissingIMPLEMENTATION,
     errMissingUnitDeclaration,
     errInvalidSTRINGUse,
+    errUnresolvedFwd,
     numParserErrors,
 } TErrorCode;
 
