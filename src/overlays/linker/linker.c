@@ -702,7 +702,6 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	
 	// Close the temporary program file and re-open it in read-only mode.
 	fclose(codeFh);
-	codeFh = fopen(TEMP_PROG, "r");
 
     // Generate PRG filename
 #ifndef COMPILERTEST
@@ -729,7 +728,20 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 #endif
 	}
 
+	// See if the program file already exists
 	_filetype = 'p';
+	out = fopen(prgFilename, "r");
+	if (out) {
+		fclose(out);
+#ifdef __MEGA65__
+		removeFile(prgFilename);
+#else
+		remove(prgFilename);
+#endif
+	}
+
+	codeFh = fopen(TEMP_PROG, "r");
+
 	out = fopen(prgFilename, "w");
 	ch = 1;
 	fwrite(&ch, 1, 1, out);
