@@ -692,6 +692,10 @@ void initEditor() {
 #endif
     setupScreenCols();
     editorSetDefaultStatusMessage();
+#ifdef __MEGA65__
+    bgcolor(6);
+    bordercolor(6);
+#endif
 }
 
 void initFile(void) {

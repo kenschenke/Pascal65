@@ -366,19 +366,15 @@ void clrscr()
     lfill(COLOR_RAM_BASE, g_curTextColor, cBytes);
 }
 
-#if 0
 void bordercolor(unsigned char c)
 {
     POKE(VIC_BASE + 0x20, c);
 }
-#endif
 
-#if 0
 void bgcolor(unsigned char c)
 {
     POKE(VIC_BASE + 0x21, c);
 }
-#endif
 
 #if 0
 void textcolor(unsigned char c)
