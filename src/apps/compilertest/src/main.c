@@ -239,6 +239,10 @@ void main()
         set_unit_offsets(units, offset);
         fix_global_offsets(astRoot);
 
+        // Verify forward declarations
+        printz("V");
+        verify_fwd_declarations(astRoot);
+
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay4size, _OVERLAY4_LOAD__, typecheckCache);
 #else

@@ -248,6 +248,7 @@ void main(int argc, char *argv[])
         offset = set_decl_offsets(astRoot, 0, 0);
         set_unit_offsets(units, offset);
         fix_global_offsets(astRoot);
+        verify_fwd_declarations(astRoot);
     }
 
     if (errors) {
