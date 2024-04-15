@@ -78,6 +78,14 @@ Begin
     StrTest3(str);
     If CompareStr(str, 'Test32') <> 0 Then Error(15);
 
+    str := 'Test4';
+    If str[2] <> 'e' Then Error(16);
+    If str[4] <> 't' Then Error(17);
+    str[1] := 'W';
+    If CompareStr(str, 'West4') <> 0 Then Error(18);
+    str[3] := 'm';
+    If CompareStr(str, 'Wemt4') <> 0 Then Error(19);
+
     If anyErrors Then Begin
         Write('Press a key to continue: ');
         ch := GetKey();
