@@ -5,6 +5,10 @@ functions, and procedures.  A unit is stored in a separate source file
 and is included into the program at time of compile.
 
 A unit is made up of two distinct parts: an interface and implementation.
+Everything declared in the interface section is accessible to code outside
+the unit, including variables, procedures, functions, constants, and
+type declarations. Conversely, everything in the implementation section
+can only be accessed within the unit.
 
 Units are a powerful tool to encapsulate and organize code in a program.
 A game might have a unit to manage the screen, another to track game state,
@@ -50,22 +54,22 @@ Uses <other-units>;  (* This is optional *)
 
 Interface
 
-Const  (*optional *)
+Const  (* optional *)
     <constant defintions>
-Type  (*optional *)
+Type  (* optional *)
     <type definitions>
-Var  (*optional *)
+Var  (* optional *)
     <variables>
 
 <procedure and function declarations>
 
 Implementation
 
-Const  (*optional *)
+Const  (* optional *)
     <constant defintions>
-Type  (*optional *)
+Type  (* optional *)
     <type definitions>
-Var  (*optional *)
+Var  (* optional *)
     <variables>
 
 <procedure and function declarations>

@@ -22,6 +22,7 @@ nav:
     - While: langref/while.md
     - Case: langref/case.md
     - Functions and Procedures: langref/funcproc.md
+    - Variable Scope: langref/scope.md
     - Units: langref/units.md
     - Libraries: langref/libraries.md
   - Function Reference:
