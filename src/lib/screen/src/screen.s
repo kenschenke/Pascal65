@@ -1,3 +1,14 @@
+;
+; screen.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Output a runtime error
+; 
+; Copyright (c) 2024
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+
 ; Jump table for screen library
 
 .import clearScreen, drawChar, drawCharRaw, drawText, drawTextRaw
