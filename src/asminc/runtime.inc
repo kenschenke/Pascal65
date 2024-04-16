@@ -79,3 +79,7 @@ rtPushAx                = rt_base + 144
 rtLibLoadParam          = rt_base + 246
 rtLibReturnValue        = rt_base + 249
 rtLibStoreVarParam      = rt_base + 252
+rtStrPos                = rt_base + 255
+rtBeginsWith            = rt_base + 258
+rtEndsWith              = rt_base + 261
+rtContains              = rt_base + 264

@@ -10,12 +10,15 @@
 ; Jump table for system library
 
 .import chr, odd, peek, poke, length, trim, stringOfChar, getkey, getkeynowait
-.import upCase, lowerCase, compareStr
+.import upCase, lowerCase, compareStr, contains, beginswith, endswith, strPos
 
 .segment "JMPTBL"
 
+jmp beginswith
 jmp chr
 jmp compareStr
+jmp contains
+jmp endswith
 jmp getkey
 jmp getkeynowait
 jmp odd
@@ -23,6 +26,7 @@ jmp length
 jmp lowerCase
 jmp peek
 jmp poke
+jmp strPos
 jmp stringOfChar
 jmp trim
 jmp upCase

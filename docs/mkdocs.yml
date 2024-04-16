@@ -27,8 +27,11 @@ nav:
     - Libraries: langref/libraries.md
   - Function Reference:
     - Abs: funcref/abs.md
+    - BeginsWith: funcref/beginswith.md
     - Chr: funcref/chr.md
+    - Contains: funcref/contains.md
     - CompareStr: funcref/comparestr.md
+    - EndsWith: funcref/endswith.md
     - GetKey : funcref/getkey.md
     - Length: funcref/length.md
     - LowerCase: funcref/lowercase.md
@@ -39,6 +42,7 @@ nav:
     - Pred: funcref/pred.md
     - Sqr: funcref/sqr.md
     - StringOfChar: funcref/strofchar.md
+    - StrPos: funcref/strpos.md
     - Succ: funcref/succ.md
     - Trim: funcref/trim.md
     - UpCase: funcref/upcase.md
@@ -59,3 +63,12 @@ nav:
     - SetScreenSize: screen/setscreensize.md
     - SetTextColor: screen/settextcolor.md
     - SetUpperCase: screen/setuppercase.md
+  - Developing Libraries:
+    - Introduction to Libraries: libraries/libraries.md
+    - Interface File: libraries/interface.md
+    - Object File: libraries/objfile.md
+    - Runtime Stack: libraries/stack.md
+    - Runtime Library: libraries/runtime.md
+    - Writing Routines: libraries/routines.md
+    - Memory Heap: libraries/memheap.md
+    

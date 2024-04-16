@@ -234,6 +234,10 @@
 #define RT_LIBLOADPARAM         (RT_BASE + 246)
 #define RT_LIBRETURNVALUE       (RT_BASE + 249)
 #define RT_LIBSTOREVARPARAM     (RT_BASE + 252)
+#define RT_STRPOS               (RT_BASE + 255)
+#define RT_BEGINSWITH           (RT_BASE + 258)
+#define RT_ENDSWITH             (RT_BASE + 261)
+#define RT_CONTAINS             (RT_BASE + 264)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

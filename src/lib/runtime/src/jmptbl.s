@@ -32,7 +32,8 @@
 .import memcopy, readFloatFromInput, readIntFromInput, _strToFloat
 .import concatString, assignString, convertString, readStringFromInput
 .import stringSubscriptRead, stringSubscriptCalc
-.import loadParam, storeVarParam, returnVal
+.import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
+.import contains
 
 .segment "JMPTBL"
 
@@ -121,3 +122,7 @@ jmp stringSubscriptCalc  ; BASE + 243
 jmp loadParam            ; BASE + 246
 jmp returnVal            ; BASE + 249
 jmp storeVarParam        ; BASE + 252
+jmp strPos               ; BASE + 255
+jmp beginswith           ; BASE + 258
+jmp endswith             ; BASE + 261
+jmp contains             ; BASE + 264
