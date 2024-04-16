@@ -82,3 +82,40 @@ Begin
     InnerVar := 10; // Compiler error - Outer cannot access Inner's local variables
 End;
 ```
+
+## Variable Name Resolution
+
+When a program accesses a variable the compiler will look for that variable from the
+inside out. In other words, from the current scope, the parent scope, and so on until
+it reaches the global scope. When the compiler finds a match it stops looking. This
+means that if a local variable has the same name as a variable in a parent or the
+global scope, the parent scope's variable is hidden and cannot be accessed.
+
+The following example demonstrates this.
+
+```
+Program ScopeDemo;
+
+Var
+    Name : String;
+
+Procedure AskForName;
+Var
+    Name : String;  // the global "Name" variable is hidden
+Begin
+    Write('Enter name: ');
+    Readln(Name);  // Local variable is modified
+End;
+
+// Main procedure
+Begin
+    AskForName;
+    Writeln('Hello ', Name);  // Name is an empty string!!
+End.
+```
+
+This program declares *Name* as a global variable. It then calls the *AskForName*
+procedure which also declares a local variable with the same name. It prompts the
+user for their name and reads it into the **local** variable. Back in the main
+procedure, the program attempts to write the user's name to console but it is
+an empty string since *AskForName* did not modify the global *Name* variable.

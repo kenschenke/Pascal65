@@ -26,6 +26,29 @@ Begin
 End;
 ```
 
+## Calling Functions and Procedures
+
+A call to a function or procedure is just the routine's name. If passing parameters,
+place the parameters inside parenthesis. If no parameters are passed then the
+parenthesis are optional.
+
+```
+Program Calls;
+
+Function GiveMeFive : Integer;
+Begin
+    GiveMeFive := 5;
+End;
+
+Begin
+    Writeln('It says ', GiveMeFive);
+    Writeln('It says ', GiveMeFive());
+End.
+```
+
+In this example, both lines in the main procedure are the same. Notice also that the function declaration
+omits the optional parenthesis.
+
 ## Parameters
 
 Procedures and functions can be passed parameters, though none are required.  Parameters can be passed by value or by reference.  If an array or record is passed by value, a copy is made for the routine and discarded when the routine exits.
