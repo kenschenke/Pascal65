@@ -204,6 +204,11 @@ L0:
     iny
     lda (ptr1),y
     sta chunkNum + 1
+    ; Clear first chunk num pointer
+    lda #0
+    sta (ptr1),y
+    dey
+    sta (ptr1),y
     jmp L10                 ; Free all row chunks
 L1:
     ; Does chunkNumPtr point to a zero value?
