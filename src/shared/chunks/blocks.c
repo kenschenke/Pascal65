@@ -60,9 +60,24 @@ unsigned char *sharedBlock;
 
 #ifdef __MEGA65__
 // Mega65 banks 4 and 5
+// IMPORTANT: update the BANKS constant in blocks_mega65.h
 static long banks[] = {
-    0x40000,
-    0x50000
+    0x0040000,		// chip RAM
+    0x0050000,
+	0x8000000,		// attic RAM
+	0x8010000,
+	0x8020000,
+	0x8030000,
+	0x8040000,
+	0x8050000,
+	0x8060000,
+	0x8070000,
+	0x8080000,
+	0x8090000,
+	0x80a0000,
+	0x80b0000,
+	0x80c0000,
+	0x80d0000,
 };	// bank memory addresses
 
 static void transferFromBank(BLOCKNUM blockNum);

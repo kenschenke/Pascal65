@@ -13,7 +13,7 @@
 #ifndef BLOCKS_MEGA65
 #define BLOCKS_MEGA65
 
-#define BANKS 2
+#define BANKS 16
 #define BLOCKS_PER_BANK 256
 #define TOTAL_BLOCKS (BANKS * BLOCKS_PER_BANK)
 
