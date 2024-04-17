@@ -10,7 +10,7 @@ Sets the character set to upper case.
 
 ## Description
 
-*SetLowerCase* is a part of the screen library.  You must reference the screen library in a *Uses* statement.
+*SetUpperCase* is a part of the screen library.  You must reference the screen library in a *Uses* statement.
 
 This procedure sets the current character set to upper case.
 
