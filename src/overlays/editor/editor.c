@@ -48,6 +48,28 @@ void fastcall setscreensize(unsigned char width, unsigned char height);
 
 /*** editor operations ***/
 
+char editorAnyUnsavedFiles(void)
+{
+    CHUNKNUM chunkNum = E.firstFileChunk;
+    struct efile file;
+
+    // Check the current file first
+    if (E.cf.dirty) {
+        return 1;
+    }
+
+    while (chunkNum) {
+        retrieveChunk(chunkNum, &file);
+        if (file.dirty) {
+            return 1;
+        }
+
+        chunkNum = file.nextFileChunk;
+    }
+
+    return 0;
+}
+
 void closeFile(void) {
     if (E.cf.dirty && E.cf.fileChunk) {
         int ch;
@@ -637,10 +659,6 @@ char editorRun(void) {
     while (E.loopCode == EDITOR_LOOP_CONTINUE) {
         editorRefreshScreen();
         E.loopCode = editorProcessKeypress();
-    }
-
-    if (E.loopCode == EDITOR_LOOP_QUIT) {
-        clearScreen();
     }
 
     return E.loopCode;

@@ -169,6 +169,7 @@ void cursorOff(void);
 char doesFileExist(char *filename);
 void drawRow(char row, char col, char len, const char *buf, char isReversed);
 void drawStatusRow(char color, char center, const char *msg);
+char editorAnyUnsavedFiles(void);
 void editorCalcSelection(void);
 void editorClearSelection(void);
 void editorCopySelection(void);

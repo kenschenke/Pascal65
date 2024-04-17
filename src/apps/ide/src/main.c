@@ -345,7 +345,23 @@ void main()
     while (1) {
         loopCode = editorRun();
         if (loopCode == EDITOR_LOOP_QUIT) {
-            reset();
+            if (editorAnyUnsavedFiles()) {
+                int ch;
+
+                while (1) {
+                    drawStatusRow(COLOR_LIGHTRED, 0, "Unsaved files. Exit anyway? Y/N");
+                    ch = cgetc();
+                    if (ch == 'y' || ch == 'Y') {
+                        reset();
+                    } else if (ch == STOP_KEY || ch == 'n' || ch == 'N' || ch == CH_ESC) {
+                        clearStatusRow();
+                        editorSetDefaultStatusMessage();
+                        break;
+                    }
+                }
+            } else {
+                reset();
+            }
         }
 
         if (loopCode == EDITOR_LOOP_OPENFILE) {
