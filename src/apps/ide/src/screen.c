@@ -29,8 +29,8 @@
 #define KILO_VERSION "0.0.1"
 
 #ifdef __MEGA65__
-#define STATUSCOL_RO 58
-#define STATUSCOL_MEM 63
+#define STATUSCOL_RO 57
+#define STATUSCOL_MEM 62
 #define STATUSCOL_X 71
 #define STATUSCOL_X_LABEL 69
 #define STATUSCOL_Y 77
