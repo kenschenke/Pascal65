@@ -40,6 +40,9 @@ nav:
     - Peek: funcref/peek.md
     - Poke: funcref/poke.md
     - Pred: funcref/pred.md
+    - Read: funcref/read.md
+    - ReadLn: funcref/read.md
+    - ReadStr: funcref/read.md
     - Sqr: funcref/sqr.md
     - StringOfChar: funcref/strofchar.md
     - StrPos: funcref/strpos.md
