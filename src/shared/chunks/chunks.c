@@ -31,7 +31,7 @@ void flushChunkBlock(void) {
 
 unsigned getTotalChunks(void) {
 #ifdef __MEGA65__
-	return CHUNKS_PER_BLOCK * BLOCKS_PER_BANK * BANKS;
+	return (unsigned)CHUNKS_PER_BLOCK * (unsigned)BLOCKS_PER_BANK * (unsigned)BANKS;
 #else
 	return CHUNKS_PER_BLOCK * getTotalBlocks();
 #endif
