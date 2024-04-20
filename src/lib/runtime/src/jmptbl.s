@@ -33,7 +33,7 @@
 .import concatString, assignString, convertString, readStringFromInput
 .import stringSubscriptRead, stringSubscriptCalc
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
-.import contains
+.import contains, readCharFromInput
 
 .segment "JMPTBL"
 
@@ -126,3 +126,4 @@ jmp strPos               ; BASE + 255
 jmp beginswith           ; BASE + 258
 jmp endswith             ; BASE + 261
 jmp contains             ; BASE + 264
+jmp readCharFromInput    ; BASE + 267

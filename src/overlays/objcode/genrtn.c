@@ -215,9 +215,10 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(arg.evalType, &_type);
 
 		switch (_type.kind) {
+		case TYPE_CHARACTER:
 		case TYPE_BYTE:
 		case TYPE_SHORTINT:
-			genThreeAddr(JSR, RT_READINTFROMINPUT);
+			genThreeAddr(JSR, _type.kind == TYPE_CHARACTER ? RT_READCHARFROMINPUT : RT_READINTFROMINPUT);
 			genThreeAddr(JSR, RT_PUSHBYTESTACK);
 			genExpr(arg.left, 0, 0, 0);
 			genThreeAddr(JSR, RT_STOREINTSTACK);

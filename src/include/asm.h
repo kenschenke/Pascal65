@@ -238,6 +238,7 @@
 #define RT_BEGINSWITH           (RT_BASE + 258)
 #define RT_ENDSWITH             (RT_BASE + 261)
 #define RT_CONTAINS             (RT_BASE + 264)
+#define RT_READCHARFROMINPUT    (RT_BASE + 267)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
