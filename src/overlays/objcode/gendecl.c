@@ -19,8 +19,7 @@
 #include <error.h>
 #include <int16.h>
 
-static void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar,
-	CHUNKNUM arrayNum);
+static void genArrayInit(struct type* pType);
 static void updateHeapOffset(short newOffset);
 
 #define RECORD_DECL_SIZEL 1
@@ -34,85 +33,16 @@ static unsigned char recordDeclCode[] = {
 	JSR, WORD_LOW(RT_PUSHINTSTACK), WORD_HIGH(RT_PUSHINTSTACK),
 };
 
-#define PARENT_ARRAY_INIT1_ELEMENTSL 1
-#define PARENT_ARRAY_INIT1_ELEMENTSH 5
-#define PARENT_ARRAY_INIT1_ELEMSIZEL 9
-#define PARENT_ARRAY_INIT1_ELEMSIZEH 11
-static unsigned char parentArrayInit1[] = {
-	LDA_IMMEDIATE, 0,
-	STA_ZEROPAGE, ZP_TMP1,
-	LDA_IMMEDIATE, 0,
-	STA_ZEROPAGE, ZP_TMP2,
-	// Initialize this array's heap
-	LDA_IMMEDIATE, 0,
-	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
-};
-static unsigned char parentArrayInit2[] = {
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
-	LDA_ZEROPAGE, ZP_PTR1L,
-	LDX_ZEROPAGE, ZP_PTR1H,
-	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
-};
-#define PARENT_ARRAY_INIT3_BNE 3
-#define PARENT_ARRAY_INIT3_JMP 11
-static unsigned char parentArrayInit3[] = {
-	DEC_ZEROPAGE, ZP_TMP1,
-	BNE, 0,
-	LDA_ZEROPAGE, ZP_TMP2,
-	BEQ, 5,
-	DEC_ZEROPAGE, ZP_TMP2,
-	JMP, 0, 0,
-};
-
-#define NON_PARENT_ARRAY_INIT1_SIZEL 1
-#define NON_PARENT_ARRAY_INIT1_SIZEH 3
-static unsigned char nonParentArrayInit1[] = {
+#define ARRAY_ALLOC_SIZEL 1
+#define ARRAY_ALLOC_SIZEH 3
+#define ARRAY_ALLOC_LEN 14
+static unsigned char arrayAlloc[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
 	STA_ZEROPAGE, ZP_PTR1L,
 	STX_ZEROPAGE, ZP_PTR1H,
 	JSR, WORD_LOW(RT_PUSHINTSTACK), WORD_HIGH(RT_PUSHINTSTACK),
-};
-#define NON_PARENT_ARRAY_INIT2_SIZEL 4
-#define NON_PARENT_ARRAY_INIT2_SIZEH 6
-static unsigned char nonParentArrayInit2[] = {
-	// keep the heap pointer
-	PHA,
-	TXA,
-	PHA,
-	// Array element size
-	LDA_IMMEDIATE, 0,
-	LDX_IMMEDIATE, 0,
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
-};
-static unsigned char nonParentArrayInit3[] = {
-	JSR, WORD_LOW(RT_PUSHAX), WORD_HIGH(RT_PUSHAX),
-	// heap address must be in A/X
-	PLA,
-	TAX,
-	PLA,
-	JSR, WORD_LOW(RT_INITARRAYHEAP), WORD_HIGH(RT_INITARRAYHEAP),
-};
-
-#define ARRAY_RECORD_INIT1_ELEMENTSL 1
-#define ARRAY_RECORD_INIT1_ELEMENTSH 5
-static unsigned char arrayRecordInit1[] = {
-	LDA_IMMEDIATE, 0,
-	STA_ZEROPAGE, ZP_TMP1,
-	LDA_IMMEDIATE, 0,
-	STA_ZEROPAGE, ZP_TMP2,
-};
-#define ARRAY_RECORD_INIT2_BNE 3
-#define ARRAY_RECORD_INIT2_JMP 11
-static unsigned char arrayRecordInit2[] = {
-	DEC_ZEROPAGE, ZP_TMP1,
-	BNE, 0,
-	LDA_ZEROPAGE, ZP_TMP2,
-	BEQ, 5,
-	DEC_ZEROPAGE, ZP_TMP2,
-	JMP, 0, 0,
 };
 
 #define HEAP_OFFSET_LOW 4
@@ -139,135 +69,70 @@ static unsigned char strAlloc[] = {
 	STA_X_INDEXED_ZP, ZP_PTR1L,
 };
 
-static void genArrayInit(struct type* pType, char isParentAnArray, char isParentHeapVar,
-	CHUNKNUM arrayNum)
+static void genArrayInit(struct type* pType)
 {
-	char label[15];
-	unsigned short branchOffset;
 	struct type indexType, elemType;
-	short size = pType->size;
-	int i, numElements, lowBound, highBound;
+	int numElements, lowBound, highBound;
 
 	retrieveChunk(pType->indextype, &indexType);
 	retrieveChunk(pType->subtype, &elemType);
+
+	// Push element size onto stack
+	genTwo(LDA_IMMEDIATE, WORD_LOW(elemType.size));
+	genTwo(LDX_IMMEDIATE, WORD_HIGH(elemType.size));
+	genThreeAddr(JSR, RT_PUSHAX);
+
 	lowBound = getArrayLimit(indexType.min);
 	highBound = getArrayLimit(indexType.max);
 	numElements = abs(highBound - lowBound) + 1;
-	if (isParentAnArray) {
-		// Loop through and intialize each child array of the parent array
-		// Parent is an array
-		// Initialize number of elements in tmp1/tmp2
-		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMENTSL] = WORD_LOW(numElements);
-		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMENTSH] = WORD_HIGH(numElements);
-		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMSIZEL] = WORD_LOW(elemType.size);
-		parentArrayInit1[PARENT_ARRAY_INIT1_ELEMSIZEH] = WORD_HIGH(elemType.size);
-		branchOffset = codeOffset + 8;
-		strcpy(label, "ARRAY");
-		strcat(label, formatInt16(arrayNum));
-		linkAddressSet(label, branchOffset);
-		writeCodeBuf(parentArrayInit1, 15);
-		// Array upper bound
-		genExpr(indexType.max, 0, 1, 0);
-		genThreeAddr(JSR, RT_PUSHAX);
-		// Array lower bound
-		genExpr(indexType.min, 0, 1, 0);
-		writeCodeBuf(parentArrayInit2, 10);
-		// Advance ptr1 past array header
-		updateHeapOffset(heapOffset + 6);
-		if (elemType.kind == TYPE_ARRAY) {
-			genArrayInit(&elemType, 1, 1, pType->subtype);
+
+	// Array upper bound
+	genExpr(indexType.max, 0, 1, 0);
+	genThreeAddr(JSR, RT_PUSHAX);
+	// Array lower bound
+	genExpr(indexType.min, 0, 1, 0);
+	genThreeAddr(JSR, RT_PUSHAX);
+	genTwo(LDA_ZEROPAGE, ZP_PTR1L);
+	genTwo(LDX_ZEROPAGE, ZP_PTR1H);
+	// Initialize the array header
+	genThreeAddr(JSR, RT_INITARRAYHEAP);
+	// Move the heap pointer past the array header
+	updateHeapOffset(heapOffset + 6);
+
+	// Check if the element is a record
+	if (elemType.kind == TYPE_DECLARED) {
+		char name[CHUNK_LEN + 1];
+		struct symbol sym;
+		memset(name, 0, sizeof(name));
+		retrieveChunk(elemType.name, name);
+		if (!scope_lookup(name, &sym)) {
+			Error(errUndefinedIdentifier);
 			return;
 		}
-
-		// Check if the element is a record
-		if (elemType.kind == TYPE_DECLARED) {
-			char name[CHUNK_LEN + 1];
-			struct symbol sym;
-			memset(name, 0, sizeof(name));
-			if (!scope_lookup(name, &sym)) {
-				Error(errUndefinedIdentifier);
-				return;
-			}
-			retrieveChunk(sym.type, &elemType);
-		}
-		if (elemType.kind == TYPE_RECORD) {
-            int i;
-			for (i = 0; i < numElements; ++i) {
-				genRecordInit(&elemType);
-			}
-		}
-		else {
-			// Advance prt1 past array elements
-			updateHeapOffset(heapOffset + numElements * elemType.size);
-		}
-
-		// Decrement tmp1/tmp2
-		parentArrayInit3[PARENT_ARRAY_INIT3_BNE] = 256 - (codeOffset - branchOffset) - 4;
-		linkAddressLookup(label, codeOffset + PARENT_ARRAY_INIT3_JMP, 0, LINKADDR_BOTH);
-		writeCodeBuf(parentArrayInit3, 13);
+		retrieveChunk(sym.type, &elemType);
 	}
-	else {
-		if (!isParentHeapVar) {
-			// Allocate array heap
-			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEL] = WORD_LOW(size);
-			nonParentArrayInit1[NON_PARENT_ARRAY_INIT1_SIZEH] = WORD_HIGH(size);
-			writeCodeBuf(nonParentArrayInit1, 14);
-		}
-		else {
-			// Restore ptr1 from parent heap
-			genTwo(LDA_ZEROPAGE, ZP_PTR1L);
-			genTwo(LDX_ZEROPAGE, ZP_PTR1H);
-		}
-		nonParentArrayInit2[NON_PARENT_ARRAY_INIT2_SIZEL] = WORD_LOW(elemType.size);
-		nonParentArrayInit2[NON_PARENT_ARRAY_INIT2_SIZEH] = WORD_HIGH(elemType.size);
-		writeCodeBuf(nonParentArrayInit2, 10);
-		// Array upper bound
-		genExpr(indexType.max, 0, 1, 0);
-		genThreeAddr(JSR, RT_PUSHAX);
-		// Array lower bound
-		genExpr(indexType.min, 0, 1, 0);
-		writeCodeBuf(nonParentArrayInit3, 9);
-		// Advance ptr1 past array header
-		updateHeapOffset(heapOffset + 6);
+
+	// If the element is another array, set it up too.
+	if (elemType.kind == TYPE_ARRAY || elemType.kind == TYPE_RECORD) {
+		unsigned short counter = codeBase + codeOffset + 3;
+		genThreeAddr(JMP, codeBase+codeOffset+5);
+		genOne(WORD_LOW(numElements));
+		genOne(WORD_HIGH(numElements));
 		if (elemType.kind == TYPE_ARRAY) {
-			for (i = 0; i < numElements; ++i) {
-				genArrayInit(&elemType, 1, 1, pType->subtype);
-			}
-		}
-
-		// Check if the element is a record
-		if (elemType.kind == TYPE_DECLARED) {
-			char name[CHUNK_LEN + 1];
-			struct symbol sym;
-			memset(name, 0, sizeof(name));
-			retrieveChunk(elemType.name, name);
-			if (!scope_lookup(name, &sym)) {
-				Error(errUndefinedIdentifier);
-				return;
-			}
-			retrieveChunk(sym.type, &elemType);
-		}
-		if (elemType.kind == TYPE_RECORD) {
-			short offset = heapOffset + elemType.size;
-			// Loop through and intialize each child array of the parent array
-			// Array element is record
-			// Store number of elements in tmp1/tmp2
-			arrayRecordInit1[ARRAY_RECORD_INIT1_ELEMENTSL] = WORD_LOW(numElements);
-			arrayRecordInit1[ARRAY_RECORD_INIT1_ELEMENTSH] = WORD_HIGH(numElements);
-			writeCodeBuf(arrayRecordInit1, 8);
-			strcpy(label, "ARRAY");
-			strcat(label, formatInt16(arrayNum));
-			branchOffset = codeOffset;
-			linkAddressSet(label, codeOffset);
-			// Initialize record
+			genArrayInit(&elemType);
+		} else {
 			genRecordInit(&elemType);
-			// Decrement tmp1/tmp2
-			arrayRecordInit2[ARRAY_RECORD_INIT2_BNE] = 256 - (codeOffset - branchOffset) - 4;
-			linkAddressLookup(label, codeOffset + ARRAY_RECORD_INIT2_JMP, 0, LINKADDR_BOTH);
-			writeCodeBuf(arrayRecordInit2, 13);
-
-			heapOffset += elemType.size * numElements;
 		}
+		genThreeAddr(DEC_ABSOLUTE, counter);
+		genTwo(BNE, 8);		// If low byte is still non-zero skip upper byte and loop again
+		genThreeAddr(LDA_ABSOLUTE, counter+1);
+		// If high byte is zero, break out of loop
+		genTwo(BEQ, elemType.kind==TYPE_ARRAY?19:6);
+		genThreeAddr(DEC_ABSOLUTE, counter+1);
+		if (elemType.kind == TYPE_ARRAY) {
+			updateHeapOffset(heapOffset + elemType.size - 6);
+		}
+		genThreeAddr(JMP, counter+2);
 	}
 }
 
@@ -295,7 +160,7 @@ void genRecordInit(struct type* pType)
 		if (_type.kind == TYPE_ARRAY) {
 			updateHeapOffset(offset);
 			// Record field is an array
-			genArrayInit(&_type, 0, 1, chunkNum);
+			genArrayInit(&_type);
 		}
 
 		offset += _type.size;
@@ -372,7 +237,10 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 
 			case TYPE_ARRAY: {
 				heapOffset = 0;
-				genArrayInit(&_type, 0, 0, chunkNum);
+				arrayAlloc[ARRAY_ALLOC_SIZEL] = WORD_LOW(_type.size);
+				arrayAlloc[ARRAY_ALLOC_SIZEH] = WORD_HIGH(_type.size);
+				writeCodeBuf(arrayAlloc, ARRAY_ALLOC_LEN);
+				genArrayInit(&_type);
 				heapOffsets[heapVar++] = sym.offset;
 				break;
 			}
