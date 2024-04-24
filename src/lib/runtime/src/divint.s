@@ -22,15 +22,15 @@
 .export divint
 
 .import prepOperands8, prepOperands16, prepOperands32, prepOperandsReal
-.import divInt8, divInt16, divInt32
+.import divInt8, divInt16, divInt32, divUint8, divUint16
 
 .proc divint
     cpy #TYPE_BYTE
-    beq div8
+    beq udiv8
     cpy #TYPE_SHORTINT
     beq div8
     cpy #TYPE_WORD
-    beq div16
+    beq udiv16
     cpy #TYPE_INTEGER
     beq div16
     cpy #TYPE_CARDINAL
@@ -46,9 +46,21 @@
     jmp rtPushFromIntOp1
 .endproc
 
+.proc udiv8
+    jsr prepOperands8
+    jsr divUint8
+    jmp rtPushFromIntOp1
+.endproc
+
 .proc div16
     jsr prepOperands16
     jsr divInt16
+    jmp rtPushFromIntOp1
+.endproc
+
+.proc udiv16
+    jsr prepOperands16
+    jsr divUint16
     jmp rtPushFromIntOp1
 .endproc
 
