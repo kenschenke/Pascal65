@@ -36,7 +36,7 @@ extern const TTokenCode tlCaseLabelStart[] = {
 // Tokens that can start an expression
 extern const TTokenCode tlExpressionStart[] = {
     tcPlus, tcMinus, tcIdentifier, tcNumber, tcString,
-    tcNOT, tcLParen, tcDummy
+    tcNOT, tcLParen, tcAt, tcDummy
 };
 
 // Tokens that can follow an expression
@@ -57,12 +57,12 @@ extern const TTokenCode tlUnaryOps[] = {
 
 // Additive operators
 extern const TTokenCode tlAddOps[] = {
-    tcPlus, tcMinus, tcOR, tcDummy
+    tcPlus, tcMinus, tcOR, tcLShift, tcRShift, tcDummy
 };
 
 // Multiplicative operators
 extern const TTokenCode tlMulOps[] = {
-    tcStar, tcSlash, tcDIV, tcMOD, tcAND, tcDummy
+    tcStar, tcSlash, tcDIV, tcMOD, tcAND, tcAmpersand, tcBang, tcDummy
 };
 
 // Tokens that can end a program

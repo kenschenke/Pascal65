@@ -70,7 +70,8 @@ TCharCode getCharCode(unsigned char ch) {
     if (ch == '+' || ch == '-' || ch == '*' || ch == '/' ||
         ch == '=' || ch == '^' || ch == '.' || ch == ',' ||
         ch == '<' || ch == '>' || ch == '(' || ch == ')' ||
-        ch == '[' || ch == ']' || ch == ':' || ch == ';') {
+        ch == '[' || ch == ']' || ch == ':' || ch == ';' ||
+        ch == '!' || ch == '&' || ch == '@') {
         return ccSpecial;
     }
 

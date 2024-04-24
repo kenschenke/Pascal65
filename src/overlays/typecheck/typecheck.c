@@ -975,6 +975,36 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		pType->size = sizeof(char);
 		break;
 
+	case EXPR_BITWISE_AND:
+	case EXPR_BITWISE_OR:
+		pType->kind = typeConversions[leftType.kind-1][rightType.kind-1];
+		if (pType->kind == TYPE_VOID) {
+			Error(errIncompatibleTypes);
+		} else {
+			pType->size = GET_TYPE_SIZE(getTypeMask(pType->kind));
+		}
+		break;
+
+	case EXPR_BITWISE_COMPLEMENT:
+		if (!isTypeInteger(leftType.kind)) {
+			Error(errInvalidType);
+			break;
+		}
+		pType->kind = leftType.kind;
+		pType->size = leftType.size;
+		break;
+
+	case EXPR_BITWISE_LSHIFT:
+	case EXPR_BITWISE_RSHIFT:
+		if (!isTypeInteger(leftType.kind) || !isTypeInteger(rightType.kind)) {
+			Error(errInvalidType);
+			pType->kind = TYPE_VOID;
+			break;
+		}
+		pType->kind = leftType.kind;
+		pType->size = leftType.size;
+		break;
+
 	case EXPR_NOT:
 		checkBoolOperand(&leftType);
 		pType->kind = TYPE_BOOLEAN;

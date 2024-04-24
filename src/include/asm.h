@@ -239,6 +239,11 @@
 #define RT_ENDSWITH             (RT_BASE + 261)
 #define RT_CONTAINS             (RT_BASE + 264)
 #define RT_READCHARFROMINPUT    (RT_BASE + 267)
+#define RT_BITWISEAND           (RT_BASE + 270)
+#define RT_BITWISEOR            (RT_BASE + 273)
+#define RT_BITWISELSHIFT        (RT_BASE + 276)
+#define RT_BITWISERSHIFT        (RT_BASE + 279)
+#define RT_BITWISEINVERT        (RT_BASE + 282)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

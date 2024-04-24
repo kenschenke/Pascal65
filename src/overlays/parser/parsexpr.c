@@ -105,6 +105,10 @@ CHUNKNUM parseFactor(void)
 		getToken();
 		return exprCreate(EXPR_NOT, parseFactor(), 0, 0, 0);
 
+	case tcAt:
+		getToken();
+		return exprCreate(EXPR_BITWISE_COMPLEMENT, parseFactor(), 0, 0, 0);
+
 	case tcLParen: {
 		// Parenthesized subexpression: call parseExpression recursively
 		CHUNKNUM expr;
@@ -177,6 +181,8 @@ CHUNKNUM parseSimpleExpression(void)
 		case tcPlus: et = EXPR_ADD; break;
 		case tcMinus: et = EXPR_SUB; break;
 		case tcOR: et = EXPR_OR; break;
+		case tcLShift: et = EXPR_BITWISE_LSHIFT; break;
+		case tcRShift: et = EXPR_BITWISE_RSHIFT; break;
 		}
 
 		getToken();
@@ -214,6 +220,8 @@ CHUNKNUM parseTerm(void)
 		case tcDIV: ec = EXPR_DIVINT; break;
 		case tcMOD: ec = EXPR_MOD; break;
 		case tcAND: ec = EXPR_AND; break;
+		case tcAmpersand: ec = EXPR_BITWISE_AND; break;
+		case tcBang: ec = EXPR_BITWISE_OR; break;
 		}
 
 		getToken();

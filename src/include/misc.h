@@ -32,7 +32,7 @@ typedef enum {
     tcUpArrow, tcStar, tcLParen, tcRParen, tcMinus, tcPlus,
     tcEqual, tcLBracket, tcRBracket, tcColon, tcSemicolon, tcLt,
     tcGt, tcComma, tcPeriod, tcSlash, tcColonEqual, tcLe, tcGe,
-    tcNe, tcDotDot,
+    tcNe, tcDotDot, tcBang, tcAmpersand, tcLShift, tcRShift, tcAt,
 
     tcAND, tcARRAY, tcBEGIN, tcCASE, tcCONST, tcDIV,
     tcDO, tcDOWNTO, tcELSE, tcEND, tcFILE, tcFOR, tcFUNCTION,

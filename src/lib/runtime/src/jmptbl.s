@@ -33,7 +33,8 @@
 .import concatString, assignString, convertString, readStringFromInput
 .import stringSubscriptRead, stringSubscriptCalc
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
-.import contains, readCharFromInput
+.import contains, readCharFromInput, andBitwise, orBitwise
+.import lshiftBitwise, rshiftBitwise, invertBitwise
 
 .segment "JMPTBL"
 
@@ -127,3 +128,8 @@ jmp beginswith           ; BASE + 258
 jmp endswith             ; BASE + 261
 jmp contains             ; BASE + 264
 jmp readCharFromInput    ; BASE + 267
+jmp andBitwise           ; BASE + 270
+jmp orBitwise            ; BASE + 273
+jmp lshiftBitwise        ; BASE + 276
+jmp rshiftBitwise        ; BASE + 279
+jmp invertBitwise        ; BASE + 282

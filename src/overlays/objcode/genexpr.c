@@ -138,6 +138,22 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		break;
 
 	case EXPR_DIVINT:
+	case EXPR_BITWISE_AND:
+	case EXPR_BITWISE_OR:
+	case EXPR_BITWISE_LSHIFT:
+	case EXPR_BITWISE_RSHIFT: {
+		unsigned short call = RT_BITWISEOR;
+
+		if (_expr.kind == EXPR_DIVINT) {
+			call = RT_DIVINT;
+		} else if (_expr.kind == EXPR_BITWISE_AND) {
+			call = RT_BITWISEAND;
+		} else if (_expr.kind == EXPR_BITWISE_LSHIFT) {
+			call = RT_BITWISELSHIFT;
+		} else if (_expr.kind == EXPR_BITWISE_RSHIFT) {
+			call = RT_BITWISERSHIFT;
+		}
+
 		getExprType(_expr.left, &leftType);
 		getExprType(_expr.right, &rightType);
 		retrieveChunk(_expr.evalType, &resultType);
@@ -147,7 +163,18 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar)
 		genTwo(LDA_IMMEDIATE, leftType.kind);
 		genTwo(LDX_IMMEDIATE, rightType.kind);
 		genTwo(LDY_IMMEDIATE, resultType.kind);
-		genThreeAddr(JSR, RT_DIVINT);
+		genThreeAddr(JSR, call);
+		if (noStack) {
+			genThreeAddr(JSR, RT_POPEAX);
+		}
+		break;
+	}
+
+	case EXPR_BITWISE_COMPLEMENT:
+		getExprType(_expr.left, &leftType);
+		genExpr(_expr.left, 1, 0, 0);
+		genTwo(LDA_IMMEDIATE, leftType.kind);
+		genThreeAddr(JSR, RT_BITWISEINVERT);
 		if (noStack) {
 			genThreeAddr(JSR, RT_POPEAX);
 		}

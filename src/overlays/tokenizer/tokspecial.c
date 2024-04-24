@@ -32,6 +32,9 @@ void getSpecialToken(void)
         case ';': tokenCode = tcSemicolon; ch = getChar(); break;
         case ',': tokenCode = tcComma;     ch = getChar(); break;
         case '/': tokenCode = tcSlash;     ch = getChar(); break;
+        case '!': tokenCode = tcBang;      ch = getChar(); break;
+        case '&': tokenCode = tcAmpersand; ch = getChar(); break;
+        case '@': tokenCode = tcAt;        ch = getChar(); break;
 
         case ':':
             ch = getChar();     // : or :=
@@ -45,7 +48,7 @@ void getSpecialToken(void)
             break;
 
         case '<':
-            ch = getChar();     // < or <= or <>
+            ch = getChar();     // < or <= or <> or <<
             if (ch == '=') {
                 *ps++ = '=';
                 tokenCode = tcLe;
@@ -54,16 +57,24 @@ void getSpecialToken(void)
                 *ps++ = '>';
                 tokenCode = tcNe;
                 getChar();
+            } else if (ch == '<') {
+                *ps++ = '<';
+                tokenCode = tcLShift;
+                getChar();
             } else {
                 tokenCode = tcLt;
             }
             break;
 
         case '>':
-            ch = getChar();     // > or >=
+            ch = getChar();     // > or >= or >>
             if (ch == '=') {
                 *ps++ = '=';
                 tokenCode = tcGe;
+                getChar();
+            } else if (ch == '>') {
+                *ps++ = '>';
+                tokenCode = tcRShift;
                 getChar();
             } else {
                 tokenCode = tcGt;
