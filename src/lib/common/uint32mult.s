@@ -16,6 +16,12 @@
 .import intOp1, intOp2, intOp32
 .endif
 
+.ifdef __MEGA65__
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
+.endif
+
 .import ltUint32, swapInt32
 
 .export multUint32
@@ -34,6 +40,28 @@
 ; Then it loops and adds intOp1/intOp2 to itself until intOp32 is zero.
 
 .proc multUint32
+.ifdef __MEGA65__
+    ; Load the first operand
+    ldx #3
+:   lda intOp1,x
+    sta MULTINA,x
+    dex
+    bpl :-
+
+    ; Load the second operand
+    ldx #3
+:   lda intOp32,x
+    sta MULTINB,x
+    dex
+    bpl :-
+
+    ; Load the result
+    ldx #3
+:   lda MULTOUT,x
+    sta intOp1,x
+    dex
+    bpl :-
+.else
     ; If intOp1/intOp2 is zero result is zero
     lda intOp1
     ora intOp1 + 1
@@ -91,6 +119,7 @@ L2:
     sta intOp1,x
     dex
     bpl :-
+.endif
 Done:
     rts
 .endproc

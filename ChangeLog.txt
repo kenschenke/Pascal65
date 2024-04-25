@@ -6,5 +6,6 @@
     BUG: Fix issue allocating nested arrays
     NEW: Add bitwise operators
     BUG: Fix issue with unsigned 8-bit and 16-bit integer divide
-
+    NEW: Integer division and multiplication now done with hardware multiplier
+         in generated code.
     

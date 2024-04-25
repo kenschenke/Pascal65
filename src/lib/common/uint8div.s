@@ -1,6 +1,14 @@
 .include "error.inc"
 .include "runtime.inc"
 
+.ifdef __MEGA65__
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
+DIVBUSY = $d70f
+DIVOUT = $d76c
+.endif
+
 .export divUint8
 
 ; tmp3 - result
@@ -26,6 +34,22 @@ L1:
     lda intOp1
     beq Done
 
+.ifdef __MEGA65__
+    lda intOp1
+    sta MULTINA
+    lda intOp2
+    sta MULTINB
+    ldx #2
+    lda #0
+:   sta MULTINA+1,x
+    sta MULTINB+1,x
+    dex
+    bpl :-
+:   bit DIVBUSY
+    bmi :-
+    lda DIVOUT
+    sta intOp1
+.else
     ; Initialize result
     lda #0
     sta tmp3
@@ -50,6 +74,7 @@ L3:
     lda tmp3
     sta intOp1
 
+.endif
 Done:
     rts
 .endproc

@@ -21,6 +21,14 @@
 .import ltUint16
 .import runtimeError, exit
 
+.ifdef __MEGA65__
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
+DIVBUSY = $d70f
+DIVOUT = $d76c
+.endif
+
 .export divUint16
 
 ; tmp3 - LB result
@@ -49,6 +57,27 @@ DividendCheck:
     ora intOp1 + 1
     beq Done            ; is intOp1 zero?
 
+.ifdef __MEGA65__
+    lda intOp1
+    sta MULTINA
+    lda intOp1 + 1
+    sta MULTINA + 1
+    lda intOp2
+    sta MULTINB
+    lda intOp2 + 1
+    sta MULTINB + 1
+    lda #0
+    sta MULTINA + 2
+    sta MULTINA + 3
+    sta MULTINB + 2
+    sta MULTINB + 3
+:   bit DIVBUSY
+    bmi :-
+    lda DIVOUT
+    sta intOp1
+    lda DIVOUT + 1
+    sta intOp1 + 1
+.else
 L1:
     ; Initialize the result
     lda #0
@@ -81,6 +110,7 @@ L6:
     sta intOp1
     lda tmp4
     sta intOp1 + 1
+.endif
 
 Done:
     rts

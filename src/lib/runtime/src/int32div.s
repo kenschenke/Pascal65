@@ -10,6 +10,14 @@
 .include "error.inc"
 .include "runtime.inc"
 
+.ifdef __MEGA65__
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
+DIVBUSY = $d70f
+DIVOUT = $d76c
+.endif
+
 .export divInt32
 
 .import absInt32, invertInt32, isNegInt32, ltInt32, swapInt32
@@ -123,6 +131,22 @@ L4:
     jsr absInt32        ; absolute value of intOp32
     jsr swapInt32       ; swap back
 
+.ifdef __MEGA65__
+    ldx #3
+:   lda intOp1,x
+    sta MULTINA,x
+    lda intOp32,x
+    sta MULTINB,x
+    dex
+    bpl :-
+:   bit DIVBUSY
+    bmi :-
+    ldx #3
+:   lda DIVOUT,x
+    sta intOp1,x
+    dex
+    bpl :-
+.else
     ; Initialize result
     lda #0
     sta ptr1
@@ -174,6 +198,7 @@ L6:
     sta intOp1,x
     dex
     bpl :-
+.endif
 
     ; Do we need to negatate the result?
     lda tmp2
