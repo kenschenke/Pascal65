@@ -91,9 +91,12 @@ static char processJumpTable(CHUNKNUM libRoot)
 
             writeCodeBuf(buffer, 3);
         }
-        else {
-            readFromMemBuf(libBuf, buffer, _type.size);
-            writeCodeBuf(buffer, _type.size);
+        else if (_decl.kind == DECL_VARIABLE) {
+            strcpy(name, "libdecl");
+            strcat(name, formatInt16(_decl.type));
+            linkAddressSet(name, codeOffset);
+            readFromMemBuf(libBuf, buffer, 2);
+            writeCodeBuf(buffer, 2);
         }
 
         chunkNum = _decl.next;

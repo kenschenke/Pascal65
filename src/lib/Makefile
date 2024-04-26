@@ -4,6 +4,7 @@ all:
 	cd screen && $(MAKE) TARGET=$(TARGET) all
 	cd debug && $(MAKE) TARGET=$(TARGET) all
 	cd system && $(MAKE) TARGET=$(TARGET) all
+	cd demolib && $(MAKE) TARGET=$(TARGET) all
 
 clean:
 	cd loadprog && $(MAKE) TARGET=$(TARGET) clean
@@ -11,3 +12,4 @@ clean:
 	cd screen && $(MAKE) TARGET=$(TARGET) clean
 	cd debug && $(MAKE) TARGET=$(TARGET) clean
 	cd system && $(MAKE) TARGET=$(TARGET) clean
+	cd demolib && $(MAKE) TARGET=$(TARGET) clean

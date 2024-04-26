@@ -74,4 +74,5 @@ nav:
     - Runtime Library: libraries/runtime.md
     - Writing Routines: libraries/routines.md
     - Memory Heap: libraries/memheap.md
+    - Demo Library: libraries/demolib.md
     

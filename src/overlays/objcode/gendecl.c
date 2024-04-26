@@ -69,6 +69,22 @@ static unsigned char strAlloc[] = {
 	STA_X_INDEXED_ZP, ZP_PTR1L,
 };
 
+#define LIBDECL_SPL 1
+#define LIBDECL_SPH 5
+#define LIBDECL_LEN 19
+static unsigned char libDecl[] = {
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR1L,
+	LDA_IMMEDIATE, 0,
+	STA_ZEROPAGE, ZP_PTR1H,
+	LDY_IMMEDIATE, 0,
+	LDA_ZEROPAGE, ZP_SPL,
+	STA_ZPINDIRECT, ZP_PTR1L,
+	INY,
+	LDA_ZEROPAGE, ZP_SPH,
+	STA_ZPINDIRECT, ZP_PTR1L,
+};
+
 static void genArrayInit(struct type* pType)
 {
 	struct type indexType, elemType;
@@ -175,7 +191,7 @@ void genRecordInit(struct type* pType)
 
 int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 {
-	char name[CHUNK_LEN + 1];
+	char label[CHUNK_LEN + 1];
 	struct decl _decl;
 	struct type _type;
 	struct symbol sym;
@@ -192,9 +208,6 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				chunkNum = _decl.next;
 				continue;
 			}
-
-			memset(name, 0, sizeof(name));
-			retrieveChunk(_decl.name, name);
 
 			if (_decl.node) {
 				retrieveChunk(_decl.node, &sym);
@@ -280,6 +293,16 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				break;
 			}
 
+			if (_decl.isLibrary) {
+				// Write the address of this library declaration
+				// to the library's jump table.
+				strcpy(label, "libdecl");
+				strcat(label, formatInt16(sym.type));
+				linkAddressLookup(label, codeOffset+LIBDECL_SPL, 0, LINKADDR_LOW);
+				linkAddressLookup(label, codeOffset+LIBDECL_SPH, 0, LINKADDR_HIGH);
+				writeCodeBuf(libDecl, LIBDECL_LEN);
+			}
+			
 			++num;
 		}
 
