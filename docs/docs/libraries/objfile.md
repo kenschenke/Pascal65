@@ -28,12 +28,19 @@ immediately following the load address.  The jump table is used to call function
 and procedures in the library.  Just like the Commodore Kernal, each jump table
 entry is three bytes: a JMP instruction, followed by the internal address within
 the library for the routine's entry point.  The table is also used for public
-variables declared in the library's interface.  The appropriate number of bytes
-need to be reserved in the table to accommodate the variable.  For arrays, strings,
-and records, the table entry will be the address within the heap.  The heap address
-will be populated during program initialization.  It is not necessary for the
-library to take any action to initialize this.  See the pages on arrays, strings, and
-records for more information on how Pascal 65 organizes the data in memory.
+variables declared in the library's interface. Each public variable takes
+up two bytes in the jump table. During program initialization, storage space for
+that variable will be allocated on the runtime stack and the address of the
+variable's storage will be placed in the jump table.
+
+### Important
+
+Please re-read the last sentence in the previous paragraph. It is important to
+understand that the location in the jump table contains the *address* for the
+variable's storage, not the variable's value. For records, arrays, and strings,
+the address in the jump table points to the *address* of the variable's heap.
+See the pages on arrays, strings, and records for more information on how
+Pascal 65 organizes the data in memory.
 
 The entries in the jump table must appear in the same order in which they are
 declared in the interface section.  This means that variables (if any) will

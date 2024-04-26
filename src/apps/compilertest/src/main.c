@@ -48,6 +48,7 @@ static char *testFiles[] = {
     "subtract",
     "divint",
     "unit",
+    "libtest",
     NULL
 };
 

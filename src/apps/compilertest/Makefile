@@ -18,6 +18,7 @@ TARGETSRCDIR = $(SRCDIR)/$(TARGET)
 RUNTIME = ../../lib/runtime/bin/$(TARGET)/runtime
 SCREENLIB = ../../lib/screen/bin/$(TARGET)/screen
 SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
+DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
 
 PROGRAM := compilertest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
@@ -85,7 +86,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECK
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -223,6 +224,9 @@ assign.petscii: assign.pas
 bitwise.petscii: bitwise.pas
 	dos2unix < bitwise.pas | petcat -w2 -text -o bitwise.petscii
 
+libtest.petscii: libtest.pas
+	dos2unix < libtest.pas | petcat -w2 -text -o libtest.petscii
+
 ifthen.petscii: ifthen.pas
 	dos2unix < ifthen.pas | petcat -w2 -text -o ifthen.petscii
 
@@ -265,6 +269,9 @@ subtract.petscii: subtract.pas
 system.petscii: ../../lib/system/system.pas
 	dos2unix < ../../lib/system/system.pas | petcat -w2 -text -o system.petscii
 
+demolib.petscii: ../../lib/demolib/demolib.pas
+	dos2unix < ../../lib/demolib/demolib.pas | petcat -w2 -text -o demolib.petscii
+
 unit.petscii: unit.pas
 	dos2unix < unit.pas | petcat -w2 -text -o unit.petscii
 
@@ -275,7 +282,7 @@ $(BINDIR)/$(PROGRAM): $(OBJECTS)
 	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
 
 ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
+$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -291,6 +298,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
 	-write add.petscii add.pas,seq \
 	-write assign.petscii assign.pas,seq \
 	-write bitwise.petscii bitwise.pas,seq \
+	-write libtest.petscii libtest.pas,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
 	-write strtests.petscii strtests.pas,seq \
@@ -305,11 +313,13 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
 	-write divint.petscii divint.pas,seq \
 	-write subtract.petscii subtract.pas,seq \
 	-write system.petscii system.pas,seq \
-	-write $(SYSTEMLIB) system.lib,seq \
+	-write demolib.petscii demolib.pas,seq \
+	-write $(SYSTEMLIB) system.lib,prg \
+	-write $(DEMOLIB) demolib.lib,prg \
 	-write unit.petscii unit.pas,seq \
 	-write unit1.petscii unit1.pas,seq
 else
-$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
+$(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
 	-write $(BINDIR)/$(TOKENIZEROVRLFILE) $(TOKENIZEROVRLFILE) \
@@ -324,6 +334,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
 	-write add.petscii add.pas,seq \
 	-write assign.petscii assign.pas,seq \
 	-write bitwise.petscii bitwise.pas,seq \
+	-write libtest.petscii libtest.pas,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
@@ -339,7 +350,9 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(TXTFILES)
 	-write divint.petscii divint.pas,seq \
 	-write subtract.petscii subtract.pas,seq \
 	-write system.petscii system.pas,seq \
-	-write $(SYSTEMLIB) system.lib,seq \
+	-write demolib.petscii demolib.pas,seq \
+	-write $(SYSTEMLIB) system.lib,prg \
+	-write $(DEMOLIB) demolib.lib,prg \
 	-write unit.petscii unit.pas,seq \
 	-write unit1.petscii unit1.pas,seq \
 	-write $(DRVFILE) $(TARGET)-reu.emd,prg
