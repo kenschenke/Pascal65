@@ -24,7 +24,7 @@ BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(DEBUGLIB)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii
 
 all: $(RUNTIME) ide compiler $(SCREENLIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
 
@@ -51,6 +51,9 @@ debug.petscii: src/lib/debug/debug.pas
 
 title.petscii: src/shared/title.txt
 	dos2unix < src/shared/title.txt | petcat -w2 -text -o title.petscii
+
+license.petscii: license
+	dos2unix < license | petcat -w2 -text -o license.petscii
 
 $(RUNTIME):
 	cd src/lib/runtime && $(MAKE) TARGET=$(TARGET)
@@ -117,6 +120,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write fivedice.petscii fivedice.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
+	-write license.petscii license.txt,seq
 
 clean:
 	cd src/apps && $(MAKE) TARGET=$(TARGET) clean

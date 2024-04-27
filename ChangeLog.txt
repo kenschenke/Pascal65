@@ -1,11 +1,13 @@
 0.24-beta Apr 20 2024
     Initial public release
 
-0.25-beta
+0.25-beta Apr 27 2024
     BUG: Fix problem in output PRG header when hiding BASIC ROM
     BUG: Fix issue allocating nested arrays
     NEW: Add bitwise operators
     BUG: Fix issue with unsigned 8-bit and 16-bit integer divide
-    NEW: Integer division and multiplication now done with hardware multiplier
+    NEW: Integer division and multiplication now use hardware multiplier
          in generated code.
-    
+    NEW: Finish implementation of public interface variables in libraries
+    NEW: Add DemoLib, a library that demonstrates how one is written
+    BUG: Fix the subscript operator on string objects

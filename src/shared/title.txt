@@ -1,4 +1,4 @@
-Welcome To Pascal65 Version 0.24
+Welcome To Pascal65 Version 0.25-beta
 
 Copyright 2022-2024 by Ken Schenke
 kenschenke@gmail.com
