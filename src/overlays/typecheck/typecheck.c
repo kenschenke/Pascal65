@@ -1121,8 +1121,9 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			if (!isTypeInteger(subscriptType.kind)) {
 				Error(errInvalidIndexType);
 				pType->kind = TYPE_VOID;
+			} else {
+				pType->kind = TYPE_CHARACTER;
 			}
-			pType->kind = TYPE_CHARACTER;
 			break;
 		}
 		else if (arrayType.kind != TYPE_ARRAY) {

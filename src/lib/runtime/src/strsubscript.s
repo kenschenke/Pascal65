@@ -24,7 +24,7 @@
 .proc stringSubscriptRead
     sta ptr1
     stx ptr1 + 1
-    jsr rtPopAx
+    jsr rtPopEax
     sta tmp1
     txa
     beq :+

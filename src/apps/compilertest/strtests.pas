@@ -7,6 +7,7 @@ Var
     arr : Array[1..4] Of Char;
     ch : Char;
     str, str2 : String;
+    i : Integer;
 
 Procedure Error(num : Integer);
 Begin
@@ -85,6 +86,12 @@ Begin
     If CompareStr(str, 'West4') <> 0 Then Error(18);
     str[3] := 'm';
     If CompareStr(str, 'Wemt4') <> 0 Then Error(19);
+
+    str := 'Test String';
+    str2 := 'Test String';
+    If Length(str) <> Length(str2) Then Error(20);
+    For i := 1 To Length(str) Do
+        If str[i] <> str2[i] Then Error(21);
 
     If anyErrors Then Begin
         Write('Press a key to continue: ');
