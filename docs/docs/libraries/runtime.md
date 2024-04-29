@@ -5,6 +5,8 @@ to any library. The runtime library is always placed at a fixed address in the
 object code. This means that all routines in the runtime library are at known
 addresses, much like the Kernal.
 
+The runtime library entry points are documented in the *Runtime Library*  section.
+
 ## Header File
 
 Everything in the runtime library is defined in **runtime.inc**, located in

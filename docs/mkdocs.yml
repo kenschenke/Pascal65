@@ -75,4 +75,14 @@ nav:
     - Writing Routines: libraries/routines.md
     - Memory Heap: libraries/memheap.md
     - Demo Library: libraries/demolib.md
-    
+  - Runtime Library:
+    - Introduction: runtime/intro.md
+    - Add: runtime/add.md
+    - Divide: runtime/divide.md
+    - DivInt: runtime/divint.md
+    - HeapAlloc: runtime/heapalloc.md
+    - HeapFree: runtime/heapfree.md
+    - Multiply: runtime/multiply.md
+    - PopEax: runtime/popeax.md
+    - PushEax: runtime/pusheax.md
+    - Subtract: runtime/subtract.md
