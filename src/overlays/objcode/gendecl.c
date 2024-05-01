@@ -103,10 +103,10 @@ static void genArrayInit(struct type* pType)
 	numElements = abs(highBound - lowBound) + 1;
 
 	// Array upper bound
-	genExpr(indexType.max, 0, 1, 0);
+	genExpr(indexType.max, 0, 1);
 	genThreeAddr(JSR, RT_PUSHAX);
 	// Array lower bound
-	genExpr(indexType.min, 0, 1, 0);
+	genExpr(indexType.min, 0, 1);
 	genThreeAddr(JSR, RT_PUSHAX);
 	genTwo(LDA_ZEROPAGE, ZP_PTR1L);
 	genTwo(LDX_ZEROPAGE, ZP_PTR1H);

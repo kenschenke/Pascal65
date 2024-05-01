@@ -106,7 +106,7 @@ void genThreeAddr(unsigned char b, unsigned short addr);
 
 void genBoolValueA(CHUNKNUM chunkNum);
 void genCharValueA(CHUNKNUM chunkNum);
-void genExpr(CHUNKNUM chunkNum, char isRead, char noStack, char isParentHeapVar);
+void genExpr(CHUNKNUM chunkNum, char isRead, char noStack);
 void genFreeVariableHeaps(short* heapOffsets);
 void genShortValueA(CHUNKNUM chunkNum);
 void genIntValueAX(CHUNKNUM chunkNum);

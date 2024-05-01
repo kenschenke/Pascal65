@@ -87,7 +87,7 @@ static void genAbsCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 	retrieveChunk(arg.evalType, &argType);
 
-	genExpr(arg.left, 1, 0, 0);
+	genExpr(arg.left, 1, 0);
 	genTwo(LDA_IMMEDIATE, argType.kind);
 	genThreeAddr(JSR, RT_ABS);
 }
@@ -182,7 +182,7 @@ static void genOrdCall(CHUNKNUM argChunk)
 
 	retrieveChunk(argChunk, &arg);
 
-	genExpr(arg.left, 1, 0, 0);
+	genExpr(arg.left, 1, 0);
 }
 
 static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -197,7 +197,7 @@ static void genPredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
 		_type.kind = TYPE_WORD;
 	}
 
-	genExpr(arg.left, 1, 0, 0);
+	genExpr(arg.left, 1, 0);
 	if (_type.kind == TYPE_ENUMERATION_VALUE) {
 		_type.kind = TYPE_WORD;
 	}
@@ -220,7 +220,7 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_SHORTINT:
 			genThreeAddr(JSR, _type.kind == TYPE_CHARACTER ? RT_READCHARFROMINPUT : RT_READINTFROMINPUT);
 			genThreeAddr(JSR, RT_PUSHBYTESTACK);
-			genExpr(arg.left, 0, 0, 0);
+			genExpr(arg.left, 0, 0);
 			genThreeAddr(JSR, RT_STOREINTSTACK);
 			break;
 
@@ -228,7 +228,7 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_WORD:
 			genThreeAddr(JSR, RT_READINTFROMINPUT);
 			genThreeAddr(JSR, RT_PUSHINTSTACK);
-			genExpr(arg.left, 0, 0, 0);
+			genExpr(arg.left, 0, 0);
 			genThreeAddr(JSR, RT_STOREINTSTACK);
 			break;
 		
@@ -236,14 +236,14 @@ static void genReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_LONGINT:
 			genThreeAddr(JSR, RT_READINTFROMINPUT);
 			genThreeAddr(JSR, RT_PUSHEAX);
-			genExpr(arg.left, 0, 0, 0);
+			genExpr(arg.left, 0, 0);
 			genThreeAddr(JSR, RT_STOREINT32STACK);
 			break;
 
 		case TYPE_REAL:
 			genThreeAddr(JSR, RT_READFLOATFROMINPUT);
 			genThreeAddr(JSR, RT_PUSHREALSTACK);
-			genExpr(arg.left, 0, 0, 0);
+			genExpr(arg.left, 0, 0);
 			genThreeAddr(JSR, RT_STOREREALSTACK);
 			break;
 
@@ -289,7 +289,7 @@ static void genRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	retrieveChunk(argChunk, &arg);
 
-	genExpr(arg.left, 1, 0, 0);
+	genExpr(arg.left, 1, 0);
 	genThreeAddr(JSR, RT_POPTOREAL);
 	if (rc == rcRound) {
 		genTwo(LDA_IMMEDIATE, 0);	// Round to 0 decimal places
@@ -350,7 +350,7 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 			paramByRef1[PARAM_BYREF1_SIZEL] = WORD_LOW(paramType.size);
 			paramByRef1[PARAM_BYREF1_SIZEH] = WORD_HIGH(paramType.size);
 			writeCodeBuf(paramByRef1, 10);
-			genExpr(_expr.left, 0, 1, 0);
+			genExpr(_expr.left, 0, 1);
 			paramByRef2[PARAM_BYREF2_SIZEL] = WORD_LOW(paramType.size);
 			paramByRef2[PARAM_BYREF2_SIZEH] = WORD_HIGH(paramType.size);
 			writeCodeBuf(paramByRef2, 27);
@@ -359,7 +359,7 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Convert the parameter into a string object
 			// Allocate a second heap and make a copy of the string
-			genExpr(_expr.left, argType.kind == TYPE_ARRAY ? 1 : 1, 1, 0);
+			genExpr(_expr.left, argType.kind == TYPE_ARRAY ? 1 : 1, 1);
 			if (argType.kind == TYPE_STRING_OBJ) {
 				++stringObjHeaps;
 				writeCodeBuf(exprFreeString1, EXPR_FREE_STRING1_LEN);
@@ -369,11 +369,11 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 			genThreeAddr(JSR, RT_PUSHEAX);
 		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
-			genExpr(_expr.left, 0, 1, 0);
+			genExpr(_expr.left, 0, 1);
 			genThreeAddr(JSR, RT_PUSHADDRSTACK);
 		}
 		else {
-			genExpr(_expr.left, 1, 0, 0);
+			genExpr(_expr.left, 1, 0);
 		}
 
 		argChunk = _expr.right;
@@ -533,7 +533,7 @@ static void genSqrCall(CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 	retrieveChunk(arg.evalType, &argType);
 
-	genExpr(arg.left, 1, 0, 0);
+	genExpr(arg.left, 1, 0);
 	genTwo(LDA_IMMEDIATE, argType.kind);
 	genThreeAddr(JSR, RT_SQR);
 }
@@ -629,9 +629,9 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_WORD:
 		case TYPE_LONGINT:
 		case TYPE_CARDINAL:
-			genExpr(arg.left, 1, 0, 0);
+			genExpr(arg.left, 1, 0);
 			if (arg.width) {
-				genExpr(arg.width, 1, 1, 0);
+				genExpr(arg.width, 1, 1);
 				genOne(TAX);
 			} else {
 				genTwo(LDX_IMMEDIATE, 0);
@@ -641,10 +641,10 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			break;
 
 		case TYPE_REAL:
-			genExpr(arg.left, 1, 0, 0);
+			genExpr(arg.left, 1, 0);
 			genThreeAddr(JSR, RT_POPTOREAL);
 			if (arg.precision) {
-				genExpr(arg.precision, 1, 1, 0);
+				genExpr(arg.precision, 1, 1);
 			}
 			else {
 				genTwo(LDA_IMMEDIATE, 0xff);
@@ -652,7 +652,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			genThreeAddr(JSR, RT_FPOUT);
 			if (arg.width) {
 				genOne(PHA);	// Preserve the value width
-				genExpr(arg.width, 1, 1, 0);
+				genExpr(arg.width, 1, 1);
 				genOne(TAY);	// Save field width in Y for a sec
 				genOne(PLA);	// Pull value width from stack
 				genOne(TAX);	// Value width in X
@@ -665,9 +665,9 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			break;
 
 		case TYPE_STRING_LITERAL:
-			genExpr(arg.left, 1, 0, 0);
+			genExpr(arg.left, 1, 0);
 			if (arg.width) {
-				genExpr(arg.width, 1, 1, 0);
+				genExpr(arg.width, 1, 1);
 			} else {
 				genTwo(LDA_IMMEDIATE, 0);
 			}
@@ -676,7 +676,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		case TYPE_STRING_VAR:
 		case TYPE_STRING_OBJ:
-			genExpr(arg.left, 1, 0, 0);
+			genExpr(arg.left, 1, 0);
 			if (isStringFunc(arg.left)) {
 				genThreeAddr(JSR, RT_POPEAX);
 			}
@@ -685,7 +685,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			}
 			genThreeAddr(JSR, RT_PUSHEAX);
 			if (arg.width) {
-				genExpr(arg.width, 1, 1, 0);
+				genExpr(arg.width, 1, 1);
 				genOne(TAX);
 			} else {
 				genTwo(LDX_IMMEDIATE, 0);
@@ -711,7 +711,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			retrieveChunk(arg.left, &leftExpr);
 			// retrieveChunk(leftExpr.node, &node);
 			if (arg.width) {
-				genExpr(arg.width, 1, 1, 0);
+				genExpr(arg.width, 1, 1);
 			} else {
 				genTwo(LDA_IMMEDIATE, 0);
 				genOne(TAX);
@@ -720,7 +720,7 @@ static void genWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			// If the argument is an array in an array, it needs to be
 			// resolved one layer deeper.
 			genExpr(arg.left,
-				leftExpr.kind == EXPR_NAME ? 1 : 0, 1, 0);
+				leftExpr.kind == EXPR_NAME ? 1 : 0, 1);
 			genThreeAddr(JSR, RT_WRITECHARARRAY);
 			break;
 		}

@@ -71,8 +71,8 @@ static void genCaseStmt(struct stmt* pStmt)
 			retrieveChunk(exprChunk, &_expr);
 			retrieveChunk(_expr.evalType, &labelType);
 
-			genExpr(pStmt->expr, 1, 0, 0);
-			genExpr(exprChunk, 1, 0, 0);
+			genExpr(pStmt->expr, 1, 0);
+			genExpr(exprChunk, 1, 0);
 			genTwo(LDA_IMMEDIATE, exprType.kind);	// data type of case expression
 			genTwo(LDX_IMMEDIATE, labelType.kind);	// data type of case label
 			genTwo(LDY_IMMEDIATE, EXPR_EQ);			// perform equality operation
@@ -130,15 +130,15 @@ static void genForLoop(struct stmt* pStmt)
 	retrieveChunk(_expr.evalType, &controlType);
 
 	// Emit the initialization expression
-	genExpr(pStmt->init_expr, 1, 0, 0);
+	genExpr(pStmt->init_expr, 1, 0);
 
 	// Initialize the start of each iteration
 	startOffset = codeBase + codeOffset;
 	// Push the value of the control variable onto the stack
-	genExpr(controlExpr, 1, 0, 0);
+	genExpr(controlExpr, 1, 0);
 
 	// Push the target value onto the stack
-	genExpr(pStmt->to_expr, 1, 0, 0);
+	genExpr(pStmt->to_expr, 1, 0);
 
 	// Compare the control value to the target value
 	retrieveChunk(pStmt->to_expr, &_expr);
@@ -158,7 +158,7 @@ static void genForLoop(struct stmt* pStmt)
 	genStmts(pStmt->body);
 
 	// Increment (or decrement) the control variable
-	genExpr(controlExpr, 1, 0, 0);
+	genExpr(controlExpr, 1, 0);
 	genTwo(LDA_IMMEDIATE, controlType.kind);
 	genThreeAddr(JSR, pStmt->isDownTo ? RT_PRED : RT_SUCC);
 	genThreeAddr(JSR, controlType.size == 2 ? RT_STOREINTSTACK : RT_STOREINT32STACK);
@@ -179,7 +179,7 @@ static void genIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	strcat(endLabel, formatInt16(chunkNum));
 
 	// Evaluate the expression
-	genExpr(pStmt->expr, 1, 0, 0);
+	genExpr(pStmt->expr, 1, 0);
 	genThreeAddr(JSR, RT_POPEAX);
 	genTwo(AND_IMMEDIATE, 1);
 
@@ -218,7 +218,7 @@ static void genRepeatStmt(struct stmt* pStmt)
 	genStmts(pStmt->body);
 
 	// Evaluate the expression
-	genExpr(pStmt->expr, 1, 0, 0);
+	genExpr(pStmt->expr, 1, 0);
 	genThreeAddr(JSR, RT_POPEAX);
 	genTwo(AND_IMMEDIATE, 1);
 	genTwo(BNE, 3);		// JMP + address_two_bytes = 3
@@ -243,7 +243,7 @@ void genStmts(CHUNKNUM chunkNum)
 
 		switch (_stmt.kind) {
 		case STMT_EXPR:
-			genExpr(_stmt.expr, 0, 0, 0);
+			genExpr(_stmt.expr, 0, 0);
 			break;
 
 		case STMT_IF_ELSE:
@@ -281,7 +281,7 @@ static void genWhileStmt(struct stmt* pStmt)
 	startAddr = codeBase + codeOffset;
 
 	// Evaluate the expression
-	genExpr(pStmt->expr, 1, 0, 0);
+	genExpr(pStmt->expr, 1, 0);
 	genThreeAddr(JSR, RT_POPEAX);
 	genTwo(AND_IMMEDIATE, 1);
 	genTwo(BNE, 3);	// JMP + two_address_bytes = 3
