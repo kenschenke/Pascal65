@@ -20,6 +20,7 @@
 
 static void genIntOrRealMath(struct expr* pExpr, char noStack);
 static void getExprType(CHUNKNUM chunkNum, struct type* pType);
+static char getExprTypeKind(CHUNKNUM chunkNum);
 
 #define EXPR_AND_OR_CODE 8
 static unsigned char exprAndOr[] = {
@@ -94,8 +95,6 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 	switch (_expr.kind) {
 	case EXPR_ADD:
 		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
-			getExprType(_expr.left, &leftType);
-			getExprType(_expr.right, &rightType);
 			genExpr(_expr.left, 1, 1);
 			// Save first string
 			genOne(PHA);
@@ -109,8 +108,8 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 			genTwo(STA_ZEROPAGE, ZP_PTR1H);
 			genOne(PLA);
 			genTwo(STA_ZEROPAGE, ZP_PTR1L);
-			genTwo(LDA_IMMEDIATE, leftType.kind);
-			genTwo(LDX_IMMEDIATE, rightType.kind);
+			genTwo(LDA_IMMEDIATE, getExprTypeKind(_expr.left));
+			genTwo(LDX_IMMEDIATE, getExprTypeKind(_expr.right));
 			genThreeAddr(JSR, RT_CONCATSTRING);
 			if (!noStack) {
 				genThreeAddr(JSR, RT_PUSHEAX);
@@ -149,14 +148,12 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 			call = RT_BITWISERSHIFT;
 		}
 
-		getExprType(_expr.left, &leftType);
-		getExprType(_expr.right, &rightType);
 		retrieveChunk(_expr.evalType, &resultType);
 
 		genExpr(_expr.left, 1, 0);
 		genExpr(_expr.right, 1, 0);
-		genTwo(LDA_IMMEDIATE, leftType.kind);
-		genTwo(LDX_IMMEDIATE, rightType.kind);
+		genTwo(LDA_IMMEDIATE, getExprTypeKind(_expr.left));
+		genTwo(LDX_IMMEDIATE, getExprTypeKind(_expr.right));
 		genTwo(LDY_IMMEDIATE, resultType.kind);
 		genThreeAddr(JSR, call);
 		if (noStack) {
@@ -166,9 +163,8 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 	}
 
 	case EXPR_BITWISE_COMPLEMENT:
-		getExprType(_expr.left, &leftType);
 		genExpr(_expr.left, 1, 0);
-		genTwo(LDA_IMMEDIATE, leftType.kind);
+		genTwo(LDA_IMMEDIATE, getExprTypeKind(_expr.left));
 		genThreeAddr(JSR, RT_BITWISEINVERT);
 		if (noStack) {
 			genThreeAddr(JSR, RT_POPEAX);
@@ -181,39 +177,22 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 	case EXPR_GT:
 	case EXPR_GTE:
 	case EXPR_NE:
-		getExprType(_expr.left, &leftType);
-		getExprType(_expr.right, &rightType);
-
-		genExpr(_expr.left, 1, 0);
-		genExpr(_expr.right, 1, 0);
-		genTwo(LDA_IMMEDIATE, leftType.kind);
-		genTwo(LDX_IMMEDIATE, rightType.kind);
-		genTwo(LDY_IMMEDIATE, _expr.kind);
-		genThreeAddr(JSR, RT_COMP);
-		break;
-
 	case EXPR_DIV:
-		getExprType(_expr.left, &leftType);
-		getExprType(_expr.right, &rightType);
-
-		genExpr(_expr.left, 1, 0);
-		genExpr(_expr.right, 1, 0);
-		genTwo(LDA_IMMEDIATE, leftType.kind);
-		genTwo(LDX_IMMEDIATE, rightType.kind);
-		genThreeAddr(JSR, RT_DIVIDE);
-		break;
-
 	case EXPR_MOD:
-		getExprType(_expr.left, &leftType);
-		getExprType(_expr.right, &rightType);
-
 		genExpr(_expr.left, 1, 0);
 		genExpr(_expr.right, 1, 0);
-		genTwo(LDA_IMMEDIATE, leftType.kind);
-		genTwo(LDX_IMMEDIATE, rightType.kind);
-		genThreeAddr(JSR, RT_MOD);
-		if (noStack) {
-			genThreeAddr(JSR, RT_POPEAX);
+		genTwo(LDA_IMMEDIATE, getExprTypeKind(_expr.left));
+		genTwo(LDX_IMMEDIATE, getExprTypeKind(_expr.right));
+		if (_expr.kind == EXPR_DIV) {
+			genThreeAddr(JSR, RT_DIVIDE);
+		} else if (_expr.kind == EXPR_MOD) {
+			genThreeAddr(JSR, RT_MOD);
+			if (noStack) {
+				genThreeAddr(JSR, RT_POPEAX);
+			}
+		} else {
+			genTwo(LDY_IMMEDIATE, _expr.kind);
+			genThreeAddr(JSR, RT_COMP);
 		}
 		break;
 
@@ -551,16 +530,16 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 		}
 
 		if (isRead) {
-			getExprType(_expr.right, &rightType);
-			if (rightType.kind == TYPE_BOOLEAN || rightType.kind == TYPE_CHARACTER) {
+			char rightKind = getExprTypeKind(_expr.right);
+			if (rightKind == TYPE_BOOLEAN || rightKind == TYPE_CHARACTER) {
 				genThreeAddr(JSR, RT_READBYTESTACK);
 				genThreeAddr(JSR, RT_PUSHBYTESTACK);
 			}
-			else if (rightType.kind == TYPE_REAL) {
+			else if (rightKind == TYPE_REAL) {
 				genThreeAddr(JSR, RT_READREALSTACK);
 				genThreeAddr(JSR, RT_PUSHREALSTACK);
 			}
-			else if (rightType.kind == TYPE_CARDINAL || rightType.kind == TYPE_LONGINT) {
+			else if (rightKind == TYPE_CARDINAL || rightKind == TYPE_LONGINT) {
 				genThreeAddr(JSR, RT_READINT32STACK);
 				genThreeAddr(JSR, RT_PUSHEAX);
 			}
@@ -582,16 +561,14 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 
 static void genIntOrRealMath(struct expr* pExpr, char noStack)
 {
-	struct type leftType, rightType, resultType;
+	struct type resultType;
 
-	getExprType(pExpr->left, &leftType);
-	getExprType(pExpr->right, &rightType);
 	retrieveChunk(pExpr->evalType, &resultType);
 
 	genExpr(pExpr->left, 1, 0);
 	genExpr(pExpr->right, 1, 0);
-	genTwo(LDA_IMMEDIATE, leftType.kind);
-	genTwo(LDX_IMMEDIATE, rightType.kind);
+	genTwo(LDA_IMMEDIATE, getExprTypeKind(pExpr->left));
+	genTwo(LDX_IMMEDIATE, getExprTypeKind(pExpr->right));
 	genTwo(LDY_IMMEDIATE, resultType.kind);
 	switch (pExpr->kind) {
 		case EXPR_ADD:
@@ -620,3 +597,10 @@ static void getExprType(CHUNKNUM chunkNum, struct type* pType)
 	retrieveChunk(_expr.evalType, pType);
 }
 
+static char getExprTypeKind(CHUNKNUM chunkNum)
+{
+	struct type _type;
+
+	getExprType(chunkNum, &_type);
+	return _type.kind;
+}
