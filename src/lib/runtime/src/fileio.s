@@ -16,6 +16,7 @@
 maxFiles = 10
 
 .export initFileIo, setFh, currentFh, writeByte, writeData
+.export createFh, freeFh
 
 .import runtimeError, addToStringBuffer
 
@@ -34,25 +35,59 @@ buffer: .res 1
     rts
 .endproc
 
+; Return an unused file handle in A (1-10)
+; If no available file handles, runtime error thrown
+.proc createFh
+    ldx #0
+L1: cpx #maxFiles
+    beq ER
+    lda files,x
+    beq DN
+    inx
+    jmp L1
+ER: lda #rteInvalidFileHandle
+    jmp runtimeError
+DN: lda #1
+    sta files,x
+    inx
+    txa
+    rts
+.endproc
+
+; Frees the file handle in A (1-10)
+; If file handle is not being used, runtime error thrown
+.proc freeFh
+    tax
+    dex
+    lda files,x
+    beq ER
+    lda #0
+    sta files,x
+    rts
+ER: lda #rteInvalidFileHandle
+    jmp runtimeError
+.endproc
+
 ; New FH in A
 ; Previous FH returned in A
 .proc setFh
-    ldx currentFh
-    stx tmp1
-    sta currentFh
-    cmp #fhString
-    beq DN
-    cmp #fhStdio
-    bne :+
-    jsr CLRCHN
-    jmp DN
-:   tax
-    lda files,x
-    bne :+
-    lda #rteInvalidFileHandle
+    ldx currentFh               ; Load the previous FH
+    stx tmp1                    ; Store it in tmp1 for a bit
+    sta currentFh               ; Set the current FH
+    cmp #fhString               ; Is the new FH a string output?
+    beq DN                      ; Branch if it is
+    cmp #fhStdio                ; Is the new FH stdout?
+    bne :+                      ; Skip ahead if it isn't
+    jsr CLRCHN                  ; The new FH is stdout - set kernal output to screen
+    jmp DN                      ; Done
+:   tax                         ; Put new FH in X
+    dex                         ; Decrement by 1 (since filehandles are 1-based)
+    lda files,x                 ; Check if new FH is allocated
+    bne :+                      ; Skip ahead if it is
+    lda #rteInvalidFileHandle   ; Invalid filehandle
     jmp runtimeError
-:   jsr CHKOUT
-DN: lda tmp1
+:   jsr CHKOUT                  ; Set the kernal to the new FH
+DN: lda tmp1                    ; Load the previous FH
     rts
 .endproc
 

@@ -9,3 +9,5 @@ Unimplemented feature
 Out of memory
 String overflow
 Invalid File Handle
+File Open Failed
+File I/O Failed

@@ -95,3 +95,5 @@ rteUnimplementedRuntimeFeature = 7
 rteOutOfMemory = 8
 rteStringOverflow = 9
 rteInvalidFileHandle = 10
+rteFileOpenFailed = 11
+rteFileIOFailed = 12
