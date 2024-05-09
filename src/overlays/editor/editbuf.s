@@ -16,7 +16,7 @@
 .export _editBuf, _editBufInsertChar, _editBufDeleteChars
 .export _editBufFlush, _editBufPopulate
 
-.import popa, _getChunk, _allocChunk, pushax, popax
+.import popa, _allocChunk, pushax, popax
 .import _freeChunk, _retrieveChunk, _storeChunk
 .importzp tmp1, ptr1
 
@@ -135,13 +135,18 @@ L1:
     lda chunkNum        ; Is the chunkNum 0?
     ora chunkNum + 1
     beq L4              ; Branch if zero
+    lda #<echunk
+    ldx #>echunk
+    jsr pushax
     lda chunkNum
     ldx chunkNum + 1
-    jsr _getChunk       ; Get a pointer to the chunk
+    jsr _retrieveChunk  ; Get the chunk
+    cmp #0
+    beq L4              ; Branch if error
+    lda #<echunk
     sta ptr1
-    stx ptr1 + 1        ; Is the pointer zero?
-    ora ptr1 + 1
-    beq L4              ; Branch if zero
+    lda #>echunk
+    sta ptr1 + 1
     ldy #2              ; Offset 2 into chunk
     lda (ptr1),y        ; Number of used chars in chunk
     beq L3              ; If chars is zero, branch

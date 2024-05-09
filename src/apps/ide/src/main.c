@@ -154,15 +154,9 @@ static void loadOverlay(int overlayNum)
 #endif
 }
 
-static void openFile(void)
+static void openFile(char *filename)
 {
     char ret;
-    char filename[16+1];
-
-    // prompt for filename
-    if (promptForOpenFilename(filename, sizeof(filename)) == 0) {
-        return;
-    }
 
     if (E.cf.fileChunk) {
         storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
@@ -246,13 +240,13 @@ static void restoreState(void)
 
 static void showFileScreen(void)
 {
-    char code;
+    char code, filename[16+1];
 
-    editorSetStatusMessage("O=Open, S=Save, N=New, C=Close, M=More");
+    editorSetStatusMessage("O=Open, S=Save, N=New, C=Close, M=Active Files, $=Dir");
     editorRefreshScreen();
 
     loadOverlay(OVERLAY_EDITORFILES);
-    code = handleFiles();
+    code = handleFiles(filename);
 
     loadOverlay(OVERLAY_EDITOR);
     editorSetDefaultStatusMessage();
@@ -275,7 +269,7 @@ static void showFileScreen(void)
         editorSetAllRowsDirty();
         updateStatusBarFilename();
     } else if (code == FILESCREEN_OPENFILE) {
-        openFile();
+        openFile(filename);
     } else if (code == FILESCREEN_SWITCHTOFILE) {
         clearScreen();
         editorSetAllRowsDirty();
@@ -365,7 +359,18 @@ void main()
         }
 
         if (loopCode == EDITOR_LOOP_OPENFILE) {
-            openFile();
+            char code, filename[16+1];
+            loadOverlay(OVERLAY_EDITORFILES);
+            code = showDirScreen(filename);
+            loadOverlay(OVERLAY_EDITOR);
+            if (code == FILESCREEN_OPENFILE) {
+                openFile(filename);
+            } else if (code == FILESCREEN_BACK) {
+                // User hit backarrow (return to editor)
+                clearScreen();
+                editorSetAllRowsDirty();
+                editorSetDefaultStatusMessage();
+            }
         }
 
         if (loopCode == EDITOR_LOOP_SAVEFILE || loopCode == EDITOR_LOOP_COMPILE || loopCode == EDITOR_LOOP_RUN) {

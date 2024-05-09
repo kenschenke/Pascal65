@@ -37,6 +37,7 @@
 #define FILESCREEN_SAVEFILE 5
 #define FILESCREEN_SAVEASFILE 6
 #define FILESCREEN_SWITCHTOFILE 7
+#define FILESCREEN_NOOP 8
 
 /*** callbacks ***/
 
@@ -167,6 +168,7 @@ void clearStatusRow(void);
 void closeFile(void);
 void cursorOff(void);
 char doesFileExist(char *filename);
+void drawScreenRaw(char row, char col, char len, const unsigned char *buf);
 void drawRow(char row, char col, char len, const char *buf, char isReversed);
 void drawStatusRow(char color, char center, const char *msg);
 char editorAnyUnsavedFiles(void);
@@ -201,13 +203,14 @@ void editorRefreshScreen();
 char editorHasState(void);
 void editorLoadState(void);
 void editorSaveState(void);
-char handleFiles(void);
+char handleFiles(char *filename);
 void initEditor(void);
 void initFile(void);
 void loadFilesFromState(void);
 void unInitFile(void);
 char saveAs(void);
 char saveFile(void);
+char showDirScreen(char *filename);
 #if __C128__
 void setScreenBg(char bg);
 #endif

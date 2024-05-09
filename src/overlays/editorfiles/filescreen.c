@@ -47,8 +47,9 @@ static void cycleCurrentDevice(void) {
     chdir(formatInt16(dev));
 }
 
-char handleFiles(void) {
+char handleFiles(char *filename) {
     int key;
+    char code;
 
     while(1) {
         key = cgetc();
@@ -72,8 +73,12 @@ char handleFiles(void) {
             if (saveAs()) {
                 return FILESCREEN_SAVEASFILE;
             }
-        } else if (key == 'o' || key == 'O') {
-            return FILESCREEN_OPENFILE;
+        } else if (key == 'o' || key == 'O' || key == '$') {
+            code = showDirScreen(filename);
+            if (code == FILESCREEN_BACK || code == FILESCREEN_OPENFILE) {
+                return code;
+            }
+            showFileScreen();
         } else if (key == BACKARROW || key == CH_ESC) {
             return FILESCREEN_BACK;
         } else if (key >= '1' && key <= '9') {
@@ -101,6 +106,7 @@ static void showFileScreen(void) {
     char y, page;
     char buf[CHUNK_LEN * 2];
     char chunk[CHUNK_LEN];
+    unsigned char lineBuf[70];
     efile file;
     CHUNKNUM chunkNum;
 
@@ -111,65 +117,109 @@ static void showFileScreen(void) {
         storeChunk(E.cf.fileChunk, (unsigned char *)&E.cf);
     }
 
-    drawRow(1, 3, 29, "Open Files (* = Current File)", 0);
+    lineBuf[0] = 112;
+    memset(lineBuf+1, 64, 68);
+    lineBuf[69] = 110;
+    drawScreenRaw(1, 4, 70, lineBuf);
+
+    memset(lineBuf, ' ', sizeof(lineBuf));
+    lineBuf[0] = 221;
+    memcpy(lineBuf+19, "Open Files (* = Current File)", 29);
+    lineBuf[69] = 221;
+    drawRow(2, 4, 70, (const char *)lineBuf, 0);
+
+    lineBuf[0] = 107;
+    memset(lineBuf+1, 64, 68);
+    lineBuf[69] = 115;
+    drawScreenRaw(3, 4, 70, lineBuf);
+
+    memset(lineBuf, ' ', sizeof(lineBuf));
+    lineBuf[0] = 221;
+    lineBuf[69] = 221;
+    drawRow(4, 4, 70, (const char *)lineBuf, 0);
 
     // Render a list of open files
     chunkNum = E.firstFileChunk;
-    y = 3;
+    y = 5;
     i = 0;
     page = 0;
     count = 0;
-    if (chunkNum == 0) {
-        drawRow(y, 7, 13, "No files open", 0);
-    } else {
-        while (chunkNum) {
-            ++count;
-            ++i;
-            if (i > 9) {
-                ++page;
-                i = 1;
-            }
-
-            retrieveChunk(chunkNum, (unsigned char *)&file);
-
-            if (page == filePage) {
-                if (file.filenameChunk) {
-                    retrieveChunk(file.filenameChunk, (unsigned char *)chunk);
-                } else {
-                    strcpy(chunk, "No filename");
-                }
-                buf[n=0] = chunkNum == selectedFile ? '*' : ' ';
-                if (i < 10) {
-                    buf[++n] = ' ';
-                }
-                buf[++n] = 0;
-                strcat(buf, formatInt16(i));
-                strcat(buf, ": ");
-                strcat(buf, chunk);
-                if (file.dirty) {
-                    strcat(buf, " (modified)");
-                }
-                n = strlen(buf);
-                drawRow(y++, 7, n, buf, 0);
-            }
-
-            chunkNum = file.nextFileChunk;
+    while (chunkNum) {
+        ++count;
+        ++i;
+        if (i > 9) {
+            ++page;
+            i = 1;
         }
+
+        retrieveChunk(chunkNum, (unsigned char *)&file);
+
+        if (page == filePage) {
+            if (file.filenameChunk) {
+                retrieveChunk(file.filenameChunk, (unsigned char *)chunk);
+            } else {
+                strcpy(chunk, "No filename");
+            }
+            memset(lineBuf+1, ' ', sizeof(lineBuf)-2);
+            n = 3;
+            if (chunkNum == selectedFile) {
+                lineBuf[n] = '*';
+            }
+            if (i < 10) {
+                ++n;
+            }
+            ++n;
+            strcpy(buf, formatInt16(i));
+            memcpy(lineBuf+n, buf, strlen(buf));
+            n += strlen(buf);
+            lineBuf[n] = ':';
+            n += 2;
+            memcpy(lineBuf+n, chunk, strlen(chunk));
+            n += strlen(chunk);
+            if (file.dirty) {
+                memcpy(lineBuf+n, " (modified)", 11);
+            }
+            drawRow(y++, 4, 70, (const char *)lineBuf, 0);
+        }
+
+        chunkNum = file.nextFileChunk;
     }
 
-    y = 12;
-    openFiles = count;
+    memset(lineBuf+1, ' ', sizeof(lineBuf)-2);
+    while (y < 14) {
+        drawRow(y++, 4, 70, (const char *)lineBuf, 0);
+    }
 
-    if (count) {
-        ++y;
+    lineBuf[0] = 107;
+    memset(lineBuf+1, 64, 68);
+    lineBuf[69] = 115;
+    drawScreenRaw(y++, 4, 70, lineBuf);
+
+    lineBuf[0] = 221;
+    lineBuf[69] = 221;
+    memset(lineBuf+1, ' ', sizeof(lineBuf)-2);
+    if (E.firstFileChunk == 0) {
+        memcpy(lineBuf+9, "No files open", 13);
+    } else {
         strcpy(buf, formatInt16(count));
         strcat(buf, " file");
         if (count != 1) {
             strcat(buf, "s");
         }
         strcat(buf, " open");
-        n = strlen(buf);
-        drawRow(y++, 3, n, buf, 0);
+        memcpy(lineBuf+(68-strlen(buf))/2, buf, strlen(buf));
+    }
+    drawRow(y++, 4, 70, (const char *)lineBuf, 0);
+
+    lineBuf[0] = 109;
+    memset(lineBuf+1, 64, 68);
+    lineBuf[69] = 125;
+    drawScreenRaw(y++, 4, 70, lineBuf);
+
+    openFiles = count;
+
+    if (count) {
+        ++y;
         drawRow(y++, 3, 29, "Type number to switch to file", 0);
         if (count > 9) {
             strcpy(buf, "Showing files ");
@@ -185,7 +235,7 @@ static void showFileScreen(void) {
     ++y;
     drawRow(y++, 3, 34, "O: Open  C: Close  S: Save  N: New", 0);
 
-    strcpy(buf, "A: Save As  D: Device (Currently ");
+    strcpy(buf, "$: Dir  A: Save As  D: Device (Currently ");
     strcat(buf, formatInt16(8));
     strcat(buf, ")");
     n = strlen(buf);

@@ -1,5 +1,6 @@
-0.24-beta Apr 20 2024
-    Initial public release
+0.26-beta
+    NEW: Add screen in IDE that shows the disk directory.
+         This screen replaces the filename prompt when opening a file.
 
 0.25-beta Apr 27 2024
     BUG: Fix problem in output PRG header when hiding BASIC ROM
@@ -11,3 +12,6 @@
     NEW: Finish implementation of public interface variables in libraries
     NEW: Add DemoLib, a library that demonstrates how one is written
     BUG: Fix the subscript operator on string objects
+
+0.24-beta Apr 20 2024
+    Initial public release

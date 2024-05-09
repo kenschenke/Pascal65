@@ -113,7 +113,7 @@ static void editorDrawRows(void) {
     erow row;
     char col;
     CHUNKNUM c, nextRowChunk;
-    echunk *chunk;
+    echunk chunk;
 
     if (E.cf.fileChunk == 0) {
         char ch, buf[41];
@@ -168,22 +168,22 @@ static void editorDrawRows(void) {
             col = 0;
             // Draw the text chunks for this row
             while (len && c) {
-                chunk = getChunk(c);
-                c = chunk->nextChunk;
+                retrieveChunk(c, &chunk);
+                c = chunk.nextChunk;
                 // If the screen is scrolled to the right (coloff > 0)
                 // and any part of the chunk is visible, draw the visible part.
-                if (startAt < chunk->bytesUsed) {
-                    toDraw = chunk->bytesUsed - startAt;
-                    if (col + chunk->bytesUsed > E.screencols) {
+                if (startAt < chunk.bytesUsed) {
+                    toDraw = chunk.bytesUsed - startAt;
+                    if (col + chunk.bytesUsed > E.screencols) {
                         toDraw = E.screencols - col;
                     }
-                    drawRow(y, col, toDraw, (char *)chunk->bytes + startAt, 0);
+                    drawRow(y, col, toDraw, (char *)chunk.bytes + startAt, 0);
                     len -= toDraw;
                     startAt = 0;
                     col += toDraw;
                 } else {
                     // None of the chunk is visible - skip it.
-                    startAt -= chunk->bytesUsed;
+                    startAt -= chunk.bytesUsed;
                 }
             }
 

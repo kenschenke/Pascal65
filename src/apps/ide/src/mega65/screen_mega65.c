@@ -34,7 +34,7 @@
 
 static void setCursor(unsigned char value, unsigned char color);
 
-static void drawRow65(char row, char col, char len, char *buf, char isReversed);
+static void drawRow65(char row, char col, char len, const char *buf, char isReversed);
 
 char * SCREEN = (char*)0x0800;
 
@@ -47,7 +47,7 @@ void clearScreen(void) {
     memset(SCREEN+offset, ' ', 80-startingCol);
 }
 
-static void drawRow65(char row, char col, char len, char *buf, char isReversed) {
+static void drawRow65(char row, char col, char len, const char *buf, char isReversed) {
     char i, rev, isRowSelected = 0;
     int offset = row * 80 + col, fileCol, startHX = -1, endHX = -1;
 
@@ -84,6 +84,10 @@ static void setCursor(unsigned char clear, unsigned char color) {
 
 void drawRow(char row, char col, char len, const char *buf, char isReversed) {
     drawRow65(row, col, len, buf, isReversed);
+}
+
+void drawScreenRaw(char row, char col, char len, unsigned char *buf) {
+    memcpy(SCREEN + row * 80 + col, buf, len);
 }
 
 void initScreen(void) {
