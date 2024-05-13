@@ -21,6 +21,5 @@ void clearInputBuf(void);
 char isInputEndOfLine(void);
 char readCharFromInput(void);
 FLOAT readFloatFromInput(void);
-int readIntFromInput(void);
 
 #endif // end of INPUTBUF_H

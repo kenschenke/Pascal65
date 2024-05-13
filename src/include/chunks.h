@@ -44,7 +44,7 @@ void flushChunkBlock(void);
 void freeChunk(CHUNKNUM chunkNum);
 
 // Returns the number of available chunks.
-unsigned int getAvailChunks(void);
+unsigned short getAvailChunks(void);
 
 // Returns the total number of chunks in memory,
 // allocated and unallocated.

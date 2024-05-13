@@ -57,8 +57,8 @@ typedef union {
     char character;
     char shortInt;
     unsigned char byte;
-    int integer;
-    unsigned int word;
+    short integer;
+    unsigned short word;
     long longInt;
     unsigned long cardinal;
     CHUNKNUM stringChunkNum;

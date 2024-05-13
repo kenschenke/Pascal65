@@ -62,9 +62,6 @@ FLOAT strToFloat(const char *str);
 // scientific notation is used.
 void floatToStr(FLOAT num, char *buffer, char precision);
 
-int floatToInt16(FLOAT num);
-FLOAT int16ToFloat(int num);
-
 FLOAT readFloatFromInput(void);
 
 #endif // end of REAL_H

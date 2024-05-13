@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <int16.h>
 
-const char *formatInt16(int num)
+const char *formatInt16(short num)
 {
     static char buffer[7];
 

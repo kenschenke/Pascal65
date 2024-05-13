@@ -73,9 +73,9 @@ typedef struct DEFN {
         // Procedure, function, or standard routine
         struct {
             TRoutineCode which;             // routine code
-            int          parmCount;         // count of parameters
-            int          totalParmSize;     // total byte size of parms
-            int          totalLocalSize;    // total byte size of locals
+            short        parmCount;         // count of parameters
+            short        totalParmSize;     // total byte size of parms
+            short        totalLocalSize;    // total byte size of locals
             LOCALIDS     locals;            // local identifiers
             CHUNKNUM     symtab;            // chunk number of local symtab
             CHUNKNUM     Icode;            // chunknum of routine's icode
@@ -83,7 +83,7 @@ typedef struct DEFN {
 
         // Variable, record field, or parameter
         struct {
-            int offset;     // vars and params: sequence count
+            short offset;   // vars and params: sequence count
                             // fields: byte offset in record
         } data;
     };
@@ -101,8 +101,8 @@ typedef struct SYMTABNODE {
     CHUNKNUM nextNode;   // next sibling node in chain
     CHUNKNUM defnChunk;  // definition info
     CHUNKNUM typeChunk;  // type info
-    int level;   // nesting level
-    int labelIndex;  // index for code label
+    short level;   // nesting level
+    short labelIndex;  // index for code label
 
     char unused[CHUNK_LEN - 18];
 } SYMTABNODE;
