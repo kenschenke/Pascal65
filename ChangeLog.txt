@@ -1,6 +1,7 @@
 0.26-beta
     NEW: Add screen in IDE that shows the disk directory.
          This screen replaces the filename prompt when opening a file.
+    BUG: Fix DMA transfers causing random crashes on newer ROMs.
 
 0.25-beta Apr 27 2024
     BUG: Fix problem in output PRG header when hiding BASIC ROM

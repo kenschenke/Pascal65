@@ -83,11 +83,42 @@ static long banks[] = {
 static void transferFromBank(BLOCKNUM blockNum);
 static void transferToBank(BLOCKNUM blockNum);
 
+struct dma_f018b
+{
+	char command;
+	unsigned int count;
+	unsigned int source;
+	char source_bank;
+	unsigned int destination;
+	char destination_bank;
+	char command_msb;
+	unsigned int mode;
+};
+static void lcopy_f018b(long source_address, long destination_address,
+	unsigned int count)
+{
+	struct dma_f018b dma;
+
+	dma.command = 0;  // copy
+	dma.count = count;
+	dma.source = source_address & 0xffff;
+	dma.source_bank = (char)(source_address >> 16);
+	dma.destination = destination_address & 0xffff;
+	dma.destination_bank = (char)(destination_address >> 16);
+	dma.command_msb = 0;
+	dma.mode = 0;
+
+	POKE(0xd702U, 0);
+	POKE(0xd704U, 0x00); // List is in $00xxxxx
+	POKE(0xd701U, ((unsigned int)&dma) >> 8);
+	POKE(0xd700U, ((unsigned int)&dma) & 0xff); // triggers enhanced DMA
+}
+
 static void transferFromBank(BLOCKNUM blockNum)
 {
 	unsigned char bank = blockNum / BLOCKS_PER_BANK;
 	unsigned char block = blockNum % BLOCKS_PER_BANK;
-    lcopy(
+    lcopy_f018b(
         banks[bank] + (long)block * BLOCK_LEN,  // source
         (long)sharedBlock,				        // destination
         BLOCK_LEN                               // bytes to copy
@@ -98,7 +129,7 @@ static void transferToBank(BLOCKNUM blockNum)
 {
 	unsigned char bank = blockNum / BLOCKS_PER_BANK;
 	unsigned char block = blockNum % BLOCKS_PER_BANK;
-    lcopy(
+    lcopy_f018b(
         (long)sharedBlock,				        // source
         banks[bank] + (long)block * BLOCK_LEN,  // destination
         BLOCK_LEN                               // bytes to copy

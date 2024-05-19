@@ -6,7 +6,7 @@ DRVDIR := ../../../drv
 PROGRAM := memtest
 D81FILE := $(BINDIR)/$(PROGRAM).d81
 PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
+TARGET := mega65
 CC65TARGET = c64
 c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
 c128_EMUCMD = x128 -reu +warp -kernal kernal -VICIIdsize +confirmonexit -autostart
@@ -39,10 +39,6 @@ SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.c)
 SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.s)
 SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
 SOURCES += $(SHAREDSRCDIR)/tests.c
-SOURCES += $(RUNTIMESRCDIR)/exit.s
-SOURCES += $(RUNTIMESRCDIR)/inputbuf.s
-SOURCES += $(RUNTIMESRCDIR)/printz.s
-SOURCES += $(RUNTIMESRCDIR)/rterror.s
 
 ifeq ($(TARGET),mega65)
 LIBCSRCDIR = ../../mega65-libc/src
