@@ -33,6 +33,7 @@ static char intBuffer[16];
 static char *testFiles[] = {
     "add",
     "assign",
+    "varinit",
     "bitwise",
     "ifthen",
     "loops",

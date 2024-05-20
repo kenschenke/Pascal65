@@ -92,6 +92,13 @@ void genIntValueAX(CHUNKNUM chunkNum)
 	}
 
 	retrieveChunk(chunkNum, &_expr);
+	if (_expr.kind == EXPR_NAME) {
+		struct symbol sym;
+		struct decl _decl;
+		retrieveChunk(_expr.node, &sym);
+		retrieveChunk(sym.decl, &_decl);
+		retrieveChunk(_decl.value, &_expr);
+	}
 	if (_expr.neg) {
 		_expr.value.integer = -_expr.value.integer;
 	}

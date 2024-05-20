@@ -11,6 +11,7 @@ nav:
   - Pascal Language Syntax:
     - Pascal Syntax: langref/syntax.md
     - Comments: langref/comments.md
+    - Variables: langref/variables.md
     - Data Types: langref/datatypes.md
     - Strings: langref/strings.md
     - Arrays: langref/arrays.md

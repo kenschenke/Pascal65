@@ -86,7 +86,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECK
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -248,6 +248,9 @@ recarray.petscii: recarray.pas
 scopetest.petscii: scopetest.pas
 	dos2unix < scopetest.pas | petcat -w2 -text -o scopetest.petscii
 
+varinit.petscii: varinit.pas
+	dos2unix < varinit.pas | petcat -w2 -text -o varinit.petscii
+
 vartest.petscii: vartest.pas
 	dos2unix < vartest.pas | petcat -w2 -text -o vartest.petscii
 
@@ -306,6 +309,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write loops.petscii loops.pas,seq \
 	-write recarray.petscii recarray.pas,seq \
 	-write scopetest.petscii scopetest.pas,seq \
+	-write varinit.petscii varinit.pas,seq \
 	-write vartest.petscii vartest.pas,seq \
 	-write casetest.petscii casetest.pas,seq \
 	-write procfunc.petscii procfunc.pas,seq \
@@ -343,6 +347,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write loops.petscii loops.pas,seq \
 	-write recarray.petscii recarray.pas,seq \
 	-write scopetest.petscii scopetest.pas,seq \
+	-write varinit.petscii varinit.pas,seq \
 	-write vartest.petscii vartest.pas,seq \
 	-write casetest.petscii casetest.pas,seq \
 	-write procfunc.petscii procfunc.pas,seq \

@@ -66,6 +66,8 @@ static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk);
 static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode);		// returns TYPE_*
 static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk);
 static void checkArraysSameType(struct type* pType1, struct type* pType2);
+static void checkAssignment(struct type *pLeftType, struct type *pRightType,
+	struct type *pResultType, CHUNKNUM exprRightChunk);
 static void checkBoolOperand(struct type* pType);
 static void checkForStringFields(CHUNKNUM firstField);
 static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalParams);
@@ -219,6 +221,52 @@ static void checkArraysSameType(struct type* pType1, struct type* pType2)
 	getBaseType(&indexType2);
 	if (indexType1.kind != indexType2.kind) {
 		Error(errInvalidType);
+	}
+}
+
+static void checkAssignment(struct type *pLeftType, struct type *pRightType,
+	struct type *pResultType, CHUNKNUM exprRightChunk)
+{
+	struct expr exprRight;
+
+	retrieveChunk(exprRightChunk, &exprRight);
+
+	if (pLeftType->kind == TYPE_REAL &&
+		(pRightType->kind == TYPE_REAL || isTypeInteger(pRightType->kind))) {
+		pResultType->kind = TYPE_REAL;
+		pResultType->size = sizeof(FLOAT);
+	}
+	else if (pLeftType->kind == TYPE_CHARACTER && pRightType->kind == TYPE_CHARACTER) {
+		pResultType->kind = TYPE_CHARACTER;
+		pResultType->size = sizeof(char);
+	}
+	else if (pLeftType->kind == TYPE_BOOLEAN && pRightType->kind == TYPE_BOOLEAN) {
+		pResultType->kind = TYPE_BOOLEAN;
+		pResultType->size = sizeof(char);
+	}
+	else if (pLeftType->kind == TYPE_STRING_VAR) {
+		if (!isAssignableToString(pRightType->kind, pRightType->subtype)) {
+			Error(errIncompatibleAssignment);
+			pResultType->kind = TYPE_VOID;
+			return;
+		}
+		pResultType->kind = pLeftType->kind;
+		pResultType->size = 2;
+	}
+	else if (isAssignmentCompatible(pLeftType->kind, pRightType, &exprRight)) {
+		pResultType->kind = pLeftType->kind;
+		pResultType->size = GET_TYPE_SIZE(getTypeMask(pLeftType->kind));
+	}
+	else if (pLeftType->kind == TYPE_ENUMERATION &&
+		(pRightType->kind == TYPE_ENUMERATION || pRightType->kind == TYPE_ENUMERATION_VALUE)) {
+		if (pLeftType->subtype != pRightType->subtype) {
+			Error(errIncompatibleAssignment);
+		}
+		pResultType->kind = TYPE_VOID;
+	}
+	else {
+		Error(errIncompatibleAssignment);
+		pResultType->kind = TYPE_VOID;
 	}
 }
 
@@ -766,6 +814,15 @@ void decl_typecheck(CHUNKNUM chunkNum)
 
 		if (_decl.value) {
 			expr_typecheck(_decl.value, 0, &_type, 0);
+			if (_decl.kind == DECL_VARIABLE) {
+				struct type varType, resultType;
+				if (!(_type.flags & TYPE_FLAG_ISCONST)) {
+					Error(errInvalidConstant);
+				}
+
+				retrieveChunk(_decl.type, &varType);
+				checkAssignment(&varType, &_type, &resultType, _decl.value);
+			}
 			// check type.kind to _decl.symbol.type
 		}
 
@@ -1012,8 +1069,6 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_ASSIGN: {
-		struct expr exprRight;
-		retrieveChunk(_expr.right, &exprRight);
 		if (isExprATypeDeclaration(_expr.left)) {
 			Error(errInvalidIdentifierUsage);
 			pType->kind = TYPE_VOID;
@@ -1034,43 +1089,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		getBaseType(&leftType);
 		getBaseType(&rightType);
 
-		if (leftType.kind == TYPE_REAL &&
-			(rightType.kind == TYPE_REAL || isTypeInteger(rightType.kind))) {
-			pType->kind = TYPE_REAL;
-			pType->size = sizeof(FLOAT);
-		}
-		else if (leftType.kind == TYPE_CHARACTER && rightType.kind == TYPE_CHARACTER) {
-			pType->kind = TYPE_CHARACTER;
-			pType->size = sizeof(char);
-		}
-		else if (leftType.kind == TYPE_BOOLEAN && rightType.kind == TYPE_BOOLEAN) {
-			pType->kind = TYPE_BOOLEAN;
-			pType->size = sizeof(char);
-		}
-		else if (leftType.kind == TYPE_STRING_VAR) {
-			if (!isAssignableToString(rightType.kind, rightType.subtype)) {
-				Error(errIncompatibleAssignment);
-				pType->kind = TYPE_VOID;
-				break;
-			}
-			pType->kind = leftType.kind;
-			pType->size = 2;
-		}
-		else if (isAssignmentCompatible(leftType.kind, &rightType, &exprRight)) {
-			pType->kind = leftType.kind;
-			pType->size = GET_TYPE_SIZE(getTypeMask(leftType.kind));
-		}
-		else if (leftType.kind == TYPE_ENUMERATION &&
-			(rightType.kind == TYPE_ENUMERATION || rightType.kind == TYPE_ENUMERATION_VALUE)) {
-			if (leftType.subtype != rightType.subtype) {
-				Error(errIncompatibleAssignment);
-			}
-			pType->kind = TYPE_VOID;
-		}
-		else {
-			Error(errIncompatibleAssignment);
-			pType->kind = TYPE_VOID;
-		}
+		checkAssignment(&leftType, &rightType, pType, _expr.right);
 		break;
 	}
 

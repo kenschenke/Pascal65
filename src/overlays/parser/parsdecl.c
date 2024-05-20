@@ -334,7 +334,7 @@ CHUNKNUM parseVariableDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 
 CHUNKNUM parseVarOrFieldDecls(CHUNKNUM* firstDecl, CHUNKNUM lastDecl, char isVarDecl)
 {
-    CHUNKNUM firstId, pId, newTypeChunkNum, lastId;
+    CHUNKNUM firstId, pId, newTypeChunkNum, lastId, valueExpr;
     struct decl _decl;
 
     // Loop to parse a list of variable or field declarations
@@ -348,12 +348,21 @@ CHUNKNUM parseVarOrFieldDecls(CHUNKNUM* firstDecl, CHUNKNUM lastDecl, char isVar
         // <type>
         newTypeChunkNum = parseTypeSpec();
 
+        // =
+        if (parserToken == tcEqual) {
+            getToken();       
+            valueExpr = parseExpression();
+        } else {
+            valueExpr = 0;
+        }
+
         // Now Loop to assign the type to each identifier in the sublist.
         pId = firstId;
         while (pId) {
             lastId = pId;
             retrieveChunk(pId, &_decl);
             _decl.type = newTypeChunkNum;
+            _decl.value = valueExpr;
             storeChunk(pId, &_decl);
             pId = _decl.next;
         }
