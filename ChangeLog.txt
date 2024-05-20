@@ -1,4 +1,4 @@
-0.26-beta
+0.26-beta May 20 2024
     NEW: Add screen in IDE that shows the disk directory.
          This screen replaces the filename prompt when opening a file.
     BUG: Fix DMA transfers causing random crashes on newer ROMs.
