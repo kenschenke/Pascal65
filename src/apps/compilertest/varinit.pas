@@ -17,6 +17,8 @@ Var
     l2 : LongInt = -123456;
 	c1 : Cardinal;
     c2 : Cardinal = 12345678;
+    str1 : String;
+    str2 : String = 'Hello, World';
 
 Procedure Error(num : Integer);
 Begin
@@ -51,6 +53,10 @@ Begin
     If c2 <> 12345678 Then Error(14);
 
     If ch <> 'k' Then Error(15);
+
+    If (Length(str1) <> 0) Or (CompareStr(str1, '') <> 0) Then Error(16);
+    If (Length(str2) <> 12) Or (CompareStr(str2, 'Hello, World') <> 0)
+        Then Error(17);
 
     If anyErrors Then Begin
         Write('Press any key');

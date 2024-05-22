@@ -66,7 +66,7 @@ static unsigned char strAlloc[] = {
 	STX_ZEROPAGE, ZP_PTR1H,
 	LDY_IMMEDIATE, 0,
 	LDA_IMMEDIATE, 0,
-	STA_X_INDEXED_ZP, ZP_PTR1L,
+	STA_ZPINDIRECT, ZP_PTR1L,
 };
 
 #define LIBDECL_SPL 1
@@ -268,21 +268,31 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				break;
 
 			case TYPE_STRING_VAR:
-				if (_decl.kind == DECL_CONST) {
+				if (_decl.kind == DECL_CONST || _decl.value) {
 					// Allocate a string object
 					// To do this, I'm gonna cheat a little and use the "WriteStr"
 					// code to construct a string object.
 					struct expr strExpr;
 					genTwo(LDA_IMMEDIATE, FH_STRING);
 					genThreeAddr(JSR, RT_SETFH);
+					genOne(PHA);
 					genThreeAddr(JSR, RT_RESETSTRBUFFER);
 					retrieveChunk(_decl.value, &strExpr);
+					if (strExpr.kind == EXPR_NAME) {
+						struct symbol sym;
+						struct decl _decl;
+						retrieveChunk(strExpr.node, &sym);
+						retrieveChunk(sym.decl, &_decl);
+						retrieveChunk(_decl.value, &strExpr);
+					}
 					genStringValueAX(strExpr.value.stringChunkNum);
 					genThreeAddr(JSR, RT_PUSHINTSTACK);
 					genTwo(LDA_IMMEDIATE, 0);
 					genThreeAddr(JSR, RT_WRITESTRLITERAL);
 					genThreeAddr(JSR, RT_GETSTRBUFFER);
 					genThreeAddr(JSR, RT_PUSHINTSTACK);
+					genOne(PLA);
+					genThreeAddr(JSR, RT_SETFH);
 				} else {
 					// Allocate an empty string
 					writeCodeBuf(strAlloc, STR_ALLOC_LEN);

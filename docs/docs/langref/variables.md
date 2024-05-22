@@ -26,13 +26,15 @@ i, j, k : Integer;
 ## Initial Value
 
 If no initial value is specified, a variable's initial value is defined by its
-type. Integers are zero, boolean is false, and characters are zero. To specify
-a different value, use an equal sign followed by the value. For example:
+type. Integers are zero, boolean is false, characters are zero, and strings are
+an empty string. To specify a different value, use an equal sign followed by the
+value. For example:
 
 ```
 ch : Char = 'a';
 flag : Boolean = true;
 i : Integer = 5;
+name : String = 'John Smith';
 ```
 
 The initial value must be a literal value or a constant. The following are errors.
