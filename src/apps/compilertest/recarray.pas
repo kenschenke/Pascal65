@@ -25,6 +25,7 @@ Type
 	End;
 Var
     anyErrors : Boolean;
+	ch : Char;
 	i , j : integer;
 	myRec : Rec;
 	myRec3 : Rec3;
@@ -32,6 +33,7 @@ Var
 	ar1 : Array[1..10] Of Rec;
 	ar2 : Array[1..10,1..3] Of Integer;
 	ar3 : Array[1..10] Of Rec3;
+	ar4 : Array[1..5] Of Real;
 
 Procedure Error(num : Integer);
 Begin
@@ -112,8 +114,15 @@ Begin
 		If ar3[i].c <> i * 10 + 3 Then Error(18);
 	End;
 
+	For i := 1 To 5 Do
+		ar4[i] := i;
+	For i := 1 To 5 Do
+		If Trunc(ar4[i]) <> i Then Begin
+			Error(19);
+		End;
+
     If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
+        Write('Press a key to continue:');
+		ch := GetKey;
     End;
 End.

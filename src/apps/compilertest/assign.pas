@@ -9,6 +9,7 @@ Var
 	w : Word;
 	l : LongInt;
 	c : Cardinal;
+    r : Real;
 
 Procedure Error(num : Integer);
 Begin
@@ -86,6 +87,22 @@ Begin
     If l <> -23456 Then Error(311);
 End;
 
+Procedure TestRealAssign;
+    Procedure TestReal(val1, val2 : Real; errorNum : Integer);
+    Begin
+        If Abs(val2-val1) > 0.01 Then Error(errorNum);
+    End;
+Begin
+    r := 123.456;
+    TestReal(r, 123.456, 400);
+    r := 5;
+    TestReal(r, 5.0, 401);
+    r := 500;
+    TestReal(r, 500.0, 402);
+    r := 123456;
+    TestReal(r, 123456.0, 403);
+End;
+
 Begin
 	anyErrors := false;
 
@@ -94,6 +111,7 @@ Begin
 	TestShortAssign;
     TestIntAssign;
     TestLongAssign;
+    TestRealAssign;
 
     If anyErrors Then Begin
         Write('Press any key');

@@ -19,6 +19,8 @@ Var
     c2 : Cardinal = 12345678;
     str1 : String;
     str2 : String = 'Hello, World';
+    r1 : Real;
+    r2 : Real = 123.456;
 
 Procedure Error(num : Integer);
 Begin
@@ -57,6 +59,9 @@ Begin
     If (Length(str1) <> 0) Or (CompareStr(str1, '') <> 0) Then Error(16);
     If (Length(str2) <> 12) Or (CompareStr(str2, 'Hello, World') <> 0)
         Then Error(17);
+
+    If r1 <> 0 Then Error(18);
+    If CompareStr(WriteStr(r2:0:2), '123.46') <> 0 Then Error(19);
 
     If anyErrors Then Begin
         Write('Press any key');

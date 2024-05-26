@@ -469,7 +469,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 			}
 			else if (leftType.kind == TYPE_REAL) {
 				genThreeAddr(JSR, RT_READREALSTACK);
-				genThreeAddr(JSR, RT_PUSHREALSTACK);
+				genThreeAddr(JSR, RT_PUSHEAX);
 			}
 			else if (leftType.kind == TYPE_CARDINAL || leftType.kind == TYPE_LONGINT) {
 				genThreeAddr(JSR, RT_READINT32STACK);

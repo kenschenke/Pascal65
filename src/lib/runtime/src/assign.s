@@ -15,10 +15,12 @@
 .export assign
 
 .import convertType, pusheax, signExtend8To16
+.import pushRealStack, storeRealStack
 
 .bss
 
 rightType: .res 1
+leftPtr: .res 2                 ; Preserve pointer to variable
 
 .code
 
@@ -30,6 +32,7 @@ rightType: .res 1
     pha
     txa
     pha
+    jsr saveLeftPtr
     jsr rtPopEax
     sta intOp1
     stx intOp1 + 1
@@ -75,7 +78,23 @@ rightType: .res 1
     jsr rtPushFromIntOp1
     jmp rtStoreByte
 @Real:
-    jsr rtPushReal
-    jmp rtStoreReal
+    jsr pushRealStack
+    jsr restoreLeftPtr
+    jmp storeRealStack
 .endproc
 
+.proc saveLeftPtr
+    lda ptr1
+    sta leftPtr
+    lda ptr1 + 1
+    sta leftPtr + 1
+    rts
+.endproc
+
+.proc restoreLeftPtr
+    lda leftPtr
+    sta ptr1
+    lda leftPtr + 1
+    sta ptr1 + 1
+    rts
+.endproc
