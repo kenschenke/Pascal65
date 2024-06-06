@@ -100,6 +100,14 @@ Hexadecimal literals can be declared with a dollar sign followed by the digits, 
    a := $d020;
 ```
 
+## Binary Literals
+
+Binary literals can be declared with a percent sign followed by the digits, such as:
+
+```
+   a := %11010001;
+```
+
 ## Enumerated Types
 
 Enumerated types define a new data type with a list of acceptable values.  They are declared

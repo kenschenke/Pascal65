@@ -53,6 +53,10 @@ void getNextToken(void)
             getCharValueToken();
             break;
 
+        case ccPercent:
+            getBinaryToken();
+            break;
+
         case ccEndOfFile:
             tokenCode = tcEndOfFile;
             break;
@@ -90,6 +94,8 @@ TCharCode getCharCode(unsigned char ch) {
     if (ch == '$') return ccDollar;
 
     if (ch == '#') return ccHash;
+
+    if (ch == '%') return ccPercent;
 
     if (ch == eofChar) return ccEndOfFile;
 
