@@ -60,3 +60,4 @@ Missing IMPLEMENTATION
 Missing Unit Decl
 Invalid STRING use
 Unresolved Forward
+Index Out Of Range

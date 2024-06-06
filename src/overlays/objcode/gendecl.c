@@ -18,9 +18,14 @@
 #include <string.h>
 #include <error.h>
 #include <int16.h>
+#include <membuf.h>
 
-static void genArrayInit(struct type* pType);
+static CHUNKNUM addArrayLiteral(CHUNKNUM exprChunk, int *bufSize, int elemSize);
+static CHUNKNUM addRealArrayLiteral(CHUNKNUM exprChunk, int *bufSize);
+static void genArrayInit(struct type* pType, CHUNKNUM exprArrayInit, struct symbol *pSym);
+static void genRecordInit(struct type* pType, struct symbol *pSym);
 static void updateHeapOffset(short newOffset);
+static void writeArrayInit(void);
 
 #define RECORD_DECL_SIZEL 1
 #define RECORD_DECL_SIZEH 3
@@ -35,13 +40,11 @@ static unsigned char recordDeclCode[] = {
 
 #define ARRAY_ALLOC_SIZEL 1
 #define ARRAY_ALLOC_SIZEH 3
-#define ARRAY_ALLOC_LEN 14
+#define ARRAY_ALLOC_LEN 10
 static unsigned char arrayAlloc[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, WORD_LOW(RT_HEAPALLOC), WORD_HIGH(RT_HEAPALLOC),
-	STA_ZEROPAGE, ZP_PTR1L,
-	STX_ZEROPAGE, ZP_PTR1H,
 	JSR, WORD_LOW(RT_PUSHINTSTACK), WORD_HIGH(RT_PUSHINTSTACK),
 };
 
@@ -85,35 +88,94 @@ static unsigned char libDecl[] = {
 	STA_ZPINDIRECT, ZP_PTR1L,
 };
 
-static void genArrayInit(struct type* pType)
+static CHUNKNUM addArrayLiteral(CHUNKNUM exprChunk, int *bufSize, int elemSize)
 {
+	struct expr _expr;
+	CHUNKNUM memChunk;
+
+	allocMemBuf(&memChunk);
+	*bufSize = 0;
+
+	while (exprChunk) {
+		retrieveChunk(exprChunk, &_expr);
+		if (_expr.neg) _expr.value.longInt = -_expr.value.longInt;
+		writeToMemBuf(memChunk, &_expr.value, elemSize);
+
+		exprChunk = _expr.right;
+		*bufSize += elemSize;
+	}
+
+	return memChunk;
+}
+
+static CHUNKNUM addRealArrayLiteral(CHUNKNUM exprChunk, int *bufSize)
+{
+	struct expr _expr;
+	CHUNKNUM memChunk;
+
+	allocMemBuf(&memChunk);
+	*bufSize = 0;
+
+	while (exprChunk) {
+		retrieveChunk(exprChunk, &_expr);
+		writeToMemBuf(memChunk, &_expr.neg, 1);
+		writeToMemBuf(memChunk, &_expr.value.stringChunkNum, 2);
+
+		exprChunk = _expr.right;
+		*bufSize += 3;
+	}
+
+	return memChunk;
+}
+
+static void genArrayInit(struct type* pType, CHUNKNUM exprInitChunk,
+	struct symbol *pSym)
+{
+	int bufSize, index;
+	struct expr exprInit;
+	struct ARRAYINIT arrayInit;
 	struct type indexType, elemType;
 	int numElements, lowBound, highBound;
 
+	memset(&arrayInit, 0, sizeof(struct ARRAYINIT));
+
 	retrieveChunk(pType->indextype, &indexType);
 	retrieveChunk(pType->subtype, &elemType);
-
-	// Push element size onto stack
-	genTwo(LDA_IMMEDIATE, WORD_LOW(elemType.size));
-	genTwo(LDX_IMMEDIATE, WORD_HIGH(elemType.size));
-	genThreeAddr(JSR, RT_PUSHAX);
 
 	lowBound = getArrayLimit(indexType.min);
 	highBound = getArrayLimit(indexType.max);
 	numElements = abs(highBound - lowBound) + 1;
 
-	// Array upper bound
-	genExpr(indexType.max, 0, 1);
-	genThreeAddr(JSR, RT_PUSHAX);
-	// Array lower bound
-	genExpr(indexType.min, 0, 1);
-	genThreeAddr(JSR, RT_PUSHAX);
-	genTwo(LDA_ZEROPAGE, ZP_PTR1L);
-	genTwo(LDX_ZEROPAGE, ZP_PTR1H);
-	// Initialize the array header
-	genThreeAddr(JSR, RT_INITARRAYHEAP);
-	// Move the heap pointer past the array header
-	updateHeapOffset(heapOffset + 6);
+	if (exprInitChunk) {
+		retrieveChunk(exprInitChunk, &exprInit);
+	} else {
+		memset(&exprInit, 0, sizeof(struct expr));
+	}
+
+	arrayInit.scopeLevel = pSym->level;
+	arrayInit.scopeOffset = pSym->offset;
+	arrayInit.elemSize = elemType.size;
+	arrayInit.heapOffset = heapOffset;
+	arrayInit.minIndex = lowBound;
+	arrayInit.maxIndex = highBound;
+	if (elemType.kind != TYPE_ARRAY && elemType.kind != TYPE_RECORD) {
+		if (elemType.kind == TYPE_REAL) {
+			arrayInit.literals = addRealArrayLiteral(exprInitChunk, &bufSize);
+			arrayInit.areLiteralsReals = 1;
+			arrayInit.numLiterals = bufSize / 3;
+		} else {
+			arrayInit.literals = addArrayLiteral(exprInitChunk, &bufSize, elemType.size);
+			arrayInit.numLiterals = bufSize / elemType.size;
+		}
+	}
+
+	if (!arrayInitsForScope) {
+		allocMemBuf(&arrayInitsForScope);
+	}
+	writeToMemBuf(arrayInitsForScope, &arrayInit, sizeof(struct ARRAYINIT));
+	++numArrayInitsForScope;
+
+	heapOffset += 6;  // move past array header
 
 	// Check if the element is a record
 	if (elemType.kind == TYPE_DECLARED) {
@@ -128,32 +190,27 @@ static void genArrayInit(struct type* pType)
 		retrieveChunk(sym.type, &elemType);
 	}
 
-	// If the element is another array, set it up too.
 	if (elemType.kind == TYPE_ARRAY || elemType.kind == TYPE_RECORD) {
-		unsigned short counter = codeBase + codeOffset + 3;
-		genThreeAddr(JMP, codeBase+codeOffset+5);
-		genOne(WORD_LOW(numElements));
-		genOne(WORD_HIGH(numElements));
-		if (elemType.kind == TYPE_ARRAY) {
-			genArrayInit(&elemType);
-		} else {
-			genRecordInit(&elemType);
+		for (index = lowBound; index <= highBound; ++index) {
+			if (elemType.kind == TYPE_ARRAY) {
+				genArrayInit(&elemType, exprInit.left, pSym);
+			} else {
+				genRecordInit(&elemType, pSym);
+			}
+			if (exprInit.right) {
+				retrieveChunk(exprInit.right, &exprInit);
+			} else {
+				exprInit.left = exprInit.right = 0;
+			}
 		}
-		genThreeAddr(DEC_ABSOLUTE, counter);
-		genTwo(BNE, 8);		// If low byte is still non-zero skip upper byte and loop again
-		genThreeAddr(LDA_ABSOLUTE, counter+1);
-		// If high byte is zero, break out of loop
-		genTwo(BEQ, elemType.kind==TYPE_ARRAY?19:6);
-		genThreeAddr(DEC_ABSOLUTE, counter+1);
-		if (elemType.kind == TYPE_ARRAY) {
-			updateHeapOffset(heapOffset + elemType.size - 6);
-		}
-		genThreeAddr(JMP, counter+2);
+	} else {
+		heapOffset += elemType.size * numElements;
 	}
 }
 
-void genRecordInit(struct type* pType)
+static void genRecordInit(struct type* pType, struct symbol *pSym)
 {
+	struct symbol sym;
 	struct decl _decl;
 	struct type _type;
 	short offset = heapOffset;
@@ -163,20 +220,24 @@ void genRecordInit(struct type* pType)
 		retrieveChunk(chunkNum, &_decl);
 		retrieveChunk(_decl.type, &_type);
 
-		if (_type.kind == TYPE_DECLARED) {
-			struct symbol sym;
+		if (_decl.node) {
 			retrieveChunk(_decl.node, &sym);
+		} else {
+			memset(&sym, 0, sizeof(struct symbol));
+		}
+
+		if (_type.kind == TYPE_DECLARED) {
 			retrieveChunk(sym.type, &_type);
 		}
 
 		if (_type.kind == TYPE_RECORD) {
-			genRecordInit(&_type);
+			genRecordInit(&_type, pSym);
 		}
 
 		if (_type.kind == TYPE_ARRAY) {
 			updateHeapOffset(offset);
 			// Record field is an array
-			genArrayInit(&_type);
+			genArrayInit(&_type, _decl.value, pSym);
 		}
 
 		offset += _type.size;
@@ -194,8 +255,10 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 	char label[CHUNK_LEN + 1];
 	struct decl _decl;
 	struct type _type;
+	struct expr _expr;
 	struct symbol sym;
 	int num = 0, heapVar = 0;
+	CHUNKNUM firstDecl = chunkNum;
 
 	while (chunkNum) {
 		retrieveChunk(chunkNum, &_decl);
@@ -253,7 +316,11 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				arrayAlloc[ARRAY_ALLOC_SIZEL] = WORD_LOW(_type.size);
 				arrayAlloc[ARRAY_ALLOC_SIZEH] = WORD_HIGH(_type.size);
 				writeCodeBuf(arrayAlloc, ARRAY_ALLOC_LEN);
-				genArrayInit(&_type);
+				if (_decl.value) {
+					retrieveChunk(_decl.value, &_expr);
+					_decl.value = _expr.left;
+				}
+				genArrayInit(&_type, _decl.value, &sym);
 				heapOffsets[heapVar++] = sym.offset;
 				break;
 			}
@@ -263,7 +330,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				recordDeclCode[RECORD_DECL_SIZEH] = WORD_HIGH(_type.size);
 				writeCodeBuf(recordDeclCode, 14);
 				heapOffset = 0;
-				genRecordInit(&_type);
+				genRecordInit(&_type, &sym);
 				heapOffsets[heapVar++] = sym.offset;
 				break;
 
@@ -321,6 +388,8 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 
 	heapOffsets[heapVar] = -1;
 
+	writeArrayInit();
+
 	return num;
 }
 
@@ -365,5 +434,31 @@ static void updateHeapOffset(short newOffset)
 
 		heapOffset = newOffset;
 	}
+}
+
+static void writeArrayInit(void)
+{
+	char label[20];
+
+	if (!arrayInitsForScope || !numArrayInitsForScope) {
+		return;
+	}
+
+	if (!arrayInitsForAllScopes) {
+		allocMemBuf(&arrayInitsForAllScopes);
+	}
+	writeToMemBuf(arrayInitsForAllScopes, &arrayInitsForScope, sizeof(CHUNKNUM));
+	++numArrayInitsForAllScopes;
+
+	strcpy(label, "arrayInits");
+	strcat(label, formatInt16(arrayInitsForScope));
+	linkAddressLookup(label, codeOffset+1, 0, LINKADDR_LOW);
+	genTwo(LDA_IMMEDIATE, 0);
+	linkAddressLookup(label, codeOffset+1, 0, LINKADDR_HIGH);
+	genTwo(LDX_IMMEDIATE, 0);
+	genThreeAddr(JSR, RT_INITARRAYS);
+
+	arrayInitsForScope = 0;
+	numArrayInitsForScope = 0;
 }
 

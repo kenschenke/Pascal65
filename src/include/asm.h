@@ -216,7 +216,7 @@
 #define RT_CALCARRAYOFFSET      (RT_BASE + 192)
 #define RT_CALCRECORD           (RT_BASE + 195)
 #define RT_PUSHEAX              (RT_BASE + 198)
-#define RT_INITARRAYHEAP        (RT_BASE + 201)
+#define RT_INITARRAYS           (RT_BASE + 201)
 #define RT_WRITECHARARRAY       (RT_BASE + 204)
 #define RT_READCHARARRAYFROMINPUT (RT_BASE + 207)
 #define RT_FLOATTOINT16         (RT_BASE + 210)

@@ -87,11 +87,11 @@ CHUNKNUM parseCaseLabel(void);
 CHUNKNUM parseCompound(void);
 
 // Expressions
-CHUNKNUM parseExpression(void);
+CHUNKNUM parseExpression(char isVarInit);
 CHUNKNUM parseField(CHUNKNUM expr);
-CHUNKNUM parseSimpleExpression(void);
-CHUNKNUM parseTerm(void);
-CHUNKNUM parseFactor(void);
+CHUNKNUM parseSimpleExpression(char isVarInit);
+CHUNKNUM parseTerm(char isVarInit);
+CHUNKNUM parseFactor(char isVarInit);
 CHUNKNUM parseSubscripts(CHUNKNUM expr);
 CHUNKNUM parseVariable(CHUNKNUM nameChunk);
 

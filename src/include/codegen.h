@@ -44,14 +44,109 @@ struct LINKTAG {
 	char which;  // one of LINKADDR_*
 };
 
+struct ARRAYINIT
+{
+	char scopeLevel;
+	char scopeOffset;
+	short heapOffset;		// offset into variable heap for array header
+	short minIndex;
+	short maxIndex;
+	short elemSize;
+	CHUNKNUM literals;
+	short numLiterals;
+	char areLiteralsReals;
+};
+
+/*
+	Array Initialization:
+
+	Arrays are stored in memory as a six-byte header followed by the elements. Since
+	they are statically allocated, arrays always take up the space needed to store all
+	elements.
+
+	Array Header:
+		Size in bytes  Description
+		-------------  ----------------------------
+		2              Lower bound of array index
+		2              Upper bound of array index
+		2              Size of each element
+	
+	Arrays are initialized at the time their declaration comes into scope. The array heap
+	is allocated dynamically when the array enters scope and freed when it leaves scope.
+	As part of the initialization, the array header is populated. If the program specified
+	a list of literals to initialize the elements, those are set at that time. For each
+	declaration scope, including the global scope, an initialization list is created that
+	describes each array in that scope. The list consists of a block for each array. That
+	block is defined as:
+
+	  Size in bytes  Description
+	  -------------  --------------------------------------------------------------
+	  1              Scope level (global scope is 1)
+	  1              Scope offset (variable offset in stack frame within scope)
+	  2              This array's offset inside variable heap
+	  2              Lower bound of array index
+	  2              Upper bound of array index
+	  2              Element size
+	  2              Pointer to list of literals to initialize the array elements
+	  2              The number of literals within the list
+	  1              Non-zero if the list of literals are real numbers
+	
+	This list is stored within the PRG file and written by the linker. The runtime reads the
+	list when it is time to initialize the arrays in a particular scope. Again, each scope gets
+	its own list of these initialization blocks.
+*/
+
 // Shared global variables
 extern CHUNKNUM linkerTags;
+extern CHUNKNUM arrayInitsForScope;
+extern CHUNKNUM arrayInitsForAllScopes;
 extern CHUNKNUM stringLiterals;
+extern int numArrayInitsForScope;
+extern int numArrayInitsForAllScopes;
 extern int numStringLiterals;
 extern FILE *codeFh;
 extern unsigned short codeOffset;
 extern unsigned short codeBase;		// base address of code
 extern short heapOffset;
+
+/*
+	Internal Handling of Array Initialization
+
+	This section documents how the compiler handles array intialization internally.
+
+	During object code generation, a list of initialization blocks is created for
+	each scope. The list is empty if no arrays are declared in that scope. The
+	list for each scope is combined into a list of the lists. The list-of-lists
+	is later used by the linker to put into the output PRG.
+
+	The following variables are used to manage the array initializations.
+
+	  Name                       Description
+	  ----------------------     -----------------------------------------------------
+	  arrayInitsForScope         Initialization blocks for the current scope
+	  numArrayInitsForScope      Number of initialization blocks for the current scope
+	  arrayInitsForAllScopes     List of lists for all scopes
+	  numArrayInitsForAllScopes  Number of lists in arrayInitsForAllScopes
+
+	arrayInitsForScope:
+	  This is a membuf that contains the initialization blocks for the current scope.
+	  When object code generation for the current scope concludes, the value of this
+	  variable is written to the membuf at arrayInitsForAllScopes and a call to
+	  initArrays in the runtime is generated.
+	
+	arrayInitsForAllScopes:
+	  This is a membuf that contains the CHUNKNUMs of each membuf that was created
+	  when a scope was processed.
+	
+	When the object generator completes the declarations for a given scope, it is left
+	with a membuf in arrayInitsForScope. The membuf is not allocated if no arrays were
+	declared. At the time of code generation a call to initArrays in the runtime is
+	generated. The runtime call expects a pointer to the list of initialization blocks.
+	That pointer is a forward reference that is resolved later by the linker using a
+	label. The label is called "arrayInits<CHUNKNUM>" where CHUNKNUM is the membuf for
+	the list of initialization blocks.
+
+*/
 
 /*
 	Code generation is split between two overlays: objcode and linker
@@ -117,7 +212,6 @@ void genRuntimeCall(unsigned char routine);
 void genStringValueAX(CHUNKNUM chunkNum);
 void genSubroutineCall(CHUNKNUM chunkNum);
 void genStmts(CHUNKNUM chunkNum);
-void genRecordInit(struct type* pType);
 int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets);
 int getArrayLimit(CHUNKNUM chunkNum);
 char isStringFunc(CHUNKNUM exprChunk);

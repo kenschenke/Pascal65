@@ -19,18 +19,18 @@ CHUNKNUM parseActualParm(char isWriteWriteln)
 	// Create a new expr node.  The left is an expression tree and
 	// the right is zero.  The type is EXPR_ARG.
 
-	CHUNKNUM exprChunk = exprCreate(EXPR_ARG, parseExpression(), 0, 0, 0);
+	CHUNKNUM exprChunk = exprCreate(EXPR_ARG, parseExpression(0), 0, 0, 0);
 
 	if (isWriteWriteln && parserToken == tcColon) {
 		struct expr _expr;
 
 		retrieveChunk(exprChunk, &_expr);
 		getToken();
-		_expr.width = parseExpression();
+		_expr.width = parseExpression(0);
 
 		if (parserToken == tcColon) {
 			getToken();
-			_expr.precision = parseExpression();
+			_expr.precision = parseExpression(0);
 		}
 
 		storeChunk(exprChunk, &_expr);

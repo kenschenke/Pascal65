@@ -19,10 +19,30 @@
 .include "runtime.inc"
 .include "cbm_kernal.inc"
 .include "types.inc"
+.include "float.inc"
 
-.export calcArrayOffset, initArrayHeap, writeCharArray, readCharArrayFromInput
+.export calcArrayOffset, writeCharArray, readCharArrayFromInput
+.export initArrays
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
+.import memcopy, popax, pushax, FPINP, COMPLM, calcStackOffset
+
+.struct ARRAYINIT
+    scopeLevel .byte
+    scopeOffset .byte
+    heapOffset .word
+    minIndex .word
+    maxIndex .word
+    elemSize .word
+    literals .word
+    numLiterals .word
+    areLiteralsReal .byte
+.endstruct
+
+.bss
+initPtr: .res 2
+
+.code
 
 ; This routine calculates the address of an element in an array's
 ; heap buffer for an index. It expects the array index to be pushed
@@ -100,6 +120,127 @@ L1:
     jsr rtRuntimeError
 .endproc
 
+; This routine copies an array literal from the PRG's BSS
+; into the array's heap, one element at a time.
+;
+; pointer to first array element is in ptr1
+; literal buffer in ptr2
+; Number of literals to copy in A/X
+; Data type of element in Y
+.proc copyArrayLiteral
+    ; Save number of literals in tmp1/tmp2
+    sta tmp1
+    stx tmp2
+    sty tmp3                    ; Save data type in tmp3
+
+    ; Make a copy of ptr1 and ptr2 and copy ptr1 to ptr3 and ptr2 to ptr4
+    lda ptr1
+    sta ptr3
+    ldx ptr1 + 1
+    stx ptr3 + 1
+    jsr pushax
+    lda ptr2
+    sta ptr4
+    ldx ptr2 + 1
+    stx ptr4 + 1
+    jsr pushax
+
+    ; This section copies the array literal buffer of all
+    ; data types except real.
+    ldy tmp3                    ; Load data type back from tmp3
+    cpy #TYPE_REAL              ; Is this an array of Reals?
+    beq L1                      ; Skip if so
+    ; Subtract 6 from the array pointer to look at the header
+    lda ptr1
+    sec
+    sbc #6
+    sta ptr1
+    lda ptr1 + 1
+    sbc #0
+    sta ptr1 + 1
+    ldy #4
+    lda (ptr1),y                ; The size of each element
+    sta tmp3                    ; Put it in tmp3
+:   lsr tmp3                    ; Divide by 2
+    beq :+                      ; Skip if zero
+    asl tmp1                    ; Multiply tmp1/tmp2 by 2,
+    rol tmp2
+    jmp :-
+:   lda ptr1                    ; Add 6 to ptr1, making it point to
+    clc                         ; the address of the first array element.
+    adc #6
+    sta ptr1
+    bcc :+                      ; If the adc #6 did not overflow, skip the next instruction
+    inc ptr1 + 1                ; The add overflowed, so increment ptr1 high byte.
+:   lda tmp1                    ; Number of bytes to copy in tmp1 and tmp2
+    ldx tmp2
+    jsr memcopy
+    jmp DN
+
+    ; Array of reals -- store each element separately.
+    ; The first byte of a real literal is non-zero
+    ; if the real is negative. Following that is a null-terminated
+    ; string representation of the value. Each has to be converted
+    ; to internal FLOAT representation then copied into the array.
+L1: ldy #0
+    lda (ptr4),y                ; Read the "negative" flag
+    pha                         ; Store it away
+    iny                         ; Increase index for reading null-terminated value
+    ; Copy the null-terminated string into FPBUF
+    ldx #0                      ; X is index into FPBUF
+:   lda (ptr4),y                ; Load character from real literal string
+    sta FPBUF,x                 ; Store it in FPBUF
+    beq :+                      ; If zero, skip ahead (done reading string)
+    iny                         ; Increment source index
+    inx                         ; Increment dest index
+    bne :-                      ; Jump back to read next character
+    ; Update ptr4
+:   iny                         ; Move to first byte of next literal
+    tya                         ; Copy source index to A for addition
+    clc
+    adc ptr4                    ; Move ptr4 to the next literal by adding
+    sta ptr4                    ; the index from the last literal to ptr4
+    bcc :+
+    inc ptr4 + 1
+:   jsr FPINP                   ; Convert the string literal into a FLOAT
+    pla                         ; Read the "negative" flag
+    beq :+                      ; Skip ahead if zero
+    ldx #FPLSW                  ; Negate the value
+    ldy #3
+    jsr COMPLM
+    ; Copy FPACC to the array heap
+:   ldy #3                      ; Start copying at the last byte
+    ldx #3
+:   lda FPBASE+FPLSW,x
+    sta (ptr3),y
+    dex
+    dey
+    bpl :-
+    ; Add 4 to ptr3
+    lda ptr3
+    clc
+    adc #4
+    sta ptr3
+    bcc :+
+    inc ptr3 + 1
+    ; Decrement tmp1/tmp2 (number of elements)
+:   dec tmp1
+    bne L1
+    lda tmp2
+    beq DN
+    dec tmp2
+    jmp L1
+
+    ; Restore ptr1 and ptr2
+DN: jsr popax
+    sta ptr2
+    stx ptr2 + 1
+    jsr popax
+    sta ptr1
+    stx ptr1 + 1
+    rts
+.endproc
+
 ; This routine calculates the length of the array
 ; and returns it in A/X.  intOp1, intOp2, and ptr1 are destroyed.
 ; The pointer to the array heap is passed in A/X.
@@ -129,40 +270,136 @@ L1:
     rts
 .endproc
 
-; This routine initializes an array heap, which is the
-; following format:
-;
-;    Lower bound of index (2 byte integer)
-;    Upper bound of index (2 byte integer)
-;    Size of each array element (2 byte integer)
-;
-; The inputs to the routine are passed in the following way:
-;    Size of each array element pushed onto runtime stack
-;    Upper bound pushed onto runtime stack
-;    Lower bound pushed onto runtime stack
-;    Array heap address in A/X
-.proc initArrayHeap
-    sta ptr2
-    stx ptr2 + 1
-    jsr rtPopAx
-    ldy #0
-    sta (ptr2),y        ; Store lower array bound
-    ldy #1
-    txa
-    sta (ptr2),y
-    jsr rtPopAx
-    ldy #2
-    sta (ptr2),y        ; Store upper array bound
-    txa
-    ldy #3
-    sta (ptr2),y
-    jsr rtPopAx
-    ldy #4
-    sta (ptr2),y        ; Store element size
-    txa
-    ldy #5
-    sta (ptr2),y
+.macro loadInitPtr
+    lda initPtr
+    sta ptr3
+    lda initPtr + 1
+    sta ptr3 + 1
+.endmacro
+
+; This routine initializes all the array heaps
+
+; The pointer to the array of ARRAYINIT structures
+; is passed in A/X
+.proc initArrays
+    sta initPtr
+    stx initPtr + 1
+
+    ; Loop through the ARRAYINIT structures
+L1: loadInitPtr
+    ldy #0                  ; Look at first two bytes
+    lda (ptr3),y
+    iny
+    ora (ptr3),y
+    bne :+                  ; If first two bytes are zero, done
     rts
+
+    ; Get the address of the array heap
+:   ldy #1
+    lda (ptr3),y
+    tax
+    dey
+    lda (ptr3),y
+    jsr calcStackOffset
+
+    ; ptr1 points to the address on the runtime stack of the array variable.
+    ; Load the address of the heap off the stack and put it back in ptr1 so
+    ; ptr1 points to the array's heap instead.
+    ldy #0
+    lda (ptr1),y
+    pha
+    iny
+    lda (ptr1),y
+    sta ptr1 + 1
+    pla
+    sta ptr1
+
+    ; Add the heap offset to the address
+    ldy #ARRAYINIT::heapOffset
+    lda ptr1
+    clc
+    adc (ptr3),y
+    sta ptr1
+    iny
+    lda ptr1 + 1
+    adc (ptr3),y
+    sta ptr1 + 1
+
+    ; Set the fields in the array header
+    ldy #ARRAYINIT::minIndex
+    lda (ptr3),y
+    ldy #0
+    sta (ptr1),y
+    ldy #ARRAYINIT::minIndex + 1
+    lda (ptr3),y
+    ldy #1
+    sta (ptr1),y
+    ldy #ARRAYINIT::maxIndex
+    lda (ptr3),y
+    ldy #2
+    sta (ptr1),y
+    ldy #ARRAYINIT::maxIndex + 1
+    lda (ptr3),y
+    ldy #3
+    sta (ptr1),y
+    ldy #ARRAYINIT::elemSize
+    lda (ptr3),y
+    ldy #4
+    sta (ptr1),y
+    ldy #ARRAYINIT::elemSize + 1
+    lda (ptr3),y
+    ldy #5
+    sta (ptr1),y
+
+    ; Advance ptr1 past the array header
+    lda ptr1
+    clc
+    adc #6
+    sta ptr1
+    bcc AL
+    inc ptr1 + 1
+
+    ; Check if there are literals to set
+AL: ldy #ARRAYINIT::literals
+    lda (ptr3),y
+    iny
+    ora (ptr3),y
+    beq NX
+    
+    ; There are literals - load their address into ptr2
+    lda (ptr3),y
+    sta ptr2 + 1
+    dey
+    lda (ptr3),y
+    sta ptr2
+    ; Load element size and stow it on the CPU stack for a bit
+    ldy #ARRAYINIT::numLiterals
+    lda (ptr3),y
+    pha
+    iny
+    lda (ptr3),y
+    pha
+    ; If the literals are reals, put TYPE_REAL in Y, otherwise TYPE_INTEGER
+    ldy #ARRAYINIT::areLiteralsReal
+    lda (ptr3),y
+    beq :+
+    ldy #TYPE_REAL
+    bne IL
+:   ldy #TYPE_INTEGER
+IL: pla
+    tax
+    pla
+    jsr copyArrayLiteral
+
+    ; Move to next ARRAYINIT structure
+NX: lda initPtr
+    clc
+    adc #.sizeof(ARRAYINIT)
+    sta initPtr
+    bcc :+
+    inc initPtr + 1
+:   jmp L1
+DN: rts
 .endproc
 
 ; This routine writes a character array to the console.

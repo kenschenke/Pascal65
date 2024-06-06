@@ -252,6 +252,7 @@ typedef enum {
     EXPR_STRING_LITERAL,
     EXPR_CHARACTER_LITERAL,
     EXPR_REAL_LITERAL,
+    EXPR_ARRAY_LITERAL,
     EXPR_BITWISE_AND,
     EXPR_BITWISE_OR,
     EXPR_BITWISE_LSHIFT,
@@ -424,7 +425,73 @@ struct expr {
     Literals:
         kind: INTEGER_LITERAL, STRING_LITERAL, or REAL_LITERAL
         value: literal value
+    
+    Array Literals:
+        kind: EXPR_ARRAY_LITERAL
+        left: first element in array
+        right: next array in literal chain (for nested arrays)
+    
+        Example: MyArray : ArrayType = (11, 44, 32)
 
+               +--------------------+
+               | EXPR_ARRAY_LITERAL |
+               |  left       right  |
+               +--------------------+
+                  /
+                 /
+        +-------------------+
+        | EXPR_BYTE_LITERAL |
+        |        11         |
+        |  left      right  |
+        +-------------------+
+                        \
+                         \
+                +-------------------+
+                | EXPR_BYTE_LITERAL |
+                |        44         |
+                |  left      right  |
+                +-------------------+
+                                \
+                                 \
+                        +-------------------+
+                        | EXPR_BYTE_LITERAL |
+                        |        32         |
+                        +-------------------+
+
+        Example: ( (1, 2, 3), (4, 5, 6) )
+
+               +--------------------+
+               | EXPR_ARRAY_LITERAL |
+               |  left       right  |
+               +--------------------+
+                  /             \ 
+                 /               \
+        +-------------------+   +--------------------+
+        | EXPR_BYTE_LITERAL |   | EXPR_ARRAY_LITERAL |
+        |         1         |   |  left       right  |
+        |  left      right  |   +--------------------+
+        +-------------------+         \
+                        \              \
+                         \              \
+                +-------------------+   +-------------------+
+                | EXPR_BYTE_LITERAL |   | EXPR_BYTE_LITERAL |
+                |         2         |   |         4         |
+                |  left      right  |   |  left      right  |
+                +-------------------+   +-------------------+
+                                \                        \
+                                 \                        \
+                        +-------------------+     +-------------------+
+                        | EXPR_BYTE_LITERAL |     | EXPR_BYTE_LITERAL |
+                        |         3         |     |         5         |
+                        +-------------------+     |  left      right  |
+                                                  +-------------------+
+                                                                  \
+                                                                   \
+                                                         +-------------------+
+                                                         | EXPR_BYTE_LITERAL |
+                                                         |         6         |
+                                                         +-------------------+
+                                                         
     Function/Procedure Argument:
         kind: EXPR_ARG
         left: expression to pass as argument

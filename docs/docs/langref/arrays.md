@@ -17,6 +17,25 @@ arr1 : Array[-5..5] Of Integer;
 arr2 : Array[0..10] Of ShortInt;
 ```
 
+## Initial Values in Arrays
+
+The program can specify initial values for arrays by listing the values in parenthesis after the array declaration.
+
+```
+arr1 : Array[1..5] Of Integer = (10, 20, 30, 40, 50);
+arr2 : Array[1..100] Of Integer = (99, 72, 35);
+```
+
+Notice the second array declaration did not specify values for all the array elements. The first three elements will be populated with the provided values but the remainder of the elements will contain whatever value happens to be in memory when the array is allocated.
+
+Multi-dimensional arrays can also be initialized.
+
+```
+arr : Array[1..3,1..3] Of Integer = (
+    (10, 20, 30), (40, 50, 60), (70, 80, 90)
+);
+```
+
 ## Accessing Array Elements
 
 Array elements are accessed by using square brackets, like this:

@@ -1,6 +1,6 @@
 0.27-beta
     NEW: Variables can be initialized to a value at time of declaration.
-         This is currently only supported for scalar and string variables.
+         This is supported for all data types except for records.
     BUG: Fix assignment of integer to real
     BUG: Fix arrays of reals
 

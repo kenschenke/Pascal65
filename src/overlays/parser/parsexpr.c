@@ -15,9 +15,44 @@
 #include <common.h>
 #include <string.h>
 
-CHUNKNUM parseExpression(void)
+static CHUNKNUM parseArrayLiteral(void);
+
+static CHUNKNUM parseArrayLiteral(void)
 {
-	CHUNKNUM exprChunk = parseSimpleExpression();
+	struct expr _expr;
+	CHUNKNUM arrayExpr, exprChunk, lastExpr = 0;
+
+	arrayExpr = exprCreate(EXPR_ARRAY_LITERAL, 0, 0, 0, 0);
+
+	// Parse comma-separated list of literals until a right paren
+
+	while (parserToken != tcRParen) {
+		exprChunk = parseExpression(1);
+		if (lastExpr) {
+			retrieveChunk(lastExpr, &_expr);
+			_expr.right = exprChunk;
+			storeChunk(lastExpr, &_expr);
+		} else {
+			retrieveChunk(arrayExpr, &_expr);
+			_expr.left = exprChunk;
+			storeChunk(arrayExpr, &_expr);
+		}
+		lastExpr = exprChunk;
+
+		if (parserToken == tcComma) {
+			getToken();
+		} else if (parserToken != tcRParen) {
+			Error(errUnexpectedToken);
+			resync(tlExpressionStart, 0, 0);
+		}
+	}
+
+	return arrayExpr;
+}
+
+CHUNKNUM parseExpression(char isVarInit)
+{
+	CHUNKNUM exprChunk = parseSimpleExpression(isVarInit);
 
 	if (tokenIn(parserToken, tlRelOps)) {
 		expr_t et;
@@ -30,7 +65,7 @@ CHUNKNUM parseExpression(void)
 		case tcEqual: et = EXPR_EQ; break;
 		}
 		getToken();
-		exprChunk = exprCreate(et, exprChunk, parseSimpleExpression(), 0, 0);
+		exprChunk = exprCreate(et, exprChunk, parseSimpleExpression(isVarInit), 0, 0);
 	}
 
 	resync(tlExpressionFollow, tlStatementFollow, tlStatementStart);
@@ -38,7 +73,7 @@ CHUNKNUM parseExpression(void)
 	return exprChunk;
 }
 
-CHUNKNUM parseFactor(void)
+CHUNKNUM parseFactor(char isVarInit)
 {
 	char unaryNeg = 0;
 	CHUNKNUM exprChunk = 0;
@@ -103,17 +138,22 @@ CHUNKNUM parseFactor(void)
 
 	case tcNOT:
 		getToken();
-		return exprCreate(EXPR_NOT, parseFactor(), 0, 0, 0);
+		return exprCreate(EXPR_NOT, parseFactor(0), 0, 0, 0);
 
 	case tcAt:
 		getToken();
-		return exprCreate(EXPR_BITWISE_COMPLEMENT, parseFactor(), 0, 0, 0);
+		return exprCreate(EXPR_BITWISE_COMPLEMENT, parseFactor(0), 0, 0, 0);
 
 	case tcLParen: {
-		// Parenthesized subexpression: call parseExpression recursively
 		CHUNKNUM expr;
 		getToken();
-		expr = parseExpression();
+		if (isVarInit) {
+			// Array literal
+			expr = parseArrayLiteral();
+		} else {
+			// Parenthesized subexpression: call parseExpression recursively
+			expr = parseExpression(0);
+		}
 		if (parserToken == tcRParen) {
 			getToken();
 			return expr;
@@ -162,12 +202,12 @@ CHUNKNUM parseField(CHUNKNUM expr)
 	return rootExpr;
 }
 
-CHUNKNUM parseSimpleExpression(void)
+CHUNKNUM parseSimpleExpression(char isVarInit)
 {
 	CHUNKNUM exprChunk;
 	char unaryNeg = 0;
 
-	exprChunk = parseTerm();
+	exprChunk = parseTerm(isVarInit);
 	if (unaryNeg) {
 		struct expr _expr;
 		retrieveChunk(exprChunk, &_expr);
@@ -186,7 +226,7 @@ CHUNKNUM parseSimpleExpression(void)
 		}
 
 		getToken();
-		exprChunk = exprCreate(et, exprChunk, parseTerm(), 0, 0);
+		exprChunk = exprCreate(et, exprChunk, parseTerm(isVarInit), 0, 0);
 	}
 
 	return exprChunk;
@@ -197,7 +237,7 @@ CHUNKNUM parseSubscripts(CHUNKNUM expr)
 	// Loop to parse a list of subscripts separated by commas.
 	do {
 		getToken();
-		expr = exprCreate(EXPR_SUBSCRIPT, expr, parseExpression(), 0, 0);
+		expr = exprCreate(EXPR_SUBSCRIPT, expr, parseExpression(0), 0, 0);
 	} while (parserToken == tcComma);
 
 	// ]
@@ -206,12 +246,12 @@ CHUNKNUM parseSubscripts(CHUNKNUM expr)
 	return expr;
 }
 
-CHUNKNUM parseTerm(void)
+CHUNKNUM parseTerm(char isVarInit)
 {
 	expr_t ec;
 	CHUNKNUM exprChunk;
 
-	exprChunk = parseFactor();
+	exprChunk = parseFactor(isVarInit);
 
 	if (tokenIn(parserToken, tlMulOps)) {
 		switch (parserToken) {
@@ -225,7 +265,7 @@ CHUNKNUM parseTerm(void)
 		}
 
 		getToken();
-		return exprCreate(ec, exprChunk, parseTerm(), 0, 0);
+		return exprCreate(ec, exprChunk, parseTerm(isVarInit), 0, 0);
 	}
 	
 	return exprChunk;

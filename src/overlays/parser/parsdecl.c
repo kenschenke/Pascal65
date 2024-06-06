@@ -351,7 +351,7 @@ CHUNKNUM parseVarOrFieldDecls(CHUNKNUM* firstDecl, CHUNKNUM lastDecl, char isVar
         // =
         if (parserToken == tcEqual) {
             getToken();       
-            valueExpr = parseExpression();
+            valueExpr = parseExpression(1);
         } else {
             valueExpr = 0;
         }

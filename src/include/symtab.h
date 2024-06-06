@@ -22,13 +22,6 @@ struct ICODE;
 
 extern CHUNKNUM symtabStack[MAX_NESTING_LEVEL];
 
-typedef struct STRVALCHUNK {
-    CHUNKNUM nextChunkNum;
-    char value[CHUNK_LEN - 2];
-} STRVALCHUNK;
-
-_Static_assert (sizeof(struct STRVALCHUNK) == CHUNK_LEN, "STRVALCHUNK should be CHUNK_LEN bytes in size");
-
 // How an identifier is defined
 
 typedef enum {

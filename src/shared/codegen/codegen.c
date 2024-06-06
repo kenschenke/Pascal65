@@ -18,6 +18,12 @@
 CHUNKNUM stringLiterals;
 int numStringLiterals;
 
+CHUNKNUM arrayInitsForScope;
+int numArrayInitsForScope;
+
+CHUNKNUM arrayInitsForAllScopes;
+int numArrayInitsForAllScopes;
+
 FILE *codeFh;
 unsigned short codeOffset;
 unsigned short codeBase;

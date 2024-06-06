@@ -11,6 +11,7 @@
 #include <ast.h>
 #include <chunks.h>
 #include <symtab.h>
+#include <membuf.h>
 
 void decl_free(CHUNKNUM chunkNum)
 {
@@ -54,14 +55,7 @@ void expr_free(CHUNKNUM chunkNum)
 	}
 
 	if ((_expr.kind == EXPR_STRING_LITERAL || _expr.kind == EXPR_REAL_LITERAL) && _expr.value.stringChunkNum) {
-		STRVALCHUNK strChunk;
-		CHUNKNUM stringChunkNum = _expr.value.stringChunkNum;
-
-		while (stringChunkNum) {
-			retrieveChunk(stringChunkNum, &strChunk);
-			freeChunk(stringChunkNum);
-			stringChunkNum = strChunk.nextChunkNum;
-		}
+		freeMemBuf(_expr.value.stringChunkNum);
 	}
 
 	if (_expr.name) freeChunk(_expr.name);

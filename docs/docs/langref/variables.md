@@ -17,7 +17,7 @@ i : Integer;
 ## Multiple Declarations
 
 The program can declare multiple variables of the same type by separating them
-with colons, like this:
+with commas, like this:
 
 ```
 i, j, k : Integer;
@@ -40,7 +40,6 @@ name : String = 'John Smith';
 The initial value must be a literal value or a constant. The following are errors.
 
 ```
-i : Integer = 5;      // This one is okay.
 j : Integer = i;      // Initial value must be a literal
 ch : Char = Chr(65);  // Initial value cannot be a function
 ```

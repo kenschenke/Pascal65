@@ -65,6 +65,7 @@ static char typeConversions[7][7] = {
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk);
 static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode);		// returns TYPE_*
 static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk);
+static void checkArrayLiteral(struct type *pArrayType, struct expr *pLiteralExpr);
 static void checkArraysSameType(struct type* pType1, struct type* pType2);
 static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 	struct type *pResultType, CHUNKNUM exprRightChunk);
@@ -182,6 +183,45 @@ static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk)
 	}
 	else if (elemType.kind == TYPE_ARRAY) {
 		checkArray(elemType.indextype, elemType.subtype);
+	}
+}
+
+static void checkArrayLiteral(struct type *pArrayType, struct expr *pLiteralExpr)
+{
+	int min, max, elems = 0;
+	struct expr _expr;
+	struct type elemType, exprType, resultType;
+	CHUNKNUM exprChunkNum = pLiteralExpr->left;
+
+	retrieveChunk(pArrayType->subtype, &elemType);
+
+	while (exprChunkNum) {
+		retrieveChunk(exprChunkNum, &_expr);
+
+		if (elemType.kind == TYPE_ARRAY) {
+			// If the array elements are arrays then
+			// the literal must be an array literal.
+			if (_expr.kind != EXPR_ARRAY_LITERAL) {
+				Error(errInvalidConstant);
+			}
+			checkArrayLiteral(&elemType, &_expr);
+		} else {
+			retrieveChunk(_expr.evalType, &exprType);
+			checkAssignment(&elemType, &exprType, &resultType, exprChunkNum);
+		}
+
+		elems++;
+		exprChunkNum = _expr.right;
+	}
+
+	// Make sure the array literal does not have too many elements
+	retrieveChunk(pArrayType->indextype, &resultType);
+	retrieveChunk(resultType.min, &_expr);
+	min = _expr.kind == EXPR_BYTE_LITERAL ? _expr.value.byte : _expr.value.integer;
+	retrieveChunk(resultType.max, &_expr);
+	max = _expr.kind == EXPR_BYTE_LITERAL ? _expr.value.byte : _expr.value.integer;
+	if (elems > max-min+1) {
+		Error(errIndexOutOfRange);
 	}
 }
 
@@ -816,12 +856,22 @@ void decl_typecheck(CHUNKNUM chunkNum)
 			expr_typecheck(_decl.value, 0, &_type, 0);
 			if (_decl.kind == DECL_VARIABLE) {
 				struct type varType, resultType;
-				if (!(_type.flags & TYPE_FLAG_ISCONST)) {
-					Error(errInvalidConstant);
-				}
 
 				retrieveChunk(_decl.type, &varType);
-				checkAssignment(&varType, &_type, &resultType, _decl.value);
+				if (varType.kind == TYPE_ARRAY) {
+					struct expr _expr;
+					retrieveChunk(_decl.value, &_expr);
+					if (_expr.kind != EXPR_ARRAY_LITERAL) {
+						Error(errInvalidConstant);
+					}
+					checkArrayLiteral(&varType, &_expr);
+				} else {
+					if (!(_type.flags & TYPE_FLAG_ISCONST)) {
+						Error(errInvalidConstant);
+					}
+
+					checkAssignment(&varType, &_type, &resultType, _decl.value);
+				}
 			}
 			// check type.kind to _decl.symbol.type
 		}
@@ -1205,6 +1255,10 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 			expr_typecheck(_expr.right, rightType.symtab, pType, 0);
 			pType->symtab = rightType.symtab;
 		}
+		break;
+
+	case EXPR_ARRAY_LITERAL:
+		// Do nothing here. This is checked in decl_typecheck.
 		break;
 
 	default:

@@ -24,7 +24,7 @@ CHUNKNUM parseAssignment(CHUNKNUM nameChunk)
 	condGetToken(tcColonEqual, errMissingColonEqual);
 
 	// <expr>
-	exprChunk = parseExpression();
+	exprChunk = parseExpression(0);
 
 	return exprCreate(EXPR_ASSIGN, target, exprChunk, 0, 0);
 }
@@ -39,7 +39,7 @@ CHUNKNUM parseCASE(void)
 	getToken();
 
 	// <expr>
-	exprChunk = parseExpression();
+	exprChunk = parseExpression(0);
 
 	// OF
 	resync(tlOF, tlCaseLabelStart, 0);
@@ -140,7 +140,7 @@ CHUNKNUM parseCaseLabel(void)
 		Error(errInvalidConstant);
 	}
 
-	exprChunk = parseExpression();
+	exprChunk = parseExpression(0);
 	retrieveChunk(exprChunk, &_expr);
 	switch (_expr.kind) {
 	case EXPR_BYTE_LITERAL:
@@ -201,7 +201,7 @@ CHUNKNUM parseFOR(void)
 	condGetToken(tcColonEqual, errMissingColonEqual);
 
 	// <init-expr>
-	initExpr = exprCreate(EXPR_ASSIGN, controlChunk, parseExpression(), 0, 0);
+	initExpr = exprCreate(EXPR_ASSIGN, controlChunk, parseExpression(0), 0, 0);
 
 	// TO or DOWNTO
 	resync(tlTODOWNTO, tlExpressionStart, 0);
@@ -217,7 +217,7 @@ CHUNKNUM parseFOR(void)
 	getToken();
 
 	// <exit-expr>
-	exitExpr = parseExpression();
+	exitExpr = parseExpression(0);
 
 	// DO
 	resync(tlDO, tlStatementStart, 0);
@@ -242,7 +242,7 @@ CHUNKNUM parseIF(void)
 	getToken();
 
 	// <expr>
-	exprChunk = parseExpression();
+	exprChunk = parseExpression(0);
 
 	// THEN
 	resync(tlTHEN, tlStatementStart, 0);
@@ -279,7 +279,7 @@ CHUNKNUM parseREPEAT(void)
 	condGetToken(tcUNTIL, errMissingUNTIL);
 
 	// <stmt>
-	return stmtCreate(STMT_REPEAT, parseExpression(), stmtList);
+	return stmtCreate(STMT_REPEAT, parseExpression(0), stmtList);
 }
 
 CHUNKNUM parseStatement(void)
@@ -376,7 +376,7 @@ CHUNKNUM parseWHILE(void)
 	getToken();
 
 	// <expr>
-	exprChunk = parseExpression();
+	exprChunk = parseExpression(0);
 
 	// DO
 	resync(tlDO, tlStatementStart, 0);

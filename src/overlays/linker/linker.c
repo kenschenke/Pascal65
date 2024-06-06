@@ -44,6 +44,24 @@
 #define BSS_BOOTSTRAP_MSG	"BSS_BOOTSTRAP_MSG"
 
 #ifdef COMPILERTEST
+
+#ifdef __MEGA65__
+#define CODESEG_CEIL 0x9000
+#else
+#define CODESEG_CEIL 0xca00
+#endif
+
+#else
+
+#ifdef __MEGA65__
+#define CODESEG_CEIL (0xc000-RUNTIME_STACK_SIZE)
+#else
+#define CODESEG_CEIL (0xd000-RUNTIME_STACK_SIZE)
+#endif
+
+#endif
+
+#ifdef COMPILERTEST
 #ifdef __MEGA65__
 static unsigned char chainCall[] = {
 	LDA_IMMEDIATE, 0,
@@ -53,7 +71,7 @@ static unsigned char chainCall[] = {
 
 	LDA_IMMEDIATE, 0,		// Offset 10: strlen(name)
 	LDX_IMMEDIATE, 0x1c,	// Offset 12: lower str address
-	LDY_IMMEDIATE, 0x7a,	// Offset 14: upper str address
+	LDY_IMMEDIATE, 0x90,	// Offset 14: upper str address
 	JSR, 0xbd, 0xff,		// SETNAM
 
 	LDA_IMMEDIATE, 0,
@@ -331,12 +349,12 @@ static unsigned char chainCode[] = {
 	STA_ZEROPAGE, ZP_PTR2H,
 	LDA_IMMEDIATE, 0,
 	STA_ZEROPAGE, ZP_PTR1L,
-	LDA_IMMEDIATE, 0x7a,
+	LDA_IMMEDIATE, 0x90,
 	STA_ZEROPAGE, ZP_PTR1H,
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, WORD_LOW(RT_MEMCOPY), WORD_HIGH(RT_MEMCOPY),
-	JMP, 0, 0x7a,
+	JMP, 0, 0x90,	// JMP to $9000
 };
 #elif defined (__C64__)
 static unsigned char chainCode[] = {
@@ -355,14 +373,16 @@ static unsigned char chainCode[] = {
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, 0, 0,
-	JMP, 0, 0xca,
+	JMP, 0, 0xca,	// JMP to $ca00
 };
 #else
 #error chainCode not defined for this platform
 #endif
 #endif  // end of COMPILERTEST
 
+static void dumpArrayInits(void);
 static void dumpStringLiterals(void);
+static void freeArrayInits(void);
 static void freeStringLiterals(void);
 #ifndef COMPILERTEST
 static void genBootstrap(void);
@@ -370,6 +390,88 @@ static void genBootstrap(void);
 static void genExeHeader(void);
 static void genRuntime(void);
 static void writePrgFile(FILE *out);
+
+static void dumpArrayInits(void)
+{
+	char label[20], areLiteralsReals, isNeg;
+	CHUNKNUM arrayInits, literals, stringChunkNum, literalsBuf = 0;
+	struct ARRAYINIT arrayInit;
+	unsigned char arrayInitBuf[sizeof(struct ARRAYINIT)];
+
+	if (!arrayInitsForAllScopes || !numArrayInitsForAllScopes) {
+		return;
+	}
+
+	setMemBufPos(arrayInitsForAllScopes, 0);
+	while (!isMemBufAtEnd(arrayInitsForAllScopes)) {
+		readFromMemBuf(arrayInitsForAllScopes, &arrayInits, sizeof(CHUNKNUM));
+
+		strcpy(label, "arrayInits");
+		strcat(label, formatInt16(arrayInits));
+		linkAddressSet(label, codeOffset);
+
+		setMemBufPos(arrayInits, 0);
+		while (!isMemBufAtEnd(arrayInits)) {
+			readFromMemBuf(arrayInits, arrayInitBuf, sizeof(struct ARRAYINIT));
+			memcpy(&arrayInit, arrayInitBuf, sizeof(struct ARRAYINIT));
+
+			if (arrayInit.literals) {
+				if (!literalsBuf) {
+					allocMemBuf(&literalsBuf);
+				}
+				writeToMemBuf(literalsBuf, &arrayInit.literals, sizeof(CHUNKNUM));
+				writeToMemBuf(literalsBuf, &arrayInit.areLiteralsReals, 1);
+
+				strcpy(label, "arrayLits");
+				strcat(label, formatInt16(arrayInit.literals));
+				linkAddressLookup(label, codeOffset+10, 0, LINKADDR_BOTH);
+			}
+
+			writeCodeBuf(arrayInitBuf, sizeof(struct ARRAYINIT));
+		}
+
+		arrayInitBuf[0] = arrayInitBuf[1] = 0;
+		writeCodeBuf(arrayInitBuf, 2);
+	}
+
+	if (!literalsBuf) {
+		return;
+	}
+
+	setMemBufPos(literalsBuf, 0);
+	while (!isMemBufAtEnd(literalsBuf)) {
+		readFromMemBuf(literalsBuf, &literals, sizeof(CHUNKNUM));
+		readFromMemBuf(literalsBuf, &areLiteralsReals, 1);
+
+		strcpy(label, "arrayLits");
+		strcat(label, formatInt16(literals));
+		linkAddressSet(label, codeOffset);
+
+		setMemBufPos(literals, 0);
+		if (areLiteralsReals) {
+			while (!isMemBufAtEnd(literals)) {
+				readFromMemBuf(literals, &isNeg, 1);
+				readFromMemBuf(literals, &stringChunkNum, sizeof(CHUNKNUM));
+
+				writeCodeBuf((unsigned char *)&isNeg, 1);
+				setMemBufPos(stringChunkNum, 0);
+				while (!isMemBufAtEnd(stringChunkNum)) {
+					readFromMemBuf(stringChunkNum, label, 1);
+					writeCodeBuf((unsigned char *)label, 1);
+				}
+				label[0] = 0;
+				writeCodeBuf((unsigned char *)label, 1);
+			}
+		} else {
+			while (!isMemBufAtEnd(literals)) {
+				readFromMemBuf(literals, arrayInitBuf, 1);
+				writeCodeBuf(arrayInitBuf, 1);
+			}
+		}
+	}
+
+	freeMemBuf(literalsBuf);
+}
 
 static void dumpStringLiterals(void)
 {
@@ -400,6 +502,35 @@ static void dumpStringLiterals(void)
 
 		++num;
 	}
+}
+
+static void freeArrayInits(void)
+{
+	CHUNKNUM arrayInits;
+	struct ARRAYINIT arrayInit;
+
+	if (arrayInitsForAllScopes || numArrayInitsForAllScopes) {
+		setMemBufPos(arrayInitsForAllScopes, 0);
+
+		while (!isMemBufAtEnd(arrayInitsForAllScopes)) {
+			readFromMemBuf(arrayInitsForAllScopes, &arrayInits, sizeof(CHUNKNUM));
+
+			setMemBufPos(arrayInits, 0);
+			while (!isMemBufAtEnd(arrayInits)) {
+				readFromMemBuf(arrayInits, &arrayInit, sizeof(struct ARRAYINIT));
+				if (arrayInit.literals) {
+					freeMemBuf(arrayInit.literals);
+				}
+			}
+
+			freeMemBuf(arrayInits);
+		}
+
+		freeMemBuf(arrayInitsForAllScopes);
+	}
+
+	arrayInitsForAllScopes = 0;
+	numArrayInitsForAllScopes = 0;
 }
 
 static void freeStringLiterals(void)
@@ -652,6 +783,7 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 #endif
 
 	dumpStringLiterals();
+	dumpArrayInits();
 
 	linkAddressSet(BSS_INTBUF, codeOffset);
 	ch = 0;
@@ -696,6 +828,11 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	ch = 0;
 	fwrite(&ch, 1, 1, codeFh);
 	fwrite(&ch, 1, 1, codeFh);
+
+	// Check if the code segment overflows
+	if (codeBase+codeOffset > CODESEG_CEIL) {
+		abortTranslation(abortCodeSegmentOverflow);
+	}
 
 	decl_free(astRoot);
 
@@ -759,6 +896,7 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 
 	fclose(out);
 	freeStringLiterals();
+	freeArrayInits();
 	freeLinkerSymbolTable();
 
 	fclose(codeFh);
