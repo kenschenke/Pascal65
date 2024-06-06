@@ -17,7 +17,7 @@
 #include <real.h>
 
 typedef enum {
-    ccLetter, ccDigit, ccSpecial, ccQuote, ccWhiteSpace, ccDollar,
+    ccLetter, ccDigit, ccSpecial, ccQuote, ccWhiteSpace, ccDollar, ccHash,
     ccEndOfFile, ccError,
 } TCharCode;
 

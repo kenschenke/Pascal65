@@ -36,6 +36,19 @@ The **String** data type is a string consisting of up to 255 PETSCII characters.
 Strings can be assigned to other strings, character literals, string literals,
 and arrays of characters. Please see the [strings](strings.md) topic for more information.
 
+## Character Data Type
+
+The **Char** data type contains a single PETSCII character in the range of 0..255.
+Character literals appear inside single quotes or can be specified by the numeric PETSCII
+value following a hash character. If a dollar sign follows the hash character, the value is
+a hexidecimal. All of the following are valid character literals.
+
+```
+   ch := 'a';
+   ch := #65;  // Same as letter 'a'
+   ch := #$41; // Same as letter 'a' (41 is 65 in hex)
+```
+
 ## Declared Data Types
 
 Examples of declared data types are arrays and records, discussed in separate topics.

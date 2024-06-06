@@ -49,6 +49,10 @@ void getNextToken(void)
             getHexToken();
             break;
 
+        case ccHash:
+            getCharValueToken();
+            break;
+
         case ccEndOfFile:
             tokenCode = tcEndOfFile;
             break;
@@ -84,6 +88,8 @@ TCharCode getCharCode(unsigned char ch) {
     if (ch == '\'') return ccQuote;
 
     if (ch == '$') return ccDollar;
+
+    if (ch == '#') return ccHash;
 
     if (ch == eofChar) return ccEndOfFile;
 

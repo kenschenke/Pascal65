@@ -33,6 +33,7 @@ TCharCode getCharCode(unsigned char ch);
 
 void getNextToken(void);
 
+void getCharValueToken(void);  // character as a numeric value, e.g. #65 or #$41
 void getHexToken(void);
 void getNumberToken(char sawDecimalPoint);
 void getSpecialToken(void);
