@@ -3,8 +3,9 @@
          This is supported for all data types except for records.
     NEW: Character literals can specified by their numeric value (base 10 or hex)
     NEW: Numeric literals can be specified as binary numbers, e.g. %11010001
-    BUG: Fix assignment of integer to real
-    BUG: Fix arrays of reals
+    FIX: Fix assignment of integer to real
+    FIX: Fix arrays of reals
+    NEW: Add Cos and Sin functions to the runtime.
 
 0.26-beta May 20 2024
     NEW: Add screen in IDE that shows the disk directory.

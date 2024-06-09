@@ -86,7 +86,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECK
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii trig.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -275,6 +275,9 @@ system.petscii: ../../lib/system/system.pas
 demolib.petscii: ../../lib/demolib/demolib.pas
 	dos2unix < ../../lib/demolib/demolib.pas | petcat -w2 -text -o demolib.petscii
 
+trig.petscii: trig.pas
+	dos2unix < trig.pas | petcat -w2 -text -o trig.petscii
+
 unit.petscii: unit.pas
 	dos2unix < unit.pas | petcat -w2 -text -o unit.petscii
 
@@ -317,6 +320,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write divint.petscii divint.pas,seq \
 	-write subtract.petscii subtract.pas,seq \
 	-write system.petscii system.pas,seq \
+	-write trig.petscii trig.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
 	-write $(SYSTEMLIB) system.lib,prg \
 	-write $(DEMOLIB) demolib.lib,prg \

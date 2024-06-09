@@ -32,6 +32,7 @@ nav:
     - Chr: funcref/chr.md
     - Contains: funcref/contains.md
     - CompareStr: funcref/comparestr.md
+    - Cos: funcref/cos.md
     - EndsWith: funcref/endswith.md
     - GetKey : funcref/getkey.md
     - Length: funcref/length.md
@@ -44,6 +45,7 @@ nav:
     - Read: funcref/read.md
     - ReadLn: funcref/read.md
     - ReadStr: funcref/read.md
+    - Sin: funcref/sin.md
     - Sqr: funcref/sqr.md
     - StringOfChar: funcref/strofchar.md
     - StrPos: funcref/strpos.md

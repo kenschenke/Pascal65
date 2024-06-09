@@ -50,6 +50,7 @@ static char *testFiles[] = {
     "divint",
     "unit",
     "libtest",
+    "trig",
     NULL
 };
 

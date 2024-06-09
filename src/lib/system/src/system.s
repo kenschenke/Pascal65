@@ -11,6 +11,7 @@
 
 .import chr, odd, peek, poke, length, trim, stringOfChar, getkey, getkeynowait
 .import upCase, lowerCase, compareStr, contains, beginswith, endswith, strPos
+.import sin, cos
 
 .segment "JMPTBL"
 
@@ -18,6 +19,7 @@ jmp beginswith
 jmp chr
 jmp compareStr
 jmp contains
+jmp cos
 jmp endswith
 jmp getkey
 jmp getkeynowait
@@ -26,6 +28,7 @@ jmp length
 jmp lowerCase
 jmp peek
 jmp poke
+jmp sin
 jmp strPos
 jmp stringOfChar
 jmp trim
