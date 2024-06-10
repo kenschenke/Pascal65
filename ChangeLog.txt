@@ -6,6 +6,7 @@
     FIX: Fix assignment of integer to real
     FIX: Fix arrays of reals
     NEW: Add Cos and Sin functions to the runtime.
+    FIX: Fix a bug in the IDE editor when updating characters while editing
 
 0.26-beta May 20 2024
     NEW: Add screen in IDE that shows the disk directory.
