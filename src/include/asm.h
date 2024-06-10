@@ -246,6 +246,7 @@
 #define RT_BITWISEINVERT        (RT_BASE + 282)
 #define RT_SINE                 (RT_BASE + 285)
 #define RT_COSINE               (RT_BASE + 288)
+#define RT_TANGENT              (RT_BASE + 291)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

@@ -13,7 +13,7 @@
 .include "runtime.inc"
 .include "float.inc"
 
-.export cosine, sine
+.export cosine, sine, tangent
 
 .import FPADD, FPMULT, FPDIV, FPSUB, COMPLM, floatGt, swapFPACCandFPOP
 
@@ -136,6 +136,73 @@ DN: ; Load the result and return
 LT: jsr calcPoly1
     ; Load the result into A/X/sreg
 DN: jmp loadResult
+.endproc
+
+; This routine calculates tangent, which is really just sin / cos.
+; Input:
+;    Angle in radians from 0 to 2*pi in A/X/sreg
+; Output:
+;    Tangent in A/X/sreg
+.proc tangent
+    ; Store the input angle on the stack
+    sta tmp1
+    stx tmp2
+    pha
+    tax
+    pha
+    lda sreg
+    pha
+    lda sreg + 1
+    pha
+    ; Calculate cosine
+    lda tmp1
+    ldx tmp2
+    jsr cosine
+    ; Pop the input angle back off the stack and store it away
+    pla
+    sta tmp4
+    pla
+    sta tmp3
+    pla
+    sta tmp2
+    pla
+    sta tmp1
+    ; Push the cosine onto the CPU stack
+    lda FPBASE + FPACCE
+    pha
+    lda FPBASE + FPMSW
+    pha
+    lda FPBASE + FPNSW
+    pha
+    lda FPBASE + FPLSW
+    pha
+    ; Calculate the sine
+    lda tmp4
+    sta sreg + 1
+    lda tmp3
+    sta sreg
+    ldx tmp2
+    lda tmp1
+    jsr sine
+    ; Pop the cosine back off the CPU stack
+    pla
+    sta FPBASE + FOPLSW
+    pla
+    sta FPBASE + FOPNSW
+    pla
+    sta FPBASE + FOPMSW
+    pla
+    sta FPBASE + FOPEXP
+    ; Divide sin by cos
+    jsr FPDIV
+    ; Load the result
+    lda FPBASE + FPACCE
+    sta sreg + 1
+    lda FPBASE + FPMSW
+    sta sreg
+    ldx FPBASE + FPNSW
+    lda FPBASE + FPLSW
+    rts
 .endproc
 
 ; This routine calculates the result of the polynomial

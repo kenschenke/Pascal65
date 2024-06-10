@@ -34,7 +34,7 @@
 .import stringSubscriptRead, stringSubscriptCalc
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
 .import contains, readCharFromInput, andBitwise, orBitwise
-.import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine
+.import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine, tangent
 
 .segment "JMPTBL"
 
@@ -135,3 +135,4 @@ jmp rshiftBitwise        ; BASE + 279
 jmp invertBitwise        ; BASE + 282
 jmp sine                 ; BASE + 285
 jmp cosine               ; BASE + 288
+jmp tangent              ; BASE + 291

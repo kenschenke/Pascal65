@@ -36,6 +36,7 @@ Procedure Poke(Address : Word; Value : Byte);
 Function Sin(angle : Real) : Real;
 Function StrPos(str, sub : String; offset : Byte) : Byte;
 Function StringOfChar(ch : Char; count : Byte) : String;
+Function Tan(angle : Real) : Real;
 Function Trim(str : String) : String;
 Function UpCase(str : String) : String;
 

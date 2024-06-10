@@ -50,6 +50,7 @@ nav:
     - StringOfChar: funcref/strofchar.md
     - StrPos: funcref/strpos.md
     - Succ: funcref/succ.md
+    - Tan: funcref/tan.md
     - Trim: funcref/trim.md
     - UpCase: funcref/upcase.md
     - Write: funcref/write.md

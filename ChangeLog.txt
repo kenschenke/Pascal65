@@ -5,7 +5,7 @@
     NEW: Numeric literals can be specified as binary numbers, e.g. %11010001
     FIX: Fix assignment of integer to real
     FIX: Fix arrays of reals
-    NEW: Add Cos and Sin functions to the runtime.
+    NEW: Add Cos, Sin, and Tan functions to the runtime.
     FIX: Fix a bug in the IDE editor when updating characters while editing
 
 0.26-beta May 20 2024
