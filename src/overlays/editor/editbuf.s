@@ -135,11 +135,11 @@ L1:
     lda chunkNum        ; Is the chunkNum 0?
     ora chunkNum + 1
     beq L4              ; Branch if zero
-    lda #<echunk
-    ldx #>echunk
-    jsr pushax
     lda chunkNum
     ldx chunkNum + 1
+    jsr pushax
+    lda #<echunk
+    ldx #>echunk
     jsr _retrieveChunk  ; Get the chunk
     cmp #0
     beq L4              ; Branch if error
