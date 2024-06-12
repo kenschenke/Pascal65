@@ -554,7 +554,12 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 		}
 		if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			retrieveChunk(exprArg.left, &exprLeft);
-			if (exprLeft.kind != EXPR_NAME && exprLeft.kind != EXPR_FIELD) {
+			if (argType.kind != paramType.kind) {
+				Error(errInvalidVarParm);
+			}
+			if (exprLeft.kind != EXPR_SUBSCRIPT &&
+				exprLeft.kind != EXPR_NAME &&
+				exprLeft.kind != EXPR_FIELD) {
 				Error(errInvalidVarParm);
 			}
 			else if (argType.flags & TYPE_FLAG_ISCONST) {
