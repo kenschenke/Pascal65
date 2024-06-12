@@ -24,6 +24,7 @@
 static 	char name[CHUNK_LEN + 1], enterLabel[15];
 
 static void genAbsCall(CHUNKNUM argChunk);
+static void genDecIncCall(TRoutineCode routineCode, CHUNKNUM argChunk);
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static void genOrdCall(CHUNKNUM argChunk);
@@ -90,6 +91,39 @@ static void genAbsCall(CHUNKNUM argChunk)
 	genExpr(arg.left, 1, 0);
 	genTwo(LDA_IMMEDIATE, argType.kind);
 	genThreeAddr(JSR, RT_ABS);
+}
+
+static void genDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
+{
+	char amountType;
+	CHUNKNUM varChunk;
+	struct expr arg, varExpr;
+	struct type amtType, varType;
+
+	retrieveChunk(argChunk, &arg);
+	varChunk = arg.left;
+
+	retrieveChunk(varChunk, &varExpr);
+	retrieveChunk(varExpr.evalType, &varType);
+
+	if (arg.right) {
+		retrieveChunk(arg.right, &arg);
+		genExpr(arg.left, 1, 0);
+		retrieveChunk(arg.left, &arg);
+		retrieveChunk(arg.evalType, &amtType);
+		amountType = amtType.kind;
+	} else {
+		genTwo(LDA_IMMEDIATE, 1);
+		genThreeAddr(JSR, RT_PUSHBYTESTACK);
+		amountType = TYPE_BYTE;
+	}
+
+	genExpr(varChunk, 0, 1);	// leaves variable address in ptr1
+
+	genTwo(LDA_IMMEDIATE, varType.kind);
+	genTwo(LDY_IMMEDIATE, amountType);
+
+	genThreeAddr(JSR, rc == rcInc ? RT_INCREMENT : RT_DECREMENT);
 }
 
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
@@ -599,6 +633,11 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	case rcOrd:
 		genOrdCall(argChunk);
+		break;
+
+	case rcDec:
+	case rcInc:
+		genDecIncCall(rc, argChunk);
 		break;
 	}
 }

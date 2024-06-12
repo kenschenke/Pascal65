@@ -247,6 +247,8 @@
 #define RT_SINE                 (RT_BASE + 285)
 #define RT_COSINE               (RT_BASE + 288)
 #define RT_TANGENT              (RT_BASE + 291)
+#define RT_DECREMENT            (RT_BASE + 294)
+#define RT_INCREMENT            (RT_BASE + 297)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

@@ -1,3 +1,6 @@
+0.28-beta
+    NEW: Add Inc and Dec procedures to the runtime.
+
 0.27-beta Jun 10 2024
     NEW: Variables can be initialized to a value at time of declaration.
          This is supported for all data types except for records.

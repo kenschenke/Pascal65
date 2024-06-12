@@ -33,8 +33,10 @@ nav:
     - Contains: funcref/contains.md
     - CompareStr: funcref/comparestr.md
     - Cos: funcref/cos.md
+    - Dec: funcref/dec.md
     - EndsWith: funcref/endswith.md
     - GetKey : funcref/getkey.md
+    - Inc: funcref/inc.md
     - Length: funcref/length.md
     - LowerCase: funcref/lowercase.md
     - Odd: funcref/odd.md

@@ -70,6 +70,7 @@ static void checkArraysSameType(struct type* pType1, struct type* pType2);
 static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 	struct type *pResultType, CHUNKNUM exprRightChunk);
 static void checkBoolOperand(struct type* pType);
+static void checkDecIncCall(CHUNKNUM argChunk);
 static void checkForStringFields(CHUNKNUM firstField);
 static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalParams);
 static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType);
@@ -314,6 +315,49 @@ static void checkBoolOperand(struct type* pType)
 {
 	if (pType->kind != TYPE_BOOLEAN) {
 		Error(errIncompatibleTypes);
+	}
+}
+
+static void checkDecIncCall(CHUNKNUM argChunk)
+{
+	struct expr _expr;
+	struct type _type;
+
+	// Needs to have the first parameter
+	if (!argChunk) {
+		Error(errWrongNumberOfParams);
+		return;
+	}
+
+	// Look at the first argument.
+	// Tt must be an integer, character, or enumeration
+	retrieveChunk(argChunk, &_expr);
+	expr_typecheck(_expr.left, 0, &_type, 0);
+	if (!isTypeInteger(_type.kind) && _type.kind != TYPE_CHARACTER &&
+		_type.kind != TYPE_ENUMERATION) {
+		Error(errInvalidType);
+		return;
+	}
+
+	// The argument must be a variable and not constant
+	if (_type.flags & TYPE_FLAG_ISCONST) {
+		Error(errInvalidType);
+		return;
+	}
+
+	// If there is a second argument, it must be an integer
+	if (_expr.right) {
+		retrieveChunk(_expr.right, &_expr);
+		expr_typecheck(_expr.left, 0, &_type, 0);
+		if (!isTypeInteger(_type.kind)) {
+			Error(errInvalidType);
+			return;
+		}
+
+		// It can't have a third argument
+		if (_expr.right) {
+			Error(errWrongNumberOfParams);
+		}
 	}
 }
 
@@ -750,6 +794,11 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 	case rcTrunc:
 		checkStdParms(argChunk, STDPARM_REAL);
 		pRetnType->kind = TYPE_INTEGER;
+		break;
+
+	case rcDec:
+	case rcInc:
+		checkDecIncCall(argChunk);
 		break;
 
 	default:
