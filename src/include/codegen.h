@@ -235,7 +235,7 @@ void linkerPostWrite(const char* prgFilename, char run, CHUNKNUM astRoot);
 // whichNeeded is one of LINKADDR_LOW, LINKADDR_HIGH, or LINKADDR_BOTH
 //    This is ignored if address is non-null.  It is only used if the
 //    address is to be filled in later.
-char linkAddressLookup(const char* name, unsigned short position, unsigned short* address, char whichNeeded);
+char linkAddressLookup(const char* name, unsigned short position, char whichNeeded);
 
 // Sets the code offset for a given symbol.
 void linkAddressSet(const char* name, unsigned short offset);

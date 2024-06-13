@@ -82,25 +82,25 @@ static void genCaseStmt(struct stmt* pStmt)
 			genTwo(BEQ, 3);							// branch to next label if not equal
 
 			// If the comparison was equal, jump to the body for this case branch
-			linkAddressLookup(bodyLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+			linkAddressLookup(bodyLabel, codeOffset + 1, LINKADDR_BOTH);
 			genThreeAddr(JMP, 0);
 
 			exprChunk = _expr.right;
 		}
 
 		if (labelStmt.next) {
-			linkAddressLookup(nextLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+			linkAddressLookup(nextLabel, codeOffset + 1, LINKADDR_BOTH);
 			genThreeAddr(JMP, 0);
 		}
 		else {
-			linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+			linkAddressLookup(endLabel, codeOffset + 1, LINKADDR_BOTH);
 			genThreeAddr(JMP, 0);
 		}
 
 		linkAddressSet(bodyLabel, codeOffset);
 		genStmts(labelStmt.body);
 		if (labelStmt.next) {
-			linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+			linkAddressLookup(endLabel, codeOffset + 1, LINKADDR_BOTH);
 			genThreeAddr(JMP, 0);
 		}
 
@@ -151,7 +151,7 @@ static void genForLoop(struct stmt* pStmt)
 	genTwo(CMP_IMMEDIATE, 0);
 	// If the target value has not been reached, jump to the body code
 	genTwo(BEQ, 3);		// JMP + two_byte_addr = 3
-	linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	linkAddressLookup(endLabel, codeOffset + 1, LINKADDR_BOTH);
 	// Target value has been reached.  Jump to end address.
 	genThreeAddr(JMP, 0);
 
@@ -186,11 +186,11 @@ static void genIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	// Dump the true block
 	genTwo(BNE, 3);		// JMP + two_byte_address = 3
 	if (pStmt->else_body) {
-		linkAddressLookup(elseLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+		linkAddressLookup(elseLabel, codeOffset + 1, LINKADDR_BOTH);
 		genThreeAddr(JMP, 0);
 	}
 	else {
-		linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+		linkAddressLookup(endLabel, codeOffset + 1, LINKADDR_BOTH);
 		genThreeAddr(JMP, 0);
 	}
 
@@ -199,7 +199,7 @@ static void genIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 
 	// Dump the else block
 	if (pStmt->else_body) {
-		linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+		linkAddressLookup(endLabel, codeOffset + 1, LINKADDR_BOTH);
 		genThreeAddr(JMP, 0);
 		linkAddressSet(elseLabel, codeOffset);
 		genStmts(pStmt->else_body);
@@ -285,7 +285,7 @@ static void genWhileStmt(struct stmt* pStmt)
 	genThreeAddr(JSR, RT_POPEAX);
 	genTwo(AND_IMMEDIATE, 1);
 	genTwo(BNE, 3);	// JMP + two_address_bytes = 3
-	linkAddressLookup(endLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	linkAddressLookup(endLabel, codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);	// jmp ENDWHILE
 
 	genStmts(pStmt->body);

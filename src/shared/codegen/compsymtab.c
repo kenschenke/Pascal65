@@ -103,17 +103,13 @@ static CHUNKNUM newLinkerSymbol(const char* name, unsigned short address, struct
 	return chunkNum;
 }
 
-char linkAddressLookup(const char* name, unsigned short position, unsigned short* address, char whichNeeded)
+char linkAddressLookup(const char* name, unsigned short position, char whichNeeded)
 {
 	CHUNKNUM chunkNum;
 	struct LINKTAG tag;
 	struct LINKSYMBOL sym;
 
 	chunkNum = bindLinkerSymbol(name, 0, &sym);
-	if (address && sym.address) {
-		*address = sym.address;
-		return 1;
-	}
 
 	tag.chunkNum = chunkNum;
 	tag.position = position;

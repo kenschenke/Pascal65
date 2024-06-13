@@ -375,8 +375,8 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 				// to the library's jump table.
 				strcpy(label, "libdecl");
 				strcat(label, formatInt16(sym.type));
-				linkAddressLookup(label, codeOffset+LIBDECL_SPL, 0, LINKADDR_LOW);
-				linkAddressLookup(label, codeOffset+LIBDECL_SPH, 0, LINKADDR_HIGH);
+				linkAddressLookup(label, codeOffset+LIBDECL_SPL, LINKADDR_LOW);
+				linkAddressLookup(label, codeOffset+LIBDECL_SPH, LINKADDR_HIGH);
 				writeCodeBuf(libDecl, LIBDECL_LEN);
 			}
 			
@@ -452,9 +452,9 @@ static void writeArrayInit(void)
 
 	strcpy(label, "arrayInits");
 	strcat(label, formatInt16(arrayInitsForScope));
-	linkAddressLookup(label, codeOffset+1, 0, LINKADDR_LOW);
+	linkAddressLookup(label, codeOffset+1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
-	linkAddressLookup(label, codeOffset+1, 0, LINKADDR_HIGH);
+	linkAddressLookup(label, codeOffset+1, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
 	genThreeAddr(JSR, RT_INITARRAYS);
 

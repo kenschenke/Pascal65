@@ -89,9 +89,9 @@ void genStringValueAX(CHUNKNUM chunkNum)
 	int num = addStringLiteral(chunkNum);
 	strcpy(label, "strVal");
 	strcat(label, formatInt16(num));
-	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_LOW);
+	linkAddressLookup(label, codeOffset + 1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
-	linkAddressLookup(label, codeOffset + 1, 0, LINKADDR_HIGH);
+	linkAddressLookup(label, codeOffset + 1, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
 }
 
@@ -150,7 +150,7 @@ void objCodeWrite(CHUNKNUM astRoot)
 	numToPop += genUnitDeclarations(heapOffsets);
 
 	// Skip over global function/procedure declarations and start main code
-	linkAddressLookup("MAIN", codeOffset + 1, 0, LINKADDR_BOTH);
+	linkAddressLookup("MAIN", codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
 	genRoutineDeclarations(_stmt.decl);

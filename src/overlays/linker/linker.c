@@ -424,7 +424,7 @@ static void dumpArrayInits(void)
 
 				strcpy(label, "arrayLits");
 				strcat(label, formatInt16(arrayInit.literals));
-				linkAddressLookup(label, codeOffset+10, 0, LINKADDR_BOTH);
+				linkAddressLookup(label, codeOffset+10, LINKADDR_BOTH);
 			}
 
 			writeCodeBuf(arrayInitBuf, sizeof(struct ARRAYINIT));
@@ -555,9 +555,9 @@ static void genBootstrap(void)
 	genTwo(BNE, 0xf6);
 #endif
 	// Display a message to press a key
-	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, 0, LINKADDR_LOW);
+	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
-	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, 0, LINKADDR_HIGH);
+	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
 	genThreeAddr(JSR, RT_PRINTZ);
 	// Wait for a key to get pressed
@@ -573,10 +573,10 @@ static void genBootstrap(void)
 	genTwo(BEQ, 0xfa);
 #endif
 	// Copy bootstrap code to upper memory
-	linkAddressLookup(BOOTSTRAP_CODE, codeOffset + 1, 0, LINKADDR_LOW);
+	linkAddressLookup(BOOTSTRAP_CODE, codeOffset + 1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
 	genTwo(STA_ZEROPAGE, ZP_PTR1L);
-	linkAddressLookup(BOOTSTRAP_CODE, codeOffset + 1, 0, LINKADDR_HIGH);
+	linkAddressLookup(BOOTSTRAP_CODE, codeOffset + 1, LINKADDR_HIGH);
 	genTwo(LDA_IMMEDIATE, 0);
 	genTwo(STA_ZEROPAGE, ZP_PTR1H);
 	genTwo(LDA_IMMEDIATE, 0xd0);
@@ -705,7 +705,7 @@ void linkerPreWrite(CHUNKNUM astRoot)
 	// (this also initializes codeOffset)
 	genExeHeader();
 
-	linkAddressLookup("INIT", codeOffset + 1, 0, LINKADDR_BOTH);
+	linkAddressLookup("INIT", codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
 #ifdef __MEGA65__
@@ -720,17 +720,17 @@ void linkerPreWrite(CHUNKNUM astRoot)
 
 	linkAddressSet("INIT", codeOffset);
 
-	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_HEADER_CODE_OFFSET_1, 0, LINKADDR_BOTH);
-	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_2, 0, LINKADDR_LOW);
-	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_3, 0, LINKADDR_HIGH);
-	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_4, 0, LINKADDR_LOW);
-	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_5, 0, LINKADDR_HIGH);
-	linkAddressLookup(BSS_TENSTABLE, codeOffset + PRG_HEADER_CODE_OFFSET_6, 0, LINKADDR_LOW);
-	linkAddressLookup(BSS_TENSTABLE, codeOffset + PRG_HEADER_CODE_OFFSET_7, 0, LINKADDR_HIGH);
-	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_9, 0, LINKADDR_LOW);
-	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_10, 0, LINKADDR_HIGH);
-	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_L, 0, LINKADDR_LOW);
-	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_H, 0, LINKADDR_HIGH);
+	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_HEADER_CODE_OFFSET_1, LINKADDR_BOTH);
+	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_2, LINKADDR_LOW);
+	linkAddressLookup(BSS_HEAPBOTTOM, codeOffset + PRG_HEADER_CODE_OFFSET_3, LINKADDR_HIGH);
+	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_4, LINKADDR_LOW);
+	linkAddressLookup(BSS_INTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_5, LINKADDR_HIGH);
+	linkAddressLookup(BSS_TENSTABLE, codeOffset + PRG_HEADER_CODE_OFFSET_6, LINKADDR_LOW);
+	linkAddressLookup(BSS_TENSTABLE, codeOffset + PRG_HEADER_CODE_OFFSET_7, LINKADDR_HIGH);
+	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_9, LINKADDR_LOW);
+	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_10, LINKADDR_HIGH);
+	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_L, LINKADDR_LOW);
+	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_H, LINKADDR_HIGH);
 	writeCodeBuf(prgHeader, PRG_HEADER_LENGTH);
 }
 
@@ -747,17 +747,17 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	int i;
 
 	linkAddressSet("EXIT_HANDLER", codeOffset);
-	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_CLEANUP_OFFSET, 0, LINKADDR_BOTH);
+	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_CLEANUP_OFFSET, LINKADDR_BOTH);
 	writeCodeBuf(prgCleanup, PRG_CLEANUP_LENGTH);
 
 #ifdef COMPILERTEST
 	if (nextTest) {
 		char msg[40];
 
-		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGL, 0, LINKADDR_LOW);
-		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGH, 0, LINKADDR_HIGH);
-		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, 0, LINKADDR_LOW);
-		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, 0, LINKADDR_HIGH);
+		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGL, LINKADDR_LOW);
+		linkAddressLookup("CHAINMSG", codeOffset + CHAIN_CODE_MSGH, LINKADDR_HIGH);
+		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, LINKADDR_LOW);
+		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, LINKADDR_HIGH);
 		chainCode[CHAIN_CODE_STRLEN] = 28 + strlen(nextTest);
 		writeCodeBuf(chainCode, 33);
 		writeChainCall(nextTest);	// filename of the next test in the chain

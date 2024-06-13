@@ -194,7 +194,7 @@ void setRuntimeRef(unsigned char exportNum, unsigned short offset)
         saveLib(routine.libNum);
         strcpy(name, "rt_");
         strcat(name, formatInt16(exportNum));
-        linkAddressLookup(name, offset, 0, LINKADDR_BOTH);
+        linkAddressLookup(name, offset, LINKADDR_BOTH);
     }
 }
 

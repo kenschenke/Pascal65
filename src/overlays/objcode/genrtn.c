@@ -136,7 +136,7 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	strcpy(enterLabel, "RTN");
 	strcat(enterLabel, formatInt16(declChunk));
 	strcat(enterLabel, "ENTER");
-	linkAddressLookup(enterLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	linkAddressLookup(enterLabel, codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
 	linkAddressSet(returnLabel, codeOffset);
@@ -165,7 +165,7 @@ static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, str
 	strcpy(enterLabel, "RTN");
 	strcat(enterLabel, formatInt16(declChunk));
 	strcat(enterLabel, "ENTER");
-	linkAddressLookup(enterLabel, codeOffset + 1, 0, LINKADDR_BOTH);
+	linkAddressLookup(enterLabel, codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JSR, 0);
 
 	linkAddressSet(returnLabel, codeOffset);
@@ -350,9 +350,9 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 	strcpy(returnLabel, "RTN");
 	strcat(returnLabel, formatInt16(exprChunk));
 	strcat(returnLabel, "RETURN");
-	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_LOW);
+	linkAddressLookup(returnLabel, codeOffset + 1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
-	linkAddressLookup(returnLabel, codeOffset + 1, 0, LINKADDR_HIGH);
+	linkAddressLookup(returnLabel, codeOffset + 1, LINKADDR_HIGH);
 	genTwo(LDX_IMMEDIATE, 0);
 	genTwo(LDY_IMMEDIATE, (unsigned char)sym.level);
 	genThreeAddr(JSR, RT_PUSHSTACKFRAMEHEADER);
