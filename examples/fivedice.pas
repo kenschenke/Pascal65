@@ -51,7 +51,16 @@ Var
     End;
     Scores : Array[0..14] Of Integer;
     Dice : Array[1..6] Of
-        Array[1..3] Of Array[1..3] Of Char;
+        Array[1..3] Of Array[1..3] Of Char =
+        (
+            ((' ', ' ', ' '), (' ', #$51, ' '), (' ', ' ', ' ')),
+            ((#$51, ' ', ' '), (' ', ' ', ' '), (' ', ' ', #$51)),
+            ((#$51, ' ', ' '), (' ', #$51, ' '), (' ', ' ', #$51)),
+            ((#$51, ' ', #$51), (' ', ' ', ' '), (#$51, ' ', #$51)),
+            ((#$51, ' ', #$51), (' ', #$51, ' '), (#$51, ' ', #$51)),
+            ((#$51, #$51, #$51), (' ', ' ', ' '), (#$51, #$51, #$51)),
+        );
+
     (* Used to count occurances of each dice value *)
     DiceCounts : Array[1..6] Of Byte;
 
@@ -373,44 +382,6 @@ Begin
     End;
 End;
 
-(* Set up the screen characters to render dice *)
-Procedure SetupDice;
-Var d, r, c : Integer;
-Begin
-    For d := 1 To 6 Do Begin
-        For r := 1 To 3 Do Begin
-            For c := 1 To 3 Do Dice[d,r,c] := ' ';
-        End;
-    End;
-
-    Dice[1,2,2] := Chr($51);
-
-    Dice[2,1,1] := Chr($51);
-    Dice[2,3,3] := Chr($51);
-
-    Dice[3,1,1] := Chr($51);
-    Dice[3,2,2] := Chr($51);
-    Dice[3,3,3] := Chr($51);
-
-    Dice[4,1,1] := Chr($51);
-    Dice[4,3,1] := Chr($51);
-    Dice[4,1,3] := Chr($51);
-    Dice[4,3,3] := Chr($51);
-
-    Dice[5,1,1] := Chr($51);
-    Dice[5,1,3] := Chr($51);
-    Dice[5,2,2] := Chr($51);
-    Dice[5,3,1] := Chr($51);
-    Dice[5,3,3] := Chr($51);
-
-    Dice[6,1,1] := Chr($51);
-    Dice[6,1,2] := Chr($51);
-    Dice[6,1,3] := Chr($51);
-    Dice[6,3,1] := Chr($51);
-    Dice[6,3,2] := Chr($51);
-    Dice[6,3,3] := Chr($51);
-End;
-
 (* Resets game state and screen for the next hand *)
 Procedure SetNextHand;
 Var
@@ -554,7 +525,6 @@ End;
 
 Begin
     ResetGame;
-    SetupDice;
 
     ClearScreen;
     SetUpperCase;
