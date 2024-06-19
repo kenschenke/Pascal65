@@ -13,9 +13,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ovrlcommon.h>
-#include <cbm.h>
-#include <device.h>
-#include <conio.h>
 #include <common.h>
 #include <chunks.h>
 #include <parser.h>
@@ -29,6 +26,14 @@
 #include <string.h>
 #include <libcommon.h>
 
+#ifdef __GNUC__
+#include <ctype.h>
+#else
+#include <cbm.h>
+#include <device.h>
+#include <conio.h>
+#endif
+
 #ifdef __MEGA65__
 #include <doscmd.h>
 #endif
@@ -37,13 +42,16 @@
 #define AUTOSRC "autosrc"
 #define EDITOR_STATE "zzstate"
 
+#ifndef __GNUC__
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 unsigned char loadfile(const char *name);
+static void relaunchIde(void);
+#endif
+
 static void checkSrcFn(const char *str);
 static void handleErrors(void);
 static char hasEditorState(void);
 static void readAutoSrc(void);
-static void relaunchIde(void);
 
 void waitforkey(void);
 
@@ -66,11 +74,13 @@ static void checkSrcFn(const char *str)
 
 static void handleErrors(void)
 {
+#ifndef __GNUC__
     if (hasEditorState()) {
         printz("\nPress a key...");
         waitforkey();
         relaunchIde();
     }
+#endif
 }
 
 static char hasEditorState(void)
@@ -127,6 +137,7 @@ static void readAutoSrc(void)
 
 void loadproghelper(const char *prg);
 
+#ifndef __GNUC__
 static void relaunchIde(void)
 {
     FILE *fp = fopen(EDITOR_STATE, "r");
@@ -139,6 +150,7 @@ static void relaunchIde(void)
     loadfile("loadprog");
     loadproghelper("pascal65");
 }
+#endif
 
 static void tokenizeAndParseUnits(void)
 {
@@ -156,10 +168,22 @@ static void tokenizeAndParseUnits(void)
                 strcpy(filename, _unit.name);
                 strcat(filename, ".pas");
 
+#ifdef __GNUC__
+                char fn[256];
+
+                if (strcmp(filename, "system.pas"))
+                    strcpy(fn, filename);
+                else
+                    strcpy(fn, "../../lib/system/system.pas");
+                unitTokens = tokenize(fn);
+#else
                 loadfile("compiler.1");
                 unitTokens = tokenize(filename);
+#endif
 
+#ifndef __GNUC__
                 loadfile("compiler.2");
+#endif
                 _unit.astRoot = parse(unitTokens);
                 freeMemBuf(unitTokens);
                 storeChunk(chunkNum, &_unit);
@@ -195,7 +219,13 @@ void main(int argc, char *argv[])
         char buffer[50];
 
         printz("Source file: ");
+#ifdef __GNUC__
+        fgets(buffer, sizeof(buffer), stdin);
+        while (isspace(buffer[strlen(buffer)-1]))
+            buffer[strlen(buffer)-1] = 0;
+#else
         gets(buffer);
+#endif
         checkSrcFn(buffer);
     }
 
@@ -214,16 +244,24 @@ void main(int argc, char *argv[])
     fast();
     videomode(VIDEOMODE_80x25);
 #endif
+#ifndef __GNUC__
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
+#endif
     printlnz("Tokenizing");
 
-    if (loadfile("compiler.1")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.1"))
+#endif
+    {
         tokenId = tokenize(srcFn);
     }
 
     printlnz("Parsing");
-    if (loadfile("compiler.2")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.2"))
+#endif
+    {
         astRoot = parse(tokenId);
         freeMemBuf(tokenId);
     }
@@ -241,7 +279,10 @@ void main(int argc, char *argv[])
     }
 
     printlnz("Resolving");
-    if (loadfile("compiler.3")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.3"))
+#endif
+    {
         init_scope_stack();
         resolve_units();
         decl_resolve(astRoot, 0);
@@ -257,7 +298,10 @@ void main(int argc, char *argv[])
     }
 
     printlnz("Type checking");
-    if (loadfile("compiler.4")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.4"))
+#endif
+    {
         decl_typecheck(astRoot);
         typecheck_units();
     }
@@ -267,7 +311,10 @@ void main(int argc, char *argv[])
         return;
     }
 
-    if (loadfile("compiler.6")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.6"))
+#endif
+    {
         linkerPreWrite(astRoot);
     }
 
@@ -277,7 +324,10 @@ void main(int argc, char *argv[])
     }
 
     printlnz("Writing code");
-    if (loadfile("compiler.5")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.5"))
+#endif
+    {
         objCodeWrite(astRoot);
     }
 
@@ -287,7 +337,10 @@ void main(int argc, char *argv[])
     }
 
     printlnz("Linking code");
-    if (loadfile("compiler.6")) {
+#ifndef __GNUC__
+    if (loadfile("compiler.6"))
+#endif
+    {
         linkerPostWrite(srcFn, isAutoRun, astRoot);
     }
 
@@ -296,22 +349,26 @@ void main(int argc, char *argv[])
 
     printlnz("Done");
 
-    log("main", "back to main code");
+    logMessage("main", "back to main code");
 
+#ifndef __GNUC__
     relaunchIde();
+#endif
 }
 
+#ifndef __GNUC__
 unsigned char loadfile(const char *name)
 {
     if (cbm_load(name, getcurrentdevice(), NULL) == 0) {
-        log("main", "Loading overlay file failed");
+        logMessage("main", "Loading overlay file failed");
         return 0;
     }
 
     return 1;
 }
+#endif
 
-void log(const char *module, const char *message)
+void logMessage(const char *module, const char *message)
 {
     printz(module);
     printz(": ");

@@ -55,7 +55,7 @@ typedef struct {
 // Definition structure
 
 typedef struct DEFN {
-    TDefnCode how;  // the identifier was defined
+    char how;  // the identifier was defined
 
     union {
 
@@ -66,7 +66,7 @@ typedef struct DEFN {
 
         // Procedure, function, or standard routine
         struct {
-            TRoutineCode which;             // routine code
+            char         which;             // routine code
             short        parmCount;         // count of parameters
             short        totalParmSize;     // total byte size of parms
             short        totalLocalSize;    // total byte size of locals

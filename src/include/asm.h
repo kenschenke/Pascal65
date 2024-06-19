@@ -282,7 +282,7 @@ enum RuntimeRoutines {
     writeUint8, writeInt16, writeUint16, writeInt32, writeUint32, rtPopAx,
     subInt32, int32Sqr, prepOperands8, prepOperands16, prepOperands32,
     prepOperandsReal, readInt16, copyFPACCtoFPOP, swapFPACCandFPOP,
-    convertType, getline, getlineNoEnter, rtDummy162, rtIsInputEndOfLine,
+    convertType, rtGetline, getlineNoEnter, rtDummy162, rtIsInputEndOfLine,
     rtReadCharFromInput, skipSpaces, readInt32, rtDummy167, writeString,
     rtHeapReAlloc, rtPopA, rtDummy171, rtPushA, rtDummy173,
     rtStringSubscriptRead, rtDuplicateString, rtStringSubscriptWrite,

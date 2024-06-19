@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#ifndef __GNUC__
+
 void __fastcall__ sendDosCmd(char *cmd, char device);
 
 // Returns current drive as a number - NOT '8' or '9'
@@ -45,3 +47,5 @@ void renameFile(char *oldName, char *newName) {
     strcat(cmd, oldName);
     sendDosCmd(cmd, getCurrentDrive());
 }
+
+#endif

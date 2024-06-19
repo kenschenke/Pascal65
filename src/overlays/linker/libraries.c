@@ -46,6 +46,12 @@ static FILE* openLibrary(const char* library)
     strcpy(filename, library);
     strcat(filename, ".lib");
 
+#ifdef __GNUC__
+    if (!strcmp(filename, "system.lib")) {
+        return fopen("../../lib/system/bin/mega65/system", "rb");
+    }
+#endif
+
     return fopen(filename, "rb");
 }
 

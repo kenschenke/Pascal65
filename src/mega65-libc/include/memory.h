@@ -15,13 +15,13 @@ struct dmagic_dmalist
 
   // F018B format DMA request
   unsigned char command;
-  unsigned int count;
-  unsigned int source_addr;
+  unsigned short count;
+  unsigned short source_addr;
   unsigned char source_bank;
-  unsigned int dest_addr;
+  unsigned short dest_addr;
   unsigned char dest_bank;
   unsigned char sub_cmd; // F018B subcmd
-  unsigned int modulo;
+  unsigned short modulo;
 };
 
 extern struct dmagic_dmalist dmalist;

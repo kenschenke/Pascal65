@@ -44,6 +44,7 @@ void assertEqualChunkNumX(CHUNKNUM expected, CHUNKNUM actual,
 	}
 }
 
+#ifndef __GNUC__
 void assertEqualFloatX(const char *expected, FLOAT actual,
     const char *test, int line) {
 	if (strToFloat(expected) != actual) {
@@ -55,6 +56,7 @@ void assertEqualFloatX(const char *expected, FLOAT actual,
 		exit(5);
 	}
 }
+#endif
 
 void assertNonZeroChunkNumX(CHUNKNUM actual,
 	const char *test, int line)

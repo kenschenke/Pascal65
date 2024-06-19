@@ -8,12 +8,22 @@ TYPECHECKOVRLSRC := ../../overlays/typecheck
 OBJCODEOVRLSRC := ../../overlays/objcode
 LINKEROVRLSRC := ../../overlays/linker
 SHAREDSRCDIR = ../../shared
-SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
-SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
 SHAREDCODEGENDIR = $(SHAREDSRCDIR)/codegen
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
+
+ifdef GCC
+
+SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks/gnuc
+SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf/gnuc
+
+else
+
+SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
+SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
+
+endif
 
 PROGRAM := compiler
 TOKENIZEROVRLFILE := $(PROGRAM).1
@@ -32,35 +42,31 @@ c64_CFLAGS =
 c128_CFLAGS =
 mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
 CONFIG := cfg-$(TARGET).cfg
-CFLAGS = $($(TARGET)_CFLAGS) -W error -D MAINPAS -O -I ../../include
 c64_ASFLAGS =
 c128_ASFLAGS =
 mega65_ASFLAGS = --asm-define __MEGA65__
 ASFLAGS = $($(TARGET)_ASFLAGS) --asm-include-dir ../../asminc
-LDFLAGS = --mapfile compiler.map -C $(CONFIG)
 
-SOURCES := $(wildcard $(SRCDIR)/*.c)
-SOURCES += $(wildcard $(SRCDIR)/*.s)
-SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
-SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.s)
-SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
-ifeq ($(TARGET),mega65)
-SOURCES += $(LIBCSRCDIR)/memory.c
+ifdef GCC
+CC = gcc
+CFLAGS = $($(TARGET)_CFLAGS) -c -fpack-struct=1 -m32 -I ../../include
+LDFLAGS = -m32
+else
+CC = cl65
+CFLAGS = $($(TARGET)_CFLAGS) -t $(CC65TARGET) -c --create-dep $(@:.o=.d) -W error -O -I ../../include
+LDFLAGS = -t $(CC65TARGET) --mapfile compiler.map -C $(CONFIG)
 endif
 
+SOURCES := $(wildcard $(SRCDIR)/*.c)
+SOURCES += $(wildcard $(TARGETSRCDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
+SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.c)
+
 TOKENIZEROVRLSRCS := $(wildcard $(TOKENIZEROVRLSRC)/*.c)
-TOKENIZEROVRLSRCS += $(wildcard $(TOKENIZEROVRLSRC)/*.s)
 
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
-PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
 RESOLVEROVRLSRCS := $(wildcard $(RESOLVEROVRLSRC)/*.c)
 
@@ -69,7 +75,29 @@ TYPECHECKOVRLSRCS := $(wildcard $(TYPECHECKOVRLSRC)/*.c)
 OBJCODEOVRLSRCS := $(wildcard $(OBJCODEOVRLSRC)/*.c)
 
 LINKEROVRLSRCS := $(wildcard $(LINKEROVRLSRC)/*.c)
+
+ifdef GCC
+SOURCES += $(wildcard $(SHAREDSRCDIR)/gnuc/*.c)
+endif
+
+ifndef GCC
+
+ifeq ($(TARGET),mega65)
+SOURCES += $(LIBCSRCDIR)/memory.c
+endif
+
+SOURCES += $(wildcard $(SRCDIR)/*.s)
+SOURCES += $(wildcard $(TARGETSRCDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDSRCDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
+SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.s)
+SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
+PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 LINKEROVRLSRCS += $(wildcard $(LINKEROVRLSRC)/*.s)
+TOKENIZEROVRLSRCS += $(wildcard $(TOKENIZEROVRLSRC)/*.s)
+
+endif
 
 CONFIG := cfg-$(TARGET).cfg
 
@@ -99,7 +127,7 @@ $(OBJTARGETDIR): $(OBJDIR)
 
 vpath %.c $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
@@ -107,15 +135,47 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 
 vpath %.c $(TARGETSRCDIR)
 $(OBJTARGETDIR)/%.o: %.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath %.s $(TARGETSRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+ifdef GCC
+
 vpath $(TOKENIZEROVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(TOKENIZEROVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY1 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(PARSEROVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(PARSEROVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(RESOLVEROVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(RESOLVEROVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(TYPECHECKOVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(TYPECHECKOVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(OBJCODEOVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(LINKEROVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(LINKEROVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(SHAREDSRCDIR)/gnuc/%.c
+$(OBJTARGETDIR)/%.o: $(SHAREDSRCDIR)/gnuc/%.c | $(OBJDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+else
+
+vpath $(TOKENIZEROVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(TOKENIZEROVRLSRC)/%.c | $(OBJTARGETDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY1 $(CFLAGS) -o $@ $<
 
 vpath $(TOKENIZEROVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(TOKENIZEROVRLSRC)/%.s | $(OBJTARGETDIR)
@@ -123,7 +183,7 @@ $(OBJTARGETDIR)/%.o: $(TOKENIZEROVRLSRC)/%.s | $(OBJTARGETDIR)
 
 vpath $(PARSEROVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(PARSEROVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY2 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY2 $(CFLAGS) -o $@ $<
 
 vpath $(PARSEROVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(PARSEROVRLSRC)/%.s | $(OBJTARGETDIR)
@@ -131,7 +191,7 @@ $(OBJTARGETDIR)/%.o: $(PARSEROVRLSRC)/%.s | $(OBJTARGETDIR)
 
 vpath $(RESOLVEROVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(RESOLVEROVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY3 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY3 $(CFLAGS) -o $@ $<
 
 vpath $(RESOLVEROVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(RESOLVEROVRLSRC)/%.s | $(OBJTARGETDIR)
@@ -139,7 +199,7 @@ $(OBJTARGETDIR)/%.o: $(RESOLVEROVRLSRC)/%.s | $(OBJTARGETDIR)
 
 vpath $(TYPECHECKOVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(TYPECHECKOVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY4 $(CFLAGS) -o $@ $<
 
 vpath $(TYPECHECKOVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(TYPECHECKOVRLSRC)/%.s | $(OBJTARGETDIR)
@@ -147,7 +207,7 @@ $(OBJTARGETDIR)/%.o: $(TYPECHECKOVRLSRC)/%.s | $(OBJTARGETDIR)
 
 vpath $(OBJCODEOVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY5 $(CFLAGS) -o $@ $<
 
 vpath $(OBJCODEOVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.s | $(OBJTARGETDIR)
@@ -155,15 +215,17 @@ $(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.s | $(OBJTARGETDIR)
 
 vpath $(LINKEROVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(LINKEROVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY6 $(CFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(LINKEROVRLSRC)/%.s | $(OBJTARGETDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
+endif
+
 vpath $(LIBCSRCDIR)/%.c
 $(OBJTARGETDIR)/%.o: $(LIBCSRCDIR)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath $(LIBCSRCDIR)/%.s
 $(OBJTARGETDIR)/%.o: $(LIBCSRCDIR)/%.s | $(OBJTARGETDIR)
@@ -171,7 +233,7 @@ $(OBJTARGETDIR)/%.o: $(LIBCSRCDIR)/%.s | $(OBJTARGETDIR)
 
 vpath $(SHAREDSRCDIR)/%.c
 $(OBJTARGETDIR)/%.o: $(SHAREDSRCDIR)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath $(SHAREDSRCDIR)/%.s
 $(OBJTARGETDIR)/%.o: $(SHAREDSRCDIR)/%.s | $(OBJTARGETDIR)
@@ -179,7 +241,7 @@ $(OBJTARGETDIR)/%.o: $(SHAREDSRCDIR)/%.s | $(OBJTARGETDIR)
 
 vpath %.c $(SHAREDCHUNKSDIR)
 $(OBJTARGETDIR)/%.o: %.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SHAREDCHUNKSDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
@@ -187,7 +249,7 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 
 vpath %.c $(SHAREDMEMBUFDIR)
 $(OBJTARGETDIR)/%.o: %.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SHAREDMEMBUFDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
@@ -195,7 +257,7 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 
 vpath %.c $(SHAREDCODEGENDIR)
 $(OBJTARGETDIR)/%.o: %.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 vpath %.s $(SHAREDCODEGENDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
@@ -206,7 +268,7 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 $(PRGFILE): $(OBJECTS)
-	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(PRGFILE) $(OBJECTS)
+	$(CC) $(LDFLAGS) -o $(PRGFILE) $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)

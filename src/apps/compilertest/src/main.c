@@ -13,20 +13,23 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ovrlcommon.h>
-#include <cbm.h>
-#include <device.h>
-#include <conio.h>
 #include <common.h>
 #include <chunks.h>
 #include <parser.h>
 #include <resolver.h>
 #include <typecheck.h>
 #include <codegen.h>
-#include <em.h>
 #include <int16.h>
 #include <membuf.h>
 #include <libcommon.h>
 #include <int16.h>
+
+#ifndef __GNUC__
+#include <cbm.h>
+#include <conio.h>
+#include <device.h>
+#include <em.h>
+#endif
 
 static char intBuffer[16];
 
@@ -54,6 +57,7 @@ static char *testFiles[] = {
     NULL
 };
 
+#ifndef __GNUC__
 extern void _OVERLAY1_LOAD__[], _OVERLAY1_SIZE__[];
 extern void _OVERLAY2_LOAD__[], _OVERLAY2_SIZE__[];
 extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
@@ -61,6 +65,7 @@ extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
 extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
 extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
 unsigned char loadfile(const char *name);
+#endif
 
 #ifndef __MEGA65__
 static unsigned overlay1size, overlay2size, overlay3size, overlay4size, overlay5size;
@@ -113,10 +118,14 @@ static void tokenizeAndParseUnits(void)
                 strcpy(filename, _unit.name);
                 strcat(filename, ".pas");
 
+#ifndef __GNUC__
                 loadfile("compilertest.1");
+#endif
                 unitTokens = tokenize(filename);
 
+#ifndef __GNUC__
                 loadfile("compilertest.2");
+#endif
                 _unit.astRoot = parse(unitTokens);
                 freeMemBuf(unitTokens);
                 storeChunk(chunkNum, &_unit);
@@ -187,8 +196,11 @@ void main()
     fast();
     videomode(VIDEOMODE_80x25);
 #endif
+
+#ifndef __GNUC__
     bgcolor(COLOR_BLUE);
     textcolor(COLOR_WHITE);
+#endif
 
     while (testFiles[i]) {
         char filename[16 + 1];
@@ -200,7 +212,7 @@ void main()
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay1size, _OVERLAY1_LOAD__, tokenizerCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.1")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -215,7 +227,7 @@ void main()
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay2size, _OVERLAY2_LOAD__, parserCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.2")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -229,7 +241,7 @@ void main()
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay3size, _OVERLAY3_LOAD__, resolverCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.3")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -249,7 +261,7 @@ void main()
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay4size, _OVERLAY4_LOAD__, typecheckCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.4")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -261,7 +273,7 @@ void main()
 
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, linkerCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.6")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -271,7 +283,7 @@ void main()
         linkerPreWrite(astRoot);
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, objcodeCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.5")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -281,7 +293,7 @@ void main()
         objCodeWrite(astRoot);
 #ifndef __MEGA65__
         loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, linkerCache);
-#else
+#elif !defined (__GNUC__)
     if (!loadfile("compilertest.6")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
@@ -303,23 +315,40 @@ void main()
     }
 
     printlnz("All tests have been generated.");
+#ifdef __GNUC__
+    char cmd[2048];
+
+    strcpy(cmd, "c1541 -format compilertest,8a d81 bin/compilertest.d81");
+    i = 0;
+    while (testFiles[i]) {
+        char str[60];
+
+        sprintf(str, " -write %s %s,prg", testFiles[i], testFiles[i]);
+        strcat(cmd, str);
+        i++;
+    }
+    system(cmd);
+#else
     printz("Press Enter to reset then load ");
     printlnz(testFiles[0]);
     getchar();
     __asm__ ("jmp ($fffc)");
+#endif
 }
 
+#ifndef __GNUC__
 unsigned char loadfile(const char *name)
 {
     if (cbm_load(name, getcurrentdevice(), NULL) == 0) {
-        log("main", "Loading overlay file failed");
+        logMessage("main", "Loading overlay file failed");
         return 0;
     }
 
     return 1;
 }
+#endif
 
-void log(const char *module, const char *message)
+void logMessage(const char *module, const char *message)
 {
     printz(module);
     printz(": ");

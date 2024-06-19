@@ -13,14 +13,17 @@
 #include <stdio.h>
 #include <common.h>
 #include <symtab.h>
-#include <cbm.h>
-#include <conio.h>
 #include <membuf.h>
 #include <ast.h>
 #include <string.h>
 #include <codegen.h>
 #include <error.h>
 #include <int16.h>
+
+#ifndef __GNUC__
+#include <cbm.h>
+#include <conio.h>
+#endif
 
 short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
@@ -80,6 +83,9 @@ void freeCommon(void)
 
 char isStopKeyPressed()
 {
+#ifdef __GNUC__
+	return 0;
+#else
     char ch = 0;
 
     if (kbhit()) {
@@ -87,6 +93,7 @@ char isStopKeyPressed()
     }
 
     return ch == CH_STOP;
+#endif
 }
 
 void getBaseType(struct type* pType)

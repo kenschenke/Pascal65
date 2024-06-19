@@ -17,6 +17,10 @@
 #include <string.h>
 #include <parscommon.h>
 
+#ifdef __GNUC__
+#define stricmp strcasecmp
+#endif
+
 CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary)
 {
 	char dummy;

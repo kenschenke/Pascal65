@@ -86,7 +86,14 @@ static void readErrorFile(char *filename, CHUNKNUM *msgs, int numMsgs) {
     reserveMemBuf(*msgs, numMsgs * CHUNK_LEN);
     setMemBufPos(*msgs, 0);
 
+#ifdef __GNUC__
+    char fn[256];
+
+    sprintf(fn, "../../shared/%s.txt", filename);
+    fp = fopen(fn, "r");
+#else
     fp = fopen(filename, "r");
+#endif
     if (fp == NULL) {
         logFatalError("Error message file missing");
         isFatalError = 1;

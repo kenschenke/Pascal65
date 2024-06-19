@@ -29,10 +29,10 @@ _Static_assert (sizeof(struct MEMBUF_CHUNK) == CHUNK_LEN, "MEMBUF_CHUNK should b
 typedef struct MEMBUF {
     CHUNKNUM firstChunkNum;
     CHUNKNUM currentChunkNum;
-    unsigned posGlobal;
-    unsigned posChunk;
-    unsigned capacity;          // storage capacity of allocated chunks
-    unsigned used;              // total bytes stored in buffer
+    unsigned short posGlobal;
+    unsigned short posChunk;
+    unsigned short capacity;          // storage capacity of allocated chunks
+    unsigned short used;              // total bytes stored in buffer
     char unused[CHUNK_LEN - 12];
 } MEMBUF;
 
@@ -45,6 +45,7 @@ typedef struct MEMBUF_LOCN {
 _Static_assert (sizeof(struct MEMBUF) == CHUNK_LEN, "MEMBUF should be CHUNK_LEN bytes in size");
 
 void allocMemBuf(CHUNKNUM *newHeader);
+void flushMemCache(void);
 void reserveMemBuf(CHUNKNUM header, unsigned size);
 unsigned getMemBufPos(CHUNKNUM header);     // returns global position
 void initMemBufCache(void);

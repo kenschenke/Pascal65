@@ -19,7 +19,6 @@
 // NOTE: Pascal code is generated elsewhere, in the objcode overlay.
 
 #include <stdio.h>
-#include <cbm.h>
 #include <buffer.h>
 #include <codegen.h>
 #include <ast.h>
@@ -27,15 +26,23 @@
 #include <membuf.h>
 #include <string.h>
 #include <int16.h>
-#include <device.h>
 #include <inputbuf.h>
 #include <doscmd.h>
+
+#ifndef __GNUC__
+#include <cbm.h>
+#include <device.h>
+#endif
 
 #define BUFLEN 20
 #define TEMP_PROG "zztmp"
 
 #ifdef __MEGA65__
 #include <memory.h>
+#endif
+
+#ifdef __GNUC__
+#define stricmp strcasecmp
 #endif
 
 #define RUNTIME_STACK_SIZE 2048
@@ -697,7 +704,11 @@ void linkerPreWrite(CHUNKNUM astRoot)
 #else
 #error Platform start address not defined
 #endif
+
+#ifndef __GNUC__
 	_filetype = 'p';
+#endif
+
 	codeFh = fopen(TEMP_PROG, "w");
 	initLinkerSymbolTable();
 
@@ -867,7 +878,9 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	}
 
 	// See if the program file already exists
+#ifndef __GNUC__
 	_filetype = 'p';
+#endif
 	out = fopen(prgFilename, "r");
 	if (out) {
 		fclose(out);
@@ -902,7 +915,7 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	fclose(codeFh);
 	removeFile(TEMP_PROG);
 
-#ifndef COMPILERTEST
+#if !defined (COMPILERTEST) && !defined(__GNUC__)
 	if (run) {
 		runPrg();
 	}
@@ -915,7 +928,11 @@ static void genRuntime(void)
 	char buf[10];
 	FILE* in;
 
+#ifdef __GNUC__
+	in = fopen("../../lib/runtime/bin/mega65/runtime", "rb");
+#else
 	in = fopen("runtime", "r");
+#endif
 	fread(buf, 1, 2, in);	// discard the starting address
 	while (!feof(in)) {
 		read = fread(buf, 1, sizeof(buf), in);
@@ -944,7 +961,17 @@ static void writeChainCall(char* name)
 	fwrite(chainCall, 1, 28, codeFh);
 	codeOffset += 28;
 
+#ifdef __GNUC__
+	// Convert the next program's filename to PETSCII
+	char localname[20];
+	strcpy(localname, name);
+	for (char *p=localname; *p; p++) {
+		*p -= 32;
+	}
+	fwrite(localname, 1, strlen(localname), codeFh);
+#else
 	fwrite(name, 1, strlen(name), codeFh);
+#endif
 	codeOffset += strlen(name);
 }
 #endif
