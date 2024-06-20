@@ -93,6 +93,7 @@ static void genAbsCall(CHUNKNUM argChunk)
 	genThreeAddr(JSR, RT_ABS);
 }
 
+#if 0
 static void genDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
 	char amountType;
@@ -125,6 +126,7 @@ static void genDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	genThreeAddr(JSR, rc == rcInc ? RT_INCREMENT : RT_DECREMENT);
 }
+#endif
 
 static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
 {
@@ -637,7 +639,7 @@ static void genStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	case rcDec:
 	case rcInc:
-		genDecIncCall(rc, argChunk);
+		// genDecIncCall(rc, argChunk);
 		break;
 	}
 }

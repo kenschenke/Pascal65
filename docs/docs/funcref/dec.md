@@ -2,6 +2,11 @@
 
 Decrements a variable.
 
+!!! warning
+
+    Due to technical limitations the Dec procedure is currently disabled.
+    A workaround is under development.
+
 ## Declaration
 
     Procedure Dec(num);

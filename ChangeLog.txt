@@ -1,5 +1,5 @@
 0.28-beta
-    NEW: Add Inc and Dec procedures to the runtime.
+    NEW: Add Inc and Dec procedures to the runtime (currently disabled).
     FIX: Fix type checking for Var parameters
 
 0.27-beta Jun 10 2024
