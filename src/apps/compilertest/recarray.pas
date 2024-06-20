@@ -34,6 +34,7 @@ Var
 	ar2 : Array[1..10,1..3] Of Integer;
 	ar3 : Array[1..10] Of Rec3;
 	ar4 : Array[1..5] Of Real;
+	ar5 : Array[-3..3] Of Integer;
 
 Procedure Error(num : Integer);
 Begin
@@ -120,6 +121,15 @@ Begin
 		If Trunc(ar4[i]) <> i Then Begin
 			Error(19);
 		End;
+	
+	For i := 1 To 7 Do ar5[i-4] := i;
+	If ar5[-3] <> 1 Then Error(19);
+	If ar5[-2] <> 2 Then Error(20);
+	If ar5[-1] <> 3 Then Error(21);
+	If ar5[0]  <> 4 Then Error(22);
+	If ar5[1]  <> 5 Then Error(23);
+	If ar5[2]  <> 6 Then Error(24);
+	If ar5[3]  <> 7 Then Error(25);
 
     If anyErrors Then Begin
         Write('Press a key to continue:');

@@ -399,10 +399,10 @@ int getArrayLimit(CHUNKNUM chunkNum)
 
 	retrieveChunk(chunkNum, &_expr);
 	if (_expr.kind == EXPR_BYTE_LITERAL) {
-		return _expr.value.shortInt;
+		return _expr.neg ? -_expr.value.shortInt : _expr.value.shortInt;
 	}
 	else if (_expr.kind == EXPR_WORD_LITERAL) {
-		return _expr.value.integer;
+		return _expr.neg ? -_expr.value.integer : _expr.value.integer;
 	}
 	else if (_expr.kind == EXPR_CHARACTER_LITERAL) {
 		return _expr.value.character;
