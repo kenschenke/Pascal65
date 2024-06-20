@@ -1,4 +1,5 @@
 0.28-beta
+    FIX: Fix negative array bounds : issue #15
     NEW: Add Inc and Dec procedures to the runtime (currently disabled).
     FIX: Fix type checking for Var parameters
 
