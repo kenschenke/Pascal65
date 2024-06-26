@@ -44,7 +44,7 @@ LDFLAGS = -m32
 else
 CC = cl65
 CFLAGS = $($(TARGET)_CFLAGS) -W error -D COMPILERTEST -D __TEST__ -O -I ../../include -t $(CC65TARGET) -c --create-dep $(@:.o=.d)
-LDFLAGS = --mapfile compiler.map -C $(CONFIG) -t $(CC65TARGET) -C $(CONFIG)
+LDFLAGS = --mapfile compiler.map -C $(CONFIG) -t $(CC65TARGET)
 endif
 
 SOURCES := $(wildcard $(SRCDIR)/*.c)
@@ -65,6 +65,11 @@ ifndef GCC
 SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.s)
 SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.s)
 SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
+SOURCES += $(RUNTIMESRCDIR)/floatinput.s
+SOURCES += $(RUNTIMESRCDIR)/floatmult.s
+SOURCES += $(RUNTIMESRCDIR)/floatnorm.s
+SOURCES += $(RUNTIMESRCDIR)/floatutil.s
+SOURCES += $(RUNTIMESRCDIR)/strtofloat.s
 
 ifeq ($(TARGET),mega65)
 LIBCSRCDIR = ../../mega65-libc/src
@@ -131,7 +136,7 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 ifeq ($(TARGET),mega65)
 vpath %.c $(LIBCSRCDIR)
 $(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) $(CFLAGS) -o $@ $<
 
 vpath %.s $(LIBCSRCDIR)
 $(OBJDIR)/%.o: %.s | $(OBJDIR)
