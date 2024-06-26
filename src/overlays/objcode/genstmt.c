@@ -32,7 +32,7 @@ static void genCaseStmt(struct stmt* pStmt)
 	struct expr _expr;
 	struct type exprType, labelType;
 	struct stmt labelStmt;
-	char branchLabel[15], bodyLabel[15], nextLabel[15], endLabel[15];
+	char branchLabel[15], bodyLabel[25], nextLabel[15], endLabel[15];
 	CHUNKNUM exprChunk, labelChunk = pStmt->body;
 
 	retrieveChunk(pStmt->expr, &_expr);
