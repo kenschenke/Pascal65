@@ -35,7 +35,7 @@ struct decl {
     CHUNKNUM unitSymtab;    // Unit symtab if this is a routine in a unit/library
     char isLibrary;         // Non-zero if this is a library unit
     short lineNumber;
-    char unused[CHUNK_LEN - 19];
+    char unused[CHUNK_LEN - 20];
 };
 
 /*
