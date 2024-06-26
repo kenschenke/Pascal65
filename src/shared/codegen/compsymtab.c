@@ -19,46 +19,47 @@
 static CHUNKNUM linkerSymtab;
 CHUNKNUM linkerTags;
 
-static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address, struct LINKSYMBOL* pSym);
+static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address);
 static void freeLinkerSymbol(CHUNKNUM chunkNum);
-static CHUNKNUM newLinkerSymbol(const char* name, unsigned short address, struct LINKSYMBOL* pSym);
+static CHUNKNUM newLinkerSymbol(const char* name, unsigned short address);
 
-static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address, struct LINKSYMBOL* pSym)
+static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address)
 {
 	int comp;
-	struct LINKSYMBOL newSym;
+	struct LINKSYMBOL sym;
 	CHUNKNUM chunkNum, newChunkNum, lastChunkNum;
 
 	if (linkerSymtab == 0) {
-		linkerSymtab = newLinkerSymbol(name, address, pSym);
+		linkerSymtab = newLinkerSymbol(name, address);
 		return linkerSymtab;
 	}
 
 	chunkNum = linkerSymtab;
 	while (chunkNum) {
-		retrieveChunk(chunkNum, pSym);
-		comp = strcmp(name, pSym->name);
+		retrieveChunk(chunkNum, &sym);
+		comp = strcmp(name, sym.name);
 		if (comp == 0) {
 			if (address) {
-				pSym->address = address;
-				storeChunk(chunkNum, pSym);
+				sym.address = address;
+				storeChunk(chunkNum, &sym);
 			}
 			return chunkNum;
 		}
 
 		lastChunkNum = chunkNum;
-		chunkNum = comp < 0 ? pSym->left : pSym->right;
+		chunkNum = comp < 0 ? sym.left : sym.right;
 	}
 
-	newChunkNum = newLinkerSymbol(name, address, &newSym);
+	newChunkNum = newLinkerSymbol(name, address);
 	// Update the current node
 	if (comp < 0) {
-		pSym->left = newChunkNum;
+		sym.left = newChunkNum;
 	}
 	else {
-		pSym->right = newChunkNum;
+		sym.right = newChunkNum;
 	}
-	storeChunk(lastChunkNum, pSym);
+
+	storeChunk(lastChunkNum, &sym);
 
 	return newChunkNum;
 }
@@ -89,16 +90,17 @@ void initLinkerSymbolTable(void)
 	allocMemBuf(&linkerTags);
 }
 
-static CHUNKNUM newLinkerSymbol(const char* name, unsigned short address, struct LINKSYMBOL* pSym)
+static CHUNKNUM newLinkerSymbol(const char* name, unsigned short address)
 {
+	struct LINKSYMBOL sym;
 	CHUNKNUM chunkNum;
 
 	allocChunk(&chunkNum);
-	memset(pSym, 0, sizeof(struct LINKSYMBOL));
+	memset(&sym, 0, sizeof(struct LINKSYMBOL));
 
-	strcpy(pSym->name, name);
-	pSym->address = address;
-	storeChunk(chunkNum, pSym);
+	strcpy(sym.name, name);
+	sym.address = address;
+	storeChunk(chunkNum, &sym);
 
 	return chunkNum;
 }
@@ -107,9 +109,8 @@ char linkAddressLookup(const char* name, unsigned short position, char whichNeed
 {
 	CHUNKNUM chunkNum;
 	struct LINKTAG tag;
-	struct LINKSYMBOL sym;
 
-	chunkNum = bindLinkerSymbol(name, 0, &sym);
+	chunkNum = bindLinkerSymbol(name, 0);
 
 	tag.chunkNum = chunkNum;
 	tag.position = position;
@@ -121,8 +122,6 @@ char linkAddressLookup(const char* name, unsigned short position, char whichNeed
 
 void linkAddressSet(const char* name, unsigned short offset)
 {
-	struct LINKSYMBOL sym;
-
-	bindLinkerSymbol(name, offset + codeBase, &sym);
+	bindLinkerSymbol(name, offset + codeBase);
 }
 
