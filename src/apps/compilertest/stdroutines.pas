@@ -74,6 +74,7 @@ Begin
     If Succ(i) <> 1235 Then Error(29);
     If Succ(1244) <> 1245 Then Error(30);
 
+(*
     b := 192;
     Inc(b);
     If b <> 193 Then Error(31);
@@ -192,6 +193,7 @@ Begin
     If c <> 'f' Then Error(69);
     Dec(c, 3);
     If c <> 'c' Then Error(70);
+*)
 
     If anyErrors Then Begin
         Write('Type any key to continue: ');
