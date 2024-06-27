@@ -50,6 +50,7 @@ Var
         RollInHand : Integer;  (* 1, 2, or 3 *)
     End;
     Scores : Array[0..14] Of Integer;
+    DiceTopRow, DiceBottomRow, DiceLeft, DiceRight : String;
     Dice : Array[1..6] Of
         Array[1..3] Of Array[1..3] Of Char =
         (
@@ -65,6 +66,7 @@ Var
     DiceCounts : Array[1..6] Of Byte;
 
 Procedure DrawGameBoard; Forward;
+Procedure ShowDice; Forward;
 
 (* Count the number of dice for each possible value 1-6 *)
 Procedure CalcDiceCounts;
@@ -117,6 +119,9 @@ Begin
     DrawGameBoard;
 End;
 
+(*
+    Calculates the total of all dice
+*)
 Function CalcDiceTotal : Integer;
 Var i, total : Integer;
 Begin
@@ -126,6 +131,21 @@ Begin
     CalcDiceTotal := total;
 End;
 
+(* This procedure clears the text prompts shown to the player
+   during game play
+*)
+Procedure ClearPrompts;
+Begin
+    DrawText(5, 18, '                        ');
+    DrawText(5, 20, '                        ');
+    DrawText(5, 21, '                            ');
+End;
+
+(*
+    This procedure is called when the player wants to score
+    a five of a kind. If the player did score a five of a kind,
+    it records that score. Otherwise, it records a zero.
+*)
 Procedure DoFiveDice;
 Var
     Found : Boolean;
@@ -144,6 +164,10 @@ Begin
         Scores[FiveOfAKind] := 0;
 End;
 
+(*
+    This procedure is called when the player wants to score a full house.
+    It verifies the player has a full house and scores it.
+*)
 Procedure DoFullHouse;
 Var
     Found2, Found3 : Boolean;
@@ -162,6 +186,11 @@ Begin
         Scores[FullHouse] := 0;
 End;
 
+(*
+    This function is called when the player wants to score a three or
+    four of a kind. It verifies the player has the hand and returns
+    the score.
+*)
 Function DoXOfAKind(Threshold : Byte) : Integer;
 Var
     i : Byte;
@@ -177,6 +206,10 @@ Begin
         DoXOfAKind := 0;
 End;
 
+(*
+    This procedure is called when the player wants to score a small straight.
+    It verifies the player has a small straight and scores it.
+*)
 Procedure DoSmStraight;
 Begin
     CalcDiceCounts;
@@ -192,6 +225,10 @@ Begin
         Scores[SmStraight] := 0;
 End;
 
+(*
+    This procedure is called when the player wants to score a large straight.
+    It verifies the player has a large straight and scores it.
+*)
 Procedure DoLgStraight;
 Begin
     CalcDiceCounts;
@@ -199,7 +236,7 @@ Begin
         (DiceCounts[3] = 0) Or
         (DiceCounts[4] = 0) Or
         (DiceCounts[5] = 0) Then
-        Scores[SmStraight] := 0
+        Scores[LgStraight] := 0
     Else If DiceCounts[1] > 0 Then
         Scores[LgStraight] := LgStraightScore
     Else If DiceCounts[6] > 0 Then
@@ -227,13 +264,13 @@ End;
 Procedure DrawDie(num, col, row : Byte);
 Var r, c : Byte;
 Begin
-    DrawTextRaw(col, row, Chr($55) + StringOfChar(Chr($43), 5) + Chr($49));
+    DrawTextRaw(col, row, DiceTopRow);
     For r := 1 To 3 Do Begin
-        DrawTextRaw(col, row+r, Chr($42) + ' ');
+        DrawTextRaw(col, row+r, DiceLeft);
         For c:= 1 To 3 Do DrawCharRaw(col+c+1, row+r, Dice[num,r,c]);
-        DrawTextRaw(col+5, row+r, ' ' + Chr($42));
+        DrawTextRaw(col+5, row+r, DiceRight);
     End;
-    DrawTextRaw(col, row+4, Chr($4a) + StringOfChar(Chr($43), 5) + Chr($4b));
+    DrawTextRaw(col, row+4, DiceBottomRow);
 End;
 
 (* Renders instructions *)
@@ -244,23 +281,12 @@ Var
     i : Byte;
 Begin
     DrawText(3, 5, 'welcome to five dice!');
+
+    DrawText(5, 7, 'copyright 2024 by ken schenke');
+
+    DrawText(5, 8, 'written using pascal65');
+    DrawText(5, 9, 'github.com/kenschenke/pascal65');
     
-    DrawText(5, 7, 'this game is inspired by the popular');
-    DrawText(5, 8, 'board game where the player rolls five');
-    DrawText(5, 9, 'dice and attempts to build poker hands.');
-
-    DrawText(5, 11, 'the scorecard is shown at the right.');
-    DrawText(5, 12, 'each hand is started by rolling all dice.');
-
-    DrawText(5, 14, 'the player decides which dice to keep');
-    DrawText(5, 15, 'and which to roll for a better hand.');
-    DrawText(5, 16, 'at any time the player can decide to');
-    DrawText(5, 17, 'play their hand in one of the scores');
-    DrawText(5, 18, 'on the right. up to three roles per hand');
-    DrawText(5, 19, 'are allowed to build the strongest');
-    DrawText(5, 20, 'possible hand. the game is over once all');
-    DrawText(5, 21, 'scores are filled in.');
-
     DrawText(5, 23, 'press a key to begin.');
 
     ch := GetKey;
@@ -353,6 +379,17 @@ Begin
     DrawText(col, 23, WriteStr(Game.TotalScore:3));
 End;
 
+(* This function looks at the scores and determines
+   whether or not the player has filled all possible scores. *)
+Function IsGameDone : Boolean;
+Var
+    i : Integer;
+Begin
+    IsGameDone := True;
+    For i := Aces To Chance Do
+        If Scores[i] = -1 Then IsGameDone := False;
+End;
+
 (* Returns a random value between 1 and 6 *)
 Function MakeDiceValue : Integer;
 Begin
@@ -380,6 +417,14 @@ Begin
         If Game.DiceToRoll[i] Then
             Game.DiceValues[i] := MakeDiceValue;
     End;
+    Game.RollInHand := Game.RollInHand + 1;
+    ShowDice;
+End;
+
+(* Draws the prompt to roll dice *)
+Procedure ShowRollDicePrompt;
+Begin
+    DrawText(5, 20, 'press space to roll dice');
 End;
 
 (* Resets game state and screen for the next hand *)
@@ -391,6 +436,17 @@ Begin
     Game.RollInHand := 0;
     For i := 5 To 10 Do
         DrawText(2, i, '                                        ');
+    ShowRollDicePrompt;
+    RollDice;
+End;
+
+(* This procedure sets up the strings to render dice *)
+Procedure SetUpDice;
+Begin
+    DiceTopRow := Chr($55) + StringOfChar(Chr($43), 5) + Chr($49);
+    DiceBottomRow := Chr($4a) + StringOfChar(Chr($43), 5) + Chr($4b);
+    DiceLeft := Chr($42) + ' ';
+    DiceRight := ' ' + Chr($42);
 End;
 
 (* Render each of the five dice *)
@@ -414,17 +470,31 @@ Var
     ch : Char;
     i : Integer;
 Begin
-    DrawText(5, 20, 'press space to roll dice');
-    DrawText(5, 18, 'type number to hold dice');
     For i := 1 To 5 Do Game.DiceToRoll[i] := True;
     Repeat
+        If IsGameDone Then Begin
+            ClearPrompts;
+            DrawText(5, 18, 'game over. press a key. ');
+            ch := GetKey;
+            ResetGame;
+            SetNextHand;
+            CalcScore;
+            DrawGameBoard;
+        End;
+        If Game.RollInHand < RollsPerHand Then Begin
+            SetTextColor(7);
+            If Game.RollInHand > 0 Then
+                DrawText(5, 18, 'type number to hold dice');
+            ShowRollDicePrompt;
+            If Game.RollInHand > 0 Then
+                DrawText(5, 21, 'press a letter to score hand');
+        End Else
+            ClearPrompts;
         ch := GetKey;
         Case ch Of
             ' ': Begin
                 If Game.RollInHand < RollsPerHand Then Begin
                     RollDice;
-                    Game.RollInHand := Game.RollInHand + 1;
-                    ShowDice;
                 End;
             End;
 
@@ -498,31 +568,43 @@ Begin
             End;
 
             'j', 'J': Begin  // small straight
-                If Scores[SmStraight] = -1 Then
+                If Scores[SmStraight] = -1 Then Begin
                     DoSmStraight;
+                    CalcScore;
+                    DrawGameBoard;
+                End;
                 SetNextHand;
             End;
 
             'k', 'K': Begin  // large straight
-                If Scores[LgStraight] = -1 Then
+                If Scores[LgStraight] = -1 Then Begin
                     DoLgStraight;
+                    CalcScore;
+                    DrawGameBoard;
+                End;
                 SetNextHand;
             End;
 
             'l', 'L': Begin  // five of a kind
-                // DoFiveDice;
+                DoFiveDice;
+                CalcScore;
+                DrawGameBoard;
                 SetNextHand;
             End;
 
             'm', 'M': Begin  // chance
-                If Scores[Chance] = -1 Then
+                If Scores[Chance] = -1 Then Begin
                     Scores[Chance] := CalcDiceTotal;
+                    CalcScore;
+                    DrawGameBoard;
+                End;
                 SetNextHand;
             End;
         End;
     Until False;
 End;
 
+(* Main Procedure *)
 Begin
     ResetGame;
 
@@ -530,6 +612,8 @@ Begin
     SetUpperCase;
     SetBackgroundColor(0);
     SetBorderColor(0);
+
+    SetUpDice;
 
     DrawGameBoard;
     DrawInstructions;
