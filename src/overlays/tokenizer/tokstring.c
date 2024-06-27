@@ -46,5 +46,14 @@ void getStringToken(void)
     *ps++ = '\'';
     *ps = 0;
 
+#ifdef __GNUC__
+    ps = tokenString;
+    while (*ps) {
+        if (*ps >= 'A' && *ps <= 'Z') *ps += 32;
+        else if (*ps >= 'a' && *ps <= 'z') *ps -= 32;
+        ps++;
+    }
+#endif
+
     tokenCode = tcString;
 }
