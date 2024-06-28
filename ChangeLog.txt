@@ -2,6 +2,7 @@
     FIX: Fix negative array bounds : issue #15
     NEW: Add Inc and Dec procedures to the runtime (currently disabled).
     FIX: Fix type checking for Var parameters
+    FIX: Fix stack overflow in linker while compiling Five Dice example : issue # 13
 
 0.27-beta Jun 10 2024
     NEW: Variables can be initialized to a value at time of declaration.

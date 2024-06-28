@@ -15,13 +15,22 @@
 #include <codegen.h>
 #include <chunks.h>
 #include <membuf.h>
+#include <error.h>
+
+// Size of the stack used to free the symbol table
+#define SYMBOL_STACK_SIZE 36
 
 static CHUNKNUM linkerSymtab;
 CHUNKNUM linkerTags;
 
+// These two variables are used to free the symbol table
+static char symbolStackTop;
+static CHUNKNUM symbolStack[SYMBOL_STACK_SIZE];
+
 static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address);
-static void freeLinkerSymbol(CHUNKNUM chunkNum);
 static CHUNKNUM newLinkerSymbol(const char* name, unsigned short address);
+static CHUNKNUM popSymbolStack(void);
+static void pushSymbolStack(CHUNKNUM chunkNum);
 
 static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address)
 {
@@ -64,23 +73,31 @@ static CHUNKNUM bindLinkerSymbol(const char* name, unsigned short address)
 	return newChunkNum;
 }
 
-static void freeLinkerSymbol(CHUNKNUM chunkNum)
-{
-	struct LINKSYMBOL sym;
-
-	if (chunkNum == 0 || !isChunkAllocated(chunkNum)) {
-		return;
-	}
-
-	retrieveChunk(chunkNum, &sym);
-	freeLinkerSymbol(sym.left);
-	freeLinkerSymbol(sym.right);
-	freeChunk(chunkNum);
-}
-
 void freeLinkerSymbolTable(void)
 {
-	freeLinkerSymbol(linkerSymtab);
+    char done = 0;
+    CHUNKNUM chunkNum = linkerSymtab;
+	struct LINKSYMBOL sym;
+
+    symbolStackTop = 0;
+
+    while (!done) {
+        if (chunkNum) {
+            retrieveChunk(chunkNum, &sym);
+            pushSymbolStack(chunkNum);
+            chunkNum = sym.left;
+        } else {
+            if (symbolStackTop) {
+                chunkNum = popSymbolStack();
+                retrieveChunk(chunkNum, &sym);
+                freeChunk(chunkNum);
+                chunkNum = sym.right;
+            } else {
+                done = 1;
+            }
+        }
+    }
+
 	freeMemBuf(linkerTags);
 }
 
@@ -123,5 +140,18 @@ char linkAddressLookup(const char* name, unsigned short position, char whichNeed
 void linkAddressSet(const char* name, unsigned short offset)
 {
 	bindLinkerSymbol(name, offset + codeBase);
+}
+
+static void pushSymbolStack(CHUNKNUM chunkNum)
+{
+    if (symbolStackTop >= SYMBOL_STACK_SIZE) {
+        runtimeError(rteStackOverflow);
+    }
+    symbolStack[symbolStackTop++] = chunkNum;
+}
+
+static CHUNKNUM popSymbolStack(void)
+{
+    return symbolStack[--symbolStackTop];
 }
 
