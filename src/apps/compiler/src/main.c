@@ -52,6 +52,7 @@ static void checkSrcFn(const char *str);
 static void handleErrors(void);
 static char hasEditorState(void);
 static void readAutoSrc(void);
+static char srcFileExists(void);
 
 void waitforkey(void);
 
@@ -152,6 +153,19 @@ static void relaunchIde(void)
 }
 #endif
 
+static char srcFileExists(void)
+{
+    FILE *fp;
+
+    fp = fopen(srcFn, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    fclose(fp);
+    return 1;
+}
+
 static void tokenizeAndParseUnits(void)
 {
     char any, filename[16 + 1];
@@ -218,15 +232,24 @@ void main(int argc, char *argv[])
     if (!srcFn[0]) {
         char buffer[50];
 
-        printz("Source file: ");
+        while (1) {
+            printz("Source file: ");
 #ifdef __GNUC__
-        fgets(buffer, sizeof(buffer), stdin);
-        while (isspace(buffer[strlen(buffer)-1]))
-            buffer[strlen(buffer)-1] = 0;
+            fgets(buffer, sizeof(buffer), stdin);
+            while (isspace(buffer[strlen(buffer)-1]))
+                buffer[strlen(buffer)-1] = 0;
 #else
-        gets(buffer);
+            gets(buffer);
 #endif
-        checkSrcFn(buffer);
+            checkSrcFn(buffer);
+            if (srcFileExists()) {
+                break;
+            }
+
+            printz(srcFn);
+            printlnz(" does not exist");
+            printlnz("");
+        }
     }
 
     setIntBuf(intBuf);
