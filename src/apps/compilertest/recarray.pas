@@ -43,6 +43,8 @@ Begin
 End;
 
 Begin
+    anyErrors := false;
+
 	Writeln('Running');
 	
 	myParent.c := 1234;
