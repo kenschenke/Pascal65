@@ -24,6 +24,7 @@ static CHUNKNUM addArrayLiteral(CHUNKNUM exprChunk, int *bufSize, int elemSize);
 static CHUNKNUM addRealArrayLiteral(CHUNKNUM exprChunk, int *bufSize);
 static void genArrayInit(struct type* pType, CHUNKNUM exprArrayInit, struct symbol *pSym);
 static void genRecordInit(struct type* pType, struct symbol *pSym);
+static int getArrayLimit(CHUNKNUM chunkNum);
 static void updateHeapOffset(short newOffset);
 static void writeArrayInit(void);
 
@@ -393,7 +394,7 @@ int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets)
 	return num;
 }
 
-int getArrayLimit(CHUNKNUM chunkNum)
+static int getArrayLimit(CHUNKNUM chunkNum)
 {
 	struct expr _expr;
 
