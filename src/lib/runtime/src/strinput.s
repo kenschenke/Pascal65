@@ -30,14 +30,12 @@ strPtr: .res 2
 ; the input until the first non-space.
 ;
 ; Inputs
-;   A - nesting level of string variable
-;   X - value offset on runtime stack
+;   A/X - pointer to string variable address on runtime stack
 .proc readStringFromInput
-    jsr rtCalcStackOffset
-    lda ptr1
     sta strPtr
-    lda ptr1 + 1
-    sta strPtr + 1
+    sta ptr1
+    stx strPtr + 1
+    stx ptr1 + 1
     ; Free existing heap for string
     ldy #1
     lda (ptr1),y

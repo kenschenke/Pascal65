@@ -35,7 +35,7 @@
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
 .import contains, readCharFromInput, andBitwise, orBitwise
 .import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine, tangent
-.import decrement, increment
+.import decrement, increment, stringInit, pushVar, readVar
 
 .segment "JMPTBL"
 
@@ -139,3 +139,6 @@ jmp cosine               ; BASE + 288
 jmp tangent              ; BASE + 291
 jmp decrement            ; BASE + 294
 jmp increment            ; BASE + 297
+jmp stringInit           ; BASE + 300
+jmp pushVar              ; BASE + 303
+jmp readVar              ; BASE + 306

@@ -25,48 +25,50 @@ upper = tmp2
 ;
 ; The new string is returned in A/X.
 .proc strCase
+    ; Save source string pointer in ptr1 and on CPU stack
     sta ptr1
     pha
     stx ptr1 + 1
     txa
     pha
+    ; Save upper/lower flag on CPU stack
     tya
     pha
     ldy #0
-    lda (ptr1),y
-    pha
+    lda (ptr1),y        ; Load source string length
+    pha                 ; Save it on CPU stack
     clc
-    adc #1
+    adc #1              ; Add one to it
     ldx #0
-    jsr rtHeapAlloc
+    jsr rtHeapAlloc     ; Allocate a new string
     sta ptr2
-    stx ptr2 + 1
-    pla
-    sta len
-    pla
-    sta upper
-    pla
-    sta ptr1 + 1
+    stx ptr2 + 1        ; Save new string in ptr2
+    pla                 ; Pop source string length off CPU stack
+    sta len             ; Keep it in "len"
+    pla                 ; Pop upper/lower flag off CPU stack
+    sta upper           ; Keep it in "upper"
+    pla                 ; Pop source string pointer off CPU stack
+    sta ptr1 + 1        ; Store it in ptr1
     pla
     sta ptr1
     ldy #0
-    lda len
+    lda len             ; Put length in destination string
     sta (ptr2),y
     beq DN
 LP: iny
-    lda (ptr1),y
-    jsr isAlpha
+    lda (ptr1),y        ; Load next character from source string
+    jsr isAlpha         ; Is it an alphabetic character?
     cpx #0
-    beq ST
-    ldx upper
-    bne UP
-    and #$7f
-    bne ST
-UP: ora #$80
-ST: sta (ptr2),y
-    dec len
-    bne LP
-DN: lda ptr2
+    beq ST              ; Branch if not
+    ldx upper           ; Check if caller wants uppercase
+    bne UP              ; Branch if so
+    and #$7f            ; Set letter to lowercase
+    bne ST              ; Branch to store
+UP: ora #$80            ; Set letter to uppercase
+ST: sta (ptr2),y        ; Store the character
+    dec len             ; Decrement length
+    bne LP              ; Branch if more characters in string
+DN: lda ptr2            ; Load destination string pointer
     ldx ptr2 + 1
     rts
 .endproc

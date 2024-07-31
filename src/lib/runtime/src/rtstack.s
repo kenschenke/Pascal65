@@ -11,7 +11,7 @@
 .export popToReal, readRealStack, readByteStack, pushByteStack
 .export storeByteStack, pushStackFrameHeader, returnFromRoutine
 .export popToIntOp1And2, popToIntOp32, readInt32Stack
-.export storeInt32Stack, pushFromIntOp1And2
+.export storeInt32Stack, pushFromIntOp1And2, pushVar, readVar
 
 ; imports
 
@@ -532,3 +532,36 @@ readInt32Stack:
     lda (ptr1),y
     rts
 
+; This routine reads the value of a variable on the runtime stack and pushes
+; onto the runtime stack
+; Inputs:
+;    A: Scope level
+;    X: Stack offset in stack frame
+.proc pushVar
+    jsr calcStackOffset
+    jmp loadVarFromPtr1
+.endproc
+
+; This routine pops the address off the runtime stack and reads the variable
+; at that address then pushes its value back onto the stack.
+.proc readVar
+    jsr popeax
+    sta ptr1
+    stx ptr1+1
+    jmp loadVarFromPtr1
+.endproc
+
+.proc loadVarFromPtr1
+    ldy #3
+    lda (ptr1),y
+    sta sreg+1
+    dey
+    lda (ptr1),y
+    sta sreg
+    dey
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
+    jmp pusheax
+.endproc

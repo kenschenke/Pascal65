@@ -474,17 +474,10 @@ L2:
 ; is smaller than the array, the remainder is space-filled.
 ;
 ; Inputs
-;   A - nesting level of array variable
-;   X - value offset on runtime stack
+;   A/X - address of array heap
 .proc readCharArrayFromInput
-    jsr rtCalcStackOffset
-    ldy #1                  ; Store array heap address in ptr2
-    lda (ptr1),y            ; and leave it in A/X for call
-    sta ptr2 + 1            ; to getArrayLength
-    tax
-    dey
-    lda (ptr1),y
     sta ptr2
+    stx ptr2 + 1
     jsr getArrayLength
     pha                     ; Store the array length on the CPU stack
     txa
