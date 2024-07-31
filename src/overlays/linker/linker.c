@@ -496,7 +496,7 @@ static void dumpStringLiterals(void)
 		memset(value, 0, sizeof(value));
 		setMemBufPos(chunkNum, 0);
 		pos = 0;
-		while (!isMemBufAtEnd(chunkNum)) {
+		while (!isMemBufAtEnd(chunkNum) && pos < sizeof(value)-1) {
 			readFromMemBuf(chunkNum, value + pos, 1);
 			++pos;
 		}
