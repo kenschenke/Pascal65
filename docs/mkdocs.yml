@@ -97,3 +97,64 @@ nav:
     - PopEax: runtime/popeax.md
     - PushEax: runtime/pusheax.md
     - Subtract: runtime/subtract.md
+  - Intermediate Code:
+    - Introduction: icode/intro.md
+    - Literals: icode/literals.md
+    - Data Types: icode/types.md
+    - Instructions:
+      - ABS: icode/mne/abs.md
+      - ADD: icode/mne/add.md
+      - AIX: icode/mne/aix.md
+      - AND: icode/mne/and.md
+      - ARR: icode/mne/arr.md
+      - ASF: icode/mne/asf.md
+      - BIF: icode/mne/bif.md
+      - BIT: icode/mne/bit.md
+      - BRA: icode/mne/bra.md
+      - BSL: icode/mne/bsl.md
+      - BSR: icode/mne/bsr.md
+      - BWA: icode/mne/bwa.md
+      - BWC: icode/mne/bwc.md
+      - BWO: icode/mne/bwo.md
+      - CCT: icode/mne/cct.md
+      - CNL: icode/mne/cnl.md
+      - CPY: icode/mne/cpy.md
+      - DEL: icode/mne/del.md
+      - DIV: icode/mne/div.md
+      - DVI: icode/mne/dvi.md
+      - EQU: icode/mne/equ.md
+      - FSO: icode/mne/fso.md
+      - GRT: icode/mne/grt.md
+      - GTE: icode/mne/gte.md
+      - INP: icode/mne/inp.md
+      - JSR: icode/mne/jsr.md
+      - LOC: icode/mne/loc.md
+      - LSE: icode/mne/lse.md
+      - LST: icode/mne/lst.md
+      - MOD: icode/mne/mod.md
+      - MUL: icode/mne/mul.md
+      - NEG: icode/mne/neg.md
+      - NEQ: icode/mne/neq.md
+      - NEW: icode/mne/new.md
+      - NOT: icode/mne/not.md
+      - ONL: icode/mne/onl.md
+      - ORA: icode/mne/ora.md
+      - OUT: icode/mne/out.md
+      - POF: icode/mne/pof.md
+      - POP: icode/mne/pop.md
+      - PRE: icode/mne/pre.md
+      - PSH: icode/mne/psh.md
+      - PUF: icode/mne/puf.md
+      - ROU: icode/mne/rou.md
+      - SCV: icode/mne/scv.md
+      - SET: icode/mne/set.md
+      - SOF: icode/mne/sof.md
+      - SQR: icode/mne/sqr.md
+      - SSP: icode/mne/ssp.md
+      - SSR: icode/mne/ssr.md
+      - SSW: icode/mne/ssw.md
+      - SST: icode/mne/sst.md
+      - SUB: icode/mne/sub.md
+      - SUC: icode/mne/suc.md
+      - TRU: icode/mne/tru.md
+
