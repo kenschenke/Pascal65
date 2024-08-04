@@ -23,6 +23,11 @@
 #include <membuf.h>
 #include <libcommon.h>
 #include <int16.h>
+#include <icode.h>
+
+#ifdef __MEGA65__
+#include <doscmd.h>
+#endif
 
 #ifndef __GNUC__
 #include <cbm.h>
@@ -64,12 +69,13 @@ extern void _OVERLAY3_LOAD__[], _OVERLAY3_SIZE__[];
 extern void _OVERLAY4_LOAD__[], _OVERLAY4_SIZE__[];
 extern void _OVERLAY5_LOAD__[], _OVERLAY5_SIZE__[];
 extern void _OVERLAY6_LOAD__[], _OVERLAY6_SIZE__[];
+extern void _OVERLAY7_LOAD__[], _OVERLAY7_SIZE__[];
 unsigned char loadfile(const char *name);
 #endif
 
 #ifndef __MEGA65__
-static unsigned overlay1size, overlay2size, overlay3size, overlay4size, overlay5size;
-static unsigned overlay1blocks, overlay2blocks, overlay3blocks, overlay4blocks, overlay5blocks;
+static unsigned overlay1size, overlay2size, overlay3size, overlay4size, overlay5size, overlay6size, overlay7size;
+static unsigned overlay1blocks, overlay2blocks, overlay3blocks, overlay4blocks, overlay5blocks, overlay6blocks, overlay7blocks;
 
 static BLOCKNUM objcodeCache, linkerCache, parserCache, resolverCache, tokenizerCache, typecheckCache;
 
@@ -153,12 +159,14 @@ void main()
     overlay4size = (unsigned)_OVERLAY4_SIZE__;
     overlay5size = (unsigned)_OVERLAY5_SIZE__;
     overlay6size = (unsigned)_OVERLAY6_SIZE__;
+    overlay7size = (unsigned)_OVERLAY6_SIZE__;
     overlay1blocks = overlay1size/BLOCK_LEN + (overlay1size % BLOCK_LEN ? 1 : 0);
     overlay2blocks = overlay2size/BLOCK_LEN + (overlay2size % BLOCK_LEN ? 1 : 0);
     overlay3blocks = overlay3size/BLOCK_LEN + (overlay3size % BLOCK_LEN ? 1 : 0);
     overlay4blocks = overlay4size/BLOCK_LEN + (overlay4size % BLOCK_LEN ? 1 : 0);
     overlay5blocks = overlay5size/BLOCK_LEN + (overlay5size % BLOCK_LEN ? 1 : 0);
     overlay6blocks = overlay6size/BLOCK_LEN + (overlay6size % BLOCK_LEN ? 1 : 0);
+    overlay7blocks = overlay7size/BLOCK_LEN + (overlay7size % BLOCK_LEN ? 1 : 0);
 #endif
 
     initBlockStorage();
@@ -173,7 +181,8 @@ void main()
         !allocBlockGroup(&resolverCache, overlay3blocks) ||
         !allocBlockGroup(&typecheckCache, overlay4blocks) ||
         !allocBlockGroup(&objcodeCache, overlay5blocks) ||
-        !allocBlockGroup(&linkerCache, overlay6blocks)) {
+        !allocBlockGroup(&objcodeCache, overlay6blocks) ||
+        !allocBlockGroup(&linkerCache, overlay7blocks)) {
         printlnz("Unable to allocate extended memory");
         return;
     }
@@ -186,10 +195,12 @@ void main()
     loadOverlayFromFile("compilertest.3", overlay3size, _OVERLAY3_LOAD__, resolverCache);
     printlnz("Loading typecheck overlay");
     loadOverlayFromFile("compilertest.4", overlay4size, _OVERLAY4_LOAD__, typecheckCache);
-    printlnz("Loading objcode overlay");
-    loadOverlayFromFile("compilertest.5", overlay6size, _OVERLAY6_LOAD__, objcodeCache);
-    printlnz("Loading linker overlay");
+    printlnz("Loading icode overlay");
+    loadOverlayFromFile("compilertest.5", overlay5size, _OVERLAY5_LOAD__, objcodeCache);
+    printlnz("Loading icodegen overlay");
     loadOverlayFromFile("compilertest.6", overlay6size, _OVERLAY6_LOAD__, linkerCache);
+    printlnz("Loading linker overlay");
+    loadOverlayFromFile("compilertest.7", overlay7size, _OVERLAY7_LOAD__, linkerCache);
 #endif
 
 #ifdef __C128__
@@ -272,35 +283,53 @@ void main()
         typecheck_units();
 
 #ifndef __MEGA65__
-        loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, linkerCache);
+        loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, linkerCache);
 #elif !defined (__GNUC__)
-    if (!loadfile("compilertest.6")) {
+    if (!loadfile("compilertest.7")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
         printz("W");
         linkerPreWrite(astRoot);
+
 #ifndef __MEGA65__
-        loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, objcodeCache);
+        loadOverlayFromCache(overlay5size, _OVERLAY5_LOAD__, linkerCache);
 #elif !defined (__GNUC__)
     if (!loadfile("compilertest.5")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
-        printz("W");
-        objCodeWrite(astRoot);
+        icodeWrite(astRoot);
+
 #ifndef __MEGA65__
-        loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, linkerCache);
+        loadOverlayFromCache(overlay6size, _OVERLAY6_LOAD__, objcodeCache);
 #elif !defined (__GNUC__)
     if (!loadfile("compilertest.6")) {
         printlnz("Unable to load overlay from disk");
         exit(0);
     }
 #endif
+        printz("G");
+        icodeGen();
+
+#ifndef __MEGA65__
+        loadOverlayFromCache(overlay7size, _OVERLAY7_LOAD__, linkerCache);
+#elif !defined (__GNUC__)
+    if (!loadfile("compilertest.7")) {
+        printlnz("Unable to load overlay from disk");
+        exit(0);
+    }
+#endif
         printz("W");
         linkerPostWrite(testFiles[i], testFiles[i+1], astRoot);
+
+#ifdef __MEGA65__
+    removeFile(TMP_ZZICODE);
+#else
+    remove(TMP_ZZICODE);
+#endif
 
         printz("F");
         free_scope_stack();

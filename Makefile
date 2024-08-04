@@ -107,6 +107,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/apps/compiler/bin/$(TARGET)/compiler.4 compiler.4,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.5 compiler.5,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.6 compiler.6,prg \
+	-write src/apps/compiler/bin/$(TARGET)/compiler.7 compiler.7,prg \
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
 	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \

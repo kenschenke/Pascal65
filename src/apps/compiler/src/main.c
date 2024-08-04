@@ -22,6 +22,7 @@
 #include <int16.h>
 #include <membuf.h>
 #include <codegen.h>
+#include <icode.h>
 
 #include <string.h>
 #include <libcommon.h>
@@ -335,7 +336,7 @@ void main(int argc, char *argv[])
     }
 
 #ifndef __GNUC__
-    if (loadfile("compiler.6"))
+    if (loadfile("compiler.7"))
 #endif
     {
         linkerPreWrite(astRoot);
@@ -351,7 +352,7 @@ void main(int argc, char *argv[])
     if (loadfile("compiler.5"))
 #endif
     {
-        objCodeWrite(astRoot);
+        icodeWrite(astRoot);
     }
 
     if (errors) {
@@ -364,8 +365,21 @@ void main(int argc, char *argv[])
     if (loadfile("compiler.6"))
 #endif
     {
+        icodeGen();
+    }
+
+#ifndef __GNUC__
+    if (loadfile("compiler.7"))
+#endif
+    {
         linkerPostWrite(srcFn, isAutoRun, astRoot);
     }
+
+#ifdef __MEGA65__
+    removeFile(TMP_ZZICODE);
+#else
+    remove(TMP_ZZICODE);
+#endif
 
     free_scope_stack();
     freeCommon();

@@ -5,13 +5,18 @@ TOKENIZEROVRLSRC := ../../overlays/tokenizer
 PARSEROVRLSRC := ../../overlays/parser
 RESOLVEROVRLSRC := ../../overlays/resolver
 TYPECHECKOVRLSRC := ../../overlays/typecheck
-OBJCODEOVRLSRC := ../../overlays/objcode
 LINKEROVRLSRC := ../../overlays/linker
+ICODEOVRLSRC := ../../overlays/icode
+ICODEGENOVRLSRC := ../../overlays/icodegen
 SHAREDSRCDIR = ../../shared
 SHAREDCODEGENDIR = $(SHAREDSRCDIR)/codegen
 LIBCSRCDIR = ../../mega65-libc/src
 LIBCOMMONDIR = ../../lib/common
 TARGETSRCDIR = $(SRCDIR)/$(TARGET)
+
+ifdef GCC
+ICODEDUMPSRC := ../../overlays/icodedump
+endif
 
 ifdef GCC
 
@@ -30,8 +35,9 @@ TOKENIZEROVRLFILE := $(PROGRAM).1
 PARSEROVRLFILE := $(PROGRAM).2
 RESOLVEROVRLFILE := $(PROGRAM).3
 TYPECHECKOVRLFILE := $(PROGRAM).4
-OBJCODEOVRLFILE := $(PROGRAM).5
-LINKEROVRLFILE := $(PROGRAM).6
+ICODEOVRLFILE := $(PROGRAM).5
+ICODEGENOVRLFILE := $(PROGRAM).6
+LINKEROVRLFILE := $(PROGRAM).7
 CC65TARGET = c64
 
 BINTARGETDIR := $(BINDIR)/$(TARGET)
@@ -72,9 +78,15 @@ RESOLVEROVRLSRCS := $(wildcard $(RESOLVEROVRLSRC)/*.c)
 
 TYPECHECKOVRLSRCS := $(wildcard $(TYPECHECKOVRLSRC)/*.c)
 
-OBJCODEOVRLSRCS := $(wildcard $(OBJCODEOVRLSRC)/*.c)
+ICODEOVRLSRCS := $(wildcard $(ICODEOVRLSRC)/*.c)
+
+ICODEGENOVRLSRCS := $(wildcard $(ICODEGENOVRLSRC)/*.c)
 
 LINKEROVRLSRCS := $(wildcard $(LINKEROVRLSRC)/*.c)
+
+ifdef GCC
+SOURCES += $(wildcard $(ICODEDUMPSRC)/*.c)
+endif
 
 ifdef GCC
 SOURCES += $(wildcard $(SHAREDSRCDIR)/gnuc/*.c)
@@ -107,7 +119,8 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(PAR
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(RESOLVEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(TYPECHECKOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(LINKEROVRLSRCS)))))
-OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(ICODEOVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(ICODEGENOVRLSRCS)))))
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -159,8 +172,16 @@ vpath $(TYPECHECKOVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(TYPECHECKOVRLSRC)/%.c | $(OBJTARGETDIR)
 	gcc $(CFLAGS) -o $@ $<
 
-vpath $(OBJCODEOVRLSRC)/%.c
-$(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJTARGETDIR)
+vpath $(ICODEOVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(ICODEOVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(ICODEGENOVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(ICODEGENOVRLSRC)/%.c | $(OBJTARGETDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(ICODEDUMPSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(ICODEDUMPSRC)/%.c | $(OBJTARGETDIR)
 	gcc $(CFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.c
@@ -205,21 +226,29 @@ vpath $(TYPECHECKOVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(TYPECHECKOVRLSRC)/%.s | $(OBJTARGETDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath $(OBJCODEOVRLSRC)/%.c
-$(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJTARGETDIR)
+vpath $(ICODEOVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(ICODEOVRLSRC)/%.c | $(OBJTARGETDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY5 $(CFLAGS) -o $@ $<
 
-vpath $(OBJCODEOVRLSRC)/%.s
-$(OBJTARGETDIR)/%.o: $(OBJCODEOVRLSRC)/%.s | $(OBJTARGETDIR)
+vpath $(ICODEOVRLSRC)/%.s
+$(OBJTARGETDIR)/%.o: $(ICODEOVRLSRC)/%.s | $(OBJTARGETDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(ICODEGENOVRLSRC)/%.c
+$(OBJTARGETDIR)/%.o: $(ICODEGENOVRLSRC)/%.c | $(OBJTARGETDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY6 $(CFLAGS) -o $@ $<
+
+vpath $(ICODEGENOVRLSRC)/%.s
+$(OBJTARGETDIR)/%.o: $(ICODEGENOVRLSRC)/%.s | $(OBJTARGETDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.c
 $(OBJTARGETDIR)/%.o: $(LINKEROVRLSRC)/%.c | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY6 $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY7 $(CFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.s
 $(OBJTARGETDIR)/%.o: $(LINKEROVRLSRC)/%.s | $(OBJTARGETDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY7 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 endif
 

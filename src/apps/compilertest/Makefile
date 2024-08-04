@@ -6,7 +6,8 @@ TOKENIZEROVRLSRC := ../../overlays/tokenizer
 PARSEROVRLSRC := ../../overlays/parser
 RESOLVEROVRLSRC := ../../overlays/resolver
 TYPECHECKOVRLSRC := ../../overlays/typecheck
-OBJCODEOVRLSRC := ../../overlays/objcode
+ICODEOVRLSRC := ../../overlays/icode
+ICODEGENOVRLSRC := ../../overlays/icodegen
 LINKEROVRLSRC := ../../overlays/linker
 SHAREDSRCDIR = ../../shared
 SHAREDCODEGENDIR = $(SHAREDSRCDIR)/codegen
@@ -36,8 +37,9 @@ TOKENIZEROVRLFILE := $(PROGRAM).1
 PARSEROVRLFILE := $(PROGRAM).2
 RESOLVEROVRLFILE := $(PROGRAM).3
 TYPECHECKOVRLFILE := $(PROGRAM).4
-OBJCODEOVRLFILE := $(PROGRAM).5
-LINKEROVRLFILE := $(PROGRAM).6
+ICODEOVRLFILE := $(PROGRAM).5
+ICODEGENOVRLFILE := $(PROGRAM).6
+LINKEROVRLFILE := $(PROGRAM).7
 PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := mega65
 CC65TARGET = c64
@@ -69,13 +71,15 @@ SOURCES += $(wildcard $(SHAREDSRCDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
 SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.c)
+TOKENIZEROVRLSRCS := $(wildcard $(TOKENIZEROVRLSRC)/*.c)
 TOKENIZEROVRLSRCS += $(wildcard $(TOKENIZEROVRLSRC)/*.s)
 PARSEROVRLSRCS := $(wildcard $(PARSEROVRLSRC)/*.c)
+PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 RESOLVEROVRLSRCS := $(wildcard $(RESOLVEROVRLSRC)/*.c)
 TYPECHECKOVRLSRCS := $(wildcard $(TYPECHECKOVRLSRC)/*.c)
-OBJCODEOVRLSRCS := $(wildcard $(OBJCODEOVRLSRC)/*.c)
+ICODEOVRLSRCS := $(wildcard $(ICODEOVRLSRC)/*.c)
+ICODEGENOVRLSRCS := $(wildcard $(ICODEGENOVRLSRC)/*.c)
 LINKEROVRLSRCS := $(wildcard $(LINKEROVRLSRC)/*.c)
-TOKENIZEROVRLSRCS := $(wildcard $(TOKENIZEROVRLSRC)/*.c)
 
 ifdef GCC
 SOURCES += $(wildcard $(SHAREDSRCDIR)/gnuc/*.c)
@@ -94,7 +98,6 @@ SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
 SOURCES += $(wildcard $(SHAREDCODEGENDIR)/*.s)
 SOURCES += $(wildcard $(LIBCOMMONDIR)/*.s)
-PARSEROVRLSRCS += $(wildcard $(PARSEROVRLSRC)/*.s)
 
 endif
 
@@ -105,7 +108,8 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TOKENIZER
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(PARSEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(RESOLVEROVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(TYPECHECKOVRLSRCS)))))
-OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(OBJCODEOVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEOVRLSRCS)))))
+OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEGENOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
 TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii trig.petscii
@@ -154,8 +158,12 @@ vpath $(TYPECHECKOVRLSRC)/%.c
 $(OBJDIR)/%.o: $(TYPECHECKOVRLSRC)/%.c | $(OBJDIR)
 	gcc $(CFLAGS) -o $@ $<
 
-vpath $(OBJCODEOVRLSRC)/%.c
-$(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJDIR)
+vpath $(ICODEOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(ICODEOVRLSRC)/%.c | $(OBJDIR)
+	gcc $(CFLAGS) -o $@ $<
+
+vpath $(ICODEGENOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(ICODEGENOVRLSRC)/%.c | $(OBJDIR)
 	gcc $(CFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.c
@@ -200,21 +208,29 @@ vpath $(TYPECHECKOVRLSRC)/%.s
 $(OBJDIR)/%.o: $(TYPECHECKOVRLSRC)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY4 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
-vpath $(OBJCODEOVRLSRC)/%.c
-$(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.c | $(OBJDIR)
+vpath $(ICODEOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(ICODEOVRLSRC)/%.c | $(OBJDIR)
 	cl65 --code-name OVERLAY5 $(CFLAGS) -o $@ $<
 
-vpath $(OBJCODEOVRLSRC)/%.s
-$(OBJDIR)/%.o: $(OBJCODEOVRLSRC)/%.s | $(OBJDIR)
+vpath $(ICODEOVRLSRC)/%.s
+$(OBJDIR)/%.o: $(ICODEOVRLSRC)/%.s | $(OBJDIR)
 	cl65 -t $(CC65TARGET) --code-name OVERLAY5 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+
+vpath $(ICODEGENOVRLSRC)/%.c
+$(OBJDIR)/%.o: $(ICODEGENOVRLSRC)/%.c | $(OBJDIR)
+	cl65 --code-name OVERLAY6 $(CFLAGS) -o $@ $<
+
+vpath $(ICODEGENOVRLSRC)/%.s
+$(OBJDIR)/%.o: $(ICODEGENOVRLSRC)/%.s | $(OBJDIR)
+	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.c
 $(OBJDIR)/%.o: $(LINKEROVRLSRC)/%.c | $(OBJDIR)
-	cl65 --code-name OVERLAY6 $(CFLAGS) -o $@ $<
+	cl65 --code-name OVERLAY7 $(CFLAGS) -o $@ $<
 
 vpath $(LINKEROVRLSRC)/%.s
 $(OBJDIR)/%.o: $(LINKEROVRLSRC)/%.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) --code-name OVERLAY6 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) --code-name OVERLAY7 -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
 
 endif  # end of else ifdef GCC
 
@@ -353,7 +369,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(RESOLVEROVRLFILE) $(RESOLVEROVRLFILE) \
 	-write $(BINDIR)/$(TYPECHECKOVRLFILE) $(TYPECHECKOVRLFILE) \
-	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
+	-write $(BINDIR)/$(ICODEOVRLFILE) $(ICODEOVRLFILE) \
+	-write $(BINDIR)/$(ICODEGENOVRLFILE) $(ICODEGENOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write $(RUNTIME) runtime \
 	-write abortmsgs.petscii abortmsgs,seq \
@@ -392,7 +409,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write $(BINDIR)/$(PARSEROVRLFILE) $(PARSEROVRLFILE) \
 	-write $(BINDIR)/$(RESOLVEROVRLFILE) $(RESOLVEROVRLFILE) \
 	-write $(BINDIR)/$(TYPECHECKOVRLFILE) $(TYPECHECKOVRLFILE) \
-	-write $(BINDIR)/$(OBJCODEOVRLFILE) $(OBJCODEOVRLFILE) \
+	-write $(BINDIR)/$(ICODEOVRLFILE) $(ICODEOVRLFILE) \
+	-write $(BINDIR)/$(ICODEGENOVRLFILE) $(ICODEGENOVRLFILE) \
 	-write $(BINDIR)/$(LINKEROVRLFILE) $(LINKEROVRLFILE) \
 	-write $(RUNTIME) runtime \
 	-write abortmsgs.petscii abortmsgs,seq \

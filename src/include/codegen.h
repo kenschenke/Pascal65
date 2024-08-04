@@ -26,6 +26,7 @@
 #define DWORD_MSB(a) ((unsigned char)(((a) >> 24) & 0xff))
 
 #define MAX_LOCAL_HEAPS 16
+#define MAX_LOCAL_VARS 32
 
 #define LINKADDR_LOW  1
 #define LINKADDR_HIGH 2
@@ -213,7 +214,6 @@ void genStringValueAX(CHUNKNUM chunkNum);
 void genSubroutineCall(CHUNKNUM chunkNum);
 void genStmts(CHUNKNUM chunkNum);
 int genVariableDeclarations(CHUNKNUM chunkNum, short* heapOffsets);
-int getArrayLimit(CHUNKNUM chunkNum);
 char isStringFunc(CHUNKNUM exprChunk);
 void writeCodeBuf(unsigned char *buf, int len);
 

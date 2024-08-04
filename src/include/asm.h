@@ -71,6 +71,7 @@
 #define LDX_ABSOLUTE    0xae    // ldx $nnnn        3 bytes
 #define LDX_ZEROPAGE	0xa6	// ldx $nn			2 bytes
 #define LDY_IMMEDIATE	0xa0	// ldy #$nn			2 bytes
+#define LDY_ZEROPAGE    0xa4    // ldy $nn          2 bytes
 #define STA_ABSOLUTE	0x8d	// sta $nnnn		3 bytes
 #define STA_ABSOLUTEX   0x9d    // sta $nnnn,x      3 bytes
 #define STA_ZEROPAGE	0x85	// sta $nn			2 bytes
@@ -249,6 +250,9 @@
 #define RT_TANGENT              (RT_BASE + 291)
 #define RT_DECREMENT            (RT_BASE + 294)
 #define RT_INCREMENT            (RT_BASE + 297)
+#define RT_STRINGINIT           (RT_BASE + 300)
+#define RT_PUSHVAR              (RT_BASE + 303)
+#define RT_READVAR              (RT_BASE + 306)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.
