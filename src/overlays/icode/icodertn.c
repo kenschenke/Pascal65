@@ -275,7 +275,7 @@ static void icodeRoutineCleanup(char *localVars, struct type* pDeclType,
 
 	if (numLocals) {
 		int i;
-		for (i = 0; i < numLocals; ++i) {
+		for (i = numLocals - 1; i >= 0; --i) {
 			icodeWriteMnemonic(localVars[i] ? IC_DEL : IC_POP);
 		}
 	}
