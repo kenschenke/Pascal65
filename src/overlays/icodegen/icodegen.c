@@ -519,22 +519,8 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         break;
 
     case IC_AIX:
-        genThreeAddr(JSR, RT_POPEAX);       // pop array index off stack
-        genTwo(STA_ZEROPAGE, ZP_TMP1);
-        genTwo(STX_ZEROPAGE, ZP_TMP2);
-        genThreeAddr(JSR, RT_POPEAX);       // pop array heap address off stack
-        genOne(PHA);                        // push it onto CPU stack
-        genOne(TXA);
-        genOne(PHA);
-        genTwo(LDA_ZEROPAGE, ZP_TMP1);
-        genTwo(LDX_ZEROPAGE, ZP_TMP2);
-        genThreeAddr(JSR, RT_PUSHAX);       // push just A/X back onto stack
-        genOne(PLA);
-        genOne(TAX);
-        genOne(PLA);
-        genTwo(LDY_IMMEDIATE, oper.literal.uint8);
-        genThreeAddr(JSR, RT_CALCARRAYOFFSET);
-        genThreeAddr(JSR, RT_PUSHEAX);
+        genTwo(LDA_IMMEDIATE, oper.literal.uint8);
+        genThreeAddr(JSR, RT_CALCARRAYELEM);
         break;
 
     case IC_BWC:

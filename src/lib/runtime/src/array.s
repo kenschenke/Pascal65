@@ -21,11 +21,11 @@
 .include "types.inc"
 .include "float.inc"
 
-.export calcArrayOffset, writeCharArray, readCharArrayFromInput
+.export writeCharArray, readCharArrayFromInput, calcArrayElem
 .export initArrays
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
-.import memcopy, popax, pushax, FPINP, COMPLM, calcStackOffset
+.import memcopy, popax, pushax, FPINP, COMPLM, calcStackOffset, pusheax, popeax
 
 .struct ARRAYINIT
     scopeLevel .byte
@@ -43,6 +43,32 @@
 initPtr: .res 2
 
 .code
+
+; This routine calculates the address of an element. It builds on
+; calcArrayOffset but pulls its input off the runtime stack. It
+; is used to shrink memory footprint of generated code. The inputs
+; for the routine are the array heap address under the index on the stack.
+; The data type for the index is passed in A.
+; The address of the array element is pushed back onto the runtime stack.
+.proc calcArrayElem
+    sta tmp3
+    jsr popeax              ; pop array index off stack
+    sta tmp1
+    stx tmp2
+    jsr popeax              ; pop array heap address off stack
+    pha
+    txa
+    pha
+    lda tmp1
+    ldx tmp2
+    jsr pushax
+    pla
+    tax
+    pla
+    ldy tmp3
+    jsr calcArrayOffset
+    jmp pusheax
+.endproc
 
 ; This routine calculates the address of an element in an array's
 ; heap buffer for an index. It expects the array index to be pushed

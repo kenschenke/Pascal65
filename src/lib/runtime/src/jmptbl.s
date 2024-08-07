@@ -27,7 +27,7 @@
 .import resetStringBuffer, getStringBuffer, writeStringLiteral
 .import strCompare, abs, add, assign, multiply, divide, divint, comp
 .import subtract, modulus, sqr, floatNeg, negate, pred, succ, PRECRD
-.import calcArrayOffset, calcRecordOffset, pusheax, initArrays
+.import calcArrayElem, calcRecordOffset, pusheax, initArrays
 .import writeCharArray, readCharArrayFromInput, floatToInt16, FPOUT
 .import memcopy, readFloatFromInput, readIntFromInput, _strToFloat
 .import concatString, assignString, convertString, readStringFromInput
@@ -103,7 +103,7 @@ jmp negate               ; BASE + 180
 jmp pred                 ; BASE + 183
 jmp succ                 ; BASE + 186
 jmp PRECRD               ; BASE + 189
-jmp calcArrayOffset      ; BASE + 192
+jmp calcArrayElem        ; BASE + 192
 jmp calcRecordOffset     ; BASE + 195
 jmp pusheax              ; BASE + 198
 jmp initArrays           ; BASE + 201

@@ -214,7 +214,7 @@
 #define RT_PRED                 (RT_BASE + 183)
 #define RT_SUCC                 (RT_BASE + 186)
 #define RT_PRECRD               (RT_BASE + 189)
-#define RT_CALCARRAYOFFSET      (RT_BASE + 192)
+#define RT_CALCARRAYELEM        (RT_BASE + 192)
 #define RT_CALCRECORD           (RT_BASE + 195)
 #define RT_PUSHEAX              (RT_BASE + 198)
 #define RT_INITARRAYS           (RT_BASE + 201)
