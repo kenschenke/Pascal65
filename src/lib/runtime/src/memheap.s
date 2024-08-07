@@ -15,7 +15,7 @@
 
 .export heapAlloc, heapFree, heapInit
 
-.import runtimeError, geInt16, ltInt16, popax
+.import runtimeError, geInt16, ltInt16, geUint32, popax, addInt16
 
 ; The memory heap starts at the end of program code going to the top of the
 ; runtime stack (the runtime stack grows downward). Assuming a 2K stack
@@ -201,6 +201,7 @@ ReUseEntry:
     clc
     bcc L99             ; Done
 NewEntry:               ; Add a new entry to the MAT
+    jsr checkFreeSpace
     ldy #0
     lda tmp1            ; Load the requested buffer size
     sta (ptr1),y        ; Store it in the first two bytes
@@ -266,6 +267,90 @@ L98:
 L1:
     dec ptr1 + 1
     rts
+.endproc
+
+; This routine calculates the address of the end of the last allocated block
+; and returns it in A/X
+; ptr4 is used to walk through the MAT
+; tmp3/tmp4 points to the end of the last allocated block
+.proc getEndOfLastBlock
+    lda heapBottom
+    sta tmp3
+    lda heapBottom + 1
+    sta tmp4
+    lda #$fc
+    sta ptr4
+    lda #$b7
+    sta ptr4 + 1
+L1: ldy #3                  ; Is the current entry all zeros?
+:   lda (ptr4),y
+    bne :+
+    dey
+    bpl :-
+    bmi L3                  ; Entry is all zeros (end of MAT)
+    ; Is the current entry allocated?
+:   ldy #1
+    lda (ptr4),y
+    and #$80
+    beq L2                  ; Skip this entry if not allocated
+    ; Update tmp3/tmp4 and add size
+    ldy #0
+    lda (ptr4),y
+    sta tmp3
+    iny
+    lda (ptr4),y
+    and #$7f                ; Clear the allocated bit
+    sta tmp4
+    iny
+    lda tmp3
+    adc (ptr4),y
+    sta tmp3
+    iny
+    lda tmp4
+    adc (ptr4),y
+    sta tmp4
+    ; Move to the next MAT entry
+L2: lda ptr4
+    sec
+    sbc #4
+    sta ptr4
+    lda ptr4 + 1
+    sbc #0
+    sta ptr4 + 1
+    jmp L1
+L3: lda tmp3
+    ldx tmp4
+    rts
+
+.endproc
+
+; This routine checks the amount of free space in the heap to see if
+; there's enough left for the requested block. If not, a runtime error is triggered.
+.proc checkFreeSpace
+    jsr getEndOfLastBlock
+    sta intOp1
+    stx intOp1 + 1
+    lda tmp1
+    sta intOp2
+    lda tmp2
+    sta intOp2 + 1
+    jsr addInt16
+    lda ptr4
+    sta intOp32
+    lda ptr4 + 1
+    sta intOp32 + 1
+    lda #0
+    sta intOp2
+    sta intOp2 + 1
+    sta intOp32 + 2
+    sta intOp32 + 3
+    jsr geUint32
+    cmp #0
+    beq L3                  ; Branch if not
+    ; The block won't fit. Abort with a runtime error
+    lda #rteOutOfMemory
+    jsr runtimeError
+L3: rts
 .endproc
 
 ; Free a block of memory from the heap.
