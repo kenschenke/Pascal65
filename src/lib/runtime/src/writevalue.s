@@ -21,7 +21,7 @@
 .export writeValue
 
 .import writeBool, writeChar, writeUint8, writeInt8, writeUint16, writeInt16
-.import writeUint32, writeInt32, printz, writeString
+.import writeUint32, writeInt32, printz, writeString, heapFree, pusheax
 
 width: .res 1
 
@@ -45,9 +45,9 @@ width: .res 1
     cmp #TYPE_LONGINT
     beq SINT32
     cmp #TYPE_STRING_VAR
-    beq STR
+    beq STRVAR
     cmp #TYPE_STRING_OBJ
-    beq STR
+    beq STROBJ
 
 BOOL:
     jsr rtPopEax
@@ -59,10 +59,26 @@ CHAR:
     ldx width
     jmp writeChar
 
-STR:
+STRVAR:
     jsr rtPopEax
     ldy width
     jmp writeString
+
+STROBJ:
+    jsr rtPopEax
+    sta sreg
+    stx sreg + 1
+    pha
+    txa
+    pha
+    lda sreg
+    ldx sreg + 1
+    jsr pusheax
+    jsr STRVAR
+    pla
+    tax
+    pla
+    jmp heapFree
 
 UINT8:
     jsr rtPopToIntOp1

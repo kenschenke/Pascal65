@@ -16,11 +16,12 @@
 
 .export convertString
 
-.import subInt16
+.import subInt16, heapFree
 
 .bss
 
 srcPtr: .res 2
+objPtr: .res 2
 
 .code
 
@@ -38,6 +39,24 @@ srcPtr: .res 2
     sta (ptr4),y
     lda ptr4
     ldx ptr4 + 1
+    rts
+.endproc
+
+.proc convertStrObj
+    lda srcPtr
+    sta objPtr
+    lda srcPtr + 1
+    sta objPtr + 1
+    jsr convertStrVar
+    pha
+    txa
+    pha
+    lda objPtr
+    ldx objPtr + 1
+    jsr heapFree
+    pla
+    tax
+    pla
     rts
 .endproc
 
@@ -61,7 +80,7 @@ srcPtr: .res 2
     cmp #TYPE_STRING_VAR
     beq convertStrVar
     cmp #TYPE_STRING_OBJ
-    beq convertStrVar
+    beq convertStrObj
     cmp #TYPE_STRING_LITERAL
     beq convertStrLiteral
     cmp #TYPE_CHARACTER

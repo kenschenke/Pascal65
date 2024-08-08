@@ -16,7 +16,7 @@
 
 .export concatString
 
-.import subInt16, addInt16
+.import subInt16, addInt16, heapFree
 
 .bss
 
@@ -34,6 +34,7 @@ concat2: .res 2
 
 type1: .res 1
 type2: .res 1
+tmpOffset: .res 1
 
 ; This routine concatenates strings, char arrays, and characters
 ; into strings. The values can be any combination of:
@@ -190,7 +191,7 @@ DN: tya
     cmp #TYPE_STRING_VAR
     beq SV
     cmp #TYPE_STRING_OBJ
-    beq SV
+    beq SO
     cmp #TYPE_ARRAY
     beq SA
     lda ptr1
@@ -199,6 +200,7 @@ DN: tya
     rts
 SL: jmp concatLiteral
 SV: jmp concatStringVar
+SO: jmp concatStringObj
 SA: jmp concatArray
 .endproc
 
@@ -215,6 +217,24 @@ LP: ldy tmp1
     inc tmp2
     bne LP
 DN: ldy tmp2
+    rts
+.endproc
+
+.proc concatStringObj
+    jsr concatStringVar
+    sty tmpOffset
+    lda ptr2
+    pha
+    lda ptr2 + 1
+    pha
+    lda ptr1
+    ldx ptr1 + 1
+    jsr heapFree
+    pla
+    sta ptr2 + 1
+    pla
+    sta ptr2
+    ldy tmpOffset
     rts
 .endproc
 
