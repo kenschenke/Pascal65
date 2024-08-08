@@ -17,7 +17,7 @@ operands. The type of instruction defines the number of expected operands.
 
 ## Operands
 
-An operand can be one of three categories: a literal, a variable reference,
+An operand can be one of four categories: a literal, a variable reference,
 a label, or a memory dereference.
 
 ### Literal
@@ -41,7 +41,7 @@ location of the label.
 
 The memory rereference operand instructs the instruction to use the value
 in the address at the top of the runtime stack. This operand is often used
-by the [PSH](/icode/mne/psh) instruction. This combination will replease the address at
+by the [PSH](/icode/mne/psh) instruction. This combination will replace the address at
 the top of the runtime stack with the value at that address.
 
 ## Intructions
