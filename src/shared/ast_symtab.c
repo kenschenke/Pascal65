@@ -66,8 +66,8 @@ static struct TStdRtn {
 	{"round", rcRound, TYPE_FUNCTION},
 	{"sqr", rcSqr, TYPE_FUNCTION},
 	{"trunc", rcTrunc, TYPE_FUNCTION},
-	// {"dec", rcDec, TYPE_PROCEDURE},
-	// {"inc", rcInc, TYPE_PROCEDURE},
+	{"dec", rcDec, TYPE_PROCEDURE},
+	{"inc", rcInc, TYPE_PROCEDURE},
 	{0},
 };
 

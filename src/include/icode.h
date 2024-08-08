@@ -81,8 +81,6 @@ typedef unsigned char ICODE_MNE;
 #define IC_SOF              0x21  // 0010 0001  Set output file handle 1:file handle
 #define IC_NEG              0x22  // 0010 0010  1:type
 #define IC_ABS              0x23  // 0010 0011  1:type
-#define IC_DEC              0x24  // 0010 0100  1:variable
-#define IC_INC              0x25  // 0010 0101  1:variable
 #define IC_INP              0x26  // 0010 0110  1:type
 #define IC_PSH              0x27  // 0010 0111  1:type
 #define IC_PRE              0x28  // 0010 1000  1:type
@@ -119,6 +117,8 @@ typedef unsigned char ICODE_MNE;
 #define IC_CCT              0x4a  // 0100 1010  1:leftType, 2:rightType concatenate
 #define IC_PUF              0x4b  // 0100 1011  1:routineLevel, 2:returnLabel -- push stack frame
 #define IC_POF              0x4c  // 0100 1100  1:isFunc, 2:isLibrary -- pop stack frame and return to caller
+#define IC_DEC              0x4d  // 0100 1101  1:variable type, 2:increment value type
+#define IC_INC              0x4e  // 0100 1110  1:variable type, 2:increment value type
 
 // These instructions take three operands
 #define IC_MASK_TRINARY     0x80

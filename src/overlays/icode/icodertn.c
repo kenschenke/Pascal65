@@ -24,6 +24,7 @@
 static 	char name[CHUNK_LEN + 1], enterLabel[15];
 
 static char icodeAbsCall(CHUNKNUM argChunk);
+static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk);
 static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk);
 static void icodeOrdCall(CHUNKNUM argChunk);
@@ -50,6 +51,36 @@ static char icodeAbsCall(CHUNKNUM argChunk)
 	icodeWriteUnary(IC_ABS, icodeOperShort(1, argType.kind));
 
 	return argType.kind;
+}
+
+static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
+{
+	char amountType;
+	CHUNKNUM varChunk;
+	struct expr arg, varExpr;
+	struct type amtType, varType;
+
+	retrieveChunk(argChunk, &arg);
+	varChunk = arg.left;
+
+	retrieveChunk(varChunk, &varExpr);
+	retrieveChunk(varExpr.evalType, &varType);
+
+	if (arg.right) {
+		retrieveChunk(arg.right, &arg);
+		icodeExpr(arg.left, 1);
+		retrieveChunk(arg.left, &arg);
+		retrieveChunk(arg.evalType, &amtType);
+		amountType = amtType.kind;
+	} else {
+		icodeWriteUnary(IC_PSH, icodeOperShort(1, 1));
+		amountType = TYPE_BYTE;
+	}
+
+	icodeExpr(varChunk, 0);	// push variable address onto stack
+
+	icodeWriteBinary(rc == rcInc ? IC_INC : IC_DEC,
+		icodeOperShort(1, varType.kind), icodeOperShort(2, amountType));
 }
 
 static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
@@ -423,6 +454,11 @@ static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 	case rcOrd:
 		icodeOrdCall(argChunk);
 		return TYPE_INTEGER;
+
+	case rcDec:
+	case rcInc:
+		icodeDecIncCall(rc, argChunk);
+		break;
 	}
 
     return TYPE_VOID;

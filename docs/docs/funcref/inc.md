@@ -2,11 +2,6 @@
 
 Increments a variable.
 
-!!! warning
-
-    Due to technical limitations the Inc procedure is currently disabled.
-    A workaround is under development.
-
 ## Declaration
 
     Procedure Inc(num);
