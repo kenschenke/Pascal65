@@ -1146,15 +1146,6 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		}
 		break;
 
-	case EXPR_BITWISE_COMPLEMENT:
-		if (!isTypeInteger(leftType.kind)) {
-			Error(errInvalidType);
-			break;
-		}
-		pType->kind = leftType.kind;
-		pType->size = leftType.size;
-		break;
-
 	case EXPR_BITWISE_LSHIFT:
 	case EXPR_BITWISE_RSHIFT:
 		if (!isTypeInteger(leftType.kind) || !isTypeInteger(rightType.kind)) {
@@ -1167,9 +1158,17 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_NOT:
-		checkBoolOperand(&leftType);
-		pType->kind = TYPE_BOOLEAN;
-		pType->size = sizeof(char);
+		if (leftType.kind == TYPE_BOOLEAN) {
+			// Logical not
+			pType->kind = TYPE_BOOLEAN;
+			pType->size = sizeof(char);
+		} else if (isTypeInteger(leftType.kind)) {
+			// Bitwise complement
+			pType->kind = leftType.kind;
+			pType->size = leftType.size;
+		} else {
+			Error(errIncompatibleTypes);
+		}
 		break;
 
 	case EXPR_ASSIGN: {

@@ -68,7 +68,7 @@ Begin
 	b2 := b >> 9; If b2 <> 85 Then Error(20);
 
 	b := 85;
-	b2 := @b;
+	b2 := Not b;
 	If b2 <> 170 Then Error(21);
 End;
 
@@ -129,7 +129,7 @@ Begin
 	w2 := w >> 17; If w2 <> $5555 Then Error(41);
 
 	w := $5555;
-	w2 := @w;
+	w2 := Not w;
 	If w2 <> $aaaa Then Error(42);
 End;
 
@@ -190,7 +190,7 @@ Begin
 	d2 := d >> 33; If d2 <> $55555555 Then Error(62);
 
 	d := $55555555;
-	d2 := @d;
+	d2 := Not d;
 	If d2 <> $aaaaaaaa Then Error(63);
 End;
 

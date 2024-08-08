@@ -140,10 +140,6 @@ CHUNKNUM parseFactor(char isVarInit)
 		getToken();
 		return exprCreate(EXPR_NOT, parseFactor(0), 0, 0, 0);
 
-	case tcAt:
-		getToken();
-		return exprCreate(EXPR_BITWISE_COMPLEMENT, parseFactor(0), 0, 0, 0);
-
 	case tcLParen: {
 		CHUNKNUM expr;
 		getToken();

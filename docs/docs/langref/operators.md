@@ -61,7 +61,7 @@ every 4 digits in written documentation.
 | !        | Bitwise OR                       |
 | <<       | Bitwise left shift               |
 | >>       | Bitwise right shift              |
-| @        | Bitwise complement (invert bits) |
+| Not      | Bitwise complement (invert bits) |
 
 ### Bitwise AND
 

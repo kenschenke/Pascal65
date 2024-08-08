@@ -256,8 +256,7 @@ typedef enum {
     EXPR_BITWISE_AND,
     EXPR_BITWISE_OR,
     EXPR_BITWISE_LSHIFT,
-    EXPR_BITWISE_RSHIFT,
-    EXPR_BITWISE_COMPLEMENT,
+    EXPR_BITWISE_RSHIFT
 } expr_t;
 
 struct expr {

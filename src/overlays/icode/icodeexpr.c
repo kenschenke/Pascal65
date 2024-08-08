@@ -128,12 +128,6 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		break;
 	}
 
-	case EXPR_BITWISE_COMPLEMENT:
-		icodeExpr(_expr.left, 1);
-		resultType.kind = getExprTypeKind(_expr.left);
-		icodeWriteUnary(IC_BWC, icodeOperShort(1, resultType.kind));
-		break;
-
 	case EXPR_EQ:	icodeCompExpr(IC_EQU, &_expr); resultType.kind=TYPE_BOOLEAN; break;
 	case EXPR_LT:	icodeCompExpr(IC_LST, &_expr); resultType.kind=TYPE_BOOLEAN; break;
 	case EXPR_LTE:	icodeCompExpr(IC_LSE, &_expr); resultType.kind=TYPE_BOOLEAN; break;
@@ -166,11 +160,12 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 
 	case EXPR_NOT:
 		icodeExpr(_expr.left, 1);
-		icodeWriteMnemonic(IC_NOT);
-		// genExpr(_expr.left, 1, 0);
-		// genTwo(AND_IMMEDIATE, 1);
-		// genTwo(EOR_IMMEDIATE, 1);
-		// genThreeAddr(JSR, RT_PUSHBYTESTACK);
+		resultType.kind = getExprTypeKind(_expr.left);
+		if (resultType.kind == TYPE_BOOLEAN) {
+			icodeWriteMnemonic(IC_NOT);
+		} else {
+			icodeWriteUnary(IC_BWC, icodeOperShort(1, resultType.kind));
+		}
 		break;
 
 	case EXPR_ASSIGN:
