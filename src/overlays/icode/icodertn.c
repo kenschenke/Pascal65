@@ -403,7 +403,7 @@ static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 	case rcWriteln:
 	case rcWriteStr:
 		icodeWriteWritelnCall(rc, argChunk);
-        return TYPE_VOID;
+        return rc == rcWriteStr ? TYPE_STRING_OBJ : TYPE_VOID;
 
 	case rcAbs:
 		return icodeAbsCall(argChunk);
