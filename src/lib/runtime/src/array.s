@@ -390,10 +390,14 @@ AL: ldy #ARRAYINIT::literals
     lda (ptr3),y
     iny
     ora (ptr3),y
-    beq NX
+    bne :+
+
+    ; No array literals - clear the array memory instead
+    jsr clearArrayMem
+    jmp NX
     
     ; There are literals - load their address into ptr2
-    lda (ptr3),y
+:   lda (ptr3),y
     sta ptr2 + 1
     dey
     lda (ptr3),y
@@ -425,6 +429,61 @@ NX: lda initPtr
     bcc :+
     inc initPtr + 1
 :   jmp L1
+DN: rts
+.endproc
+
+; This helper routine zeros out the array element portion of the heap
+.proc clearArrayMem
+    ; Calculate the number of elements in the array
+    ldy #ARRAYINIT::minIndex
+    lda (ptr3),y
+    sta intOp2
+    iny
+    lda (ptr3),y
+    sta intOp2 + 1
+    ldy #ARRAYINIT::maxIndex
+    lda (ptr3),y
+    sta intOp1
+    iny
+    lda (ptr3),y
+    sta intOp1 + 1
+    jsr subInt16
+    lda #1
+    sta intOp2
+    lda #0
+    sta intOp2 + 1
+    jsr addInt16
+    ; Multiply the number of elements by the element size
+    ldy #ARRAYINIT::elemSize
+    lda (ptr3),y
+    sta intOp2
+    iny
+    lda (ptr3),y
+    sta intOp2 + 1
+    jsr multInt16
+    ; Store the product (size of memory to clear) in tmp1/tmp2
+    lda intOp1
+    sta tmp1
+    lda intOp1 + 1
+    sta tmp2
+    ; Copy ptr4 (pointer to elements portion of array heap) to ptr1
+    lda ptr1
+    sta ptr4
+    lda ptr1 + 1
+    sta ptr4 + 1
+    lda #0
+    tay
+L1: sta (ptr4),y
+    ; Decrement tmp1/tmp2 (number of elements)
+    dec tmp1
+    bne :+
+    ldx tmp2
+    beq DN
+    dec tmp2
+:   inc ptr4
+    bne L1
+    inc ptr4 + 1
+    jmp L1
 DN: rts
 .endproc
 

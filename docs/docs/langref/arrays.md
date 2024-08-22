@@ -36,6 +36,10 @@ arr : Array[1..3,1..3] Of Integer = (
 );
 ```
 
+!!! note ""
+
+    If no initial values are provided, the array elements are initialized to 0.
+
 ## Accessing Array Elements
 
 Array elements are accessed by using square brackets, like this:

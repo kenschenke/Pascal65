@@ -2,6 +2,7 @@
     NEW: Rewrite code generation module in compiler to use intermediate code
     NEW: Add Dec and Inc procedures to System unit
     NEW: Replace the "@" operator with "Not" for bitwise complements
+    NEW: Array elements are now intialized to zero if no initial values are provided
     
 0.28-beta Jun 29 2024
     FIX: Fix negative array bounds : issue #15
