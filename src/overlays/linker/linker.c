@@ -960,7 +960,7 @@ static void genRuntime(void)
 
 	fclose(in);
 
-	// Write an extra 400 bytes for BSS
+	// Write an extra 200 bytes for BSS
 
 	memset(buf, 0, sizeof(buf));
 	for (i = 0; i < 20; ++i) {
