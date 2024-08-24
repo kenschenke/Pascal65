@@ -338,6 +338,14 @@ CHUNKNUM parseTypeSpec(void)
 	case tcRECORD:
 		type = parseRecordType();
 		break;
+	
+	case tcFILE:
+		type = parseFileType();
+		break;
+	
+	case tcTEXT:
+		typeKind = TYPE_TEXT;
+		break;
 
 	case tcPlus:
 	case tcMinus:

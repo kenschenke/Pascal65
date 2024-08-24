@@ -206,6 +206,8 @@ void icodeStmts(CHUNKNUM chunkNum)
 		retrieveChunk(chunkNum, &_stmt);
 		currentLineNumber = _stmt.lineNumber;
 
+		icodeWriteUnary(IC_LIN, icodeOperWord(1, currentLineNumber));
+
 		switch (_stmt.kind) {
 		case STMT_EXPR:
 			icodeExpr(_stmt.expr, 0);

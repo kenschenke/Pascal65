@@ -20,19 +20,27 @@ Procedure Delete(Var str : String; index, count : Byte);
 Procedure Insert(source : String; Var str : String; index : Byte);
 *)
 
+Procedure Assign(Var f : File; filename : String);
 Function BeginsWith(str, sub : String) : Boolean;
 Function Chr(Num : Integer) : Char;
+Procedure Close(Var f : File);
 Function CompareStr(s1, s2 : String) : ShortInt;
 Function Contains(str, sub : String) : Boolean;
 Function Cos(angle : Real) : Real;
 Function EndsWith(str, sub : String) : Boolean;
+Function EOF(Var f : File) : Boolean;
+Procedure Erase(Var f : File);
 Function GetKey : Char;
 Function GetKeyNoWait : Char;
-Function Odd(Num : LongInt) : Boolean;
+Function IOResult : Word;
 Function Length(str : String) : Byte;
 Function LowerCase(str : String) : String;
+Function Odd(Num : LongInt) : Boolean;
 Function Peek(Address : Word) : Byte;
 Procedure Poke(Address : Word; Value : Byte);
+Procedure Rename(Var f : File; newName : String);
+Procedure Reset(Var f : File);
+Procedure Rewrite(Var f : File);
 Function Sin(angle : Real) : Real;
 Function StrPos(str, sub : String; offset : Byte) : Byte;
 Function StringOfChar(ch : Char; count : Byte) : String;

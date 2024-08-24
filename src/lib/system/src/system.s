@@ -11,23 +11,32 @@
 
 .import chr, odd, peek, poke, length, trim, stringOfChar, getkey, getkeynowait
 .import upCase, lowerCase, compareStr, contains, beginswith, endswith, strPos
-.import sin, cos, tan
+.import sin, cos, tan, fileAssign, fileClose, fileReset, fileRewrite, fileEOF
+.import fileIOResult, fileErase, fileRename
 
 .segment "JMPTBL"
 
+jmp fileAssign
 jmp beginswith
 jmp chr
+jmp fileClose
 jmp compareStr
 jmp contains
 jmp cos
 jmp endswith
+jmp fileEOF
+jmp fileErase
 jmp getkey
 jmp getkeynowait
-jmp odd
+jmp fileIOResult
 jmp length
 jmp lowerCase
+jmp odd
 jmp peek
 jmp poke
+jmp fileRename
+jmp fileReset
+jmp fileRewrite
 jmp sin
 jmp strPos
 jmp stringOfChar

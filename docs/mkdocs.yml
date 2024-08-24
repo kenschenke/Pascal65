@@ -27,18 +27,24 @@ nav:
     - Functions and Procedures: langref/funcproc.md
     - Variable Scope: langref/scope.md
     - Units: langref/units.md
+    - Files: langref/files.md
     - Libraries: langref/libraries.md
   - Function Reference:
     - Abs: funcref/abs.md
+    - Assign: funcref/assign.md
     - BeginsWith: funcref/beginswith.md
     - Chr: funcref/chr.md
+    - Close: funcref/close.md
     - Contains: funcref/contains.md
     - CompareStr: funcref/comparestr.md
     - Cos: funcref/cos.md
     - Dec: funcref/dec.md
     - EndsWith: funcref/endswith.md
+    - EOF: funcref/eof.md
+    - Erase: funcref/erase.md
     - GetKey : funcref/getkey.md
     - Inc: funcref/inc.md
+    - IOResult: funcref/ioresult.md
     - Length: funcref/length.md
     - LowerCase: funcref/lowercase.md
     - Odd: funcref/odd.md
@@ -49,6 +55,9 @@ nav:
     - Read: funcref/read.md
     - ReadLn: funcref/read.md
     - ReadStr: funcref/read.md
+    - Rename: funcref/rename.md
+    - Reset: funcref/reset.md
+    - Rewrite: funcref/rewrite.md
     - Sin: funcref/sin.md
     - Sqr: funcref/sqr.md
     - StringOfChar: funcref/strofchar.md
@@ -133,6 +142,7 @@ nav:
       - LOC: icode/mne/loc.md
       - LSE: icode/mne/lse.md
       - LST: icode/mne/lst.md
+      - MEM: icode/mne/mem.md
       - MOD: icode/mne/mod.md
       - MUL: icode/mne/mul.md
       - NEG: icode/mne/neg.md

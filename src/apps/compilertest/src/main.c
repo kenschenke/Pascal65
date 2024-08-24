@@ -59,6 +59,8 @@ static char *testFiles[] = {
     "unit",
     "libtest",
     "trig",
+    "filetesta",
+    "filetestb",
     NULL
 };
 

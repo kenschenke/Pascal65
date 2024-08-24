@@ -52,15 +52,6 @@ static char typeConversions[7][7] = {
 	{ TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
 	{ TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL },
 };
-// static char typeConversions[7][7] = {
-// 	{ TYPE_BYTE,     TYPE_INTEGER,  TYPE_WORD,     TYPE_INTEGER,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
-// 	{ TYPE_INTEGER,  TYPE_SHORTINT, TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
-// 	{ TYPE_WORD,     TYPE_WORD,     TYPE_WORD,     TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL },
-// 	{ TYPE_INTEGER,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL },
-// 	{ TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_VOID,     TYPE_REAL },
-// 	{ TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_VOID,     TYPE_LONGINT,  TYPE_REAL },
-// 	{ TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL },
-// };
 
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk);
 static char checkAbsSqrCall(CHUNKNUM argChunk, char routineCode);		// returns TYPE_*
@@ -76,11 +67,11 @@ static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalP
 static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType);
 static void checkIntegerBaseType(CHUNKNUM exprChunk);
 static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType);
-static void checkReadReadlnCall(CHUNKNUM argChunk);
+static void checkReadReadlnCall(CHUNKNUM argChunk, char routineCode);
 static void checkRelOpOperands(struct type* pType1, struct type* pType2);
 static void checkStdParms(CHUNKNUM argChunk, char allowedParms);
 static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* pRetnType);
-static void checkWriteWritelnCall(CHUNKNUM argChunk);
+static void checkWriteWritelnCall(CHUNKNUM argChunk, char routineCode);
 static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type* pType, char parentIsFuncCall);
 static void getArrayType(CHUNKNUM exprChunk, struct type* pType);
 static void hoistFuncCall(CHUNKNUM chunkNum);
@@ -549,12 +540,29 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 				Error(errInvalidType);
 			}
 		}
+		else if (paramType.kind == TYPE_FILE) {
+			if (argType.kind == TYPE_TEXT) {
+				// okay
+			} else if (argType.kind == TYPE_FILE) {
+				if (paramType.subtype && argType.subtype != paramType.subtype) {
+					Error(errInvalidType);
+				}
+			} else {
+				Error(errInvalidType);
+			}
+			if (!(paramType.flags & TYPE_FLAG_ISBYREF)) {
+				Error(errInvalidType);
+			}
+		}
 		else if (paramType.kind != argType.kind) {
 			Error(errInvalidType);
 		}
 		if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			retrieveChunk(exprArg.left, &exprLeft);
-			if (argType.kind != paramType.kind) {
+			if (argType.kind == TYPE_TEXT && paramType.kind == TYPE_FILE) {
+				// okay
+			}
+			else if (argType.kind != paramType.kind) {
 				Error(errInvalidVarParm);
 			}
 			if (exprLeft.kind != EXPR_SUBSCRIPT &&
@@ -650,18 +658,30 @@ static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType)
 	pRetnType->kind = TYPE_VOID;
 }
 
-static void checkReadReadlnCall(CHUNKNUM argChunk)
+static void checkReadReadlnCall(CHUNKNUM argChunk, char routineCode)
 {
+	char first = 1;
 	char name[CHUNK_LEN + 1];
 	struct expr _expr, exprLeft;
 	struct symbol sym;
-	struct type _type, subtype;
+	struct type _type, subtype, fileSubtype;
+
+	fileSubtype.kind = 0;
 
 	while (argChunk)
 	{
 		retrieveChunk(argChunk, &_expr);
-		argChunk = _expr.right;
 		retrieveChunk(_expr.left, &exprLeft);
+
+		expr_typecheck(_expr.left, 0, &_type, 0);
+		getBaseType(&_type);
+		if (_expr.evalType) {
+			freeChunk(_expr.evalType);
+		}
+		allocChunk(&_expr.evalType);
+		storeChunk(_expr.evalType, &_type);
+		storeChunk(argChunk, &_expr);
+
 		if (exprLeft.kind != EXPR_NAME) {
 			Error(errInvalidVarParm);
 			continue;
@@ -679,8 +699,12 @@ static void checkReadReadlnCall(CHUNKNUM argChunk)
 		case TYPE_ARRAY:
 			retrieveChunk(_type.subtype, &subtype);
 			getBaseType(&subtype);
-			if (subtype.kind != TYPE_CHARACTER) {
-				Error(errIncompatibleTypes);
+			if (fileSubtype.kind == 0) {
+				if (subtype.kind != TYPE_CHARACTER) {
+					Error(errIncompatibleTypes);
+				}
+			} else {
+				checkArraysSameType(&_type, &fileSubtype);
 			}
 			break;
 
@@ -699,10 +723,41 @@ static void checkReadReadlnCall(CHUNKNUM argChunk)
 			}
 			break;
 
+		case TYPE_FILE:
+			if (!first) {
+				Error(errIncompatibleTypes);
+			}
+			if (routineCode != rcRead) {
+				Error(errIncompatibleTypes);
+			}
+			if (_type.subtype) {
+				retrieveChunk(_type.subtype, &fileSubtype);
+				getBaseType(&fileSubtype);
+			}
+			break;
+
+		case TYPE_TEXT:
+			if (!first) {
+				Error(errIncompatibleTypes);
+			}
+			break;
+		
+		case TYPE_RECORD:
+			break;
+
 		default:
 			Error(errIncompatibleTypes);
 			break;
 		}
+
+		if (!first && fileSubtype.kind && fileSubtype.kind != TYPE_ARRAY) {
+			if (!isAssignmentCompatible(fileSubtype.kind, &_type, &_expr)) {
+				Error(errIncompatibleTypes);
+			}
+		}
+
+		first = 0;
+		argChunk = _expr.right;
 	}
 }
 
@@ -768,14 +823,14 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 	switch (pType->routineCode) {
 	case rcRead:
 	case rcReadln:
-		checkReadReadlnCall(argChunk);
+		checkReadReadlnCall(argChunk, pType->routineCode);
 		pRetnType->kind = TYPE_VOID;
 		break;
 
 	case rcWrite:
 	case rcWriteln:
 	case rcWriteStr:
-		checkWriteWritelnCall(argChunk);
+		checkWriteWritelnCall(argChunk, pType->routineCode);
 		pRetnType->kind = pType->routineCode == rcWriteStr ?
 			TYPE_STRING_OBJ : TYPE_VOID;
 		break;
@@ -812,10 +867,13 @@ static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* 
 	}
 }
 
-static void checkWriteWritelnCall(CHUNKNUM argChunk)
+static void checkWriteWritelnCall(CHUNKNUM argChunk, char routineCode)
 {
+	char first = 1;
 	struct expr _expr, exprLeft;
-	struct type _type, subtype;
+	struct type _type, subtype, fileSubtype;
+
+	fileSubtype.kind = 0;
 
 	while (argChunk)
 	{
@@ -834,23 +892,57 @@ static void checkWriteWritelnCall(CHUNKNUM argChunk)
 		if (_type.kind == TYPE_ARRAY) {
 			retrieveChunk(_type.subtype, &subtype);
 			getBaseType(&subtype);
-			if (subtype.kind != TYPE_CHARACTER) {
+			if (fileSubtype.kind == 0) {
+				if (subtype.kind != TYPE_CHARACTER) {
+					Error(errIncompatibleTypes);
+				}
+				checkIntegerBaseType(exprLeft.width);
+				checkIntegerBaseType(exprLeft.precision);
+			} else {
+				checkArraysSameType(&_type, &fileSubtype);
+			}
+		} else if (_type.kind == TYPE_RECORD) {
+			retrieveChunk(_type.subtype, &subtype);
+			if (subtype.symtab != fileSubtype.symtab) {
 				Error(errIncompatibleTypes);
 			}
-			checkIntegerBaseType(exprLeft.width);
-			checkIntegerBaseType(exprLeft.precision);
 		} else if (_type.kind == TYPE_REAL ||
 			_type.kind == TYPE_CHARACTER ||
 			_type.kind == TYPE_BOOLEAN ||
 			isTypeInteger(_type.kind)) {
 			checkIntegerBaseType(exprLeft.width);
 			checkIntegerBaseType(exprLeft.precision);
+		} else if (_type.kind == TYPE_TEXT) {
+			if (!first) {
+				Error(errIncompatibleTypes);
+			}
+			if (routineCode == rcWriteStr) {
+				Error(errIncompatibleTypes);
+			}
+		} else if (_type.kind == TYPE_FILE) {
+			if (!first) {
+				Error(errIncompatibleTypes);
+			}
+			if (routineCode != rcWrite) {
+				Error(errIncompatibleTypes);
+			}
+			if (_type.subtype) {
+				retrieveChunk(_type.subtype, &fileSubtype);
+				getBaseType(&fileSubtype);
+			}
 		} else if (_type.kind != TYPE_STRING_LITERAL &&
 			_type.kind != TYPE_STRING_VAR &&
 			_type.kind != TYPE_STRING_OBJ) {
 			Error(errIncompatibleTypes);
 		}
 
+		if (!first && fileSubtype.kind && fileSubtype.kind != TYPE_ARRAY && fileSubtype.kind != TYPE_RECORD) {
+			if (!isAssignmentCompatible(fileSubtype.kind, &_type, &_expr)) {
+				Error(errIncompatibleTypes);
+			}
+		}
+
+		first = 0;
 		argChunk = _expr.right;
 	}
 }

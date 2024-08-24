@@ -35,7 +35,9 @@
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
 .import contains, readCharFromInput, andBitwise, orBitwise
 .import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine, tangent
-.import decrement, increment, stringInit, pushVar, readVar
+.import decrement, increment, stringInit, pushVar, readVar, writeBytes
+.import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
+.import fileErase, fileAssign, fileRename, fileFree
 
 .segment "JMPTBL"
 
@@ -142,3 +144,14 @@ jmp increment            ; BASE + 297
 jmp stringInit           ; BASE + 300
 jmp pushVar              ; BASE + 303
 jmp readVar              ; BASE + 306
+jmp writeBytes           ; BASE + 309
+jmp readBytes            ; BASE + 312
+jmp fileOpen             ; BASE + 315
+jmp fileClose            ; BASE + 318
+jmp isEOF                ; BASE + 321
+jmp setIOResult          ; BASE + 324
+jmp getIOResult          ; BASE + 327
+jmp fileErase            ; BASE + 330
+jmp fileAssign           ; BASE + 333
+jmp fileRename           ; BASE + 336
+jmp fileFree             ; BASE + 339

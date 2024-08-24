@@ -2,6 +2,7 @@
 
 .include "float.inc"
 .include "runtime.inc"
+.include "types.inc"
 
 ; exports
 
@@ -544,24 +545,46 @@ readInt32Stack:
 
 ; This routine pops the address off the runtime stack and reads the variable
 ; at that address then pushes its value back onto the stack.
+; A - variable type
 .proc readVar
+    pha
     jsr popeax
     sta ptr1
     stx ptr1+1
+    pla
     jmp loadVarFromPtr1
 .endproc
 
 .proc loadVarFromPtr1
+    ldx #0
+    stx sreg
+    stx sreg + 1
+    cmp #TYPE_BYTE
+    beq LOAD8
+    cmp #TYPE_SHORTINT
+    beq LOAD8
+    cmp #TYPE_BOOLEAN
+    beq LOAD8
+    cmp #TYPE_CHARACTER
+    beq LOAD8
+    cmp #TYPE_WORD
+    beq LOAD16
+    cmp #TYPE_INTEGER
+    beq LOAD16
+    cmp #TYPE_ENUMERATION
+    beq LOAD16
     ldy #3
     lda (ptr1),y
     sta sreg+1
     dey
     lda (ptr1),y
     sta sreg
-    dey
+LOAD16:
+    ldy #1
     lda (ptr1),y
     tax
-    dey
+LOAD8:
+    ldy #0
     lda (ptr1),y
     jmp pusheax
 .endproc

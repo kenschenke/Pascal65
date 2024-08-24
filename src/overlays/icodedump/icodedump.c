@@ -38,6 +38,7 @@ static struct {
     {IC_CNL, "CNL"},
     {IC_CPY, "CPY"},
     {IC_DEC, "DEC"},
+    {IC_DEF, "DEF"},
     {IC_DEL, "DEL"},
     {IC_DIV, "DIV"},
     {IC_DVI, "DVI"},
@@ -79,7 +80,7 @@ static struct {
     {IC_ROU, "ROU"},
     {IC_SCV, "SCV"},
     {IC_SET, "SET"},
-    {IC_SOF, "SOF"},
+    {IC_SFH, "SFH"},
     {IC_SQR, "SQR"},
     {IC_SSP, "SSP"},
     {IC_SSR, "SSR"},
@@ -190,7 +191,7 @@ static void icodeDumpOperand(FILE *fh)
             readFromMemBuf(chunkNum, &ch, 1);
             printf("%c", ch);
         }
-    } else if (oper.type != IC_MEM && oper.type != IC_RET) {
+    } else if (oper.type != IC_RET) {
         switch (oper.type) {
             case IC_CHR:
             case IC_IBU:

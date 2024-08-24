@@ -60,7 +60,6 @@ typedef unsigned char ICODE_MNE;
 // Non-literal operand types
 #define IC_LBL              0x1b  // 0001 1011
 #define IC_RET              0x1d  // 0001 1101  memory address of return value
-#define IC_MEM              0x1e  // 0001 1110  memory address at top of stack
 
 // These instructions take no operands
 #define IC_AND              0x01  // 0000 0001
@@ -75,10 +74,10 @@ typedef unsigned char ICODE_MNE;
 #define IC_SSR              0x0a  // 0000 1010  string subscript read
 #define IC_SSW              0x0b  // 0000 1011  string subscript write
 #define IC_FSO              0x0c  // 0000 1100  flush string output
+#define IC_DEF              0x0d  // 0000 1101  pop and free a file handle and close file
 
 // These instructions take one operand
 #define IC_MASK_UNARY       0x20  // 0010 0000
-#define IC_SOF              0x21  // 0010 0001  Set output file handle 1:file handle
 #define IC_NEG              0x22  // 0010 0010  1:type
 #define IC_ABS              0x23  // 0010 0011  1:type
 #define IC_INP              0x26  // 0010 0110  1:type
@@ -102,6 +101,7 @@ typedef unsigned char ICODE_MNE;
 #define IC_SCV              0x37  // 0011 0111  1:type -- string convert for routine parameters
 #define IC_ASF              0x38  // 0011 1000  1:routineLevel - activate stack frame
 #define IC_SSP              0x39  // 0011 1001  1:label - store stack pointer at label
+#define IC_MEM              0x3a  // 0011 1010  1:type
 
 // These instructions take two operands
 #define IC_MASK_BINARY      0x40  // 0100 0000
@@ -119,6 +119,7 @@ typedef unsigned char ICODE_MNE;
 #define IC_POF              0x4c  // 0100 1100  1:isFunc, 2:isLibrary -- pop stack frame and return to caller
 #define IC_DEC              0x4d  // 0100 1101  1:variable type, 2:increment value type
 #define IC_INC              0x4e  // 0100 1110  1:variable type, 2:increment value type
+#define IC_SFH              0x4f  // 0100 1111  Set file handle 1:file handle 2:0/output 1/input
 
 // These instructions take three operands
 #define IC_MASK_TRINARY     0x80
@@ -134,7 +135,7 @@ typedef unsigned char ICODE_MNE;
 
 struct icode_operand
 {
-    unsigned char type;  // IC_MASK_LITERAL, IC_VAR, IC_LBL, or IC_MEM
+    unsigned char type;  // IC_MASK_LITERAL, IC_VAR, IC_LBL
     union {
         union {
             char ch;
@@ -179,7 +180,6 @@ struct icode_operand* icodeOperReal(char num, CHUNKNUM realBuf);
 struct icode_operand* icodeOperLabel(char num, char *label);
 struct icode_operand* icodeOperStr(char num, CHUNKNUM strBuf);
 struct icode_operand* icodeOperVar(char num, char oper, char type, char level, char offset);
-struct icode_operand* icodeOperMem(char num);
 
 char icodeBoolValue(CHUNKNUM chunkNum);
 char icodeCharValue(CHUNKNUM chunkNum);
@@ -193,7 +193,7 @@ char icodeShortValue(CHUNKNUM chunkNum);
 void icodeStringValue(CHUNKNUM stringChunkNum);
 void icodeVar(char oper, char type, unsigned char level, unsigned char offset);
 char icodeWordValue(CHUNKNUM chunkNum);
-int icodeVariableDeclarations(CHUNKNUM chunkNum);
+int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars);
 
 #ifdef __GNUC__
 void icodeDump(void);

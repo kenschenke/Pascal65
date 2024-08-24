@@ -524,6 +524,10 @@ typedef enum {
     TYPE_RECORD,
     TYPE_STRING_VAR,
     TYPE_STRING_OBJ,
+    TYPE_FILE,
+    TYPE_TEXT,
+    TYPE_SCALAR_BYTES,                 // Used to write to files
+    TYPE_HEAP_BYTES,                   // Used to write to files
 } type_t;
 // CAUTION. Do not rearrange this list without also changing
 // the values in types.inc.

@@ -37,13 +37,6 @@ The label operand is used to define the target of a branch or routine. This
 operand can be used to define the location of a label or to look up the
 location of the label.
 
-### Memory Dereference
-
-The memory rereference operand instructs the instruction to use the value
-in the address at the top of the runtime stack. This operand is often used
-by the [PSH](/icode/mne/psh) instruction. This combination will replace the address at
-the top of the runtime stack with the value at that address.
-
 ## Intructions
 
 Instructions in intermediate code are very similar to instructions in assembly
@@ -61,6 +54,7 @@ The following instructions do not take an operand.
 |---------------------|---------|------------|-------------------------------|
 |[AND](/icode/mne/and)|01       |0000 0001   |Perform a boolean AND operation|
 |[CNL](/icode/mne/cnl)|08       |0000 1000   |Clear input buffer to newline  |
+|[DEF](/icode/mne/def)|0d       |0000 1101   |Pops and frees file handle     |
 |[DEL](/icode/mne/del)|07       |0000 0111   |Pops and frees address         |
 |[FSO](/icode/mne/not)|0c       |0000 1100   |Flush string output buffer     |
 |[NOT](/icode/mne/not)|09       |0000 1001   |Logical not top of stack       |
@@ -89,13 +83,13 @@ The following instructions take one operand.
 |[CPY](/icode/mne/cpy)|36       |0011 0110   |Clones memory                        |
 |[INP](/icode/mne/inp)|26       |0010 0110   |Reads and stores a value from input  |
 |[LOC](/icode/mne/loc)|2e       |0010 1110   |Sets the target for the label        |
+|[MEM](/icode/mne/mem)|3a       |0011 1010   |Reads a value from a memory location |
 |[NEG](/icode/mne/neg)|22       |0010 0010   |Negate value at top of stack         |
 |[NEW](/icode/mne/new)|2b       |0010 1011   |Allocate memory from the heap        |
 |[OUT](/icode/mne/out)|2a       |0010 1010   |Output a value                       |
 |[PRE](/icode/mne/pre)|28       |0010 1000   |Calcuate the predecessor of the value|
 |[PSH](/icode/mne/psh)|27       |0010 0111   |Push the operand to the runtime stack|
 |[SCV](/icode/mne/sqr)|37       |0011 0111   |Converts to a string object          |
-|[SOF](/icode/mne/sof)|21       |0010 0001   |Set output file number               |
 |[SQR](/icode/mne/sqr)|35       |0011 0101   |Calculate the square of a number     |
 |[SSP](/icode/mne/ssp)|39       |0011 1001   |Save the stack pointer               |
 |[SST](/icode/mne/sst)|2d       |0010 1101   |Initialize a string variable         |
@@ -121,6 +115,7 @@ The following instructions take two operands.
 |[POF](/icode/mne/pof)|4c       |0100 1100   |Pop the stack frame for a routine         |
 |[PUF](/icode/mne/puf)|4b       |0100 1011   |Push the stack frame for a routine        |
 |[SET](/icode/mne/set)|41       |0100 0001   |Set the value of a variable               |
+|[SFH](/icode/mne/sfh)|4f       |0100 1111   |Set input/output file number         |
 
 ### Trinary Instructions
 

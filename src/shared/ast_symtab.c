@@ -58,7 +58,6 @@ static struct TStdRtn {
 	{"writeln", rcWriteln, TYPE_PROCEDURE},
 	{"writestr", rcWriteStr, TYPE_FUNCTION},
 	{"abs", rcAbs, TYPE_FUNCTION},
-	{"eof", rcEof, TYPE_FUNCTION},
 	{"eoln", rcEoln, TYPE_FUNCTION},
 	{"ord", rcOrd, TYPE_FUNCTION},
 	{"pred", rcPred, TYPE_FUNCTION},

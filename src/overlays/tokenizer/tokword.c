@@ -35,9 +35,9 @@ static TResWord rw3[] = {
 
 static TResWord rw4[] = {
     {"byte", tcBYTE}, {"case", tcCASE}, {"char", tcCHAR}, {"else", tcELSE},
-    {"file", tcFILE}, {"goto", tcGOTO}, {"real", tcREAL}, {"then", tcTHEN},
-    {"true", tcTRUE}, {"type", tcTYPE}, {"unit", tcUNIT}, {"uses", tcUSES},
-    {"with", tcWITH}, {"word", tcWORD}, {NULL},
+    {"file", tcFILE}, {"goto", tcGOTO}, {"real", tcREAL}, {"text", tcTEXT},
+    {"then", tcTHEN}, {"true", tcTRUE}, {"type", tcTYPE}, {"unit", tcUNIT},
+    {"uses", tcUSES}, {"with", tcWITH}, {"word", tcWORD}, {NULL},
 };
 
 static TResWord rw5[] = {

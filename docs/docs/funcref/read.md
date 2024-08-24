@@ -16,8 +16,8 @@ ReadStr reads values from a string object.
 
 The routines can accept multiple parameters.
 
-*ReadLn* behaves just like *Read* except it consumes all keyboard input until
-return is pressed.
+*ReadLn* behaves just like *Read* except it consumes all input until
+the return key is pressed or a carriage return is encountered in the file.
 
 ## Data Types
 

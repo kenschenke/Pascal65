@@ -139,6 +139,7 @@
 // Used by read/write routines that are called by read/readln/write/writeln
 #define FH_STDIO        0x80    // Use screen/keyboard for IO
 #define FH_STRING       0x81    // Use string for IO
+#define FH_FILENUM      0x82    // File handle is on stack
 
 // Runtime Jumptable locations
 
@@ -253,6 +254,17 @@
 #define RT_STRINGINIT           (RT_BASE + 300)
 #define RT_PUSHVAR              (RT_BASE + 303)
 #define RT_READVAR              (RT_BASE + 306)
+#define RT_WRITEBYTES           (RT_BASE + 309)
+#define RT_READBYTES            (RT_BASE + 312)
+#define RT_FILEOPEN             (RT_BASE + 315)
+#define RT_FILECLOSE            (RT_BASE + 318)
+#define RT_EOF                  (RT_BASE + 321)
+#define RT_SETIORESULT          (RT_BASE + 324)
+#define RT_GETIORESULT          (RT_BASE + 327)
+#define RT_FILEERASE            (RT_BASE + 330)
+#define RT_FILEASSIGN           (RT_BASE + 333)
+#define RT_FILERENAME           (RT_BASE + 336)
+#define RT_FILEFREE             (RT_BASE + 339)
 
 // DO NOT REMOVE OR REORDER THESE!!!
 // These routine numbers are used in runtime.def and all hell will break loose.

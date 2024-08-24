@@ -401,6 +401,10 @@ static short getTypeSize(struct type* pType)
 		size = sizeof(short);
 		break;
 	case TYPE_STRING_LITERAL: size = sizeof(CHUNKNUM); break;
+	case TYPE_FILE:
+	case TYPE_TEXT:
+		size = 4;
+		break;
 
 	case TYPE_STRING_OBJ:
 	case TYPE_STRING_VAR:
@@ -801,6 +805,8 @@ short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 			case TYPE_DECLARED:
 			case TYPE_RECORD:
 			case TYPE_SUBRANGE:
+			case TYPE_FILE:
+			case TYPE_TEXT:
 				retrieveChunk(_decl.node, &sym);
 				if (_decl.kind == DECL_CONST || _decl.kind == DECL_VARIABLE) {
 					sym.offset = offset++;

@@ -176,6 +176,8 @@ CHUNKNUM parseFormalParmList(void)
 			case tcLONGINT: tc = TYPE_LONGINT; break;
 			case tcREAL: tc = TYPE_REAL; break;
 			case tcSTRING: tc = TYPE_STRING_VAR; break;
+			case tcFILE: tc = TYPE_FILE; break;
+			case tcTEXT: tc = TYPE_TEXT; break;
 			default:
 				Error(errInvalidType);
 				break;

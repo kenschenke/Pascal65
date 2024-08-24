@@ -37,7 +37,7 @@ typedef enum {
     rcDeclared, rcForward,
     rcRead, rcReadln, rcReadStr,
     rcWrite, rcWriteln, rcWriteStr,
-    rcAbs, rcEof, rcEoln, rcOrd,
+    rcAbs, rcEoln, rcOrd,
     rcPred, rcRound, rcSqr, rcSucc, rcTrunc,
     rcDec, rcInc
 } TRoutineCode;

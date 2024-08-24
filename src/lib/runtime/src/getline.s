@@ -16,7 +16,8 @@
 
 .export getline, getlineNoEnter
 
-.import exit, floatNeg, invertInt8, invertInt16, invertInt32
+.import exit, floatNeg, invertInt8, invertInt16, invertInt32, currentFhIn, setEOF
+.import isFileOpen, getFileRW, setIOResult, setEOF
 
 CH_STOP = 3
 CH_DEL = 20
@@ -33,11 +34,63 @@ L1:
     rts
 .endproc
 
+.proc getlineNoEnter
+    lda currentFhIn
+    cmp #fhStdio
+    bne getlineNoEnterFile
+    jmp getlineNoEnterKbd
+.endproc
+
+.proc getlineNoEnterFile
+    lda currentFhIn
+    beq NO
+    jsr isFileOpen
+    cmp #0
+    beq NO
+    lda currentFhIn
+    jsr getFileRW
+    cmp #1
+    bne NR
+    jsr clearBuf
+    lda #0
+    sta tmp1
+Loop:
+    jsr CHRIN
+    ldx STATUS
+    beq :+
+    lda currentFhIn
+    jsr setEOF
+    jmp EndOfLine
+:   cmp #CH_ENTER
+    beq EndOfLine
+    ldx tmp1
+    cpx #INPUTBUFLEN
+    beq Loop        ; Yes - ignore the character
+    ldy tmp1
+    sta (inputBuf),y
+    inc tmp1
+    lda STATUS      ; Check for read error
+    beq Loop        ; Keep reading if no error
+EndOfLine:
+    lda #0
+    ldx tmp1
+    stx inputBufUsed
+    rts
+NO: lda currentFhIn
+    jsr setEOF
+    lda #103
+    jmp setIOResult
+NR: lda currentFhIn
+    jsr setEOF
+    lda #104
+    jmp setIOResult
+.endproc
+
 ; Read an input line from the keyboard into inputBuf.
 ; Non-zero is returned in A if the user presses RUN/STOP.
 ; inputBufUsed contains the number of characters read.
 ; inputBuf is not zero-terminated.
-.proc getlineNoEnter
+.proc getlineNoEnterKbd
     jsr clearBuf
     jsr rtClearKeyBuf
     ; turn the cursor on
@@ -140,7 +193,19 @@ EnterKey:
 .endproc
 
 .proc getline
-    jsr getlineNoEnter
+    lda currentFhIn
+    cmp #fhStdio
+    bne getlineFile
+    jmp getlineKbd
+.endproc
+
+.proc getlineFile
+    jmp getlineNoEnterFile
+.endproc
+
+; Get a line of input from the keyboard
+.proc getlineKbd
+    jsr getlineNoEnterKbd
     cmp #0
     bne L1
     lda #CH_ENTER

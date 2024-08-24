@@ -157,6 +157,20 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         genOne(PHA);
         break;
 
+    case IC_SFH:
+        if (oper1.literal.uint8 == FH_FILENUM) {
+            genThreeAddr(JSR, RT_POPEAX);
+            genTwo(LDA_ZEROPAGE, ZP_SREGL);
+        } else {
+            genTwo(LDA_IMMEDIATE, oper1.literal.uint8);
+        }
+        genTwo(LDX_IMMEDIATE, oper2.literal.uint8);
+        genThreeAddr(JSR, RT_SETFH);
+        if (oper1.literal.uint8 == FH_STRING) {
+            genThreeAddr(JSR, RT_RESETSTRBUFFER);
+        }
+        break;
+
     case IC_INC:
     case IC_DEC:
         genThreeAddr(JSR, RT_POPEAX);
@@ -325,10 +339,6 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
                 genThreeAddr(JSR, RT_PUSHEAX);
                 break;
 
-            case IC_MEM:
-                genThreeAddr(JSR, RT_READVAR);
-                break;
-            
             case IC_RET:
                 genTwo(LDA_ZEROPAGE, ZP_STACKFRAMEL);
                 genOne(SEC);
@@ -344,7 +354,23 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         break;
 
     case IC_OUT:
-        if (oper.literal.uint8 == TYPE_REAL) {
+        if (oper.literal.uint8 == TYPE_SCALAR_BYTES) {
+            genThreeAddr(JSR, RT_POPEAX);
+            genOne(PHA);
+            genOne(TXA);
+            genOne(PHA);
+            genThreeAddr(JSR, RT_POPTOINTOP1AND2);
+            genTwo(LDA_IMMEDIATE, ZP_INTOP1L);
+            genTwo(LDX_IMMEDIATE, 0);
+            genThreeAddr(JSR, RT_PUSHEAX);
+            genOne(PLA);
+            genOne(TAX);
+            genOne(PLA);
+            genThreeAddr(JSR, RT_PUSHEAX);
+            genThreeAddr(JSR, RT_WRITEBYTES);
+        } else if (oper.literal.uint8 == TYPE_HEAP_BYTES) {
+            genThreeAddr(JSR, RT_WRITEBYTES);
+        } else if (oper.literal.uint8 == TYPE_REAL) {
             genThreeAddr(JSR, RT_POPEAX);   // precision
             genTwo(STA_ZEROPAGE, ZP_TMP1);  // store precision in tmp1
             genThreeAddr(JSR, RT_POPEAX);   // width
@@ -396,6 +422,11 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
     
     case IC_INP:
         switch (oper.literal.uint8) {
+        case TYPE_SCALAR_BYTES:
+        case TYPE_HEAP_BYTES:
+            genThreeAddr(JSR, RT_READBYTES);
+            break;
+
 		case TYPE_CHARACTER:
 		case TYPE_BYTE:
 		case TYPE_SHORTINT:
@@ -460,6 +491,7 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
             genOne(DEY);
             genTwo(LDA_ZPINDIRECT, ZP_PTR1L);
 			genThreeAddr(JSR, RT_READCHARARRAYFROMINPUT);
+            break;
 
 		case TYPE_STRING_VAR:
             genThreeAddr(JSR, RT_POPEAX);
@@ -590,21 +622,6 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
         break;
 
-    case IC_SOF:
-        if (!oper.literal.uint8) {
-            genOne(PLA);
-        } else {
-            genTwo(LDA_IMMEDIATE, oper.literal.uint8);
-        }
-        genThreeAddr(JSR, RT_SETFH);
-        if (oper.literal.uint8) {
-            genOne(PHA);	// push previous FH to stack
-            if (oper.literal.uint8 == FH_STRING) {
-                genThreeAddr(JSR, RT_RESETSTRBUFFER);
-            }
-        }
-        break;
-
     case IC_SSP:
         linkAddressLookup(oper.label, codeOffset+1, LINKADDR_LOW);
         genTwo(LDA_IMMEDIATE, 0);
@@ -618,6 +635,21 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         genOne(INY);
         genTwo(LDA_ZEROPAGE, ZP_SPH);
         genTwo(STA_ZPINDIRECT, ZP_PTR1L);
+        break;
+
+    case IC_LIN:
+#if 0
+		genOne(NOP);
+		genOne(PHA);
+		genTwo(LDA_IMMEDIATE, oper.literal.uint8);
+		genOne(PLA);
+		genOne(NOP);
+#endif
+        break;
+
+    case IC_MEM:
+        genTwo(LDA_IMMEDIATE, oper.literal.uint8);
+        genThreeAddr(JSR, RT_READVAR);
         break;
     }
 }
@@ -664,6 +696,8 @@ void icodeGen(void)
         } else if (mnemonic == IC_DEL) {
             genThreeAddr(JSR, RT_POPEAX);
             genThreeAddr(JSR, RT_HEAPFREE);
+        } else if (mnemonic == IC_DEF) {
+            genThreeAddr(JSR, RT_FILEFREE);
         } else if (mnemonic == IC_CNL) {
     		genThreeAddr(JSR, RT_CLEARINPUTBUF);
         } else if (mnemonic == IC_NOT) {
@@ -716,7 +750,7 @@ static void readOperand(FILE *fh, struct icode_operand *pOper)
         fread(&pOper->var.type, 1, 1, fh);
         fread(&pOper->var.level, 1, 1, fh);
         fread(&pOper->var.offset, 1, 1, fh);
-    } else if (pOper->type != IC_MEM && pOper->type != IC_RET) {
+    } else if (pOper->type != IC_RET) {
         switch (pOper->type) {
             case IC_CHR:
             case IC_IBU:

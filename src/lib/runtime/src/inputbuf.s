@@ -15,7 +15,7 @@
 
 .export isInputEndOfLine, readCharFromInput, skipSpaces
 
-.import getline
+.import getline, isEOF, currentFhIn
 
 .proc isInputEndOfLine
     lda #1
@@ -63,9 +63,12 @@ L1:
     bne L1
 L2:
     jsr getline     ; read another input line
+    lda currentFhIn ; load file handle if reading from a file
+    jsr isEOF       ; check for end of file
+    bne L4          ; branch if EOF
     ldy #0          ; Reset buffer position
     beq L1
 L3:
     sty inputPos    ; Put Y back into inputPos
-    rts
+L4: rts
 .endproc

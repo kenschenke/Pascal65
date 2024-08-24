@@ -32,6 +32,10 @@ static CHUNKNUM addArrayLiteral(CHUNKNUM exprChunk, int *bufSize, int elemSize)
 	struct expr _expr;
 	CHUNKNUM memChunk;
 
+	if (!exprChunk) {
+		return 0;
+	}
+
 	allocMemBuf(&memChunk);
 	*bufSize = 0;
 
@@ -222,7 +226,7 @@ static void icodeRecordInit(struct type* pType, struct symbol *pSym)
 	}
 }
 
-int icodeVariableDeclarations(CHUNKNUM chunkNum)
+int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars)
 {
 	char label[CHUNK_LEN + 1];
 	struct decl _decl;
@@ -234,6 +238,7 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum)
 
 	while (chunkNum) {
 		retrieveChunk(chunkNum, &_decl);
+		localVars[num] = 0;
 
 		if (_decl.kind == DECL_CONST || _decl.kind == DECL_VARIABLE) {
 			retrieveChunk(_decl.type, &_type);
@@ -271,6 +276,12 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum)
 			case TYPE_CARDINAL:
 				icodeDWordValue(_decl.value);
 				break;
+			
+			case TYPE_FILE:
+			case TYPE_TEXT:
+				icodeDWordValue(0);
+				localVars[num] = 2;
+				break;
 
 			case TYPE_BOOLEAN:
 				icodeBoolValue(_decl.value);
@@ -291,6 +302,7 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum)
 			}
 
 			case TYPE_ARRAY:
+				localVars[num] = 1;
 				icodeWriteUnary(IC_NEW, icodeOperInt(1, _type.size));
 				heapOffset = 0;
 				if (_decl.value) {
@@ -301,12 +313,14 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum)
 				break;
 
 			case TYPE_RECORD:
+				localVars[num] = 1;
 				icodeWriteUnary(IC_NEW, icodeOperInt(1, _type.size));
 				heapOffset = 0;
 				icodeRecordInit(&_type, &sym);
 				break;
 
 			case TYPE_STRING_VAR:
+				localVars[num] = 1;
 				if (_decl.kind == DECL_CONST || _decl.value) {
 					struct expr strExpr;
 					retrieveChunk(_decl.value, &strExpr);

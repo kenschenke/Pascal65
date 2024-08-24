@@ -63,6 +63,7 @@ CHUNKNUM parseConstant(CHUNKNUM* type);
 CHUNKNUM parseConstantDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl);
 CHUNKNUM parseEnumerationType(void);
 CHUNKNUM parseFieldDeclarations(void);
+CHUNKNUM parseFileType(void);
 CHUNKNUM parseRecordType(void);
 type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit);
 CHUNKNUM parseSubrangeType(CHUNKNUM name);

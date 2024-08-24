@@ -130,13 +130,6 @@ struct icode_operand* icodeOperVar(char num, char oper, char type, char level, c
     return &operands[num-1];
 }
 
-struct icode_operand* icodeOperMem(char num)
-{
-    operands[num-1].type = IC_MEM;
-
-    return &operands[num-1];
-}
-
 void icodeWriteMnemonic(ICODE_MNE instruction)
 {
     fwrite(&instruction, 1, 1, fhi);
@@ -149,13 +142,15 @@ static int icodeUnitDeclarations(void)
 	struct decl _decl;
 	struct stmt _stmt;
 	CHUNKNUM chunkNum = units;
+    char localVars[MAX_LOCAL_VARS];
 
+    memset(localVars, 0, sizeof(localVars));
 	while (chunkNum) {
 		retrieveChunk(chunkNum, &_unit);
 		retrieveChunk(_unit.astRoot, &_decl);
 		retrieveChunk(_decl.code, &_stmt);
-		numToPop += icodeVariableDeclarations(_stmt.decl);
-		numToPop += icodeVariableDeclarations(_stmt.interfaceDecl);
+		numToPop += icodeVariableDeclarations(_stmt.decl, localVars);
+		numToPop += icodeVariableDeclarations(_stmt.interfaceDecl, localVars);
 
 		chunkNum = _unit.next;
 	}
@@ -187,6 +182,7 @@ void icodeWrite(CHUNKNUM astRoot)
 	struct stmt _stmt;
 	// int i;
     int numToPop;
+    char localVars[MAX_LOCAL_VARS];
 
     fhi = fopen(TMP_ZZICODE, "w");
 
@@ -195,7 +191,8 @@ void icodeWrite(CHUNKNUM astRoot)
 	retrieveChunk(_decl.code, &_stmt);
 
 	// Create stack entries for the global variables
-	numToPop = icodeVariableDeclarations(_stmt.decl);
+    memset(localVars, 0, sizeof(localVars));
+	numToPop = icodeVariableDeclarations(_stmt.decl, localVars);
 	numToPop += icodeUnitDeclarations();
 
 	// Skip over global function/procedure declarations and start main code
@@ -225,7 +222,7 @@ static void icodeWriteOperand(struct icode_operand *pOper)
         fwrite(pOper->label, 1, strlen(pOper->label)+1, fhi);
     } else if (pOper->type == IC_STR || pOper->type == IC_FLT) {
         fwrite(&pOper->literal.strBuf, 2, 1, fhi);
-    } else if (pOper->type != IC_MEM && pOper->type != IC_RET) {
+    } else if (pOper->type != IC_RET) {
         unsigned char size;
         switch (pOper->type) {
             case IC_CHR:

@@ -11,7 +11,7 @@ OUT <data type>
 The **OUT** instruction outputs the value at the top of the runtime stack
 to the current output file. The value is popped off the runtime stack.
 The current output file defaults to the screen but can be changed with
-the [SOF](/icode/mne/sof) instruction.
+the [SFH](/icode/mne/sfh) instruction.
 
 ### Data Type Operand
 
@@ -20,4 +20,4 @@ The data type operand refers to one of the Pascal65 defined types. See the
 
 ## See Also
 
-[ONL](/icode/mne/onl), [SOF](/icode/mne/sof)
+[ONL](/icode/mne/onl), [SFH](/icode/mne/sfh), [INP](/icode/mne/inp)

@@ -318,8 +318,8 @@ static unsigned char prgHeader[] = {
 #error Program header and footer not defined for this platform
 #endif
 
-#define PRG_CLEANUP_OFFSET 12
-#define PRG_CLEANUP_LENGTH 21
+#define PRG_CLEANUP_OFFSET 15
+#define PRG_CLEANUP_LENGTH 24
 static unsigned char prgCleanup[] = {
 	// Clean up the program's stack frame
 	JSR, WORD_LOW(RT_STACKCLEANUP), WORD_HIGH(RT_STACKCLEANUP),
@@ -328,6 +328,9 @@ static unsigned char prgCleanup[] = {
 	LDA_ZEROPAGE, 1,
 	ORA_IMMEDIATE, 1,
 	STA_ZEROPAGE, 1,
+
+	// Close all open files and clear I/O channels
+	JSR, 0xe7, 0xff,  // CLALL
 
 	// Copy the backup of page zero back
 	LDX_IMMEDIATE, 0,
@@ -339,16 +342,21 @@ static unsigned char prgCleanup[] = {
 };
 
 #ifdef COMPILERTEST
-#define CHAIN_CODE_MSGL 1
-#define CHAIN_CODE_MSGH 3
-#define CHAIN_CODE_CALLL 8
-#define CHAIN_CODE_CALLH 12
-#define CHAIN_CODE_STRLEN 24
+#define CHAIN_CODE_MSGL 8
+#define CHAIN_CODE_MSGH 10
+#define CHAIN_CODE_CALLL 15
+#define CHAIN_CODE_CALLH 19
+#define CHAIN_CODE_STRLEN 31
+#define CHAIN_CODE_LEN 40
 #ifdef __MEGA65__
 static unsigned char chainCode[] = {
+	LDA_IMMEDIATE, FH_STDIO,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_SETFH), WORD_HIGH(RT_SETFH),
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, WORD_LOW(RT_PRINTZ), WORD_HIGH(RT_PRINTZ),
+	// 0, 0, 0,
 
 	LDA_IMMEDIATE, 0,
 	STA_ZEROPAGE, ZP_PTR2L,
@@ -365,6 +373,9 @@ static unsigned char chainCode[] = {
 };
 #elif defined (__C64__)
 static unsigned char chainCode[] = {
+	LDA_IMMEDIATE, FH_STDIO,
+	LDX_IMMEDIATE, 0,
+	JSR, WORD_LOW(RT_SETFH), WORD_HIGH(RT_SETFH),
 	LDA_IMMEDIATE, 0,
 	LDX_IMMEDIATE, 0,
 	JSR, 0, 0,
@@ -770,7 +781,7 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLL, LINKADDR_LOW);
 		linkAddressLookup("CHAINCALL", codeOffset + CHAIN_CODE_CALLH, LINKADDR_HIGH);
 		chainCode[CHAIN_CODE_STRLEN] = 28 + strlen(nextTest);
-		writeCodeBuf(chainCode, 33);
+		writeCodeBuf(chainCode, CHAIN_CODE_LEN);
 		writeChainCall(nextTest);	// filename of the next test in the chain
 
 		strcpy(msg, "Loading ");
@@ -835,6 +846,11 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	}
 
 	// This MUST be the last thing written to the code buffer
+#if 0
+	printf("heap bottom = %04x\n", codeBase+codeOffset);
+	printf("ceiling %04x\n", CODESEG_CEIL);
+	printf("heap size %d\n", CODESEG_CEIL-codeBase-codeOffset);
+#endif
 	linkAddressSet(BSS_HEAPBOTTOM, codeOffset);
 	ch = 0;
 	fwrite(&ch, 1, 1, codeFh);
@@ -944,7 +960,7 @@ static void genRuntime(void)
 
 	fclose(in);
 
-	// Write an extra 200 bytes for BSS
+	// Write an extra 400 bytes for BSS
 
 	memset(buf, 0, sizeof(buf));
 	for (i = 0; i < 20; ++i) {

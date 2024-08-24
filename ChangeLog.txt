@@ -3,7 +3,8 @@
     NEW: Add Dec and Inc procedures to System unit
     NEW: Replace the "@" operator with "Not" for bitwise complements
     NEW: Array elements are now intialized to zero if no initial values are provided
-    
+    NEW: Add support for reading and writing files
+
 0.28-beta Jun 29 2024
     FIX: Fix negative array bounds : issue #15
     NEW: Add Inc and Dec procedures to the runtime (currently disabled).

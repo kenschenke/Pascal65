@@ -254,7 +254,7 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 			}
 			icodeVar(oper, kind, (unsigned char)sym.level, (unsigned char)sym.offset);
 			if (isByRef && isRead) {
-				icodeWriteUnary(IC_PSH, icodeOperMem(1));
+				icodeWriteUnary(IC_MEM, icodeOperShort(1, kind));
 			}
 			resultType.kind = rightType.kind;
 		}
@@ -299,13 +299,13 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		icodeWriteUnary(IC_AIX, icodeOperShort(1, rightType.kind));
 
 		if (isRead) {
-			icodeWriteUnary(IC_PSH, icodeOperMem(1));
 			getExprType(_expr.left, &leftType);
 			retrieveChunk(leftType.subtype, &leftType);
 			getBaseType(&leftType);
 			if (leftType.kind == TYPE_ARRAY) {
 				retrieveChunk(leftType.subtype, &leftType);
 			}
+			icodeWriteUnary(IC_MEM, icodeOperShort(1, leftType.kind));
 			resultType.kind = leftType.kind;
 		}
 		break;
@@ -328,29 +328,23 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		memset(name, 0, sizeof(name));
 		retrieveChunk(exprRight.name, name);
 		symtab_lookup(leftType.symtab, name, &sym);
+		// Look up the field offset
 		if (exprLeft.kind != EXPR_NAME) {
 			icodeExpr(_expr.left, 0);
-			// Look up the record index
-			if (sym.offset) {
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, sym.offset));
-				icodeWriteTrinary(IC_ADD, icodeOperShort(1, TYPE_WORD),
-					icodeOperShort(2, TYPE_WORD), icodeOperShort(3, TYPE_WORD));
-			}
 		}
 		else {
-			// Look up the field offset
 			icodeExpr(_expr.left, 1);
-			if (sym.offset) {
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, sym.offset));
-				icodeWriteTrinary(IC_ADD, icodeOperShort(1, TYPE_WORD),
-					icodeOperShort(2, TYPE_WORD), icodeOperShort(3, TYPE_WORD));
-			}
+		}
+		if (sym.offset) {
+			icodeWriteUnary(IC_PSH, icodeOperWord(1, sym.offset));
+			icodeWriteTrinary(IC_ADD, icodeOperShort(1, TYPE_WORD),
+				icodeOperShort(2, TYPE_WORD), icodeOperShort(3, TYPE_WORD));
 		}
 
-		if (isRead) {
-			icodeWriteUnary(IC_PSH, icodeOperMem(1));
-		}
 		resultType.kind = getExprTypeKind(_expr.right);
+		if (isRead) {
+			icodeWriteUnary(IC_MEM, icodeOperShort(1, resultType.kind));
+		}
 		break;
 
 	case EXPR_STRING_LITERAL:

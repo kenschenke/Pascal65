@@ -66,6 +66,27 @@ CHUNKNUM parseArrayType(void)
 	return outerArray;
 }
 
+CHUNKNUM parseFileType(void)
+{
+	CHUNKNUM subtype = 0;
+	struct type _type;
+
+	// OF
+	getToken();
+	if (parserToken == tcOF) {
+		getToken();
+		subtype = parseTypeSpec();
+		retrieveChunk(subtype, &_type);
+		if (_type.kind == TYPE_FILE ||
+			_type.kind == TYPE_TEXT ||
+			_type.kind == TYPE_STRING_VAR) {
+				Error(errIncompatibleTypes);
+			}
+	}
+
+	return typeCreate(TYPE_FILE, 0, subtype, 0);
+}
+
 CHUNKNUM parseRecordType(void)
 {
 	struct type _type;

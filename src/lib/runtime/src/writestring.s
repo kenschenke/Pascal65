@@ -46,7 +46,6 @@ LP: iny
     pha
     tya
     pha
-    ; jsr $ffd2
     lda tmp1
     jsr writeByte
     pla

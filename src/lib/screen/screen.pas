@@ -18,8 +18,8 @@ Interface
 Procedure ClearScreen();
 Procedure DrawChar(col, row : Byte; ch : Char);
 Procedure DrawCharRaw(col, row : Byte; ch : Char);
-Procedure DrawText(col, row : Byte; text : String);
-Procedure DrawTextRaw(col, row : Byte; text : String);
+Procedure DrawText(col, row : Byte; str : String);
+Procedure DrawTextRaw(col, row : Byte; str : String);
 Procedure GetScreenSize(Var cols, rows : Byte);
 Procedure SetBackgroundColor(color : Byte);
 Procedure SetBorderColor(color : Byte);
