@@ -16,7 +16,7 @@
 
 .export concatString
 
-.import subInt16, addInt16, heapFree
+.import subInt16, addInt16, heapFree, runtimeError
 
 .bss
 
@@ -85,7 +85,7 @@ tmpOffset: .res 1
     lda intOp1 + 1
     beq :+
     lda #rteStringOverflow
-    jsr rtRuntimeError
+    jsr runtimeError
 :   lda intOp1
     pha
     clc
@@ -175,7 +175,7 @@ DN: tya
     lda intOp1 + 1          ; Look at high byte of array length
     beq :+                  ; Branch if array <= 255
     lda #rteStringOverflow
-    jsr rtRuntimeError
+    jsr runtimeError
 :   inc intOp1              ; Length is actually upper - lower + 1
     lda intOp1
     rts

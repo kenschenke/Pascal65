@@ -15,7 +15,7 @@
 .export assign
 
 .import convertType, pusheax, signExtend8To16
-.import pushRealStack, storeRealStack
+.import pushRealStack, storeRealStack, storeByteStack
 
 .bss
 
@@ -76,7 +76,7 @@ leftPtr: .res 2                 ; Preserve pointer to variable
 @Int8:
 @Bool:
     jsr rtPushFromIntOp1
-    jmp rtStoreByte
+    jmp storeByteStack
 @Real:
     jsr pushRealStack
     jsr restoreLeftPtr

@@ -26,6 +26,7 @@
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
 .import memcopy, popax, pushax, FPINP, COMPLM, calcStackOffset, pusheax, popeax
+.import runtimeError
 
 .struct ARRAYINIT
     scopeLevel .byte
@@ -81,7 +82,7 @@ initPtr: .res 2
     stx ptr1 + 1
     tya                 ; Push the index data type on the CPU stack
     pha
-    jsr rtPopAx
+    jsr popax
     sta intOp1          ; Array index in intOp1
     stx intOp1 + 1
     pla                 ; Pop the index data type off the CPU stack
@@ -143,7 +144,7 @@ initPtr: .res 2
     rts
 L1:
     lda #rteValueOutOfRange
-    jsr rtRuntimeError
+    jsr runtimeError
 .endproc
 
 ; This routine copies an array literal from the PRG's BSS
@@ -499,7 +500,7 @@ DN: rts
     sta tmp1
     stx tmp2
     ; Pop the field width off the runtime stack
-    jsr rtPopAx
+    jsr popax
     sta tmp3
     ; If field width specified and array length <= 255
     lda tmp2            ; Look at high byte of array length

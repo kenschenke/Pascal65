@@ -16,7 +16,7 @@
 
 .export modulus
 
-.import divInt32, multInt32, swapInt32, subInt32, prepOperands32
+.import divInt32, multInt32, swapInt32, subInt32, prepOperands32, runtimeError
 
 .bss
 
@@ -50,7 +50,7 @@ divisor: .res 4
     ora intOp32 + 3
     bne L1
     lda #rteDivisionByZero
-    jmp rtRuntimeError
+    jmp runtimeError
 L1:
     ; Copy intOp1/intOp2 to dividend
     ldx #3

@@ -16,7 +16,7 @@
 
 .export convertString
 
-.import subInt16, heapFree
+.import subInt16, heapFree, runtimeError
 
 .bss
 
@@ -106,7 +106,7 @@ objPtr: .res 2
     lda intOp1 + 1          ; Look at high byte of array length
     beq :+                  ; Branch if array <= 255
     lda #rteStringOverflow
-    jsr rtRuntimeError
+    jsr runtimeError
 :   inc intOp1              ; Length is actually upper - lower + 1
     lda ptr3                ; Adjust srcPtr to first array element
     clc

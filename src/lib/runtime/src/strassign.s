@@ -16,7 +16,7 @@
 
 .export assignString
 
-.import convertString
+.import convertString, popax
 
 .bss
 
@@ -40,12 +40,12 @@ varPtr: .res 2
 .proc assignString
     sta srcPtr              ; Save the source pointer
     stx srcPtr + 1
-    jsr rtPopAx
+    jsr popax
     sta varPtr              ; Save the pointer to the string variable
     sta ptr1
     stx varPtr + 1
     stx ptr1 + 1
-    jsr rtPopAx
+    jsr popax
     pha                     ; Save the source type
     ; Free the current string variable
     ldy #1

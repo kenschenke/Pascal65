@@ -13,14 +13,14 @@
 ; Jump table at the start of the runtime library
 
 .import rtStackCleanup, rtStackInit, pushIntStack, calcStackOffset
-.import storeIntStack, pushAddrStack, readIntStack, popToIntOp1
+.import storeIntStack, pushAddrStack, popToIntOp1
 .import popToIntOp2, pushFromIntOp1, pushRealStack, storeRealStack
-.import popToReal, readRealStack, readByteStack, pushByteStack
-.import storeByteStack, pushStackFrameHeader, returnFromRoutine
-.import popToIntOp1And2, popToIntOp32, readInt32Stack
+.import popToReal, pushByteStack
+.import pushStackFrameHeader, returnFromRoutine
+.import popToIntOp1And2
 .import storeInt32Stack, pushFromIntOp1And2, getKey, clearKeyBuf
 
-.import runtimeError, runtimeErrorInit, popa, popax, popeax, incsp4, pushax
+.import runtimeErrorInit, popeax, incsp4, pushax
 
 .import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
 .import writeValue, leftpad, printz, strCase, trim, initFileIo, setFh
@@ -47,28 +47,28 @@ jmp pushIntStack         ; BASE + 6
 jmp calcStackOffset      ; BASE + 9
 jmp storeIntStack        ; BASE + 12
 jmp pushAddrStack        ; BASE + 15
-jmp readIntStack         ; BASE + 18
+jmp fileOpen             ; BASE + 18
 jmp popToIntOp1          ; BASE + 21
 jmp popToIntOp2          ; BASE + 24
 jmp pushFromIntOp1       ; BASE + 27
 jmp pushRealStack        ; BASE + 30
 jmp storeRealStack       ; BASE + 33
 jmp popToReal            ; BASE + 36
-jmp readRealStack        ; BASE + 39
-jmp readByteStack        ; BASE + 42
+jmp fileClose            ; BASE + 39
+jmp isEOF                ; BASE + 42
 jmp pushByteStack        ; BASE + 45
-jmp storeByteStack       ; BASE + 48
+jmp setIOResult          ; BASE + 48
 jmp pushStackFrameHeader ; BASE + 51
 jmp returnFromRoutine    ; BASE + 54
 jmp popToIntOp1And2      ; BASE + 57
-jmp popToIntOp32         ; BASE + 60
-jmp readInt32Stack       ; BASE + 63
+jmp getIOResult          ; BASE + 60
+jmp fileErase            ; BASE + 63
 jmp storeInt32Stack      ; BASE + 66
 jmp pushFromIntOp1And2   ; BASE + 69
-jmp runtimeError         ; BASE + 72
+jmp fileAssign           ; BASE + 72
 jmp runtimeErrorInit     ; BASE + 75
-jmp popa                 ; BASE + 78
-jmp popax                ; BASE + 81
+jmp fileRename           ; BASE + 78
+jmp fileFree             ; BASE + 81
 jmp heapInit             ; BASE + 84
 jmp heapAlloc            ; BASE + 87
 jmp heapFree             ; BASE + 90
@@ -146,12 +146,3 @@ jmp pushVar              ; BASE + 303
 jmp readVar              ; BASE + 306
 jmp writeBytes           ; BASE + 309
 jmp readBytes            ; BASE + 312
-jmp fileOpen             ; BASE + 315
-jmp fileClose            ; BASE + 318
-jmp isEOF                ; BASE + 321
-jmp setIOResult          ; BASE + 324
-jmp getIOResult          ; BASE + 327
-jmp fileErase            ; BASE + 330
-jmp fileAssign           ; BASE + 333
-jmp fileRename           ; BASE + 336
-jmp fileFree             ; BASE + 339

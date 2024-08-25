@@ -20,7 +20,7 @@ DIVOUT = $d76c
 
 .export divUint32
 
-.import ltInt32
+.import ltInt32, runtimeError
 
 ; ptr1/ptr2 - result
 ;
@@ -41,7 +41,7 @@ DIVOUT = $d76c
     bne DividendCheck
     ; Divide by zero
     lda #rteDivisionByZero
-    jmp rtRuntimeError
+    jmp runtimeError
 
 DividendCheck:
     ; Special case - dividend is zero

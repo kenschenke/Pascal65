@@ -3,7 +3,7 @@
 
 .export divInt8
 
-.import absInt8, invertInt8, isNegInt8, ltInt8, swapInt8
+.import absInt8, invertInt8, isNegInt8, ltInt8, swapInt8, runtimeError
 
 ; tmp1 - intOpt1 is -128
 ; tmp2 - result is negative
@@ -33,7 +33,7 @@
     bne DividendCheck
     ; Divide by zero
     lda #rteDivisionByZero
-    jmp rtRuntimeError
+    jmp runtimeError
 
 DividendCheck:
     ; Special case - dividend is zero

@@ -14,6 +14,7 @@
 .include "error.inc"
 
 .export stringSubscriptRead, stringSubscriptCalc
+.import runtimeError
 
 ; This routine returns the string character at the given subscript.
 ;
@@ -29,13 +30,13 @@
     txa
     beq :+
     lda #rteValueOutOfRange
-    jsr rtRuntimeError
+    jsr runtimeError
 :   ldy #0
     lda (ptr1),y
     cmp tmp1
     bcs :+
     lda #rteValueOutOfRange
-    jsr rtRuntimeError
+    jsr runtimeError
 :   ldy tmp1
     ldx #0
     lda (ptr1),y
@@ -68,6 +69,6 @@
     sta ptr1 + 1
     rts
 RO: lda #rteValueOutOfRange     ; Index out of range
-    jsr rtRuntimeError
+    jsr runtimeError
 .endproc
 

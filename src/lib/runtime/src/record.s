@@ -14,6 +14,8 @@
 
 .export calcRecordOffset
 
+.import popax
+
 ; This routine calculates the address of a field in a record's
 ; heap buffer. It expects the field offset to be pushed onto the
 ; runtime stack and the record heap address to be passed in A/X.
@@ -22,7 +24,7 @@
 .proc calcRecordOffset
     sta ptr1
     stx ptr1 + 1
-    jsr rtPopAx
+    jsr popax
     sta tmp1
     stx tmp2
     lda ptr1

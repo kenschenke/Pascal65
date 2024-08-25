@@ -7,11 +7,11 @@
 ; exports
 
 .export rtStackCleanup, rtStackInit, pushIntStack, calcStackOffset
-.export storeIntStack, pushAddrStack, readIntStack, popToIntOp1
+.export storeIntStack, pushAddrStack, popToIntOp1
 .export popToIntOp2, pushFromIntOp1, pushRealStack, storeRealStack
-.export popToReal, readRealStack, readByteStack, pushByteStack
+.export popToReal, pushByteStack
 .export storeByteStack, pushStackFrameHeader, returnFromRoutine
-.export popToIntOp1And2, popToIntOp32, readInt32Stack
+.export popToIntOp1And2
 .export storeInt32Stack, pushFromIntOp1And2, pushVar, readVar
 
 ; imports
@@ -378,26 +378,6 @@ L4:
     jmp pusheax
 .endproc
 
-; Read the integer from the address in ptr1
-; Returned in A/X
-.proc readIntStack
-    ldy #1
-    lda (ptr1),y
-    tax
-    dey
-    lda (ptr1),y
-    rts
-.endproc
-
-; Read the byte from the address in ptr1
-; Returned in A
-.proc readByteStack
-    ldy #0
-    lda (ptr1),y
-    ldx #0
-    rts
-.endproc
-
 ; Store the integer at the top of the stack
 ; to the address in ptr1
 .proc storeIntStack
@@ -468,19 +448,6 @@ L4:
     rts
 .endproc
 
-; Pops the 32-bit integer at the top of the runtime
-; stack and stores it in intOp32
-.proc popToIntOp32
-    jsr popeax
-    sta intOp32
-    stx intOp32 + 1
-    lda sreg
-    sta intOp32 + 2
-    lda sreg + 1
-    sta intOp32 + 3
-    rts
-.endproc
-
 ; Pushes intOp1 onto the runtime stack
 .proc pushFromIntOp1
     lda #0
@@ -516,22 +483,6 @@ L4:
     sta FPBASE + FPACCE
     rts
 .endproc
-
-; Read the real and/or 32-bit integer from the address and leave in A/X/sreg
-readRealStack:
-readInt32Stack:
-    ldy #3
-    lda (ptr1),y
-    sta sreg + 1
-    dey
-    lda (ptr1),y
-    sta sreg
-    dey
-    lda (ptr1),y
-    tax
-    dey
-    lda (ptr1),y
-    rts
 
 ; This routine reads the value of a variable on the runtime stack and pushes
 ; onto the runtime stack

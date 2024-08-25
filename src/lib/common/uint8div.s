@@ -11,6 +11,8 @@ DIVOUT = $d76c
 
 .export divUint8
 
+.import runtimeError
+
 ; tmp3 - result
 ;
 ; This routine divides two unsigned 8-bit integers stored in intOp1 and intOp2.
@@ -27,7 +29,7 @@ DIVOUT = $d76c
     bne L1
     ; Divide by zero
     lda #rteDivisionByZero
-    jmp rtRuntimeError
+    jmp runtimeError
 
 L1:
     ; Special case - dividend is zero

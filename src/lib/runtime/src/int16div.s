@@ -20,7 +20,7 @@ DIVOUT = $d76c
 
 .export divInt16
 
-.import absInt16, invertInt16, isNegInt16, ltInt16, swapInt16
+.import absInt16, invertInt16, isNegInt16, ltInt16, swapInt16, runtimeError
 
 ; tmp1 - intOpt1 is -32768
 ; tmp2 - result is negative
@@ -51,7 +51,7 @@ DIVOUT = $d76c
     bne DividendCheck
     ; Divide by zero
     lda #rteDivisionByZero
-    jmp rtRuntimeError
+    jmp runtimeError
 
 DividendCheck:
     ; Special case - dividend is zero

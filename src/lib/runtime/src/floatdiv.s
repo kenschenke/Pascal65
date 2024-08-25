@@ -19,7 +19,7 @@
 
 .export FPDIV
 
-.import CALCPTR, EXMLDV, ROTATR, ROTATL, ROTL, MOVIND, CKSIGN
+.import CALCPTR, EXMLDV, ROTATR, ROTATL, ROTL, MOVIND, CKSIGN, runtimeError
 
 ; This routine divides FPACC by FPOP and leaves the result in FPACC.
 ; FPOP is also modified.
@@ -70,7 +70,7 @@ DIVIDE:
     jmp QUOROT
 DERROR:
     lda #rteDivisionByZero
-    jmp rtRuntimeError
+    jmp runtimeError
 NOGO:
     clc                 ; Negative result, clear carry
 QUOROT:
