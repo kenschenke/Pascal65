@@ -48,7 +48,7 @@ static char icodeAbsCall(CHUNKNUM argChunk)
 	retrieveChunk(arg.evalType, &argType);
 
 	icodeExpr(arg.left, 1);
-	icodeWriteUnary(IC_ABS, icodeOperShort(1, argType.kind));
+	icodeWriteUnaryShort(IC_ABS, argType.kind);
 
 	return argType.kind;
 }
@@ -73,14 +73,23 @@ static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(arg.evalType, &amtType);
 		amountType = amtType.kind;
 	} else {
-		icodeWriteUnary(IC_PSH, icodeOperShort(1, 1));
+		icodeWriteUnaryShort(IC_PSH, 1);
 		amountType = TYPE_BYTE;
+	}
+
+	if (varType.kind == TYPE_POINTER) {
+		struct type subtype;
+		// The increment amount needs to be multiplied by the
+		// size of the pointer's data type.
+		retrieveChunk(varType.subtype, &subtype);
+		icodeWriteUnary(IC_PSH, icodeOperInt(1, subtype.size));
+		icodeWriteTrinaryShort(IC_MUL, amountType, TYPE_INTEGER, amountType);
 	}
 
 	icodeExpr(varChunk, 0);	// push variable address onto stack
 
-	icodeWriteBinary(rc == rcInc ? IC_INC : IC_DEC,
-		icodeOperShort(1, varType.kind), icodeOperShort(2, amountType));
+	icodeWriteBinaryShort(rc == rcInc ? IC_INC : IC_DEC,
+		varType.kind, amountType);
 }
 
 static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk)
@@ -98,7 +107,7 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 	icodeWriteTrinary(IC_JSR, icodeOperLabel(1, enterLabel),
 		icodeOperShort(2, level), icodeOperShort(3, 0));
 
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, returnLabel));
+	icodeWriteUnaryLabel(IC_LOC, returnLabel);
 
 	retrieveChunk(pType->subtype, &rtnType);
 	return rtnType.kind;
@@ -122,7 +131,7 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	icodeWriteTrinary(IC_JSR, icodeOperLabel(1, enterLabel),
 		icodeOperShort(2, level), icodeOperBool(3, 1));
 
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, returnLabel));
+	icodeWriteUnaryLabel(IC_LOC, returnLabel);
 
 	// Tear down the routine's stack frame and free parameters
 	icodeRoutineCleanup(localVars, pType, numLocal,
@@ -154,7 +163,7 @@ static char icodePredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
 	}
 
 	icodeExpr(arg.left, 1);
-	icodeWriteUnary(rc == rcPred ? IC_PRE : IC_SUC, icodeOperShort(1, _type.kind));
+	icodeWriteUnaryShort(rc == rcPred ? IC_PRE : IC_SUC, _type.kind);
 
 	return _type.kind;
 }
@@ -176,8 +185,7 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		argValue = FH_STDIO;
 	}
 
-	icodeWriteBinary(IC_SFH, icodeOperShort(1, argValue),
-		icodeOperShort(2, 1));
+	icodeWriteBinaryShort(IC_SFH, argValue, 1);
 
 	while (argChunk) {
 		retrieveChunk(argChunk, &arg);
@@ -186,12 +194,12 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		if (readBytes) {
 			if (_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) {
 				icodeExpr(arg.left, 1);
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, _type.size));
-				icodeWriteUnary(IC_INP, icodeOperShort(1, TYPE_HEAP_BYTES));
+				icodeWriteUnaryWord(IC_PSH, _type.size);
+				icodeWriteUnaryShort(IC_INP, TYPE_HEAP_BYTES);
 			} else {
 				icodeExpr(arg.left, 0);
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, _type.size));
-				icodeWriteUnary(IC_INP, icodeOperShort(1, TYPE_SCALAR_BYTES));
+				icodeWriteUnaryWord(IC_PSH, _type.size);
+				icodeWriteUnaryShort(IC_INP, TYPE_SCALAR_BYTES);
 			}
 		} else if (_type.kind == TYPE_ARRAY) {
 			struct type subtype;
@@ -199,11 +207,11 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			// can only read into character arrays
 			if (subtype.kind == TYPE_CHARACTER) {
 				icodeExpr(arg.left, 0);
-				icodeWriteUnary(IC_INP, icodeOperShort(1, _type.kind));
+				icodeWriteUnaryShort(IC_INP, _type.kind);
 			}
 		} else {
 			icodeExpr(arg.left, 0);
-			icodeWriteUnary(IC_INP, icodeOperShort(1, _type.kind));
+			icodeWriteUnaryShort(IC_INP, _type.kind);
 		}
 
 		argChunk = arg.right;
@@ -213,8 +221,7 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		icodeWriteMnemonic(IC_CNL);
 	}
 
-	icodeWriteBinary(IC_SFH, icodeOperShort(1, 0),
-		icodeOperShort(2, 1));
+	icodeWriteBinaryShort(IC_SFH, 0, 1);
 }
 
 static void icodeRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
@@ -268,14 +275,14 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Allocate a second heap and make a copy of the variable
 			icodeExpr(_expr.left, 1);
-			icodeWriteUnary(IC_CPY, icodeOperWord(1, paramType.size));
+			icodeWriteUnaryWord(IC_CPY, paramType.size);
 		}
 		else if (paramType.kind == TYPE_STRING_VAR &&
 		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Convert the parameter into a string object
 			// Allocate a second heap and make a copy of the string
 			icodeExpr(_expr.left, argType.kind == TYPE_ARRAY ? 1 : 1);
-			icodeWriteUnary(IC_SCV, icodeOperShort(1, argType.kind));
+			icodeWriteUnaryShort(IC_SCV, argType.kind);
 		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			icodeExpr(_expr.left, 0);
@@ -289,7 +296,7 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 	}
 
 	// Activate the new stack frame
-	icodeWriteUnary(IC_ASF, icodeOperShort(1, sym.level));
+	icodeWriteUnaryShort(IC_ASF, sym.level);
 
 	return sym.level;
 }
@@ -347,8 +354,7 @@ static void icodeRoutineCleanup(char *localVars, struct type* pDeclType,
 		}
 	}
 
-	icodeWriteBinary(IC_POF, icodeOperShort(1, isFunc),
-		icodeOperShort(2, isLibrary));
+	icodeWriteBinaryShort(IC_POF, isFunc, isLibrary);
 }
 
 static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType)
@@ -377,7 +383,7 @@ static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struc
 	strcpy(startLabel, "RTN");
 	strcat(startLabel, formatInt16(chunkNum));
 	strcat(startLabel, "ENTER");
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, startLabel));
+	icodeWriteUnaryLabel(IC_LOC, startLabel);
 
 	// Push the local variables onto the stack
 	numLocals = icodeVariableDeclarations(_stmt.decl, localVars);
@@ -426,7 +432,7 @@ static char icodeSqrCall(CHUNKNUM argChunk)
 	retrieveChunk(arg.evalType, &argType);
 
 	icodeExpr(arg.left, 1);
-	icodeWriteUnary(IC_SQR, icodeOperShort(1, argType.kind));
+	icodeWriteUnaryShort(IC_SQR, argType.kind);
 
 	return argType.kind == TYPE_REAL ? TYPE_REAL : TYPE_LONGINT;
 }
@@ -522,8 +528,7 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		}
 	}
 
-	icodeWriteBinary(IC_SFH, icodeOperShort(1, argValue),
-		icodeOperShort(2, 0));
+	icodeWriteBinaryShort(IC_SFH, argValue, 0);
 
 	while (argChunk) {
 		retrieveChunk(argChunk, &arg);
@@ -544,20 +549,20 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_STRING_OBJ:
 			if (writeBytes) {
 				icodeExpr(arg.left, 1);
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, _type.size));
-				icodeWriteUnary(IC_OUT, icodeOperShort(1, TYPE_SCALAR_BYTES));
+				icodeWriteUnaryWord(IC_PSH, _type.size);
+				icodeWriteUnaryShort(IC_OUT, TYPE_SCALAR_BYTES);
 				break;
 			}
 			valType = icodeExpr(arg.left, 1);
 			if (arg.width) {
                 icodeExpr(arg.width, 1);
 			} else {
-                icodeWriteUnary(IC_PSH, icodeOperShort(1, 0));
+                icodeWriteUnaryShort(IC_PSH, 0);
 			}
             if (arg.precision) {
                 icodeExpr(arg.precision, 1);
             } else {
-                icodeWriteUnary(IC_PSH, icodeOperShort(1, 0xff));
+                icodeWriteUnaryShort(IC_PSH, 0xff);
             }
             icodeWriteUnary(IC_OUT, icodeOperByte(1, valType));
 			break;
@@ -565,8 +570,8 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_ARRAY:
 			if (writeBytes) {
 				icodeExpr(arg.left, 1);
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, _type.size));
-				icodeWriteUnary(IC_OUT, icodeOperShort(1, TYPE_HEAP_BYTES));
+				icodeWriteUnaryWord(IC_PSH, _type.size);
+				icodeWriteUnaryShort(IC_OUT, TYPE_HEAP_BYTES);
 			} else {
 				struct type subtype;
 				struct expr leftExpr;
@@ -580,9 +585,9 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 				if (arg.width) {
 					icodeExpr(arg.width, 1);
 				} else {
-					icodeWriteUnary(IC_PSH, icodeOperShort(1, 0));
+					icodeWriteUnaryShort(IC_PSH, 0);
 				}
-				icodeWriteUnary(IC_PSH, icodeOperShort(1, 0xff));
+				icodeWriteUnaryShort(IC_PSH, 0xff);
 				icodeWriteUnary(IC_OUT, icodeOperByte(1, valType));
 			}
 			break;
@@ -590,8 +595,8 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		case TYPE_RECORD:
 			if (writeBytes) {
 				icodeExpr(arg.left, 1);
-				icodeWriteUnary(IC_PSH, icodeOperWord(1, _type.size));
-				icodeWriteUnary(IC_OUT, icodeOperShort(1, TYPE_HEAP_BYTES));
+				icodeWriteUnaryWord(IC_PSH, _type.size);
+				icodeWriteUnaryShort(IC_OUT, TYPE_HEAP_BYTES);
 			}
 			break;
 		}
@@ -607,6 +612,5 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		icodeWriteMnemonic(IC_FSO);
 	}
 
-	icodeWriteBinary(IC_SFH, icodeOperShort(1, 0),
-		icodeOperShort(2, 0));
+	icodeWriteBinaryShort(IC_SFH, 0, 0);
 }

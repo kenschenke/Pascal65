@@ -123,6 +123,12 @@ CHUNKNUM parseFactor(char isVarInit)
 		getToken();
 		break;
 
+	case tcNIL:
+		parserValue.integer = 0;
+		exprChunk = exprCreate(EXPR_WORD_LITERAL, 0, 0, 0, &parserValue);
+		getToken();
+		break;
+
 	case tcString:
 		if (strlen(parserString) == 3) {
 			parserValue.character = parserString[1];
@@ -139,6 +145,11 @@ CHUNKNUM parseFactor(char isVarInit)
 	case tcNOT:
 		getToken();
 		return exprCreate(EXPR_NOT, parseFactor(0), 0, 0, 0);
+	
+	case tcAt:
+		getToken();
+		return exprCreate(EXPR_ADDRESS_OF, parseFactor(0), 0, 0, 0);
+		break;
 
 	case tcLParen: {
 		CHUNKNUM expr;
@@ -283,6 +294,11 @@ CHUNKNUM parseVariable(CHUNKNUM nameChunk)
 
 		case tcPeriod:
 			rootExpr = parseField(rootExpr);
+			break;
+		
+		case tcUpArrow:
+			rootExpr = exprCreate(EXPR_POINTER, rootExpr, 0, 0, 0);
+			getToken();
 			break;
 
 		default:

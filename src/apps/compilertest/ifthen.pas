@@ -4,6 +4,7 @@ Program IfThen;
 Var
     anyErrors : Boolean;
     i, j, k : Integer;
+    p : ^Integer;
 
 Procedure Error(num : Integer);
 Begin
@@ -28,6 +29,9 @@ Begin
     If Not (i > 526) Then Error(8);
     If i <> 528 Then Error(9);
     If Not (i > 526) Or (j > 1042) Then Error(10);
+
+    p := @i;
+    If p^ > 528 Then Error(11);
 
     If anyErrors Then Begin
         Write('Type any number to continue: ');

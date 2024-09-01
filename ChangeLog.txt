@@ -4,6 +4,7 @@
     NEW: Replace the "@" operator with "Not" for bitwise complements
     NEW: Array elements are now intialized to zero if no initial values are provided
     NEW: Add support for reading and writing files
+    NEW: Add pointers
 
 0.28-beta Jun 29 2024
     FIX: Fix negative array bounds : issue #15

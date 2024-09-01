@@ -200,6 +200,13 @@ CHUNKNUM parseConstant(CHUNKNUM* type) {
         *type = typeCreate(TYPE_BOOLEAN, 1, 0, 0);
         getToken();
         break;
+    
+    case tcNIL:
+        parserValue.integer = 0;
+        expr = exprCreate(EXPR_WORD_LITERAL, 0, 0, 0, &parserValue);
+        *type = typeCreate(TYPE_ADDRESS, 1, 0, 0);
+        getToken();
+        break;
 
     default:
         Error(errInvalidConstant);

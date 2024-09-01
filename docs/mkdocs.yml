@@ -18,6 +18,7 @@ nav:
     - Strings: langref/strings.md
     - Arrays: langref/arrays.md
     - Records: langref/records.md
+    - Pointers: langref/pointers.md
     - Operators: langref/operators.md
     - For Loops: langref/for.md
     - If Then Else: langref/ifelse.md
@@ -160,7 +161,7 @@ nav:
       - ROU: icode/mne/rou.md
       - SCV: icode/mne/scv.md
       - SET: icode/mne/set.md
-      - SOF: icode/mne/sof.md
+      - SFH: icode/mne/sfh.md
       - SQR: icode/mne/sqr.md
       - SSP: icode/mne/ssp.md
       - SSR: icode/mne/ssr.md

@@ -60,6 +60,8 @@ leftPtr: .res 2                 ; Preserve pointer to variable
     beq @Int16
     cpx #TYPE_INTEGER
     beq @Int16
+    cpx #TYPE_POINTER
+    beq @Int16
     cpx #TYPE_CARDINAL
     beq @Int32
     cpx #TYPE_LONGINT

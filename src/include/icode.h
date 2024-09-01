@@ -163,10 +163,15 @@ void icodeGen(void);
 void icodeWrite(CHUNKNUM astRoot);
 void icodeWriteMnemonic(ICODE_MNE instruction);
 void icodeWriteUnary(ICODE_MNE instruction, struct icode_operand *operand);
+void icodeWriteUnaryLabel(ICODE_MNE instruction, char *operand);
+void icodeWriteUnaryShort(ICODE_MNE instruction, char operand);
+void icodeWriteUnaryWord(ICODE_MNE instruction, unsigned short operand);
 void icodeWriteBinary(ICODE_MNE instruction, struct icode_operand *oper1,
     struct icode_operand *oper2);
+void icodeWriteBinaryShort(ICODE_MNE instruction, char oper1, char oper2);
 void icodeWriteTrinary(ICODE_MNE instruction, struct icode_operand *oper1,
     struct icode_operand *oper2, struct icode_operand *oper3);
+void icodeWriteTrinaryShort(ICODE_MNE instruction, char oper1, char oper2, char oper3);
 
 struct icode_operand* icodeOperChar(char num, char value);
 struct icode_operand* icodeOperBool(char num, char value);

@@ -256,7 +256,9 @@ typedef enum {
     EXPR_BITWISE_AND,
     EXPR_BITWISE_OR,
     EXPR_BITWISE_LSHIFT,
-    EXPR_BITWISE_RSHIFT
+    EXPR_BITWISE_RSHIFT,
+    EXPR_ADDRESS_OF,
+    EXPR_POINTER,
 } expr_t;
 
 struct expr {
@@ -495,6 +497,15 @@ struct expr {
         kind: EXPR_ARG
         left: expression to pass as argument
         right: next argument
+    
+    Pointers:   identifier^
+        kind: EXPR_POINTER
+        name: name of pointer identifier
+        node: symbol table node of identifier
+    
+    Address-Of:  @identifier
+        kind: EXPR_ADDRESS_OF
+        left: identifier expression
 
 */
 
@@ -528,6 +539,8 @@ typedef enum {
     TYPE_TEXT,
     TYPE_SCALAR_BYTES,                 // Used to write to files
     TYPE_HEAP_BYTES,                   // Used to write to files
+    TYPE_POINTER,
+    TYPE_ADDRESS,
 } type_t;
 // CAUTION. Do not rearrange this list without also changing
 // the values in types.inc.

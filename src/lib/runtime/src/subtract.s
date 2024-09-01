@@ -38,6 +38,10 @@
     beq sub16
     cpy #TYPE_INTEGER
     beq sub16
+    cpy #TYPE_ADDRESS
+    beq sub16
+    cpy #TYPE_POINTER
+    beq sub16
     cpy #TYPE_CARDINAL
     beq sub32
     cpy #TYPE_LONGINT

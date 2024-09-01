@@ -196,13 +196,13 @@ void icodeWrite(CHUNKNUM astRoot)
 	numToPop += icodeUnitDeclarations();
 
 	// Skip over global function/procedure declarations and start main code
-    icodeWriteUnary(IC_BRA, icodeOperLabel(1, "MAIN"));
+    icodeWriteUnaryLabel(IC_BRA, "MAIN");
 
 	icodeRoutineDeclarations(_stmt.decl);
 
     icodeUnitRoutines();
 
-    icodeWriteUnary(IC_LOC, icodeOperLabel(1, "MAIN"));
+    icodeWriteUnaryLabel(IC_LOC, "MAIN");
 	icodeStmts(_stmt.body);
 
 	scope_exit();
@@ -252,12 +252,32 @@ void icodeWriteUnary(ICODE_MNE instruction, struct icode_operand *pOper)
     icodeWriteOperand(pOper);
 }
 
+void icodeWriteUnaryLabel(ICODE_MNE instruction, char *operand)
+{
+    icodeWriteUnary(instruction, icodeOperLabel(1, operand));
+}
+
+void icodeWriteUnaryShort(ICODE_MNE instruction, char operand)
+{
+    icodeWriteUnary(instruction, icodeOperShort(1, operand));
+}
+
+void icodeWriteUnaryWord(ICODE_MNE instruction, unsigned short operand)
+{
+    icodeWriteUnary(instruction, icodeOperWord(1, operand));
+}
+
 void icodeWriteBinary(ICODE_MNE instruction, struct icode_operand *pOper1,
     struct icode_operand *pOper2)
 {
     icodeWriteMnemonic(instruction);
     icodeWriteOperand(pOper1);
     icodeWriteOperand(pOper2);
+}
+
+void icodeWriteBinaryShort(ICODE_MNE instruction, char oper1, char oper2)
+{
+    icodeWriteBinary(instruction, icodeOperShort(1, oper1), icodeOperShort(2, oper2));
 }
 
 void icodeWriteTrinary(ICODE_MNE instruction, struct icode_operand *pOper1,
@@ -267,6 +287,12 @@ void icodeWriteTrinary(ICODE_MNE instruction, struct icode_operand *pOper1,
     icodeWriteOperand(pOper1);
     icodeWriteOperand(pOper2);
     icodeWriteOperand(pOper3);
+}
+
+void icodeWriteTrinaryShort(ICODE_MNE instruction, char oper1, char oper2, char oper3)
+{
+    icodeWriteTrinary(instruction, icodeOperShort(1, oper1),
+        icodeOperShort(2, oper2), icodeOperShort(3, oper3));
 }
 
 char icodeDWordValue(CHUNKNUM chunkNum)
@@ -346,7 +372,7 @@ char icodeShortValue(CHUNKNUM chunkNum)
         }
     }
 
-    icodeWriteUnary(IC_PSH, icodeOperShort(1, _expr.value.shortInt));
+    icodeWriteUnaryShort(IC_PSH, _expr.value.shortInt);
     return _type.kind;
 }
 
@@ -377,7 +403,7 @@ char icodeWordValue(CHUNKNUM chunkNum)
         }
     }
 
-    icodeWriteUnary(IC_PSH, icodeOperWord(1, _expr.value.word));
+    icodeWriteUnaryWord(IC_PSH, _expr.value.word);
     return _type.kind;
 }
 

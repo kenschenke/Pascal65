@@ -61,7 +61,7 @@ static void icodeCaseStmt(struct stmt* pStmt)
 		strcpy(endLabel, "ENDCASE");
 		strcat(endLabel, formatInt16(num));
 
-		icodeWriteUnary(IC_LOC, icodeOperLabel(1, branchLabel));
+		icodeWriteUnaryLabel(IC_LOC, branchLabel);
 
 		// Loop through the labels for this case branch
 		exprChunk = labelStmt.expr;
@@ -72,31 +72,30 @@ static void icodeCaseStmt(struct stmt* pStmt)
 
 			icodeExpr(pStmt->expr, 1);
 			icodeExpr(exprChunk, 1);
-			icodeWriteBinary(IC_EQU, icodeOperShort(1, exprType.kind),
-				icodeOperShort(2, labelType.kind));
-			icodeWriteUnary(IC_BIT, icodeOperLabel(1, bodyLabel));
+			icodeWriteBinaryShort(IC_EQU, exprType.kind, labelType.kind);
+			icodeWriteUnaryLabel(IC_BIT, bodyLabel);
 
 			exprChunk = _expr.right;
 		}
 
 		if (labelStmt.next) {
-			icodeWriteUnary(IC_BRA, icodeOperLabel(1, nextLabel));
+			icodeWriteUnaryLabel(IC_BRA, nextLabel);
 		}
 		else {
-			icodeWriteUnary(IC_BRA, icodeOperLabel(1, endLabel));
+			icodeWriteUnaryLabel(IC_BRA, endLabel);
 		}
 
-		icodeWriteUnary(IC_LOC, icodeOperLabel(1, bodyLabel));
+		icodeWriteUnaryLabel(IC_LOC, bodyLabel);
 		icodeStmts(labelStmt.body);
 		if (labelStmt.next) {
-			icodeWriteUnary(IC_BRA, icodeOperLabel(1, endLabel));
+			icodeWriteUnaryLabel(IC_BRA, endLabel);
 		}
 
 		++branch;
 		labelChunk = labelStmt.next;
 	}
 
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, endLabel));
+	icodeWriteUnaryLabel(IC_LOC, endLabel);
 }
 
 static void icodeForLoop(struct stmt* pStmt)
@@ -125,7 +124,7 @@ static void icodeForLoop(struct stmt* pStmt)
 	icodeExpr(pStmt->init_expr, 1);
 
 	// Initialize the start of each iteration
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, loopLabel));
+	icodeWriteUnaryLabel(IC_LOC, loopLabel);
 	// Push the value of the control variable onto the stack
 	controlKind = icodeExpr(controlExpr, 1);
 
@@ -135,23 +134,23 @@ static void icodeForLoop(struct stmt* pStmt)
 	// Compare the control value to the target value
 	retrieveChunk(pStmt->to_expr, &_expr);
 	// retrieveChunk(_expr.evalType, &targetType);
-	icodeWriteBinary(pStmt->isDownTo ? IC_LST : IC_GRT,
-		icodeOperShort(1, controlKind), icodeOperShort(2, targetKind));
-	icodeWriteUnary(IC_BIT, icodeOperLabel(1, endLabel));
+	icodeWriteBinaryShort(pStmt->isDownTo ? IC_LST : IC_GRT,
+		controlKind, targetKind);
+	icodeWriteUnaryLabel(IC_BIT, endLabel);
 
 	icodeStmts(pStmt->body);
 
 	// Increment (or decrement) the control variable
 	icodeExpr(controlExpr, 1);
-	icodeWriteUnary(pStmt->isDownTo ? IC_PRE : IC_SUC, icodeOperShort(1, controlKind));
+	icodeWriteUnaryShort(pStmt->isDownTo ? IC_PRE : IC_SUC, controlKind);
 	icodeWriteUnary(IC_PSH, icodeOperVar(1,
 		(controlType.flags & TYPE_FLAG_ISBYREF) ? IC_VVW : IC_VDW,
 			controlKind, sym.level, sym.offset));
-	icodeWriteBinary(IC_SET, icodeOperShort(1, controlKind), icodeOperShort(2, controlKind));
+	icodeWriteBinaryShort(IC_SET, controlKind, controlKind);
 
 	// Jump back up and check the control variable for the next iteration
-	icodeWriteUnary(IC_BRA, icodeOperLabel(1, loopLabel));
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, endLabel));
+	icodeWriteUnaryLabel(IC_BRA, loopLabel);
+	icodeWriteUnaryLabel(IC_LOC, endLabel);
 }
 
 static void icodeIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
@@ -176,12 +175,12 @@ static void icodeIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 
 	icodeStmts(pStmt->body);
 	if (pStmt->else_body) {
-		icodeWriteUnary(IC_BRA, icodeOperLabel(1, endLabel));
-		icodeWriteUnary(IC_LOC, icodeOperLabel(1, elseLabel));
+		icodeWriteUnaryLabel(IC_BRA, endLabel);
+		icodeWriteUnaryLabel(IC_LOC, elseLabel);
 		icodeStmts(pStmt->else_body);
 	}
 
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, endLabel));
+	icodeWriteUnaryLabel(IC_LOC, endLabel);
 }
 
 static void icodeRepeatStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
@@ -190,12 +189,12 @@ static void icodeRepeatStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 
 	strcpy(label, "REPEAT");
 	strcat(label, formatInt16(chunkNum));
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, label));
+	icodeWriteUnaryLabel(IC_LOC, label);
 	icodeStmts(pStmt->body);
 
 	// Evaluate the expression
 	icodeExpr(pStmt->expr, 1);
-	icodeWriteUnary(IC_BIF, icodeOperLabel(1, label));
+	icodeWriteUnaryLabel(IC_BIF, label);
 }
 
 void icodeStmts(CHUNKNUM chunkNum)
@@ -248,15 +247,15 @@ static void icodeWhileStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	strcpy(endLabel, "ENDWHILE");
 	strcat(endLabel, formatInt16(chunkNum));
 
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, startLabel));
+	icodeWriteUnaryLabel(IC_LOC, startLabel);
 
 	// Evaluate the expression
 	icodeExpr(pStmt->expr, 1);
-	icodeWriteUnary(IC_BIF, icodeOperLabel(1, endLabel));
+	icodeWriteUnaryLabel(IC_BIF, endLabel);
 
 	icodeStmts(pStmt->body);
-	icodeWriteUnary(IC_BRA, icodeOperLabel(1, startLabel));
+	icodeWriteUnaryLabel(IC_BRA, startLabel);
 
-	icodeWriteUnary(IC_LOC, icodeOperLabel(1, endLabel));
+	icodeWriteUnaryLabel(IC_LOC, endLabel);
 }
 

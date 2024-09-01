@@ -57,6 +57,10 @@
     beq SINT8
     cmp #TYPE_WORD
     beq UINT16
+    cmp #TYPE_ADDRESS
+    beq UINT16
+    cmp #TYPE_POINTER
+    beq UINT16
     cmp #TYPE_INTEGER
     beq SINT16
     cmp #TYPE_CARDINAL
@@ -156,6 +160,10 @@ Done:
     cpx #TYPE_BYTE
     beq Done
     cpx #TYPE_INTEGER
+    beq Done
+    cpx #TYPE_POINTER
+    beq Done
+    cpx #TYPE_ADDRESS
     beq Done
     cpx #TYPE_REAL
     beq @ToReal

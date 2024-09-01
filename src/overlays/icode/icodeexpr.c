@@ -18,7 +18,8 @@
 
 static void getExprType(CHUNKNUM chunkNum, struct type* pType);
 static char getExprTypeKind(CHUNKNUM chunkNum);
-static void icodeCompExpr(unsigned char oper, struct expr* pExpr);
+static char icodeCompExpr(struct expr* pExpr);
+static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref);
 static char icodeIntOrRealMath(struct expr* pExpr);
 
 static void getExprType(CHUNKNUM chunkNum, struct type* pType)
@@ -37,9 +38,19 @@ static char getExprTypeKind(CHUNKNUM chunkNum)
 	return _type.kind;
 }
 
-static void icodeCompExpr(unsigned char oper, struct expr* pExpr)
+static char icodeCompExpr(struct expr* pExpr)
 {
+	unsigned char oper;
 	char leftKind, rightKind;
+
+	switch (pExpr->kind) {
+	case EXPR_EQ:	oper = IC_EQU; break;
+	case EXPR_LT:	oper = IC_LST; break;
+	case EXPR_LTE:	oper = IC_LSE; break;
+	case EXPR_GT:	oper = IC_GRT; break;
+	case EXPR_GTE:	oper = IC_GTE; break;
+	case EXPR_NE:	oper = IC_NEQ; break;
+	}
 
 	leftKind = icodeExpr(pExpr->left, 1);
 	rightKind = icodeExpr(pExpr->right, 1);
@@ -51,25 +62,18 @@ static void icodeCompExpr(unsigned char oper, struct expr* pExpr)
         rightKind = TYPE_WORD;
     }
 
-	// genTwo(LDA_IMMEDIATE, getExprTypeKind(_expr.left));
-	// genTwo(LDX_IMMEDIATE, getExprTypeKind(_expr.right));
-	icodeWriteBinary(oper, icodeOperShort(1, leftKind),
-		icodeOperShort(2, rightKind));
-	// if (_expr.kind == EXPR_DIV) {
-	// 	genThreeAddr(JSR, RT_DIVIDE);
-	// } else if (_expr.kind == EXPR_MOD) {
-	// 	genThreeAddr(JSR, RT_MOD);
-	// 	if (noStack) {
-	// 		genThreeAddr(JSR, RT_POPEAX);
-	// 	}
-	// } else {
-	// 	genTwo(LDY_IMMEDIATE, _expr.kind);
-	// 	genThreeAddr(JSR, RT_COMP);
-	// }
+	icodeWriteBinaryShort(oper, leftKind, rightKind);
+
+	return TYPE_BOOLEAN;
+}
+
+char icodeExpr(CHUNKNUM chunkNum, char isRead)
+{
+	return icodeExprPvt(chunkNum, isRead, 1);
 }
 
 // Returns TYPE_* of expression
-char icodeExpr(CHUNKNUM chunkNum, char isRead)
+static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 {
 	char name[CHUNK_LEN + 1];
 	struct expr _expr, exprLeft, exprRight;
@@ -83,9 +87,8 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
 			icodeExpr(_expr.left, 1);
 			icodeExpr(_expr.right, 1);
-			icodeWriteBinary(IC_CCT,
-				icodeOperShort(1, getExprTypeKind(_expr.left)),
-				icodeOperShort(2, getExprTypeKind(_expr.right)));
+			icodeWriteBinaryShort(IC_CCT, getExprTypeKind(_expr.left),
+				getExprTypeKind(_expr.right));
 			resultType.kind = TYPE_STRING_OBJ;
 		} else {
 			resultType.kind = icodeIntOrRealMath(&_expr);
@@ -122,34 +125,30 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 
 		icodeExpr(_expr.left, 1);
 		icodeExpr(_expr.right, 1);
-		icodeWriteTrinary(call, icodeOperShort(1, getExprTypeKind(_expr.left)),
-			icodeOperShort(2, getExprTypeKind(_expr.right)),
-			icodeOperShort(3, resultType.kind));
+		icodeWriteTrinaryShort(call, getExprTypeKind(_expr.left),
+			getExprTypeKind(_expr.right), resultType.kind);
 		break;
 	}
 
-	case EXPR_EQ:	icodeCompExpr(IC_EQU, &_expr); resultType.kind=TYPE_BOOLEAN; break;
-	case EXPR_LT:	icodeCompExpr(IC_LST, &_expr); resultType.kind=TYPE_BOOLEAN; break;
-	case EXPR_LTE:	icodeCompExpr(IC_LSE, &_expr); resultType.kind=TYPE_BOOLEAN; break;
-	case EXPR_GT:	icodeCompExpr(IC_GRT, &_expr); resultType.kind=TYPE_BOOLEAN; break;
-	case EXPR_GTE:	icodeCompExpr(IC_GTE, &_expr); resultType.kind=TYPE_BOOLEAN; break;
-	case EXPR_NE:	icodeCompExpr(IC_NEQ, &_expr); resultType.kind=TYPE_BOOLEAN; break;
+	case EXPR_EQ:
+	case EXPR_LT:
+	case EXPR_LTE:
+	case EXPR_GT:
+	case EXPR_GTE:
+	case EXPR_NE:
+		resultType.kind = icodeCompExpr(&_expr);
+		break;
 
 	case EXPR_DIV:
+	case EXPR_MOD: {
+		char kind = getExprTypeKind(_expr.left);
 		icodeExpr(_expr.left, 1);
 		icodeExpr(_expr.right, 1);
-		icodeWriteBinary(IC_DIV, icodeOperShort(1, getExprTypeKind(_expr.left)),
-			icodeOperShort(2, getExprTypeKind(_expr.right)));
-		resultType.kind = TYPE_REAL;
+		icodeWriteBinaryShort(_expr.kind == EXPR_DIV ? IC_DIV : IC_MOD,
+			kind, getExprTypeKind(_expr.right));
+		resultType.kind = _expr.kind == EXPR_DIV ? TYPE_REAL : kind;
 		break;
-
-	case EXPR_MOD:
-		icodeExpr(_expr.left, 1);
-		icodeExpr(_expr.right, 1);
-		resultType.kind = getExprTypeKind(_expr.left);
-		icodeWriteBinary(IC_MOD, icodeOperShort(1, resultType.kind),
-			icodeOperShort(2, getExprTypeKind(_expr.right)));
-		break;
+	}
 
 	case EXPR_AND:
 	case EXPR_OR:
@@ -164,7 +163,7 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		if (resultType.kind == TYPE_BOOLEAN) {
 			icodeWriteMnemonic(IC_NOT);
 		} else {
-			icodeWriteUnary(IC_BWC, icodeOperShort(1, resultType.kind));
+			icodeWriteUnaryShort(IC_BWC, resultType.kind);
 		}
 		break;
 
@@ -180,10 +179,31 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		getBaseType(&rightType);
 
 		icodeExpr(_expr.right, 1);
-		icodeExpr(_expr.left, 0);
-		icodeWriteBinary(IC_SET, icodeOperShort(1, leftType.kind),
-			icodeOperShort(2, rightType.kind));
+		icodeExprPvt(_expr.left, 0, exprLeft.kind == TYPE_POINTER ? 1 : 0);
+		icodeWriteBinaryShort(IC_SET, leftType.kind, rightType.kind);
 		resultType.kind = TYPE_VOID;
+		break;
+	
+	case EXPR_POINTER:
+		getExprType(_expr.left, &leftType);
+		retrieveChunk(leftType.subtype, &leftType);
+		getBaseType(&leftType);
+		icodeExprPvt(_expr.left, 1, 0);
+		if (isRead && (leftType.kind == TYPE_ARRAY ||
+			leftType.kind == TYPE_RECORD ||
+			leftType.kind == TYPE_STRING_OBJ ||
+			leftType.kind == TYPE_STRING_VAR)) {
+			icodeWriteUnaryShort(IC_MEM, leftType.kind);
+		}
+		else if (isDeref) {
+			icodeWriteUnaryShort(IC_MEM, leftType.kind);
+			resultType.kind = leftType.kind;
+		}
+		break;
+	
+	case EXPR_ADDRESS_OF:
+		icodeExprPvt(_expr.left, 0, 0);
+		resultType.kind = TYPE_ADDRESS;
 		break;
 
 	case EXPR_BOOLEAN_LITERAL:
@@ -241,12 +261,18 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 			struct expr value;
 			retrieveChunk(sym.decl, &_decl);
 			retrieveChunk(_decl.value, &value);
-			icodeWriteUnary(IC_PSH, icodeOperWord(1, value.value.word));
+			icodeWriteUnaryWord(IC_PSH, value.value.word);
 		}
 		else {
+			struct type subtype;
 			char kind = rightType.kind;
-			char isByRef = (rightType.flags & TYPE_FLAG_ISBYREF);
-			char oper;
+			char isByRef, oper;
+			if (rightType.subtype && rightType.kind == TYPE_POINTER) {
+				retrieveChunk(rightType.subtype, &subtype);
+			} else {
+				subtype.flags = rightType.flags;
+			}
+			isByRef = (subtype.flags & TYPE_FLAG_ISBYREF);
 			if (isRead) {
 				oper = isByRef ? IC_VVR : IC_VDR;
 			} else {
@@ -254,7 +280,7 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 			}
 			icodeVar(oper, kind, (unsigned char)sym.level, (unsigned char)sym.offset);
 			if (isByRef && isRead) {
-				icodeWriteUnary(IC_MEM, icodeOperShort(1, kind));
+				icodeWriteUnaryShort(IC_MEM, kind);
 			}
 			resultType.kind = rightType.kind;
 		}
@@ -284,7 +310,10 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		}
 
 		if (exprLeft.kind != EXPR_NAME) {
-			icodeExpr(_expr.left, 0);
+			icodeExprPvt(_expr.left, 0, isDeref);
+			if (!isRead && exprLeft.kind == EXPR_POINTER) {
+				icodeWriteUnaryShort(IC_MEM, TYPE_ADDRESS);
+			}
 			icodeExpr(_expr.right, 1);
 		}
 		else {
@@ -296,7 +325,7 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 
 		retrieveChunk(_expr.right, &exprRight);
 		retrieveChunk(exprRight.evalType, &rightType);
-		icodeWriteUnary(IC_AIX, icodeOperShort(1, rightType.kind));
+		icodeWriteUnaryShort(IC_AIX, rightType.kind);
 
 		if (isRead) {
 			getExprType(_expr.left, &leftType);
@@ -305,7 +334,7 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 			if (leftType.kind == TYPE_ARRAY) {
 				retrieveChunk(leftType.subtype, &leftType);
 			}
-			icodeWriteUnary(IC_MEM, icodeOperShort(1, leftType.kind));
+			icodeWriteUnaryShort(IC_MEM, leftType.kind);
 			resultType.kind = leftType.kind;
 		}
 		break;
@@ -329,6 +358,9 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 		retrieveChunk(exprRight.name, name);
 		symtab_lookup(leftType.symtab, name, &sym);
 		// Look up the field offset
+		if (exprLeft.kind == EXPR_POINTER) {
+			retrieveChunk(exprLeft.left, &exprLeft);
+		}
 		if (exprLeft.kind != EXPR_NAME) {
 			icodeExpr(_expr.left, 0);
 		}
@@ -336,14 +368,13 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 			icodeExpr(_expr.left, 1);
 		}
 		if (sym.offset) {
-			icodeWriteUnary(IC_PSH, icodeOperWord(1, sym.offset));
-			icodeWriteTrinary(IC_ADD, icodeOperShort(1, TYPE_WORD),
-				icodeOperShort(2, TYPE_WORD), icodeOperShort(3, TYPE_WORD));
+			icodeWriteUnaryWord(IC_PSH, sym.offset);
+			icodeWriteTrinaryShort(IC_ADD, TYPE_WORD, TYPE_WORD, TYPE_WORD);
 		}
 
 		resultType.kind = getExprTypeKind(_expr.right);
 		if (isRead) {
-			icodeWriteUnary(IC_MEM, icodeOperShort(1, resultType.kind));
+			icodeWriteUnaryShort(IC_MEM, resultType.kind);
 		}
 		break;
 
@@ -378,6 +409,18 @@ static char icodeIntOrRealMath(struct expr* pExpr)
 		case EXPR_MUL:
             instruction = IC_MUL;
 			break;
+	}
+
+	if (pExpr->kind != EXPR_MUL) {
+		if (leftType == TYPE_POINTER) {
+			struct expr _expr;
+			struct type _type;
+			retrieveChunk(pExpr->left, &_expr);
+			retrieveChunk(_expr.evalType, &_type);
+			retrieveChunk(_type.subtype, &_type);
+			icodeWriteUnary(IC_PSH, icodeOperInt(1, _type.size));
+			icodeWriteTrinaryShort(IC_MUL, rightType, TYPE_INTEGER, rightType);
+		}
 	}
 
     icodeWriteTrinary(instruction, icodeOperByte(1, leftType),

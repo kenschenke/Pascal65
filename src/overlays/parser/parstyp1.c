@@ -353,6 +353,19 @@ CHUNKNUM parseTypeSpec(void)
 	case tcString:
 		type = parseSubrangeType(0);
 		break;
+	
+	case tcUpArrow: {
+		CHUNKNUM chunkNum;
+		struct type subtype;
+		char name[23];
+		getToken();
+		chunkNum = parseTypeSpec();
+		retrieveChunk(chunkNum, &subtype);
+		memset(name, 0, sizeof(name));
+		retrieveChunk(subtype.name, name);
+		type = typeCreate(TYPE_POINTER, 0, chunkNum, 0);
+		break;
+	}
 
 	default:
 		Error(errInvalidType);

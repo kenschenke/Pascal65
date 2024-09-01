@@ -105,8 +105,13 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc)
 				storeChunk(returnChunk, &_type);
 			}
 			else {
-				// The return type should be one of the pre-defined Pascal types.
+				char isPtr = 0;
 				type_t type = 0;
+				if (parserToken == tcUpArrow) {
+					getToken();
+					isPtr = 1;
+				}
+				// The return type should be one of the pre-defined Pascal types.
 				switch (parserToken) {
 				case tcBYTE: type = TYPE_BYTE; break;
 				case tcSHORTINT: type = TYPE_SHORTINT; break;
@@ -122,6 +127,9 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc)
 					Error(errIncompatibleTypes);
 				}
 				returnChunk = typeCreate(type, 0, 0, 0);
+				if (isPtr) {
+					returnChunk = typeCreate(TYPE_POINTER, 0, returnChunk, 0);
+				}
 			}
 
 			getToken();

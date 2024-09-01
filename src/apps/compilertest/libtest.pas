@@ -17,6 +17,10 @@ Begin
 End;
 
 Begin
+	Writeln('Running');
+	
+    anyErrors := false;
+
     If DemoArea(5, 6) <> 30 Then Error(1);
 
     i := 1234;

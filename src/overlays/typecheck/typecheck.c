@@ -296,6 +296,36 @@ static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 		}
 		pResultType->kind = TYPE_VOID;
 	}
+	else if (pLeftType->kind == TYPE_POINTER) {
+		struct type subtype, rtype;
+		struct symbol sym;
+	
+		if (exprRight.kind == EXPR_BYTE_LITERAL ||
+			exprRight.kind == EXPR_WORD_LITERAL) {
+			// assignment okay
+		} else {
+			char subscript = 0;  // non-zero if address of array subscript
+			retrieveChunk(pLeftType->subtype, &subtype);
+			retrieveChunk(exprRight.left, &exprRight);
+			if (exprRight.kind == EXPR_SUBSCRIPT) {
+				retrieveChunk(exprRight.left, &exprRight);
+				subscript = 1;
+			}
+			retrieveChunk(exprRight.node, &sym);
+			retrieveChunk(sym.type, &rtype);
+			getBaseType(&subtype);
+			if (rtype.kind == TYPE_ARRAY && subscript) {
+				retrieveChunk(rtype.subtype, &rtype);
+			}
+			if (rtype.kind == TYPE_POINTER) {
+				// assignment okay
+			}
+			else if (subtype.kind != rtype.kind) {
+				Error(errIncompatibleAssignment);
+				pResultType->kind = TYPE_VOID;
+			}
+		}
+	}
 	else {
 		Error(errIncompatibleAssignment);
 		pResultType->kind = TYPE_VOID;
@@ -321,11 +351,11 @@ static void checkDecIncCall(CHUNKNUM argChunk)
 	}
 
 	// Look at the first argument.
-	// Tt must be an integer, character, or enumeration
+	// It must be an integer, character, pointer, or enumeration
 	retrieveChunk(argChunk, &_expr);
 	expr_typecheck(_expr.left, 0, &_type, 0);
 	if (!isTypeInteger(_type.kind) && _type.kind != TYPE_CHARACTER &&
-		_type.kind != TYPE_ENUMERATION) {
+		_type.kind != TYPE_ENUMERATION && _type.kind != TYPE_POINTER) {
 		Error(errInvalidType);
 		return;
 	}
@@ -554,6 +584,15 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 				Error(errInvalidType);
 			}
 		}
+		else if (paramType.kind == TYPE_POINTER && argType.kind == TYPE_ADDRESS) {
+			struct type paramSubType, argSubType;
+
+			retrieveChunk(paramType.subtype, &paramSubType);
+			retrieveChunk(argType.subtype, &argSubType);
+			if (paramSubType.kind != argSubType.kind) {
+				Error(errIncompatibleTypes);
+			}
+		}
 		else if (paramType.kind != argType.kind) {
 			Error(errInvalidType);
 		}
@@ -567,7 +606,8 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 			}
 			if (exprLeft.kind != EXPR_SUBSCRIPT &&
 				exprLeft.kind != EXPR_NAME &&
-				exprLeft.kind != EXPR_FIELD) {
+				exprLeft.kind != EXPR_FIELD &&
+				exprLeft.kind != EXPR_POINTER) {
 				Error(errInvalidVarParm);
 			}
 			else if (argType.flags & TYPE_FLAG_ISCONST) {
@@ -660,7 +700,7 @@ static void checkPredSuccCall(CHUNKNUM argChunk, struct type* pRetnType)
 
 static void checkReadReadlnCall(CHUNKNUM argChunk, char routineCode)
 {
-	char first = 1;
+	char first = 1, subscript = 0;
 	char name[CHUNK_LEN + 1];
 	struct expr _expr, exprLeft;
 	struct symbol sym;
@@ -682,19 +722,34 @@ static void checkReadReadlnCall(CHUNKNUM argChunk, char routineCode)
 		storeChunk(_expr.evalType, &_type);
 		storeChunk(argChunk, &_expr);
 
+		if (exprLeft.kind == EXPR_SUBSCRIPT) {
+			retrieveChunk(exprLeft.left, &exprLeft);
+			subscript = 1;
+		}
+		if (exprLeft.kind == EXPR_POINTER) {
+			retrieveChunk(exprLeft.left, &exprLeft);
+		}
 		if (exprLeft.kind != EXPR_NAME) {
 			Error(errInvalidVarParm);
+			argChunk = _expr.right;
 			continue;
 		}
 
 		retrieveChunk(exprLeft.name, name);
 		if (!scope_lookup(name, &sym)) {
 			Error(errUndefinedIdentifier);
+			argChunk = _expr.right;
 			continue;
 		}
 
 		retrieveChunk(sym.type, &_type);
+		if (subscript) {
+			retrieveChunk(_type.subtype, &_type);
+		}
 		getBaseType(&_type);
+		if (subscript) {
+			retrieveChunk(_type.subtype, &_type);
+		}
 		switch (_type.kind) {
 		case TYPE_ARRAY:
 			retrieveChunk(_type.subtype, &subtype);
@@ -781,6 +836,19 @@ static void checkRelOpOperands(struct type* pType1, struct type* pType2)
 	if ((type1.kind == TYPE_ENUMERATION || type1.kind == TYPE_ENUMERATION_VALUE) &&
 		(type2.kind == TYPE_ENUMERATION || type2.kind == TYPE_ENUMERATION_VALUE)) {
 		if (type1.subtype != type2.subtype) {
+			Error(errIncompatibleTypes);
+		}
+		return;
+	}
+
+	if (type1.kind == TYPE_POINTER || type2.kind == TYPE_POINTER) {
+		if (type1.kind == TYPE_POINTER || type1.kind == TYPE_ADDRESS) {
+			retrieveChunk(type1.subtype, &type1);
+		}
+		if (type2.kind == TYPE_POINTER || type2.kind == TYPE_ADDRESS) {
+			retrieveChunk(type2.subtype, &type2);
+		}
+		if (type1.kind != type2.kind) {
 			Error(errIncompatibleTypes);
 		}
 		return;
@@ -1077,7 +1145,7 @@ static void getArrayType(CHUNKNUM exprChunk, struct type* pType)
 	struct expr _expr;
 
 	retrieveChunk(exprChunk, &_expr);
-	if (_expr.kind == EXPR_SUBSCRIPT) {
+	if (_expr.kind == EXPR_SUBSCRIPT || _expr.kind == EXPR_POINTER) {
 		getArrayType(_expr.left, pType);
 		retrieveChunk(pType->subtype, pType);
 	}
@@ -1189,6 +1257,13 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
 			pType->kind = TYPE_STRING_OBJ;
 			pType->size = 2;
+		} else if (leftType.kind == TYPE_POINTER) {
+			if (!isTypeInteger(rightType.kind)) {
+				Error(errIncompatibleTypes);
+				pType->kind = TYPE_VOID;
+			} else {
+				pType->kind = TYPE_ADDRESS;
+			}
 		} else {
 			pType->kind = realOperands(leftType.kind, rightType.kind, &pType->size);
 		}
@@ -1196,7 +1271,16 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 
 	case EXPR_SUB:
 	case EXPR_MUL:
-		pType->kind = realOperands(leftType.kind, rightType.kind, &pType->size);
+		if (leftType.kind == TYPE_POINTER) {
+			if (_expr.kind != EXPR_SUB || !isTypeInteger(rightType.kind)) {
+				Error(errIncompatibleTypes);
+				pType->kind = TYPE_VOID;
+			} else {
+				pType->kind = TYPE_ADDRESS;
+			}
+		} else {
+			pType->kind = realOperands(leftType.kind, rightType.kind, &pType->size);
+		}
 		break;
 
 	case EXPR_DIV:
@@ -1404,6 +1488,18 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 
 	case EXPR_ARRAY_LITERAL:
 		// Do nothing here. This is checked in decl_typecheck.
+		break;
+	
+	case EXPR_ADDRESS_OF:
+		pType->kind = TYPE_ADDRESS;
+		pType->subtype = typeCreate(leftType.kind, 0, 0, 0);
+		break;
+	
+	case EXPR_POINTER:
+		retrieveChunk(_expr.evalType, &leftType);
+		retrieveChunk(leftType.subtype, &leftType);
+		pType->kind = leftType.kind;
+		pType->name = leftType.name;
 		break;
 
 	default:

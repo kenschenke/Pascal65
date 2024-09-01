@@ -49,6 +49,13 @@ a hexidecimal. All of the following are valid character literals.
    ch := #$41; // Same as letter 'a' (41 is 65 in hex)
 ```
 
+## Pointer Data Type
+
+A pointer is a variable that *points* to another variable. In this case, *points* means
+that the pointer variable is linked to the other variable. Updates to the pointer actually
+update the variable pointed to by the pointer. Please see the [pointers](pointers.md) topic
+for more information.
+
 ## Declared Data Types
 
 Examples of declared data types are arrays and records, discussed in separate topics.

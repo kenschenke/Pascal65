@@ -33,6 +33,10 @@
     beq add16
     cpy #TYPE_INTEGER
     beq add16
+    cpy #TYPE_ADDRESS
+    beq add16
+    cpy #TYPE_POINTER
+    beq add16
     cpy #TYPE_CARDINAL
     beq add32
     cpy #TYPE_LONGINT

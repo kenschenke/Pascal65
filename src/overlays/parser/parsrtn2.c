@@ -75,7 +75,7 @@ CHUNKNUM parseActualParmList(char isWriteWriteln)
 
 CHUNKNUM parseFormalParmList(void)
 {
-	char isByRef;
+	char isByRef, pointerParam;
 	struct param_list param;
 	struct type _type;
 	CHUNKNUM paramType;
@@ -90,6 +90,8 @@ CHUNKNUM parseFormalParmList(void)
 	// Loop to parse parameter declarations separated by semicolons
 	// i, j, k : integer; a, b, c : character, r, s, t: real
 	while (parserToken == tcIdentifier || parserToken == tcVAR) {
+		pointerParam = 0;
+
 		if (parserToken == tcVAR) {
 			isByRef = 1;
 			getToken();
@@ -137,6 +139,11 @@ CHUNKNUM parseFormalParmList(void)
 		// colon
 		resync(tlSublistFollow, tlDeclarationFollow, 0);
 		condGetToken(tcColon, errMissingColon);
+
+		if (parserToken == tcUpArrow) {
+			pointerParam = 1;
+			getToken();
+		}
 
 		// <id-type>
 		if (parserToken == tcIdentifier) {
@@ -194,6 +201,17 @@ CHUNKNUM parseFormalParmList(void)
 			getToken();
 		}
 
+		if (pointerParam) {
+			CHUNKNUM pointerChunk = typeCreate(TYPE_POINTER, 0, paramType, 0);
+			if (isByRef) {
+				struct type pointerType;
+				retrieveChunk(pointerChunk, &pointerType);
+				pointerType.flags |= TYPE_FLAG_ISBYREF;
+				storeChunk(pointerChunk, &pointerType);
+			}
+			paramType = pointerChunk;
+		}
+		
 		// Loop to assign the offset and type to each
 		// parm id in the sublist.
 		for (paramChunk = firstId; paramChunk; paramChunk = param.next) {

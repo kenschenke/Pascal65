@@ -286,6 +286,10 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars)
 			case TYPE_BOOLEAN:
 				icodeBoolValue(_decl.value);
 				break;
+			
+			case TYPE_POINTER:
+				icodeWordValue(0);
+				break;
 
 			case TYPE_REAL: {
 				struct expr _expr;
@@ -334,7 +338,7 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars)
 					icodeWriteUnary(IC_SST, icodeOperStr(1, strExpr.value.stringChunkNum));
 				} else {
 					// Allocate an empty string
-					icodeWriteUnary(IC_SST, icodeOperWord(1, 0));
+					icodeWriteUnaryWord(IC_SST, 0);
 				}
 				break;
 			}
@@ -344,7 +348,7 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars)
 				// to the library's jump table.
 				strcpy(label, "libdecl");
 				strcat(label, formatInt16(sym.type));
-				icodeWriteUnary(IC_SSP, icodeOperLabel(1, label));
+				icodeWriteUnaryLabel(IC_SSP, label);
 			}
 			
 			++num;
@@ -374,7 +378,7 @@ static void writeArrayInit(void)
 
 	strcpy(label, "arrayInits");
 	strcat(label, formatInt16(arrayInitsForScope));
-	icodeWriteUnary(IC_ARR, icodeOperLabel(1, label));
+	icodeWriteUnaryLabel(IC_ARR, label);
 
 	arrayInitsForScope = 0;
 	numArrayInitsForScope = 0;

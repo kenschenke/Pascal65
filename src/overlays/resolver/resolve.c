@@ -303,6 +303,10 @@ static CHUNKNUM getRecordSymtab(CHUNKNUM exprChunk, CHUNKNUM symtab)
 		return getEmbeddedArraySymtab(_expr.left, symtab);
 	}
 
+	if (_expr.kind == EXPR_POINTER) {
+		retrieveChunk(_expr.left, &_expr);
+	}
+
 	if (!_expr.name) {
 		return 0;
 	}
@@ -324,7 +328,8 @@ static CHUNKNUM getRecordSymtab(CHUNKNUM exprChunk, CHUNKNUM symtab)
 	}
 
 	retrieveChunk(sym.type, &_type);
-	while (_type.kind == TYPE_DECLARED || _type.kind == TYPE_ARRAY) {
+	while (_type.kind == TYPE_DECLARED || _type.kind == TYPE_ARRAY
+		|| _type.kind == TYPE_POINTER) {
 		if (_type.kind == TYPE_DECLARED && !_type.subtype && _type.name) {
 			memset(name, 0, sizeof(name));
 			retrieveChunk(_type.name, name);
@@ -333,6 +338,8 @@ static CHUNKNUM getRecordSymtab(CHUNKNUM exprChunk, CHUNKNUM symtab)
 				return 0;
 			}
 			retrieveChunk(sym.type, &_type);
+		} else if (_type.kind == TYPE_POINTER) {
+			retrieveChunk(_type.subtype, &_type);
 		}
 		else {
 			retrieveChunk(_type.subtype, &_type);
@@ -485,7 +492,8 @@ static short getTypeSize(struct type* pType)
 		break;
 	}
 
-	case TYPE_FUNCTION: {
+	case TYPE_FUNCTION:
+	case TYPE_POINTER: {
 		struct type subtype;
 		retrieveChunk(pType->subtype, &subtype);
 		subtype.size = getTypeSize(&subtype);
@@ -807,6 +815,7 @@ short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 			case TYPE_SUBRANGE:
 			case TYPE_FILE:
 			case TYPE_TEXT:
+			case TYPE_POINTER:
 				retrieveChunk(_decl.node, &sym);
 				if (_decl.kind == DECL_CONST || _decl.kind == DECL_VARIABLE) {
 					sym.offset = offset++;

@@ -61,6 +61,7 @@ static char *testFiles[] = {
     "trig",
     "filetesta",
     "filetestb",
+    "pointers",
     NULL
 };
 
