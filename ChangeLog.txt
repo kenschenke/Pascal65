@@ -1,4 +1,4 @@
-0.29-beta
+0.29-beta Sep 03 2024
     NEW: Rewrite code generation module in compiler to use intermediate code
     NEW: Add Dec and Inc procedures to System unit
     NEW: Replace the "@" operator with "Not" for bitwise complements
