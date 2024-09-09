@@ -16,6 +16,12 @@
 
 .segment "JMPTBL"
 
+rts                 ; initialization
+nop                 ; pad to three bytes
+nop
+rts                 ; cleanup
+nop                 ; pad to three bytes
+nop
 jmp fileAssign
 jmp beginswith
 jmp chr

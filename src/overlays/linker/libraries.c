@@ -33,11 +33,55 @@ static unsigned short libBase;
 static CHUNKNUM libBuf;
 
 // Private function prototypes
+static void genLibraryInitCleanup(CHUNKNUM astRoot, char isInit);
 static FILE* openLibrary(const char* library);
 static unsigned short relocate(unsigned char p, unsigned char o);
 static char processJumpTable(CHUNKNUM libRoot);
 static int readLibrary(FILE* fp);
 static void loadLibrary(const char* library, CHUNKNUM libRoot);
+
+void cleanupLibraries(CHUNKNUM astRoot)
+{
+    genLibraryInitCleanup(astRoot, 0);
+}
+
+static void genLibraryInitCleanup(CHUNKNUM astRoot, char isInit)
+{
+    struct decl _decl, unitDecl;
+    struct stmt _stmt;
+    struct unit _unit;
+    char name[CHUNK_LEN + 1];
+    CHUNKNUM chunkNum;
+
+    retrieveChunk(astRoot, &_decl);
+    retrieveChunk(_decl.code, &_stmt);
+
+    chunkNum = _stmt.decl;
+    while (chunkNum) {
+        retrieveChunk(chunkNum, &_decl);
+
+        if (_decl.kind == DECL_USES) {
+            memset(name, 0, sizeof(name));
+            retrieveChunk(_decl.name, name);
+
+            findUnit(_decl.name, &_unit);
+            retrieveChunk(_unit.astRoot, &unitDecl);
+            if (unitDecl.isLibrary) {
+                strcpy(name, isInit ? "init" : "cleanup");
+                strcat(name, formatInt16(_unit.astRoot));
+                linkAddressLookup(name, codeOffset+1, LINKADDR_BOTH);
+                genThreeAddr(JSR, 0);
+            }
+        }
+        
+        chunkNum = _decl.next;
+    }
+}
+
+void initLibraries(CHUNKNUM astRoot)
+{
+    genLibraryInitCleanup(astRoot, 1);
+}
 
 static FILE* openLibrary(const char* library)
 {
@@ -71,6 +115,26 @@ static char processJumpTable(CHUNKNUM libRoot)
     char name[16 + 1];
     CHUNKNUM chunkNum;
     unsigned short relocAddr;
+
+    // Write the entry point for the library initialization
+    readFromMemBuf(libBuf, buffer, 3);
+    relocAddr = relocate(buffer[2], buffer[1]);
+    buffer[1] = WORD_LOW(relocAddr);
+    buffer[2] = WORD_HIGH(relocAddr);
+    strcpy(name, "init");
+    strcat(name, formatInt16(libRoot));
+    linkAddressSet(name, codeOffset);
+    writeCodeBuf(buffer, 3);
+
+    // Write the entry point for the library cleanup
+    readFromMemBuf(libBuf, buffer, 3);
+    relocAddr = relocate(buffer[2], buffer[1]);
+    buffer[1] = WORD_LOW(relocAddr);
+    buffer[2] = WORD_HIGH(relocAddr);
+    strcpy(name, "cleanup");
+    strcat(name, formatInt16(libRoot));
+    linkAddressSet(name, codeOffset);
+    writeCodeBuf(buffer, 3);
 
     retrieveChunk(libRoot, &_decl);
     retrieveChunk(_decl.code, &_stmt);

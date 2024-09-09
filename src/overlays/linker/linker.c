@@ -754,6 +754,8 @@ void linkerPreWrite(CHUNKNUM astRoot)
 	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_L, LINKADDR_LOW);
 	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_H, LINKADDR_HIGH);
 	writeCodeBuf(prgHeader, PRG_HEADER_LENGTH);
+
+	initLibraries(astRoot);
 }
 
 void runPrg(void);
@@ -768,6 +770,7 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	char ch, prgFilename[16 + 1];
 	int i;
 
+	cleanupLibraries(astRoot);
 	linkAddressSet("EXIT_HANDLER", codeOffset);
 	linkAddressLookup(BSS_ZPBACKUP, codeOffset + PRG_CLEANUP_OFFSET, LINKADDR_BOTH);
 	writeCodeBuf(prgCleanup, PRG_CLEANUP_LENGTH);

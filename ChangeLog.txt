@@ -1,3 +1,7 @@
+0.30-beta
+    NEW: **IMPORTANT** Libraries now have two mandatory entry points in
+         their jump tables, for initialization and cleanup.
+
 0.29-beta Sep 03 2024
     NEW: Rewrite code generation module in compiler to use intermediate code
     NEW: Add Dec and Inc procedures to System unit

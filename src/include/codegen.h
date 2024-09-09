@@ -240,6 +240,8 @@ char linkAddressLookup(const char* name, unsigned short position, char whichNeed
 // Sets the code offset for a given symbol.
 void linkAddressSet(const char* name, unsigned short offset);
 
+void cleanupLibraries(CHUNKNUM astRoot);
+void initLibraries(CHUNKNUM astRoot);
 void loadLibraries(CHUNKNUM astRoot);
 
 void readRuntimeDefFile(void);

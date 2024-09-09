@@ -25,7 +25,7 @@ pages.
 
 As mentioned previously, an object file consists of a jump table at the beginning
 immediately following the load address.  The jump table is used to call functions
-and procedures in the library.  Just like the Commodore Kernal, each jump table
+and procedures in the library.  Just like the Commodore KERNAL, each jump table
 entry is three bytes: a JMP instruction, followed by the internal address within
 the library for the routine's entry point.  The table is also used for public
 variables declared in the library's interface. Each public variable takes
@@ -45,3 +45,15 @@ Pascal 65 organizes the data in memory.
 The entries in the jump table must appear in the same order in which they are
 declared in the interface section.  This means that variables (if any) will
 always appear before functions and procedures.
+
+### Library Initialization and Cleanup
+
+The first two entries in the library jump table are reserved for library
+initialization and cleanup. The initialization routine, the first entry
+in the jump table, is called during program initialization before any
+user code is called. The cleanup routine, the second entry in the jump
+table, is called after all user code completes.
+
+These two entries must be the first two in the jump table. If a library
+has no need for initialization or cleanup, the routines can jump to
+an RTS instruction or be RTS followed by two bytes such as NOP.
