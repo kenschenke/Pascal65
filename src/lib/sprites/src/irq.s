@@ -365,17 +365,14 @@ HI: jmp initLineVert ; vert - dy > dx
     ; dy = y1 - y0
     jsr y1_minus_y0
     ; yi = positive
-    lda SPR_MASKS,x
-    ora yi
-    sta yi
+    lda #1
+    sta yi,x
     ; if dy < 0
     lda dy,x
     bpl :+
     ;    yi = negative
-    lda SPR_MASKS,x
-    eor #$ff
-    and yi
-    sta yi
+    lda #$ff
+    sta yi,x
     ;    dy = -dy
     jsr neg_dy
 :   ; if dx < 0 then dx = -dx
@@ -416,12 +413,10 @@ HI: jmp initLineVert ; vert - dy > dx
 L1: lda err+1,y
     bmi L3
     ; y = y + yi
-    lda SPR_MASKS,x
-    and yi
-    bne :+
-    dec posy,x
-    jmp L2
-:   inc posy,x
+    lda posy,x
+    clc
+    adc yi,x
+    sta posy,x
 L2: ; err -= 2 * dx
     lda dx,y
     sta work
@@ -665,7 +660,7 @@ y1: .res NUM_SPRITES
 dx: .res NUM_SPRITES*2
 dy: .res NUM_SPRITES
 xi: .res 1
-yi: .res 1
+yi: .res NUM_SPRITES
 xdir: .res 1
 ydir: .res 1
 err: .res NUM_SPRITES*2
