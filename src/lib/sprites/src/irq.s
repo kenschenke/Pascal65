@@ -196,9 +196,9 @@ initSpriteBss:
 ; .endproc
 
 .proc isDyLessThanDx
-    lda dy,y
+    lda dy,x
     cmp dx,y
-    lda dy+1,y
+    lda #0
     sbc dx+1,y
     bvc L1
     eor #$80
@@ -231,20 +231,20 @@ L2: lda SPR_MASKS,x
 .endproc
 
 .proc isY0GreaterThanY1
-    lda y0,y
-    cmp y1,y
-    lda y0+1,y
-    sbc y1+1,y
+    lda y0,x
+    cmp y1,x
     bvc L1
     eor #$80
-L1: bpl L2
+L1:
+    bpl L2
     lda SPR_MASKS,x
     ora ydir
     sta ydir
     lda #0
     rts
-L2: lda SPR_MASKS,x
-    eor #$ff
+L2:
+    lda SPR_MASKS,x
+    eor #$55
     and ydir
     sta ydir
     lda #1
@@ -263,13 +263,10 @@ L2: lda SPR_MASKS,x
 .endproc
 
 .proc y1_minus_y0
-    lda y1,y
+    lda y1,x
     sec
-    sbc y0,y
-    sta dy,y
-    lda y1+1,y
-    sbc y0+1,y
-    sta dy+1,y
+    sbc y0,x
+    sta dy,x
     rts
 .endproc
 
@@ -295,30 +292,18 @@ L2: lda SPR_MASKS,x
 .endproc
 
 .proc neg_dy
-    txa
-    pha
-    asl a
-    tax
-    lda dy+1,x
-    eor #$ff
-    sta dy+1,x
     lda dy,x
     eor #$ff
     clc
     adc #1
     sta dy,x
-    lda dy+1,x
-    adc #0
-    sta dy+1,x
-    pla
-    tax
     rts
 .endproc
 
 .proc two_times_dy
-    lda dy,y
+    lda dy,x
     sta work
-    lda dy+1,y
+    lda #0
     sta work+1
     asl work
     rol work+1
@@ -342,17 +327,6 @@ L2: lda SPR_MASKS,x
 :   rts
 .endproc
 
-.proc incPosy
-    lda posy,y
-    clc
-    adc #1
-    sta posy,y
-    lda posy,y
-    adc #0
-    sta posy,y
-    rts
-.endproc
-
 .proc decPosx
     lda posx,y
     sec
@@ -364,22 +338,11 @@ L2: lda SPR_MASKS,x
     rts
 .endproc
 
-.proc decPosy
-    lda posy,y
-    sec
-    sbc #1
-    sta posy,y
-    lda posy+1,y
-    sbc #0
-    sta posy+1,y
-    rts
-.endproc
-
 .proc initLine
     ; if abs(y1 - y0) < abs(x1 - x0)
     spriteYindex
     jsr y1_minus_y0
-    lda dy+1,y
+    lda dy,x
     bpl :+
     jsr neg_dy
 :   jsr x1_minus_x0
@@ -406,7 +369,7 @@ HI: jmp initLineVert ; vert - dy > dx
     ora yi
     sta yi
     ; if dy < 0
-    lda dy+1,y
+    lda dy,x
     bpl :+
     ;    yi = negative
     lda SPR_MASKS,x
@@ -434,10 +397,8 @@ HI: jmp initLineVert ; vert - dy > dx
     lda x0+1,y
     sta posx+1,y
     ; y = y0
-    lda y0,y
-    sta posy,y
-    lda y0+1,y
-    sta posy+1,y
+    lda y0,x
+    sta posy,x
     jsr isX0GreaterThanX1
     rts
 .endproc
@@ -458,9 +419,9 @@ L1: lda err+1,y
     lda SPR_MASKS,x
     and yi
     bne :+
-    jsr decPosy
+    dec posy,x
     jmp L2
-:   jsr incPosy
+:   inc posy,x
 L2: ; err -= 2 * dx
     lda dx,y
     sta work
@@ -511,7 +472,7 @@ L3: ; err += dy * 2
     ; dx = -dx
     jsr neg_dx
 :   ; if dy < 0 then dy = -dy
-    lda dy+1,y
+    lda dy,x
     bpl :+
     jsr neg_dy
 :   ; err = (dx * 2) - dy
@@ -523,10 +484,10 @@ L3: ; err += dy * 2
     rol work+1
     lda work
     sec
-    sbc dy,y
+    sbc dy,x
     sta err,y
     lda work+1
-    sbc dy+1,y
+    sbc #0
     sta err+1,y
     ; x = x0
     lda x0,y
@@ -534,10 +495,8 @@ L3: ; err += dy * 2
     lda x0+1,y
     sta posx+1,y
     ; y = y0
-    lda y0,y
-    sta posy,y
-    lda y0+1,y
-    sta posy+1,y
+    lda y0,x
+    sta posy,x
     jsr isY0GreaterThanY1
     rts
 .endproc
@@ -547,9 +506,9 @@ L3: ; err += dy * 2
     lda SPR_MASKS,x
     and ydir
     bne :+
-    jsr decPosy
+    dec posy,x
     jmp L0
-:   jsr incPosy
+:   inc posy,x
     ; if err >= 0
 L0: lda err+1,y
     bmi L3
@@ -560,9 +519,9 @@ L0: lda err+1,y
     jsr decPosx
     jmp L2
 L1: jsr incPosx
-L2: lda dy,y
+L2: lda dy,x
     sta work
-    lda dy+1,y
+    lda #0
     sta work+1
     asl work
     rol work+1
@@ -599,8 +558,8 @@ L3:   ; err += dx * 2
     lda posx+1,y
     cmp x1+1,y
     bne NO
-    lda posy,y
-    cmp y1,y
+    lda posy,x
+    cmp y1,x
     bne NO
     lda #0
     rts
@@ -618,7 +577,7 @@ DN: rts
 .endproc
 
 .proc setSpriteXY
-    lda posy,y
+    lda posy,x
     sta VIC_SPR0_Y,y
     lda posx,y
     sta VIC_SPR0_X,y
@@ -683,8 +642,8 @@ L1: lda VIC_SPR_ENA
     cmp posx+1,y
     bne MV
     ; Has the sprite hit the Y target?
-    lda y1,y
-    cmp posy,y
+    lda y1,x
+    cmp posy,x
     bne MV
     ; Move current sprite
 MV: jsr moveSprite
@@ -701,10 +660,10 @@ spriteIrqReturn:
 startbss:
 x0: .res NUM_SPRITES*2
 x1: .res NUM_SPRITES*2
-y0: .res NUM_SPRITES*2
-y1: .res NUM_SPRITES*2
+y0: .res NUM_SPRITES
+y1: .res NUM_SPRITES
 dx: .res NUM_SPRITES*2
-dy: .res NUM_SPRITES*2
+dy: .res NUM_SPRITES
 xi: .res 1
 yi: .res 1
 xdir: .res 1
@@ -712,7 +671,7 @@ ydir: .res 1
 err: .res NUM_SPRITES*2
 work: .res 2
 posx: .res NUM_SPRITES*2
-posy: .res NUM_SPRITES*2
+posy: .res NUM_SPRITES
 speed: .res NUM_SPRITES
 speedn: .res 1
 horiz: .res 1
