@@ -37,6 +37,7 @@ static struct {
     {IC_CHR, "CHR"},
     {IC_CNL, "CNL"},
     {IC_CPY, "CPY"},
+    {IC_CVI, "CVI"},
     {IC_DEC, "DEC"},
     {IC_DEF, "DEF"},
     {IC_DEL, "DEL"},

@@ -258,6 +258,7 @@
 #define RT_READVAR              (RT_BASE + 306)
 #define RT_WRITEBYTES           (RT_BASE + 309)
 #define RT_READBYTES            (RT_BASE + 312)
+#define RT_CONVERTINT           (RT_BASE + 315)
 
 // CBM Kernal
 

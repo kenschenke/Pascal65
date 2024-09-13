@@ -129,6 +129,7 @@ nav:
       - CCT: icode/mne/cct.md
       - CNL: icode/mne/cnl.md
       - CPY: icode/mne/cpy.md
+      - CVI: icode/mne/cvi.md
       - DEC: icode/mne/dec.md
       - DEL: icode/mne/del.md
       - DIV: icode/mne/div.md
