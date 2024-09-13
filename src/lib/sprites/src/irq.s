@@ -1,0 +1,732 @@
+.include "cbm_kernal.inc"
+.include "c64.inc"
+
+.export initSpriteBss, spriteIrq, spriteIrqReturn
+.export SPR_MASKS, setSpriteXY, posx, posy, getIrqAddress
+.export x0, x1, y0, y1, initLine, hastarget, speed
+
+.export dx, dy, err
+
+.import setIrq
+
+NUM_SPRITES = 8
+
+; Pascal Procedures
+;
+; SpriteOnOff(sprite_num, on/true)
+; SpriteColor(sprite_num, color_number)
+; SpriteSize(sprite_num, doubleX, doubleY)
+; SpritePriority(sprite_num, hasBackgroundPriority)
+;
+; MoveSprite(sprite_num, x, y)
+; MoveSpriteTo(sprite_num, x0, y0, x1, y2, speed)
+; MoveSpriteRel(sprite_num, xRel, yRel);
+; MoveSpriteAngle(sprite_num, angle, speed)
+
+.code
+
+; This macro calculates the address of the sprite coordinates in the
+; VIC chip (as an offset from sprite 0). X contains the sprite number
+; from 0-7. The number is multiplied by two and copied to Y.
+; A and X are preserved.
+.macro spriteAddr
+    pha
+    txa
+    asl
+    tay
+    pla
+.endmacro
+
+.macro spriteYindex
+    txa
+    asl a
+    tay
+.endmacro
+
+    ; Center: 175,150
+    ; Octants:
+    ;    1: 100,140 - works : m=(140-150)/(100-175)
+    ;    2: 165,100 - works : m=(100-150)/(165-175)
+    ;    3: 185,100 - works : m=(100-150)/(185-175)
+    ;    4: 250,140 - works : m=(140-150)/(250-175)
+    ;    5: 250,165 - works : m=(165-150)/(250-175)
+    ;    6: 185,200 - works : m=(200-150)/(185-175)
+    ;    7: 165,200 - works : m=(200-150)/(165-175)
+    ;    8: 100,165 - works : m=(165-150)/(100-175)
+    ;     \  2  |  3 /
+    ;    1 \ +m | -m/  4
+    ;   +m  \   |  / -m
+    ;  -----------------
+    ;   -m  /   |  \ +m
+    ;    8 / -m | +m\  5
+    ;     /  7  |  6 \
+    ; Slope = y1-y0 / x1-x0
+
+initSpriteBss:
+    ldx #endbss-startbss-1
+    lda #0
+:   sta startbss,x
+    dex
+    bpl :-
+    rts
+
+; initAllEight:
+;     ldx #0
+;     lda #100
+;     ldy #140
+;     jsr initSprite
+;     ldx #1
+;     lda #165
+;     ldy #100
+;     jsr initSprite
+;     ldx #2
+;     lda #185
+;     ldy #100
+;     jsr initSprite
+;     ldx #3
+;     lda #250
+;     ldy #140
+;     jsr initSprite
+;     ldx #4
+;     lda #250
+;     ldy #165
+;     jsr initSprite
+;     ldx #5
+;     lda #185
+;     ldy #200
+;     jsr initSprite
+;     ldx #6
+;     lda #165
+;     ldy #200
+;     jsr initSprite
+;     ldx #7
+;     lda #100
+;     ldy #165
+;     jsr initSprite
+;     rts
+
+; initSprite:
+;     pha
+;     tya
+;     pha
+;     spriteYindex
+;     lda #SPR_X0
+;     sta x0,y
+;     sta posx,y
+;     lda #0
+;     sta x0+1,y
+;     sta posx+1,y
+;     lda #SPR_Y0
+;     sta y0,y
+;     sta posy,y
+;     lda #0
+;     sta y0+1,y
+;     sta posy+1,y
+;     pla
+;     sta y1,y
+;     lda #0
+;     sta y1+1,y
+;     pla
+;     sta x1,y
+;     lda #0
+;     sta x1+1,y
+
+;     ; Sprite 0 has a target to hit
+;     lda SPR_MASKS,x
+;     ora hastarget
+;     sta hastarget
+
+;     ; Set sprite 0 to speed 1
+;     lda #1
+;     sta speed,x
+
+;     ; Turn on sprite 0
+;     lda SPR_MASKS,x
+;     ora VIC_SPR_ENA
+;     sta VIC_SPR_ENA
+
+;     jsr initLine
+;     rts
+
+; .proc enableOne
+;     ldx #0
+;     lda SPR_MASKS,x
+;     ora VIC_SPR_ENA
+;     sta VIC_SPR_ENA
+;     rts
+; .endproc
+
+; .proc moveOne
+;     ; Move sprite 0 to 175,150
+;     ldx #0
+;     spriteYindex
+;     lda #175
+;     sta posx,y
+;     lda #150
+;     sta posy,y
+;     lda #0
+;     sta posx+1,y
+;     sta posy+1,y
+;     jmp setSpriteXY
+; .endproc
+
+; .proc moveRight
+;     ; jsr moveOne
+;     ; Move sprite 0 to the right
+;     ldx #0
+;     spriteYindex
+;     lda #175
+;     sta x0,y
+;     lda #150
+;     sta y0,y
+;     sta y1,y
+;     lda #200
+;     sta x1,y
+;     lda #0
+;     sta x0+1,y
+;     sta y0+1,y
+;     sta x1+1,y
+;     sta y1+1,y
+;     lda #1
+;     sta speed,x
+;     ; lda SPR_MASKS,x
+;     ; eor #$ff
+;     ; and hastarget
+;     jmp initLine
+; .endproc
+
+.proc isDyLessThanDx
+    lda dy,y
+    cmp dx,y
+    lda dy+1,y
+    sbc dx+1,y
+    bvc L1
+    eor #$80
+L1: bpl L2
+    lda #1
+    rts
+L2: lda #0
+    rts
+.endproc
+
+.proc isX0GreaterThanX1
+    lda x0,y
+    cmp x1,y
+    lda x0+1,y
+    sbc x1+1,y
+    bvc L1
+    eor #$80
+L1: bpl L2
+    lda SPR_MASKS,x
+    ora xdir
+    sta xdir
+    lda #0
+    rts
+L2: lda SPR_MASKS,x
+    eor #$ff
+    and xdir
+    sta xdir
+    lda #1
+    rts
+.endproc
+
+.proc isY0GreaterThanY1
+    lda y0,y
+    cmp y1,y
+    lda y0+1,y
+    sbc y1+1,y
+    bvc L1
+    eor #$80
+L1: bpl L2
+    lda SPR_MASKS,x
+    ora ydir
+    sta ydir
+    lda #0
+    rts
+L2: lda SPR_MASKS,x
+    eor #$ff
+    and ydir
+    sta ydir
+    lda #1
+    rts
+.endproc
+
+.proc x1_minus_x0
+    lda x1,y
+    sec
+    sbc x0,y
+    sta dx,y
+    lda x1+1,y
+    sbc x0+1,y
+    sta dx+1,y
+    rts
+.endproc
+
+.proc y1_minus_y0
+    lda y1,y
+    sec
+    sbc y0,y
+    sta dy,y
+    lda y1+1,y
+    sbc y0+1,y
+    sta dy+1,y
+    rts
+.endproc
+
+.proc neg_dx
+    txa
+    pha
+    asl a
+    tax
+    lda dx+1,x
+    eor #$ff
+    sta dx+1,x
+    lda dx,x
+    eor #$ff
+    clc
+    adc #1
+    sta dx,x
+    lda dx+1,x
+    adc #0
+    sta dx+1,x
+    pla
+    tax
+    rts
+.endproc
+
+.proc neg_dy
+    txa
+    pha
+    asl a
+    tax
+    lda dy+1,x
+    eor #$ff
+    sta dy+1,x
+    lda dy,x
+    eor #$ff
+    clc
+    adc #1
+    sta dy,x
+    lda dy+1,x
+    adc #0
+    sta dy+1,x
+    pla
+    tax
+    rts
+.endproc
+
+.proc two_times_dy
+    lda dy,y
+    sta work
+    lda dy+1,y
+    sta work+1
+    asl work
+    rol work+1
+    rts
+.endproc
+
+.proc incPosx
+    lda posx,y
+    clc
+    adc #1
+    sta posx,y
+    bcc :+
+    lda posx+1,y
+    adc #0
+    sta posx+1,y
+    lda VIC_SPR_HI_X
+    eor SPR_MASKS,x
+    sta VIC_SPR_HI_X
+    and SPR_MASKS,x
+    sta posx+1,y
+:   rts
+.endproc
+
+.proc incPosy
+    lda posy,y
+    clc
+    adc #1
+    sta posy,y
+    lda posy,y
+    adc #0
+    sta posy,y
+    rts
+.endproc
+
+.proc decPosx
+    lda posx,y
+    sec
+    sbc #1
+    sta posx,y
+    lda posx+1,y
+    sbc #0
+    sta posx+1,y
+    rts
+.endproc
+
+.proc decPosy
+    lda posy,y
+    sec
+    sbc #1
+    sta posy,y
+    lda posy+1,y
+    sbc #0
+    sta posy+1,y
+    rts
+.endproc
+
+.proc initLine
+    ; if abs(y1 - y0) < abs(x1 - x0)
+    spriteYindex
+    jsr y1_minus_y0
+    lda dy+1,y
+    bpl :+
+    jsr neg_dy
+:   jsr x1_minus_x0
+    lda dx+1,y
+    bpl :+
+    jsr neg_dx
+:   jsr isDyLessThanDx
+    beq HI
+    jmp initLineHoriz ; horiz - dx > dy
+HI: jmp initLineVert ; vert - dy > dx
+.endproc
+
+; X contains current sprite number
+.proc initLineHoriz
+    lda SPR_MASKS,x
+    ora horiz
+    sta horiz
+    ; dx = x1 - x0
+    jsr x1_minus_x0
+    ; dy = y1 - y0
+    jsr y1_minus_y0
+    ; yi = positive
+    lda SPR_MASKS,x
+    ora yi
+    sta yi
+    ; if dy < 0
+    lda dy+1,y
+    bpl :+
+    ;    yi = negative
+    lda SPR_MASKS,x
+    eor #$ff
+    and yi
+    sta yi
+    ;    dy = -dy
+    jsr neg_dy
+:   ; if dx < 0 then dx = -dx
+    lda dx+1,y
+    bpl :+
+    jsr neg_dx
+:   ; err = (2 * dy) - dx
+    jsr two_times_dy
+    lda work
+    sec
+    sbc dx,y
+    sta err,y
+    lda work+1
+    sbc dx+1,y
+    sta err+1,y
+    ; x = x0
+    lda x0,y
+    sta posx,y
+    lda x0+1,y
+    sta posx+1,y
+    ; y = y0
+    lda y0,y
+    sta posy,y
+    lda y0+1,y
+    sta posy+1,y
+    jsr isX0GreaterThanX1
+    rts
+.endproc
+
+.proc incLineHoriz ; horiz
+    ; increment x
+    lda SPR_MASKS,x
+    and xdir
+    bne :+
+    ; subtract 1 instead
+    jsr decPosx
+    jmp L1
+:   jsr incPosx
+    ; if err >= 0
+L1: lda err+1,y
+    bmi L3
+    ; y = y + yi
+    lda SPR_MASKS,x
+    and yi
+    bne :+
+    jsr decPosy
+    jmp L2
+:   jsr incPosy
+L2: ; err -= 2 * dx
+    lda dx,y
+    sta work
+    lda dx+1,y
+    sta work+1
+    asl work
+    rol work+1
+    lda err,y
+    sec
+    sbc work
+    sta err,y
+    lda err+1,y
+    sbc work+1
+    sta err+1,y
+L3: ; err += dy * 2
+    jsr two_times_dy
+    lda err,y
+    clc
+    adc work
+    sta err,y
+    lda err+1,y
+    adc work+1
+    sta err+1,y
+    rts
+.endproc
+
+.proc initLineVert ; vert
+    lda SPR_MASKS,x
+    eor #$ff
+    and horiz
+    sta horiz
+    ; dx = x1 - x0
+    jsr x1_minus_x0
+    ; dy = y1 - y0
+    jsr y1_minus_y0
+    ; xi = positive
+    lda SPR_MASKS,x
+    ora xi
+    sta xi
+    ; if dx < 0
+    lda dx+1,y
+    bpl :+
+    ; xi = negative
+    lda SPR_MASKS,x
+    eor #$ff
+    and xi
+    sta xi
+    ; dx = -dx
+    jsr neg_dx
+:   ; if dy < 0 then dy = -dy
+    lda dy+1,y
+    bpl :+
+    jsr neg_dy
+:   ; err = (dx * 2) - dy
+    lda dx,y
+    sta work
+    lda dx+1,y
+    sta work+1
+    asl work
+    rol work+1
+    lda work
+    sec
+    sbc dy,y
+    sta err,y
+    lda work+1
+    sbc dy+1,y
+    sta err+1,y
+    ; x = x0
+    lda x0,y
+    sta posx,y
+    lda x0+1,y
+    sta posx+1,y
+    ; y = y0
+    lda y0,y
+    sta posy,y
+    lda y0+1,y
+    sta posy+1,y
+    jsr isY0GreaterThanY1
+    rts
+.endproc
+
+.proc incLineVert ; vert
+    ; increment y
+    lda SPR_MASKS,x
+    and ydir
+    bne :+
+    jsr decPosy
+    jmp L0
+:   jsr incPosy
+    ; if err >= 0
+L0: lda err+1,y
+    bmi L3
+    ; x += xi
+    lda SPR_MASKS,x
+    and xi
+    bne L1
+    jsr decPosx
+    jmp L2
+L1: jsr incPosx
+L2: lda dy,y
+    sta work
+    lda dy+1,y
+    sta work+1
+    asl work
+    rol work+1
+    lda err,y
+    sec
+    sbc work
+    sta err,y
+    lda err+1,y
+    sbc work+1
+    sta err+1,y
+L3:   ; err += dx * 2
+    lda dx,y
+    sta work
+    lda dx+1,y
+    sta work+1
+    asl work
+    rol work+1
+    lda work
+    clc
+    adc err,y
+    sta err,y
+    lda err+1,y
+    adc work+1
+    sta err+1,y
+    rts
+.endproc
+
+; Returns zero in A if target reached and sprite should stop moving
+.proc checkTarget
+    spriteYindex
+    lda posx,y
+    cmp x1,y
+    bne NO
+    lda posx+1,y
+    cmp x1+1,y
+    bne NO
+    lda posy,y
+    cmp y1,y
+    bne NO
+    lda #0
+    rts
+NO: lda #1
+DN: rts
+.endproc
+
+.proc incLine
+    spriteYindex
+    lda SPR_MASKS,x
+    and horiz
+    beq :+
+    jmp incLineHoriz
+:   jmp incLineVert
+.endproc
+
+.proc setSpriteXY
+    lda posy,y
+    sta VIC_SPR0_Y,y
+    lda posx,y
+    sta VIC_SPR0_X,y
+    lda posx+1,y
+    beq :+
+    lda VIC_SPR_HI_X
+    ora SPR_MASKS,x
+    sta VIC_SPR_HI_X
+    rts
+:   lda SPR_MASKS,x
+    eor #$ff
+    and VIC_SPR_HI_X
+    sta VIC_SPR_HI_X
+    rts
+.endproc
+
+.proc moveSprite
+    lda speed,x
+    sta speedn
+    inc speedn
+L1: dec speedn
+    beq XY
+    lda SPR_MASKS,x
+    and hastarget
+    beq :+
+    jsr checkTarget
+    beq ST
+:   jsr incLine
+    jmp L1
+XY: jsr setSpriteXY
+    jmp DN
+ST: lda SPR_MASKS,x
+    eor #$ff
+    and hastarget
+    sta hastarget
+    lda #0
+    sta speed,x
+DN: rts
+.endproc
+
+; This gets the address of the IRQ handler (spriteIrq) and 
+; puts it on the CPU stack using JSR. The setIrq label pops the address
+; back off the STACK to store in the CINV vector.
+getIrqAddress:
+    jsr setIrq
+    ; spriteIrq must be the very next line
+spriteIrq:
+    ; Move each active sprite
+    ldx #NUM_SPRITES-1
+L1: lda VIC_SPR_ENA
+    and SPR_MASKS,x
+    beq NX
+    ; Is the sprite moving?
+    lda speed,x
+    beq NX
+    ; Has the sprite hit the X target?
+    spriteYindex
+    lda x1,y
+    cmp posx,y
+    bne MV
+    lda x1+1,y
+    cmp posx+1,y
+    bne MV
+    ; Has the sprite hit the Y target?
+    lda y1,y
+    cmp posy,y
+    bne MV
+    ; Move current sprite
+MV: jsr moveSprite
+
+NX: dex
+    bpl L1
+
+spriteIrqReturn:
+    jmp $0000
+
+.data
+
+; vectable: .res $30
+startbss:
+x0: .res NUM_SPRITES*2
+x1: .res NUM_SPRITES*2
+y0: .res NUM_SPRITES*2
+y1: .res NUM_SPRITES*2
+dx: .res NUM_SPRITES*2
+dy: .res NUM_SPRITES*2
+xi: .res 1
+yi: .res 1
+xdir: .res 1
+ydir: .res 1
+err: .res NUM_SPRITES*2
+work: .res 2
+posx: .res NUM_SPRITES*2
+posy: .res NUM_SPRITES*2
+speed: .res NUM_SPRITES
+speedn: .res 1
+horiz: .res 1
+
+; Bit is 1 if sprite has target to hit (destination for movement)
+hastarget: .res 1
+endbss:
+
+SPR_MASKS:
+    .byte %00000001
+    .byte %00000010
+    .byte %00000100
+    .byte %00001000
+    .byte %00010000
+    .byte %00100000
+    .byte %01000000
+    .byte %10000000
