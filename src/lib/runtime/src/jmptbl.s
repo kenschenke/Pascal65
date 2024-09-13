@@ -37,7 +37,7 @@
 .import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine, tangent
 .import decrement, increment, stringInit, pushVar, readVar, writeBytes
 .import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
-.import fileErase, fileAssign, fileRename, fileFree
+.import fileErase, fileAssign, fileRename, fileFree, convertType
 
 .segment "JMPTBL"
 
@@ -146,3 +146,4 @@ jmp pushVar              ; BASE + 303
 jmp readVar              ; BASE + 306
 jmp writeBytes           ; BASE + 309
 jmp readBytes            ; BASE + 312
+jmp convertType          ; BASE + 315

@@ -180,6 +180,14 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         genTwo(LDY_IMMEDIATE, oper2.literal.uint8);
         genThreeAddr(JSR, mnemonic == IC_INC ? RT_INCREMENT : RT_DECREMENT);
         break;
+
+    case IC_CVI:
+        genThreeAddr(JSR, RT_POPTOINTOP1AND2);
+        genTwo(LDA_IMMEDIATE, oper1.literal.uint8);
+        genTwo(LDX_IMMEDIATE, oper2.literal.uint8);
+        genThreeAddr(JSR, RT_CONVERTINT);
+        genThreeAddr(JSR, RT_PUSHFROMINTOP1AND2);
+        break;
     }
 }
 

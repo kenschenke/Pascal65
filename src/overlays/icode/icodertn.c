@@ -30,7 +30,8 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 static void icodeOrdCall(CHUNKNUM argChunk);
 static char icodePredSuccCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
-static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char *returnLabel);
+static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk,
+	char *returnLabel, char isLibraryCall);
 static void icodeRoutineCleanup(char *localVars, struct type* pDeclType,
 	int numLocals, char isFunc, char isLibrary);
 static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType);
@@ -98,7 +99,7 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 	short level;
 	struct type rtnType;
 
-	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel);
+	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 0);
 
 	// Call the routine
 	strcpy(enterLabel, "RTN");
@@ -122,7 +123,7 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	char returnLabel[15];
 
 	memset(localVars, 0, sizeof(localVars));
-	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel);
+	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 1);
 
 	// Call the routine
 	strcpy(enterLabel, "RTN");
@@ -234,7 +235,8 @@ static void icodeRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
 	icodeWriteMnemonic(rc == rcRound ? IC_ROU : IC_TRU);
 }
 
-static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char *returnLabel)
+static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk,
+	char *returnLabel, char isLibraryCall)
 {
 	char stringObjHeaps = 0;
 	CHUNKNUM paramChunk = pType->paramsFields;
@@ -289,6 +291,9 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 		}
 		else {
 			icodeExpr(_expr.left, 1);
+			if (isLibraryCall && isTypeInteger(paramType.kind)) {
+				icodeWriteBinaryShort(IC_CVI, argType.kind, paramType.kind);
+			}
 		}
 
 		argChunk = _expr.right;

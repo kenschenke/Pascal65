@@ -102,6 +102,7 @@ The following instructions take two operands.
 |Mnemonic             |Hex Value|Binary Value|Description                               |
 |---------------------|---------|------------|------------------------------------------|
 |[CCT](/icode/mne/cct)|4a       |0100 1010   |Concatenate two values into a string obj  |
+|[CVI](/icode/mne/cvi)|50       |0101 0000   |Convert the integer at top of the stack   |
 |[DEC](/icode/mne/dec)|4d       |0100 1101   |Decrement a variable                      |
 |[DIV](/icode/mne/div)|43       |0100 0011   |Perform floating point division           |
 |[EQU](/icode/mne/equ)|48       |0100 1000   |Perform an equality comparison            |
@@ -115,7 +116,7 @@ The following instructions take two operands.
 |[POF](/icode/mne/pof)|4c       |0100 1100   |Pop the stack frame for a routine         |
 |[PUF](/icode/mne/puf)|4b       |0100 1011   |Push the stack frame for a routine        |
 |[SET](/icode/mne/set)|41       |0100 0001   |Set the value of a variable               |
-|[SFH](/icode/mne/sfh)|4f       |0100 1111   |Set input/output file number         |
+|[SFH](/icode/mne/sfh)|4f       |0100 1111   |Set input/output file number              |
 
 ### Trinary Instructions
 
