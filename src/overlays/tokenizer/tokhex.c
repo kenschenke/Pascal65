@@ -49,11 +49,11 @@ void getHexToken(void)
     }
 
     *ps = 0;
-    if (tokenValue.cardinal < UCHAR_MAX) {
+    if (tokenValue.cardinal <= UCHAR_MAX) {
         tokenValue.byte = tokenValue.cardinal;
         tokenizerCode = tzByte;
     }
-    else if (tokenValue.cardinal < USHRT_MAX) {
+    else if (tokenValue.cardinal <= USHRT_MAX) {
         tokenValue.word = tokenValue.cardinal;
         tokenizerCode = tzWord;
     } else {
