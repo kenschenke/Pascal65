@@ -12,7 +12,8 @@
 ; Jump table for sprite library
 
 .import initSpriteLibrary, cleanupSpriteLibrary, spriteCall, spritePosCall
-.import spriteMoveCall, spriteMoveRelCall, spriteColorCall
+.import spriteMoveCall, spriteMoveRelCall, spriteColorCall, spriteMultiColorCall
+.import spriteSizeCall
 
 .segment "JMPTBL"
 
@@ -20,9 +21,8 @@ jmp initSpriteLibrary
 jmp cleanupSpriteLibrary
 jmp spriteCall
 jmp spriteColorCall
-jmp $0000           ; SpriteMultiColor
+jmp spriteMultiColorCall
 jmp spritePosCall
-jmp $0000           ; SpriteSize
+jmp spriteSizeCall
 jmp spriteMoveCall
-jmp $0000           ; SpriteMoveAngle
 jmp spriteMoveRelCall
