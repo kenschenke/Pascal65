@@ -16,11 +16,11 @@ Interface
 Procedure Sprite(number : Byte; enabled : Boolean);
 Procedure SpriteColor(number, color : Byte);
 Procedure SpriteMultiColor(number : Byte; isMultiColor : Boolean);
-Procedure SpritePos(number : Byte; x, y : Integer);
+Procedure SpritePos(number : Byte; x : Integer; y : Byte);
 Procedure SpriteSize(number : Byte; isDoubleX, isDoubleY : Boolean);
-Procedure SpriteMove(number : Byte; x0, y0, x1, y1 : Integer; speed : Byte);
-Procedure SpriteMoveAngle(number, angle, speed : Byte);
-Procedure SpriteMoveRel(number : Byte; xRel, yRel : Integer);
+Procedure SpriteMove(number : Byte; x0 : Integer; y0 : Byte;
+    x1 : Integer; y1, speed : Byte; stopAtTarget : Boolean);
+Procedure SpriteMoveRel(number : Byte; xRel : Integer; yRel : Byte);
 
 Implementation Library
 
