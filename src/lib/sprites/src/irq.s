@@ -207,10 +207,23 @@ L2:
     sec
     sbc #1
     sta posx,y
+    cmp #$ff
+    bne DN
     lda posx+1,y
-    sbc #0
+    beq :+
+    lda #0
     sta posx+1,y
-    rts
+    lda SPR_MASKS,x
+    eor #$ff
+    and VIC_SPR_HI_X
+    sta VIC_SPR_HI_X
+    jmp DN
+:   lda SPR_MASKS,x
+    ora VIC_SPR_HI_X
+    sta VIC_SPR_HI_X
+    lda #1
+    sta posx+1,y
+DN: rts
 .endproc
 
 .proc initLine
