@@ -7,7 +7,7 @@
 .import SPR_MASKS
 
 ; Procedure SpriteMove(number : Byte; x0 : Integer; y0 : Byte;
-;    x1 : Integer; y1, speed : Byte);
+;    x1 : Integer; y1, speed : Byte; stopAtTarget : Boolean);
 .proc spriteMoveCall
     lda #0                      ; Get the first parameter
     jsr rtLibLoadParam
@@ -43,12 +43,23 @@
     jsr rtLibLoadParam
     ldx tmp1
     sta speed,x
+    lda #6                      ; Get the seventh parameter
+    jsr rtLibLoadParam
+    ldx tmp1
+    cmp #0
+    beq :+
     ; Enable targeting for the sprite
     lda SPR_MASKS,x
     ora hastarget
     sta hastarget
+    jmp IL
+:   ; Disable targeting for thr sprite
+    lda SPR_MASKS,x
+    eor #$ff
+    and hastarget
+    sta hastarget
     ; brk
-    jsr initLine                ; Calculate the line slope
+IL: jsr initLine                ; Calculate the line slope
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; lda speed+1
     ; ldx hastarget
