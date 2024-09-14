@@ -13,7 +13,7 @@
 
 .import initSpriteLibrary, cleanupSpriteLibrary, spriteCall, spritePosCall
 .import spriteMoveCall, spriteMoveRelCall, spriteColorCall, spriteMultiColorCall
-.import spriteSizeCall
+.import spriteSizeCall, spriteData
 
 .segment "JMPTBL"
 
@@ -26,3 +26,4 @@ jmp spritePosCall
 jmp spriteSizeCall
 jmp spriteMoveCall
 jmp spriteMoveRelCall
+jmp spriteData

@@ -21,6 +21,7 @@ Procedure SpriteSize(number : Byte; isDoubleX, isDoubleY : Boolean);
 Procedure SpriteMove(number : Byte; x0 : Integer; y0 : Byte;
     x1 : Integer; y1, speed : Byte; stopAtTarget : Boolean);
 Procedure SpriteMoveRel(number : Byte; xRel : Integer; yRel : Byte);
+Procedure SpriteData(number : Byte; data : ^Byte);
 
 Implementation Library
 
