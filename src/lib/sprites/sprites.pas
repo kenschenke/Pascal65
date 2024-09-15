@@ -13,9 +13,8 @@ Unit Sprites;
 
 Interface
 
-Procedure Sprite(number : Byte; enabled : Boolean);
-Procedure SpriteColor(number, color : Byte);
-Procedure SpriteMultiColor(number : Byte; isMultiColor : Boolean);
+Procedure Sprite(number, color : Byte; enabled, isMultiColor : Boolean);
+Procedure SpriteMultiColors(color1, color2 : Byte);
 Procedure SpritePos(number : Byte; x : Integer; y : Byte);
 Procedure SpriteSize(number : Byte; isDoubleX, isDoubleY : Boolean);
 Procedure SpriteMove(number : Byte; x0 : Integer; y0 : Byte;

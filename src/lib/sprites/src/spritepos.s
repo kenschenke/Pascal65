@@ -20,6 +20,7 @@
     lda #2                      ; Get the third parameter
     jsr rtLibLoadParam
     ldx tmp1
+    ldy tmp2
     sta posy,x
     jmp setSpriteXY
 .endproc
