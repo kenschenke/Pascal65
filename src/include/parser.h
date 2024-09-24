@@ -42,7 +42,7 @@ CHUNKNUM parseActualParmList(char isWriteWriteln);
 CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary);
 CHUNKNUM parseDeclaredSubroutineCall(char parmCheckFlag, CHUNKNUM Icode);
 CHUNKNUM parseFormalParmList(void);
-CHUNKNUM parseFuncOrProcHeader(char isFunc);
+CHUNKNUM parseFuncOrProcHeader(char isFunc, char isRtnType);
 CHUNKNUM parseModule(void);
 CHUNKNUM parseModuleHeader(void);
 CHUNKNUM parseSubroutine(void);

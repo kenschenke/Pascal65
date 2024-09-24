@@ -62,6 +62,7 @@ static char *testFiles[] = {
     "filetesta",
     "filetestb",
     "pointers",
+    "rtnptrs",
     NULL
 };
 

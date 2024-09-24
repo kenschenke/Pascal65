@@ -112,7 +112,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEOVRL
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEGENOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii trig.petscii filetesta.petscii filetestb.petscii pointers.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii trig.petscii filetesta.petscii filetestb.petscii pointers.petscii rtnptrs.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -359,6 +359,9 @@ filetestb.petscii: filetestb.pas
 pointers.petscii: pointers.pas
 	dos2unix < pointers.pas | petcat -w2 -text -o pointers.petscii
 
+rtnptrs.petscii: rtnptrs.pas
+	dos2unix < rtnptrs.pas | petcat -w2 -text -o rtnptrs.petscii
+
 unit.petscii: unit.pas
 	dos2unix < unit.pas | petcat -w2 -text -o unit.petscii
 
@@ -406,6 +409,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write filetesta.petscii filetesta.pas,seq \
 	-write filetestb.petscii filetestb.pas,seq \
 	-write pointers.petscii pointers.pas,seq \
+	-write rtnptrs.petscii rtnptrs.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write trig.petscii trig.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
@@ -449,6 +453,7 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write filetesta.petscii filetesta.pas,seq \
 	-write filetestb.petscii filetestb.pas,seq \
 	-write pointers.petscii pointers.pas,seq \
+	-write rtnptrs.petscii rtnptrs.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
 	-write $(SYSTEMLIB) system.lib,prg \

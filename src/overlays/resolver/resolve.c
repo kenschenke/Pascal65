@@ -496,10 +496,15 @@ static short getTypeSize(struct type* pType)
 	case TYPE_POINTER: {
 		struct type subtype;
 		retrieveChunk(pType->subtype, &subtype);
-		subtype.size = getTypeSize(&subtype);
+		subtype.size = size = getTypeSize(&subtype);
 		storeChunk(pType->subtype, &subtype);
 		break;
 	}
+
+	case TYPE_ROUTINE_ADDRESS:
+	case TYPE_ROUTINE_POINTER:
+		size = 4;
+		break;
 	}
 
 	return size;
@@ -816,6 +821,7 @@ short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level)
 			case TYPE_FILE:
 			case TYPE_TEXT:
 			case TYPE_POINTER:
+			case TYPE_ROUTINE_POINTER:
 				retrieveChunk(_decl.node, &sym);
 				if (_decl.kind == DECL_CONST || _decl.kind == DECL_VARIABLE) {
 					sym.offset = offset++;

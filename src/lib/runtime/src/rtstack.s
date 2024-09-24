@@ -489,8 +489,14 @@ L4:
 ; Inputs:
 ;    A: Scope level
 ;    X: Stack offset in stack frame
+;    Y: Variable type
 .proc pushVar
+    sta tmp1
+    tya
+    pha
+    lda tmp1
     jsr calcStackOffset
+    pla
     jmp loadVarFromPtr1
 .endproc
 
@@ -506,6 +512,7 @@ L4:
     jmp loadVarFromPtr1
 .endproc
 
+; Variable type in A
 .proc loadVarFromPtr1
     ldx #0
     stx sreg

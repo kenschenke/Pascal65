@@ -91,6 +91,7 @@ nav:
     - Runtime Stack: libraries/stack.md
     - Runtime Library: libraries/runtime.md
     - Writing Routines: libraries/routines.md
+    - Calling Pascal Routines: libraries/calls.md
     - Memory Heap: libraries/memheap.md
     - Demo Library: libraries/demolib.md
   - Runtime Library:
@@ -156,6 +157,7 @@ nav:
       - OUT: icode/mne/out.md
       - POF: icode/mne/pof.md
       - POP: icode/mne/pop.md
+      - PPF: icode/mne/ppf.md
       - PRE: icode/mne/pre.md
       - PSH: icode/mne/psh.md
       - PUF: icode/mne/puf.md

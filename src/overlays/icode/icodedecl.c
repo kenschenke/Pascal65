@@ -291,6 +291,10 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars)
 				icodeWordValue(0);
 				break;
 
+			case TYPE_ROUTINE_POINTER:
+				icodeDWordValue(0);
+				break;
+
 			case TYPE_REAL: {
 				struct expr _expr;
 

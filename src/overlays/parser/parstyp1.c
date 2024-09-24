@@ -367,6 +367,15 @@ CHUNKNUM parseTypeSpec(void)
 		break;
 	}
 
+	case tcFUNCTION:
+	case tcPROCEDURE: {
+		struct decl _decl;
+		CHUNKNUM declChunk = parseFuncOrProcHeader(parserToken == tcFUNCTION ? 1 : 0, 1);
+		retrieveChunk(declChunk, &_decl);
+		type = _decl.type;
+		break;
+	}
+
 	default:
 		Error(errInvalidType);
 		typeKind = TYPE_VOID;

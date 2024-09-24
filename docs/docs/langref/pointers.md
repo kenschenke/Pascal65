@@ -131,3 +131,67 @@ pointers. Consider the following example.
 ## Pointer Comparison
 
 Pointers can be compared to other pointers or to the value **nil** (zero).
+
+## Pointers to Functions and Procedures
+
+Programs can declare a pointer to a function or procedure and later use
+that pointer to call it. It is recommended to define a pointer type for the
+routine to simplify syntax. A pointer to a procedure might look like this:
+
+    Type
+        ProcType = Procedure(num : Integer);
+    
+In this example, a new data type is defined called **ProcType**. The datatype
+can be used to declare a pointer to a procedure that accepts an integer parameter.
+
+A pointer to this procedure would be declared like:
+
+    Var
+        ptr : ProcType;
+
+To assign a value to the pointer, use the **@** operator like any other variable.
+To call a procedure or function using a pointer, use the pointer variable just
+like any other call.
+
+Following is a complete example.
+
+    Type
+        ProcType = Procedure(num : Integer);
+    
+    Var
+        ptr : ProcType;
+    
+    Procedure MyProc(i : Integer);
+    Begin
+        ...
+    End;
+
+    (* Main *)
+    Begin
+        ptr := @MyProc;
+        ptr(1234);
+    End.
+
+!!! warning
+
+    Due to a compiler limitation, routine pointers cannot be assigned to
+    library routines, including routines in the System library.
+
+### Pointers and Callbacks
+
+A very common pattern in many systems is for a program to designate a
+routine to be called when something important occurs. This would be used
+in situations such as a sprite collision, a timer expiring, or an IRQ
+interrupt occuring.
+
+The way in which a callback is registered depend on the specifics, but the
+general concept still applies. The typical process would be for the program
+to register a callback by passing a pointer to the callback routine. A
+theoretical timer callback could be configured like this:
+
+    Procedure TimeExpired;
+    Begin
+        Writeln('The timer finished.');
+    End;
+
+    setTimer(10, @TimeExpired); // start a timer for 10 seconds

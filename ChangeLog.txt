@@ -2,6 +2,7 @@
     NEW: **IMPORTANT** Libraries now have two mandatory entry points in
          their jump tables, for initialization and cleanup.
     FIX: Fix bug preventing numeric variables being assigned their maximum unsigned value
+    NEW: Add pointers to functions and procedures
 
 0.29-beta Sep 03 2024
     NEW: Rewrite code generation module in compiler to use intermediate code

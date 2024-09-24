@@ -57,6 +57,7 @@
 #define INY				0xc8
 
 #define JMP             0x4c	// jmp $nnnn		3 bytes
+#define JMP_INDIRECT    0x6c    // jmp ($nnnn)      3 bytes
 #define JSR             0x20	// jsr $nnnn		3 bytes
 #define RTS				0x60
 #define NOP				0xea

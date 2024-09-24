@@ -540,7 +540,9 @@ typedef enum {
     TYPE_SCALAR_BYTES,                 // Used to write to files
     TYPE_HEAP_BYTES,                   // Used to write to files
     TYPE_POINTER,
-    TYPE_ADDRESS,
+    TYPE_ADDRESS,                      // An address to a variable
+    TYPE_ROUTINE_ADDRESS,              // An address to a routine
+    TYPE_ROUTINE_POINTER,              // A pointer to a routine
 } type_t;
 // CAUTION. Do not rearrange this list without also changing
 // the values in types.inc.

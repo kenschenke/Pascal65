@@ -17,17 +17,18 @@
 
 .segment "JMPTBL"
 
-publicInt: .res 2
-publicArray: .res 2
-publicRecord: .res 2
-publicString: .res 2
-
 rts                 ; initialization
 nop                 ; pad to three bytes
 nop
 rts                 ; cleanup
 nop                 ; pad to three bytes
 nop
+
+publicInt: .res 2
+publicArray: .res 2
+publicRecord: .res 2
+publicString: .res 2
+
 jmp demoArea
 jmp doubleParam
 jmp biggest

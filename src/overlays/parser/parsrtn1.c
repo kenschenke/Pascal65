@@ -69,10 +69,12 @@ CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary)
 	return stmtChunk;
 }
 
-CHUNKNUM parseFuncOrProcHeader(char isFunc)
+// isRtnType is non-zero if this is parsing a type declaration
+// for a routine in the type section.
+CHUNKNUM parseFuncOrProcHeader(char isFunc, char isRtnType)
 {
 	struct type _type;
-	CHUNKNUM name = 0, params = 0, returnChunk = 0;
+	CHUNKNUM name = 0, params = 0, returnChunk = 0, subtype;
 
 	getToken();
 
@@ -81,7 +83,7 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc)
 		name = name_create(parserString);
 		getToken();
 	}
-	else {
+	else if (!isRtnType) {
 		Error(errMissingIdentifier);
 	}
 
@@ -139,9 +141,12 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc)
 		}
 	}
 
-	return declCreate(DECL_TYPE, name,
-		typeCreate(isFunc ? TYPE_FUNCTION : TYPE_PROCEDURE, 0, returnChunk, params),
-		0);
+	subtype = typeCreate(isFunc ? TYPE_FUNCTION : TYPE_PROCEDURE,
+		0, returnChunk, params);
+	if (isRtnType) {
+		subtype = typeCreate(TYPE_ROUTINE_POINTER, 0, subtype, 0);
+	}
+	return declCreate(DECL_TYPE, name, subtype, 0);
 }
 
 CHUNKNUM parseSubroutine(void)
@@ -153,7 +158,7 @@ CHUNKNUM parseSubroutine(void)
 
 	// <routine-header>
 	isFunc = parserToken == tcFUNCTION;
-	subChunk = parseFuncOrProcHeader(isFunc);
+	subChunk = parseFuncOrProcHeader(isFunc, 0);
 
 	// ;
 	resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
