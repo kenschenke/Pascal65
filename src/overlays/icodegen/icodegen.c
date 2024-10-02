@@ -134,11 +134,7 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         }
 
         if (!oper2.literal.uint8) {
-            // Routine is a declared routine - put the caller's return address back
-            genOne(PLA);
-            genOne(TAX);
-            genOne(PLA);
-            genThreeAddr(JSR, RT_PUSHEAX);
+            // Routine is a declared routine - return to the caller
             genThreeAddr(JMP, RT_RETURNFROMROUTINE);
         }
         break;

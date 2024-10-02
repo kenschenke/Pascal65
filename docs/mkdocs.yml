@@ -101,8 +101,10 @@ nav:
     - DivInt: runtime/divint.md
     - HeapAlloc: runtime/heapalloc.md
     - HeapFree: runtime/heapfree.md
+    - LibCallRoutine: runtime/libcallroutine.md
     - LibLoadParam: runtime/libloadparam.md
     - LibReturnValue: runtime/libreturnvalue.md
+    - LibStackHeader: runtime/libstackheader.md
     - LibStoreVarParam: runtime/libstorevarparam.md
     - Multiply: runtime/multiply.md
     - PopEax: runtime/popeax.md

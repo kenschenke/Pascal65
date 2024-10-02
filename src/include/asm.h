@@ -260,6 +260,8 @@
 #define RT_WRITEBYTES           (RT_BASE + 309)
 #define RT_READBYTES            (RT_BASE + 312)
 #define RT_CONVERTINT           (RT_BASE + 315)
+#define RT_LIBSTACKFRAME        (RT_BASE + 318)
+#define RT_LIBCALLROUTINE       (RT_BASE + 321)
 
 // CBM Kernal
 

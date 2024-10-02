@@ -267,6 +267,9 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 		icodeVar(IC_VDR, TYPE_ROUTINE_POINTER, (unsigned char)pSym->level, (unsigned char)pSym->offset);
 		icodeWriteUnaryLabel(IC_PPF, returnLabel);
 	} else {
+		// If a library routine (level 0), force nesting level to 2
+		if (sym.level == 0)
+			sym.level = 2;
 		icodeWriteBinary(IC_PUF, icodeOperShort(1, sym.level),
 			icodeOperLabel(2, returnLabel));
 	}

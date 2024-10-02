@@ -16,6 +16,17 @@ Begin
     anyErrors := true;
 End;
 
+Procedure MyCallbackProc(num : Integer);
+Begin
+    If i <> 32121 Then Error(35);
+    i := num;
+End;
+
+Function MyCallbackFunc : Integer;
+Begin
+    MyCallbackFunc := 12121;
+End;
+
 Begin
 	Writeln('Running');
 	
@@ -114,6 +125,14 @@ Begin
     AppendToPublicString(' Abc123');
     If CompareStr(PublicString, 'Hello, World Abc123') <> 0 Then
         Error(32);
+    
+    i := 32121;
+    RegisterDemoProc(@MyCallbackProc);
+    TestDemoProc(12345);
+    If i <> 12345 Then Error(33);
+
+    RegisterDemoFunc(@MyCallbackFunc);
+    If TestDemoFunc <> 12121 Then Error(34);
 
     If anyErrors Then Begin
         Write('Press a key to continue: ');

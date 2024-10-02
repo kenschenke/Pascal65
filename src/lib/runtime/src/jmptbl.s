@@ -38,6 +38,7 @@
 .import decrement, increment, stringInit, pushVar, readVar, writeBytes
 .import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
 .import fileErase, fileAssign, fileRename, fileFree, convertType
+.import libStackHeader, libCallRoutine
 
 .segment "JMPTBL"
 
@@ -147,3 +148,5 @@ jmp readVar              ; BASE + 306
 jmp writeBytes           ; BASE + 309
 jmp readBytes            ; BASE + 312
 jmp convertType          ; BASE + 315
+jmp libStackHeader       ; BASE + 318
+jmp libCallRoutine       ; BASE + 321

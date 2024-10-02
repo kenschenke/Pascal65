@@ -96,4 +96,5 @@ rtContains              = rt_base + 264
 rtSine                  = rt_base + 285
 rtCosine                = rt_base + 288
 rtTangent               = rt_base + 291
-
+rtLibStackHeader        = rt_base + 318
+rtLibCallRoutine        = rt_base + 321

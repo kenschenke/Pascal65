@@ -11,11 +11,11 @@
 
 .export appendToString
 
-.bss
+.data
 
-srcPtr: .res 2
-appendPtr: .res 2
-newStr: .res 2
+srcPtr: .word 0
+appendPtr: .word 0
+newStr: .word 0
 
 .code
 

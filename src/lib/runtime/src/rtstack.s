@@ -304,18 +304,19 @@ L4:
     rts
 .endproc
 
-; This uses the return address stored in the stack frame header and places
-; that address on the CPU stack then does an RTS.  It expects the return
-; address to be at the top of the stack.  Callers should call this with
+; This uses the return address stored in the stack frame header,
+; adds 1, then does an indirect JMP. It expects the return address
+; to be at the top of the stack. Callers should call this with
 ; a jmp, NOT a jsr.
 .proc returnFromRoutine
-    jsr popeax
-    tay                 ; Transfer low byte to Y
-    txa                 ; Transfer high byte to A
-    pha                 ; Push high byte to stack
-    tya                 ; Transfer low byte back to A
-    pha                 ; Push low byte to stack
-    rts                 ; Go to the return address
+    pla
+    sta tmp2
+    pla
+    sta tmp1
+    inc tmp1
+    bne :+
+    inc tmp2
+:   jmp (tmp1)
 .endproc
 
 ; Push the byte in A to the runtime stack

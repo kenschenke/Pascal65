@@ -32,6 +32,8 @@ Type
     DemoRecord = Record
         a, b : Integer;
     End;
+    DemoProc = Procedure(num : Integer);
+    DemoFunc = Function : Integer;
 
 Var
     PublicInt : Integer;
@@ -51,6 +53,10 @@ Procedure DoublePublicInt;
 Procedure DoublePublicArray;
 Procedure DoublePublicRecord;
 Procedure AppendToPublicString(str : String);
+Procedure RegisterDemoProc(callback : DemoProc);
+Procedure TestDemoProc(num : Integer);
+Procedure RegisterDemoFunc(callback : DemoFunc);
+Function TestDemoFunc : Integer;
 
 Implementation Library
 

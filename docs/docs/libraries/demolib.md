@@ -10,3 +10,5 @@ includes the following examples.
   * Accessing arrays, records and strings passed by parameter.
   * Reading and modifying public variables declared in the library's interface.
   * Arrays, records, and strings declared in the library's interface.
+  * Calling Pascal routines from a library (callback)
+  

@@ -14,6 +14,7 @@
 .import demoArea, doubleParam, biggest, lastChar, sumOfRecord, appendToString
 .import doubleArray, doubleRecord, doublePublicInt, doublePublicArray
 .import doublePublicRecord, appendToPublicString
+.import registerCallbackProc, testCallbackProc, registerCallbackFunc, testCallbackFunc
 
 .segment "JMPTBL"
 
@@ -41,4 +42,7 @@ jmp doublePublicInt
 jmp doublePublicArray
 jmp doublePublicRecord
 jmp appendToPublicString
-
+jmp registerCallbackProc
+jmp testCallbackProc
+jmp registerCallbackFunc
+jmp testCallbackFunc

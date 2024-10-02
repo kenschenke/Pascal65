@@ -1,58 +1,26 @@
 # Calling Pascal Routines
 
-!!! warning
-
-    This feature is not yet implemented and the information in this
-    document will likely change.
-
 Libraries can call Pascal routines if a pointer to the routine has been
 provided. The most common use case would be for a Pascal program to 
-register a callback.
+register a callback with the library.
 
-Calling a Pascal routine is a four step process.
+Calling a Pascal routine is a three step process.
 
   1. Create the stack frame header
   2. Push parameters onto the runtime stack
   3. Call the routine
-  4. Clean up the runtime stack
+
+The Pascal routine will clean up the runtime stack before it returns,
+including the frame header.
+
+!!! note
+
+    If the routine is a **Procedure** the entire stack frame is cleaned up.
+    If the routine is a **Function** the return value is left on the stack
+    and is the responsibility of the library to remove it.
 
 If you have not read the page on the [runtime stack](stack.md) yet, please do so
 before continuing.
-
-## Return Address
-
-Calls to Pascal routines are done via JMPs instead of JSRs. This means the
-runtime needs to know the return addresses to return control to the library routine.
-Since libraries are relocatable, this presents a bit of a challenge. To understand this
-challenge, please read the page on [object files](objfile.md).
-
-There are several legitimate ways to determine the address of something at runtime.
-What we really need to know is the value of the program counter of a particular
-piece of code. [This page](http://forum.6502.org/viewtopic.php?f=2&t=1250) discusses
-a few of the techniques. One possible way used by the sprites library is to JSR to a
-label then pop the return address off the stack.
-
-For example, if the label **returnFromCall** is the return point, this piece of code
-demonstrates how to determine the address of the label. **addrL** and **addrH** will
-contain the low and high value of the return address.
-
-        jmp getReturnAddress
-    setAddress:
-        pla         ; Pop address of return point off CPU stack and add 1
-        clc
-        adc #1
-        sta addrL
-        pla
-        adc #0
-        sta addrH
-
-        ; ...
-    
-    getReturnAddress:
-        jsr setAddress
-    returnFromCall:
-        ; This is where execution will continue when returning from the
-        ; call to the Pascal routine.
 
 ## Create the Stack Frame Header
 
@@ -62,8 +30,7 @@ important information, including the return address of the caller.
 
 The first step in calling a Pascal routine is to create the stack frame header.
 This is accomplished by calling the runtime routine
-[LibSFHeader](../runtime/libsfheader.md). This routine needs to know the return
-address of the caller and the pointer to the routine being called.
+[LibStackHeader](../runtime/libstackheader.md).
 
 ## Passing Parameters
 
@@ -72,12 +39,36 @@ be pushed onto the stack. This is done by calling the
 [PushEax](../runtime/pusheax.md) runtime routine. Parameters are pushed on to
 the stack in order of declaration, from left to right.
 
+### Scalar vs Non-scaler Values
+
+Scalar values are traditional built-in values that are stored entirely on the
+stack such as integers and boolean. Non-scalar values are objects such as
+strings, records, and arrays. They are stored in the heap and the stack
+contains a pointer to the heap storage.
+
+### Parameters By Value
+
+When passing a parameter by value, the Pascal routine expects to get its own
+copy of the value and is free to modify that value without affecting any of
+the caller's data. That means that if the routine is being passed a non-scalar
+value such as a string, the caller is expected to allocate a copy for the
+routine. It is the caller's responsibility to allocate the memory, copy the value,
+and free the memory when the routine returns.
+
+### Parameters By Reference
+
+When passing a variable by reference, the caller supplies a pointer to the
+caller's data rather than the value itself. For a scalar parameter, the caller
+puts the address to the value on the stack. For non-scalar, the caller must
+put the address of the pointer on the stack. This is necessary to allow the caller
+to modify and/or reallocate the variable as necessary.
+
 ## Call the Routine
 
-After the runtime stack has been set up the routine can be called by
+After the runtime stack has been set up, the routine can be called by
 the [LibCallRoutine](../runtime/libcallroutine.md).
 
-## Clean Up the Runtime Stack
+## Clean Up the Runtime Stack (Functions Only)
 
-When the Pascal routine returns, the stack frame header and parameters must
-be removed from the stack.
+If the Pascal routine is a **Function**, the return value must be removed
+from the stack by calling the [PopEax](../runtime/popeax.md) routine.
