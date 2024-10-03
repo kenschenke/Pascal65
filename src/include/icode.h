@@ -75,11 +75,13 @@ typedef unsigned char ICODE_MNE;
 #define IC_SSW              0x0b  // 0000 1011  string subscript write
 #define IC_FSO              0x0c  // 0000 1100  flush string output
 #define IC_DEF              0x0d  // 0000 1101  pop and free a file handle and close file
+#define IC_JRP              0x0e  // 0000 1110  call a routine from a pointer on the stack
 
 // These instructions take one operand
 #define IC_MASK_UNARY       0x20  // 0010 0000
 #define IC_NEG              0x22  // 0010 0010  1:type
 #define IC_ABS              0x23  // 0010 0011  1:type
+#define IC_PPF              0x24  // 0010 0100  1:label
 #define IC_INP              0x26  // 0010 0110  1:type
 #define IC_PSH              0x27  // 0010 0111  1:type
 #define IC_PRE              0x28  // 0010 1000  1:type
@@ -133,6 +135,7 @@ typedef unsigned char ICODE_MNE;
 #define IC_BSL              0x87  // 1000 0111  1:leftType, 2:rightType, 3:resultType (bitwise left-shift)
 #define IC_BSR              0x88  // 1000 1000  1:leftType, 2:rightType, 3:resultType (bitwise right-shift)
 #define IC_JSR              0x89  // 1000 1001  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
+#define IC_PRP              0x8a  // 1001 1010  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
 
 struct icode_operand
 {

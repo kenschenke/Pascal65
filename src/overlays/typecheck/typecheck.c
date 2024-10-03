@@ -314,6 +314,9 @@ static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 			retrieveChunk(exprRight.node, &sym);
 			retrieveChunk(sym.type, &rtype);
 			getBaseType(&subtype);
+			while (rtype.kind == TYPE_FUNCTION || rtype.kind == TYPE_ROUTINE_POINTER) {
+				retrieveChunk(rtype.subtype, &rtype);
+			}
 			if (rtype.kind == TYPE_ARRAY && subscript) {
 				retrieveChunk(rtype.subtype, &rtype);
 			}
@@ -325,6 +328,28 @@ static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 				pResultType->kind = TYPE_VOID;
 			}
 		}
+	}
+	else if (pLeftType->kind == TYPE_ROUTINE_POINTER) {
+		struct expr _expr;
+		char name[CHUNK_LEN+1];
+		struct symbol sym;
+		struct decl _decl;
+		struct type leftSubtype, rightSubtype;
+		if (pRightType->kind != TYPE_ROUTINE_ADDRESS) {
+			Error(errIncompatibleAssignment);
+		}
+		retrieveChunk(exprRight.left, &_expr);
+		memset(name, 0, sizeof(name));
+		retrieveChunk(_expr.name, name);
+		scope_lookup(name, &sym);
+		retrieveChunk(sym.decl, &_decl);
+		if (_decl.isLibrary) {
+			Error(errIncompatibleAssignment);
+		}
+		retrieveChunk(pLeftType->subtype, &leftSubtype);
+		retrieveChunk(sym.type, &rightSubtype);
+		// Make sure the pointers point to a routine of the same type
+		checkForwardVsFormalDeclaration(leftSubtype.paramsFields, rightSubtype.paramsFields);
 	}
 	else {
 		Error(errIncompatibleAssignment);
@@ -513,12 +538,18 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 	// If the symbol is the function's return value then look up the
 	// symbol in the parent scope because the function's symbol is needed.
 	retrieveChunk(sym.type, &_type);
+	getBaseType(&_type);
 	if (_type.flags & TYPE_FLAG_ISRETVAL) {
 		if (!scope_lookup_parent(name, &sym)) {
 			Error(errUndefinedIdentifier);
 			pRetnType->kind = TYPE_VOID;
 		}
 		retrieveChunk(sym.type, &_type);
+	}
+
+	if (_type.kind == TYPE_ROUTINE_POINTER) {
+		// Pointer to routine
+		retrieveChunk(_type.subtype, &_type);
 	}
 
 	if (_type.kind != TYPE_FUNCTION && _type.kind != TYPE_PROCEDURE) {
@@ -592,6 +623,17 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 			if (paramSubType.kind != argSubType.kind) {
 				Error(errIncompatibleTypes);
 			}
+		}
+		else if (paramType.kind == TYPE_ROUTINE_POINTER && argType.kind == TYPE_ROUTINE_ADDRESS) {
+			struct type paramSubType, argSubType;
+			struct symbol sym;
+
+			retrieveChunk(exprArg.left, &exprLeft);
+			retrieveChunk(exprLeft.left, &exprLeft);
+			retrieveChunk(exprLeft.node, &sym);
+			retrieveChunk(sym.type, &argSubType);
+			retrieveChunk(paramType.subtype, &paramSubType);
+			checkForwardVsFormalDeclaration(paramSubType.paramsFields, argSubType.paramsFields);
 		}
 		else if (paramType.kind != argType.kind) {
 			Error(errInvalidType);
@@ -1185,7 +1227,8 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 
 	retrieveChunk(chunkNum, &_expr);
 
-	expr_typecheck(_expr.left, recordSymtab, &leftType, _expr.kind == EXPR_CALL ? 1 : 0);
+	expr_typecheck(_expr.left, recordSymtab, &leftType,
+		(_expr.kind == EXPR_CALL || _expr.kind == EXPR_ADDRESS_OF) ? 1 : 0);
 	if (_expr.kind == EXPR_ARG) {
 		memcpy(pType, &leftType, sizeof(struct type));
 		if (_expr.evalType) {
@@ -1491,7 +1534,11 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 	
 	case EXPR_ADDRESS_OF:
-		pType->kind = TYPE_ADDRESS;
+		if (leftType.kind == TYPE_PROCEDURE || leftType.kind == TYPE_FUNCTION) {
+			pType->kind = TYPE_ROUTINE_ADDRESS;
+		} else {
+			pType->kind = TYPE_ADDRESS;
+		}
 		pType->subtype = typeCreate(leftType.kind, 0, 0, 0);
 		break;
 	

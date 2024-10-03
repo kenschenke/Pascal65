@@ -87,6 +87,7 @@ The following instructions take one operand.
 |[NEG](/icode/mne/neg)|22       |0010 0010   |Negate value at top of stack         |
 |[NEW](/icode/mne/new)|2b       |0010 1011   |Allocate memory from the heap        |
 |[OUT](/icode/mne/out)|2a       |0010 1010   |Output a value                       |
+|[PPF](/icode/mne/ppf)|24       |0010 0100   |Push stack frame for a routine ptr   |
 |[PRE](/icode/mne/pre)|28       |0010 1000   |Calcuate the predecessor of the value|
 |[PSH](/icode/mne/psh)|27       |0010 0111   |Push the operand to the runtime stack|
 |[SCV](/icode/mne/sqr)|37       |0011 0111   |Converts to a string object          |

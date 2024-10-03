@@ -57,6 +57,7 @@
 #define INY				0xc8
 
 #define JMP             0x4c	// jmp $nnnn		3 bytes
+#define JMP_INDIRECT    0x6c    // jmp ($nnnn)      3 bytes
 #define JSR             0x20	// jsr $nnnn		3 bytes
 #define RTS				0x60
 #define NOP				0xea
@@ -259,6 +260,8 @@
 #define RT_WRITEBYTES           (RT_BASE + 309)
 #define RT_READBYTES            (RT_BASE + 312)
 #define RT_CONVERTINT           (RT_BASE + 315)
+#define RT_LIBSTACKFRAME        (RT_BASE + 318)
+#define RT_LIBCALLROUTINE       (RT_BASE + 321)
 
 // CBM Kernal
 

@@ -134,11 +134,7 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         }
 
         if (!oper2.literal.uint8) {
-            // Routine is a declared routine - put the caller's return address back
-            genOne(PLA);
-            genOne(TAX);
-            genOne(PLA);
-            genThreeAddr(JSR, RT_PUSHEAX);
+            // Routine is a declared routine - return to the caller
             genThreeAddr(JMP, RT_RETURNFROMROUTINE);
         }
         break;
@@ -151,7 +147,7 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         genTwo(LDY_IMMEDIATE, oper1.literal.uint8);
         genThreeAddr(JSR, RT_PUSHSTACKFRAMEHEADER);
         // Push the stack frame pointer onto the CPU stack.
-        // This is popped back off by the ASF instruction.
+        // This is popped back off by the ASF and JRP instructions.
         genOne(PHA);
         genOne(TXA);
         genOne(PHA);
@@ -245,6 +241,18 @@ static void genTrinary(FILE *fh, ICODE_MNE mnemonic)
         linkAddressLookup(oper1.label, codeOffset+1, LINKADDR_BOTH);
         genThreeAddr(oper3.literal.uint8 ? JSR : JMP, 0);
         break;
+
+    case IC_PRP:
+        genTwo(LDA_IMMEDIATE, oper2.literal.uint8);
+        genTwo(STA_ZEROPAGE, ZP_SREGL);
+        genTwo(LDA_IMMEDIATE, oper3.literal.uint8);
+        genTwo(STA_ZEROPAGE, ZP_SREGH);
+        linkAddressLookup(oper1.label, codeOffset+1, LINKADDR_LOW);
+        genTwo(LDA_IMMEDIATE, 0);
+        linkAddressLookup(oper1.label, codeOffset+1, LINKADDR_HIGH);
+        genTwo(LDX_IMMEDIATE, 0);
+        genThreeAddr(JSR, RT_PUSHEAX);
+        break;
     }
 }
 
@@ -306,6 +314,7 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
             case IC_VDR:
                 genTwo(LDA_IMMEDIATE, oper.var.level);
                 genTwo(LDX_IMMEDIATE, oper.var.offset);
+                genTwo(LDY_IMMEDIATE, oper.var.type);
                 genThreeAddr(JSR, RT_PUSHVAR);
                 break;
             
@@ -659,6 +668,21 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         genTwo(LDA_IMMEDIATE, oper.literal.uint8);
         genThreeAddr(JSR, RT_READVAR);
         break;
+
+    case IC_PPF:
+        genThreeAddr(JSR, RT_POPEAX);
+        linkAddressLookup(oper.label, codeOffset + 1, LINKADDR_LOW);
+        genTwo(LDA_IMMEDIATE, 0);
+        linkAddressLookup(oper.label, codeOffset + 1, LINKADDR_HIGH);
+        genTwo(LDX_IMMEDIATE, 0);
+        genTwo(LDY_ZEROPAGE, ZP_SREGL);
+        genThreeAddr(JSR, RT_PUSHSTACKFRAMEHEADER);
+        // Push the stack frame pointer onto the CPU stack.
+        // This is popped back off by the ASF and JRP instructions.
+        genOne(PHA);
+        genOne(TXA);
+        genOne(PHA);
+        break;
     }
 }
 
@@ -730,6 +754,20 @@ void icodeGen(void)
         } else if (mnemonic == IC_FSO) {
             genThreeAddr(JSR, RT_GETSTRBUFFER);
             genThreeAddr(JSR, RT_PUSHEAX);
+        } else if (mnemonic == IC_JRP) {
+            // Activate the stack frame
+            genOne(PLA);
+            genTwo(STA_ZEROPAGE, ZP_STACKFRAMEH);
+            genOne(PLA);
+            genTwo(STA_ZEROPAGE, ZP_STACKFRAMEL);
+            genThreeAddr(JSR, RT_POPEAX);
+            genTwo(STA_ZEROPAGE, ZP_TMP1);
+            genTwo(STX_ZEROPAGE, ZP_TMP2);
+            genTwo(LDA_ZEROPAGE, ZP_NESTINGLEVEL);
+            genOne(PHA);
+            genTwo(LDA_ZEROPAGE, ZP_SREGL);
+            genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
+            genThreeAddr(JMP_INDIRECT, ZP_TMP1);
         }
     }
 

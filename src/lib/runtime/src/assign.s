@@ -29,6 +29,8 @@ leftPtr: .res 2                 ; Preserve pointer to variable
 ; ptr1 - address of left variable
 ; value to assign on top of runtime stack
 .proc assign
+    cpx #TYPE_ROUTINE_POINTER
+    beq @RoutineAddress
     pha
     txa
     pha
@@ -83,6 +85,8 @@ leftPtr: .res 2                 ; Preserve pointer to variable
     jsr pushRealStack
     jsr restoreLeftPtr
     jmp storeRealStack
+@RoutineAddress:
+    jmp rtStoreInt32
 .endproc
 
 .proc saveLeftPtr

@@ -13,6 +13,9 @@
 .include "runtime.inc"
 
 .export storeVarParam, loadParam, returnVal
+.export libStackHeader, libCallRoutine
+
+.import pushStackFrameHeader, popeax, pusheax
 
 ; This routine calculates the address of a parameter and
 ; leaves it in ptr1.
@@ -120,3 +123,67 @@ DN: rts
     rts
 .endproc
 
+; This routine pushes a stack frame header in preparation
+; for a library to call a Pascal routine.
+.proc libStackHeader
+    ; Save the return address
+    pla
+    sta tmp3
+    pla
+    sta tmp4
+    ; Pop the routine pointer off the stack
+    jsr popeax
+    ldy sreg                    ; nesting level
+    lda #0                      ; $0000 for return address for now
+    tax
+    jsr pushStackFrameHeader
+    pha                         ; Save the new stack frame ptr on the stack.
+    txa                         ; libCallRoutine pops it back off
+    pha
+    lda tmp4                    ; Put the return address back on the stack
+    pha
+    lda tmp3
+    pha
+    rts
+.endproc
+
+; This routine calls a Pascal routine from a library
+.proc libCallRoutine
+    ; Pop the return address off the CPU stack
+    pla
+    sta tmp3
+    pla
+    sta tmp4
+    ; Pop the routine pointer off the stack
+    jsr popeax
+    sta tmp1
+    stx tmp2
+    ; Pop the new stack frame header pointer off the stack
+    ; and put in stackP
+    pla
+    sta stackP+1
+    pla
+    sta stackP
+    ; Copy the stack frame header pointer to ptr1, subtracting 8.
+    ; This is the location of the return address on the stack
+    ; when returning from the Pascal routine.
+    lda stackP
+    sec
+    sbc #8
+    sta ptr1
+    lda stackP+1
+    sbc #0
+    sta ptr1+1
+    ; Store the return address in the stack frame header
+    ldy #0
+    lda tmp3
+    sta (ptr1),y
+    iny
+    lda tmp4
+    sta (ptr1),y
+    lda currentNestingLevel
+    pha
+    lda sreg
+    sta currentNestingLevel
+    jmp (tmp1)                  ; Jump into the routine
+.endproc

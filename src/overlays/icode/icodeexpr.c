@@ -15,6 +15,7 @@
 #include <ast.h>
 #include <string.h>
 #include <common.h>
+#include <int16.h>
 
 static void getExprType(CHUNKNUM chunkNum, struct type* pType);
 static char getExprTypeKind(CHUNKNUM chunkNum);
@@ -203,7 +204,12 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 	
 	case EXPR_ADDRESS_OF:
 		icodeExprPvt(_expr.left, 0, 0);
-		resultType.kind = TYPE_ADDRESS;
+		getExprType(_expr.left, &leftType);
+		if (leftType.kind == TYPE_PROCEDURE || leftType.kind == TYPE_FUNCTION) {
+			resultType.kind = TYPE_ROUTINE_ADDRESS;
+		} else {
+			resultType.kind = TYPE_ADDRESS;
+		}
 		break;
 
 	case EXPR_BOOLEAN_LITERAL:
@@ -262,8 +268,14 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 			retrieveChunk(sym.decl, &_decl);
 			retrieveChunk(_decl.value, &value);
 			icodeWriteUnaryWord(IC_PSH, value.value.word);
-		}
-		else {
+		} else if (rightType.kind == TYPE_FUNCTION || rightType.kind == TYPE_PROCEDURE) {
+			char label[16];
+			strcpy(label, "RTN");
+			strcat(label, formatInt16(sym.decl));
+			strcat(label, "ENTER");
+			icodeWriteTrinary(IC_PRP, icodeOperLabel(1, label),
+				icodeOperShort(2, sym.level), icodeOperShort(3, 0));
+		} else {
 			struct type subtype;
 			char kind = rightType.kind;
 			char isByRef, oper;
