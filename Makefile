@@ -24,7 +24,7 @@ BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(DEBUGLIB)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
 all: $(RUNTIME) ide compiler $(SCREENLIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
 
@@ -37,11 +37,20 @@ screen.petscii: src/lib/screen/screen.pas
 screendemo.petscii: examples/screendemo.pas
 	dos2unix < examples/screendemo.pas | petcat -w2 -text -o screendemo.petscii
 
+bubbles.petscii: examples/bubbles.pas
+	dos2unix < examples/bubbles.pas | petcat -w2 -text -o bubbles.petscii
+
 fivedice.petscii: examples/fivedice.pas
 	dos2unix < examples/fivedice.pas | petcat -w2 -text -o fivedice.petscii
 
 hello.petscii: hello.pas
 	dos2unix < hello.pas | petcat -w2 -text -o hello.petscii
+
+sprites.petscii: src/lib/sprites/sprites.pas
+	dos2unix < src/lib/sprites/sprites.pas | petcat -w2 -text -o sprites.petscii
+
+spritemove.petscii: src/lib/spritemove/spritemove.pas
+	dos2unix < src/lib/spritemove/spritemove.pas | petcat -w2 -text -o spritemove.petscii
 
 system.petscii: src/lib/system/system.pas
 	dos2unix < src/lib/system/system.pas | petcat -w2 -text -o system.petscii
@@ -110,6 +119,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/apps/compiler/bin/$(TARGET)/compiler.7 compiler.7,prg \
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
+	-write src/lib/sprites/bin/$(TARGET)/sprites sprites.lib,prg \
+	-write src/lib/spritemove/bin/$(TARGET)/spritemove spritemove.lib,prg \
 	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \
 	$(DRVWRITE) \
 	-write abortmsgs.petscii abortmsgs,seq \
@@ -118,7 +129,10 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write help.petscii help.txt,seq \
 	-write screen.petscii screen.pas,seq \
 	-write screendemo.petscii screendemo.pas,seq \
+	-write bubbles.petscii bubbles.pas,seq \
 	-write fivedice.petscii fivedice.pas,seq \
+	-write sprites.petscii sprites.pas,seq \
+	-write spritemove.petscii spritemove.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
 	-write license.petscii license.txt,seq

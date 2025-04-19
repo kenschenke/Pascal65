@@ -59,6 +59,7 @@ nav:
     - Rename: funcref/rename.md
     - Reset: funcref/reset.md
     - Rewrite: funcref/rewrite.md
+    - SetRasterCallback: funcref/setrastercallback.md
     - Sin: funcref/sin.md
     - Sqr: funcref/sqr.md
     - StringOfChar: funcref/strofchar.md
@@ -84,6 +85,17 @@ nav:
     - SetScreenSize: screen/setscreensize.md
     - SetTextColor: screen/settextcolor.md
     - SetUpperCase: screen/setuppercase.md
+  - Sprites Library:
+    - Introduction: sprites/intro.md
+    - GetSpritePos: sprites/getspritepos.md
+    - SetCollisionCallback: sprites/setcollisioncallback.md
+    - Sprite: sprites/sprite.md
+    - SpriteData: sprites/spritedata.md
+    - SpriteMultiColors: sprites/spritemulticolors.md
+    - SpritePos: sprites/spritepos.md
+    - SpriteSize: sprites/spritesize.md
+  - SpriteMove Library:
+    - SpriteMove: spritemove/spritemove.md
   - Developing Libraries:
     - Introduction to Libraries: libraries/libraries.md
     - Interface File: libraries/interface.md
@@ -97,6 +109,7 @@ nav:
   - Runtime Library:
     - Introduction: runtime/intro.md
     - Add: runtime/add.md
+    - AddIrqHandler: runtime/addirqhandler.md
     - Divide: runtime/divide.md
     - DivInt: runtime/divint.md
     - HeapAlloc: runtime/heapalloc.md

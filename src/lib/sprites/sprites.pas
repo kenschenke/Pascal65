@@ -13,14 +13,16 @@ Unit Sprites;
 
 Interface
 
+Type
+    SpriteCollisionCb = Procedure(Sprites : Byte; IsSToS : Boolean);
+
+Procedure GetSpritePos(number : Byte; Var x : Word; Var y : Byte);
 Procedure Sprite(number, color : Byte; enabled, isMultiColor : Boolean);
 Procedure SpriteMultiColors(color1, color2 : Byte);
-Procedure SpritePos(number : Byte; x : Integer; y : Byte);
+Procedure SpritePos(number : Byte; x : Word; y : Byte);
 Procedure SpriteSize(number : Byte; isDoubleX, isDoubleY : Boolean);
-Procedure SpriteMove(number : Byte; x0 : Integer; y0 : Byte;
-    x1 : Integer; y1, speed : Byte; stopAtTarget : Boolean);
-Procedure SpriteMoveRel(number : Byte; xRel : Integer; yRel : Byte);
 Procedure SpriteData(number : Byte; data : ^Byte);
+Procedure SetCollisionCallback(callback : SpriteCollisionCb);
 
 Implementation Library
 
