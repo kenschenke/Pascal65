@@ -1,6 +1,6 @@
 # Runtime Library
 
-Pascal65 provides a runtime library that is included in a programs produced
+Pascal65 provides a runtime library that is included in programs produced
 by the compiler. It includes a wide variety of utility routines and helpers.
 Many of them will be helpful to those wishing to write additional libraries.
 
