@@ -126,7 +126,8 @@ DN: rts
 ; This routine pushes a stack frame header in preparation
 ; for a library to call a Pascal routine.
 .proc libStackHeader
-    ; Save the return address
+    ; Save the return address because the new stack frame header
+    ; has to go under the return address on the CPU stack.
     pla
     sta tmp3
     pla
