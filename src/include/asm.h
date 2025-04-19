@@ -262,6 +262,8 @@
 #define RT_CONVERTINT           (RT_BASE + 315)
 #define RT_LIBSTACKFRAME        (RT_BASE + 318)
 #define RT_LIBCALLROUTINE       (RT_BASE + 321)
+#define RT_ADDIRQHANDLER        (RT_BASE + 324)
+#define RT_IRQCLEANUP           (RT_BASE + 327)
 
 // CBM Kernal
 

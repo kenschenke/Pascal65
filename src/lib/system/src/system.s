@@ -9,19 +9,17 @@
 
 ; Jump table for system library
 
+.include "runtime.inc"
+
 .import chr, odd, peek, poke, length, trim, stringOfChar, getkey, getkeynowait
 .import upCase, lowerCase, compareStr, contains, beginswith, endswith, strPos
 .import sin, cos, tan, fileAssign, fileClose, fileReset, fileRewrite, fileEOF
-.import fileIOResult, fileErase, fileRename
+.import fileIOResult, fileErase, fileRename, setRasterCb, cleanup, init
 
 .segment "JMPTBL"
 
-rts                 ; initialization
-nop                 ; pad to three bytes
-nop
-rts                 ; cleanup
-nop                 ; pad to three bytes
-nop
+jmp init
+jmp cleanup
 jmp fileAssign
 jmp beginswith
 jmp chr
@@ -43,6 +41,7 @@ jmp poke
 jmp fileRename
 jmp fileReset
 jmp fileRewrite
+jmp setRasterCb
 jmp sin
 jmp strPos
 jmp stringOfChar

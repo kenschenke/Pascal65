@@ -118,9 +118,11 @@ static char processJumpTable(CHUNKNUM libRoot)
 
     // Write the entry point for the library initialization
     readFromMemBuf(libBuf, buffer, 3);
-    relocAddr = relocate(buffer[2], buffer[1]);
-    buffer[1] = WORD_LOW(relocAddr);
-    buffer[2] = WORD_HIGH(relocAddr);
+    if (buffer[0] == JMP) {
+        relocAddr = relocate(buffer[2], buffer[1]);
+        buffer[1] = WORD_LOW(relocAddr);
+        buffer[2] = WORD_HIGH(relocAddr);
+    }
     strcpy(name, "init");
     strcat(name, formatInt16(libRoot));
     linkAddressSet(name, codeOffset);
@@ -128,9 +130,11 @@ static char processJumpTable(CHUNKNUM libRoot)
 
     // Write the entry point for the library cleanup
     readFromMemBuf(libBuf, buffer, 3);
-    relocAddr = relocate(buffer[2], buffer[1]);
-    buffer[1] = WORD_LOW(relocAddr);
-    buffer[2] = WORD_HIGH(relocAddr);
+    if (buffer[0] == JMP) {
+        relocAddr = relocate(buffer[2], buffer[1]);
+        buffer[1] = WORD_LOW(relocAddr);
+        buffer[2] = WORD_HIGH(relocAddr);
+    }
     strcpy(name, "cleanup");
     strcat(name, formatInt16(libRoot));
     linkAddressSet(name, codeOffset);

@@ -98,3 +98,5 @@ rtCosine                = rt_base + 288
 rtTangent               = rt_base + 291
 rtLibStackHeader        = rt_base + 318
 rtLibCallRoutine        = rt_base + 321
+rtAddIrqHandler         = rt_base + 324
+rtIrqCleanup            = rt_base + 327

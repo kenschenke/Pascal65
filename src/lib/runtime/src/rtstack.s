@@ -16,7 +16,7 @@
 
 ; imports
 
-.import popeax, pusheax, incsp4
+.import popeax, pusheax, incsp4, irqInit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -159,6 +159,7 @@ L2:
     jsr pushIntStack    ; Return address
     jsr pushIntStack    ; Static link               ; Stack frame of parent scope
     jsr pushIntStack    ; Dynamic link              ; Stack frame of caller
+    jsr irqInit
     rts
 .endproc
 

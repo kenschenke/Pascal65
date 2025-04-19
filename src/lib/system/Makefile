@@ -28,7 +28,7 @@ OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOU
 
 DEPENDS := $(OBJECTS:.o=.d)
 
-all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE)
+all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE) $(CONFIG)
 
 $(BINDIR):
 	mkdir -p $@
@@ -46,7 +46,7 @@ vpath %.s $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) -o $@ $<
 
-$(PRGFILE): $(OBJECTS)
+$(PRGFILE): $(OBJECTS) $(CONFIG)
 	ld65 $(LDFLAGS) -o $(PRGFILE) -C $(CONFIG) $(OBJECTS)
 
 clean:

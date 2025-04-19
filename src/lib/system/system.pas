@@ -13,6 +13,9 @@ Unit System;
 
 Interface
 
+Type
+    RasterCb = Procedure;
+
 (*
 Future string routines
 Function Copy(str : String; index, count : Byte) : String;
@@ -41,6 +44,7 @@ Procedure Poke(Address : Word; Value : Byte);
 Procedure Rename(Var f : File; newName : String);
 Procedure Reset(Var f : File);
 Procedure Rewrite(Var f : File);
+Procedure SetRasterCallback(callback : RasterCb);
 Function Sin(angle : Real) : Real;
 Function StrPos(str, sub : String; offset : Byte) : Byte;
 Function StringOfChar(ch : Char; count : Byte) : String;

@@ -38,7 +38,7 @@
 .import decrement, increment, stringInit, pushVar, readVar, writeBytes
 .import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
 .import fileErase, fileAssign, fileRename, fileFree, convertType
-.import libStackHeader, libCallRoutine
+.import libStackHeader, libCallRoutine, addIrqHandler, irqCleanup
 
 .segment "JMPTBL"
 
@@ -150,3 +150,5 @@ jmp readBytes            ; BASE + 312
 jmp convertType          ; BASE + 315
 jmp libStackHeader       ; BASE + 318
 jmp libCallRoutine       ; BASE + 321
+jmp addIrqHandler        ; BASE + 324
+jmp irqCleanup           ; BASE + 327
