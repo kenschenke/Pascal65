@@ -16,6 +16,7 @@
 ; This routine returns the value in the address in the first parameter
 
 .proc peek
+    lda #0
     jsr rtLibLoadParam
     sta ptr1
     stx ptr1 + 1
