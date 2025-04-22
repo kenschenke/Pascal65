@@ -23,36 +23,17 @@
 
 static 	char name[CHUNK_LEN + 1], enterLabel[15];
 
-static char icodeAbsCall(CHUNKNUM argChunk);
 static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk);
 static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char isRtnPtr, struct symbol *pSym);
 static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char isRtnPtr, struct symbol *pSym);
-static void icodeOrdCall(CHUNKNUM argChunk);
-static char icodePredSuccCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
 static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk,
 	char *returnLabel, char isLibraryCall, char isRtnPtr, struct symbol *pSym);
 static void icodeRoutineCleanup(char *localVars, struct type* pDeclType,
 	int numLocals, char isFunc, char isLibrary);
 static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType);
-static void icodeRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk);
-static char icodeSqrCall(CHUNKNUM argChunk);
 static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk);
-
-static char icodeAbsCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-	struct type argType;
-
-	retrieveChunk(argChunk, &arg);
-	retrieveChunk(arg.evalType, &argType);
-
-	icodeExpr(arg.left, 1);
-	icodeWriteUnaryShort(IC_ABS, argType.kind);
-
-	return argType.kind;
-}
 
 static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
@@ -152,33 +133,6 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	return rtnType.kind;
 }
 
-static void icodeOrdCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-
-	retrieveChunk(argChunk, &arg);
-
-	icodeExpr(arg.left, 1);
-}
-
-static char icodePredSuccCall(TRoutineCode rc, CHUNKNUM argChunk)
-{
-	struct expr arg;
-	struct type _type;
-
-	retrieveChunk(argChunk, &arg);
-	retrieveChunk(arg.evalType, &_type);
-	getBaseType(&_type);
-	if (_type.kind == TYPE_ENUMERATION || _type.kind == TYPE_ENUMERATION_VALUE) {
-		_type.kind = TYPE_WORD;
-	}
-
-	icodeExpr(arg.left, 1);
-	icodeWriteUnaryShort(rc == rcPred ? IC_PRE : IC_SUC, _type.kind);
-
-	return _type.kind;
-}
-
 static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
 	char argValue, readBytes = 0;
@@ -233,16 +187,6 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 	}
 
 	icodeWriteBinaryShort(IC_SFH, 0, 1);
-}
-
-static void icodeRoundTruncCall(TRoutineCode rc, CHUNKNUM argChunk)
-{
-	struct expr arg;
-
-	retrieveChunk(argChunk, &arg);
-
-	icodeExpr(arg.left, 1);
-	icodeWriteMnemonic(rc == rcRound ? IC_ROU : IC_TRU);
 }
 
 static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk,
@@ -451,20 +395,6 @@ void icodeRoutineDeclarations(CHUNKNUM chunkNum)
 
 }
 
-static char icodeSqrCall(CHUNKNUM argChunk)
-{
-	struct expr arg;
-	struct type argType;
-
-	retrieveChunk(argChunk, &arg);
-	retrieveChunk(arg.evalType, &argType);
-
-	icodeExpr(arg.left, 1);
-	icodeWriteUnaryShort(IC_SQR, argType.kind);
-
-	return argType.kind == TYPE_REAL ? TYPE_REAL : TYPE_LONGINT;
-}
-
 char icodeSubroutineCall(CHUNKNUM chunkNum)
 {
 	char isRtnPtr = 0;
@@ -500,6 +430,9 @@ char icodeSubroutineCall(CHUNKNUM chunkNum)
 
 static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 {
+	struct expr arg;
+	struct type argType;
+
 	switch (rc) {
 	case rcRead:
 	case rcReadln:
@@ -513,22 +446,41 @@ static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
         return rc == rcWriteStr ? TYPE_STRING_OBJ : TYPE_VOID;
 
 	case rcAbs:
-		return icodeAbsCall(argChunk);
+		retrieveChunk(argChunk, &arg);
+		retrieveChunk(arg.evalType, &argType);
+		icodeExpr(arg.left, 1);
+		icodeWriteUnaryShort(IC_ABS, argType.kind);
+		return argType.kind;
 
 	case rcSqr:
-		return icodeSqrCall(argChunk);
+		retrieveChunk(argChunk, &arg);
+		retrieveChunk(arg.evalType, &argType);
+		icodeExpr(arg.left, 1);
+		icodeWriteUnaryShort(IC_SQR, argType.kind);
+		return argType.kind == TYPE_REAL ? TYPE_REAL : TYPE_LONGINT;
 
 	case rcRound:
 	case rcTrunc:
-		icodeRoundTruncCall(rc, argChunk);
+		retrieveChunk(argChunk, &arg);
+		icodeExpr(arg.left, 1);
+		icodeWriteMnemonic(rc == rcRound ? IC_ROU : IC_TRU);
 		return TYPE_INTEGER;
 
 	case rcPred:
 	case rcSucc:
-		return icodePredSuccCall(rc, argChunk);
+		retrieveChunk(argChunk, &arg);
+		retrieveChunk(arg.evalType, &argType);
+		getBaseType(&argType);
+		if (argType.kind == TYPE_ENUMERATION || argType.kind == TYPE_ENUMERATION_VALUE) {
+			argType.kind = TYPE_WORD;
+		}
+		icodeExpr(arg.left, 1);
+		icodeWriteUnaryShort(rc == rcPred ? IC_PRE : IC_SUC, argType.kind);
+		return argType.kind;
 
 	case rcOrd:
-		icodeOrdCall(argChunk);
+		retrieveChunk(argChunk, &arg);
+		icodeExpr(arg.left, 1);
 		return TYPE_INTEGER;
 
 	case rcDec:
