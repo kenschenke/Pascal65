@@ -50,7 +50,7 @@ static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	if (arg.right) {
 		retrieveChunk(arg.right, &arg);
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		retrieveChunk(arg.left, &arg);
 		retrieveChunk(arg.evalType, &amtType);
 		amountType = amtType.kind;
@@ -142,7 +142,7 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 	retrieveChunk(argChunk, &arg);
 	retrieveChunk(arg.evalType, &_type);
 	if (_type.kind == TYPE_FILE || _type.kind == TYPE_TEXT) {
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		argValue = FH_FILENUM;
 		argChunk = arg.right;
 		readBytes = _type.kind == TYPE_FILE ? 1 : 0;
@@ -158,7 +158,7 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 		if (readBytes) {
 			if (_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) {
-				icodeExpr(arg.left, 1);
+				icodeExprRead(arg.left);
 				icodeWriteUnaryWord(IC_PSH, _type.size);
 				icodeWriteUnaryShort(IC_INP, TYPE_HEAP_BYTES);
 			} else {
@@ -238,21 +238,21 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY) &&
 			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Allocate a second heap and make a copy of the variable
-			icodeExpr(_expr.left, 1);
+			icodeExprRead(_expr.left);
 			icodeWriteUnaryWord(IC_CPY, paramType.size);
 		}
 		else if (paramType.kind == TYPE_STRING_VAR &&
 		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Convert the parameter into a string object
 			// Allocate a second heap and make a copy of the string
-			icodeExpr(_expr.left, argType.kind == TYPE_ARRAY ? 1 : 1);
+			icodeExprRead(_expr.left);
 			icodeWriteUnaryShort(IC_SCV, argType.kind);
 		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			icodeExpr(_expr.left, 0);
 		}
 		else {
-			icodeExpr(_expr.left, 1);
+			icodeExprRead(_expr.left);
 			if (isLibraryCall && isTypeInteger(paramType.kind)) {
 				icodeWriteBinaryShort(IC_CVI, argType.kind, paramType.kind);
 			}
@@ -448,21 +448,21 @@ static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 	case rcAbs:
 		retrieveChunk(argChunk, &arg);
 		retrieveChunk(arg.evalType, &argType);
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		icodeWriteUnaryShort(IC_ABS, argType.kind);
 		return argType.kind;
 
 	case rcSqr:
 		retrieveChunk(argChunk, &arg);
 		retrieveChunk(arg.evalType, &argType);
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		icodeWriteUnaryShort(IC_SQR, argType.kind);
 		return argType.kind == TYPE_REAL ? TYPE_REAL : TYPE_LONGINT;
 
 	case rcRound:
 	case rcTrunc:
 		retrieveChunk(argChunk, &arg);
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		icodeWriteMnemonic(rc == rcRound ? IC_ROU : IC_TRU);
 		return TYPE_INTEGER;
 
@@ -474,13 +474,13 @@ static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk)
 		if (argType.kind == TYPE_ENUMERATION || argType.kind == TYPE_ENUMERATION_VALUE) {
 			argType.kind = TYPE_WORD;
 		}
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		icodeWriteUnaryShort(rc == rcPred ? IC_PRE : IC_SUC, argType.kind);
 		return argType.kind;
 
 	case rcOrd:
 		retrieveChunk(argChunk, &arg);
-		icodeExpr(arg.left, 1);
+		icodeExprRead(arg.left);
 		return TYPE_INTEGER;
 
 	case rcDec:
@@ -505,7 +505,7 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(argChunk, &arg);
 		retrieveChunk(arg.evalType, &_type);
 		if (_type.kind == TYPE_FILE || _type.kind == TYPE_TEXT) {
-			icodeExpr(arg.left, 1);
+			icodeExprRead(arg.left);
 			argValue = FH_FILENUM;
 			argChunk = arg.right;
 			writeBytes = _type.kind == TYPE_FILE ? 1 : 0;
@@ -521,20 +521,20 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(arg.evalType, &_type);
 
 		if (writeBytes) {
-			icodeExpr(arg.left, 1);
+			icodeExprRead(arg.left);
 			icodeWriteUnaryWord(IC_PSH, _type.size);
 			icodeWriteUnaryShort(IC_OUT,
 				(_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) ?
 				TYPE_HEAP_BYTES : TYPE_SCALAR_BYTES);
 		} else if (_type.kind != TYPE_RECORD) {
-			valType = icodeExpr(arg.left, 1);
+			valType = icodeExprRead(arg.left);
 			if (arg.width) {
-                icodeExpr(arg.width, 1);
+                icodeExprRead(arg.width);
 			} else {
                 icodeWriteUnaryShort(IC_PSH, 0);
 			}
             if (arg.precision) {
-                icodeExpr(arg.precision, 1);
+                icodeExprRead(arg.precision);
             } else {
                 icodeWriteUnaryShort(IC_PSH, 0xff);
             }

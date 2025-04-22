@@ -70,8 +70,8 @@ static void icodeCaseStmt(struct stmt* pStmt)
 			retrieveChunk(exprChunk, &_expr);
 			retrieveChunk(_expr.evalType, &labelType);
 
-			icodeExpr(pStmt->expr, 1);
-			icodeExpr(exprChunk, 1);
+			icodeExprRead(pStmt->expr);
+			icodeExprRead(exprChunk);
 			icodeWriteBinaryShort(IC_EQU, exprType.kind, labelType.kind);
 			icodeWriteUnaryLabel(IC_BIT, bodyLabel);
 
@@ -121,15 +121,15 @@ static void icodeForLoop(struct stmt* pStmt)
 	retrieveChunk(_expr.node, &sym);
 
 	// Emit the initialization expression
-	icodeExpr(pStmt->init_expr, 1);
+	icodeExprRead(pStmt->init_expr);
 
 	// Initialize the start of each iteration
 	icodeWriteUnaryLabel(IC_LOC, loopLabel);
 	// Push the value of the control variable onto the stack
-	controlKind = icodeExpr(controlExpr, 1);
+	controlKind = icodeExprRead(controlExpr);
 
 	// Push the target value onto the stack
-	targetKind = icodeExpr(pStmt->to_expr, 1);
+	targetKind = icodeExprRead(pStmt->to_expr);
 
 	// Compare the control value to the target value
 	retrieveChunk(pStmt->to_expr, &_expr);
@@ -141,7 +141,7 @@ static void icodeForLoop(struct stmt* pStmt)
 	icodeStmts(pStmt->body);
 
 	// Increment (or decrement) the control variable
-	icodeExpr(controlExpr, 1);
+	icodeExprRead(controlExpr);
 	icodeWriteUnaryShort(pStmt->isDownTo ? IC_PRE : IC_SUC, controlKind);
 	icodeWriteUnary(IC_PSH, icodeOperVar(1,
 		(controlType.flags & TYPE_FLAG_ISBYREF) ? IC_VVW : IC_VDW,
@@ -165,7 +165,7 @@ static void icodeIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	strcat(endLabel, formatInt16(chunkNum));
 
 	// Evaluate the expression
-	icodeExpr(pStmt->expr, 1);
+	icodeExprRead(pStmt->expr);
 	if (pStmt->else_body) {
 		pFalseLabel = icodeOperLabel(1, elseLabel);
 	} else {
@@ -193,7 +193,7 @@ static void icodeRepeatStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	icodeStmts(pStmt->body);
 
 	// Evaluate the expression
-	icodeExpr(pStmt->expr, 1);
+	icodeExprRead(pStmt->expr);
 	icodeWriteUnaryLabel(IC_BIF, label);
 }
 
@@ -250,7 +250,7 @@ static void icodeWhileStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	icodeWriteUnaryLabel(IC_LOC, startLabel);
 
 	// Evaluate the expression
-	icodeExpr(pStmt->expr, 1);
+	icodeExprRead(pStmt->expr);
 	icodeWriteUnaryLabel(IC_BIF, endLabel);
 
 	icodeStmts(pStmt->body);
