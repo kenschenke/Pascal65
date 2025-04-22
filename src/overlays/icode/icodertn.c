@@ -568,26 +568,14 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(argChunk, &arg);
 		retrieveChunk(arg.evalType, &_type);
 
-		switch (_type.kind) {
-		case TYPE_BOOLEAN:
-		case TYPE_CHARACTER:
-		case TYPE_BYTE:
-		case TYPE_SHORTINT:
-		case TYPE_INTEGER:
-		case TYPE_WORD:
-		case TYPE_LONGINT:
-		case TYPE_CARDINAL:
-		case TYPE_STRING_LITERAL:
-        case TYPE_REAL:
-		case TYPE_STRING_VAR:
-		case TYPE_STRING_OBJ:
-			if (writeBytes) {
-				icodeExpr(arg.left, 1);
-				icodeWriteUnaryWord(IC_PSH, _type.size);
-				icodeWriteUnaryShort(IC_OUT, TYPE_SCALAR_BYTES);
-				break;
-			}
+		if (writeBytes) {
 			icodeExpr(arg.left, 1);
+			icodeWriteUnaryWord(IC_PSH, _type.size);
+			icodeWriteUnaryShort(IC_OUT,
+				(_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) ?
+				TYPE_HEAP_BYTES : TYPE_SCALAR_BYTES);
+		} else if (_type.kind != TYPE_RECORD) {
+			valType = icodeExpr(arg.left, 1);
 			if (arg.width) {
                 icodeExpr(arg.width, 1);
 			} else {
@@ -598,41 +586,8 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
             } else {
                 icodeWriteUnaryShort(IC_PSH, 0xff);
             }
-            icodeWriteUnary(IC_OUT, icodeOperByte(1, _type.kind));
-			break;
-
-		case TYPE_ARRAY:
-			if (writeBytes) {
-				icodeExpr(arg.left, 1);
-				icodeWriteUnaryWord(IC_PSH, _type.size);
-				icodeWriteUnaryShort(IC_OUT, TYPE_HEAP_BYTES);
-			} else {
-				struct type subtype;
-				struct expr leftExpr;
-				// struct symbol node;
-				retrieveChunk(_type.subtype, &subtype);
-				if (subtype.kind != TYPE_CHARACTER) {
-					break;  // can only write character arrays
-				}
-				retrieveChunk(arg.left, &leftExpr);
-				valType = icodeExpr(arg.left, 1);
-				if (arg.width) {
-					icodeExpr(arg.width, 1);
-				} else {
-					icodeWriteUnaryShort(IC_PSH, 0);
-				}
-				icodeWriteUnaryShort(IC_PSH, 0xff);
-				icodeWriteUnary(IC_OUT, icodeOperByte(1, valType));
-			}
-			break;
-		
-		case TYPE_RECORD:
-			if (writeBytes) {
-				icodeExpr(arg.left, 1);
-				icodeWriteUnaryWord(IC_PSH, _type.size);
-				icodeWriteUnaryShort(IC_OUT, TYPE_HEAP_BYTES);
-			}
-			break;
+            icodeWriteUnary(IC_OUT, icodeOperByte(1,
+				_type.kind == TYPE_ARRAY ? valType : _type.kind));
 		}
 
 		argChunk = arg.right;
