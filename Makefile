@@ -13,6 +13,8 @@ D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 
 RUNTIME = src/lib/runtime/bin/$(TARGET)/runtime
 SCREENLIB = src/lib/screen/bin/$(TARGET)/screen
+SPRITESLIB = src/lib/screen/bin/$(TARGET)/sprites
+SPRITEMOVELIB = src/lib/screen/bin/$(TARGET)/spritemove
 SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
 DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
@@ -20,13 +22,15 @@ LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 BINFILES := $(wildcard src/apps/ide/bin/$(TARGET)/pascal65*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
 BINFILES += $(SCREENLIB)
+BINFILES += $(SPRITESLIB)
+BINFILES += $(SPRITEMOVELIB)
 BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(DEBUGLIB)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
-all: $(RUNTIME) ide compiler $(SCREENLIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) ide compiler $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -88,8 +92,17 @@ compiler:
 $(SCREENLIB):
 	cd src/lib/screen && $(MAKE) TARGET=$(TARGET)
 
+$(SPRITESLIB):
+	cd src/lib/sprites && $(MAKE) TARGET=$(TARGET)
+
+$(SPRITEMOVELIB):
+	cd src/lib/spritemove && $(MAKE) TARGET=$(TARGET)
+
 $(SYSTEMLIB):
 	cd src/lib/system && $(MAKE) TARGET=$(TARGET)
+
+$(DEBUGLIB):
+	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
 
 $(DEBUGLIB):
 	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
@@ -143,5 +156,5 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
-run: $(RUNTIME) ide compiler $(SYSTEMLIB) $(SCREENLIB) $(BINTARGETDIR) $(D81FILE)
+run: $(RUNTIME) ide compiler $(SYSTEMLIB) $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
