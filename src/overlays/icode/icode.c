@@ -19,6 +19,7 @@
 #include <codegen.h>
 #include <buffer.h>
 #include <common.h>
+#include <int16.h>
 
 static FILE *fhi;
 
@@ -29,6 +30,12 @@ static char strBuf[25 + 1];
 static void icode_write_operand(struct icode_operand *operand);
 static int icodeUnitDeclarations(void);
 static void icodeUnitRoutines(void);
+
+void icodeFormatLabel(char *label, const char *str, short num)
+{
+    strcpy(label, str);
+    strcat(label, formatInt16(num));
+}
 
 struct icode_operand* icodeOperChar(char num, char value)
 {

@@ -275,9 +275,7 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 			icodeWriteUnaryWord(IC_PSH, value.value.word);
 		} else if (rightType.kind == TYPE_FUNCTION || rightType.kind == TYPE_PROCEDURE) {
 			char label[16];
-			strcpy(label, "RTN");
-			strcat(label, formatInt16(sym.decl));
-			strcat(label, "ENTER");
+			icodeFormatLabel(label, "RTNENTER", sym.decl);
 			icodeWriteTrinary(IC_PRP, icodeOperLabel(1, label),
 				icodeOperShort(2, sym.level), icodeOperShort(3, 0));
 		} else {

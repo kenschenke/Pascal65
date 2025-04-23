@@ -58,9 +58,7 @@ static void icodeCaseStmt(struct stmt* pStmt)
 		strcat(nextLabel, "_");
 		strcat(nextLabel, formatInt16(branch + 1));
 
-		strcpy(endLabel, "ENDCASE");
-		strcat(endLabel, formatInt16(num));
-
+		icodeFormatLabel(endLabel, "ENDCASE", num);
 		icodeWriteUnaryLabel(IC_LOC, branchLabel);
 
 		// Loop through the labels for this case branch
@@ -106,11 +104,8 @@ static void icodeForLoop(struct stmt* pStmt)
 	CHUNKNUM controlExpr;
 	char loopLabel[15], endLabel[15], controlKind, targetKind;
 
-	strcpy(loopLabel, "FOR");
-	strcat(loopLabel, formatInt16(pStmt->body));
-
-	strcpy(endLabel, "ENDFOR");
-	strcat(endLabel, formatInt16(pStmt->body));
+	icodeFormatLabel(loopLabel, "FOR", pStmt->body);
+	icodeFormatLabel(endLabel, "ENDFOR", pStmt->body);
 
 	// Look up the control variable
 	retrieveChunk(pStmt->init_expr, &_expr);
@@ -158,11 +153,8 @@ static void icodeIfStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 	char elseLabel[15], endLabel[15];
 	struct icode_operand *pFalseLabel;
 
-	strcpy(elseLabel, "ELSE");
-	strcat(elseLabel, formatInt16(chunkNum));
-
-	strcpy(endLabel, "ENDIF");
-	strcat(endLabel, formatInt16(chunkNum));
+	icodeFormatLabel(elseLabel, "ELSE", chunkNum);
+	icodeFormatLabel(endLabel, "ENDIF", chunkNum);
 
 	// Evaluate the expression
 	icodeExprRead(pStmt->expr);
@@ -187,8 +179,7 @@ static void icodeRepeatStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 {
 	char label[15];
 
-	strcpy(label, "REPEAT");
-	strcat(label, formatInt16(chunkNum));
+	icodeFormatLabel(label, "REPEAT", chunkNum);
 	icodeWriteUnaryLabel(IC_LOC, label);
 	icodeStmts(pStmt->body);
 
@@ -241,11 +232,8 @@ static void icodeWhileStmt(struct stmt* pStmt, CHUNKNUM chunkNum)
 {
 	char startLabel[15], endLabel[15];
 
-	strcpy(startLabel, "WHILE");
-	strcat(startLabel, formatInt16(chunkNum));
-
-	strcpy(endLabel, "ENDWHILE");
-	strcat(endLabel, formatInt16(chunkNum));
+	icodeFormatLabel(startLabel, "WHILE", chunkNum);
+	icodeFormatLabel(endLabel, "ENDWHILE", chunkNum);
 
 	icodeWriteUnaryLabel(IC_LOC, startLabel);
 

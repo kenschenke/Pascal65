@@ -87,9 +87,7 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 		icodeWriteMnemonic(IC_JRP);
 		// icodeWriteBinaryShort(IC_JRP, level, 0);
 	} else {
-		strcpy(enterLabel, "RTN");
-		strcat(enterLabel, formatInt16(declChunk));
-		strcat(enterLabel, "ENTER");
+		icodeFormatLabel(enterLabel, "RTNENTER", declChunk);
 		icodeWriteTrinary(IC_JSR, icodeOperLabel(1, enterLabel),
 			icodeOperShort(2, level), icodeOperShort(3, 0));
 	}
@@ -116,9 +114,7 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 		icodeWriteMnemonic(IC_JRP);
 		// icodeWriteBinaryShort(IC_JRP, level, 1);
 	} else {
-		strcpy(enterLabel, "RTN");
-		strcat(enterLabel, formatInt16(declChunk));
-		strcat(enterLabel, "ENTER");
+		icodeFormatLabel(enterLabel, "RTNENTER", declChunk);
 		icodeWriteTrinary(IC_JSR, icodeOperLabel(1, enterLabel),
 			icodeOperShort(2, level), icodeOperBool(3, 1));
 	}
@@ -157,23 +153,12 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 		retrieveChunk(arg.evalType, &_type);
 
 		if (readBytes) {
-			if (_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) {
-				icodeExprRead(arg.left);
-				icodeWriteUnaryWord(IC_PSH, _type.size);
-				icodeWriteUnaryShort(IC_INP, TYPE_HEAP_BYTES);
-			} else {
-				icodeExpr(arg.left, 0);
-				icodeWriteUnaryWord(IC_PSH, _type.size);
-				icodeWriteUnaryShort(IC_INP, TYPE_SCALAR_BYTES);
-			}
-		} else if (_type.kind == TYPE_ARRAY) {
-			struct type subtype;
-			retrieveChunk(_type.subtype, &subtype);
-			// can only read into character arrays
-			if (subtype.kind == TYPE_CHARACTER) {
-				icodeExpr(arg.left, 0);
-				icodeWriteUnaryShort(IC_INP, _type.kind);
-			}
+			icodeExpr(arg.left,
+				(_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) ? 1 : 0);
+			icodeWriteUnaryWord(IC_PSH, _type.size);
+			icodeWriteUnaryShort(IC_INP,
+				(_type.kind == TYPE_ARRAY || _type.kind == TYPE_RECORD) ?
+					TYPE_HEAP_BYTES : TYPE_SCALAR_BYTES);
 		} else {
 			icodeExpr(arg.left, 0);
 			icodeWriteUnaryShort(IC_INP, _type.kind);
@@ -204,9 +189,7 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 	retrieveChunk(_decl.node, &sym);
 
 	// Set up the stack frame
-	strcpy(returnLabel, "RTN");
-	strcat(returnLabel, formatInt16(exprChunk));
-	strcat(returnLabel, "RETURN");
+	icodeFormatLabel(returnLabel, "RTNRETURN", exprChunk);
 	if (isRtnPtr) {
 		icodeVar(IC_VDR, TYPE_ROUTINE_POINTER, (unsigned char)pSym->level, (unsigned char)pSym->offset);
 		icodeWriteUnaryLabel(IC_PPF, returnLabel);
@@ -253,8 +236,18 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 		}
 		else {
 			icodeExprRead(_expr.left);
-			if (isLibraryCall && isTypeInteger(paramType.kind)) {
-				icodeWriteBinaryShort(IC_CVI, argType.kind, paramType.kind);
+			if (isLibraryCall && isTypeInteger(paramType.kind) &&
+				argType.kind != paramType.kind) {
+					// The argument being passed is an integer and a
+					// different type than the expected parameter.
+					// See if it needs to be sign-extended.
+					char argMask, paramMask;
+					argMask = getTypeMask(argType.kind);
+					paramMask = getTypeMask(paramType.kind);
+					if (GET_TYPE_SIZE(paramMask) > GET_TYPE_SIZE(argMask))
+						// If the parameter type expected is larger than the
+						// argument being passed, sign-extend it up.
+						icodeWriteBinaryShort(IC_CVI, argType.kind, paramType.kind);
 			}
 		}
 
@@ -352,9 +345,7 @@ static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struc
 
 	memset(name, 0, sizeof(name));
 	retrieveChunk(pDecl->name, name);
-	strcpy(startLabel, "RTN");
-	strcat(startLabel, formatInt16(chunkNum));
-	strcat(startLabel, "ENTER");
+	icodeFormatLabel(startLabel, "RTNENTER", chunkNum);
 	icodeWriteUnaryLabel(IC_LOC, startLabel);
 
 	// Push the local variables onto the stack

@@ -350,8 +350,7 @@ int icodeVariableDeclarations(CHUNKNUM chunkNum, char *localVars)
 			if (_decl.isLibrary) {
 				// Write the address of this library declaration
 				// to the library's jump table.
-				strcpy(label, "libdecl");
-				strcat(label, formatInt16(sym.type));
+				icodeFormatLabel(label, "libdecl", sym.type);
 				icodeWriteUnaryLabel(IC_SSP, label);
 			}
 			
@@ -380,8 +379,7 @@ static void writeArrayInit(void)
 	writeToMemBuf(arrayInitsForAllScopes, &arrayInitsForScope, sizeof(CHUNKNUM));
 	++numArrayInitsForAllScopes;
 
-	strcpy(label, "arrayInits");
-	strcat(label, formatInt16(arrayInitsForScope));
+	icodeFormatLabel(label, "arrayInits", arrayInitsForScope);
 	icodeWriteUnaryLabel(IC_ARR, label);
 
 	arrayInitsForScope = 0;
