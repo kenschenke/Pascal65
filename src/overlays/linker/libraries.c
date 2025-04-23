@@ -158,9 +158,8 @@ static char processJumpTable(CHUNKNUM libRoot)
             buffer[1] = WORD_LOW(relocAddr);
             buffer[2] = WORD_HIGH(relocAddr);
 
-            strcpy(name, "RTN");
+            strcpy(name, "RTNENTER");
             strcat(name, formatInt16(chunkNum));
-            strcat(name, "ENTER");
             linkAddressSet(name, codeOffset);
 
             writeCodeBuf(buffer, 3);

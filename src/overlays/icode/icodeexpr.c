@@ -53,8 +53,8 @@ static char icodeCompExpr(struct expr* pExpr)
 	case EXPR_NE:	oper = IC_NEQ; break;
 	}
 
-	leftKind = icodeExpr(pExpr->left, 1);
-	rightKind = icodeExpr(pExpr->right, 1);
+	leftKind = icodeExprRead(pExpr->left);
+	rightKind = icodeExprRead(pExpr->right);
 
     if (leftKind == TYPE_ENUMERATION || leftKind == TYPE_ENUMERATION_VALUE) {
         leftKind = TYPE_WORD;
@@ -73,6 +73,11 @@ char icodeExpr(CHUNKNUM chunkNum, char isRead)
 	return icodeExprPvt(chunkNum, isRead, 1);
 }
 
+char icodeExprRead(CHUNKNUM chunkNum)
+{
+	return icodeExprPvt(chunkNum, 1, 1);
+}
+
 // Returns TYPE_* of expression
 static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 {
@@ -86,8 +91,8 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 	switch (_expr.kind) {
 	case EXPR_ADD:
 		if (isConcatOperand(_expr.left) && isConcatOperand(_expr.right)) {
-			icodeExpr(_expr.left, 1);
-			icodeExpr(_expr.right, 1);
+			icodeExprRead(_expr.left);
+			icodeExprRead(_expr.right);
 			icodeWriteBinaryShort(IC_CCT, getExprTypeKind(_expr.left),
 				getExprTypeKind(_expr.right));
 			resultType.kind = TYPE_STRING_OBJ;
@@ -124,8 +129,8 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 
 		retrieveChunk(_expr.evalType, &resultType);
 
-		icodeExpr(_expr.left, 1);
-		icodeExpr(_expr.right, 1);
+		icodeExprRead(_expr.left);
+		icodeExprRead(_expr.right);
 		icodeWriteTrinaryShort(call, getExprTypeKind(_expr.left),
 			getExprTypeKind(_expr.right), resultType.kind);
 		break;
@@ -143,8 +148,8 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 	case EXPR_DIV:
 	case EXPR_MOD: {
 		char kind = getExprTypeKind(_expr.left);
-		icodeExpr(_expr.left, 1);
-		icodeExpr(_expr.right, 1);
+		icodeExprRead(_expr.left);
+		icodeExprRead(_expr.right);
 		icodeWriteBinaryShort(_expr.kind == EXPR_DIV ? IC_DIV : IC_MOD,
 			kind, getExprTypeKind(_expr.right));
 		resultType.kind = _expr.kind == EXPR_DIV ? TYPE_REAL : kind;
@@ -153,13 +158,13 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 
 	case EXPR_AND:
 	case EXPR_OR:
-		icodeExpr(_expr.left, 1);
-		icodeExpr(_expr.right, 1);
+		icodeExprRead(_expr.left);
+		icodeExprRead(_expr.right);
 		icodeWriteMnemonic(_expr.kind == EXPR_AND ? IC_AND : IC_ORA);
 		break;
 
 	case EXPR_NOT:
-		icodeExpr(_expr.left, 1);
+		icodeExprRead(_expr.left);
 		resultType.kind = getExprTypeKind(_expr.left);
 		if (resultType.kind == TYPE_BOOLEAN) {
 			icodeWriteMnemonic(IC_NOT);
@@ -179,7 +184,7 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 		getBaseType(&leftType);
 		getBaseType(&rightType);
 
-		icodeExpr(_expr.right, 1);
+		icodeExprRead(_expr.right);
 		icodeExprPvt(_expr.left, 0, exprLeft.kind == TYPE_POINTER ? 1 : 0);
 		icodeWriteBinaryShort(IC_SET, leftType.kind, rightType.kind);
 		resultType.kind = TYPE_VOID;
@@ -270,9 +275,7 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 			icodeWriteUnaryWord(IC_PSH, value.value.word);
 		} else if (rightType.kind == TYPE_FUNCTION || rightType.kind == TYPE_PROCEDURE) {
 			char label[16];
-			strcpy(label, "RTN");
-			strcat(label, formatInt16(sym.decl));
-			strcat(label, "ENTER");
+			icodeFormatLabel(label, "RTNENTER", sym.decl);
 			icodeWriteTrinary(IC_PRP, icodeOperLabel(1, label),
 				icodeOperShort(2, sym.level), icodeOperShort(3, 0));
 		} else {
@@ -310,12 +313,12 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 		getBaseType(&leftType);
 		if (leftType.kind == TYPE_STRING_VAR) {
 			if (isRead) {
-				icodeExpr(_expr.right, 1);
-				icodeExpr(_expr.left, 1);
+				icodeExprRead(_expr.right);
+				icodeExprRead(_expr.left);
 				icodeWriteMnemonic(IC_SSR);
 			} else {
-				icodeExpr(_expr.left, 1);
-				icodeExpr(_expr.right, 1);
+				icodeExprRead(_expr.left);
+				icodeExprRead(_expr.right);
 				icodeWriteMnemonic(IC_SSW);
 			}
 			break;
@@ -326,13 +329,13 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 			if (!isRead && exprLeft.kind == EXPR_POINTER) {
 				icodeWriteUnaryShort(IC_MEM, TYPE_ADDRESS);
 			}
-			icodeExpr(_expr.right, 1);
+			icodeExprRead(_expr.right);
 		}
 		else {
 			// Look up the array index
-			icodeExpr(_expr.left, 1);
+			icodeExprRead(_expr.left);
 			// Put the address of the array variable into ptr1
-			icodeExpr(_expr.right, 1);
+			icodeExprRead(_expr.right);
 		}
 
 		retrieveChunk(_expr.right, &exprRight);
@@ -377,7 +380,7 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 			icodeExpr(_expr.left, 0);
 		}
 		else {
-			icodeExpr(_expr.left, 1);
+			icodeExprRead(_expr.left);
 		}
 		if (sym.offset) {
 			icodeWriteUnaryWord(IC_PSH, sym.offset);
@@ -407,8 +410,8 @@ static char icodeIntOrRealMath(struct expr* pExpr)
 
 	retrieveChunk(pExpr->evalType, &resultType);
 
-	leftType = icodeExpr(pExpr->left, 1);
-	rightType = icodeExpr(pExpr->right, 1);
+	leftType = icodeExprRead(pExpr->left);
+	rightType = icodeExprRead(pExpr->right);
 	switch (pExpr->kind) {
 		case EXPR_ADD:
             instruction = IC_ADD;

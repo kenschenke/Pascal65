@@ -135,9 +135,8 @@ static void genDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, st
 	genRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel);
 
 	// Call the routine
-	strcpy(enterLabel, "RTN");
+	strcpy(enterLabel, "RTNENTER");
 	strcat(enterLabel, formatInt16(declChunk));
-	strcat(enterLabel, "ENTER");
 	linkAddressLookup(enterLabel, codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JMP, 0);
 
@@ -164,9 +163,8 @@ static void genLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, str
 	genRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel);
 
 	// Call the routine
-	strcpy(enterLabel, "RTN");
+	strcpy(enterLabel, "RTNENTER");
 	strcat(enterLabel, formatInt16(declChunk));
-	strcat(enterLabel, "ENTER");
 	linkAddressLookup(enterLabel, codeOffset + 1, LINKADDR_BOTH);
 	genThreeAddr(JSR, 0);
 
@@ -349,9 +347,8 @@ static void genRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* 
 	retrieveChunk(_decl.node, &sym);
 
 	// Set up the stack frame
-	strcpy(returnLabel, "RTN");
+	strcpy(returnLabel, "RTNRETURN");
 	strcat(returnLabel, formatInt16(exprChunk));
-	strcat(returnLabel, "RETURN");
 	linkAddressLookup(returnLabel, codeOffset + 1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(returnLabel, codeOffset + 1, LINKADDR_HIGH);
@@ -511,9 +508,8 @@ static void genRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct 
 
 	memset(name, 0, sizeof(name));
 	retrieveChunk(pDecl->name, name);
-	strcpy(startLabel, "RTN");
+	strcpy(startLabel, "RTNENTER");
 	strcat(startLabel, formatInt16(chunkNum));
-	strcat(startLabel, "ENTER");
 	linkAddressSet(startLabel, codeOffset);
 
 	// Push the local variables onto the stack

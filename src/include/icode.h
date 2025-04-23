@@ -194,6 +194,8 @@ char icodeBoolValue(CHUNKNUM chunkNum);
 char icodeCharValue(CHUNKNUM chunkNum);
 char icodeDWordValue(CHUNKNUM chunkNum);
 char icodeExpr(CHUNKNUM chunkNum, char isRead);  // return TYPE_* of expression
+char icodeExprRead(CHUNKNUM chunkNum);  // return TYPE_* of expression
+void icodeFormatLabel(char *label, const char *str, short num);
 void icodeRealValue(CHUNKNUM chunkNum);
 void icodeRoutineDeclarations(CHUNKNUM chunkNum);
 char icodeSubroutineCall(CHUNKNUM chunkNum);
