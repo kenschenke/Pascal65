@@ -72,6 +72,7 @@ static void checkRelOpOperands(struct type* pType1, struct type* pType2);
 static void checkStdParms(CHUNKNUM argChunk, char allowedParms);
 static void checkStdRoutine(struct type* pType, CHUNKNUM argChunk, struct type* pRetnType);
 static void checkWriteWritelnCall(CHUNKNUM argChunk, char routineCode);
+static void expr_literal(struct expr* pExpr, struct type* pType);
 static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type* pType, char parentIsFuncCall);
 static void getArrayType(CHUNKNUM exprChunk, struct type* pType);
 static void hoistFuncCall(CHUNKNUM chunkNum);
@@ -84,6 +85,7 @@ static char isExprATypeDeclaration(CHUNKNUM exprChunk);
 static char isTypeOrdinal(char type);
 static char isTypeNumeric(char type);
 static char realOperands(char type1Kind, char type2Kind, short *pSize);
+static void saveEvalType(CHUNKNUM chunkNum, struct expr* pExpr, struct type* pType);
 
 static void caseTypeCheck(char exprKind, CHUNKNUM subtype, CHUNKNUM labelChunk)
 {
@@ -1212,36 +1214,9 @@ static void getArrayType(CHUNKNUM exprChunk, struct type* pType)
 	}
 }
 
-static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type* pType, char parentIsFuncCall)
+static void expr_literal(struct expr* pExpr, struct type* pType)
 {
-	struct expr _expr;
-	struct type leftType, rightType;
-	struct symbol sym;
-
-	memset(pType, 0, sizeof(struct type));
-
-	if (!chunkNum) {
-		pType->kind = TYPE_VOID;
-		return;
-	}
-
-	retrieveChunk(chunkNum, &_expr);
-
-	expr_typecheck(_expr.left, recordSymtab, &leftType,
-		(_expr.kind == EXPR_CALL || _expr.kind == EXPR_ADDRESS_OF) ? 1 : 0);
-	if (_expr.kind == EXPR_ARG) {
-		memcpy(pType, &leftType, sizeof(struct type));
-		if (_expr.evalType) {
-			freeChunk(_expr.evalType);
-		}
-		allocChunk(&_expr.evalType);
-		storeChunk(_expr.evalType, pType);
-		storeChunk(chunkNum, &_expr);
-		return;
-	}
-	expr_typecheck(_expr.right, recordSymtab, &rightType, _expr.kind == EXPR_CALL ? 1 : 0);
-
-	switch (_expr.kind) {
+	switch (pExpr->kind) {
 	case EXPR_BOOLEAN_LITERAL:
 		pType->kind = TYPE_BOOLEAN;
 		pType->flags = TYPE_FLAG_ISCONST;
@@ -1249,23 +1224,23 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_BYTE_LITERAL:
-		pType->kind = (!_expr.neg && _expr.value.byte > SCHAR_MAX) ? TYPE_BYTE : TYPE_SHORTINT;
+		pType->kind = (!pExpr->neg && pExpr->value.byte > SCHAR_MAX) ? TYPE_BYTE : TYPE_SHORTINT;
 		pType->flags = TYPE_FLAG_ISCONST;
-		if (_expr.neg && _expr.value.byte > SCHAR_MAX) {
+		if (pExpr->neg && pExpr->value.byte > SCHAR_MAX) {
 			pType->kind = TYPE_INTEGER;
 			pType->size = sizeof(short);
-			_expr.kind = EXPR_WORD_LITERAL;
+			pExpr->kind = EXPR_WORD_LITERAL;
 		} else {
 			pType->size = sizeof(char);
 		}
 		break;
 
 	case EXPR_WORD_LITERAL:
-		pType->kind = (!_expr.neg && _expr.value.word > SHRT_MAX) ? TYPE_WORD : TYPE_INTEGER;
-		if (_expr.neg && _expr.value.word >= SHRT_MAX) {
+		pType->kind = (!pExpr->neg && pExpr->value.word > SHRT_MAX) ? TYPE_WORD : TYPE_INTEGER;
+		if (pExpr->neg && pExpr->value.word >= SHRT_MAX) {
 			pType->kind = TYPE_LONGINT;
 			pType->size = sizeof(long);
-			_expr.kind = EXPR_DWORD_LITERAL;
+			pExpr->kind = EXPR_DWORD_LITERAL;
 		} else {
 			pType->size = sizeof(short);
 		}
@@ -1273,7 +1248,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 
 	case EXPR_DWORD_LITERAL:
-		pType->kind = (!_expr.neg && _expr.value.cardinal > LONG_MAX) ? TYPE_CARDINAL : TYPE_LONGINT;
+		pType->kind = (!pExpr->neg && pExpr->value.cardinal > LONG_MAX) ? TYPE_CARDINAL : TYPE_LONGINT;
 		pType->flags = TYPE_FLAG_ISCONST;
 		pType->size = sizeof(long);
 		break;
@@ -1294,6 +1269,64 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		pType->kind = TYPE_REAL;
 		pType->flags = TYPE_FLAG_ISCONST;
 		pType->size = sizeof(FLOAT);
+		break;
+	}
+}
+
+static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type* pType, char parentIsFuncCall)
+{
+	struct expr _expr;
+	struct type leftType, rightType;
+	struct symbol sym;
+
+	memset(pType, 0, sizeof(struct type));
+
+	if (!chunkNum) {
+		pType->kind = TYPE_VOID;
+		return;
+	}
+
+	retrieveChunk(chunkNum, &_expr);
+
+	if (_expr.kind == EXPR_ARRAY_LITERAL) {
+		chunkNum = _expr.left;
+		while (chunkNum) {
+			retrieveChunk(chunkNum, &_expr);
+			memset(&leftType, 0, sizeof(struct type));
+			if (_expr.kind == EXPR_ARRAY_LITERAL) {
+				expr_typecheck(chunkNum, recordSymtab, &leftType, 0);
+			} else {
+				expr_literal(&_expr, &leftType);
+				saveEvalType(chunkNum, &_expr, &leftType);
+			}
+			chunkNum = _expr.right;
+		}
+		return;
+	}
+
+	expr_typecheck(_expr.left, recordSymtab, &leftType,
+		(_expr.kind == EXPR_CALL || _expr.kind == EXPR_ADDRESS_OF) ? 1 : 0);
+	if (_expr.kind == EXPR_ARG) {
+		memcpy(pType, &leftType, sizeof(struct type));
+		if (_expr.evalType) {
+			freeChunk(_expr.evalType);
+		}
+		allocChunk(&_expr.evalType);
+		storeChunk(_expr.evalType, pType);
+		storeChunk(chunkNum, &_expr);
+		return;
+	}
+	expr_typecheck(_expr.right, recordSymtab, &rightType, _expr.kind == EXPR_CALL ? 1 : 0);
+	
+	switch (_expr.kind) {
+	case EXPR_BOOLEAN_LITERAL:
+	case EXPR_BYTE_LITERAL:
+	case EXPR_WORD_LITERAL:
+	case EXPR_DWORD_LITERAL:
+	case EXPR_STRING_LITERAL:
+	case EXPR_CHARACTER_LITERAL:
+	case EXPR_REAL_LITERAL:
+		expr_literal(&_expr, pType);
 		break;
 
 	case EXPR_ADD:
@@ -1554,12 +1587,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		pType->kind = TYPE_VOID;
 	}
 
-	if (_expr.evalType) {
-		freeChunk(_expr.evalType);
-	}
-	allocChunk(&_expr.evalType);
-	storeChunk(_expr.evalType, pType);
-	storeChunk(chunkNum, &_expr);
+	saveEvalType(chunkNum, &_expr, pType);
 }
 
 // This function takes a bare EXPR_NAME node and replaces it
@@ -1687,6 +1715,16 @@ static char isTypeNumeric(char type)
 		type == TYPE_REAL) ? 1 : 0;
 }
 
+static void saveEvalType(CHUNKNUM chunkNum, struct expr* pExpr, struct type* pType)
+{
+	if (pExpr->evalType) {
+		freeChunk(pExpr->evalType);
+	}
+	allocChunk(&pExpr->evalType);
+	storeChunk(pExpr->evalType, pType);
+	storeChunk(chunkNum, pExpr);
+}
+
 void stmt_typecheck(CHUNKNUM chunkNum)
 {
 	struct stmt _stmt;
@@ -1750,7 +1788,6 @@ void stmt_typecheck(CHUNKNUM chunkNum)
 		chunkNum = _stmt.next;
 	}
 }
-
 
 void typecheck_units(void)
 {
