@@ -5,6 +5,7 @@
     NEW: Add pointers to functions and procedures
     NEW: Libraries can now call Pascal functions and procedures
     FIX: Bug with Dec/Inc at byte boundaries
+    FIX: Cannot type ^ and @ in editor
 
 0.29-beta Sep 03 2024
     NEW: Rewrite code generation module in compiler to use intermediate code
