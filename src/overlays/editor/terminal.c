@@ -26,6 +26,8 @@ int editorReadKey(void) {
     int c = cgetc();
 #ifdef __MEGA65__
     c = fixAlphaCase(c);
+    if (c == 175) c = '^';
+    if (c == 192) c = '@';
 #endif
 
     if (c == CH_ESC) {
