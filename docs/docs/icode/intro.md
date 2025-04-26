@@ -104,12 +104,10 @@ The following instructions take two operands.
 |---------------------|---------|------------|------------------------------------------|
 |[CCT](/icode/mne/cct)|4a       |0100 1010   |Concatenate two values into a string obj  |
 |[CVI](/icode/mne/cvi)|50       |0101 0000   |Convert the integer at top of the stack   |
-|[DEC](/icode/mne/dec)|4d       |0100 1101   |Decrement a variable                      |
 |[DIV](/icode/mne/div)|43       |0100 0011   |Perform floating point division           |
 |[EQU](/icode/mne/equ)|48       |0100 1000   |Perform an equality comparison            |
 |[GRT](/icode/mne/grt)|44       |0100 0100   |Perform a greater-than comparison         |
 |[GTE](/icode/mne/gte)|45       |0100 0101   |Perform a greater-than-or-equal comparison|
-|[INC](/icode/mne/inc)|4e       |0100 1110   |Increment a variable                      |
 |[LSE](/icode/mne/lse)|47       |0100 1111   |Perform a less-than-or-equal comparison   |
 |[LST](/icode/mne/lst)|46       |0100 1110   |Perform a less-than comparison            |
 |[MOD](/icode/mne/mod)|42       |0100 0010   |Perform modulus                           |

@@ -96,6 +96,9 @@ Begin
     Dec(s, 3);
     If s <> -122 Then Error(38);
 
+	w := 255;
+	Inc(w);
+	If w <> 256 Then Error(381);
     w := 41135;
     Inc(w);
     If w <> 41136 Then Error(39);
@@ -106,6 +109,9 @@ Begin
     If w <> 38944 Then Error(41);
     Dec(w, 6);
     If w <> 38938 Then Error(42);
+	w := 256;
+	Dec(w);
+	If w <> 255 Then Error(421);
 
     i := -13245;
     Inc(i);

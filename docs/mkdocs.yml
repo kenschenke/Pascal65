@@ -133,7 +133,6 @@ nav:
       - CNL: icode/mne/cnl.md
       - CPY: icode/mne/cpy.md
       - CVI: icode/mne/cvi.md
-      - DEC: icode/mne/dec.md
       - DEL: icode/mne/del.md
       - DIV: icode/mne/div.md
       - DVI: icode/mne/dvi.md
@@ -141,7 +140,6 @@ nav:
       - FSO: icode/mne/fso.md
       - GRT: icode/mne/grt.md
       - GTE: icode/mne/gte.md
-      - INC: icode/mne/inc.md
       - INP: icode/mne/inp.md
       - JSR: icode/mne/jsr.md
       - LOC: icode/mne/loc.md

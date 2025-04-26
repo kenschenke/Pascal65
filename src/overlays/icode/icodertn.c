@@ -47,6 +47,14 @@ static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 
 	retrieveChunk(varChunk, &varExpr);
 	retrieveChunk(varExpr.evalType, &varType);
+	if (varType.kind == TYPE_CHARACTER) {
+		varType.kind = TYPE_SHORTINT;
+	}
+	if (varType.kind == TYPE_ENUMERATION) {
+		varType.kind = TYPE_INTEGER;
+	}
+
+	icodeExprRead(varChunk);	// push variable value onto stack
 
 	if (arg.right) {
 		retrieveChunk(arg.right, &arg);
@@ -68,10 +76,11 @@ static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk)
 		icodeWriteTrinaryShort(IC_MUL, amountType, TYPE_INTEGER, amountType);
 	}
 
-	icodeExpr(varChunk, 0);	// push variable address onto stack
+	icodeWriteTrinaryShort(rc == rcInc ? IC_ADD : IC_SUB,
+		varType.kind, amountType, varType.kind);
 
-	icodeWriteBinaryShort(rc == rcInc ? IC_INC : IC_DEC,
-		varType.kind, amountType);
+	icodeExpr(varChunk, 0);	// push variable address onto stack
+	icodeWriteBinaryShort(IC_SET, varType.kind, varType.kind);
 }
 
 static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char isRtnPtr, struct symbol *pSym)

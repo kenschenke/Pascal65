@@ -35,7 +35,7 @@
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
 .import contains, readCharFromInput, andBitwise, orBitwise
 .import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine, tangent
-.import decrement, increment, stringInit, pushVar, readVar, writeBytes
+.import stringInit, pushVar, readVar, writeBytes
 .import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
 .import fileErase, fileAssign, fileRename, fileFree, convertType
 .import libStackHeader, libCallRoutine
@@ -140,8 +140,8 @@ jmp invertBitwise        ; BASE + 282
 jmp sine                 ; BASE + 285
 jmp cosine               ; BASE + 288
 jmp tangent              ; BASE + 291
-jmp decrement            ; BASE + 294
-jmp increment            ; BASE + 297
+jmp $0000                ; BASE + 294
+jmp $0000                ; BASE + 297
 jmp stringInit           ; BASE + 300
 jmp pushVar              ; BASE + 303
 jmp readVar              ; BASE + 306
