@@ -15,7 +15,7 @@ newly allocated string object.
 ### Data Type Operand
 
 The data type operand refers to one of the Pascal65 defined types. See the
-[data types](/icode/types) topic for more information.
+[data types](../../types) topic for more information.
 
 This instruction can convert a string literal, a character literal, or an
 array of characters. If a string object or string variable is passed in,

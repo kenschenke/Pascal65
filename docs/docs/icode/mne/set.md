@@ -23,4 +23,4 @@ This operand is the data type of the value.
 
 ## See Also
 
-[Data Types](/icode/types)
+[Data Types](../../types)

@@ -20,4 +20,4 @@ The operand is the data type of the index.
 
 ## See Also
 
-[Data Types](/icode/types)
+[Data Types](../types)

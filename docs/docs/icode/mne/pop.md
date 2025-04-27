@@ -12,4 +12,4 @@ The **POP** instruction pops and discards the value at the top of the runtime st
 
 ## See Also
 
-[DEL](/icode/mne/del)
+[DEL](../del)

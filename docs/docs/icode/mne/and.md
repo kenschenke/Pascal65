@@ -13,4 +13,4 @@ values on the runtime stack and replaces both with the logical AND of their valu
 
 ## See Also
 
-[ORA](/icode/mne/ora)
+[ORA](../ora)

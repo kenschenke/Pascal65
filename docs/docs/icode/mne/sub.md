@@ -20,5 +20,5 @@ The operands are the data type of the values.
 
 ## See Also
 
-[ADD](/icode/mne/add), [MUL](/icode/mne/mul), [DIV](/icode/mne/div),
-[DVI](/icode/mne/dvi), [Data Types](/icode/types)
+[ADD](../add), [MUL](../mul), [DIV](../div),
+[DVI](../dvi), [Data Types](../../types)

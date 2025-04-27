@@ -36,4 +36,4 @@ jsr rtPushEax
 
 ## See Also
 
-[PopEax](/runtime/popeax)
+[PopEax](../popeax)

@@ -2,7 +2,7 @@
 
 Variables in Pascal are declared in the **Var** section. This could be the
 Var section of the global scope or the Var section of a procedure or function
-scope. Please see the [variable scope](/langref/scope) section for more information.
+scope. Please see the [variable scope](../scope) section for more information.
 
 ## Declarations
 

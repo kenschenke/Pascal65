@@ -17,5 +17,5 @@ The operand is the data type of the index.
 
 ## See Also
 
-[BWA](/icode/mne/bwa), [BWO](/icode/mne/bwo),
-[BSL](/icode/mne/bsl), [BSR](/icode/mne/bsr), [Data Types](/icode/types)
+[BWA](../bwa), [BWO](../bwo),
+[BSL](../bsl), [BSR](../bsr), [Data Types](../../types)

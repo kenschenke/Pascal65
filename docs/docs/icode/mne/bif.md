@@ -17,4 +17,4 @@ The operand is a label that defines the target.
 
 ## See Also
 
-[BIT](/icode/mne/bit), [BRA](/icode/mne/bra)
+[BIT](../bit), [BRA](../bra)

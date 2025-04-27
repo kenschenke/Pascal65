@@ -21,5 +21,5 @@ The operands are the data type of the values.
 
 ## See Also
 
-[BWA](/icode/mne/bwa), [BWO](/icode/mne/bwo), [BSR](/icode/mne/bsr),
-[BWC](/icode/mne/bwc), [Data Types](/icode/types)
+[BWA](../bwa), [BWO](../bwo), [BSR](../bsr),
+[BWC](../bwc), [Data Types](../../types)

@@ -32,7 +32,7 @@ Constant definitions for the supported data types can be found in the
 ## Inputs
 
 The routine divides *operand-1* by *operand-2*.
-Both operands are pushed onto the runtime stack with [PushEax](/runtime/pusheax),
+Both operands are pushed onto the runtime stack with [PushEax](../pusheax),
 with *operand-1* pushed first, followed by *operand-2*.
 
 |Register|Description             |
@@ -44,7 +44,7 @@ with *operand-1* pushed first, followed by *operand-2*.
 ## Result
 
 On return, the result is left at the top of the runtime stack and is accessed by
-a call to [PopEax](/runtime/popeax).
+a call to [PopEax](../popeax).
 
 ## Example
 
@@ -70,6 +70,6 @@ jsr rtPopEax        ; loads result into A/X (A is low byte)
 
 ## See Also
 
-[PopEax](/runtime/popeax), [PushEax](/runtime/pusheax),
-[Add](/runtime/add), [Subtract](/runtime/subtract),
-[Multiply](/runtime/multiply), [DivInt](/runtime/divint)
+[PopEax](../popeax), [PushEax](../pusheax),
+[Add](../add), [Subtract](../subtract),
+[Multiply](../multiply), [DivInt](../divint)

@@ -25,7 +25,7 @@ src/asminc directory. Each runtime library entry point is defined.
 The runtime library makes heavy use of the runtime stack. Several runtime
 library routines require inputs to be placed on the runtime stack and
 will place results on the runtime stack for consumption. Please take a
-moment to read the [this page](/libraries/stack) for a complete
+moment to read the [this page](../libraries/stack.md) for a complete
 discussion of the stack.
 
 ### Stack Routines
@@ -35,6 +35,6 @@ stack.
 
 |Routine                      |Description        |
 |-----------------------------|-------------------|
-|[PushEax](/runtime/pusheax)  |Push a 32-bit value|
-|[PopEax](/runtime/popeax)    |Pop a 32-bit value |
+|[PushEax](../pusheax)  |Push a 32-bit value|
+|[PopEax](../popeax)    |Pop a 32-bit value |
 

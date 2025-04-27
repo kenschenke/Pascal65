@@ -28,7 +28,7 @@ Constant definitions for the supported data types can be found in the
 ## Inputs
 
 The routine adds two operands, referred to as *operand-1* and *operand-2*.
-Both operands are pushed onto the runtime stack with [PushEax](/runtime/pusheax),
+Both operands are pushed onto the runtime stack with [PushEax](../pusheax),
 with *operand-1* pushed first, followed by *operand-2*.
 
 |Register|Description             |

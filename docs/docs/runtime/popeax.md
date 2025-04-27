@@ -8,4 +8,4 @@ in *sreg*.
 
 ## See Also
 
-[PushEax](/runtime/pusheax)
+[PushEax](../pusheax)

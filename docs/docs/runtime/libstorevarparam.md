@@ -25,4 +25,4 @@ jsr rtLibStoreVarParam
 
 ## See Also
 
-[LibLoadParam](/runtime/libloadparam), [LibReturnValue](/runtime/libreturnvalue)
+[LibLoadParam](../libloadparam), [LibReturnValue](../libreturnvalue)

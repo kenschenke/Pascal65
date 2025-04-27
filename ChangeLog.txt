@@ -6,6 +6,7 @@
     NEW: Libraries can now call Pascal functions and procedures
     FIX: Bug with Dec/Inc at byte boundaries
     FIX: Cannot type ^ and @ in editor
+    FIX: Fix links in docs.pascal65.org
 
 0.29-beta Sep 03 2024
     NEW: Rewrite code generation module in compiler to use intermediate code

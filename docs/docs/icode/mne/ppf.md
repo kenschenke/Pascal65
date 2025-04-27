@@ -7,7 +7,7 @@ PPF <return label>
 ```
 
 The **PPF** instruction pushes the stack frame for a routine being called
-through a pointer. This is in contrast to the [PUF](/icode/mne/puf) instruction
+through a pointer. This is in contrast to the [PUF](../puf) instruction
 which pushes the stack frame for a non-pointer routine call.
 
 !!! warning
