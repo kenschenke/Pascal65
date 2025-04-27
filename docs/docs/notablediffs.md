@@ -17,6 +17,5 @@ brace characters.*
 
 Support for some of these features is planned for future releases.  Of note:
 
-* Pointers
 * A math library
 * Support for strings in records and arrays
