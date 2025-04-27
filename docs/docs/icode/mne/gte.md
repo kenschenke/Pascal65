@@ -20,5 +20,5 @@ The operands are the data type of the values.
 
 ## See Also
 
-[GRT](/icode/mne/grt), [LST](/icode/mne/lst), [LSE](/icode/mne/lse),
-[EQU](/icode/mne/equ), [NEQ](/icode/mne/neq), [Data Types](/icode/types)
+[GRT](../grt), [LST](../lst), [LSE](../lse),
+[EQU](../equ), [NEQ](../neq), [Data Types](../../types)

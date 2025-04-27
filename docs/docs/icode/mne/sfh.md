@@ -25,4 +25,4 @@ is being set. 1 indicates input and 0 indicates output.
 
 ## See Also
 
-[INP](/icode/mne/inp), [OUT](/icode/mne/out)
+[INP](../inp), [OUT](../out)

@@ -4,7 +4,6 @@ Pascal65 is not a complete implementation of the Pascal standard.  The following
 notable differences.
 
 * Sets are not implemented
-* Pointers are missing
 
 ## Code Comments ##
 
@@ -18,6 +17,5 @@ brace characters.*
 
 Support for some of these features is planned for future releases.  Of note:
 
-* Pointers
 * A math library
 * Support for strings in records and arrays

@@ -29,4 +29,4 @@ stx ptr1+1
 
 ## See Also
 
-[HeapFree](/runtime/heapfree)
+[HeapFree](../heapfree)

@@ -13,4 +13,4 @@ values on the runtime stack and replaces both with the logical OR of their value
 
 ## See Also
 
-[AND](/icode/mne/and)
+[AND](../and)

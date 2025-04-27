@@ -10,10 +10,10 @@ stack and the stack frame header.
 ### Routine Pointer
 
 The pointer to the Pascal routine is expected at the top of the runtime
-stack. The [PushEax](../runtime/pusheax.md) routine pushes values to the stack.
+stack. The [PushEax](../pusheax) routine pushes values to the stack.
 
 ## Outputs
 
 None
 
-[LibCallRoutine](/runtime/libcallroutine)
+[LibCallRoutine](../libcallroutine)

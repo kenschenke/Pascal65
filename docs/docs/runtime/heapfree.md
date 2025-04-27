@@ -18,4 +18,4 @@ jsr rtHeapFree
 
 ## See Also
 
-[HeapAlloc](/runtime/heapalloc)
+[HeapAlloc](../heapalloc)

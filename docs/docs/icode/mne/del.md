@@ -13,4 +13,4 @@ and deletes it from the program heap.
 
 ## See Also
 
-[POP](/icode/mne/pop)
+[POP](../pop)

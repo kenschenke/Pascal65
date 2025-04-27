@@ -9,7 +9,7 @@ PUF <routineLevel> <returnLabel>
 ## Description
 
 The **PUF** instruction pushes the stack frame for a routine.
-This is in contrast to the [PPF](/icode/mne/pff) instruction
+This is in contrast to the [PPF](../ppf) instruction
 which pushes the stack frame for a call made through a routine pointer.
 
 !!! warning

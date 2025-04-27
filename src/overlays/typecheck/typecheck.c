@@ -23,12 +23,6 @@
 #define STDPARM_REAL    0x4
 #define STDPARM_CHAR    0x8
 
-static long intRanges[] = {
-	SCHAR_MAX,
-	SHRT_MAX,
-	LONG_MAX,
-};
-
 /*
 ; |----------------------------------------------------------------------------------|
 ; |          | Byte     | ShortInt | Word     | Integer  | Cardinal | LongInt | Real |
@@ -78,8 +72,7 @@ static void getArrayType(CHUNKNUM exprChunk, struct type* pType);
 static void hoistFuncCall(CHUNKNUM chunkNum);
 static char integerOperands(char type1Kind, char type2Kind, short *pSize);
 static char isAssignableToString(char rightKind, CHUNKNUM rightSubType);
-static char isAssignmentCompatible(char leftKind, struct type *rightType,
-	struct expr *rightExpr);
+static char isAssignmentCompatible(char leftKind, struct type *rightType);
 static char isExprAFuncCall(CHUNKNUM exprChunk);
 static char isExprATypeDeclaration(CHUNKNUM exprChunk);
 static char isTypeOrdinal(char type);
@@ -287,7 +280,7 @@ static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 		pResultType->kind = pLeftType->kind;
 		pResultType->size = 2;
 	}
-	else if (isAssignmentCompatible(pLeftType->kind, pRightType, &exprRight)) {
+	else if (isAssignmentCompatible(pLeftType->kind, pRightType)) {
 		pResultType->kind = pLeftType->kind;
 		pResultType->size = GET_TYPE_SIZE(getTypeMask(pLeftType->kind));
 	}
@@ -850,7 +843,7 @@ static void checkReadReadlnCall(CHUNKNUM argChunk, char routineCode)
 		}
 
 		if (!first && fileSubtype.kind && fileSubtype.kind != TYPE_ARRAY) {
-			if (!isAssignmentCompatible(fileSubtype.kind, &_type, &_expr)) {
+			if (!isAssignmentCompatible(fileSubtype.kind, &_type)) {
 				Error(errIncompatibleTypes);
 			}
 		}
@@ -1049,7 +1042,7 @@ static void checkWriteWritelnCall(CHUNKNUM argChunk, char routineCode)
 		}
 
 		if (!first && fileSubtype.kind && fileSubtype.kind != TYPE_ARRAY && fileSubtype.kind != TYPE_RECORD) {
-			if (!isAssignmentCompatible(fileSubtype.kind, &_type, &_expr)) {
+			if (!isAssignmentCompatible(fileSubtype.kind, &_type)) {
 				Error(errIncompatibleTypes);
 			}
 		}
@@ -1628,8 +1621,7 @@ static char isAssignableToString(char rightKind, CHUNKNUM rightSubType)
 	return 0;
 }
 
-static char isAssignmentCompatible(char leftKind, struct type *rightType,
-	struct expr *rightExpr)
+static char isAssignmentCompatible(char leftKind, struct type *rightType)
 {
 	char rightKind = rightType->kind;
 	char leftMask = getTypeMask(leftKind);
@@ -1639,30 +1631,7 @@ static char isAssignmentCompatible(char leftKind, struct type *rightType,
 		return 1;
 	}
 
-	if (!isTypeInteger(leftKind) || !isTypeInteger(rightKind)) {
-		return 0;
-	}
-
-	// If the left is unsigned, the right cannot be signed
-	// unless it's a constant and between zero and the maximum
-	// signed value for that type.
-	if (!IS_TYPE_SIGNED(leftMask) && IS_TYPE_SIGNED(rightMask)) {
-		if (!(rightType->flags & TYPE_FLAG_ISCONST) ||
-			GET_TYPE_SIZE(rightMask) > GET_TYPE_SIZE(leftMask) ||
-			(rightExpr->neg || rightExpr->value.longInt > intRanges[GET_TYPE_SIZE(rightMask)/2])) {
-				return 0;
-			}
-	}
-
-	// If the left is signed and the right is unsigned, the left
-	// must be a larger data type.
-	if (IS_TYPE_SIGNED(leftMask) && !IS_TYPE_SIGNED(rightMask) &&
-		GET_TYPE_SIZE(leftMask) <= GET_TYPE_SIZE(rightMask)) {
-			return 0;
-	}
-
-	// The left must be equal to or larger in size than the right.
-	return GET_TYPE_SIZE(leftMask) >= GET_TYPE_SIZE(rightMask) ? 1 : 0;
+	return (isTypeInteger(leftKind) && isTypeInteger(rightKind)) ? 1 : 0;
 }
 
 static char isExprAFuncCall(CHUNKNUM exprChunk)

@@ -252,8 +252,6 @@
 #define RT_SINE                 (RT_BASE + 285)
 #define RT_COSINE               (RT_BASE + 288)
 #define RT_TANGENT              (RT_BASE + 291)
-#define RT_DECREMENT            (RT_BASE + 294)
-#define RT_INCREMENT            (RT_BASE + 297)
 #define RT_STRINGINIT           (RT_BASE + 300)
 #define RT_PUSHVAR              (RT_BASE + 303)
 #define RT_READVAR              (RT_BASE + 306)

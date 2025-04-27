@@ -18,4 +18,4 @@ This operand is the data type of the variable.
 
 ## See Also
 
-[Data Types](/icode/types)
+[Data Types](../../types)

@@ -167,16 +167,6 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         }
         break;
 
-    case IC_INC:
-    case IC_DEC:
-        genThreeAddr(JSR, RT_POPEAX);
-        genTwo(STA_ZEROPAGE, ZP_PTR1L);
-        genTwo(STX_ZEROPAGE, ZP_PTR1H);
-        genTwo(LDA_IMMEDIATE, oper1.literal.uint8);
-        genTwo(LDY_IMMEDIATE, oper2.literal.uint8);
-        genThreeAddr(JSR, mnemonic == IC_INC ? RT_INCREMENT : RT_DECREMENT);
-        break;
-
     case IC_CVI:
         genThreeAddr(JSR, RT_POPTOINTOP1AND2);
         genTwo(LDA_IMMEDIATE, oper1.literal.uint8);

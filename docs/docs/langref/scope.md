@@ -70,7 +70,7 @@ Var OuterVar : Integer;
     Procedure Inner;
     Var InnerVar : Integer;
     Begin
-        OuterVar := 5;  // Inner can access its local variable
+        InnerVar := 5;  // Inner can access its local variable
         OuterVar := 10; // It can also access the parent scope's local variables
         GlobalVar := 3; // And it can access global variables
     End;
