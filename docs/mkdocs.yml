@@ -133,6 +133,7 @@ nav:
       - CNL: icode/mne/cnl.md
       - CPY: icode/mne/cpy.md
       - CVI: icode/mne/cvi.md
+      - DEF: icode/mne/def.md
       - DEL: icode/mne/del.md
       - DIV: icode/mne/div.md
       - DVI: icode/mne/dvi.md
