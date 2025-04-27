@@ -65,6 +65,8 @@ Begin
 	If 1234 + 30000 <> 31234 Then Error(24);
 	If -1234 + 2147483650 <> 2147482416 Then Error(25);
 	If -1234 + 123456 <> 122222 Then Error(26);
+	i2 := i3 + 5;
+	If i2 <> 5683 Then Error(261);
 End;
 
 Procedure TestLongIntAdd;
@@ -84,6 +86,10 @@ Begin;
 	If 496789 <> l3 + w Then Error(33);
 	i := 12345;
 	If 469134 <> l3 + i Then Error(34);
+	l2 := l3 + 5;
+	If l2 <> 456794 Then Error(341);
+	l2 := l3 + 12345;
+	If l2 <> 469134 Then Error(342);
 End;
 
 Procedure TestShortAdd;
@@ -115,6 +121,11 @@ Begin
 	If 43210 + 20 <> 43230 Then Error(49);
 	If 43210 + 2147483650 <> 2147526860 Then Error(50);
 	If 43210 + 123456 <> 166666 Then Error(51);
+	w2 := w3 + 5;
+	If w2 <> 583 Then Error(511);
+	i := -5;
+	w2 := w3 + i;
+	If w2 <> 573 Then Error(512); 
 End;
 
 Begin
