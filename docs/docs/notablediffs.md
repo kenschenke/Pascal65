@@ -4,7 +4,6 @@ Pascal65 is not a complete implementation of the Pascal standard.  The following
 notable differences.
 
 * Sets are not implemented
-* Pointers are missing
 
 ## Code Comments ##
 
