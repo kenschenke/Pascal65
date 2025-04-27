@@ -56,7 +56,7 @@ The following instructions do not take an operand.
 |[CNL](../mne/cnl)    |08       |0000 1000   |Clear input buffer to newline  |
 |[DEF](../mne/def)    |0d       |0000 1101   |Pops and frees file handle     |
 |[DEL](../mne/del)    |07       |0000 0111   |Pops and frees address         |
-|[FSO](../mne/not)    |0c       |0000 1100   |Flush string output buffer     |
+|[FSO](../mne/fso)    |0c       |0000 1100   |Flush string output buffer     |
 |[NOT](../mne/not)    |09       |0000 1001   |Logical not top of stack       |
 |[ORA](../mne/ora)    |02       |0000 0010   |Perform a boolean OR operation |
 |[ONL](../mne/onl)    |03       |0000 0011   |Output a newline character     |
@@ -90,7 +90,7 @@ The following instructions take one operand.
 |[PPF](../mne/ppf)    |24       |0010 0100   |Push stack frame for a routine ptr   |
 |[PRE](../mne/pre)    |28       |0010 1000   |Calcuate the predecessor of the value|
 |[PSH](../mne/psh)    |27       |0010 0111   |Push the operand to the runtime stack|
-|[SCV](../mne/sqr)    |37       |0011 0111   |Converts to a string object          |
+|[SCV](../mne/scv)    |37       |0011 0111   |Converts to a string object          |
 |[SQR](../mne/sqr)    |35       |0011 0101   |Calculate the square of a number     |
 |[SSP](../mne/ssp)    |39       |0011 1001   |Save the stack pointer               |
 |[SST](../mne/sst)    |2d       |0010 1101   |Initialize a string variable         |
