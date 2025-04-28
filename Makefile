@@ -13,8 +13,8 @@ D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 
 RUNTIME = src/lib/runtime/bin/$(TARGET)/runtime
 SCREENLIB = src/lib/screen/bin/$(TARGET)/screen
-SPRITESLIB = src/lib/screen/bin/$(TARGET)/sprites
-SPRITEMOVELIB = src/lib/screen/bin/$(TARGET)/spritemove
+SPRITESLIB = src/lib/sprites/bin/$(TARGET)/sprites
+SPRITEMOVELIB = src/lib/spritemove/bin/$(TARGET)/spritemove
 SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
 DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
@@ -100,9 +100,6 @@ $(SPRITEMOVELIB):
 
 $(SYSTEMLIB):
 	cd src/lib/system && $(MAKE) TARGET=$(TARGET)
-
-$(DEBUGLIB):
-	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
 
 $(DEBUGLIB):
 	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
