@@ -1,6 +1,6 @@
-Welcome To Pascal65 Version 0.29-beta
+Welcome To Pascal65 Version 0.30-beta
 
-Copyright 2022-2024 by Ken Schenke
+Copyright 2022-2025 by Ken Schenke
 kenschenke@gmail.com
 github.com/kenschenke/Pascal65
 
