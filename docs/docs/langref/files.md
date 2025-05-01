@@ -106,3 +106,18 @@ Begin
     Close(fh);
 End.
 ```
+
+## File Routines
+
+Here is a complete list of the file routines in the Pascal runtime.
+
+|Name                              |Description                                       |
+|----------------------------------|--------------------------------------------------|
+|[Assign](../../funcref/assign)    |Set the filename for a file handle                |
+|[Close](../../funcref/close)      |Close an open file                                |
+|[EOF](../../funcref/eof)          |Checks if a file has reached end-of-file condition|
+|[Erase](../../funcref/erase)      |Delete a file                                     |
+|[IOResult](../../funcref/ioresult)|Gets the error number for the last file operation |
+|[Rename](../../funcref/rename)    |Rename a file                                     |
+|[Reset](../../funcref/reset)      |Open a file for reading                           |
+|[Rewrite](../../funcref/rewrite)  |Open a file for writing                           |
