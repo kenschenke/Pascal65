@@ -1,3 +1,6 @@
+0.31-beta
+    FIX: Fix bug not correctly detecting error when reading from unopened file
+
 0.30-beta Apr 30 2025
     NEW: **IMPORTANT** Libraries now have two mandatory entry points in
          their jump tables, for initialization and cleanup.

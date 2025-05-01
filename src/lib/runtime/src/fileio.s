@@ -673,12 +673,13 @@ NO: lda #1
     sta ptr1                    ; Store it in ptr1
     stx ptr1 + 1
     lda currentFhIn
+    beq ZF                      ; Branch if file number is zero
     jsr getFileRW
     cmp #0
     bne :+
     lda currentFhIn
     jsr setEOF
-    lda #104
+ZF: lda #104
     jmp setIOResult
 :   ldy #0
 LP: lda tmp1                    ; Check if the length is zero
