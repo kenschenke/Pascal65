@@ -472,6 +472,9 @@ DN: rts
 :   jmp incLineVert
 .endproc
 
+; Sets a sprite's position on the screen from posx and posy.
+; X contains sprite number, 0-7
+; Y contains sprite number * 2
 .proc setSpriteXY
     lda posy,x
     sta VIC_SPR0_Y,y

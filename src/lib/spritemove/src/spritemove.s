@@ -3,7 +3,7 @@
 
 .export spriteMoveCall
 
-.import posx, posy, x0, x1, y0, y1, hastarget, speed, initLine
+.import posx, posy, x0, x1, y0, y1, hastarget, speed, initLine, setSpriteXY
 .import SPR_MASKS
 
 ; Procedure SpriteMove(number : Byte; x0 : Integer; y0 : Byte;
@@ -57,6 +57,8 @@
     and hastarget
     sta hastarget
 IL: jsr initLine                ; Calculate the line slope
+    ; Move the sprite to the starting position
+    jsr setSpriteXY
     ; Enable sprite
     lda SPR_MASKS,x
     ora VIC_SPR_ENA
