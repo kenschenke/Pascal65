@@ -4,9 +4,7 @@
 
 .export initSpriteBss, spriteIrqReturn
 .export SPR_MASKS, getIrqAddress
-.export collisionCallback
-
-.import setIrq
+.export collisionCallback, isIrqSet, installIrqHandler
 
 .code
 
@@ -16,6 +14,31 @@ initSpriteBss:
 :   sta startbss,x
     dex
     bpl :-
+    rts
+
+installIrqHandler:
+    jmp getIrqAddress       ; Get address of IRQ handler on CPU stack
+setIrq:
+    pla                     ; Pop address of CPU handler off CPU stack and add 1
+    clc
+    adc #1
+    sta tmp1
+    pla
+    adc #0
+    tax
+    lda tmp1
+
+    ; Bit 1: Enable sprite/data collision interrupts
+    ; Bit 2: Enable sprite/sprite collision interrupts
+    ldy #%00000110
+
+    sei                     ; disable CPU interrupts
+    jsr rtAddIrqHandler
+    sta spriteIrqReturn+1
+    stx spriteIrqReturn+2
+    cli                     ; clear interrupt flag, allowing the CPU to respond to interrupt requests
+    lda #1
+    sta isIrqSet
     rts
 
 ; This gets the address of the IRQ handler (irqHandler) and 
@@ -90,6 +113,7 @@ startbss:
 collisionBits: .res 1
 collisionCallback: .res 4
 spriteOnSprite: .res 1
+isIrqSet: .res 1
 
 ; Bit is 1 if sprite has target to hit (destination for movement)
 endbss:

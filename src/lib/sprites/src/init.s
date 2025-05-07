@@ -1,34 +1,12 @@
 .include "c64.inc"
-.include "runtime.inc"
 
-.export initSpriteLibrary, setIrq
+.export initSpriteLibrary
 
-.import initSpriteBss, spriteIrqReturn, getIrqAddress
+.import initSpriteBss
 
 initSpriteLibrary:
     jsr initSpriteBss
 
     lda #0
     sta VIC_SPR_ENA         ; Disable all sprites
-
-    jmp getIrqAddress       ; Get address of IRQ handler on CPU stack
-setIrq:
-    pla                     ; Pop address of CPU handler off CPU stack and add 1
-    clc
-    adc #1
-    sta tmp1
-    pla
-    adc #0
-    tax
-    lda tmp1
-
-    ; Bit 1: Enable sprite/data collision interrupts
-    ; Bit 2: Enable sprite/sprite collision interrupts
-    ldy #%00000110
-
-    sei                     ; disable CPU interrupts
-    jsr rtAddIrqHandler
-    sta spriteIrqReturn+1
-    stx spriteIrqReturn+2
-    cli                     ; clear interrupt flag, allowing the CPU to respond to interrupt requests
     rts

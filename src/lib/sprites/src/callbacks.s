@@ -2,7 +2,7 @@
 
 .export registerCollisionCallback
 
-.import collisionCallback
+.import collisionCallback, isIrqSet, installIrqHandler
 
 .proc registerCollisionCallback
     lda #0
@@ -13,5 +13,11 @@
     sta collisionCallback+2
     lda sreg+1
     sta collisionCallback+3
-    rts
+
+    ; Check if the IRQ handler has been set up
+    lda isIrqSet
+    bne :+      ; skip the next instruction if it already is
+    jsr installIrqHandler
+
+:   rts
 .endproc
