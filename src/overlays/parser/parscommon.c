@@ -172,6 +172,11 @@ const TTokenCode tlSubscriptOrFieldStart[] = {
     tcLBracket, tcPeriod, tcDummy
 };
 
+// Global compiler directives
+const TTokenCode tlGlobalDirectives[] = {
+    tcSTACKSIZE, tcDummy
+};
+
 // Individual tokens
 extern const TTokenCode tlColonEqual[] = {tcColonEqual, tcDummy};
 extern const TTokenCode tlDO[] = {tcDO, tcDummy};

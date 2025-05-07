@@ -28,6 +28,7 @@
 #include <int16.h>
 #include <inputbuf.h>
 #include <doscmd.h>
+#include <common.h>
 
 #ifndef __GNUC__
 #include <cbm.h>
@@ -45,8 +46,6 @@
 #define stricmp strcasecmp
 #endif
 
-#define RUNTIME_STACK_SIZE 2048
-
 #define BOOTSTRAP_CODE		"BOOTSTRAP_CODE"
 #define BSS_BOOTSTRAP_MSG	"BSS_BOOTSTRAP_MSG"
 
@@ -61,9 +60,9 @@
 #else
 
 #ifdef __MEGA65__
-#define CODESEG_CEIL (0xc000-RUNTIME_STACK_SIZE)
+#define CODESEG_CEIL 0xc000
 #else
-#define CODESEG_CEIL (0xd000-RUNTIME_STACK_SIZE)
+#define CODESEG_CEIL 0xd000
 #endif
 
 #endif
@@ -129,6 +128,10 @@ static void writeChainCall(char* name);
 #define PRG_HEADER_CODE_EXIT_HANDLER_L 27
 #define PRG_HEADER_CODE_EXIT_HANDLER_H 31
 #define PRG_HEADER_LENGTH 109
+#define PRG_HEADER_STACKSIZE1_L 47
+#define PRG_HEADER_STACKSIZE1_H 49
+#define PRG_HEADER_STACKSIZE2_L 54
+#define PRG_HEADER_STACKSIZE2_H 58
 static unsigned char prgHeader[] = {
 	// Disable BASIC ROM
 	LDA_ZEROPAGE, 1,
@@ -165,13 +168,13 @@ static unsigned char prgHeader[] = {
 	STA_ZEROPAGE, ZP_STACKFRAMEH,
 
 	// Set the runtime stack size and initialize the stack
-	LDA_IMMEDIATE, WORD_LOW(RUNTIME_STACK_SIZE),
-	LDX_IMMEDIATE, WORD_HIGH(RUNTIME_STACK_SIZE),
+	LDA_IMMEDIATE, 0,  // PRG_HEADER_STACKSIZE1_L
+	LDX_IMMEDIATE, 0, // PRG_HEADER_STACKSIZE1_H
 	JSR, WORD_LOW(RT_STACKINIT), WORD_HIGH(RT_STACKINIT),
 
-	LDA_IMMEDIATE, WORD_LOW(0xc000 - RUNTIME_STACK_SIZE - 4),
+	LDA_IMMEDIATE, 0,  // PRG_HEADER_STACKSIZE2_L
 	STA_ZEROPAGE, ZP_PTR1L,
-	LDA_IMMEDIATE, WORD_HIGH(0xc000 - RUNTIME_STACK_SIZE - 4),
+	LDA_IMMEDIATE, 0, // PRG_HEADER_STACKSIZE2_H
 	STA_ZEROPAGE, ZP_PTR1H,
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_2
 	LDX_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_3
@@ -259,13 +262,13 @@ static unsigned char prgHeader[] = {
 	STA_ZEROPAGE, ZP_STACKFRAMEH,
 
 	// Set the runtime stack size and initialize the stack
-	LDA_IMMEDIATE, WORD_LOW(RUNTIME_STACK_SIZE),
-	LDX_IMMEDIATE, WORD_HIGH(RUNTIME_STACK_SIZE),
+	LDA_IMMEDIATE, WORD_LOW(runtimeStackSize),
+	LDX_IMMEDIATE, WORD_HIGH(runtimeStackSize),
 	JSR, WORD_LOW(RT_STACKINIT), WORD_HIGH(RT_STACKINIT),
 
-	LDA_IMMEDIATE, WORD_LOW(0xd000 - RUNTIME_STACK_SIZE - 4),
+	LDA_IMMEDIATE, WORD_LOW(0xd000 - runtimeStackSize - 4),
 	STA_ZEROPAGE, PTR1L,
-	LDA_IMMEDIATE, WORD_HIGH(0xd000 - RUNTIME_STACK_SIZE - 4),
+	LDA_IMMEDIATE, WORD_HIGH(0xd000 - runtimeStackSize - 4),
 	STA_ZEROPAGE, PTR1H,
 	LDA_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_2
 	LDX_IMMEDIATE, 0,  // PRG_HEADER_CODE_OFFSET_3
@@ -753,6 +756,10 @@ void linkerPreWrite(CHUNKNUM astRoot)
 	linkAddressLookup(BSS_INPUTBUF, codeOffset + PRG_HEADER_CODE_OFFSET_10, LINKADDR_HIGH);
 	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_L, LINKADDR_LOW);
 	linkAddressLookup("EXIT_HANDLER", codeOffset + PRG_HEADER_CODE_EXIT_HANDLER_H, LINKADDR_HIGH);
+	prgHeader[PRG_HEADER_STACKSIZE1_L] = WORD_LOW(runtimeStackSize);
+	prgHeader[PRG_HEADER_STACKSIZE1_H] = WORD_HIGH(runtimeStackSize);
+	prgHeader[PRG_HEADER_STACKSIZE2_L] = WORD_LOW(CODESEG_CEIL - runtimeStackSize - 4);
+	prgHeader[PRG_HEADER_STACKSIZE2_H] = WORD_HIGH(CODESEG_CEIL - runtimeStackSize - 4);
 	writeCodeBuf(prgHeader, PRG_HEADER_LENGTH);
 
 	initLibraries(astRoot);
@@ -849,18 +856,13 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 	}
 
 	// This MUST be the last thing written to the code buffer
-#if 0
-	printf("heap bottom = %04x\n", codeBase+codeOffset);
-	printf("ceiling %04x\n", CODESEG_CEIL);
-	printf("heap size %d\n", CODESEG_CEIL-codeBase-codeOffset);
-#endif
 	linkAddressSet(BSS_HEAPBOTTOM, codeOffset);
 	ch = 0;
 	fwrite(&ch, 1, 1, codeFh);
 	fwrite(&ch, 1, 1, codeFh);
 
 	// Check if the code segment overflows
-	if (codeBase+codeOffset > CODESEG_CEIL) {
+	if (codeBase+codeOffset > CODESEG_CEIL-runtimeStackSize) {
 		abortTranslation(abortCodeSegmentOverflow);
 	}
 

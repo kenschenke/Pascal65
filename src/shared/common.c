@@ -25,6 +25,8 @@
 #include <conio.h>
 #endif
 
+#define DEFAULT_RUNTIMESTACKSIZE 512
+
 short cntSymtabs;
 CHUNKNUM firstSymtabChunk;
 CHUNKNUM globalSymtab;
@@ -32,6 +34,7 @@ CHUNKNUM units;
 CHUNKNUM exports;
 char isFatalError;
 short currentLineNumber;
+unsigned short runtimeStackSize;
 unsigned char libsNeeded[MAX_LIBS / 8];
 
 static void saveLib(char num);
@@ -62,6 +65,7 @@ void initCommon(void)
     cntSymtabs = 0;
     firstSymtabChunk = 0;
     isFatalError = 0;
+	runtimeStackSize = DEFAULT_RUNTIMESTACKSIZE;
 
     initMemBufCache();
 }

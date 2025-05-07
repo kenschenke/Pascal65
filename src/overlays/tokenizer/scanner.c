@@ -27,6 +27,12 @@ char tokenString[MAX_LINE_LEN + 1];
 void getNextToken(void)
 {
     skipWhiteSpace();
+    if (isCompilerDirective()) {
+        // If the skipWhiteSpace function encountered a compiler directive inside
+        // a comment then it leaves the tokenCode set to that directive. If so,
+        // return so the directive can be tokenized and the comment closed out.
+        return;
+    }
 
     switch (getCharCode(getCurrentChar())) {
         case ccLetter:
@@ -122,7 +128,17 @@ static void skipWhiteSpace(void)
             if (ch == '*') {
                 while (ch != eofChar) {
                     ch = getChar();
-                    if (ch == '*') {
+                    if (ch == '$') {
+                        getChar();
+                        // Check for a compiler directive
+                        getWordToken();
+                        // If a compiler directive was found, skip processing
+                        // the rest of the comment
+                        if (tokenCode == tcSTACKSIZE) {
+                            break;
+                        }
+                    }
+                    else if (ch == '*') {
                         ch = getChar();
                         if (ch == ')') {
                             break;

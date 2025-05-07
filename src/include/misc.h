@@ -29,6 +29,8 @@ typedef enum {
 
     tcFALSE, tcTRUE,
 
+    tcSTACKSIZE,
+
     tcUpArrow, tcStar, tcLParen, tcRParen, tcMinus, tcPlus,
     tcEqual, tcLBracket, tcRBracket, tcColon, tcSemicolon, tcLt,
     tcGt, tcComma, tcPeriod, tcSlash, tcColonEqual, tcLe, tcGe,

@@ -48,9 +48,25 @@
  *    The string is stored with the quotes.
  */
 
+static char directiveHasParam(void);
 static void writeTzIdentifier(CHUNKNUM Icode);
 
+// Returns a 1 if the compiler directive has a parameter
+static char directiveHasParam(void)
+{
+    return tokenCode == tcSTACKSIZE ? 1 : 0;
+}
+
+// Returns a 1 if the current token is a compiler directive
+char isCompilerDirective(void)
+{
+    return tokenCode == tcSTACKSIZE ? 1 : 0;
+}
+
 CHUNKNUM tokenize(const char *filename) {
+    char isDirective;     // non-zero if processing a compiler directive
+    char directiveParam;  // non-zero if the current loop iteration
+                          // is processing a compiler directive param
     CHUNKNUM Icode;
     TTokenizerCode tzType;
     extern char lineNumberChanged;
@@ -59,7 +75,28 @@ CHUNKNUM tokenize(const char *filename) {
 
     tinOpen(filename, abortSourceFileOpenFailed);
 
+    isDirective = 0;
+    directiveParam = 0;
     while (!isBufferEof()) {
+        // If processing a compiler directive but not looking for a parameter,
+        // then the tokenizer needs to consume the remainder of the comment block
+        // before retrieving the next token.
+        if (isDirective && !directiveParam) {
+            // Consume characters until *) is reached.
+            char ch = getCurrentChar();
+            while (ch != eofChar) {
+                if (ch == '*') {
+                    ch = getChar();
+                    if (ch == ')') {
+                        getChar();
+                        break;
+                    }
+                }
+                ch = getChar();
+            }
+            isDirective = 0;
+        }
+
         getNextToken();
 
         if (lineNumberChanged) {
@@ -77,6 +114,7 @@ CHUNKNUM tokenize(const char *filename) {
                 writeToMemBuf(Icode, &tzType, 1);
                 writeToMemBuf(Icode, &len, 1);
                 writeToMemBuf(Icode, tokenString, len);
+                directiveParam = 0;
                 break;
             }
 
@@ -93,13 +131,19 @@ CHUNKNUM tokenize(const char *filename) {
                 }
                 writeToMemBuf(Icode, &len, 1);
                 writeToMemBuf(Icode, tokenString, len);
+                directiveParam = 0;
                 break;
             }
-            
+
             default:
                 tzType = tzToken;
                 writeToMemBuf(Icode, &tzType, 1);
                 writeToMemBuf(Icode, &tokenCode, 1);
+                if (isCompilerDirective()) {
+                    isDirective = 1;
+                    directiveParam = directiveHasParam() ? 1 : 0;
+                    tokenCode = 0;
+                }
                 break;
         }
     }

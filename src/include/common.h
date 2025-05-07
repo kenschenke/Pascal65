@@ -36,6 +36,7 @@ extern CHUNKNUM units;
 extern CHUNKNUM exports;
 extern short currentLineNumber;
 extern unsigned char libsNeeded[MAX_LIBS / 8];
+extern unsigned short runtimeStackSize;
 
 extern const TTokenCode tlDeclarationStart[], tlDeclarationFollow[],
     tlIdentifierStart[], tlIdentifierFollow[],
@@ -54,6 +55,8 @@ extern const TTokenCode tlProcFuncStart[], tlProcFuncFollow[],
 
 extern const TTokenCode tlProgProcIdFollow[], tlFuncIdFollow[],
     tlActualVarParmFollow[], tlFormalParmsFollow[];
+
+extern const TTokenCode tlGlobalDirectives[];
 
 extern char isFatalError;       // non-zero if fatal parsing error encountered
 

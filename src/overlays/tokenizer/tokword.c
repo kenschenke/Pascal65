@@ -61,7 +61,8 @@ static TResWord rw8[] = {
 };
 
 static TResWord rw9[] = {
-    {"interface", tcINTERFACE}, {"procedure", tcPROCEDURE}, {NULL},
+    {"interface", tcINTERFACE}, {"procedure", tcPROCEDURE},
+    {"stacksize", tcSTACKSIZE}, {NULL},
 };
 
 static TResWord rw10[] = {

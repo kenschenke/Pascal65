@@ -22,5 +22,6 @@ typedef enum {
 
 // Returns membuf of intermediate code containing tokenized code
 CHUNKNUM tokenize(const char *filename);
+char isCompilerDirective(void);
 
 #endif // end of TOKENIZER_H

@@ -16,7 +16,7 @@ the curious.
 
 The runtime stack is used to store every global and local variable as well
 as the call stack for functions and procedures.  The stack starts at
-$CFFF ($BFFF on the Mega65) and grows downward in memory to a maximum size of 2k.
+$CFFF ($BFFF on the Mega65) and grows downward in memory.
 
 The zeropage value stackP points to the base of the current scope's stack frame.  More accurately, it points to the next byte following the bottom of the stack
 frame.  For example, on program startup stackP is $D000 ($C000 on the Mega65).
@@ -34,7 +34,7 @@ in the following order bottom to top.
 4. Dynamic link (point to base of stack frame of caller).
 
 Routine parameters always consume 4 bytes on the runtime stack.
-Consider thefollowing example routine.
+Consider the following example routine.
 
 ```
     Function Multiply(num1, num2 : Integer) : Integer;

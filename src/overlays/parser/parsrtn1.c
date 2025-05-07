@@ -286,6 +286,19 @@ CHUNKNUM parseModule(void)
 		isInUnitInterface = 1;
 	}
 
+	// Look for compiler directives
+	while (tokenIn(parserToken, tlGlobalDirectives)) {
+		if (parserToken == tcSTACKSIZE) {
+			getToken();
+			if (parserToken != tcNumber) {
+				Error(errInvalidNumber);
+			} else {
+				runtimeStackSize = parserValue.word;
+				getToken();
+			}
+		}
+	}
+
 	// <block>
 	retrieveChunk(progDecl, &_decl);
 	_decl.code = parseBlock(1, &_decl.isLibrary);

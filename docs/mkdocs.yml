@@ -30,6 +30,7 @@ nav:
     - Units: langref/units.md
     - Files: langref/files.md
     - Libraries: langref/libraries.md
+    - Compiler Directives: langref/compiler.md
   - Function Reference:
     - Abs: funcref/abs.md
     - Assign: funcref/assign.md
