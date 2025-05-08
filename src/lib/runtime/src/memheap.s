@@ -30,9 +30,8 @@
 ; The MAT is at the high end of the heap and grows downward until the heap is full.
 ; The end of the MAT is signaled by $00000000.
 
-heapPtr: .res 2
-heapTop: .res 2
-heapBottom: .res 2
+heapTop: .res 2         ; Pointer to the start of the MAT (the top of the heap)
+heapBottom: .res 2      ; Pointer to the bottom of the heap where mem starts getting allocated
 
 ; This routine initializes the heap MAT.  The caller passes the pointer to the
 ; top and bottom of the heap.  The bottom is passed in A/X and the top is
@@ -42,14 +41,11 @@ heapBottom: .res 2
     stx heapBottom + 1
     lda ptr1
     sta heapTop
-    sta heapPtr
     lda ptr1 + 1
     sta heapTop + 1
-    sta heapPtr + 1
     lda #0
     ldy #3
-L1:
-    sta (ptr1),y
+L1: sta (ptr1),y
     dey
     bpl L1
     rts
@@ -278,9 +274,9 @@ L1:
     sta tmp3
     lda heapBottom + 1
     sta tmp4
-    lda #$fc
+    lda heapTop
     sta ptr4
-    lda #$b7
+    lda heapTop+1
     sta ptr4 + 1
 L1: ldy #3                  ; Is the current entry all zeros?
 :   lda (ptr4),y
