@@ -85,6 +85,7 @@ rtPushAx                = rt_base + 144
 rtAdd                   = rt_base + 150
 rtMultiply              = rt_base + 156
 rtPushEax               = rt_base + 198
+rtStrToFloat            = rt_base + 225
 rtConvertString         = rt_base + 234
 rtLibLoadParam          = rt_base + 246
 rtLibReturnValue        = rt_base + 249
