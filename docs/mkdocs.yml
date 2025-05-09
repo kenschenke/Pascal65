@@ -111,6 +111,7 @@ nav:
     - Introduction: runtime/intro.md
     - Add: runtime/add.md
     - AddIrqHandler: runtime/addirqhandler.md
+    - Cosine: runtime/cosine.md
     - Divide: runtime/divide.md
     - DivInt: runtime/divint.md
     - HeapAlloc: runtime/heapalloc.md
@@ -123,7 +124,10 @@ nav:
     - Multiply: runtime/multiply.md
     - PopEax: runtime/popeax.md
     - PushEax: runtime/pusheax.md
+    - Sine: runtime/sine.md
+    - StrToFloat: runtime/strtofloat.md
     - Subtract: runtime/subtract.md
+    - Tangent: runtime/tangent.md
   - Intermediate Code:
     - Introduction: icode/intro.md
     - Literals: icode/literals.md
