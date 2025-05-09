@@ -1,4 +1,4 @@
-0.31-beta
+0.31-beta May 09 2025
     FIX: Fix bug not correctly detecting error when reading from unopened file
     FIX: Fix bug with SpriteMove not setting starting position
     FIX: Fix poor IRQ performance
