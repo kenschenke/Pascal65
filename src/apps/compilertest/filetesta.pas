@@ -153,6 +153,8 @@ Begin
     Writeln(f, 'old file');
     Close(f);
 
+    Rename(f, 'bad*name');
+    IF IOResult <> 7 Then Error(133);
     Rename(f, 'newname');
     If IOResult <> 0 Then Error(34);
     Reset(f);
