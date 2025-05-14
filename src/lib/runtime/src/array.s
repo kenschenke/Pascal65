@@ -2,7 +2,7 @@
 ; array.s
 ; Ken Schenke (kenschenke@gmail.com)
 ; 
-; Copyright (c) 2024
+; Copyright (c) 2024-2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
@@ -21,12 +21,17 @@
 .include "types.inc"
 .include "float.inc"
 
+ARRAYDECL_RECORD = 2
+ARRAYDECL_STRING = 3
+ARRAYDECL_FILE = 4
+ARRAYDECL_ARRAY = 5
+
 .export writeCharArray, readCharArrayFromInput, calcArrayElem
 .export initArrays
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
 .import memcopy, popax, pushax, FPINP, COMPLM, calcStackOffset, pusheax, popeax
-.import runtimeError
+.import runtimeError, convertString
 
 .struct ARRAYINIT
     scopeLevel .byte
@@ -38,6 +43,15 @@
     literals .word
     numLiterals .word
     areLiteralsReal .byte
+.endstruct
+
+.struct ARRAYDECL
+    minIndex .word
+    maxIndex .word
+    elemSize .word
+    literals .word
+    numLiterals .word
+    elemType .byte
 .endstruct
 
 .bss
@@ -303,6 +317,220 @@ DN: jsr popax
     lda initPtr + 1
     sta ptr3 + 1
 .endmacro
+
+; This routine initializes an array using an ARRAYDECL structure
+; Inputs:
+;   pointer to setup data (passed in A/X)
+;   pointer to heap memory (top of stack, 2 bytes only)
+; Locals:
+;   number of array elements
+;   element index for loop
+;   pointer to heap memory (ptr1)
+;   pointer to setup data (ptr2)
+;   pointer to array literal buffer (ptr4)
+
+numElems: .res 2
+ndxElems: .res 2
+numLiterals: .res 2
+
+.proc initArrayDeclaration
+    sta ptr2                    ; Store pointer to setup data
+    stx ptr2+1
+    jsr popax                   ; Pop pointer to heap memory and store
+    sta ptr1
+    sta ptr+1
+    ; Copy minIndex, maxIndex, and elemSize from declaration block into array header
+    ldy #ARRAYDECL::minIndex
+    lda (ptr2),y
+    ldy #0
+    sta (ptr1),y
+    ldy #ARRAYDECL::minIndex+1
+    lda (ptr2),y
+    ldy #1
+    sta (ptr1),y
+    ldy #ARRAYDECL::maxIndex
+    lda (ptr2),y
+    ldy #2
+    sta (ptr1),y
+    ldy #ARRAYDECL::maxIndex+1
+    lda (ptr2),y
+    ldy #3
+    sta (ptr1),y
+    ldy #ARRAYDECL::elemSize
+    lda (ptr2),y
+    ldy #4
+    sta (ptr1),y
+    ldy #ARRAYDECL::elemSize+1
+    lda (ptr2),y
+    ldy #5
+    sta (ptr1),y
+    ; Calculate number of array elements.
+    ; getArrayLength destroys ptr1, but it uses it for the heap
+    ; pointer so it's okay since this code is doing the same.
+    lda ptr1
+    ldx ptr+1
+    jsr getArrayLength
+    sta numElems
+    stx numElems+1
+    ; Clear ndxElems
+    lda #0
+    sta ndxElems
+    sta ndxElems+1
+    ; Check the element type
+    ldy #ARRAYDECL::elemType
+    lda (ptr2),y
+    ; Are they strings?
+    cmp #ARRAYDECL_STRING
+    beq initArrayStrings
+    ; Are they records?
+    cmp #ARRAYDECL_RECORD
+    beq initArrayRecords
+    ; Are they files?
+    cmp #ARRAYDECL_FILE
+    beq initArrayFiles
+    ; ...
+    rts
+.endproc
+
+.proc initArrayRecords
+    ; Loop through the elements
+.endproc
+
+.proc initArrayStrings
+    ; Store the number of literals
+    ldy #ARRAYDECL::numLiterals
+    lda (ptr2),y
+    sta numLiterals
+    iny
+    lda (ptr2),y
+    sta numLiterals+1
+    ; Store the pointer to the literals
+    ldy #ARRAYDECL::literals
+    lda (ptr2),y
+    sta ptr4
+    iny
+    lda (ptr2),y
+    sta ptr4+1
+    ; Loop for each element
+L1: lda numLiterals                 ; If numLiterals is zero,
+    ora numLiterals+1               ; then this element has no literal initializer.
+    beq NL                          ; Branch if no literal (create empty string)
+    ; Allocate a new string from the literal
+    jsr makeStringFromLiteral
+    jmp LZ
+NL: jsr makeEmptyString
+LZ: lda ptr1                        ; Add 2 to ptr2
+    clc
+    adc #2
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    inc ndxElems                    ; Increment ndxElems
+    bne :+
+    inc ndxElems+1
+:   lda ndxElems
+    cmp numElems                    ; If numElems != ndxElems
+    bne L1                          ; branch if not equal
+    lda ndxElems+1
+    cmp numElems+1
+    bne L1
+    rts
+.endproc
+
+; This routine preserves local variables for initArrayDeclaration
+
+.proc saveArrayLocals
+    lda numElems
+    ldx numElems+1
+    jsr pushax
+    lda ndxElems
+    ldx ndxElems+1
+    jsr pushax
+    lda ptr1
+    ldx ptr1+1
+    jsr pushax
+    lda ptr4
+    ldx ptr4+1
+    jsr pushax
+    rts
+.endproc
+
+; This routine restores local variables for initArrayDeclaration
+
+.proc restoreArrayLocals
+    jsr popax
+    sta ptr4
+    stx ptr4+1
+    jsr popax
+    sta ptr
+    stx ptr1+1
+    jsr popax
+    sta ndxElems
+    stx ndxElems+1
+    jsr popax
+    sta numElems
+    stx numElems+1
+    rts
+.endproc
+
+; This routine allocates an empty string and stores in the array heap (ptr1)
+
+.proc makeEmptyString
+    jsr saveArrayLocals             ; Preserve the ptr1 and ptr2 for the call to heapAlloc
+    lda #1                          ; Allocate a 1-byte buffer for the empty string
+    ldx #0
+    jsr heapAlloc
+    sta ptr3                        ; Store the string buffer pointer in ptr3
+    stx ptr3+1
+    jsr restoreArrayLocals          ; Restore ptr1 and ptr2 after the call to heapAlloc
+    lda ptr3                        ; Copy the new string buffer to the array heap
+    ldy #0
+    sta (ptr1),y                    ; Also store it in the array heap (ptr1)
+    iny
+    lda ptr3+1
+    sta (ptr1),y                    ; Store the high byte of the string buffer pointer
+    lda #0
+    tay
+    sta (ptr3),y                    ; Store 0 (length) in new string buffer
+    rts
+.endproc
+
+; This routine allocates a string from a null-terminated literal (ptr4)
+
+.proc makeStringFromLiteral
+    jsr saveArrayLocals
+    lda ptr4
+    ldx ptr4+1
+    ldy #TYPE_STRING_LITERAL
+    jsr convertString
+    pha
+    txa
+    pha
+    jsr restoreArrayLocals
+    ldy #1
+    pla
+    sta (ptr1),y
+    dey
+    pla
+    sta (ptr1),y
+    lda ptr1
+    clc
+    adc #2
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    ldy #0
+L1: lda (ptr4),y
+    pha
+    inc4 ptr4
+    bne L2
+    inc4 ptr4+1
+L2: pla
+    bne L1
+    rts
+.endproc
 
 ; This routine initializes all the array heaps
 
