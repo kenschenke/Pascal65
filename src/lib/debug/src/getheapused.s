@@ -25,10 +25,11 @@ MAT = $C7FC
     lda #0
     sta intOp1
     sta intOp1 + 1
-    lda #<MAT
+    lda #$ff
+    tax
+    jsr rtHeapAlloc
     sta ptr1
-    lda #>MAT
-    sta ptr1 + 1
+    stx ptr1+1
 
     ; Loop through the MAT
 

@@ -12,14 +12,6 @@
 .include "runtime.inc"
 .include "cbm_kernal.inc"
 
-; First entry in MAT
-; Assuming a 2k stack size
-.ifdef __MEGA65__
-MAT = $B7FC
-.else
-MAT = $C7FC
-.endif
-
 .export dumpHeap
 
 .data
@@ -201,10 +193,11 @@ S3: ldx #0
     lda #0
     sta intOp1
     sta intOp1 + 1
-    lda #<MAT
+    lda #$ff
+    tax
+    jsr rtHeapAlloc
     sta ptr1
-    lda #>MAT
-    sta ptr1 + 1
+    stx ptr1 + 1
     ; Print the header
     ldx #0
 :   lda header1,x
