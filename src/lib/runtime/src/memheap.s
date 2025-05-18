@@ -63,6 +63,10 @@ L1: sta (ptr1),y
 ;           to the end of heap.
 ;
 ; Note: intOp1 and intOp2 are destroyed.
+;
+; Special call:
+;   If A/X are $FFFF then the top of the heap (start of MAT)
+;   is returned instead of allocating memory.
 .proc heapAlloc
     ; Algorithm:
     ;    Store A/X in tmp1+tmp2
@@ -74,8 +78,18 @@ L1: sta (ptr1),y
     ;    If ptr2 contains a block, mark it as allocated and
     ;       return the memory address in A/X.
 
+    ; Look for special call. If $FFFF is passed in A and X,
+    ; return the top of the memory heap (start of MAT).
+    cmp #$ff
+    bne :+
+    cpx #$ff
+    bne :+
+    lda heapTop         ; Return the bottom of the heap in A/X.
+    ldx heapTop+1
+    rts
+
     ; Initialization
-    sta tmp1
+:   sta tmp1
     stx tmp2
     lda heapTop
     sta ptr1
