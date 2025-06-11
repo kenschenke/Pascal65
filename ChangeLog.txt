@@ -1,3 +1,6 @@
+0.32-beta
+    FIX: Fix bug with record field resolution in certain cases
+
 0.31-beta May 09 2025
     FIX: Fix bug not correctly detecting error when reading from unopened file
     FIX: Fix bug with SpriteMove not setting starting position
