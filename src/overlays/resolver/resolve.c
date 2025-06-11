@@ -228,23 +228,31 @@ static CHUNKNUM getEmbeddedArraySymtab(CHUNKNUM chunkNum, CHUNKNUM symtab)
 		}
 	}
 	retrieveChunk(sym.type, &_type);
-	retrieveChunk(_type.subtype, &_type);
-	if (_type.kind == TYPE_DECLARED) {
-		memset(name, 0, sizeof(name));
-		retrieveChunk(_type.name, name);
-		if (symtab) {
-			if (!symtab_lookup(symtab, name, &sym)) {
-				Error(errUndefinedIdentifier);
-				return 0;
+
+	while (1) {
+		if (_type.kind == TYPE_ARRAY) {
+			retrieveChunk(_type.subtype, &_type);
+		}
+		else if (_type.kind == TYPE_DECLARED) {
+			memset(name, 0, sizeof(name));
+			retrieveChunk(_type.name, name);
+			if (symtab) {
+				if (!symtab_lookup(symtab, name, &sym)) {
+					Error(errUndefinedIdentifier);
+					return 0;
+				}
 			}
+			else {
+				if (!scope_lookup(name, &sym)) {
+					Error(errUndefinedIdentifier);
+					return 0;
+				}
+			}
+			retrieveChunk(sym.type, &_type);
 		}
 		else {
-			if (!scope_lookup(name, &sym)) {
-				Error(errUndefinedIdentifier);
-				return 0;
-			}
+			break;
 		}
-		retrieveChunk(sym.type, &_type);
 	}
 
 	return _type.symtab;
