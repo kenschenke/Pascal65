@@ -40,9 +40,6 @@ str := 'hello' + ' ' + 'world';
 The concatenation operater accepts string objects, string literals, character literals,
 and arrays of characters.
 
-**Note**: Strings cannot be used inside records or arrays. This will eventually be
-supported in the future.
-
 In memory, strings are stored with the first byte as the length of the string followed
 by the characters in the string.
 
@@ -60,4 +57,4 @@ The runtime library has a few functions and procedures to handle strings.
 |[StringOfChar](../funcref/strofchar.md)|Returns a string filled with a character      |
 |[StrPos](../funcref/strpos.md)         |Returns the position of a substring.          |
 |[Trim](../funcref/trim.md)             |Removes leading and trailing spaces           |
-|[UpCase](../funcref/upcase.md)         |Returns a lower-case string                   |
+|[UpCase](../funcref/upcase.md)         |Returns an upper-case string                  |

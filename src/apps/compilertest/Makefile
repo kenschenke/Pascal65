@@ -112,7 +112,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEOVRL
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEGENOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwise.petscii demolib.petscii libtest.petscii trig.petscii filetesta.petscii filetestb.petscii pointers.petscii rtnptrs.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii incdec.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwisea.petscii bitwiseb.petscii demolib.petscii libtest.petscii trig.petscii filetesta.petscii filetestb.petscii pointers.petscii rtnptrs.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -293,8 +293,11 @@ add.petscii: add.pas
 assign.petscii: assign.pas
 	dos2unix < assign.pas | petcat -w2 -text -o assign.petscii
 
-bitwise.petscii: bitwise.pas
-	dos2unix < bitwise.pas | petcat -w2 -text -o bitwise.petscii
+bitwisea.petscii: bitwisea.pas
+	dos2unix < bitwisea.pas | petcat -w2 -text -o bitwisea.petscii
+
+bitwiseb.petscii: bitwiseb.pas
+	dos2unix < bitwiseb.pas | petcat -w2 -text -o bitwiseb.petscii
 
 libtest.petscii: libtest.pas
 	dos2unix < libtest.pas | petcat -w2 -text -o libtest.petscii
@@ -307,6 +310,9 @@ loops.petscii: loops.pas
 
 stdroutines.petscii: stdroutines.pas
 	dos2unix < stdroutines.pas | petcat -w2 -text -o stdroutines.petscii
+
+incdec.petscii: incdec.pas
+	dos2unix < incdec.pas | petcat -w2 -text -o incdec.petscii
 
 strroutines.petscii: strroutines.pas
 	dos2unix < strroutines.pas | petcat -w2 -text -o strroutines.petscii
@@ -390,9 +396,11 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write add.petscii add.pas,seq \
 	-write assign.petscii assign.pas,seq \
-	-write bitwise.petscii bitwise.pas,seq \
+	-write bitwisea.petscii bitwisea.pas,seq \
+	-write bitwiseb.petscii bitwiseb.pas,seq \
 	-write libtest.petscii libtest.pas,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
+	-write incdec.petscii incdec.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
 	-write strtests.petscii strtests.pas,seq \
 	-write ifthen.petscii ifthen.pas,seq \
@@ -433,10 +441,12 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write errormsgs.petscii errormsgs,seq \
 	-write add.petscii add.pas,seq \
 	-write assign.petscii assign.pas,seq \
-	-write bitwise.petscii bitwise.pas,seq \
+	-write bitwisea.petscii bitwisea.pas,seq \
+	-write bitwiseb.petscii bitwiseb.pas,seq \
 	-write libtest.petscii libtest.pas,seq \
 	-write runtimemsgs.petscii runtimemsgs,seq \
 	-write stdroutines.petscii stdroutines.pas,seq \
+	-write incdec.petscii incdec.pas,seq \
 	-write strroutines.petscii strroutines.pas,seq \
 	-write strtests.petscii strtests.pas,seq \
 	-write ifthen.petscii ifthen.pas,seq \

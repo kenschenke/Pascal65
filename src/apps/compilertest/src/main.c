@@ -42,10 +42,12 @@ static char *testFiles[] = {
     "add",
     "assign",
     "varinit",
-    "bitwise",
+    "bitwisea",
+    "bitwiseb",
     "ifthen",
     "loops",
-    "stdroutines",
+    "stdroutines",  // too big
+    "incdec",
     "strroutines",
     "strtests",
     "recarray",
@@ -63,6 +65,8 @@ static char *testFiles[] = {
     "filetestb",
     "pointers",
     "rtnptrs",
+    "strrecord",
+    "strarray",
     NULL
 };
 

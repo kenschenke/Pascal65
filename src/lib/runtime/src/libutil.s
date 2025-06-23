@@ -13,9 +13,9 @@
 .include "runtime.inc"
 
 .export storeVarParam, loadParam, returnVal
-.export libStackHeader, libCallRoutine
+.export libStackHeader, libCallRoutine, libStackCleanup
 
-.import pushStackFrameHeader, popeax, pusheax
+.import pushStackFrameHeader, popeax, pusheax, incsp4
 
 ; This routine calculates the address of a parameter and
 ; leaves it in ptr1.
@@ -146,6 +146,49 @@ DN: rts
     lda tmp3
     pha
     rts
+.endproc
+
+; This routine removes a stack frame header from the runtime stack
+; and restores the caller's stack frame pointer.
+; Caller passes 0 in A if the routine was a procedure or 1 if a function.
+; If 1, the return value is left on the runtime stack.
+.proc libStackCleanup
+    ; Store the flag to indicate whether or not to leave the return value
+    sta tmp1
+
+    ; Save the caller's return address
+    pla
+    sta tmp3
+    pla
+    sta tmp4
+
+    ; Restore the caller's nesting level
+    pla
+    sta currentNestingLevel
+
+    ; Put the caller's return address back on the stack
+    lda tmp4
+    pha
+    lda tmp3
+    pha
+
+    ; Restore the caller's stack frame base pointer
+    jsr popeax
+    sta stackP
+    stx stackP+1
+
+    ; Pop the stack link off the stack
+    jsr incsp4
+
+    ; Pop the dynamic link off the stack
+    jsr incsp4
+
+    ; Load a 0 or 1 to indicate whether or not to leave
+    ; the return value on the runtime stack (if it was a function).
+    lda tmp1
+    bne :+
+    jsr incsp4
+:   rts
 .endproc
 
 ; This routine calls a Pascal routine from a library

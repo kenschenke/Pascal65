@@ -108,35 +108,8 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
 
     case IC_POF:
         // Restore the nesting level
-        genOne(PLA);
-        genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
-
-        // Restore the caller's stack frame base pointer
-        genThreeAddr(JSR, RT_POPEAX);
-        genTwo(STA_ZEROPAGE, ZP_STACKFRAMEL);
-        genTwo(STX_ZEROPAGE, ZP_STACKFRAMEH);
-
-    	genThreeAddr(JSR, RT_INCSP4);	// Pop the static link off the stack
-
-        genThreeAddr(JSR, RT_POPEAX);
-        if (oper2.literal.uint8) {
-            // Routine is library call - ignore the caller's return address
-        } else {
-            // Routine is a declared routine - save the caller's return address
-            genOne(PHA);
-            genOne(TXA);
-            genOne(PHA);
-        }
-
-        if (!oper1.literal.uint8) {
-            // Routine is a procedure - pop the unused return value off the stack
-            genThreeAddr(JSR, RT_INCSP4);
-        }
-
-        if (!oper2.literal.uint8) {
-            // Routine is a declared routine - return to the caller
-            genThreeAddr(JMP, RT_RETURNFROMROUTINE);
-        }
+        genTwo(LDA_IMMEDIATE, oper1.literal.uint8);
+        genThreeAddr(JSR, RT_LIBSTACKCLEANUP);
         break;
 
     case IC_PUF:
@@ -173,6 +146,33 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         genTwo(LDX_IMMEDIATE, oper2.literal.uint8);
         genThreeAddr(JSR, RT_CONVERTINT);
         genThreeAddr(JSR, RT_PUSHFROMINTOP1AND2);
+        break;
+
+    case IC_DCI:
+        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_LOW);
+        genTwo(LDA_IMMEDIATE, 0);
+        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_HIGH);
+        genTwo(LDX_IMMEDIATE, 0);
+        genTwo(LDY_IMMEDIATE, oper2.literal.uint8);
+        genThreeAddr(JSR, RT_INITDECL);
+        break;
+
+    case IC_DCF:
+        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_LOW);
+        genTwo(LDA_IMMEDIATE, 0);
+        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_HIGH);
+        genTwo(LDX_IMMEDIATE, 0);
+        genTwo(LDY_IMMEDIATE, oper2.literal.uint8);
+        genThreeAddr(JSR, RT_FREEDECL);
+        break;
+
+    case IC_DCC:
+        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_LOW);
+        genTwo(LDA_IMMEDIATE, 0);
+        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_HIGH);
+        genTwo(LDX_IMMEDIATE, 0);
+        genTwo(LDY_IMMEDIATE, oper2.literal.uint8);
+        genThreeAddr(JSR, RT_CLONEDECL);
         break;
     }
 }
@@ -226,8 +226,6 @@ static void genTrinary(FILE *fh, ICODE_MNE mnemonic)
         break;
 
     case IC_JSR:
-        genTwo(LDA_IMMEDIATE, oper2.literal.uint8);
-        genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
         linkAddressLookup(oper1.label, codeOffset+1, LINKADDR_BOTH);
         genThreeAddr(oper3.literal.uint8 ? JSR : JMP, 0);
         break;
@@ -559,14 +557,6 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         genThreeAddr(JSR, RT_PUSHEAX);
         break;
 
-    case IC_ARR:
-        linkAddressLookup(oper.label, codeOffset+1, LINKADDR_LOW);
-        genTwo(LDA_IMMEDIATE, 0);
-        linkAddressLookup(oper.label, codeOffset+1, LINKADDR_HIGH);
-        genTwo(LDX_IMMEDIATE, 0);
-        genThreeAddr(JSR, RT_INITARRAYS);
-        break;
-
     case IC_AIX:
         genTwo(LDA_IMMEDIATE, oper.literal.uint8);
         genThreeAddr(JSR, RT_CALCARRAYELEM);
@@ -758,6 +748,8 @@ void icodeGen(void)
             genTwo(LDA_ZEROPAGE, ZP_SREGL);
             genTwo(STA_ZEROPAGE, ZP_NESTINGLEVEL);
             genThreeAddr(JMP_INDIRECT, ZP_TMP1);
+        } else if (mnemonic == IC_RTS) {
+            genThreeAddr(JMP, RT_RETURNFROMROUTINE);
         }
     }
 

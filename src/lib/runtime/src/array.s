@@ -21,41 +21,39 @@
 .include "types.inc"
 .include "float.inc"
 
+ARRAYDECL_REAL = 1
 ARRAYDECL_RECORD = 2
 ARRAYDECL_STRING = 3
 ARRAYDECL_FILE = 4
 ARRAYDECL_ARRAY = 5
 
 .export writeCharArray, readCharArrayFromInput, calcArrayElem
-.export initArrays
+.export initArrayDeclaration, freeArrayDeclaration, cloneArrayDeclaration
+.export getArraySize
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
-.import memcopy, popax, pushax, FPINP, COMPLM, calcStackOffset, pusheax, popeax
-.import runtimeError, convertString
-
-.struct ARRAYINIT
-    scopeLevel .byte
-    scopeOffset .byte
-    heapOffset .word
-    minIndex .word
-    maxIndex .word
-    elemSize .word
-    literals .word
-    numLiterals .word
-    areLiteralsReal .byte
-.endstruct
+.import memcopy, popax, pushax, FPINP, COMPLM, pusheax, popeax
+.import runtimeError, convertString, heapAlloc, heapFree, fileClose
+.import freeRecordDeclaration, cloneRecordDeclaration
 
 .struct ARRAYDECL
-    minIndex .word
-    maxIndex .word
-    elemSize .word
-    literals .word
-    numLiterals .word
-    elemType .byte
+    heapOffset .word                ; Byte offset into memory heap
+    minIndex .word                  ; Low index of array
+    maxIndex .word                  ; High index
+    elemSize .word                  ; Size of each element
+    literals .word                  ; Pointer to literals for initialization
+    numLiterals .word               ; Number of literals
+    elemDecl .word                  ; Pointer to declaration block for array elements
+    elemType .byte                  ; one of ARRAYDECL_*
 .endstruct
 
 .bss
 initPtr: .res 2
+
+; Local variables used by initArrayDeclaration
+numElems: .res 2
+ndxElems: .res 2
+numLiterals: .res 2
 
 .code
 
@@ -189,7 +187,7 @@ L1:
     ; This section copies the array literal buffer of all
     ; data types except real.
     ldy tmp3                    ; Load data type back from tmp3
-    cpy #TYPE_REAL              ; Is this an array of Reals?
+    cpy #ARRAYDECL_REAL         ; Is this an array of Reals?
     beq L1                      ; Skip if so
     ; Subtract 6 from the array pointer to look at the header
     lda ptr1
@@ -321,7 +319,7 @@ DN: jsr popax
 ; This routine initializes an array using an ARRAYDECL structure
 ; Inputs:
 ;   pointer to setup data (passed in A/X)
-;   pointer to heap memory (top of stack, 2 bytes only)
+;   pointer to heap memory (top of stack, preserved and left at top of stack)
 ; Locals:
 ;   number of array elements
 ;   element index for loop
@@ -329,16 +327,23 @@ DN: jsr popax
 ;   pointer to setup data (ptr2)
 ;   pointer to array literal buffer (ptr4)
 
-numElems: .res 2
-ndxElems: .res 2
-numLiterals: .res 2
-
 .proc initArrayDeclaration
     sta ptr2                    ; Store pointer to setup data
     stx ptr2+1
-    jsr popax                   ; Pop pointer to heap memory and store
+    jsr popeax                  ; Pop pointer to heap memory and store
     sta ptr1
-    sta ptr+1
+    stx ptr1+1
+    jsr pusheax                 ; Keep the heap pointer on the stack
+    ; Add heap offset to the pointer
+    ldy #ARRAYDECL::heapOffset
+    lda ptr1
+    clc
+    adc (ptr2),y
+    sta ptr1
+    iny
+    lda ptr1+1
+    adc (ptr2),y
+    sta ptr1+1
     ; Copy minIndex, maxIndex, and elemSize from declaration block into array header
     ldy #ARRAYDECL::minIndex
     lda (ptr2),y
@@ -368,7 +373,7 @@ numLiterals: .res 2
     ; getArrayLength destroys ptr1, but it uses it for the heap
     ; pointer so it's okay since this code is doing the same.
     lda ptr1
-    ldx ptr+1
+    ldx ptr1+1
     jsr getArrayLength
     sta numElems
     stx numElems+1
@@ -376,24 +381,86 @@ numLiterals: .res 2
     lda #0
     sta ndxElems
     sta ndxElems+1
+    ; Move ptr1 past array header
+    lda ptr1
+    clc
+    adc #6
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
     ; Check the element type
     ldy #ARRAYDECL::elemType
     lda (ptr2),y
     ; Are they strings?
     cmp #ARRAYDECL_STRING
-    beq initArrayStrings
+    bne :+
+    jmp initArrayStrings
     ; Are they records?
-    cmp #ARRAYDECL_RECORD
-    beq initArrayRecords
+:   cmp #ARRAYDECL_RECORD
+    beq DN
     ; Are they files?
     cmp #ARRAYDECL_FILE
-    beq initArrayFiles
-    ; ...
-    rts
+    bne :+
+    jmp initArrayFiles
+:   ; Elements are scalar. Initialize them from literals.
+    ldy #6
+    lda (ptr2),y                    ; Check if there are literals supplied for this array
+    bne :+
+    iny
+    lda (ptr2),y
+    beq DN                          ; No literals. Skip the rest of initialization.
+:   lda ptr2                        ; Copy ptr2 to ptr3
+    sta ptr3
+    lda ptr2+1
+    sta ptr3+1
+    ldy #ARRAYDECL::literals        ; Pointer to literals in ptr2
+    lda (ptr3),y
+    sta ptr2
+    iny
+    lda (ptr3),y
+    sta ptr2+1
+    ldy #ARRAYDECL::numLiterals     ; Put number of literals on CPU stack
+    lda (ptr3),y
+    pha
+    iny
+    lda (ptr3),y
+    pha
+    ldy #ARRAYDECL::elemType        ; Load literal element type
+    lda (ptr3),y
+    tay
+    pla                             ; Pop number of literals off CPU stack
+    tax
+    pla
+    jmp copyArrayLiteral
+DN: rts
 .endproc
 
-.proc initArrayRecords
+.proc initArrayFiles
     ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: ldy #3
+    lda #0
+:   sta (ptr1),y
+    dey
+    bpl :-
+    lda ptr1
+    clc
+    adc #4
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
+    jmp L1
+DN: rts
 .endproc
 
 .proc initArrayStrings
@@ -417,9 +484,12 @@ L1: lda numLiterals                 ; If numLiterals is zero,
     beq NL                          ; Branch if no literal (create empty string)
     ; Allocate a new string from the literal
     jsr makeStringFromLiteral
+    dec numLiterals                 ; Decrement numLiterals
+    bpl LZ
+    dec numLiterals+1
     jmp LZ
 NL: jsr makeEmptyString
-LZ: lda ptr1                        ; Add 2 to ptr2
+LZ: lda ptr1                        ; Add 2 to ptr1
     clc
     adc #2
     sta ptr1
@@ -450,6 +520,12 @@ LZ: lda ptr1                        ; Add 2 to ptr2
     lda ptr1
     ldx ptr1+1
     jsr pushax
+    lda ptr3
+    ldx ptr3+1
+    jsr pushax
+    lda ptr2
+    ldx ptr2+1
+    jsr pushax
     lda ptr4
     ldx ptr4+1
     jsr pushax
@@ -463,7 +539,13 @@ LZ: lda ptr1                        ; Add 2 to ptr2
     sta ptr4
     stx ptr4+1
     jsr popax
-    sta ptr
+    sta ptr2
+    stx ptr2+1
+    jsr popax
+    sta ptr3
+    stx ptr3+1
+    jsr popax
+    sta ptr1
     stx ptr1+1
     jsr popax
     sta ndxElems
@@ -514,6 +596,206 @@ LZ: lda ptr1                        ; Add 2 to ptr2
     dey
     pla
     sta (ptr1),y
+    ldy #0
+L1: lda (ptr4),y
+    pha
+    inc ptr4
+    bne L2
+    inc ptr4+1
+L2: pla
+    bne L1
+    rts
+.endproc
+
+; This routine clones an array using an ARRAYDECL structure
+; and leaves the cloned array address at the top of the runtime stack.
+; Inputs:
+;   pointer to setup data (passed in A/X)
+;   pointer to source array heap (top of stack)
+;   pointer to target array heap (under source on stack)
+; Locals:
+;   number of array elements
+;   element index for loop
+;   pointer to source heap (ptr1)
+;   pointer to target heap (ptr2)
+;   pointer to setup data (ptr3)
+
+.proc cloneArrayDeclaration
+    sta ptr3                        ; Store setup data ptr
+    stx ptr3+1
+    jsr popeax
+    sta ptr1                        ; Store source heap ptr
+    stx ptr1+1
+    jsr popeax
+    sta ptr2                        ; Store target heap ptr
+    stx ptr2+1
+    ; jsr pusheax                     ; Keep the target address on the stack for the caller
+    ; Calculate number of array elements.
+    ; getArrayLength destroys ptr1, but it uses it for the heap
+    ; pointer so it's okay since this code is doing the same.
+    lda ptr1
+    ldx ptr1+1
+    jsr getArrayLength
+    sta numElems
+    stx numElems+1
+    ; Clear ndxElems
+    lda #0
+    sta ndxElems
+    sta ndxElems+1
+    ; Copy the array header information
+    ldy #5
+:   lda (ptr1),y
+    sta (ptr2),y
+    dey
+    bpl :-
+    ; Move ptr1 past array header
+    lda ptr1
+    clc
+    adc #6
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    ; Move ptr2 past array header
+    lda ptr2
+    clc
+    adc #6
+    sta ptr2
+    lda ptr2+1
+    adc #0
+    sta ptr2+1
+    ; Check the element type
+    ldy #ARRAYDECL::elemType
+    lda (ptr3),y
+    ; Are they strings?
+    cmp #ARRAYDECL_STRING
+    bne :+
+    jmp cloneArrayStrings
+    ; Are they records?
+:   cmp #ARRAYDECL_RECORD
+    bne :+
+    jmp cloneArrayRecords
+    ; Are they files?
+:   cmp #ARRAYDECL_FILE
+    bne :+
+    jmp cloneArrayFiles
+    ; Are they arrays?
+:   cmp #ARRAYDECL_ARRAY
+    bne :+
+    jmp cloneArrayOfArrays
+:   ; Elements are scalar. Copy the array elements in bulk.
+    ldy #ARRAYDECL::elemSize
+    lda (ptr3),y                        ; Copy element size to intOp1
+    sta intOp1
+    iny
+    lda (ptr3),y
+    sta intOp1+1
+    ; Copy numElems to intOp2
+    lda numElems
+    sta intOp2
+    lda numElems+1
+    sta intOp2+1
+    jsr multInt16
+    ; Swap ptr1 and ptr2
+    lda ptr1
+    sta ptr4
+    lda ptr1+1
+    sta ptr4+1
+    lda ptr2
+    sta ptr1
+    lda ptr2+1
+    sta ptr1+1
+    sta ptr2+1
+    lda ptr4
+    sta ptr2
+    lda ptr4+1
+    sta ptr2+1
+    lda intOp1
+    ldx intOp1+1
+    jmp memcopy
+.endproc
+
+.proc cloneArrayOfArrays
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: jsr saveArrayLocals
+    lda ptr1
+    ldx ptr1+1
+    jsr pusheax                         ; Put source address onto the stack
+    ; Put the array declaration into ptr3
+    lda ptr3
+    sta ptr4
+    lda ptr3+1
+    sta ptr4+1
+    ldy #6
+    lda (ptr4),y
+    sta ptr3
+    iny
+    lda (ptr4),y
+    sta ptr3+1
+    jsr cloneArrayDeclaration
+    jsr restoreArrayLocals
+    ; Look up the size of the array and put in tmp1/tmp2
+    ldy #4
+    lda (ptr3),y
+    sta tmp1
+    iny
+    lda (ptr3),y
+    sta tmp2
+    ; Advance ptr1 by the size of the array
+    lda ptr1
+    clc
+    adc tmp1
+    sta ptr1
+    lda ptr1+1
+    adc tmp2
+    sta ptr1+1
+    ; Advance ptr2 by the size of the array
+    lda ptr2
+    clc
+    adc tmp1
+    sta ptr2
+    lda ptr2+1
+    adc tmp2
+    sta ptr2+1
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
+    jmp L1
+DN: rts
+.endproc
+
+.proc cloneArrayStrings
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: jsr saveArrayLocals
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
+    ldy #TYPE_STRING_VAR
+    jsr convertString
+    pha
+    txa
+    pha
+    jsr restoreArrayLocals
+    ldy #1
+    pla
+    sta (ptr2),y
+    dey
+    pla
+    sta (ptr2),y 
     lda ptr1
     clc
     adc #2
@@ -521,197 +803,326 @@ LZ: lda ptr1                        ; Add 2 to ptr2
     lda ptr1+1
     adc #0
     sta ptr1+1
-    ldy #0
-L1: lda (ptr4),y
-    pha
-    inc4 ptr4
-    bne L2
-    inc4 ptr4+1
-L2: pla
+    lda ptr2
+    clc
+    adc #2
+    sta ptr2
+    lda ptr2+1
+    adc #0
+    sta ptr2+1
+    inc ndxElems
     bne L1
-    rts
+    inc ndxElems+1
+    jmp L1
+DN: rts
 .endproc
 
-; This routine initializes all the array heaps
-
-; The pointer to the array of ARRAYINIT structures
-; is passed in A/X
-.proc initArrays
-    sta initPtr
-    stx initPtr + 1
-
-    ; Loop through the ARRAYINIT structures
-L1: loadInitPtr
-    ldy #0                  ; Look at first two bytes
-    lda (ptr3),y
-    iny
-    ora (ptr3),y
-    bne :+                  ; If first two bytes are zero, done
-    rts
-
-    ; Get the address of the array heap
-:   ldy #1
+.proc cloneArrayRecords
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: jsr saveArrayLocals
+    lda ptr2                        ; Push target heap address onto stack
+    ldx ptr2+1
+    jsr pusheax
+    lda ptr1                        ; Push source heap address onto stack
+    ldx ptr1+1
+    jsr pusheax
+    ; Load the record declaration pointer into A/X
+    ldy #ARRAYDECL::elemDecl+1
     lda (ptr3),y
     tax
     dey
     lda (ptr3),y
-    jsr calcStackOffset
-
-    ; ptr1 points to the address on the runtime stack of the array variable.
-    ; Load the address of the heap off the stack and put it back in ptr1 so
-    ; ptr1 points to the array's heap instead.
-    ldy #0
-    lda (ptr1),y
-    pha
+    jsr cloneRecordDeclaration
+    jsr restoreArrayLocals
+    ; Look up the size of the record and put in tmp1/tmp2
+    ldy #ARRAYDECL::elemSize
+    lda (ptr3),y
+    sta tmp1
     iny
-    lda (ptr1),y
-    sta ptr1 + 1
-    pla
-    sta ptr1
-
-    ; Add the heap offset to the address
-    ldy #ARRAYINIT::heapOffset
+    lda (ptr3),y
+    sta tmp2
+    ; Advance ptr1 by the size of the record
     lda ptr1
     clc
-    adc (ptr3),y
+    adc tmp1
     sta ptr1
-    iny
-    lda ptr1 + 1
-    adc (ptr3),y
-    sta ptr1 + 1
+    lda ptr1+1
+    adc tmp2
+    sta ptr1+1
+    ; Advance ptr2 by the size of the record
+    lda ptr2
+    clc
+    adc tmp1
+    sta ptr2
+    lda ptr2+1
+    adc tmp2
+    sta ptr2+1
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
+    jmp L1
+DN: rts
+.endproc
 
-    ; Set the fields in the array header
-    ldy #ARRAYINIT::minIndex
-    lda (ptr3),y
-    ldy #0
-    sta (ptr1),y
-    ldy #ARRAYINIT::minIndex + 1
-    lda (ptr3),y
-    ldy #1
-    sta (ptr1),y
-    ldy #ARRAYINIT::maxIndex
-    lda (ptr3),y
-    ldy #2
-    sta (ptr1),y
-    ldy #ARRAYINIT::maxIndex + 1
-    lda (ptr3),y
+.proc cloneArrayFiles
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: ldy #2
+:   lda (ptr1),y
+    sta (ptr2),y
+    dey
+    bpl :-
     ldy #3
-    sta (ptr1),y
-    ldy #ARRAYINIT::elemSize
-    lda (ptr3),y
-    ldy #4
-    sta (ptr1),y
-    ldy #ARRAYINIT::elemSize + 1
-    lda (ptr3),y
-    ldy #5
-    sta (ptr1),y
+    lda (ptr1),y
+    ora #1                          ; Flip bit 0 to indicate this is a cloned file handle
+    sta (ptr2),y
+    lda ptr1
+    clc
+    adc #4
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    lda ptr2
+    clc
+    adc #4
+    sta ptr2
+    lda ptr2+1
+    adc #0
+    sta ptr2+1
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
+    jmp L1
+DN: rts
+.endproc
 
-    ; Advance ptr1 past the array header
+; This routine frees an array using an ARRAYDECL structure
+; Inputs:
+;   pointer to setup data (passed in A/X)
+;   pointer to array heap (top of stack)
+; Locals:
+;   number of array elements
+;   element index for loop
+;   pointer to array heap (ptr1)
+;   pointer to setup data (ptr2)
+
+.proc freeArrayDeclaration
+    sta ptr2                        ; Store setup data ptr
+    stx ptr2+1
+    jsr popeax
+    sta ptr1                        ; Store heap ptr
+    stx ptr1+1
+    ; Calculate number of array elements.
+    ; getArrayLength destroys ptr1, but it uses it for the heap
+    ; pointer so it's okay since this code is doing the same.
+    lda ptr1
+    ldx ptr1+1
+    jsr getArrayLength
+    sta numElems
+    stx numElems+1
+    ; Clear ndxElems
+    lda #0
+    sta ndxElems
+    sta ndxElems+1
+    ; Move ptr1 past array header
     lda ptr1
     clc
     adc #6
     sta ptr1
-    bcc AL
-    inc ptr1 + 1
-
-    ; Check if there are literals to set
-AL: ldy #ARRAYINIT::literals
-    lda (ptr3),y
-    iny
-    ora (ptr3),y
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    ; Check the element type
+    ldy #ARRAYDECL::elemType
+    lda (ptr2),y
+    ; Are they strings?
+    cmp #ARRAYDECL_STRING
     bne :+
+    jmp freeArrayStrings
+    ; Are they records?
+:   cmp #ARRAYDECL_RECORD
+    bne :+
+    jmp freeArrayRecords
+    ; Are they files?
+:   cmp #ARRAYDECL_FILE
+    bne :+
+    jmp freeArrayFiles
+    ; Are they arrays?
+:   cmp #ARRAYDECL_ARRAY
+    bne :+
+    jmp freeArrayOfArrays
+:   ; Elements are scalar. Nothing else to do.
+    rts
+.endproc
 
-    ; No array literals - clear the array memory instead
-    jsr clearArrayMem
-    jmp NX
-    
-    ; There are literals - load their address into ptr2
-:   lda (ptr3),y
-    sta ptr2 + 1
-    dey
-    lda (ptr3),y
-    sta ptr2
-    ; Load element size and stow it on the CPU stack for a bit
-    ldy #ARRAYINIT::numLiterals
-    lda (ptr3),y
-    pha
-    iny
-    lda (ptr3),y
-    pha
-    ; If the literals are reals, put TYPE_REAL in Y, otherwise TYPE_INTEGER
-    ldy #ARRAYINIT::areLiteralsReal
-    lda (ptr3),y
-    beq :+
-    ldy #TYPE_REAL
-    bne IL
-:   ldy #TYPE_INTEGER
-IL: pla
+.proc freeArrayStrings
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: jsr saveArrayLocals
+    ldy #1
+    lda (ptr1),y
     tax
-    pla
-    jsr copyArrayLiteral
-
-    ; Move to next ARRAYINIT structure
-NX: lda initPtr
+    dey
+    lda (ptr1),y
+    jsr heapFree
+    jsr restoreArrayLocals
+    ; Move ptr1 to the next element
+    lda ptr1
     clc
-    adc #.sizeof(ARRAYINIT)
-    sta initPtr
-    bcc :+
-    inc initPtr + 1
-:   jmp L1
+    adc #2
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    ; Increment ndxElems
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
+    jmp L1
 DN: rts
 .endproc
 
-; This helper routine zeros out the array element portion of the heap
-.proc clearArrayMem
-    ; Calculate the number of elements in the array
-    ldy #ARRAYINIT::minIndex
-    lda (ptr3),y
-    sta intOp2
-    iny
-    lda (ptr3),y
-    sta intOp2 + 1
-    ldy #ARRAYINIT::maxIndex
-    lda (ptr3),y
-    sta intOp1
-    iny
-    lda (ptr3),y
-    sta intOp1 + 1
-    jsr subInt16
-    lda #1
-    sta intOp2
-    lda #0
-    sta intOp2 + 1
-    jsr addInt16
-    ; Multiply the number of elements by the element size
-    ldy #ARRAYINIT::elemSize
-    lda (ptr3),y
-    sta intOp2
-    iny
-    lda (ptr3),y
-    sta intOp2 + 1
-    jsr multInt16
-    ; Store the product (size of memory to clear) in tmp1/tmp2
-    lda intOp1
-    sta tmp1
-    lda intOp1 + 1
-    sta tmp2
-    ; Copy ptr4 (pointer to elements portion of array heap) to ptr1
-    lda ptr1
-    sta ptr4
-    lda ptr1 + 1
-    sta ptr4 + 1
-    lda #0
-    tay
-L1: sta (ptr4),y
-    ; Decrement tmp1/tmp2 (number of elements)
-    dec tmp1
-    bne :+
-    ldx tmp2
+.proc freeArrayRecords
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
     beq DN
-    dec tmp2
-:   inc ptr4
+L2: jsr saveArrayLocals
+    ; Push the heap pointer onto the stack
+    lda ptr1
+    ldx ptr1+1
+    jsr pusheax
+    ; Load the pointer to the record declaration into A/X
+    ; lda ptr2
+    ; sta ptr4
+    ; lda ptr2+1
+    ; sta ptr4+1
+    ldy #ARRAYDECL::elemDecl+1
+    lda (ptr2),y
+    tax
+    dey
+    lda (ptr2),y
+    jsr freeRecordDeclaration
+    jsr restoreArrayLocals
+    ; Advance ptr1 by the size of the record
+    ldy #ARRAYDECL::elemSize
+    lda ptr1
+    clc
+    adc (ptr2),y
+    sta ptr1
+    iny
+    lda ptr1+1
+    adc (ptr2),y
+    sta ptr1+1
+    ; Increment ndxElems
+    inc ndxElems
     bne L1
-    inc ptr4 + 1
+    inc ndxElems+1
+    jmp L1
+DN: rts
+.endproc
+
+.proc freeArrayOfArrays
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: jsr saveArrayLocals
+    ; Push the heap pointer onto the stack
+    lda ptr1
+    ldx ptr1+1
+    jsr pushax
+    ; Load the pointer to the array declaration into A/X
+    lda ptr2
+    sta ptr4
+    lda ptr2+1
+    sta ptr4+1
+    ldy #ARRAYDECL::elemDecl+1
+    lda (ptr4),y
+    tax
+    dey
+    lda (ptr4),y
+    jsr freeArrayDeclaration
+    jsr restoreArrayLocals
+    ; Look up the size of the element and put in tmp1/tmp2
+    ldy #ARRAYDECL::elemSize
+    lda (ptr3),y
+    sta tmp1
+    iny
+    lda (ptr3),y
+    sta tmp2
+    ; Advance ptr1 by the size of the record
+    lda ptr1
+    clc
+    adc tmp1
+    sta ptr1
+    lda ptr1+1
+    adc tmp2
+    sta ptr1+1
+    ; Increment ndxElems
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
+    jmp L1
+DN: rts
+.endproc
+
+.proc freeArrayFiles
+    ; Loop through the elements
+L1: lda ndxElems
+    cmp numElems
+    bne L2
+    lda ndxElems+1
+    cmp numElems+1
+    beq DN
+L2: ldy #3                          ; Look at bit 0 - if 1 then this is a cloned file handle.
+    lda (ptr1),y
+    and #1
+    bne :+                          ; Branch if a cloned file handle
+    ; Close the file
+    jsr saveArrayLocals
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
+    lda (ptr1),y
+    jsr fileClose
+    jsr restoreArrayLocals
+    ; Move ptr1 to the next file in the array
+:   lda ptr1
+    clc
+    adc #4
+    sta ptr1
+    lda ptr1+1
+    adc #0
+    sta ptr1+1
+    ; Increment ndxElems
+    inc ndxElems
+    bne L1
+    inc ndxElems+1
     jmp L1
 DN: rts
 .endproc
@@ -874,5 +1285,43 @@ L3:
     clc
     bcc L3
 L4:
+    rts
+.endproc
+
+; This routine calculates an array's size based on the declaration block
+; passed in A/X
+.proc getArraySize
+    sta ptr3                        ; Put the declaration block ptr in ptr3
+    stx ptr3+1
+    sta ptr2                        ; Also put it in ptr2 for some math
+    stx ptr2+1
+    ; Move ptr2 to point to the min/max element indexes in the declaration block
+    lda ptr2
+    clc
+    adc #ARRAYDECL::minIndex
+    sta ptr2
+    lda ptr2+1
+    adc #0
+    sta ptr2+1
+    ; Get the array length (number of elements)
+    lda ptr2
+    ldx ptr2+1
+    jsr getArrayLength
+    sta intOp1                      ; Store the array length in intOp1
+    stx intOp1+1
+    ldy #ARRAYDECL::elemSize
+    lda (ptr3),y
+    sta intOp2                      ; Store the element size in intOp2
+    iny
+    lda (ptr3),y
+    sta intOp2+1
+    jsr multInt16                   ; Multiply array length by element size
+    lda #6
+    sta intOp2
+    lda #0
+    sta intOp2+1
+    jsr addInt16                    ; Add 6 for array header
+    lda intOp1                      ; Return array size in A/X
+    ldx intOp1+1
     rts
 .endproc

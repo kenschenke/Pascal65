@@ -21,6 +21,8 @@
 #include <libcommon.h>
 #include <asm.h>
 
+#define END_OF_PARAMS 127
+
 static 	char name[CHUNK_LEN + 1], enterLabel[15];
 
 static void icodeDecIncCall(TRoutineCode rc, CHUNKNUM argChunk);
@@ -28,9 +30,10 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk, char isRtnPtr, struct symbol *pSym);
 static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk);
 static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk,
-	char *returnLabel, char isLibraryCall, char isRtnPtr, struct symbol *pSym);
-static void icodeRoutineCleanup(char *localVars, struct type* pDeclType,
-	int numLocals, char isFunc, char isLibrary);
+	char *returnLabel, char isLibraryCall, char isRtnPtr, struct symbol *pSym,
+	char *paramTypes, CHUNKNUM *paramChunkNums);
+static void icodeRoutineCleanup(char *localVars, int numLocals);
+static void icodeRoutineParamsCleanup(char *paramTypes, CHUNKNUM *paramChunkNums);
 static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType);
 static char icodeStdRoutineCall(TRoutineCode rc, CHUNKNUM argChunk);
 static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk);
@@ -88,13 +91,16 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 	char returnLabel[15];
 	short level;
 	struct type rtnType;
+	char paramTypes[15];
+	CHUNKNUM paramChunkNums[15];
 
-	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 0, isRtnPtr, pSym);
+	memset(paramTypes, 0, sizeof(paramTypes));
+	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 0, isRtnPtr, pSym,
+		paramTypes, paramChunkNums);
 
 	// Call the routine
 	if (isRtnPtr) {
 		icodeWriteMnemonic(IC_JRP);
-		// icodeWriteBinaryShort(IC_JRP, level, 0);
 	} else {
 		icodeFormatLabel(enterLabel, "RTNENTER", declChunk);
 		icodeWriteTrinary(IC_JSR, icodeOperLabel(1, enterLabel),
@@ -102,6 +108,8 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 	}
 
 	icodeWriteUnaryLabel(IC_LOC, returnLabel);
+	icodeRoutineParamsCleanup(paramTypes, paramChunkNums);
+	icodeWriteBinaryShort(IC_POF, pType->kind == TYPE_PROCEDURE ? 0 : 1, 0);
 
 	retrieveChunk(pType->subtype, &rtnType);
 	return rtnType.kind;
@@ -111,12 +119,13 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 {
 	struct type rtnType;
 	short level;
-	char localVars[MAX_LOCAL_VARS];
-	int numLocal = 0;
 	char returnLabel[15];
+	char paramTypes[15];
+	CHUNKNUM paramChunkNums[15];
 
-	memset(localVars, 0, sizeof(localVars));
-	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 1, isRtnPtr, pSym);
+	memset(paramTypes, END_OF_PARAMS, sizeof(paramTypes));
+	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 1, isRtnPtr, pSym,
+		paramTypes, paramChunkNums);
 
 	// Call the routine
 	if (isRtnPtr) {
@@ -131,8 +140,8 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	icodeWriteUnaryLabel(IC_LOC, returnLabel);
 
 	// Tear down the routine's stack frame and free parameters
-	icodeRoutineCleanup(localVars, pType, numLocal,
-		(pType->kind == TYPE_PROCEDURE) ? 0 : 1, 1);
+	icodeRoutineParamsCleanup(paramTypes, paramChunkNums);
+	icodeWriteBinaryShort(IC_POF, (pType->kind == TYPE_PROCEDURE) ? 0 : 1, 1);
 
 	retrieveChunk(pType->subtype, &rtnType);
 	return rtnType.kind;
@@ -184,7 +193,8 @@ static void icodeReadReadlnCall(TRoutineCode rc, CHUNKNUM argChunk)
 }
 
 static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct type* pType, CHUNKNUM argChunk,
-	char *returnLabel, char isLibraryCall, char isRtnPtr, struct symbol *pSym)
+	char *returnLabel, char isLibraryCall, char isRtnPtr, struct symbol *pSym,
+	char *paramTypes, CHUNKNUM *paramChunkNums)
 {
 	char stringObjHeaps = 0;
 	CHUNKNUM paramChunk = pType->paramsFields;
@@ -193,6 +203,7 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 	struct param_list param;
 	struct type argType, paramType;
 	struct symbol sym;
+	char paramNum = 0;
 
 	retrieveChunk(declChunk, &_decl);
 	retrieveChunk(_decl.node, &sym);
@@ -217,6 +228,8 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 		retrieveChunk(paramChunk, &param);
 		retrieveChunk(param.type, &paramType);
 
+		paramTypes[paramNum] = 0;
+
 		if (paramType.kind == TYPE_DECLARED) {
 			struct symbol sym;
 			char flags = paramType.flags;
@@ -230,8 +243,21 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY) &&
 			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
 			// Allocate a second heap and make a copy of the variable
+			struct expr argExpr;
+			struct symbol sym;
+			char name[25];
+			short declType;
 			icodeExprRead(_expr.left);
-			icodeWriteUnaryWord(IC_CPY, paramType.size);
+			retrieveChunk(_expr.left, &argExpr);
+			memset(name, 0, sizeof(name));
+			retrieveChunk(argExpr.name, name);
+			scope_lookup(name, &sym);
+			declType = paramType.kind == TYPE_RECORD ? ARRAYDECL_RECORD : ARRAYDECL_ARRAY;
+			paramTypes[paramNum] = declType;
+			paramChunkNums[paramNum] = sym.decl;
+			icodeFormatLabel(name, "di", sym.decl);
+			icodeWriteBinary(IC_DCC, icodeOperLabel(1, name),
+				icodeOperShort(2, declType));
 		}
 		else if (paramType.kind == TYPE_STRING_VAR &&
 		 (!(paramType.flags & TYPE_FLAG_ISBYREF))) {
@@ -239,6 +265,7 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 			// Allocate a second heap and make a copy of the string
 			icodeExprRead(_expr.left);
 			icodeWriteUnaryShort(IC_SCV, argType.kind);
+			paramTypes[paramNum] = ARRAYDECL_STRING;
 		}
 		else if (paramType.flags & TYPE_FLAG_ISBYREF) {
 			icodeExpr(_expr.left, 0);
@@ -262,11 +289,13 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 
 		argChunk = _expr.right;
 		paramChunk = param.next;
+		++paramNum;
 	}
+
+	paramTypes[paramNum] = END_OF_PARAMS;
 
 	if (isRtnPtr) {
 		icodeVar(IC_VDR, TYPE_ROUTINE_POINTER, (unsigned char)pSym->level, (unsigned char)pSym->offset);
-		// icodeWriteUnaryShort(IC_PSH, TYPE_ADDRESS);
 	} else {
 		// Activate the new stack frame
 		icodeWriteUnaryShort(IC_ASF, sym.level);
@@ -275,60 +304,67 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 	return sym.level;
 }
 
-static void icodeRoutineCleanup(char *localVars, struct type* pDeclType,
-	int numLocals, char isFunc, char isLibrary)
+static void icodeRoutineCleanup(char *localVars, int numLocals)
 {
-	CHUNKNUM paramChunk;
-	struct param_list param;
-	struct type paramType;
-	int offset = -1;
-
-	paramChunk = pDeclType->paramsFields;
-	while (paramChunk) {
-		retrieveChunk(paramChunk, &param);
-		++offset;
-
-		retrieveChunk(param.type, &paramType);
-
-		if (paramType.kind == TYPE_DECLARED) {
-			struct symbol sym;
-			char flags = paramType.flags;
-			memset(name, 0, sizeof(name));
-			retrieveChunk(paramType.name, name);
-			scope_lookup(name, &sym);
-			retrieveChunk(sym.type, &paramType);
-			paramType.flags = flags;
-		}
-
-		if ((paramType.kind == TYPE_RECORD || paramType.kind == TYPE_ARRAY ||
-			paramType.kind == TYPE_STRING_VAR) &&
-			(!(paramType.flags & TYPE_FLAG_ISBYREF))) {
-				localVars[numLocals] = 1;
-		}
-		else {
-			localVars[numLocals] = 0;
-		}
-		++numLocals;
-
-		paramChunk = param.next;
-	}
-
-	if (numLocals) {
+	if (numLocals && localVars) {
 		int i;
 		for (i = numLocals - 1; i >= 0; --i) {
-			ICODE_MNE instruction;
-			if (localVars[i] == 1) {
-				instruction = IC_DEL;
-			} else if (localVars[i] == 2) {
-				instruction = IC_DEF;
-			} else {
-				instruction = IC_POP;
+			ICODE_MNE instruction = 0;
+			switch (localVars[i]) {
+				case LOCALVARS_ARRAY:
+				case LOCALVARS_RECORD:
+				case LOCALVARS_DEL:
+					instruction = IC_DEL;
+					break;
+				case LOCALVARS_FILE:
+					instruction = IC_DEF;
+					break;
+				default:
+					instruction = IC_POP;
+					break;
 			}
-			icodeWriteMnemonic(instruction);
+			if (instruction)
+				icodeWriteMnemonic(instruction);
 		}
 	}
+}
 
-	icodeWriteBinaryShort(IC_POF, isFunc, isLibrary);
+static void icodeRoutineParamsCleanup(char *paramTypes, CHUNKNUM *paramChunkNums)
+{
+	char paramNum = 0;
+	char label[25];
+
+	// Go to the last parameter
+	while (paramTypes[paramNum] != END_OF_PARAMS) {
+		++paramNum;
+	}
+	if (!paramNum) {
+		return;
+	}
+
+	while (1) {
+		--paramNum;
+		switch (paramTypes[paramNum]) {
+		case ARRAYDECL_ARRAY:
+		case ARRAYDECL_RECORD:
+			icodeFormatLabel(label, "di", paramChunkNums[paramNum]);
+			icodeWriteBinary(IC_DCF, icodeOperLabel(1, label),
+				icodeOperShort(2, paramTypes[paramNum]));
+			break;
+
+		case ARRAYDECL_STRING:
+			icodeWriteMnemonic(IC_DEL);
+			break;
+		
+		default:
+			icodeWriteMnemonic(IC_POP);
+			break;
+		}
+
+		if (!paramNum) {
+			break;
+		}
+	}
 }
 
 static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struct type* pDeclType)
@@ -369,8 +405,8 @@ static void icodeRoutineDeclaration(CHUNKNUM chunkNum, struct decl* pDecl, struc
 	// Tear down the routine's stack frame and free local variables
 
 	retrieveChunk(pDecl->type, &_type);
-	icodeRoutineCleanup(localVars, pDeclType, numLocals,
-		_type.kind == TYPE_PROCEDURE ? 0 : 1, 0);
+	icodeRoutineCleanup(localVars, numLocals);
+	icodeWriteMnemonic(IC_RTS);
 }
 
 void icodeRoutineDeclarations(CHUNKNUM chunkNum)
@@ -411,6 +447,8 @@ char icodeSubroutineCall(CHUNKNUM chunkNum)
 	getBaseType(&subtype);
 	if (subtype.kind == TYPE_ROUTINE_POINTER) {
 		isRtnPtr = 1;
+		// Look up the routine type
+		retrieveChunk(subtype.subtype, &rtnType);
 	}
 	if (sym.decl) {
 		retrieveChunk(sym.decl, &_decl);

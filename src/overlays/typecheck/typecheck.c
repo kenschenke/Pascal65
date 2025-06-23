@@ -56,7 +56,6 @@ static void checkAssignment(struct type *pLeftType, struct type *pRightType,
 	struct type *pResultType, CHUNKNUM exprRightChunk);
 static void checkBoolOperand(struct type* pType);
 static void checkDecIncCall(CHUNKNUM argChunk);
-static void checkForStringFields(CHUNKNUM firstField);
 static void checkForwardVsFormalDeclaration(CHUNKNUM fwdParams, CHUNKNUM formalParams);
 static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType);
 static void checkIntegerBaseType(CHUNKNUM exprChunk);
@@ -165,10 +164,7 @@ static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk)
 	}
 	retrieveChunk(elemChunk, &elemType);
 	getBaseType(&elemType);
-	if (elemType.kind == TYPE_STRING_VAR) {
-		Error(errInvalidSTRINGUse);
-	}
-	else if (elemType.kind == TYPE_ARRAY) {
+	if (elemType.kind == TYPE_ARRAY) {
 		checkArray(elemType.indextype, elemType.subtype);
 	}
 }
@@ -399,30 +395,6 @@ static void checkDecIncCall(CHUNKNUM argChunk)
 		if (_expr.right) {
 			Error(errWrongNumberOfParams);
 		}
-	}
-}
-
-static void checkForStringFields(CHUNKNUM firstField)
-{
-	struct decl _decl;
-	struct type _type;
-	CHUNKNUM chunkNum = firstField;
-
-	while (chunkNum) {
-		retrieveChunk(chunkNum, &_decl);
-		retrieveChunk(_decl.type, &_type);
-		getBaseType(&_type);
-		if (_type.kind == TYPE_STRING_VAR) {
-			Error(errInvalidSTRINGUse);
-		}
-		else if (_type.kind == TYPE_RECORD) {
-			checkForStringFields(_type.paramsFields);
-		}
-		else if (_type.kind == TYPE_ARRAY) {
-			checkArray(_type.indextype, _type.subtype);
-		}
-
-		chunkNum = _decl.next;
 	}
 }
 
@@ -1148,11 +1120,6 @@ void decl_typecheck(CHUNKNUM chunkNum)
 			// is the array type (Type section).
 			if (((_decl.kind == DECL_VARIABLE && _type.name == 0) || _decl.kind == DECL_TYPE) && _type.kind == TYPE_ARRAY) {
 				checkArray(_type.indextype, _type.subtype);
-			}
-
-			// If this is a record, make sure none of the fields are string types.
-			if (((_decl.kind == DECL_VARIABLE && _type.name == 0) || _decl.kind == DECL_TYPE) && _type.kind == TYPE_RECORD) {
-				checkForStringFields(_type.paramsFields);
 			}
 
 			// If this is a function or procedure, check for a forward declaration and make

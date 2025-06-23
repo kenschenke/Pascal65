@@ -15,7 +15,7 @@
 
 .export heapAlloc, heapFree, heapInit
 
-.import runtimeError, geInt16, ltInt16, geUint32, popax, addInt16
+.import runtimeError, geInt16, ltInt16, geUint32, addInt16
 
 ; The memory heap starts at the end of program code going to the top of the
 ; runtime stack (the runtime stack grows downward). Assuming a 2K stack

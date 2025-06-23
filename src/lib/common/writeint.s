@@ -20,7 +20,7 @@
 .endif
 
 .import tensTable32, spcl2147483648
-.import isNegInt32, invertInt32, leftpad, popax, geUint32, subInt32
+.import isNegInt32, invertInt32, leftpad, geUint32, subInt32
 .import signExtend8To32, signExtend16To32
 
 .export writeInt8, writeUint8, writeInt16, writeUint16, writeInt32, writeUint32

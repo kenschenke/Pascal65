@@ -14,7 +14,7 @@
 .include "chunks.inc"
 
 .export _getChunk
-.import popax, _isBlockAllocated, _currentBlock, _storeBlock, __chunkGetBlock, _blockData
+.import _isBlockAllocated, _currentBlock, _storeBlock, __chunkGetBlock, _blockData
 .import extractBlockAndChunkNum, isChunkAlloc
 .importzp ptr1, tmp1
 

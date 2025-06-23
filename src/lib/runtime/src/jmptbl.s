@@ -27,7 +27,7 @@
 .import resetStringBuffer, getStringBuffer, writeStringLiteral
 .import strCompare, abs, add, assign, multiply, divide, divint, comp
 .import subtract, modulus, sqr, floatNeg, negate, pred, succ, PRECRD
-.import calcArrayElem, calcRecordOffset, pusheax, initArrays
+.import calcArrayElem, calcRecordOffset, pusheax
 .import writeCharArray, readCharArrayFromInput, floatToInt16, FPOUT
 .import memcopy, readFloatFromInput, readIntFromInput, _strToFloat
 .import concatString, assignString, convertString, readStringFromInput
@@ -39,6 +39,7 @@
 .import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
 .import fileErase, fileAssign, fileRename, fileFree, convertType
 .import libStackHeader, libCallRoutine, addIrqHandler, irqCleanup
+.import initDecl, freeDecl, cloneDecl, libStackCleanup
 
 .segment "JMPTBL"
 
@@ -109,7 +110,7 @@ jmp PRECRD               ; BASE + 189
 jmp calcArrayElem        ; BASE + 192
 jmp calcRecordOffset     ; BASE + 195
 jmp pusheax              ; BASE + 198
-jmp initArrays           ; BASE + 201
+jmp cloneDecl            ; BASE + 201
 jmp writeCharArray       ; BASE + 204
 jmp readCharArrayFromInput ; BASE + 207
 jmp floatToInt16         ; BASE + 210
@@ -140,8 +141,8 @@ jmp invertBitwise        ; BASE + 282
 jmp sine                 ; BASE + 285
 jmp cosine               ; BASE + 288
 jmp tangent              ; BASE + 291
-jmp $0000                ; BASE + 294
-jmp $0000                ; BASE + 297
+jmp initDecl             ; BASE + 294
+jmp freeDecl             ; BASE + 297
 jmp stringInit           ; BASE + 300
 jmp pushVar              ; BASE + 303
 jmp readVar              ; BASE + 306
@@ -152,3 +153,4 @@ jmp libStackHeader       ; BASE + 318
 jmp libCallRoutine       ; BASE + 321
 jmp addIrqHandler        ; BASE + 324
 jmp irqCleanup           ; BASE + 327
+jmp libStackCleanup      ; BASE + 330

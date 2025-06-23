@@ -310,14 +310,23 @@ L4:
 ; to be at the top of the stack. Callers should call this with
 ; a jmp, NOT a jsr.
 .proc returnFromRoutine
-    pla
-    sta tmp2
-    pla
+    lda stackP                  ; Put the stack frame pointer into ptr1
+    sec
+    sbc #8                      ; subtracting 8 to access the routine's return address.
+    sta ptr1
+    lda stackP+1
+    sbc #0
+    sta ptr1+1
+    ldy #0                      ; Copy the return address into tmp1/tmp2
+    lda (ptr1),y
     sta tmp1
-    inc tmp1
+    iny
+    lda (ptr1),y
+    sta tmp2
+    inc tmp1                    ; Increment the return address by one
     bne :+
     inc tmp2
-:   jmp (tmp1)
+:   jmp (tmp1)                  ; JMP to the return address
 .endproc
 
 ; Push the byte in A to the runtime stack

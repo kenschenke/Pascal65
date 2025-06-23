@@ -69,6 +69,14 @@ callbackFunc: .dword 0
     ; Call the callback procedure
     jsr pushCallbackProcAddr
     jsr rtLibCallRoutine
+
+    ; Pop the parameter off the stack
+    jsr rtPopEax
+
+    ; Clean up the stack frame
+    lda #0  ; 0 = procedure call
+    jsr rtLibStackCleanup
+
     rts
 .endproc
 
@@ -95,6 +103,10 @@ callbackFunc: .dword 0
     ; Call the Pascal Function
     jsr pushCallbackFuncAddr
     jsr rtLibCallRoutine
+
+    ; Clean up the stack frame
+    lda #1  ; 1 = function call
+    jsr rtLibStackCleanup
 
     ; Get the Function's return value
     jsr rtPopEax

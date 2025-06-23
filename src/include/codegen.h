@@ -45,6 +45,18 @@ struct LINKTAG {
 	char which;  // one of LINKADDR_*
 };
 
+struct ARRAYDECL
+{
+	short heapOffset;
+	short minIndex;
+	short maxIndex;
+	short elemSize;
+	CHUNKNUM literals;
+	short numLiterals;
+	CHUNKNUM elemDecl;
+	char elemType;
+};
+
 struct ARRAYINIT
 {
 	char scopeLevel;
@@ -99,16 +111,22 @@ struct ARRAYINIT
 
 // Shared global variables
 extern CHUNKNUM linkerTags;
-extern CHUNKNUM arrayInitsForScope;
-extern CHUNKNUM arrayInitsForAllScopes;
 extern CHUNKNUM stringLiterals;
-extern int numArrayInitsForScope;
-extern int numArrayInitsForAllScopes;
+extern CHUNKNUM arrayInits, recordInits;			// see below
 extern int numStringLiterals;
 extern FILE *codeFh;
 extern unsigned short codeOffset;
 extern unsigned short codeBase;		// base address of code
 extern short heapOffset;
+
+/*
+	The arrayInits and recordInits variables store initialization information
+	for array and record declarations. There are a MEMBUF containing two CHUNKNUMs
+	for each declaration. The first CHUNKNUM is the declaration number in the AST.
+	The second CHUNKNUM is the MEMBUF containing the declaration block.
+	The declaration block is later written in the DATA segment. The
+	declaration number is used in a label to refer to the declaration block.
+*/
 
 /*
 	Internal Handling of Array Initialization

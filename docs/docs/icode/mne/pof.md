@@ -8,8 +8,7 @@ POF <isFunction> <isLibrary>
 
 ## Description
 
-The **POF** instruction pops the stack frame for a routine. After removing
-the stack frame, this instruction resumes execution with the caller's code.
+The **POF** instruction pops the stack frame for a routine.
 
 ## IsFunction Operand
 

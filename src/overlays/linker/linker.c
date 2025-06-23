@@ -19,6 +19,7 @@
 // NOTE: Pascal code is generated elsewhere, in the objcode overlay.
 
 #include <stdio.h>
+#include <stddef.h>
 #include <buffer.h>
 #include <codegen.h>
 #include <ast.h>
@@ -29,6 +30,7 @@
 #include <inputbuf.h>
 #include <doscmd.h>
 #include <common.h>
+#include <icode.h>
 
 #ifndef __GNUC__
 #include <cbm.h>
@@ -401,9 +403,18 @@ static unsigned char chainCode[] = {
 #endif
 #endif  // end of COMPILERTEST
 
+// This is a helper structure used in dumpRecordInits for
+// processing record declaration blocks.
+struct RECDECLINFO
+{
+	CHUNKNUM chunkNum;
+	unsigned short fieldOffset;
+};
+
 static void dumpArrayInits(void);
+static void dumpRecordInits(void);
 static void dumpStringLiterals(void);
-static void freeArrayInits(void);
+static void freeDeclInits(CHUNKNUM memBuf);
 static void freeStringLiterals(void);
 #ifndef COMPILERTEST
 static void genBootstrap(void);
@@ -414,45 +425,62 @@ static void writePrgFile(FILE *out);
 
 static void dumpArrayInits(void)
 {
-	char label[20], areLiteralsReals, isNeg;
-	CHUNKNUM arrayInits, literals, stringChunkNum, literalsBuf = 0;
-	struct ARRAYINIT arrayInit;
-	unsigned char arrayInitBuf[sizeof(struct ARRAYINIT)];
+	int i;
+	char label[25], elemType, isNeg;
+	CHUNKNUM declMemBuf, literals, stringChunkNum, literalsBuf = 0;
+	struct ARRAYDECL arrayDecl;
 
-	if (!arrayInitsForAllScopes || !numArrayInitsForAllScopes) {
+	if (!arrayInits) {
 		return;
 	}
 
-	setMemBufPos(arrayInitsForAllScopes, 0);
-	while (!isMemBufAtEnd(arrayInitsForAllScopes)) {
-		readFromMemBuf(arrayInitsForAllScopes, &arrayInits, sizeof(CHUNKNUM));
+	setMemBufPos(arrayInits, 0);
+	while (!isMemBufAtEnd(arrayInits)) {
+		i = 0;
+		while (1) {
+			readFromMemBuf(arrayInits, label+i, 1);
+			if (!label[i]) {
+				break;
+			}
+			i++;
+		}
+		readFromMemBuf(arrayInits, &declMemBuf, sizeof(CHUNKNUM));
 
-		strcpy(label, "arrayInits");
-		strcat(label, formatInt16(arrayInits));
 		linkAddressSet(label, codeOffset);
 
-		setMemBufPos(arrayInits, 0);
-		while (!isMemBufAtEnd(arrayInits)) {
-			readFromMemBuf(arrayInits, arrayInitBuf, sizeof(struct ARRAYINIT));
-			memcpy(&arrayInit, arrayInitBuf, sizeof(struct ARRAYINIT));
+		setMemBufPos(declMemBuf, 0);
+		readFromMemBuf(declMemBuf, &arrayDecl, sizeof(struct ARRAYDECL));
 
-			if (arrayInit.literals) {
-				if (!literalsBuf) {
-					allocMemBuf(&literalsBuf);
-				}
-				writeToMemBuf(literalsBuf, &arrayInit.literals, sizeof(CHUNKNUM));
-				writeToMemBuf(literalsBuf, &arrayInit.areLiteralsReals, 1);
-
-				strcpy(label, "arrayLits");
-				strcat(label, formatInt16(arrayInit.literals));
-				linkAddressLookup(label, codeOffset+10, LINKADDR_BOTH);
+		if (arrayDecl.literals) {
+			if (!literalsBuf) {
+				allocMemBuf(&literalsBuf);
 			}
+			writeToMemBuf(literalsBuf, &arrayDecl.literals, sizeof(CHUNKNUM));
+			writeToMemBuf(literalsBuf, &arrayDecl.elemType, 1);
 
-			writeCodeBuf(arrayInitBuf, sizeof(struct ARRAYINIT));
+			strcpy(label, "arrayLits");
+			strcat(label, formatInt16(arrayDecl.literals));
+			linkAddressLookup(label, codeOffset+offsetof(struct ARRAYDECL, literals), LINKADDR_BOTH);
 		}
 
-		arrayInitBuf[0] = arrayInitBuf[1] = 0;
-		writeCodeBuf(arrayInitBuf, 2);
+		if (arrayDecl.elemDecl) {
+		}
+
+		if (arrayDecl.elemType == ARRAYDECL_ARRAY ||
+			arrayDecl.elemType == ARRAYDECL_RECORD) {
+			strcat(label, ".1");
+		} else if (arrayDecl.elemDecl) {
+			strcpy(label, "di");
+			strcat(label, formatInt16(arrayDecl.elemDecl));
+		} else {
+			label[0] = 0;
+		}
+
+		if (label[0]) {
+			linkAddressLookup(label, codeOffset+offsetof(struct ARRAYDECL, elemDecl), LINKADDR_BOTH);
+		}
+
+		writeCodeBuf((unsigned char *)&arrayDecl, sizeof(struct ARRAYDECL));
 	}
 
 	if (!literalsBuf) {
@@ -462,14 +490,14 @@ static void dumpArrayInits(void)
 	setMemBufPos(literalsBuf, 0);
 	while (!isMemBufAtEnd(literalsBuf)) {
 		readFromMemBuf(literalsBuf, &literals, sizeof(CHUNKNUM));
-		readFromMemBuf(literalsBuf, &areLiteralsReals, 1);
+		readFromMemBuf(literalsBuf, &elemType, 1);
 
 		strcpy(label, "arrayLits");
 		strcat(label, formatInt16(literals));
 		linkAddressSet(label, codeOffset);
 
 		setMemBufPos(literals, 0);
-		if (areLiteralsReals) {
+		if (elemType == ARRAYDECL_REAL) {
 			while (!isMemBufAtEnd(literals)) {
 				readFromMemBuf(literals, &isNeg, 1);
 				readFromMemBuf(literals, &stringChunkNum, sizeof(CHUNKNUM));
@@ -485,13 +513,60 @@ static void dumpArrayInits(void)
 			}
 		} else {
 			while (!isMemBufAtEnd(literals)) {
-				readFromMemBuf(literals, arrayInitBuf, 1);
-				writeCodeBuf(arrayInitBuf, 1);
+				readFromMemBuf(literals, label, 1);
+				writeCodeBuf((unsigned char *)label, 1);
 			}
 		}
 	}
 
 	freeMemBuf(literalsBuf);
+}
+
+static void dumpRecordInits(void)
+{
+	int i;
+	char label[25], ch;
+	CHUNKNUM declMemBuf;
+	struct RECDECLINFO declInfo;
+	unsigned short word;
+
+	if (!recordInits) {
+		return;
+	}
+
+	setMemBufPos(recordInits, 0);
+	while (!isMemBufAtEnd(recordInits)) {
+		i = 0;
+		while (1) {
+			readFromMemBuf(recordInits, label+i, 1);
+			if (!label[i]) {
+				break;
+			}
+			i++;
+		}
+		readFromMemBuf(recordInits, &declMemBuf, sizeof(CHUNKNUM));
+
+		linkAddressSet(label, codeOffset);
+
+		setMemBufPos(declMemBuf, 0);
+		readFromMemBuf(declMemBuf, &word, sizeof(unsigned short));
+		writeCodeBuf((unsigned char *)&word, sizeof(unsigned short));
+		readFromMemBuf(declMemBuf, &word, sizeof(unsigned short));
+		writeCodeBuf((unsigned char *)&word, sizeof(unsigned short));
+		while (!isMemBufAtEnd(declMemBuf)) {
+			readFromMemBuf(declMemBuf, &ch, 1);
+			writeCodeBuf((unsigned char *)&ch, 1);
+			if (ch) {
+				readFromMemBuf(declMemBuf, &declInfo, sizeof(struct RECDECLINFO));
+				if (ch == ARRAYDECL_ARRAY || ch == ARRAYDECL_RECORD) {
+					strcpy(label, "di");
+					strcat(label, formatInt16(declInfo.chunkNum));
+					linkAddressLookup(label, codeOffset, LINKADDR_BOTH);
+				}
+				writeCodeBuf((unsigned char *)&declInfo, sizeof(struct RECDECLINFO));
+			}
+		}
+	}
 }
 
 static void dumpStringLiterals(void)
@@ -525,33 +600,30 @@ static void dumpStringLiterals(void)
 	}
 }
 
-static void freeArrayInits(void)
+static void freeDeclInits(CHUNKNUM declMemBuf)
 {
-	CHUNKNUM arrayInits;
-	struct ARRAYINIT arrayInit;
+	char ch;
+	CHUNKNUM memBuf;
 
-	if (arrayInitsForAllScopes || numArrayInitsForAllScopes) {
-		setMemBufPos(arrayInitsForAllScopes, 0);
-
-		while (!isMemBufAtEnd(arrayInitsForAllScopes)) {
-			readFromMemBuf(arrayInitsForAllScopes, &arrayInits, sizeof(CHUNKNUM));
-
-			setMemBufPos(arrayInits, 0);
-			while (!isMemBufAtEnd(arrayInits)) {
-				readFromMemBuf(arrayInits, &arrayInit, sizeof(struct ARRAYINIT));
-				if (arrayInit.literals) {
-					freeMemBuf(arrayInit.literals);
-				}
-			}
-
-			freeMemBuf(arrayInits);
-		}
-
-		freeMemBuf(arrayInitsForAllScopes);
+	if (!declMemBuf) {
+		return;
 	}
 
-	arrayInitsForAllScopes = 0;
-	numArrayInitsForAllScopes = 0;
+	setMemBufPos(declMemBuf, 0);
+	while (!isMemBufAtEnd(declMemBuf)) {
+		// Read the declaration label (ignore)
+		while (1) {
+			readFromMemBuf(declMemBuf, &ch, 1);
+			if (!ch) {
+				break;
+			}
+		}
+		// Read the declaration block MEMBUF
+		readFromMemBuf(declMemBuf, &memBuf, sizeof(CHUNKNUM));
+		freeMemBuf(memBuf);
+	}
+
+	freeMemBuf(declMemBuf);
 }
 
 static void freeStringLiterals(void)
@@ -816,6 +888,7 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 
 	dumpStringLiterals();
 	dumpArrayInits();
+	dumpRecordInits();
 
 	linkAddressSet(BSS_INTBUF, codeOffset);
 	ch = 0;
@@ -930,8 +1003,11 @@ void linkerPostWrite(const char* filename, char run, CHUNKNUM astRoot)
 
 	fclose(out);
 	freeStringLiterals();
-	freeArrayInits();
+	freeDeclInits(arrayInits);
+	freeDeclInits(recordInits);
 	freeLinkerSymbolTable();
+
+	arrayInits = recordInits = 0;
 
 	fclose(codeFh);
 	removeFile(TEMP_PROG);

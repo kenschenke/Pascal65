@@ -57,6 +57,7 @@ The following instructions do not take an operand.
 |[DEF](../mne/def)    |0d       |0000 1101   |Pops and frees file handle     |
 |[DEL](../mne/del)    |07       |0000 0111   |Pops and frees address         |
 |[FSO](../mne/fso)    |0c       |0000 1100   |Flush string output buffer     |
+|[RTS](../mne/rts)    |0f       |0000 1111   |Returns to a routine's caller  |
 |[NOT](../mne/not)    |09       |0000 1001   |Logical not top of stack       |
 |[ORA](../mne/ora)    |02       |0000 0010   |Perform a boolean OR operation |
 |[ONL](../mne/onl)    |03       |0000 0011   |Output a newline character     |
@@ -104,6 +105,8 @@ The following instructions take two operands.
 |---------------------|---------|------------|------------------------------------------|
 |[CCT](../mne/cct)    |4a       |0100 1010   |Concatenate two values into a string obj  |
 |[CVI](../mne/cvi)    |50       |0101 0000   |Convert the integer at top of the stack   |
+|[DCF](../mne/dcf)    |4d       |0101 0001   |Free an array or record declaration       |
+|[DCI](../mne/dci)    |4d       |0100 1101   |Initialize an array or record declaration |
 |[DIV](../mne/div)    |43       |0100 0011   |Perform floating point division           |
 |[EQU](../mne/equ)    |48       |0100 1000   |Perform an equality comparison            |
 |[GRT](../mne/grt)    |44       |0100 0100   |Perform a greater-than comparison         |

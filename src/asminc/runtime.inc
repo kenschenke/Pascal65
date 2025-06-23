@@ -101,3 +101,4 @@ rtLibStackHeader        = rt_base + 318
 rtLibCallRoutine        = rt_base + 321
 rtAddIrqHandler         = rt_base + 324
 rtIrqCleanup            = rt_base + 327
+rtLibStackCleanup       = rt_base + 330

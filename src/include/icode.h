@@ -30,6 +30,19 @@
 
 #define TMP_ZZICODE "zzicode"
 
+#define LOCALVARS_RECORD 2
+#define LOCALVARS_DEL 1
+#define LOCALVARS_FILE 4
+#define LOCALVARS_ARRAY 5
+#define LOCALVARS_STRING 3
+
+#define ARRAYDECL_SCALAR 0
+#define ARRAYDECL_REAL 1
+#define ARRAYDECL_RECORD 2
+#define ARRAYDECL_STRING 3
+#define ARRAYDECL_FILE 4
+#define ARRAYDECL_ARRAY 5
+
 /*****************************************************************************
  * Mnemonics
  * 
@@ -76,6 +89,7 @@ typedef unsigned char ICODE_MNE;
 #define IC_FSO              0x0c  // 0000 1100  flush string output
 #define IC_DEF              0x0d  // 0000 1101  pop and free a file handle and close file
 #define IC_JRP              0x0e  // 0000 1110  call a routine from a pointer on the stack
+#define IC_RTS              0x0f  // 0000 1111  return from a routine using the stack frame return addr
 
 // These instructions take one operand
 #define IC_MASK_UNARY       0x20  // 0010 0000
@@ -119,8 +133,11 @@ typedef unsigned char ICODE_MNE;
 #define IC_CCT              0x4a  // 0100 1010  1:leftType, 2:rightType concatenate
 #define IC_PUF              0x4b  // 0100 1011  1:routineLevel, 2:returnLabel -- push stack frame
 #define IC_POF              0x4c  // 0100 1100  1:isFunc, 2:isLibrary -- pop stack frame and return to caller
+#define IC_DCI              0x4d  // 0100 1101  1:label, 2:type (1=array, 2=record) - initialize declaration
+#define IC_DCC              0x4e  // 0100 1110  1:label, 2:type - clone declaration (array or record)
 #define IC_SFH              0x4f  // 0100 1111  Set file handle 1:file handle 2:0/output 1/input
 #define IC_CVI              0x50  // 0101 0000  1:from type, 2:to type
+#define IC_DCF              0x51  // 0101 0001  1:label, 2:type - free declaration (array or record)
 
 // These instructions take three operands
 #define IC_MASK_TRINARY     0x80

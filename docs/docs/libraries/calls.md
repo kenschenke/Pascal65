@@ -4,20 +4,19 @@ Libraries can call Pascal routines if a pointer to the routine has been
 provided. The most common use case would be for a Pascal program to 
 register a callback with the library.
 
-Calling a Pascal routine is a three step process.
+Calling a Pascal routine is a five step process.
 
   1. Create the stack frame header
   2. Push parameters onto the runtime stack
   3. Call the routine
-
-The Pascal routine will clean up the runtime stack before it returns,
-including the frame header.
+  4. Pop parameters back off the runtime stack
+  5. Clean up the stack frame
 
 !!! note
 
-    If the routine is a **Procedure** the entire stack frame is cleaned up.
-    If the routine is a **Function** the return value is left on the stack
-    and is the responsibility of the library to remove it.
+    Cleanup up the stack frame leaves the return value on the runtime stack
+    if the called routine is a function. It is the responsibility of the
+    library to remove it.
 
 If you have not read the page on the [runtime stack](stack.md) yet, please do so
 before continuing.
@@ -68,7 +67,15 @@ to modify and/or reallocate the variable as necessary.
 After the runtime stack has been set up, the routine can be called by
 the [LibCallRoutine](../runtime/libcallroutine.md).
 
-## Clean Up the Runtime Stack (Functions Only)
+## Pop any Parameters Off the Stack
 
-If the Pascal routine is a **Function**, the return value must be removed
-from the stack by calling the [PopEax](../runtime/popeax.md) routine.
+When the routine returns the library still needs to remove the parameters
+from the runtime stack by calling [PopEax](../runtime/popeax.md) for
+each parameter.
+
+## Clean Up the Runtime Stack
+
+Finally, the library needs to clean up the stack frame header by calling
+[LibStackCleanup](../runtime/libstackcleanup.md). This removes the stack
+frame header. If the routine is a function the return value is left on
+the stack and is the responsibility of the library to remove it.

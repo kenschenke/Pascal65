@@ -221,7 +221,7 @@
 #define RT_CALCARRAYELEM        (RT_BASE + 192)
 #define RT_CALCRECORD           (RT_BASE + 195)
 #define RT_PUSHEAX              (RT_BASE + 198)
-#define RT_INITARRAYS           (RT_BASE + 201)
+#define RT_CLONEDECL            (RT_BASE + 201)
 #define RT_WRITECHARARRAY       (RT_BASE + 204)
 #define RT_READCHARARRAYFROMINPUT (RT_BASE + 207)
 #define RT_FLOATTOINT16         (RT_BASE + 210)
@@ -252,6 +252,8 @@
 #define RT_SINE                 (RT_BASE + 285)
 #define RT_COSINE               (RT_BASE + 288)
 #define RT_TANGENT              (RT_BASE + 291)
+#define RT_INITDECL             (RT_BASE + 294)
+#define RT_FREEDECL             (RT_BASE + 297)
 #define RT_STRINGINIT           (RT_BASE + 300)
 #define RT_PUSHVAR              (RT_BASE + 303)
 #define RT_READVAR              (RT_BASE + 306)
@@ -262,6 +264,7 @@
 #define RT_LIBCALLROUTINE       (RT_BASE + 321)
 #define RT_ADDIRQHANDLER        (RT_BASE + 324)
 #define RT_IRQCLEANUP           (RT_BASE + 327)
+#define RT_LIBSTACKCLEANUP      (RT_BASE + 330)
 
 // CBM Kernal
 

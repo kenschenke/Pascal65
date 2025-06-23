@@ -120,6 +120,7 @@ nav:
     - LibLoadParam: runtime/libloadparam.md
     - LibReturnValue: runtime/libreturnvalue.md
     - LibStackHeader: runtime/libstackheader.md
+    - LibStackCleanup: runtime/libstackcleanup.md
     - LibStoreVarParam: runtime/libstorevarparam.md
     - Multiply: runtime/multiply.md
     - PopEax: runtime/popeax.md
@@ -151,6 +152,8 @@ nav:
       - CNL: icode/mne/cnl.md
       - CPY: icode/mne/cpy.md
       - CVI: icode/mne/cvi.md
+      - DCF: icode/mne/dcf.md
+      - DCI: icode/mne/dci.md
       - DEF: icode/mne/def.md
       - DEL: icode/mne/del.md
       - DIV: icode/mne/div.md

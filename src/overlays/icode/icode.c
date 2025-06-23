@@ -151,7 +151,6 @@ static int icodeUnitDeclarations(void)
 	CHUNKNUM chunkNum = units;
     char localVars[MAX_LOCAL_VARS];
 
-    memset(localVars, 0, sizeof(localVars));
 	while (chunkNum) {
 		retrieveChunk(chunkNum, &_unit);
 		retrieveChunk(_unit.astRoot, &_decl);
@@ -198,7 +197,6 @@ void icodeWrite(CHUNKNUM astRoot)
 	retrieveChunk(_decl.code, &_stmt);
 
 	// Create stack entries for the global variables
-    memset(localVars, 0, sizeof(localVars));
 	numToPop = icodeVariableDeclarations(_stmt.decl, localVars);
 	numToPop += icodeUnitDeclarations();
 
