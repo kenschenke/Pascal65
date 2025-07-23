@@ -69,4 +69,8 @@ char isStopKeyPressed(void);
 char isConcatOperand(CHUNKNUM exprChunk);
 char isStringConcat(CHUNKNUM exprChunk);
 
+#ifdef GCC
+void printStackTrace(void);
+#endif
+
 #endif // end of COMMON_H

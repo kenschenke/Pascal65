@@ -55,8 +55,8 @@ ASFLAGS = $($(TARGET)_ASFLAGS) --asm-include-dir ../../asminc
 
 ifdef GCC
 CC = gcc
-CFLAGS = $($(TARGET)_CFLAGS) -c -fpack-struct=1 -m32 -I ../../include
-LDFLAGS = -m32
+CFLAGS = $($(TARGET)_CFLAGS) -c -fpack-struct=1 -m32 -rdynamic -g -I ../../include
+LDFLAGS = -m32 -rdynamic
 else
 CC = cl65
 CFLAGS = $($(TARGET)_CFLAGS) -t $(CC65TARGET) -c --create-dep $(@:.o=.d) -W error -O -I ../../include

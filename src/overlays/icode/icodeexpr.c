@@ -344,6 +344,9 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 
 		if (isRead) {
 			getExprType(_expr.left, &leftType);
+			if (leftType.kind == TYPE_DECLARED) {
+				getBaseType(&leftType);
+			}
 			retrieveChunk(leftType.subtype, &leftType);
 			getBaseType(&leftType);
 			if (leftType.kind == TYPE_ARRAY) {

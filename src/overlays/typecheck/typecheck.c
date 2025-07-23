@@ -1540,6 +1540,9 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 					retrieveChunk(exprLeft.left, &exprLeft);
 					continue;
 				}
+				if (!exprLeft.node && exprLeft.kind == EXPR_POINTER) {
+					retrieveChunk(exprLeft.left, &exprLeft);
+				}
 				retrieveChunk(exprLeft.node, &sym);
 				retrieveChunk(sym.type, &rightType);
 				expr_typecheck(_expr.right, rightType.symtab, pType, 0);
@@ -1569,8 +1572,15 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 		break;
 	
 	case EXPR_POINTER:
-		retrieveChunk(_expr.evalType, &leftType);
-		retrieveChunk(leftType.subtype, &leftType);
+		if (_expr.evalType) {
+			retrieveChunk(_expr.evalType, &leftType);
+		} else {
+			struct expr leftExpr;
+			retrieveChunk(_expr.left, &leftExpr);
+			retrieveChunk(leftExpr.evalType, &leftType);
+		}
+		if (leftType.subtype)
+			retrieveChunk(leftType.subtype, &leftType);
 		pType->kind = leftType.kind;
 		pType->name = leftType.name;
 		break;

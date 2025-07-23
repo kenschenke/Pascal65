@@ -103,6 +103,10 @@ static char icodeDeclaredSubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, 
 
 	icodeWriteUnaryLabel(IC_LOC, returnLabel);
 
+	if (pType->kind == TYPE_PROCEDURE) {
+		return TYPE_VOID;
+	}
+
 	retrieveChunk(pType->subtype, &rtnType);
 	return rtnType.kind;
 }
@@ -113,7 +117,7 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	short level;
 	char localVars[MAX_LOCAL_VARS];
 	int numLocal = 0;
-	char returnLabel[15];
+	char returnLabel[15], isFunc = pType->kind == TYPE_FUNCTION ? 1 : 0;
 
 	memset(localVars, 0, sizeof(localVars));
 	level = icodeRoutineCall(exprChunk, declChunk, pType, argChunk, returnLabel, 1, isRtnPtr, pSym);
@@ -131,9 +135,12 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	icodeWriteUnaryLabel(IC_LOC, returnLabel);
 
 	// Tear down the routine's stack frame and free parameters
-	icodeRoutineCleanup(localVars, pType, numLocal,
-		(pType->kind == TYPE_PROCEDURE) ? 0 : 1, 1);
+	icodeRoutineCleanup(localVars, pType, numLocal, isFunc, 1);
 
+	if (!isFunc) {
+		return TYPE_VOID;
+	}
+	
 	retrieveChunk(pType->subtype, &rtnType);
 	return rtnType.kind;
 }
@@ -194,8 +201,12 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 	struct type argType, paramType;
 	struct symbol sym;
 
-	retrieveChunk(declChunk, &_decl);
-	retrieveChunk(_decl.node, &sym);
+	if (declChunk) {
+		retrieveChunk(declChunk, &_decl);
+		retrieveChunk(_decl.node, &sym);
+	} else {
+		sym.level = 0;
+	}
 
 	// Set up the stack frame
 	icodeFormatLabel(returnLabel, "RTNRETURN", exprChunk);
@@ -214,8 +225,12 @@ static short icodeRoutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, struct typ
 	while (argChunk) {
 		retrieveChunk(argChunk, &_expr);
 		retrieveChunk(_expr.evalType, &argType);
-		retrieveChunk(paramChunk, &param);
-		retrieveChunk(param.type, &paramType);
+		if (paramChunk) {
+			retrieveChunk(paramChunk, &param);
+			retrieveChunk(param.type, &paramType);
+		} else {
+			paramType.kind = TYPE_VOID;
+		}
 
 		if (paramType.kind == TYPE_DECLARED) {
 			struct symbol sym;
@@ -499,9 +514,10 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 	struct expr arg;
 	struct type _type;
 
+	argValue = FH_STDIO;
 	if (rc == rcWriteStr) {
 		argValue = FH_STRING;
-	} else {
+	} else if (argChunk) {
 		retrieveChunk(argChunk, &arg);
 		retrieveChunk(arg.evalType, &_type);
 		if (_type.kind == TYPE_FILE || _type.kind == TYPE_TEXT) {
@@ -509,8 +525,6 @@ static void icodeWriteWritelnCall(TRoutineCode rc, CHUNKNUM argChunk)
 			argValue = FH_FILENUM;
 			argChunk = arg.right;
 			writeBytes = _type.kind == TYPE_FILE ? 1 : 0;
-		} else {
-			argValue = FH_STDIO;
 		}
 	}
 

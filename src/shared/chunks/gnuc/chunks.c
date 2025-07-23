@@ -8,9 +8,12 @@
  * https://opensource.org/licenses/MIT
  */
 
+#include <stdio.h>
 #include <blocks.h>
 #include <chunks.h>
 #include <string.h>
+#include <common.h>
+#include <stdlib.h>
 
 BLOCKNUM		currentBlock;
 unsigned char	*blockData;
@@ -193,13 +196,17 @@ char retrieveChunk(CHUNKNUM chunkNum, void *chunk)
 		}
 		blockData = retrieveBlock(blockNum);
 		if (!blockData) {
-			return 0;
+			printf("Invalid block number\n");
+			printStackTrace();
+			exit(5);
 		}
 		currentBlock = blockNum;
 	}
 
 	if (c>=CHUNKS_PER_BLOCK || !isAlloc(c)) {
-		return 0;
+		printf("Chunk %04x not allocated\n", chunkNum);
+		printStackTrace();
+		exit(5);
 	}
 
 	memcpy(chunk, blockData+2+(c*CHUNK_LEN), CHUNK_LEN);
