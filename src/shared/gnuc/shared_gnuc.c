@@ -14,6 +14,8 @@
 #include <int16.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <execinfo.h>
+#include <string.h>
 
 const char *formatInt16(short num)
 {
@@ -52,5 +54,39 @@ void strlwr(char *str)
 {
     for (char *p=str; *p; p++) {
         *p = tolower(*p);
+    }
+}
+
+void printStackTrace(void)
+{
+    void *trace[16];
+    char **messages = (char **)NULL;
+    int i, trace_size = 0;
+    char addr[16];
+
+    trace_size = backtrace(trace, 16);
+    messages = backtrace_symbols(trace, trace_size);
+    printf("[bt] Execute path:\n");
+    for (i = 1; i < trace_size; ++i) {
+        printf("[bt] #%d %s\n", i, messages[i]);
+
+        size_t q, p = 0;
+        while(messages[i][p] != '(' && messages[i][p] != ' ' &&
+            messages[i][p] != 0) {
+                p++;
+            }
+        if (messages[i][p+1] == '+') {
+            q = p + 2;
+            while (messages[i][q] != ')' && messages[i][q] != 0)
+                q++;
+            strncpy(addr, &messages[i][p+2], q-p-2);
+            addr[q-p-2] = 0;
+        } else {
+            sprintf(addr, "%p", trace[i]);
+        }
+        
+        char syscom[256];
+        sprintf(syscom, "addr2line %s -e %.*s", addr, p, messages[i]);
+        system(syscom);
     }
 }

@@ -365,15 +365,17 @@ char icodeShortValue(CHUNKNUM chunkNum)
 	struct expr _expr;
     struct type _type;
 
+    _type.kind = TYPE_BYTE;
 	if (!chunkNum) {
         _expr.value.shortInt = 0;
-        _type.kind = TYPE_BYTE;
 	} else {
         retrieveChunk(chunkNum, &_expr);
-        retrieveChunk(_expr.evalType, &_type);
-        if (_expr.neg) {
-            _expr.value.shortInt = -_expr.value.shortInt;
-            _type.kind = TYPE_SHORTINT;
+        if (_expr.evalType) {
+            retrieveChunk(_expr.evalType, &_type);
+            if (_expr.neg) {
+                _expr.value.shortInt = -_expr.value.shortInt;
+                _type.kind = TYPE_SHORTINT;
+            }
         }
     }
 
