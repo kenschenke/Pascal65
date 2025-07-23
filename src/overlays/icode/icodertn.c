@@ -146,7 +146,8 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 	icodeWriteUnaryLabel(IC_LOC, returnLabel);
 
 	// Tear down the routine's stack frame and free parameters
-	icodeRoutineCleanup(localVars, pType, numLocal, isFunc, 1);
+	icodeRoutineParamsCleanup(paramTypes, paramChunkNums);
+	icodeWriteBinaryShort(IC_POF, (pType->kind == TYPE_PROCEDURE) ? 0 : 1, 1);
 
 	if (!isFunc) {
 		return TYPE_VOID;
