@@ -123,7 +123,6 @@ static char icodeLibrarySubroutineCall(CHUNKNUM exprChunk, CHUNKNUM declChunk, s
 {
 	struct type rtnType;
 	short level;
-	char localVars[MAX_LOCAL_VARS];
 	int numLocal = 0;
 	char returnLabel[15], isFunc = pType->kind == TYPE_FUNCTION ? 1 : 0;
 	char paramTypes[15];
