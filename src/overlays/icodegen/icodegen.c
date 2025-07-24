@@ -19,15 +19,98 @@
 #include <libcommon.h>
 #include <int16.h>
 #include <membuf.h>
+#include <stdlib.h>
 
 static char strBuf[MAX_LINE_LEN + 1];
 
+static CHUNKNUM addArrayLiteral(CHUNKNUM exprChunk, int *bufSize, int elemSize);
+static CHUNKNUM addRealArrayLiteral(CHUNKNUM exprChunk, int *bufSize);
+static CHUNKNUM addStringArrayLiteral(CHUNKNUM exprChunk, short *numLiterals);
 static int addStringLiteral(CHUNKNUM chunkNum);
+static void genArrayInit(CHUNKNUM chunkNum);
 static void genBinary(FILE *fh, ICODE_MNE mnemonic);
 static void genComp(char compExpr, char leftType, char rightType);
+static void genRecordInit(CHUNKNUM chunkNum);
 static void genTrinary(FILE *fh, ICODE_MNE mnemonic);
 static void genUnary(FILE *fh, ICODE_MNE mnemonic);
+static int getArrayLimit(CHUNKNUM chunkNum);
+static void icodeArrayInit(char *label, struct type* pType,
+	CHUNKNUM exprInitChunk, CHUNKNUM declChunkNum);
+static void icodeRecordInit(char *label, struct type* pType, CHUNKNUM declChunkNum);
 static void readOperand(FILE *fh, struct icode_operand *pOper);
+
+static CHUNKNUM addArrayLiteral(CHUNKNUM exprChunk, int *bufSize, int elemSize)
+{
+	struct expr _expr;
+	CHUNKNUM memChunk;
+
+	*bufSize = 0;
+	if (!exprChunk) {
+		return 0;
+	}
+
+	allocMemBuf(&memChunk);
+
+	while (exprChunk) {
+		retrieveChunk(exprChunk, &_expr);
+		if (_expr.neg) _expr.value.longInt = -_expr.value.longInt;
+		writeToMemBuf(memChunk, &_expr.value, elemSize);
+
+		exprChunk = _expr.right;
+		*bufSize += elemSize;
+	}
+
+	return memChunk;
+}
+
+static CHUNKNUM addRealArrayLiteral(CHUNKNUM exprChunk, int *bufSize)
+{
+	struct expr _expr;
+	CHUNKNUM memChunk;
+
+	allocMemBuf(&memChunk);
+	*bufSize = 0;
+
+	while (exprChunk) {
+		retrieveChunk(exprChunk, &_expr);
+		writeToMemBuf(memChunk, &_expr.neg, 1);
+		writeToMemBuf(memChunk, &_expr.value.stringChunkNum, 2);
+
+		exprChunk = _expr.right;
+		*bufSize += 3;
+	}
+
+	return memChunk;
+}
+
+static CHUNKNUM addStringArrayLiteral(CHUNKNUM exprChunk, short *numLiterals)
+{
+	char ch;
+	struct expr _expr;
+	CHUNKNUM memChunk;
+
+	if (!exprChunk) {
+		return 0;
+	}
+
+	allocMemBuf(&memChunk);
+
+	while (exprChunk) {
+		retrieveChunk(exprChunk, &_expr);
+		setMemBufPos(_expr.value.stringChunkNum, 0);
+		while (!isMemBufAtEnd(_expr.value.stringChunkNum)) {
+			readFromMemBuf(_expr.value.stringChunkNum, &ch, 1);
+			writeToMemBuf(memChunk, &ch, 1);
+		}
+		ch = 0;
+		writeToMemBuf(memChunk, &ch, 1);
+
+		exprChunk = _expr.right;
+		(*numLiterals)++;
+	}
+
+	return memChunk;
+}
 
 static int addStringLiteral(CHUNKNUM chunkNum)
 {
@@ -38,6 +121,27 @@ static int addStringLiteral(CHUNKNUM chunkNum)
 	writeToMemBuf(stringLiterals, &chunkNum, sizeof(CHUNKNUM));
 
 	return ++numStringLiterals;
+}
+
+static void genArrayInit(CHUNKNUM chunkNum)
+{
+    struct decl _decl;
+    struct expr _expr;
+    struct type _type;
+    char label[125];
+
+    retrieveChunk(chunkNum, &_decl);
+    retrieveChunk(_decl.type, &_type);
+    getBaseType(&_type);
+
+    heapOffset = 0;
+    strcpy(label, "di");
+    strcat(label, formatInt16(chunkNum));
+    if (_decl.value) {
+        retrieveChunk(_decl.value, &_expr);
+        _decl.value = _expr.left;
+    }
+    icodeArrayInit(label, &_type, _decl.value, chunkNum);
 }
 
 static void genBinary(FILE *fh, ICODE_MNE mnemonic)
@@ -148,15 +252,6 @@ static void genBinary(FILE *fh, ICODE_MNE mnemonic)
         genThreeAddr(JSR, RT_PUSHFROMINTOP1AND2);
         break;
 
-    case IC_DCI:
-        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_LOW);
-        genTwo(LDA_IMMEDIATE, 0);
-        linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_HIGH);
-        genTwo(LDX_IMMEDIATE, 0);
-        genTwo(LDY_IMMEDIATE, oper2.literal.uint8);
-        genThreeAddr(JSR, RT_INITDECL);
-        break;
-
     case IC_DCF:
         linkAddressLookup(oper1.label, codeOffset + 1, LINKADDR_LOW);
         genTwo(LDA_IMMEDIATE, 0);
@@ -189,6 +284,23 @@ static void genComp(char compExpr, char leftType, char rightType)
     genTwo(LDX_IMMEDIATE, rightType);
     genTwo(LDY_IMMEDIATE, compExpr);
     genThreeAddr(JSR, RT_COMP);
+}
+
+static void genRecordInit(CHUNKNUM chunkNum)
+{
+    struct decl _decl;
+    // struct expr _expr;
+    struct type _type;
+    char label[25];
+
+    retrieveChunk(chunkNum, &_decl);
+    retrieveChunk(_decl.type, &_type);
+    getBaseType(&_type);
+
+    heapOffset = 0;
+    strcpy(label, "di");
+    strcat(label, formatInt16(chunkNum));
+    icodeRecordInit(label, &_type, chunkNum);
 }
 
 static void genTrinary(FILE *fh, ICODE_MNE mnemonic)
@@ -663,7 +775,234 @@ static void genUnary(FILE *fh, ICODE_MNE mnemonic)
         genOne(TXA);
         genOne(PHA);
         break;
+
+    case IC_DIA:
+        genArrayInit(oper.literal.uint16);
+        break;
+
+    case IC_DIR:
+        genRecordInit(oper.literal.uint16);
+        break;
     }
+}
+
+static int getArrayLimit(CHUNKNUM chunkNum)
+{
+	struct expr _expr;
+
+    retrieveChunk(chunkNum, &_expr);
+	if (_expr.kind == EXPR_BYTE_LITERAL) {
+		return _expr.neg ? -_expr.value.shortInt : _expr.value.shortInt;
+	}
+	else if (_expr.kind == EXPR_WORD_LITERAL) {
+		return _expr.neg ? -_expr.value.integer : _expr.value.integer;
+	}
+	else if (_expr.kind == EXPR_CHARACTER_LITERAL) {
+		return _expr.value.character;
+	}
+	else if (_expr.kind == EXPR_NAME) {
+		struct symbol sym;
+		struct decl _decl;
+		char name[CHUNK_LEN + 1];
+		memset(name, 0, sizeof(name));
+		retrieveChunk(_expr.name, name);
+		scope_lookup(name, &sym);
+		retrieveChunk(sym.decl, &_decl);
+		return getArrayLimit(_decl.value);
+	}
+	else {
+		Error(errInvalidIndexType);
+	}
+
+	return 0;
+}
+
+static void icodeArrayInit(char *label, struct type* pType,
+	CHUNKNUM exprInitChunk, CHUNKNUM declChunkNum)
+{
+	int bufSize, index;
+	CHUNKNUM declMemBuf;
+	struct expr exprInit;
+	struct ARRAYDECL arrayDecl;
+	struct type indexType, elemType;
+	int numElements, lowBound, highBound;
+
+	memset(&arrayDecl, 0, sizeof(struct ARRAYDECL));
+
+	retrieveChunk(pType->indextype, &indexType);
+	retrieveChunk(pType->subtype, &elemType);
+
+	lowBound = getArrayLimit(indexType.min);
+	highBound = getArrayLimit(indexType.max);
+	numElements = abs(highBound - lowBound) + 1;
+
+	if (exprInitChunk) {
+		retrieveChunk(exprInitChunk, &exprInit);
+	} else {
+		memset(&exprInit, 0, sizeof(struct expr));
+	}
+
+	// Check if the element is a record
+	if (elemType.kind == TYPE_DECLARED) {
+        if (elemType.subtype) {
+            retrieveChunk(elemType.subtype, &elemType);
+        } else {
+            Error(errUndefinedIdentifier);
+        }
+	}
+
+	arrayDecl.elemSize = elemType.size;
+	arrayDecl.heapOffset = heapOffset;
+	arrayDecl.minIndex = lowBound;
+	arrayDecl.maxIndex = highBound;
+	if (elemType.kind == TYPE_ARRAY) {
+		arrayDecl.elemType = ARRAYDECL_ARRAY;
+	} else if (elemType.kind == TYPE_RECORD) {
+		arrayDecl.elemType = ARRAYDECL_RECORD;
+	} else if (elemType.kind == TYPE_STRING_VAR) {
+		arrayDecl.elemType = ARRAYDECL_STRING;
+		arrayDecl.literals = addStringArrayLiteral(exprInitChunk, &arrayDecl.numLiterals);
+	} else if (elemType.kind == TYPE_FILE || elemType.kind == TYPE_TEXT) {
+		arrayDecl.elemType = ARRAYDECL_FILE;
+	} else if (elemType.kind != TYPE_ARRAY && elemType.kind != TYPE_RECORD) {
+		if (elemType.kind == TYPE_REAL) {
+			arrayDecl.literals = addRealArrayLiteral(exprInitChunk, &bufSize);
+			arrayDecl.elemType = ARRAYDECL_REAL;
+			arrayDecl.numLiterals = bufSize / 3;
+		} else {
+			arrayDecl.literals = addArrayLiteral(exprInitChunk, &bufSize, elemType.size);
+			arrayDecl.numLiterals = bufSize / elemType.size;
+		}
+	}
+
+	if (!arrayInits) {
+		allocMemBuf(&arrayInits);
+	}
+
+	writeToMemBuf(arrayInits, label, strlen(label)+1);
+
+	allocMemBuf(&declMemBuf);
+	writeToMemBuf(declMemBuf, &arrayDecl, sizeof(struct ARRAYDECL));
+	writeToMemBuf(arrayInits, &declMemBuf, sizeof(CHUNKNUM));
+
+    linkAddressLookup(label, codeOffset + 1, LINKADDR_LOW);
+    genTwo(LDA_IMMEDIATE, 0);
+    linkAddressLookup(label, codeOffset + 1, LINKADDR_HIGH);
+    genTwo(LDX_IMMEDIATE, 0);
+    genTwo(LDY_IMMEDIATE, LOCALVARS_ARRAY);
+    genThreeAddr(JSR, RT_INITDECL);
+
+	heapOffset += 6;  // move past array header
+
+	if (elemType.kind == TYPE_ARRAY || elemType.kind == TYPE_RECORD) {
+		int i;
+		for (index = lowBound, i = 1; index <= highBound; ++index,++i) {
+			char elemLabel[20];
+			strcpy(elemLabel, label);
+			strcat(elemLabel, ".");
+			strcat(elemLabel, formatInt16(i));
+			if (elemType.kind == TYPE_ARRAY) {
+				icodeArrayInit(elemLabel, &elemType, exprInit.left, declChunkNum);
+			} else {
+				icodeRecordInit(elemLabel, &elemType, declChunkNum);
+			}
+			if (exprInit.right) {
+				retrieveChunk(exprInit.right, &exprInit);
+			} else {
+				exprInit.left = exprInit.right = 0;
+			}
+		}
+	} else {
+		heapOffset += elemType.size * numElements;
+	}
+}
+
+static void icodeRecordInit(char *label, struct type* pType, CHUNKNUM declChunkNum)
+{
+	char memberType;
+	struct symbol sym;
+	struct decl fieldDecl;
+	struct type fieldType;
+	short fieldOffset = 0;
+	short recordOffset = heapOffset;  // heap offset at start of record
+	short saveHeapOffset;  // save the heap offset and revert it for embedded arrays
+	CHUNKNUM chunkNum = pType->paramsFields;
+	CHUNKNUM declMemBuf = 0;
+
+	while (chunkNum) {
+		retrieveChunk(chunkNum, &fieldDecl);
+		retrieveChunk(fieldDecl.type, &fieldType);
+
+		memberType = 0;
+
+		if (fieldDecl.node) {
+			retrieveChunk(fieldDecl.node, &sym);
+		} else {
+			memset(&sym, 0, sizeof(struct symbol));
+		}
+
+		if (fieldType.kind == TYPE_DECLARED) {
+			retrieveChunk(sym.type, &fieldType);
+		}
+
+		if (fieldType.kind == TYPE_RECORD) {
+			char label[25];
+			// Record field is an embedded record
+            strcpy(label, "di");
+            strcat(label, formatInt16(declChunkNum));
+			icodeRecordInit(label, &fieldType, declChunkNum);
+		} else if (fieldType.kind == TYPE_STRING_VAR) {
+			memberType = LOCALVARS_STRING;
+		} else if (fieldType.kind == TYPE_FILE || fieldType.kind == TYPE_TEXT) {
+			memberType = LOCALVARS_FILE;
+		} else if (fieldType.kind == TYPE_ARRAY) {
+			char fieldLabel[25];
+			// Record field is an array
+			strcpy(fieldLabel, label);
+			strcat(fieldLabel, formatInt16(declChunkNum));
+			strcat(fieldLabel, ".");
+			strcat(fieldLabel, formatInt16(fieldOffset));
+			saveHeapOffset = heapOffset;
+			icodeArrayInit(fieldLabel, &fieldType, fieldDecl.value, declChunkNum);
+			heapOffset = saveHeapOffset;
+			memberType = LOCALVARS_ARRAY;
+		}
+	
+		if (!declMemBuf) {
+			allocMemBuf(&declMemBuf);
+			writeToMemBuf(declMemBuf, &recordOffset, sizeof(short));
+			writeToMemBuf(declMemBuf, &pType->size, sizeof(short));
+		}
+
+		if (memberType) {
+			writeToMemBuf(declMemBuf, &memberType, 1);
+			writeToMemBuf(declMemBuf, &declChunkNum, sizeof(CHUNKNUM));
+			writeToMemBuf(declMemBuf, &fieldOffset, sizeof(short));
+		}
+	
+		heapOffset += fieldType.size;
+		fieldOffset += fieldType.size;
+		chunkNum = fieldDecl.next;
+	}
+
+	if (declMemBuf) {
+		char eob = 0;  // end of buffer character
+		writeToMemBuf(declMemBuf, &eob, 1);
+
+		if (!recordInits) {
+			allocMemBuf(&recordInits);
+		}
+
+		writeToMemBuf(recordInits, label, strlen(label)+1);
+		writeToMemBuf(recordInits, &declMemBuf, sizeof(CHUNKNUM));
+
+        linkAddressLookup(label, codeOffset + 1, LINKADDR_LOW);
+        genTwo(LDA_IMMEDIATE, 0);
+        linkAddressLookup(label, codeOffset + 1, LINKADDR_HIGH);
+        genTwo(LDX_IMMEDIATE, 0);
+        genTwo(LDY_IMMEDIATE, LOCALVARS_RECORD);
+        genThreeAddr(JSR, RT_INITDECL);
+	}
 }
 
 void icodeGen(void)

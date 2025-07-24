@@ -112,7 +112,7 @@ OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEOVRL
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(ICODEGENOVRLSRCS)))))
 OBJECTS += $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(LINKEROVRLSRCS)))))
 
-TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii incdec.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwisea.petscii bitwiseb.petscii demolib.petscii libtest.petscii trig.petscii filetesta.petscii filetestb.petscii pointers.petscii rtnptrs.petscii
+TXTFILES := abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii stdroutines.petscii incdec.petscii strroutines.petscii strtests.petscii ifthen.petscii loops.petscii recarray.petscii scopetest.petscii varinit.petscii vartest.petscii casetest.petscii procfunc.petscii add.petscii subtract.petscii multiply.petscii divint.petscii unit.petscii unit1.petscii assign.petscii bitwisea.petscii bitwiseb.petscii demolib.petscii libtest.petscii trig.petscii filetesta.petscii filetestb.petscii pointers.petscii rtnptrs.petscii strrecord.petscii strarray.petscii
 
 DEPENDS := $(OBJECTS:.o=.d)
 
@@ -368,6 +368,12 @@ pointers.petscii: pointers.pas
 rtnptrs.petscii: rtnptrs.pas
 	dos2unix < rtnptrs.pas | petcat -w2 -text -o rtnptrs.petscii
 
+strrecord.petscii: strrecord.pas
+	dos2unix < strrecord.pas | petcat -w2 -text -o strrecord.petscii
+
+strarray.petscii: strarray.pas
+	dos2unix < strarray.pas | petcat -w2 -text -o strarray.petscii
+
 unit.petscii: unit.pas
 	dos2unix < unit.pas | petcat -w2 -text -o unit.petscii
 
@@ -418,6 +424,8 @@ $(D81FILE): $(BINDIR)/$(PROGRAM) $(RUNTIME) $(SYSTEMLIB) $(DEMOLIB) $(TXTFILES)
 	-write filetestb.petscii filetestb.pas,seq \
 	-write pointers.petscii pointers.pas,seq \
 	-write rtnptrs.petscii rtnptrs.pas,seq \
+	-write strrecord.petscii strrecord.pas,seq \
+	-write strarray.petscii strarray.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write trig.petscii trig.pas,seq \
 	-write demolib.petscii demolib.pas,seq \

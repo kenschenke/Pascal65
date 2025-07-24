@@ -563,15 +563,18 @@ LZ: lda ptr1                        ; Add 2 to ptr1
     lda #1                          ; Allocate a 1-byte buffer for the empty string
     ldx #0
     jsr heapAlloc
-    sta ptr3                        ; Store the string buffer pointer in ptr3
-    stx ptr3+1
+    pha                             ; Save new string buffer on CPU stack
+    txa
+    pha
     jsr restoreArrayLocals          ; Restore ptr1 and ptr2 after the call to heapAlloc
-    lda ptr3                        ; Copy the new string buffer to the array heap
-    ldy #0
-    sta (ptr1),y                    ; Also store it in the array heap (ptr1)
-    iny
-    lda ptr3+1
-    sta (ptr1),y                    ; Store the high byte of the string buffer pointer
+    ldy #1
+    pla                             ; Pop string buffer pointer off CPU stack
+    sta (ptr1),y                    ; and store it in the array heap (ptr1)
+    sta ptr3+1                      ; and in ptr3
+    dey
+    pla
+    sta (ptr1),y
+    sta ptr3
     lda #0
     tay
     sta (ptr3),y                    ; Store 0 (length) in new string buffer

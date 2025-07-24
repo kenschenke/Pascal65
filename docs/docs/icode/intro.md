@@ -82,6 +82,8 @@ The following instructions take one operand.
 |[BRA](../mne/bra)    |2f       |0010 1111   |Branch unconditionally to the label  |
 |[BWC](../mne/bwc)    |34       |0011 0100   |Calculate bitwise complement         |
 |[CPY](../mne/cpy)    |36       |0011 0110   |Clones memory                        |
+|[DIA](../mne/dia)    |25       |0010 0101   |Initializes an array                 |
+|[DIR](../mne/dir)    |21       |0010 0001   |Initializes a record                 |
 |[INP](../mne/inp)    |26       |0010 0110   |Reads and stores a value from input  |
 |[LOC](../mne/loc)    |2e       |0010 1110   |Sets the target for the label        |
 |[MEM](../mne/mem)    |3a       |0011 1010   |Reads a value from a memory location |
@@ -106,7 +108,6 @@ The following instructions take two operands.
 |[CCT](../mne/cct)    |4a       |0100 1010   |Concatenate two values into a string obj  |
 |[CVI](../mne/cvi)    |50       |0101 0000   |Convert the integer at top of the stack   |
 |[DCF](../mne/dcf)    |4d       |0101 0001   |Free an array or record declaration       |
-|[DCI](../mne/dci)    |4d       |0100 1101   |Initialize an array or record declaration |
 |[DIV](../mne/div)    |43       |0100 0011   |Perform floating point division           |
 |[EQU](../mne/equ)    |48       |0100 1000   |Perform an equality comparison            |
 |[GRT](../mne/grt)    |44       |0100 0100   |Perform a greater-than comparison         |

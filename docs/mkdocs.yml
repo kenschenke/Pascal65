@@ -153,9 +153,10 @@ nav:
       - CPY: icode/mne/cpy.md
       - CVI: icode/mne/cvi.md
       - DCF: icode/mne/dcf.md
-      - DCI: icode/mne/dci.md
       - DEF: icode/mne/def.md
       - DEL: icode/mne/del.md
+      - DIA: icode/mne/dia.md
+      - DIR: icode/mne/dir.md
       - DIV: icode/mne/div.md
       - DVI: icode/mne/dvi.md
       - EQU: icode/mne/equ.md

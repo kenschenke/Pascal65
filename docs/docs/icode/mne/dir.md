@@ -1,31 +1,22 @@
-# DCI Instruction
+# DIR Instruction
 
 ## Synopsis
 
 ```
-DCI <label> <type>
+DIR <record declaration chunk number>
 ```
 
 ## Description
 
-The **DCI** instruction initializes a record or array using a declaration block
-in the data segment.
+The **DIR** instruction initializes a record by referencing the declaration
+chunk number. It is an interstitial messenger instruction that exists solely
+to communicate from the intermediate code generation phase of the compiler to
+the object code generation phase.
 
-The address of the record or array is expected at the top of the stack and is
-left on the stack. The declaration block layout is shown here.
-
-### Array Declaration Block
-
-|# Of Bytes|Description                               |
-|----------|------------------------------------------|
-|2         |Heap offset - # of bytes past heap pointer|
-|2         |Low index of array (signed 16-bit integer)|
-|2         |High index of array                       |
-|2         |Element size                              |
-|2         |Pointer to literal initializers           |
-|2         |Number of literals supplied               |
-|2         |Pointer to element declaration block      |
-|1         |Element type (see list below)             |
+When the object code generation phase sees this instruction it generates a call
+into the runtime to initialize a record. The declaration chunk number is used to
+create a declaration block in the BSS segment of the PRG file that contains the
+necessary information to initialize the record.
 
 ### Record Declaration Block
 
@@ -48,10 +39,6 @@ list is terminated by a single zero byte.
 |2         |Pointer to declaration block (record or array)|
 |2         |Offset - # of bytes from start of record      |
 
-## Label Operand
-
-This is a label linking to the declaration block in the data segment.
-
 ## Declaration Type
 
 This is a number representing the type of declaration.
@@ -66,4 +53,4 @@ This is a number representing the type of declaration.
 
 ## See Also
 
-[DCF](../dcf)
+[DIA](../dia)

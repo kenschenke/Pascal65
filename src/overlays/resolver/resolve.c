@@ -207,6 +207,7 @@ static CHUNKNUM getEmbeddedArraySymtab(CHUNKNUM chunkNum, CHUNKNUM symtab)
 	struct symbol sym;
 	struct type _type;
 	char name[CHUNK_LEN + 1];
+	CHUNKNUM declaredType;
 
 	retrieveChunk(chunkNum, &leftExpr);
 	if (leftExpr.kind == EXPR_FIELD) {
@@ -228,9 +229,11 @@ static CHUNKNUM getEmbeddedArraySymtab(CHUNKNUM chunkNum, CHUNKNUM symtab)
 		}
 	}
 	retrieveChunk(sym.type, &_type);
+	declaredType = sym.type;
 
 	while (1) {
 		if (_type.kind == TYPE_ARRAY) {
+			declaredType = _type.subtype;
 			retrieveChunk(_type.subtype, &_type);
 		}
 		else if (_type.kind == TYPE_DECLARED) {
@@ -248,6 +251,8 @@ static CHUNKNUM getEmbeddedArraySymtab(CHUNKNUM chunkNum, CHUNKNUM symtab)
 					return 0;
 				}
 			}
+			_type.subtype = sym.type;
+			storeChunk(declaredType, &_type);
 			retrieveChunk(sym.type, &_type);
 		}
 		else {

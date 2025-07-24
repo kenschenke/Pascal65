@@ -46,7 +46,7 @@ static char *testFiles[] = {
     "bitwiseb",
     "ifthen",
     "loops",
-    "stdroutines",  // too big
+    "stdroutines",
     "incdec",
     "strroutines",
     "strtests",
