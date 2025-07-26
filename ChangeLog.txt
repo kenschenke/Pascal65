@@ -1,4 +1,4 @@
-0.32-beta
+0.32-beta Jul 26 2025
     FIX: Fix bug with record field resolution in certain cases
     NEW: Arrays and records can now contain strings
 
