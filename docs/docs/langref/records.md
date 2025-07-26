@@ -73,7 +73,7 @@ This section describes how Pascal65 stores records in computer memory.  It is no
 necessary to know this information to write Pascal programs.  This is here
 primarily for developers writing libraries and for those curious.
 
-Records fields are stored directly in a block of memory with no padding or
+Record fields are stored directly in a block of memory with no padding or
 packing.  For example, a record defined as follows:
 
 ```
@@ -97,4 +97,4 @@ $0a $00 $0f $00 $b2 $07
 ```
 
 If a record contains an array the array is stored directly within the record's
-memory.
+memory. If a record contains a string, the string pointer is stored in the record.

@@ -39,6 +39,7 @@ arr : Array[1..3,1..3] Of Integer = (
 !!! note ""
 
     If no initial values are provided, the array elements are initialized to 0.
+    If the array contains string elements, they are initialized to empty strings.
 
 ## Accessing Array Elements
 
@@ -106,4 +107,5 @@ $06 $00 $07 $00 $08 $00 $09 $00 $0a $00
 ```
 
 If the array element is a record the record values are stored directly
-within the array's memory.
+within the array's memory. If the array element is a string, the array
+contains pointers to the strings.
