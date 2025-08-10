@@ -91,7 +91,6 @@ void drawScreenRaw(char row, char col, char len, unsigned char *buf) {
 }
 
 void initScreen(void) {
-    conioinit();
     clearScreen();
 }
 
