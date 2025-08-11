@@ -86,7 +86,7 @@ void drawRow(char row, char col, char len, const char *buf, char isReversed) {
     drawRow65(row, col, len, buf, isReversed);
 }
 
-void drawScreenRaw(char row, char col, char len, unsigned char *buf) {
+void drawScreenRaw(char row, char col, char len, const unsigned char *buf) {
     memcpy(SCREEN + row * 80 + col, buf, len);
 }
 
