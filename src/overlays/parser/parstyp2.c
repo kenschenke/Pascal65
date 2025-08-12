@@ -31,7 +31,7 @@ CHUNKNUM parseArrayType(void)
 
 	// Loop to parse each type spec in the index type list, separated by commas.
 	do {
-		arrayType.indextype = parseTypeSpec();
+		arrayType.indextype = parseTypeSpec(1);
 		storeChunk(arrayTypeChunkNum, &arrayType);
 
 		// ,
@@ -60,7 +60,7 @@ CHUNKNUM parseArrayType(void)
 	condGetToken(tcOF, errMissingOF);
 
 	// Final element type
-	arrayType.subtype = parseTypeSpec();
+	arrayType.subtype = parseTypeSpec(0);
 	storeChunk(arrayTypeChunkNum, &arrayType);
 
 	return outerArray;
@@ -75,7 +75,7 @@ CHUNKNUM parseFileType(void)
 	getToken();
 	if (parserToken == tcOF) {
 		getToken();
-		subtype = parseTypeSpec();
+		subtype = parseTypeSpec(0);
 		retrieveChunk(subtype, &_type);
 		if (_type.kind == TYPE_FILE ||
 			_type.kind == TYPE_TEXT ||

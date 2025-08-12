@@ -8,13 +8,19 @@ Arrays are declared with the following syntax.
 
 ```
     <variable-name> : Array[<low-index>..<high-index>] Of <element-type>
+    <variable-name> : Array[<number-of-elements>] : <element-type>
 ```
 
-The low index must be less than the high index.  It can be an integer, a character, or an enumeration.  Examples are:
+The low index must be less than the high index.  It can be an integer, a character, or an enumeration.
+If specifying the number of elements, the low index of the array will be zero and the high index will
+be the number of elements less one.
+
+Examples are:
 
 ```
 arr1 : Array[-5..5] Of Integer;
 arr2 : Array[0..10] Of ShortInt;
+arr3 : Array[5] Of Integer;
 ```
 
 ## Initial Values in Arrays

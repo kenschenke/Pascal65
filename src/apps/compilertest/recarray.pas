@@ -35,6 +35,7 @@ Var
 	ar3 : Array[1..10] Of Rec3;
 	ar4 : Array[1..5] Of Real;
 	ar5 : Array[-3..3] Of Integer;
+	ar6 : Array[5] Of Integer;
 
 Procedure Error(num : Integer);
 Begin
@@ -132,6 +133,9 @@ Begin
 	If ar5[1]  <> 5 Then Error(23);
 	If ar5[2]  <> 6 Then Error(24);
 	If ar5[3]  <> 7 Then Error(25);
+
+	For i := 0 To 4 Do ar6[i] := (i+1) * 100;
+	For i := 0 To 4 Do If ar6[i] <> (i+1) * 100 Then Error(26);
 
     If anyErrors Then Begin
         Write('Press a key to continue:');

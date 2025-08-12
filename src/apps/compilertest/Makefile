@@ -490,3 +490,7 @@ clean:
 
 run: $(D81FILE)
 	$(EMUCMD) $<
+
+load: $(D81FILE)
+	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
+	etherload -m compilertest.d81 -r $(BINDIR)/$(PROGRAM)

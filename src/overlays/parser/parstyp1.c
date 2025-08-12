@@ -170,7 +170,7 @@ type_t parseSubrangeLimit(CHUNKNUM name, CHUNKNUM* limit)
 	return limitType;
 }
 
-CHUNKNUM parseSubrangeType(CHUNKNUM name)
+CHUNKNUM parseSubrangeType(CHUNKNUM name, char allowShorthand)
 {
 	CHUNKNUM subrangeType;
 	type_t minType, maxType;
@@ -186,10 +186,21 @@ CHUNKNUM parseSubrangeType(CHUNKNUM name)
 
 	// ..
 	resync(tlSubrangeLimitFollow, tlDeclarationStart, 0);
-	condGetToken(tcDotDot, errMissingDotDot);
+	if (allowShorthand && parserToken != tcDotDot) {
+		struct expr _expr;
+		allocChunk(&subrangeMax);
+		maxType = minType;
+		retrieveChunk(subrangeMin, &_expr);
+		_expr.value.integer = _expr.value.integer - 1;
+		storeChunk(subrangeMax, &_expr);
+		_expr.value.integer = 0;
+		storeChunk(subrangeMin, &_expr);
+	} else {
+		condGetToken(tcDotDot, errMissingDotDot);
+		// <max-const>
+		maxType = parseSubrangeLimit(0, &subrangeMax);
+	}
 
-	// <max-const>
-	maxType = parseSubrangeLimit(0, &subrangeMax);
 
 	if (minType != maxType) {
 		Error(errIncompatibleTypes);
@@ -241,7 +252,7 @@ CHUNKNUM parseTypeDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 		condGetToken(tcEqual, errMissingEqual);
 
 		// <type>
-		decl = declCreate(DECL_TYPE, name, parseTypeSpec(), 0);
+		decl = declCreate(DECL_TYPE, name, parseTypeSpec(0), 0);
 
 		if (*firstDecl == 0) {
 			*firstDecl = decl;
@@ -266,7 +277,7 @@ CHUNKNUM parseTypeDefinitions(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 	return lastDecl;
 }
 
-CHUNKNUM parseTypeSpec(void)
+CHUNKNUM parseTypeSpec(char allowSubrangeShorthand)
 {
 	CHUNKNUM name, type;
 	type_t typeKind = 0;
@@ -316,7 +327,7 @@ CHUNKNUM parseTypeSpec(void)
 		name = name_create(parserString);
 		getToken();
 		if (parserToken == tcDotDot) {
-			type = parseSubrangeType(name);
+			type = parseSubrangeType(name, 0);
 		}
 		else {
 			struct type _type;
@@ -349,15 +360,18 @@ CHUNKNUM parseTypeSpec(void)
 
 	case tcPlus:
 	case tcMinus:
-	case tcNumber:
 	case tcString:
-		type = parseSubrangeType(0);
+		type = parseSubrangeType(0, 0);
+		break;
+
+	case tcNumber:
+		type = parseSubrangeType(0, allowSubrangeShorthand);
 		break;
 	
 	case tcUpArrow: {
 		CHUNKNUM chunkNum;
 		getToken();
-		chunkNum = parseTypeSpec();
+		chunkNum = parseTypeSpec(0);
 		type = typeCreate(TYPE_POINTER, 0, chunkNum, 0);
 		break;
 	}

@@ -353,7 +353,7 @@ CHUNKNUM parseVarOrFieldDecls(CHUNKNUM* firstDecl, CHUNKNUM lastDecl, char isVar
         condGetToken(tcColon, errMissingColon);
 
         // <type>
-        newTypeChunkNum = parseTypeSpec();
+        newTypeChunkNum = parseTypeSpec(0);
 
         // =
         if (parserToken == tcEqual) {

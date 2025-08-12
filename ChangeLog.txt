@@ -1,5 +1,6 @@
 0.33-beta
     FIX: Character font garbled on exit from IDE
+    NEW: Arrays can now be specified by number of elements instead of low..high
 
 0.32-beta Jul 26 2025
     FIX: Fix bug with record field resolution in certain cases
