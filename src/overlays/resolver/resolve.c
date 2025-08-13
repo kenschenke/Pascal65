@@ -451,6 +451,13 @@ static short getTypeSize(struct type* pType)
 				else if (symType.kind == TYPE_SUBRANGE) {
 					min = getSubrangeLimit(symType.min);
 					max = getSubrangeLimit(symType.max);
+				} else if (symType.kind == TYPE_BYTE || symType.kind == TYPE_WORD) {
+					struct decl symDecl;
+					struct expr declExpr;
+					retrieveChunk(sym.decl, &symDecl);
+					retrieveChunk(symDecl.value, &declExpr);
+					min = 0;
+					max = declExpr.value.word - 1;
 				}
 				symType.size = getTypeSize(&symType);
 				storeChunk(sym.type, &symType);

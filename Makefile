@@ -155,3 +155,7 @@ clean:
 
 run: $(RUNTIME) ide compiler $(SYSTEMLIB) $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
+
+load: $(D81FILE)
+	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
+	etherload -m pascal65.d81 -r src/apps/compiler/bin/$(TARGET)/compiler

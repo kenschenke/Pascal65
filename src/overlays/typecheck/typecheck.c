@@ -158,7 +158,9 @@ static void checkArray(CHUNKNUM indexChunk, CHUNKNUM elemChunk)
 	struct type indexType, elemType;
 
 	retrieveChunk(indexChunk, &indexType);
-	getBaseType(&indexType);
+	if (indexType.kind == TYPE_SUBRANGE) {
+		retrieveChunk(indexType.subtype, &indexType);
+	}
 	if (!isTypeOrdinal(indexType.kind) && indexType.kind != TYPE_CHARACTER) {
 		Error(errInvalidIndexType);
 	}

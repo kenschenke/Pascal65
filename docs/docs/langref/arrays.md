@@ -11,7 +11,7 @@ Arrays are declared with the following syntax.
     <variable-name> : Array[<number-of-elements>] : <element-type>
 ```
 
-The low index must be less than the high index.  It can be an integer, a character, or an enumeration.
+The low index must be less than the high index.  It can be an integer or a character.
 If specifying the number of elements, the low index of the array will be zero and the high index will
 be the number of elements less one.
 
