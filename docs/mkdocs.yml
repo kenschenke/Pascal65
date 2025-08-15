@@ -185,6 +185,7 @@ nav:
       - PSH: icode/mne/psh.md
       - PUF: icode/mne/puf.md
       - ROU: icode/mne/rou.md
+      - RTS: icode/mne/rts.md
       - SCV: icode/mne/scv.md
       - SET: icode/mne/set.md
       - SFH: icode/mne/sfh.md

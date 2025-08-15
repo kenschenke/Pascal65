@@ -26,6 +26,10 @@ Begin
 End;
 ```
 
+!!! note
+
+    Procedure and function names cannot be longer than 23 characters.
+
 ## Calling Functions and Procedures
 
 A call to a function or procedure is just the routine's name. If passing parameters,
@@ -112,7 +116,8 @@ The **Forward** keyword specifies a forward declaration.
 
 Procedures and functions can be nested within one another.  This allows the programmer to group related routines and hide nested routines.
 
-The local variables of a routine are accessible by nested routines.  The topic on variable scope goes into depth on this.
+The local variables of a routine are accessible by nested routines.  The topic on
+[variable scope](../scope.md) goes into depth on this.
 
 The programmer can define multiple nested routines and can nest routines at multiple levels.
 
@@ -133,3 +138,6 @@ The Inner procedure is not visible or accessible outside of Outer.
     End;
 ```
 
+## See Also
+
+[Variable Scope](../scope)

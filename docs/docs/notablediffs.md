@@ -12,10 +12,3 @@ C-like languages.  Multi-line comments begin with a open parenthesis and asteris
 and end with an asterisk followed by a close parenthesis.  *Pascal65 does not support
 comments using curly braces since PETSCII does not contain the curly
 brace characters.*
-
-## Future Wishes
-
-Support for some of these features is planned for future releases.  Of note:
-
-* A math library
-* Support for strings in records and arrays

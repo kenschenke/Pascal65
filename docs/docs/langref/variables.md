@@ -14,6 +14,10 @@ it would look like this:
 i : Integer;
 ```
 
+!!! note
+
+    Variable names cannot be longer than 23 characters.
+
 ## Multiple Declarations
 
 The program can declare multiple variables of the same type by separating them

@@ -80,6 +80,10 @@ CHUNKNUM parseFuncOrProcHeader(char isFunc, char isRtnType)
 
 	// <id>
 	if (parserToken == tcIdentifier) {
+		if (strlen(parserString) > CHUNK_LEN) {
+			Error(errIdentifierTooLong);
+			parserString[CHUNK_LEN] = 0;
+		}
 		name = name_create(parserString);
 		getToken();
 	}

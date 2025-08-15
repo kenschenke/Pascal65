@@ -264,6 +264,10 @@ static CHUNKNUM parseIdSublist(char decl_kind)
     while (parserToken == tcIdentifier) {
         // create a decl node
 
+        if (strlen(parserString) > CHUNK_LEN) {
+            Error(errIdentifierTooLong);
+            parserString[CHUNK_LEN] = 0;
+        }
         name = name_create(parserString);
         newChunkNum = declCreate(decl_kind, name, 0, 0);
         if (firstId) {
