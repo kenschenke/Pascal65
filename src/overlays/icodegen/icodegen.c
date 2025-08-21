@@ -319,6 +319,7 @@ static void genTrinary(FILE *fh, ICODE_MNE mnemonic)
     case IC_DVI:
     case IC_BWA:
     case IC_BWO:
+    case IC_BWX:
     case IC_BSL:
     case IC_BSR:
         switch(mnemonic) {
@@ -328,6 +329,7 @@ static void genTrinary(FILE *fh, ICODE_MNE mnemonic)
         case IC_DVI: routine = RT_DIVINT; break;
         case IC_BWA: routine = RT_BITWISEAND; break;
         case IC_BWO: routine = RT_BITWISEOR; break;
+        case IC_BWX: routine = RT_BITWISEXOR; break;
         case IC_BSL: routine = RT_BITWISELSHIFT; break;
         case IC_BSR: routine = RT_BITWISERSHIFT; break;
         }

@@ -30,7 +30,7 @@ static TResWord rw2[] = {
 static TResWord rw3[] = {
     {"and", tcAND}, {"div", tcDIV}, {"end", tcEND}, {"for", tcFOR},
     {"mod", tcMOD}, {"nil", tcNIL}, {"not", tcNOT}, {"set", tcSET},
-    {"var", tcVAR}, {NULL},
+    {"var", tcVAR}, {"xor", tcXOR}, {NULL},
 };
 
 static TResWord rw4[] = {

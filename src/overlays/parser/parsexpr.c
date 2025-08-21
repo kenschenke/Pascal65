@@ -228,6 +228,7 @@ CHUNKNUM parseSimpleExpression(char isVarInit)
 		case tcPlus: et = EXPR_ADD; break;
 		case tcMinus: et = EXPR_SUB; break;
 		case tcOR: et = EXPR_OR; break;
+		case tcXOR: et = EXPR_BITWISE_XOR; break;
 		case tcLShift: et = EXPR_BITWISE_LSHIFT; break;
 		case tcRShift: et = EXPR_BITWISE_RSHIFT; break;
 		}

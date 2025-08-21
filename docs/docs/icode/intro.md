@@ -132,6 +132,7 @@ The following instructions take three operands.
 |[BSR](../mne/bsr)    |88       |1000 1000   |Bitwise right-shift                       |
 |[BWA](../mne/bwa)    |85       |1000 0101   |Bitwise and two numbers                   |
 |[BWO](../mne/bwo)    |86       |1000 0110   |Bitwise or two numbers                    |
+|[BWX](../mne/bwx)    |8b       |1000 1011   |Bitwise xor two numbers                   |
 |[DVI](../mne/dvi)    |84       |1000 0100   |Integer divide two numbers                |
 |[JSR](../mne/jsr)    |89       |1000 1001   |Call a routine                            |
 |[MUL](../mne/mul)    |83       |1000 0011   |Multiply two numbers                      |

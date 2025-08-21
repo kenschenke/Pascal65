@@ -11,7 +11,7 @@
 
 .include "runtime.inc"
 
-.export andInt32, orInt32, onesComplementInt32, lshiftInt32, rshiftInt32
+.export andInt32, orInt32, xorInt32, onesComplementInt32, lshiftInt32, rshiftInt32
 
 ; Perform AND operation on two 32-bit numbers in intOp1/intOp2 and intOp32
 ; Result is left in intOp1/intOp2
@@ -84,3 +84,16 @@ DN: rts
     bne :-
 DN: rts
 .endproc
+
+; Perform XOR operation on two 32-bit numbers in intOp1/intOp2 and intOp32
+; Result is left in intOp1/intOp2
+.proc xorInt32
+    ldx #3
+:   lda intOp1,x
+    eor intOp32,x
+    sta intOp1,x
+    dex
+    bpl :-
+    rts
+.endproc
+

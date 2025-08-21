@@ -26,6 +26,10 @@ Begin
     b := 24 & b2; If b <> 16 Then Error(6);
     b := b3 & 51; If b <> 16 Then Error(7);
     b := 51 & b3; If b <> 16 Then Error(8);
+    b := b2 Xor 24; If b <> 43 Then Error(50);
+    b := 24 Xor b2; If b <> 43 Then Error(51);
+    b := b3 Xor 51; If b <> 43 Then Error(52);
+    b := 51 Xor b3; If b <> 43 Then Error(53);
 
 	b := 1;
 	b2 := b << 0;
@@ -84,6 +88,10 @@ Begin
     w := $1357 & w2; If w <> $1102 Then Error(27);
     w := w3 & $d5aa; If w <> $1102 Then Error(28);
     w := $d5aa & w3; If w <> $1102 Then Error(29);
+    w := w2 Xor $1357; If w <> $c6fd Then Error(54);
+    w := $1357 Xor w2; If w <> $c6fd Then Error(55);
+    w := w3 Xor $d5aa; If w <> $c6fd Then Error(56);
+    w := $d5aa Xor w3; If w <> $c6fd Then Error(57);
 
 	w := 1;
 	w2 := w << 0;

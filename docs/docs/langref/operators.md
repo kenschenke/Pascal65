@@ -62,6 +62,7 @@ every 4 digits in written documentation.
 | <<       | Bitwise left shift               |
 | >>       | Bitwise right shift              |
 | Not      | Bitwise complement (invert bits) |
+| Xor      | Bitwise XOR                      |
 
 ### Bitwise AND
 
@@ -130,7 +131,7 @@ The bitwise complement operator inverts the bits in a number. The operation woul
 look like this:
 
 ```
-   num1 := @num2;
+   num1 := Not num2;
 ```
 
 If num1 and num2 were the following values, this would be the before and after.
@@ -138,4 +139,18 @@ If num1 and num2 were the following values, this would be the before and after.
 ```
    num2: 0110 1000
    num1: 1001 0111
+```
+
+### Bitwise XOR
+
+The bitwise XOR operator combines two numbers and keeps binary digits that are
+1 in either number, but not both.
+
+For example:
+
+```
+     0110 1001
+ Xor 0011 1101
+     ---- ----
+     0101 0100
 ```

@@ -11,7 +11,7 @@
 
 .include "runtime.inc"
 
-.export andInt8, orInt8, onesComplementInt8, lshiftInt8, rshiftInt8
+.export andInt8, orInt8, xorInt8, onesComplementInt8, lshiftInt8, rshiftInt8
 
 ; Perform AND operation on two 8-bit numbers in intOp1 and intOp2
 ; Result is left in intOp1
@@ -68,4 +68,13 @@ DN: rts
     dex
     bne :-
 DN: rts
+.endproc
+
+; Perform XOR operation on two 8-bit numbers in intOp1 and intOp2
+; Result is left in intOp1
+.proc xorInt8
+    lda intOp1
+    eor intOp2
+    sta intOp1
+    rts
 .endproc

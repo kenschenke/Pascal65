@@ -265,6 +265,7 @@
 #define RT_ADDIRQHANDLER        (RT_BASE + 324)
 #define RT_IRQCLEANUP           (RT_BASE + 327)
 #define RT_LIBSTACKCLEANUP      (RT_BASE + 330)
+#define RT_BITWISEXOR           (RT_BASE + 333)
 
 // CBM Kernal
 

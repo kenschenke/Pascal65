@@ -39,7 +39,7 @@
 .import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
 .import fileErase, fileAssign, fileRename, fileFree, convertType
 .import libStackHeader, libCallRoutine, addIrqHandler, irqCleanup
-.import initDecl, freeDecl, cloneDecl, libStackCleanup
+.import initDecl, freeDecl, cloneDecl, libStackCleanup, xorBitwise
 
 .segment "JMPTBL"
 
@@ -154,3 +154,4 @@ jmp libCallRoutine       ; BASE + 321
 jmp addIrqHandler        ; BASE + 324
 jmp irqCleanup           ; BASE + 327
 jmp libStackCleanup      ; BASE + 330
+jmp xorBitwise           ; BASE + 333

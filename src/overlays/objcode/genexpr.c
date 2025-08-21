@@ -134,6 +134,7 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 	case EXPR_DIVINT:
 	case EXPR_BITWISE_AND:
 	case EXPR_BITWISE_OR:
+	case EXPR_BITWISE_XOR:
 	case EXPR_BITWISE_LSHIFT:
 	case EXPR_BITWISE_RSHIFT: {
 		unsigned short call = RT_BITWISEOR;
@@ -146,6 +147,8 @@ void genExpr(CHUNKNUM chunkNum, char isRead, char noStack)
 			call = RT_BITWISELSHIFT;
 		} else if (_expr.kind == EXPR_BITWISE_RSHIFT) {
 			call = RT_BITWISERSHIFT;
+		} else if (_expr.kind == EXPR_BITWISE_XOR) {
+			call = RT_BITWISEXOR;
 		}
 
 		retrieveChunk(_expr.evalType, &resultType);

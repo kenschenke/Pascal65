@@ -25,6 +25,10 @@ Begin
     d := $13571357 & d2; If d <> $11021102 Then Error(48);
     d := d3 & $d5aad5aa; If d <> $11021102 Then Error(49);
     d := $d5aad5aa & d3; If d <> $11021102 Then Error(50);
+    d := d2 Xor $13571357; If d <> $c6fdc6fd Then Error(70);
+    d := $13571357 Xor d2; If d <> $c6fdc6fd Then Error(71);
+    d := d3 Xor $d5aad5aa; If d <> $c6fdc6fd Then Error(72);
+    d := $d5aad5aa Xor d3; If d <> $c6fdc6fd Then Error(73);
 
 	d := 1;
 	d2 := d << 0;

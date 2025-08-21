@@ -11,7 +11,7 @@
 
 .include "runtime.inc"
 
-.export andInt16, orInt16, onesComplementInt16, lshiftInt16, rshiftInt16
+.export andInt16, orInt16, xorInt16, onesComplementInt16, lshiftInt16, rshiftInt16
 
 ; Perform AND operation on two 16-bit numbers in intOp1 and intOp2
 ; Result is left in intOp1
@@ -80,3 +80,16 @@ DN: rts
     bne :-
 DN: rts
 .endproc
+
+; Perform XOR operation on two 16-bit numbers in intOp1 and intOp2
+; Result is left in intOp1
+.proc xorInt16
+    ldx #1
+:   lda intOp1,x
+    eor intOp2,x
+    sta intOp1,x
+    dex
+    bpl :-
+    rts
+.endproc
+

@@ -19,4 +19,4 @@ The operands are the data type of the values.
 ## See Also
 
 [BWA](../bwa), [BSL](../bsl), [BSR](../bsr),
-[BWC](../bwc), [Data Types](../../types)
+[BWC](../bwc), [BWX](../bwx), [Data Types](../../types)

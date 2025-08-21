@@ -1352,6 +1352,7 @@ static void expr_typecheck(CHUNKNUM chunkNum, CHUNKNUM recordSymtab, struct type
 
 	case EXPR_BITWISE_AND:
 	case EXPR_BITWISE_OR:
+	case EXPR_BITWISE_XOR:
 		pType->kind = typeConversions[leftType.kind-1][rightType.kind-1];
 		if (pType->kind == TYPE_VOID) {
 			Error(errIncompatibleTypes);

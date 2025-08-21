@@ -22,4 +22,4 @@ The operands are the data type of the values.
 ## See Also
 
 [BWA](../bwa), [BWO](../bwo), [BSL](../bsl),
-[BWC](../bwc), [Data Types](../../types)
+[BWC](../bwc), [BWX](../bwx), [Data Types](../../types)

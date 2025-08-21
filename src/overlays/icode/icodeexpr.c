@@ -113,6 +113,7 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 	case EXPR_DIVINT:
 	case EXPR_BITWISE_AND:
 	case EXPR_BITWISE_OR:
+	case EXPR_BITWISE_XOR:
 	case EXPR_BITWISE_LSHIFT:
 	case EXPR_BITWISE_RSHIFT: {
 		unsigned short call = IC_BWO;
@@ -125,6 +126,8 @@ static char icodeExprPvt(CHUNKNUM chunkNum, char isRead, char isDeref)
 			call = IC_BSL;
 		} else if (_expr.kind == EXPR_BITWISE_RSHIFT) {
 			call = IC_BSR;
+		} else if (_expr.kind == EXPR_BITWISE_XOR) {
+			call = IC_BWX;
 		}
 
 		retrieveChunk(_expr.evalType, &resultType);

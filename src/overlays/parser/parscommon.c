@@ -57,7 +57,7 @@ extern const TTokenCode tlUnaryOps[] = {
 
 // Additive operators
 extern const TTokenCode tlAddOps[] = {
-    tcPlus, tcMinus, tcOR, tcLShift, tcRShift, tcDummy
+    tcPlus, tcMinus, tcOR, tcXOR, tcLShift, tcRShift, tcDummy
 };
 
 // Multiplicative operators

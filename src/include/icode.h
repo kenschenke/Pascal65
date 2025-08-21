@@ -152,6 +152,7 @@ typedef unsigned char ICODE_MNE;
 #define IC_BSR              0x88  // 1000 1000  1:leftType, 2:rightType, 3:resultType (bitwise right-shift)
 #define IC_JSR              0x89  // 1000 1001  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
 #define IC_PRP              0x8a  // 1001 1010  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
+#define IC_BWX              0x8b  // 1001 1011  1:leftType, 2:rightType, 3:resultType (bitwise xor)
 
 struct icode_operand
 {
