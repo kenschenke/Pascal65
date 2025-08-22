@@ -15,6 +15,7 @@
 .import upCase, lowerCase, compareStr, contains, beginswith, endswith, strPos
 .import sin, cos, tan, fileAssign, fileClose, fileReset, fileRewrite, fileEOF
 .import fileIOResult, fileErase, fileRename, setRasterCb, cleanup, init
+.import wpeek, wpoke, lpeek, lpoke
 
 .segment "JMPTBL"
 
@@ -37,7 +38,11 @@ jmp length
 jmp lowerCase
 jmp odd
 jmp peek
+jmp wpeek
+jmp lpeek
 jmp poke
+jmp wpoke
+jmp lpoke
 jmp fileRename
 jmp fileReset
 jmp fileRewrite

@@ -1,8 +1,8 @@
 ;
-; peek.s
+; wpeek.s
 ; Ken Schenke (kenschenke@gmail.com)
 ; 
-; Copyright (c) 2024
+; Copyright (c) 2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
@@ -13,11 +13,11 @@
 
 .p4510
 
-.export peek
+.export wpeek
 
 ; This routine returns the value in the address in the first parameter
 
-.proc peek
+.proc wpeek
     lda #0
     jsr rtLibLoadParam
     ; Use ptr1 and ptr2 as a 32-bit pointer
@@ -25,17 +25,24 @@
     stx ptr1 + 1
     lda sreg
     bne L1
-    ldy #0
+    ldy #1
+    lda (ptr1),y
+    tax
+    dey
     lda (ptr1),y
     bra L2
 L1: sta ptr2
     lda sreg + 1
     sta ptr2 + 1
-    ldz #0
+    ldz #1
     nop
     lda (ptr1),z
-L2: ldx #0
-    stx sreg
-    stx sreg + 1
+    tax
+    dez
+    nop
+    lda (ptr1),z 
+L2: ldz #0
+    stz sreg
+    stz sreg + 1
     jmp rtLibReturnValue
 .endproc

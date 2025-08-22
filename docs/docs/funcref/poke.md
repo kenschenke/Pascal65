@@ -1,14 +1,21 @@
 # Poke
 
-Stores a byte value in a memory location.
+Stores a value in a memory location.
 
 ## Declaration
 
-    PROCEDURE Poke(address : word; value : byte);
+    Procedure Poke(address : Cardinal; value : Byte);
+    Procedure PokeW(address : Cardinal; value : Word);
+    Procedure PokeL(address : Cardinal; value : Cardinal);
 
 ## Description
 
-*Poke* stores a byte value in a supplied memory location.
+*Poke* stores a byte value in a supplied memory location. The memory location can be
+specified as a 16-bit or 24-bit address.
+
+*PokeW* stores a word value in a supplied memory location.
+
+*PokeL* stores a cardinal value in a supplied memory location.
 
 ## Example ##
 

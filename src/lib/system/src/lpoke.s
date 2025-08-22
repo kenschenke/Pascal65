@@ -1,8 +1,8 @@
 ;
-; poke.s
+; lpoke.s
 ; Ken Schenke (kenschenke@gmail.com)
 ; 
-; Copyright (c) 2024
+; Copyright (c) 2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
@@ -13,14 +13,19 @@
 
 .p4510
 
-.export poke
+.export lpoke
 
 ; This routine stores the value from the second parameter
 ; into the address in the first parameter.
 
-.proc poke
+.proc lpoke
     lda #1
     jsr rtLibLoadParam
+    pha
+    phx
+    lda sreg
+    pha
+    lda sreg + 1
     pha
     lda #0
     jsr rtLibLoadParam
@@ -29,16 +34,20 @@
     stx ptr2 + 1
     lda sreg
     bne L1
-    ldy #0
-    pla
+    ldy #3
+:   pla
     sta (ptr2),y
+    dey
+    bpl :-
     rts
 L1: sta ptr3
     lda sreg + 1
     sta ptr3 + 1
-    pla
-    ldz #0
+    ldz #3
+:   pla
     nop
     sta (ptr2),z
+    dez
+    bpl :-
     rts
 .endproc
