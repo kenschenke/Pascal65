@@ -72,6 +72,21 @@ Begin
     If Succ(i) <> 1235 Then Error(29);
     If Succ(1244) <> 1245 Then Error(30);
 
+    Poke($b000, 33);
+    Poke($40001, 99);
+    If Peek($b000) <> 33 Then Error(31);
+    If Peek($40001) <> 99 Then Error(32);
+
+    PokeW($b001, 1234);
+    PokeW($40002, 5678);
+    If PeekW($b001) <> 1234 Then Error(33);
+    If PeekW($40002) <> 5678 Then Error(34);
+
+    PokeL($b003, 123456);
+    PokeL($40004, 234567);
+    If PeekL($b003) <> 123456 Then Error(35);
+    if PeekL($40004) <> 234567 Then Error(36);
+
     If anyErrors Then Begin
         Write('Type any key to continue: ');
         c := GetKey;
