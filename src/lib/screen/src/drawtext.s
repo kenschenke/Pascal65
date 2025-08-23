@@ -11,22 +11,22 @@
 
 .include "runtime.inc"
 
+.p4510
+
 .export drawChar, drawCharRaw, drawText, drawTextRaw
 
-.import calcScreen, toScreenCode, is80Cols
-.import lfill, lpoke, textColor
-.ifdef __MEGA65__
-.import dma_addr, dma_count, dma_value
-.endif
+.import calcScreen, toScreenCode, is80Cols, textColor
 
 isRaw: .res 1
 
 ; Calculate the address in color RAM for Mega65
 ; Column in X, row in Y
 ; X and Y are preserved
-; Address is left in dma_addr
+; Address is left in ptr1/ptr2
 .ifdef __MEGA65__
 .proc calcColorAddr
+    phx
+    phy
     stx tmp1
     sty tmp2
     jsr is80Cols
@@ -34,37 +34,47 @@ isRaw: .res 1
     lda #40
     bne S3
 :   lda #80
-S3: sta tmp3
+S3: sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
     ; 0x0FF80000 is base of color RAM
     lda #$f
-    sta dma_addr + 3
+    sta ptr2 + 1
     lda #$f8
-    sta dma_addr + 2
+    sta ptr2
     lda #0
-    sta dma_addr + 1
-    sta dma_addr
-    ldy tmp2
-LY: dey
+    sta ptr1 + 1
+    sta ptr1
+LY: dec tmp2
     beq AX
-    lda dma_addr
+    neg
+    neg
+    lda ptr1
     clc
-    adc tmp3
-    sta dma_addr
-    lda dma_addr + 1
-    adc #0
-    sta dma_addr + 1
-    jmp LY
+    neg
+    neg
+    adc intOp32
+    neg
+    neg
+    sta ptr1
+    bra LY
 AX: ldx tmp1
     dex
-    txa
+    stx intOp32
+    neg
+    neg
+    lda ptr1
     clc
-    adc dma_addr
-    sta dma_addr
-    lda dma_addr + 1
-    adc #0
-    sta dma_addr + 1
-    ldx tmp1
-    ldy tmp2
+    neg
+    neg
+    adc intOp32
+    neg
+    neg
+    sta ptr1
+    ply
+    plx
     rts
 .endproc
 .endif
@@ -92,26 +102,28 @@ AX: ldx tmp1
     lda #1                  ; Get the second parameter (row)
     jsr rtLibLoadParam
     tay
-    pla
-    tax
-.ifdef __MEGA65__
-    jsr calcColorAddr
-.endif
+    plx
+    phy
+    phx
     jsr calcScreen          ; Get the address for the character
-    sta ptr2
-    stx ptr2 + 1
+    neg
+    neg
+    sta ptr3
     lda #2                  ; Get the third parameter (character)
     jsr rtLibLoadParam
     ldx isRaw
     beq :+
     jsr toScreenCode
-:   ldy #0
-    sta (ptr2),y
-.ifdef __MEGA65__
+:   ldz #0
+    nop
+    sta (ptr3),z
+    plx
+    ply
+    jsr calcColorAddr
     lda textColor
-    sta dma_value
-    jsr lpoke
-.endif
+    ldz #0
+    nop
+    sta (ptr1),z
     rts
 .endproc
 
@@ -138,21 +150,24 @@ AX: ldx tmp1
     lda #1                  ; Get the second parameter (row)
     jsr rtLibLoadParam
     tay
-    pla
-    tax
-.ifdef __MEGA65__
-    jsr calcColorAddr
-.endif
+    plx
+    phy
+    phx
     jsr calcScreen          ; Get the address for the first character
-    sta ptr2
-    stx ptr2 + 1
+    neg
+    neg
+    sta ptr3
     lda #2                  ; Get the third parameter (string)
     jsr rtLibLoadParam
     sta ptr1
     stx ptr1 + 1
     ldy #0
     lda (ptr1),y            ; Length of string
-    beq DN
+    bne :+
+    pla
+    pla
+    rts
+:   ldz #0
     pha
     tax
     dex
@@ -163,19 +178,23 @@ LP: iny
     bne SC
 NS: lda (ptr1),y
     jsr toScreenCode
-SC: dey
-    sta (ptr2),y
-    iny
+SC: nop
+    sta (ptr3),z
+    inz
     dex
     bpl LP
-DN: pla
-    sta dma_count
-.ifdef __MEGA65__
+    pla
+    plx
+    ply
+    pha
+    jsr calcColorAddr
     lda textColor
-    sta dma_value
-    lda #0
-    sta dma_count + 1
-    jsr lfill
-.endif
+    plx
+    ldz #0
+L2: nop
+    sta (ptr1),z
+    inz
+    dex
+    bpl L2
     rts
 .endproc

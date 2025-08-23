@@ -5,6 +5,7 @@
     NEW: Add Xor operator
     NEW: Add PeekW, PokeW, PeekL, and PokeL
     NEW: All Peek and Poke routines now support 16-bit and 24-bit addresses
+    FIX: Fixed screen library for 80x50 size
 
 0.32-beta Jul 26 2025
     FIX: Fix bug with record field resolution in certain cases

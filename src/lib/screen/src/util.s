@@ -9,40 +9,53 @@
 
 .include "runtime.inc"
 
+.p4510
+
 .export calcScreen, toScreenCode, is80Cols, is50Rows
 
 .import reverse
 
 ; Calculate screen or color RAM address
 ; Column in X, Row in Y
-; Base address is expected in ptr1
-; Address returned in A/X
+; Base address is expected in ptr1/ptr2 (24-bit address)
+; Address returned in Q
 .proc calcAddr
+    stx tmp1
+    sty tmp2
     jsr is80Cols
     beq C4                  ; branch if 40 columns
     lda #80                 ; assume 80 columns
     bne SC
 C4: lda #40
-SC: sta tmp1
-    dey                     ; Row is 1-based, so subtract one
-LR: dey
+SC: sta intOp32
+    dec tmp2                ; Row is 1-based, so subtract one
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+LR: dec tmp2
     bmi DR                  ; branch if done counting rows
+    neg
+    neg
     lda ptr1
     clc
-    adc tmp1
+    neg
+    neg
+    adc intOp32
+    neg
+    neg
     sta ptr1
-    bcc LR
-    inc ptr1 + 1
-    jmp LR
-DR: dex
-    txa
+    bra LR
+DR: ldx tmp1
+    dex
+    stx intOp32
+    neg
+    neg
+    lda ptr1
     clc
-    adc ptr1
-    sta ptr1
-    bcc :+
-    inc ptr1 + 1
-:   lda ptr1
-    ldx ptr1 + 1
+    neg
+    neg
+    adc intOp32
     rts
 .endproc
 
@@ -52,12 +65,17 @@ DR: dex
 .proc calcScreen
     lda #0
     sta ptr1
-.ifdef __MEGA65__
+    sta ptr2+1
     lda #8
-.else
+    sta ptr1+1
+    jsr is50Rows
+    bne L1
+    ; 25 rows -- screen RAM is at $800
+    lda #0
+    bra L2
+L1: ; 50 rows -- screen RAM is at $40800
     lda #4
-.endif
-    sta ptr1 + 1
+L2: sta ptr2
     jmp calcAddr
 .endproc
 
