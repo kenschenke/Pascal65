@@ -540,6 +540,7 @@ static void checkFuncProcCall(CHUNKNUM exprChunk, struct type* pRetnType)
 		getBaseType(&paramType);
 
 		expr_typecheck(argChunk, 0, &argType, 0);
+		getBaseType(&argType);
 
 		if (paramType.kind == TYPE_ENUMERATION
 			&& (argType.kind == TYPE_ENUMERATION || argType.kind == TYPE_ENUMERATION_VALUE))

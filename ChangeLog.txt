@@ -1,6 +1,7 @@
 0.34-beta
     FIX: System unit was not being automatically included in other units
     FIX: Integer math is now done internally at 32-bits to preserve range
+    FIX: Array or record passed by var to another routine
 
 0.33-beta Aug 24 2025
     FIX: Character font garbled on exit from IDE

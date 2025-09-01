@@ -84,6 +84,29 @@ Begin
     x := 15.5;
 End;
 
+Procedure Proc7(Var r7 : MyRecord);
+Begin
+	r7.a := 3456;
+	r7.b := 4567;
+End;
+
+Procedure Proc8(Var r8 : MyRecord);
+Begin
+	Proc7(r8);
+End;
+
+Procedure Proc9(Var a9 : MyArray);
+Begin
+	a9[1] := 4;
+	a9[2] := 5;
+	a9[3] := 6;
+End;
+
+Procedure Proc10(Var a10 : MyArray);
+Begin
+	Proc9(a10);
+End;
+
 Begin
 	Writeln('Running');
 	
@@ -134,6 +157,20 @@ Begin
     Proc6(u, v);
     If Abs(u - 1.23) > 0.01 Then Error(31);
     If Abs(v - 15.5) > 0.01 Then Error(32);
+
+	r.a := 1234;
+	r.b := 2345;
+	Proc8(r);
+	If r.a <> 3456 Then Error(33);
+	If r.b <> 4567 Then Error(34);
+
+	a[1] := 1;
+	a[2] := 2;
+	a[3] := 3;
+	Proc10(a);
+	If a[1] <> 4 Then Error(35);
+	If a[2] <> 5 Then Error(36);
+	If a[3] <> 6 Then Error(37);
 
     If anyErrors Then Begin
         Write('Type any number to continue: ');
