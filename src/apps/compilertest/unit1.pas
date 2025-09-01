@@ -17,6 +17,7 @@ Function PublicFunc1(i, j : Integer) : Integer;
 Function PublicColor(c : Colors) : Integer;
 Procedure PublicRec(Var r : UnitRec);
 Procedure PublicArray(Var a : UnitArray);
+Function TestSystemOdd(i : Integer): Boolean;
 
 Implementation
 
@@ -55,6 +56,11 @@ Var
     i : Integer;
 Begin
     For i := 1 To 5 Do a[i] := a[i] * 2;
+End;
+
+Function TestSystemOdd(i : Integer) : Boolean;
+Begin
+    TestSystemOdd := Odd(i);
 End;
 
 End.

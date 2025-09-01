@@ -38,6 +38,8 @@ Begin
     PublicArray(ar);
     For i := 1 To 5 Do If ar[i] <> i * 2 Then Error(6);
 
+    If TestSystemOdd(123) <> True Then Error(7);
+
     If anyErrors Then Begin
         Write('Type any number to continue: ');
         Readln(i);
