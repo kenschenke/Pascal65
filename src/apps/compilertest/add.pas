@@ -2,6 +2,7 @@ Program AddTest;
 
 Var
 	anyErrors : Boolean;
+	ch : Char;
 	b, b2, b3 : Byte;
 	s, s2, s3 : ShortInt;
 	i, i2, i3 : Integer;
@@ -29,6 +30,9 @@ Begin
 	If 30190 <> 190 + 30000 Then Error(6);
 	If 2147483844 <> 190 + 2147483654 Then Error(7);
 	If 123190 <> 190 + 123000 Then Error(8);
+	b := 200;
+	d := b + 300;
+	If d <> 500 Then Error(81);
 End;
 
 Procedure TestCardinalAdd;
@@ -67,6 +71,9 @@ Begin
 	If -1234 + 123456 <> 122222 Then Error(26);
 	i2 := i3 + 5;
 	If i2 <> 5683 Then Error(261);
+	b := 200;
+	i := b + 300;
+	If i <> 500 Then Error(262);
 End;
 
 Procedure TestLongIntAdd;
@@ -141,7 +148,7 @@ Begin
 	TestCardinalAdd;
 
     If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
+        Write('Press a key to continue: ');
+        ch := GetKey;
     End;
 End.

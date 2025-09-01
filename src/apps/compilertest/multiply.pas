@@ -2,6 +2,7 @@ Program MultiplyTest;
 
 Var
 	anyErrors : Boolean;
+	ch : Char;
 	b, b2, b3 : Byte;
 	s, s2, s3 : ShortInt;
 	i, i2, i3 : Integer;
@@ -43,6 +44,9 @@ Begin
 	If d <> 246912 Then Error(11);
     If 2147483748 * 0 <> 0 Then Error(12);
     If 0 * 2147483748 <> 0 Then Error(13);
+	b2 := 80;
+	d := b2 * 8;
+	If d <> 640 Then Error(14);
 End;
 
 Procedure TestIntegerMultiply;
@@ -56,6 +60,9 @@ Begin
     If 2468 <> -1234 * -2 Then Error(20);
     If 0 <> 12345 * 0 Then Error(21);
     If 0 <> 0 * 12345 Then Error(22);
+	b2 := 80;
+	l := b2 * 8;
+	If l <> 640 Then Error(23);
 End;
 
 Begin
@@ -68,7 +75,7 @@ Begin
 	TestIntegerMultiply;
 
     If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
+        Write('Press a key to continue: ');
+        ch := GetKey;
     End;
 End.
