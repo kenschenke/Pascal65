@@ -17,9 +17,10 @@ SPRITESLIB = src/lib/sprites/bin/$(TARGET)/sprites
 SPRITEMOVELIB = src/lib/spritemove/bin/$(TARGET)/spritemove
 SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
 DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
+ASMLIB = src/lib/asmlib/bin/$(TARGET)/asmlib
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 
-BINFILES := $(wildcard src/apps/ide/bin/$(TARGET)/pascal65*)
+BINFILES := $(wildcard src/apps/editor/bin/$(TARGET)/editor*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
 BINFILES += $(SCREENLIB)
 BINFILES += $(SPRITESLIB)
@@ -27,10 +28,11 @@ BINFILES += $(SPRITEMOVELIB)
 BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(DEBUGLIB)
+BINFILES += $(ASMLIB)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
-all: $(RUNTIME) ide compiler $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) editor compiler $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -83,8 +85,8 @@ runtimemsgs.petscii: src/shared/runtimemsgs.txt
 $(LOADPROG):
 	cd src/lib/loadprog && $(MAKE) TARGET=$(TARGET)
 
-ide:
-	cd src/apps/ide && $(MAKE) TARGET=$(TARGET)
+editor:
+	cd src/apps/editor && $(MAKE) TARGET=$(TARGET)
 
 compiler:
 	cd src/apps/compiler && $(MAKE) TARGET=$(TARGET)
@@ -104,6 +106,9 @@ $(SYSTEMLIB):
 $(DEBUGLIB):
 	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
 
+$(ASMLIB):
+	cd src/lib/asmlib && $(MAKE) TARGET=$(TARGET)
+
 $(BINDIR):
 	mkdir -p $@
 
@@ -116,9 +121,7 @@ endif
 
 $(D81FILE): $(BINFILES) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write src/apps/ide/bin/$(TARGET)/pascal65 pascal65,prg \
-	-write src/apps/ide/bin/$(TARGET)/pascal65.1 pascal65.1,prg \
-	-write src/apps/ide/bin/$(TARGET)/pascal65.2 pascal65.2,prg \
+	-write src/apps/editor/bin/$(TARGET)/editor pascal65,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler compiler,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.1 compiler.1,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.2 compiler.2,prg \
@@ -132,6 +135,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/lib/sprites/bin/$(TARGET)/sprites sprites.lib,prg \
 	-write src/lib/spritemove/bin/$(TARGET)/spritemove spritemove.lib,prg \
 	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \
+	-write src/lib/asmlib/bin/$(TARGET)/asmlib asm.lib,prg \
 	$(DRVWRITE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
@@ -153,9 +157,9 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
-run: $(RUNTIME) ide compiler $(SYSTEMLIB) $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
+run: $(RUNTIME) editor compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
 
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
-	etherload -m pascal65.d81 -r src/apps/compiler/bin/$(TARGET)/compiler
+	etherload -m pascal65.d81 -r src/apps/editor/bin/$(TARGET)/editor

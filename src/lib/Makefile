@@ -6,6 +6,7 @@ all:
 	cd sprites && $(MAKE) TARGET=$(TARGET) all
 	cd spritemove && $(MAKE) TARGET=$(TARGET) all
 	cd system && $(MAKE) TARGET=$(TARGET) all
+	cd asmlib && $(MAKE) TARGET=$(TARGET) all
 	cd demolib && $(MAKE) TARGET=$(TARGET) all
 
 clean:
@@ -16,4 +17,5 @@ clean:
 	cd sprites && $(MAKE) TARGET=$(TARGET) clean
 	cd spritemove && $(MAKE) TARGET=$(TARGET) clean
 	cd system && $(MAKE) TARGET=$(TARGET) clean
+	cd asmlib && $(MAKE) TARGET=$(TARGET) clean
 	cd demolib && $(MAKE) TARGET=$(TARGET) clean
