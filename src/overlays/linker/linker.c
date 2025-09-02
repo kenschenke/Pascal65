@@ -648,6 +648,8 @@ static void genBootstrap(void)
 	genTwo(BNE, 0xf6);
 #endif
 	// Display a message to press a key
+	genTwo(LDA_IMMEDIATE, FH_STDIO);
+	genThreeAddr(JSR, RT_SETFH);
 	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, LINKADDR_LOW);
 	genTwo(LDA_IMMEDIATE, 0);
 	linkAddressLookup(BSS_BOOTSTRAP_MSG, codeOffset + 1, LINKADDR_HIGH);
