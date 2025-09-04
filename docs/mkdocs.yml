@@ -60,6 +60,7 @@ nav:
     - Rename: funcref/rename.md
     - Reset: funcref/reset.md
     - Rewrite: funcref/rewrite.md
+    - Round: funcref/round.md
     - SetRasterCallback: funcref/setrastercallback.md
     - Sin: funcref/sin.md
     - Sqr: funcref/sqr.md
@@ -68,6 +69,7 @@ nav:
     - Succ: funcref/succ.md
     - Tan: funcref/tan.md
     - Trim: funcref/trim.md
+    - Trunc: funcref/trunc.md
     - UpCase: funcref/upcase.md
     - Write: funcref/write.md
     - WriteLn: funcref/write.md

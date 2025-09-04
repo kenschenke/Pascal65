@@ -28,7 +28,7 @@ Begin
     ResetTicks;
     // ... do things
     t := GetTicks;
-    Writeln(t Div 1000000, ' seconds have elapsed);
+    Writeln(t Div 1000000, ' seconds have elapsed');
 End.
 ```
 

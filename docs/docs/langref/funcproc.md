@@ -117,7 +117,7 @@ The **Forward** keyword specifies a forward declaration.
 Procedures and functions can be nested within one another.  This allows the programmer to group related routines and hide nested routines.
 
 The local variables of a routine are accessible by nested routines.  The topic on
-[variable scope](../scope.md) goes into depth on this.
+[variable scope](../scope) goes into depth on this.
 
 The programmer can define multiple nested routines and can nest routines at multiple levels.
 
