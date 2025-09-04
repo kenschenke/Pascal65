@@ -97,6 +97,10 @@ nav:
     - SpriteSize: sprites/spritesize.md
   - SpriteMove Library:
     - SpriteMove: spritemove/spritemove.md
+  - Time Library:
+    - GetDateTime: time/getdatetime.md
+    - GetTicks: time/getticks.md
+    - ResetTicks: time/resetticks.md
   - Developing Libraries:
     - Introduction to Libraries: libraries/libraries.md
     - Interface File: libraries/interface.md

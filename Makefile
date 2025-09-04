@@ -18,6 +18,7 @@ SPRITEMOVELIB = src/lib/spritemove/bin/$(TARGET)/spritemove
 SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
 DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
 ASMLIB = src/lib/asmlib/bin/$(TARGET)/asmlib
+TIMELIB = src/lib/time/bin/$(TARGET)/time
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 
 BINFILES := $(wildcard src/apps/editor/bin/$(TARGET)/editor*)
@@ -29,10 +30,11 @@ BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(DEBUGLIB)
 BINFILES += $(ASMLIB)
+BINFILES += $(TIMELIB)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
-all: $(RUNTIME) editor compiler $(SCREENLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) editor compiler $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -42,6 +44,9 @@ screen.petscii: src/lib/screen/screen.pas
 
 screendemo.petscii: examples/screendemo.pas
 	dos2unix < examples/screendemo.pas | petcat -w2 -text -o screendemo.petscii
+
+time.petscii: src/lib/time/time.pas
+	dos2unix < src/lib/time/time.pas | petcat -w2 -text -o time.petscii
 
 bubbles.petscii: examples/bubbles.pas
 	dos2unix < examples/bubbles.pas | petcat -w2 -text -o bubbles.petscii
@@ -103,6 +108,9 @@ $(SPRITEMOVELIB):
 $(SYSTEMLIB):
 	cd src/lib/system && $(MAKE) TARGET=$(TARGET)
 
+$(TIMELIB):
+	cd src/lib/time && $(MAKE) TARGET=$(TARGET)
+
 $(DEBUGLIB):
 	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
 
@@ -136,6 +144,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/lib/spritemove/bin/$(TARGET)/spritemove spritemove.lib,prg \
 	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \
 	-write src/lib/asmlib/bin/$(TARGET)/asmlib asm.lib,prg \
+	-write src/lib/time/bin/$(TARGET)/time time.lib,prg \
 	$(DRVWRITE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs,seq \
@@ -143,6 +152,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write help.petscii help.txt,seq \
 	-write screen.petscii screen.pas,seq \
 	-write screendemo.petscii screendemo.pas,seq \
+	-write time.petscii time.pas,seq \
 	-write bubbles.petscii bubbles.pas,seq \
 	-write fivedice.petscii fivedice.pas,seq \
 	-write sprites.petscii sprites.pas,seq \
