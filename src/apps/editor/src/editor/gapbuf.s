@@ -46,7 +46,7 @@ screenPtr: .res 4               ; Pointer to screen memory for the edited line
 ; This routine is called when the user makes a change on the current line.
 ; It is called when the user types a character that results in an editing
 ; change. If the gap buffer is already set up, the change is made. If not,
-; the gap buffer is set up.
+; the gap buffer is set up first.
 ;
 ; Inputs:
 ;    A contains character typed
@@ -641,6 +641,8 @@ L1: ; if ptr1 == gapCursor then ptr1 = gapEnd
     lda gapEnd+1
     sta ptr1+1
     sta intOp1+1
+    jsr eqInt16                 ; See if end of buffer is reached
+    bne L2                      ; Branch if so
     ldy #0
 :   lda (ptr1),y
     nop
@@ -653,7 +655,7 @@ L1: ; if ptr1 == gapCursor then ptr1 = gapEnd
     cmp #0
     bne L1
 
-    lda #0
+L2: lda #0
     sta gapValid
     rts
 .endproc
