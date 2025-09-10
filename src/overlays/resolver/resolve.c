@@ -531,6 +531,57 @@ static short getTypeSize(struct type* pType)
 }
 
 /*
+*	This function injects the system unit into the scope of all other units
+	the program is referencing.
+*/
+void inject_system_unit(void)
+{
+	struct unit systemUnit, _unit;
+	struct decl _decl;
+	struct stmt _stmt;
+	CHUNKNUM unitChunk = units, systemChunk = units, firstDecl;
+
+	// First, find the system unit in the list of units.
+	while (systemChunk) {
+		retrieveChunk(systemChunk, &systemUnit);
+		if (!strcmp(systemUnit.name, "system")) {
+			break;
+		}
+
+		systemChunk = systemUnit.next;
+	}
+
+	// If the system unit is not found, nothing else to do.
+	if (!systemChunk) {
+		return;
+	}
+
+	// Go through the units and add the system unit to the list
+	// of "Uses" declarations.
+	while (unitChunk) {
+		retrieveChunk(unitChunk, &_unit);
+
+		if (unitChunk != systemChunk) {
+			CHUNKNUM usesDecl; // , nameChunk, typeChunk;
+			usesDecl = declCreate(DECL_USES, name_create("system"), 
+				typeCreate(TYPE_UNIT, 0, 0, 0), 0);
+
+			// Add DECL_USES as the first declaration in the unit
+			retrieveChunk(_unit.astRoot, &_decl);
+			retrieveChunk(_decl.code, &_stmt);
+			firstDecl = _stmt.decl;
+			_stmt.decl = usesDecl;
+			storeChunk(_decl.code, &_stmt);
+			retrieveChunk(usesDecl, &_decl);
+			_decl.next = firstDecl;
+			storeChunk(usesDecl, &_decl);
+		}
+
+		unitChunk = _unit.next;
+	}
+}
+
+/*
 *	This function injects a unit's interface declarations into the current
 *	scope.  It does this by looping through the unit's interface symbol table
 *	and looking up the corresponding entry in the unit's implementation

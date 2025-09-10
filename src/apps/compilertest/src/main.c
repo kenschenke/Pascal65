@@ -52,7 +52,6 @@ static char *testFiles[] = {
     "strtests",
     "recarray",
     "scopetest",
-    "vartest",
     "casetest",
     "procfunc",
     "multiply",
@@ -61,6 +60,7 @@ static char *testFiles[] = {
     "unit",
     "libtest",
     "trig",
+    "vartest",
     "filetesta",
     "filetestb",
     "pointers",
@@ -268,6 +268,7 @@ void main()
 #endif
         printz("R");
         init_scope_stack();
+        inject_system_unit();
         resolve_units();
         decl_resolve(astRoot, 0);
         offset = set_decl_offsets(astRoot, 0, 0);

@@ -85,14 +85,10 @@ void copyRealString(char* pString, CHUNKNUM* firstChunk) {
     copyStringToMemBuf(pString, firstChunk, (int)strlen(pString));
 }
 
-CHUNKNUM parseDeclarations(char isProgramOrUnitBlock, char isSystemUnit) {
-    CHUNKNUM firstDecl = 0, lastDecl = 0;
+CHUNKNUM parseDeclarations(char isProgramOrUnitBlock) {
+    CHUNKNUM firstDecl = 0, lastDecl;
 
-    if (parserModuleType == TYPE_UNIT && isProgramOrUnitBlock) {
-        if (!isSystemUnit && !isInUnitInterface) {
-            lastDecl = addUnit("system", &firstDecl, lastDecl);
-        }
-    } else if (units == 0) {
+    if (units == 0) {
         lastDecl = addUnit("system", &firstDecl, 0);
     }
 

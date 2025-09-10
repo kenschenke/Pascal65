@@ -23,6 +23,7 @@ void param_list_resolve(CHUNKNUM chunkNum);
 void stmt_resolve(CHUNKNUM chunkNum);
 
 void fix_global_offsets(CHUNKNUM astRoot);
+void inject_system_unit(void);
 short set_decl_offsets(CHUNKNUM chunkNum, short offset, short level);
 void set_unit_offsets(CHUNKNUM firstUnit, short rootOffset);
 void verify_fwd_declarations(CHUNKNUM astRoot);

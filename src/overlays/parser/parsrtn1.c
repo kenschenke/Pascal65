@@ -21,12 +21,12 @@
 #define stricmp strcasecmp
 #endif
 
-CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary, char isSystemUnit)
+CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary)
 {
 	char dummy;
 	struct stmt _stmt;
 	CHUNKNUM stmtChunk, body = 0;
-	CHUNKNUM interfaceDecl = 0, decl = parseDeclarations(isProgramOrUnitBlock, 0);
+	CHUNKNUM interfaceDecl = 0, decl = parseDeclarations(isProgramOrUnitBlock);
 
 	// So callers can pass NULL for second parameter
 	if (isLibrary == 0) {
@@ -47,7 +47,7 @@ CHUNKNUM parseBlock(char isProgramOrUnitBlock, char *isLibrary, char isSystemUni
 			*isLibrary = 1;
 			decl = 0;
 		} else {
-			decl = parseDeclarations(1, isSystemUnit);
+			decl = parseDeclarations(1);
 		}
 	}
 
@@ -187,7 +187,7 @@ CHUNKNUM parseSubroutine(void)
 		storeChunk(_decl.type, &_type);
 	} else {
 		// Not a forward declaration
-		_decl.code = parseBlock(0, 0, 0);
+		_decl.code = parseBlock(0, 0);
 		storeChunk(subChunk, &_decl);
 	}
 
@@ -273,8 +273,7 @@ CHUNKNUM parseSubroutineDeclarations(CHUNKNUM* firstDecl, CHUNKNUM lastDecl)
 CHUNKNUM parseModule(void)
 {
 	struct decl _decl;
-	char isSystemUnit;
-	CHUNKNUM progDecl = parseModuleHeader(&isSystemUnit);
+	CHUNKNUM progDecl = parseModuleHeader();
 
 	// ;
 	resync(tlHeaderFollow, tlDeclarationStart, tlStatementStart);
@@ -306,7 +305,7 @@ CHUNKNUM parseModule(void)
 
 	// <block>
 	retrieveChunk(progDecl, &_decl);
-	_decl.code = parseBlock(1, &_decl.isLibrary, isSystemUnit);
+	_decl.code = parseBlock(1, &_decl.isLibrary);
 	storeChunk(progDecl, &_decl);
 
 	if (parserModuleType == TYPE_UNIT) {
@@ -320,7 +319,7 @@ CHUNKNUM parseModule(void)
 	return progDecl;
 }
 
-CHUNKNUM parseModuleHeader(char *isSystemUnit)
+CHUNKNUM parseModuleHeader(void)
 {
 	CHUNKNUM paramList = 0, moduleName;
 
@@ -342,12 +341,6 @@ CHUNKNUM parseModuleHeader(char *isSystemUnit)
 
 	// parserString contains name of program
 	moduleName = name_create(parserString);
-
-	if (parserModuleType == TYPE_UNIT && !strcmp(parserString, "system")) {
-		*isSystemUnit = 1;
-	} else {
-		*isSystemUnit = 0;
-	}
 
 	// ( or ;
 	getToken();

@@ -308,6 +308,7 @@ void main(int argc, char *argv[])
 #endif
     {
         init_scope_stack();
+        inject_system_unit();
         resolve_units();
         decl_resolve(astRoot, 0);
         offset = set_decl_offsets(astRoot, 0, 0);

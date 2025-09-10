@@ -14,6 +14,30 @@
 #include <common.h>
 #include <string.h>
 
+CHUNKNUM declCreate(
+    char kind,
+    CHUNKNUM name,
+    CHUNKNUM type,
+    CHUNKNUM value)
+{
+    CHUNKNUM chunkNum;
+    struct decl decl;
+
+    allocChunk(&chunkNum);
+
+    memset(&decl, 0, sizeof(struct decl));
+
+    decl.kind = kind;
+    decl.name = name;
+    decl.type = type;
+    decl.value = value;
+    decl.lineNumber = currentLineNumber;
+
+    storeChunk(chunkNum, (unsigned char*)&decl);
+
+    return chunkNum;
+}
+
 char getTypeMask(char type) {
 	char mask = TYPE_CHARACTER;
 
