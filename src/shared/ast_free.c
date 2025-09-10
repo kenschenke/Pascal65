@@ -13,6 +13,9 @@
 #include <symtab.h>
 #include <membuf.h>
 
+// This is used by symtab_free() to keep it off the stack
+static struct symbol symForFree;
+
 void decl_free(CHUNKNUM chunkNum)
 {
 	struct decl _decl;
@@ -109,7 +112,7 @@ void stmt_free(CHUNKNUM chunkNum)
 
 void symtab_free(CHUNKNUM chunkNum)
 {
-	struct symbol sym;
+	CHUNKNUM leftChild, rightChild;
 
 	if (!chunkNum) {
 		return;
@@ -118,15 +121,20 @@ void symtab_free(CHUNKNUM chunkNum)
 	if (!isChunkAllocated(chunkNum)) {
 		return;
 	}
-	if (!retrieveChunk(chunkNum, &sym)) {
+	if (!retrieveChunk(chunkNum, &symForFree)) {
 		return;
 	}
 
-	symtab_free(sym.leftChild);
-	symtab_free(sym.rightChild);
-	type_free(sym.type);
+	leftChild = symForFree.leftChild;
+	rightChild = symForFree.rightChild;
+	symtab_free(leftChild);
+	symtab_free(rightChild);
 
-	if (sym.name && isChunkAllocated(sym.name)) freeChunk(sym.name);
+	retrieveChunk(chunkNum, &symForFree);
+	type_free(symForFree.type);
+
+	if (symForFree.name && isChunkAllocated(symForFree.name))
+		freeChunk(symForFree.name);
 
 	freeChunk(chunkNum);
 }

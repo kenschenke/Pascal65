@@ -106,6 +106,7 @@ void getBaseType(struct type* pType)
 	char name[CHUNK_LEN + 1];
 	char wasSubrange = 0;
 
+	name[CHUNK_LEN] = 0;
 	while (1) {
 		if (pType->kind == TYPE_ENUMERATION || pType->kind == TYPE_ENUMERATION_VALUE) {
 			break;

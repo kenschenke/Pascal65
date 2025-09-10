@@ -24,8 +24,9 @@ static char lookup_symbol(const char* identifier, CHUNKNUM root, struct symbol* 
 static void initStandardRoutines(void);
 
 static int comp_symbol(const char* identifier, CHUNKNUM other) {
-    char otherIdent[CHUNK_LEN];
+    char otherIdent[CHUNK_LEN+1];
 
+	otherIdent[CHUNK_LEN] = 0;
 	if (retrieveChunk(other, (unsigned char*)otherIdent) == 0) {
         abortTranslation(abortOutOfMemory);
     }
