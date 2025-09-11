@@ -13,6 +13,7 @@
 .import writeToMemBuf, getline, addInt16, eqInt16, leInt16, ltInt16, gtInt16
 .import geInt16, subInt16, initMemHeap, heapAlloc, heapFree, ltUint16
 .import geUint32, writeInt16, _exit, isMemBufAtEnd
+.import scratchFile, renameFile, makeFilename, doesFileExist
 
 .segment "JMPTBL"
 
@@ -38,3 +39,7 @@ jmp geUint32
 jmp writeInt16
 jmp isMemBufAtEnd
 jmp _exit
+jmp scratchFile
+jmp renameFile
+jmp makeFilename
+jmp doesFileExist

@@ -33,3 +33,7 @@ geUint32 = ASMBASE + 54
 writeInt16 = ASMBASE + 57
 isMemBufAtEnd = ASMBASE + 60
 _exit = ASMBASE + 63
+scratchFile = ASMBASE + 66
+renameFile = ASMBASE + 69
+makeFilename = ASMBASE + 72
+doesFileExist = ASMBASE + 75

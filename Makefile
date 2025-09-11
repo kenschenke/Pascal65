@@ -23,6 +23,7 @@ LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 
 BINFILES := $(wildcard src/apps/editor/bin/$(TARGET)/editor*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
+BINFILES += src/apps/compilerasm/bin/$(TARGET)/compilerasm
 BINFILES += $(SCREENLIB)
 BINFILES += $(SPRITESLIB)
 BINFILES += $(SPRITEMOVELIB)
@@ -34,7 +35,7 @@ BINFILES += $(TIMELIB)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
-all: $(RUNTIME) editor compiler $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) editor compiler compilerasm $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -96,6 +97,9 @@ editor:
 compiler:
 	cd src/apps/compiler && $(MAKE) TARGET=$(TARGET)
 
+compilerasm:
+	cd src/apps/compilerasm && $(MAKE) TARGET=$(TARGET)
+
 $(SCREENLIB):
 	cd src/lib/screen && $(MAKE) TARGET=$(TARGET)
 
@@ -138,6 +142,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/apps/compiler/bin/$(TARGET)/compiler.5 compiler.5,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.6 compiler.6,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.7 compiler.7,prg \
+	-write src/apps/compilerasm/bin/$(TARGET)/compilerasm compilerasm,prg \
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
 	-write src/lib/sprites/bin/$(TARGET)/sprites sprites.lib,prg \
@@ -167,7 +172,7 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
-run: $(RUNTIME) editor compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
+run: $(RUNTIME) editor compiler compilerasm $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
 
 load: $(D81FILE)
