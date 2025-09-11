@@ -14,6 +14,30 @@
 #include <string.h>
 #include <common.h>
 
+CHUNKNUM declCreate(
+    char kind,
+    CHUNKNUM name,
+    CHUNKNUM type,
+    CHUNKNUM value)
+{
+    CHUNKNUM chunkNum;
+    struct decl decl;
+
+    allocChunk(&chunkNum);
+
+    memset(&decl, 0, sizeof(struct decl));
+
+    decl.kind = kind;
+    decl.name = name;
+    decl.type = type;
+    decl.value = value;
+    decl.lineNumber = currentLineNumber;
+
+    storeChunk(chunkNum, (unsigned char*)&decl);
+
+    return chunkNum;
+}
+
 CHUNKNUM stmtCreate(stmt_t kind, CHUNKNUM expr, CHUNKNUM body)
 {
     CHUNKNUM chunkNum;

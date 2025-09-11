@@ -19,6 +19,11 @@
 #include <string.h>
 
 static void addEnumsToSymtab(CHUNKNUM firstChunkNum, CHUNKNUM enumType);
+static CHUNKNUM declCreateForResolve(
+    char kind,
+    CHUNKNUM name,
+    CHUNKNUM type,
+    CHUNKNUM value);
 static void fixGlobalOffset(CHUNKNUM symtab);
 static short getSubrangeLimit(CHUNKNUM chunkNum);
 static short getTypeSize(struct type* pType);
@@ -55,6 +60,30 @@ static void addEnumsToSymtab(CHUNKNUM chunkNum, CHUNKNUM enumType)
 
 		chunkNum = _decl.next;
 	}
+}
+
+static CHUNKNUM declCreateForResolve(
+    char kind,
+    CHUNKNUM name,
+    CHUNKNUM type,
+    CHUNKNUM value)
+{
+    CHUNKNUM chunkNum;
+    struct decl decl;
+
+    allocChunk(&chunkNum);
+
+    memset(&decl, 0, sizeof(struct decl));
+
+    decl.kind = kind;
+    decl.name = name;
+    decl.type = type;
+    decl.value = value;
+    decl.lineNumber = currentLineNumber;
+
+    storeChunk(chunkNum, (unsigned char*)&decl);
+
+    return chunkNum;
 }
 
 void decl_resolve(CHUNKNUM chunkNum, CHUNKNUM* symtab)
@@ -562,8 +591,8 @@ void inject_system_unit(void)
 		retrieveChunk(unitChunk, &_unit);
 
 		if (unitChunk != systemChunk) {
-			CHUNKNUM usesDecl; // , nameChunk, typeChunk;
-			usesDecl = declCreate(DECL_USES, name_create("system"), 
+			CHUNKNUM usesDecl;
+			usesDecl = declCreateForResolve(DECL_USES, name_create("system"), 
 				typeCreate(TYPE_UNIT, 0, 0, 0), 0);
 
 			// Add DECL_USES as the first declaration in the unit
