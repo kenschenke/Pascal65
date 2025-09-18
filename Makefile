@@ -20,10 +20,12 @@ DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
 ASMLIB = src/lib/asmlib/bin/$(TARGET)/asmlib
 TIMELIB = src/lib/time/bin/$(TARGET)/time
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
+TOKENIZER = src/overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 
 BINFILES := $(wildcard src/apps/editor/bin/$(TARGET)/editor*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
 BINFILES += src/apps/compilerasm/bin/$(TARGET)/compilerasm
+BINFILES += $(TOKENIZER)
 BINFILES += $(SCREENLIB)
 BINFILES += $(SPRITESLIB)
 BINFILES += $(SPRITEMOVELIB)
@@ -99,6 +101,7 @@ compiler:
 
 compilerasm:
 	cd src/apps/compilerasm && $(MAKE) TARGET=$(TARGET)
+	cd src/overlays && $(MAKE) TARGET=$(TARGET)
 
 $(SCREENLIB):
 	cd src/lib/screen && $(MAKE) TARGET=$(TARGET)
@@ -121,6 +124,9 @@ $(DEBUGLIB):
 $(ASMLIB):
 	cd src/lib/asmlib && $(MAKE) TARGET=$(TARGET)
 
+$(TOKENIZER):
+	cd src/overlays/tokenizerasm && $(MAKE) TARGET=$(TARGET)
+
 $(BINDIR):
 	mkdir -p $@
 
@@ -133,6 +139,7 @@ endif
 
 $(D81FILE): $(BINFILES) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
+	-write src/apps/compilerasm/bin/$(TARGET)/compilerasm compilerasm,prg \
 	-write src/apps/editor/bin/$(TARGET)/editor pascal65,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler compiler,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.1 compiler.1,prg \
@@ -142,7 +149,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/apps/compiler/bin/$(TARGET)/compiler.5 compiler.5,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.6 compiler.6,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.7 compiler.7,prg \
-	-write src/apps/compilerasm/bin/$(TARGET)/compilerasm compilerasm,prg \
+	-write $(TOKENIZER) tokenizer,prg \
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
 	-write src/lib/sprites/bin/$(TARGET)/sprites sprites.lib,prg \
@@ -164,7 +171,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write spritemove.petscii spritemove.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
-	-write license.petscii license.txt,seq
+	-write license.petscii license.txt,seq \
+	-write hello.petscii hello.pas,seq
 
 clean:
 	cd src/apps && $(MAKE) TARGET=$(TARGET) clean

@@ -37,3 +37,5 @@ scratchFile = ASMBASE + 66
 renameFile = ASMBASE + 69
 makeFilename = ASMBASE + 72
 doesFileExist = ASMBASE + 75
+readInt32 = ASMBASE + 78
+leUint32 = ASMBASE + 81

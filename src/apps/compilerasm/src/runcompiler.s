@@ -1,11 +1,16 @@
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
+.include "tokenizer.inc"
 
 .export runCompiler
+
+.import loadfile
 
 .data
 
 compilingMsg: .asciiz "Compiling "
+tokenizer: .byte "tokenizer"
+tokenizerLen:
 
 .code
 
@@ -34,5 +39,14 @@ compilingMsg: .asciiz "Compiling "
     bne :-
 :   lda #13
     jsr CHROUT
+
+    ; Load the tokenizer overlay
+    ldx #<tokenizer
+    ldy #>tokenizer
+    lda #tokenizerLen-tokenizer
+    jsr loadfile
+    lda ptr1
+    ldx ptr1+1
+    jsr tokenize
     rts
 .endproc
