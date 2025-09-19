@@ -14,6 +14,8 @@
 .import geInt16, subInt16, initMemHeap, heapAlloc, heapFree, ltUint16
 .import geUint32, writeInt16, _exit, isMemBufAtEnd
 .import scratchFile, renameFile, makeFilename, doesFileExist, readInt32, leUint32
+.import initRuntimeStack, rtPushA, rtPushAX, rtPushQ, rtPopA, rtPopAX, rtPopQ
+.import rtInitCompilerErrors, rtCompilerError
 
 .segment "JMPTBL"
 
@@ -45,3 +47,12 @@ jmp makeFilename
 jmp doesFileExist
 jmp readInt32
 jmp leUint32
+jmp initRuntimeStack
+jmp rtPushA
+jmp rtPushAX
+jmp rtPushQ
+jmp rtPopA
+jmp rtPopAX
+jmp rtPopQ
+jmp rtInitCompilerErrors
+jmp rtCompilerError

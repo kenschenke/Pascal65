@@ -50,12 +50,12 @@ lastBlock: .res 4
     stq heapBottom          ; Store 0x00042000 in heapBottom
 
     ;  Z  Y  X  A
-    ; 00 05 ff fa
+    ; 00 05 ef fa
     lda #$fa
     ldy #$05
-    ldx #$ff
+    ldx #$ef
     ldz #$00
-    stq heapTop             ; Store 0x00060000-6 in heapTop
+    stq heapTop             ; Store 0x0005F000-6 in heapTop
 
     ; Store six zeros for the first entry in the MAT
     ldz #5
