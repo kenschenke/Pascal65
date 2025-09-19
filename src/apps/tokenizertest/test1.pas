@@ -1,4 +1,4 @@
-(* Hello World Program *)
+(* Test1.pas - test all tokens and literals *)
 
 Program HelloWorld ;
 

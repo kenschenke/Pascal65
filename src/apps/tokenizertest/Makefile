@@ -23,18 +23,30 @@ BINFILES += $(PRGFILE)
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 
-TXTFILES := test.petscii
+TXTFILES := test1.petscii test2.petscii test3.petscii test4.petscii test5.petscii errormsgs.petscii
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
-test.petscii: test.pas
-	dos2unix < test.pas | petcat -w2 -text -o test.petscii
+test1.petscii: test1.pas
+	dos2unix < test1.pas | petcat -w2 -text -o test1.petscii
+
+test2.petscii: test2.pas
+	dos2unix < test2.pas | petcat -w2 -text -o test2.petscii
+
+test3.petscii: test3.pas
+	dos2unix < test3.pas | petcat -w2 -text -o test3.petscii
+
+test4.petscii: test4.pas
+	dos2unix < test4.pas | petcat -w2 -text -o test4.petscii
+
+test5.petscii: test5.pas
+	dos2unix < test5.pas | petcat -w2 -text -o test5.petscii
 
 # abortmsgs.petscii: src/shared/abortmsgs.txt
 # 	dos2unix < src/shared/abortmsgs.txt | petcat -w2 -text -o abortmsgs.petscii
 
-# errormsgs.petscii: src/shared/errormsgs.txt
-# 	dos2unix < src/shared/errormsgs.txt | petcat -w2 -text -o errormsgs.petscii
+errormsgs.petscii: ../../shared/errormsgs.txt
+	dos2unix < ../../shared/errormsgs.txt | petcat -w2 -text -o errormsgs.petscii
 
 # runtimemsgs.petscii: src/shared/runtimemsgs.txt
 # 	dos2unix < src/shared/runtimemsgs.txt | petcat -w2 -text -o runtimemsgs.petscii
@@ -63,7 +75,12 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PRGFILE) tokenizertest,prg \
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(ASMLIB) asm.lib,prg \
-	-write test.petscii test.pas,seq
+	-write test1.petscii test1.pas,seq \
+	-write test3.petscii test3.pas,seq \
+	-write test2.petscii test2.pas,seq \
+	-write test4.petscii test4.pas,seq \
+	-write test5.petscii test5.pas,seq \
+	-write errormsgs.petscii errormsgs.txt,seq
 
 clean:
 	$(RM) $(TXTFILES)

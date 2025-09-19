@@ -4,7 +4,9 @@
 .include "4510macros.inc"
 .include "cbm_kernal.inc"
 
-.export testTokenizer
+.export runTest1
+
+.import errorNum, errorCount
 
 .bss
 
@@ -15,10 +17,12 @@ intBuf: .res 10
 
 .data
 
-sourceFn: .asciiz "test.pas"
+sourceFn: .asciiz "test1.pas"
+test1Msg: .asciiz "Running Test 1 "
 passedMsg: .asciiz "Passed"
 failedMsg: .asciiz "Failed, offset "
 expectedMsg: .asciiz "   Expected "
+badErrorNum: .asciiz "Unexpected error"
 sawMsg: .asciiz "   Saw "
 
 results: .byte tzLineNum, $03, $00              ; 0
@@ -178,13 +182,38 @@ results: .byte tzLineNum, $03, $00              ; 0
 
 .code
 
-.proc testTokenizer
-    lda #<sourceFn
+.proc runTest1
+    lda #0
+    sta errorNum
+    sta errorCount
+
+    ldx #0
+:   lda test1Msg,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+
+:   lda #<sourceFn
     ldx #>sourceFn
     jsr tokenize
     stq memBuf
 
-    stq ptr1
+    lda errorNum
+    ora errorCount
+    beq L1
+    ; Did not expect an error to occur
+    ldx #0
+:   lda badErrorNum,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+    lda #13
+    jsr CHROUT
+    rts
+
+L1: stq ptr1
     lda #0
     ldx #0
     jsr setMemBufPos
@@ -194,10 +223,10 @@ results: .byte tzLineNum, $03, $00              ; 0
     lda #>results
     sta resultsPtr+1
 
-L1: ldq memBuf
+L2: ldq memBuf
     jsr isMemBufAtEnd
     bne :+
-    bra L9
+    bra L4
 
 :   ldq memBuf
     stq ptr1
@@ -219,16 +248,16 @@ L1: ldq memBuf
     ldy #0
     lda (ptr1),y
     cmp ch
-    beq L2
+    beq L3
 
     jmp showFailedMsg
 
-L2: inc resultsPtr
-    bne L1
+L3: inc resultsPtr
+    bne L2
     inc resultsPtr+1
-    bra L1
+    bra L2
 
-L9: ldx #0
+L4: ldx #0
 :   lda passedMsg,x
     beq :+
     jsr CHROUT
