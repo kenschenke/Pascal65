@@ -88,6 +88,7 @@ directiveHasParam:
     lda #0
     sta isDirective
     sta directiveParam
+    sta tokenCode
 
 L1: lda tokenCode
     cmp #tcEndOfFile

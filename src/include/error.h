@@ -100,6 +100,7 @@ typedef enum {
     errInvalidSTRINGUse,
     errUnresolvedFwd,
     errIndexOutOfRange,
+    errMissingQuote,
     numParserErrors,
 } TErrorCode;
 

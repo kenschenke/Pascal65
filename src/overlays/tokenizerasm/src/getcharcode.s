@@ -42,8 +42,9 @@ CkSpecial:
     bne :+
     jmp Special
 :   cmp #'-'
-    beq Special
-    cmp #'*'
+    bne :+
+    jmp Special
+:   cmp #'*'
     beq Special
     cmp #'/'
     beq Special

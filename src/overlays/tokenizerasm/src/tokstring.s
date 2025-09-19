@@ -12,14 +12,11 @@
 .include "tokenizer.inc"
 .include "zeropage.inc"
 .include "error.inc"
+.include "asmlib.inc"
 
 .export getStringToken
 
-.import tokenCode, tokenString, getChar
-
-.proc compilerError
-    rts
-.endproc
+.import tokenCode, tokenString, getChar, currentLineNumber
 
 ; This routine tokenizes a string or character literal.
 .proc getStringToken
@@ -33,7 +30,11 @@
 L1: jsr getChar
     cmp #CH_EOF
     beq L4
-    cmp #'''                ; Look for another quote
+    cmp #13
+    bne :+
+    jsr sawCR
+    bra L1
+:   cmp #'''                ; Look for another quote
     bne L2
     ; Fetched a quote. Now check for an adjacent quote,
     ; since two consecutive quotes represent a single
@@ -59,6 +60,14 @@ L3: ; End of string reached. Write a closing quote
     rts
 
 L4: lda #errUnexpectedEndOfFile
-    jsr compilerError
-    rts
+    ldx currentLineNumber
+    ldy currentLineNumber+1
+    jmp compilerError
+.endproc
+
+.proc sawCR
+    lda #errMissingQuote
+    ldx currentLineNumber
+    ldy currentLineNumber+1
+    jmp compilerError
 .endproc

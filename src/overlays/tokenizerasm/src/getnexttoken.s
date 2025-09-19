@@ -12,16 +12,14 @@
 .include "tokenizer.inc"
 .include "cbm_kernal.inc"
 .include "error.inc"
+.include "asmlib.inc"
 
 .export getNextToken
 
 .import skipWhiteSpace, getChar, getCurrentChar, getCharCode, tokenCode
 .import getWordToken, getNumberToken, getStringToken, getSpecialToken
 .import getHexToken, getCharValueToken, getBinaryToken, isCompilerDirective
-
-.proc compilerError
-    rts
-.endproc
+.import currentLineNumber
 
 ; This routine scans the input buffer and gets the next token.
 ; The token is stored in tokenCode.
@@ -65,6 +63,8 @@
     sta tokenCode
     rts
 :   lda #errUnexpectedToken
+    ldx currentLineNumber
+    ldy currentLineNumber+1
     jsr compilerError
     jmp getChar
 .endproc

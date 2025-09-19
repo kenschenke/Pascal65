@@ -11,11 +11,13 @@
 
 .include "tokenizer.inc"
 .include "zeropage.inc"
+.include "error.inc"
+.include "asmlib.inc"
 
 .export skipWhiteSpace
 
 .import getLine, getChar, getCurrentChar, getCharCode, putBackChar
-.import getWordToken, tokenCode
+.import getWordToken, tokenCode, currentLineNumber
 
 .bss
 
@@ -71,7 +73,10 @@ L6: jsr getChar
 L1: lda ch
     cmp #CH_EOF                 ; Reach end of file?
     bne L2                      ; Branch if not
-    rts
+    lda #errUnexpectedEndOfFile
+    ldx currentLineNumber
+    ldy currentLineNumber+1
+    jmp compilerError
 
 L2: jsr getChar                 ; Get the next character
     sta ch

@@ -10,10 +10,13 @@
 ; getSpecialToken routine
 
 .include "tokenizer.inc"
+.include "asmlib.inc"
+.include "error.inc"
 
 .export getSpecialToken
 
 .import tokenCode, getNumberToken, getChar, getCurrentChar, getCharCode
+.import currentLineNumber
 
 ; This routine tokenizes any non-numeric or identifier in the source file.
 ; What is left is mostly operators.
@@ -160,7 +163,11 @@ DT: cmp #'.'
     sta tokenCode
     rts
 
-ER: lda #tcError
+ER: lda #errUnexpectedToken
+    ldx currentLineNumber
+    ldy currentLineNumber+1
+    jsr compilerError
+    lda #tcError
     ; Fall through to DN
 
 DN: sta tokenCode

@@ -36,10 +36,6 @@ maxDigitCount: .byte 20
 
 .code
 
-.proc compilerError
-    rts
-.endproc
-
 ; This routine converts digits from the input buffer into a number.
 ; If the number is an integer, it is converted into an 8, 16, or 32-bit
 ; number. Otherwise, it is left as a string (real).
@@ -71,7 +67,7 @@ maxDigitCount: .byte 20
     jsr getCharCode
     cmp #ccDigit
     beq :+
-    jmp L10
+    rts
 
     ; If sawDecimalPoint is non-zero, this call came from
     ; getSpecialToken when it saw a decimal point followed
@@ -199,10 +195,5 @@ L9: ldx #tcNumber
     beq :+
     ldx #tcError
 :   stx tokenCode
-    rts
-
-L10:
-    lda #errInvalidNumber
-    jsr compilerError
     rts
 .endproc

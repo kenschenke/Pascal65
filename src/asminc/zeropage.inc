@@ -29,3 +29,4 @@ exitHandler := zp_base + $26    ; 2 bytes
 currentFile := zp_base + $28    ; 4 bytes
 gapCursor := zp_base + $2c      ; 2 bytes
 gapEnd := zp_base + $2e         ; 2 bytes
+stackPointer := zp_base + $30   ; 4 bytes
