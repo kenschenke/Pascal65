@@ -15,7 +15,7 @@
 .import geUint32, writeInt16, _exit, isMemBufAtEnd
 .import scratchFile, renameFile, makeFilename, doesFileExist, readInt32, leUint32
 .import initRuntimeStack, rtPushA, rtPushAX, rtPushQ, rtPopA, rtPopAX, rtPopQ
-.import rtInitCompilerErrors, rtCompilerError
+.import rtInitCompilerErrors, rtCompilerError, isQZero, rtPushQZero
 
 .segment "JMPTBL"
 
@@ -56,3 +56,5 @@ jmp rtPopAX
 jmp rtPopQ
 jmp rtInitCompilerErrors
 jmp rtCompilerError
+jmp isQZero
+jmp rtPushQZero

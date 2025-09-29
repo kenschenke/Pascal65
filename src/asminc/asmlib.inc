@@ -48,3 +48,5 @@ popAX = ASMBASE + 99
 popQ = ASMBASE + 102
 initCompilerErrors = ASMBASE + 105
 compilerError = ASMBASE + 108
+isQZero = ASMBASE + 111
+pushQZero = ASMBASE + 114

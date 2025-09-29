@@ -13,6 +13,7 @@
 .include "4510macros.inc"
 
 .export initRuntimeStack, rtPopA, rtPopAX, rtPopQ, rtPushA, rtPushAX, rtPushQ
+.export rtPushQZero
 
 ; Initialize the runtime stack pointer
 .proc initRuntimeStack
@@ -99,19 +100,19 @@
 ; Pop four bytes off the runtime stack into A, X, Y, and Z
 ; Z, Y, X, then A are popped off the stack in that order
 .proc rtPopQ
-    ldz #0
+    ldz #3
     nop
     lda (stackPointer),z
     pha
-    inz
+    dez
     nop
     lda (stackPointer),z
     tay
-    inz
+    dez
     nop
     lda (stackPointer),z
     tax
-    inz
+    dez
     nop
     lda (stackPointer),z
     pha
@@ -159,20 +160,28 @@
     jsr decStackPointer
     pla
     phz
-    ldz #3
+    ldz #0
     nop
     sta (stackPointer),z
     txa
-    dez
+    inz
     nop
     sta (stackPointer),z
     tya
-    dez
+    inz
     nop
     sta (stackPointer),z
     pla
-    dez
+    inz
     nop
     sta (stackPointer),z
     rts
+.endproc
+
+.proc rtPushQZero
+    lda #0
+    tax
+    tay
+    taz
+    jmp rtPushQ
 .endproc

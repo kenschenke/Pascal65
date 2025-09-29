@@ -31,6 +31,27 @@
     type .res 23
 .endstruct
 
+.enum
+    rcDeclared
+    rcForward
+    rcRead
+    rcReadln
+    rcReadStr
+    rcWrite
+    rcWriteln
+    rcWriteStr
+    rcAbs
+    rcEoln
+    rcOrd
+    rcPred
+    rcRound
+    rcSqr
+    rcSucc
+    rcTrunc
+    rcDec
+    rcInc
+.endenum
+
 .if .sizeof(SYMTABNODE) <> CHUNK_LEN
     .error "SYMTABNODE must be CHUNK_LEN bytes in size"
 .endif
