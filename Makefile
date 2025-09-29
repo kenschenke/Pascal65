@@ -21,11 +21,13 @@ ASMLIB = src/lib/asmlib/bin/$(TARGET)/asmlib
 TIMELIB = src/lib/time/bin/$(TARGET)/time
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 TOKENIZER = src/overlays/tokenizerasm/bin/$(TARGET)/tokenizer
+PARSER = src/overlays/parserasm/bin/$(TARGET)/parser
 
 BINFILES := $(wildcard src/apps/editor/bin/$(TARGET)/editor*)
 BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
 BINFILES += src/apps/compilerasm/bin/$(TARGET)/compilerasm
 BINFILES += $(TOKENIZER)
+BINFILES += $(PARSER)
 BINFILES += $(SCREENLIB)
 BINFILES += $(SPRITESLIB)
 BINFILES += $(SPRITEMOVELIB)
@@ -127,6 +129,9 @@ $(ASMLIB):
 $(TOKENIZER):
 	cd src/overlays/tokenizerasm && $(MAKE) TARGET=$(TARGET)
 
+$(PARSER):
+	cd src/overlays/parserasm && $(MAKE) TARGET=$(TARGET)
+
 $(BINDIR):
 	mkdir -p $@
 
@@ -150,6 +155,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write src/apps/compiler/bin/$(TARGET)/compiler.6 compiler.6,prg \
 	-write src/apps/compiler/bin/$(TARGET)/compiler.7 compiler.7,prg \
 	-write $(TOKENIZER) tokenizer,prg \
+	-write $(PARSER) parser,prg \
 	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
 	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
 	-write src/lib/sprites/bin/$(TARGET)/sprites sprites.lib,prg \

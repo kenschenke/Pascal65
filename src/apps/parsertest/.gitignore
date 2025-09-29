@@ -1,4 +1,2 @@
-obj/*
-bin/*
-*.petscii
-*.map
+bin
+obj
