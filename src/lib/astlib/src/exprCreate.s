@@ -15,7 +15,7 @@ valueOffset = 0
 
 ; Allocate an expr structure and populate it with parameters.
 ; Inputs on runtime stack, bottom to top:
-;    EXPT_* kind   - 1 byte
+;    EXPR_* kind   - 1 byte
 ;    left pointer  - 4 bytes
 ;    right pointer - 4 bytes
 ;    name pointer  - 4 bytes

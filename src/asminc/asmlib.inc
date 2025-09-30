@@ -50,3 +50,5 @@ initCompilerErrors = ASMBASE + 105
 compilerError = ASMBASE + 108
 isQZero = ASMBASE + 111
 pushQZero = ASMBASE + 114
+invertInt16 = ASMBASE + 117
+invertInt32 = ASMBASE + 120

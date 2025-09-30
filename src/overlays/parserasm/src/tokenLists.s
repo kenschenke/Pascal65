@@ -4,9 +4,10 @@
 .export tlEnumConstFollow, tlEnumConstStart
 .export tlExpressionFollow, tlExpressionStart, tlFieldDeclFollow
 .export tlFormalParamsFollow, tlGlobalDirectives, tlHeaderFollow
-.export tlIdentifierFollow, tlIdentifierStart, tlMulOps, tlProcFuncStart
+.export tlIdentifierFollow, tlIdentifierStart, tlIndexFollow
+.export tlIndexListFollow, tlIndexStart, tlMulOps, tlProcFuncStart
 .export tlProgProcIdFollow, tlProgramEnd, tlRelOps, tlStatementStart
-.export tlStatementFollow, tlSublistFollow, tlUnaryOps
+.export tlStatementFollow, tlSublistFollow, tlSubrangeLimitFollow, tlUnaryOps
 
 .data
 
@@ -24,6 +25,10 @@ tlGlobalDirectives: .byte tcSTACKSIZE, tcDummy
 tlHeaderFollow: .byte tcSemicolon, tcDummy
 tlIdentifierFollow: .byte tcComma, tcIdentifier, tcColon, tcSemicolon, tcDummy
 tlIdentifierStart: .byte tcIdentifier, tcDummy
+tlIndexFollow: .byte tcComma, tcRBracket, tcOF, tcSemicolon, tcDummy
+tlIndexListFollow: .byte tcOF, tcIdentifier, tcLParen, tcARRAY, tcRECORD
+                   .byte tcPlus, tcMinus, tcNumber, tcString, tcSemicolon, tcDummy
+tlIndexStart: .byte tcIdentifier, tcNumber, tcString, tcLParen, tcPlus, tcMinus, tcDummy
 tlMulOps: .byte tcStar, tcSlash, tcDIV, tcMOD, tcAND, tcAmpersand, tcBang, tcDummy
 tlProcFuncStart: .byte tcPROCEDURE, tcFUNCTION, tcDummy
 tlProgProcIdFollow: .byte tcLParen, tcColon, tcSemicolon, tcDummy
@@ -32,4 +37,6 @@ tlRelOps: .byte tcEqual, tcNe, tcLt, tcGt, tcLe, tcGe, tcDummy
 tlStatementStart: .byte tcBEGIN, tcCASE, tcFOR, tcREPEAT, tcWHILE, tcIdentifier, tcDummy
 tlStatementFollow: .byte tcSemicolon, tcPeriod, tcEND, tcELSE, tcUNTIL, tcDummy
 tlSublistFollow: .byte tcColon, tcDummy
+tlSubrangeLimitFollow: .byte tcDotDot, tcIdentifier, tcPlus, tcMinus, tcString
+                       .byte tcRBracket, tcComma, tcSemicolon, tcOF, tcDummy
 tlUnaryOps: .byte tcPlus, tcMinus, tcDummy

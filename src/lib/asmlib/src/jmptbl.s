@@ -16,6 +16,7 @@
 .import scratchFile, renameFile, makeFilename, doesFileExist, readInt32, leUint32
 .import initRuntimeStack, rtPushA, rtPushAX, rtPushQ, rtPopA, rtPopAX, rtPopQ
 .import rtInitCompilerErrors, rtCompilerError, isQZero, rtPushQZero
+.import invertInt16, invertInt32
 
 .segment "JMPTBL"
 
@@ -58,3 +59,5 @@ jmp rtInitCompilerErrors
 jmp rtCompilerError
 jmp isQZero
 jmp rtPushQZero
+jmp invertInt16
+jmp invertInt32

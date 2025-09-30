@@ -153,8 +153,30 @@ routineCodes: .byte .LOBYTE(str_rcDeclared), .HIBYTE(str_rcDeclared)
     ; Subtype
     lda #<subtypeLabel
     ldx #>subtypeLabel
+    jsr printz
     ldz #type::subtype
-    jsr printStructAddr
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr showAddr
+    ldq ptr2
+    jsr pushQ
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    jsr isQZero
+    beq :+
+    lda #' '
+    jsr CHROUT
+    jsr showTypeKind
+:   lda #13
+    jsr CHROUT
+    jsr popQ
+    stq ptr2
 
     ; Indextype
     lda #<indextypeLabel
