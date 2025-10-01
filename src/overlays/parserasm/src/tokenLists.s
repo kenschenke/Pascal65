@@ -8,7 +8,7 @@
 .export tlIndexListFollow, tlIndexStart, tlMulOps, tlProcFuncStart
 .export tlProgProcIdFollow, tlProgramEnd, tlRelOps, tlStatementStart
 .export tlStatementFollow, tlStatementListNotAllowed, tlSublistFollow
-.export tlSubrangeLimitFollow, tlUnaryOps
+.export tlSubrangeLimitFollow, tlTHEN, tlUnaryOps
 
 .data
 
@@ -41,4 +41,5 @@ tlStatementListNotAllowed: .byte tcELSE, tcDummy
 tlSublistFollow: .byte tcColon, tcDummy
 tlSubrangeLimitFollow: .byte tcDotDot, tcIdentifier, tcPlus, tcMinus, tcString
                        .byte tcRBracket, tcComma, tcSemicolon, tcOF, tcDummy
+tlTHEN: .byte tcTHEN, tcDummy
 tlUnaryOps: .byte tcPlus, tcMinus, tcDummy
