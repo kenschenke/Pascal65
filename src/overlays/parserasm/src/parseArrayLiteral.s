@@ -11,25 +11,20 @@ arrayExprOffset = 0
 
 .export parseArrayLiteral
 
-.import makeExpr, parserValue, parseExpression, tlExpressionStart, doResync
+.import makeExpr, parseExpression, tlExpressionStart, doResync
 .import getToken, parserToken, parserError
 
 .proc parseArrayLiteral
-    lda #0
-    tax
-    tay
-    taz
-    stq parserValue
-    jsr pushQ
+    jsr pushQZero           ; lastExpr
 
     lda #EXPR_ARRAY_LITERAL
     jsr makeExpr
-    jsr pushQ
+    jsr pushQ               ; arrayExpr
 
     ; Parse comma-separated list of literals until a right paren
 L1: lda parserToken
     cmp #tcRParen
-    bne L4
+    beq L4
 
     lda #1
     jsr parseExpression
@@ -85,14 +80,16 @@ L3: ; lastExpr = expr
     jsr getToken
     bra L1
 :   cmp #tcRParen
-    bne L1
+    beq L1
     lda #errUnexpectedToken
     jsr parserError
     resync tlExpressionStart
     jmp L1
 
 L4: jsr popQ
+    stq ptr1
     jsr popQ
 
+    ldq ptr1
     rts
 .endproc
