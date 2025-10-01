@@ -108,14 +108,9 @@ L5: lda #<tlProcFuncStart
     jsr parseSubroutineDeclarations
     jsr storeLastDecl
 
-L6: ldz #firstDeclOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+L6: jsr popQ
+    jsr popQ
     stq ptr1
-    jsr popQ
-    jsr popQ
     jsr popA
     ldq ptr1
     rts

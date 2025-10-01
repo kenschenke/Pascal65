@@ -9,7 +9,7 @@
 .export parseConstant
 
 .import tokenIn, getToken, parserValue, parserString, parserToken, parserType
-.import copyQuotedString
+.import copyQuotedString, parserError
 .import tlUnaryOps
 
 .bss
@@ -59,7 +59,7 @@ exprKind: .res 1
     bne :+
     jmp parseNilConst
 :   lda #errInvalidConstant
-    jsr compilerError
+    jsr parserError
     jsr getToken
     lda #0
     tax
@@ -261,7 +261,7 @@ L1: lda typeKind
     cmp #tcDummy
     bne :+
     lda #errInvalidConstant
-    jsr compilerError
+    jsr parserError
     ; Calculate the length of parserString (minus the quotes)
 :   ldx #0
 :   lda parserString,x

@@ -167,8 +167,18 @@ L4: cmp #'e'
     jsr showExpr
 :   jsr popQ
     jmp showStmt
-L5: cmp #CH_BACKARROW
+L5: cmp #'n'
     bne L6
+    ldq ptr2
+    jsr pushQ
+    ldz #stmt::next
+    jsr loadPtr
+    beq :+
+    jsr showStmt
+:   jsr popQ
+    jmp showStmt
+L6: cmp #CH_BACKARROW
+    bne L7
     rts
-L6: bra L1
+L7: jmp L1
 .endproc

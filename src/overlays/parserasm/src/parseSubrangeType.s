@@ -9,7 +9,7 @@
 
 .export parseSubrangeType
 
-.import parseSubrangeLimit, condGetToken, doResync, parserToken
+.import parseSubrangeLimit, condGetToken, doResync, parserToken, parserError
 .import tlSubrangeLimitFollow, tlDeclarationStart
 
 nameOffset = 1
@@ -135,7 +135,7 @@ L2: lda minType
     cmp maxType
     beq :+
     lda #errIncompatibleTypes
-    jsr compilerError
+    jsr parserError
 
 :   lda #TYPE_SUBRANGE
     jsr pushA

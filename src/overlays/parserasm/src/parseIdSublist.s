@@ -10,7 +10,7 @@
 .export parseIdSublist
 
 .import parserToken, parserValue, doResync, getToken, parserString
-.import tlIdentifierFollow, tlIdentifierStart
+.import tlIdentifierFollow, tlIdentifierStart, parserError
 
 .bss
 
@@ -79,7 +79,7 @@ L3: ldq newDecl
     cmp #tcIdentifier
     beq :+
     lda #errMissingComma
-    jsr compilerError
+    jsr parserError
 :   jmp L1
 
 L4: ; Saw comma
@@ -90,7 +90,7 @@ L4: ; Saw comma
     cmp #tcComma
     bne L5
     lda #errMissingIdentifier
-    jsr compilerError
+    jsr parserError
 L5: lda parserToken
     cmp #tcComma
     beq L4

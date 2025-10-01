@@ -1,8 +1,22 @@
 Program Test;
 
+Uses Screen, Sprites;
+
+Const
+    MaxLength = 100;
+    MaxHeight = 20;
+
+Type
+    MyRec = Record
+        x, y : Integer;
+        z : Real;
+    End;
+    Age = Integer;
+
 Var
-    a : Array[1..5] Of Array[3..6] Of Integer;
+    a, b : Integer;
 
 Begin
     a := 1234;
+    b := 23456;
 End.

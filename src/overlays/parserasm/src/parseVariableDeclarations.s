@@ -7,8 +7,9 @@
 .include "4510macros.inc"
 
 lastDeclOffset = 0
+firstDeclOffset = 4
 
-.export parseVariableDeclarations, parseVarOrFieldDecls
+.export parseVariableDeclarations, parseFieldDeclarations
 
 .import parserToken, doResync, condGetToken, parseTypeSpec, parseIdSublist
 .import appendDecl, parseExpression, getToken
@@ -24,10 +25,26 @@ lastId: .res 4
 
 .code
 
+.proc parseFieldDeclarations
+    jsr pushQZero       ; firstDecl
+    jsr pushQZero       ; lastDecl
+    lda #0
+    jsr pushA           ; isVarDecl
+    jsr parseVarOrFieldDecls
+    jsr popQ            ; pop lastDecl
+    jsr popQ            ; pop firstDecl
+    rts
+.endproc
+
 .proc parseVariableDeclarations
     lda #1
-    jsr pushA
-    jmp parseVarOrFieldDecls
+    jsr pushA           ; isVarDecl
+    jsr parseVarOrFieldDecls
+    jsr popQ                ; pop lastDecl
+    stq ptr1                ; save lastDecl
+    jsr popQ                ; pop firstDecl pointer
+    ldq ptr1                ; load lastDecl
+    rts
 .endproc
 
 .proc parseVarOrFieldDecls
@@ -49,8 +66,26 @@ L1: lda parserToken
     jsr parseIdSublist
     stq firstId
 
+    ; Store firstId on the stack
+    ldz #firstDeclOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    jsr isQZero
+    bne :++
+    ldz #firstDeclOffset
+    ldx #0
+:   lda firstId,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
     ; colon
-    resync tlSublistFollow, tlDeclarationFollow
+:   resync tlSublistFollow, tlDeclarationFollow
     lda #tcColon
     ldx #errMissingColon
     jsr condGetToken
@@ -156,9 +191,6 @@ L7: ; skip extra semicolons
     jmp L1
 
 L9: pla                     ; Discard isVarDecl
-    jsr popQ
-    stq ptr1
-    jsr popQ
-    ldq ptr1
+    ; leave lastDecl and firstDecl on stack
     rts
 .endproc

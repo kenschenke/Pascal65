@@ -12,7 +12,7 @@ arrayExprOffset = 0
 .export parseArrayLiteral
 
 .import makeExpr, parserValue, parseExpression, tlExpressionStart, doResync
-.import getToken, parserToken
+.import getToken, parserToken, parserError
 
 .proc parseArrayLiteral
     lda #0
@@ -87,7 +87,7 @@ L3: ; lastExpr = expr
 :   cmp #tcRParen
     bne L1
     lda #errUnexpectedToken
-    jsr compilerError
+    jsr parserError
     resync tlExpressionStart
     jmp L1
 

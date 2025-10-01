@@ -7,9 +7,6 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-firstDeclOffset = 4
-lastDeclOffset = 0
-
 .export parseTypeDefinitions
 
 .import parserToken, parserString, getToken, condGetToken, parseTypeSpec, parserValue
@@ -32,6 +29,7 @@ L1: lda parserToken
     ; <id>
 :   lda #<parserString
     ldx #>parserString
+    jsr nameCreate
     stq name
 
     ; =
@@ -45,12 +43,12 @@ L1: lda parserToken
     jsr parseTypeSpec
     stq ptr1
     lda #DECL_TYPE
-    jsr pushA
+    jsr pushA               ; kind
     ldq name
-    jsr pushQ
+    jsr pushQ               ; name
     ldq ptr1
-    jsr pushQ
-    jsr pushQZero
+    jsr pushQ               ; type
+    jsr pushQZero           ; value
     jsr declCreate
     stq ptr2
     jsr appendDecl
@@ -71,13 +69,8 @@ L1: lda parserToken
 :   resync tlDeclarationFollow, tlDeclarationStart, tlStatementStart
     jmp L1
 
-L2: ldz #lastDeclOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+L2: jsr popQ
     stq ptr1
-    jsr popQ
     jsr popQ
     ldq ptr1
     rts

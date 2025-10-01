@@ -12,6 +12,7 @@ limitOffset = 0
 .export parseSubrangeLimit
 
 .import tlUnaryOps, parserToken, getToken, tokenIn, parserString, parserType, parserValue
+.import parserError
 
 .bss
 
@@ -80,7 +81,7 @@ L2: lda parserToken
     jsr parseIdentifierLimit
     bra L3
 :   lda #errMissingConstant
-    jsr compilerError
+    jsr parserError
 
 L3: jsr getToken
 
@@ -187,7 +188,7 @@ L5: cmp #tyLongInt
     sta limitType
     jmp L7
 L6: lda #errInvalidSubrangeType
-    jsr compilerError
+    jsr parserError
     lda #EXPR_DWORD_LITERAL
     sta exprKind
     lda #TYPE_VOID
@@ -217,7 +218,7 @@ L7: lda exprKind
     cmp #tcDummy
     beq L1
     lda #errInvalidConstant
-    jsr compilerError
+    jsr parserError
 
 L1: ldx #0
 :   lda parserString,x
@@ -228,7 +229,7 @@ L1: ldx #0
     beq :+
     ; length includes quotes
     lda #errInvalidSubrangeType
-    jsr compilerError
+    jsr parserError
 :   lda #TYPE_CHARACTER
     sta limitType
     lda #EXPR_CHARACTER_LITERAL

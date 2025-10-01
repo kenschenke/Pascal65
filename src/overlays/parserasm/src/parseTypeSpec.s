@@ -9,7 +9,7 @@
 .export parseTypeSpec
 
 .import parserToken, parseEnumerationType, parseRecordType, parseArrayType
-.import parseSubrangeType, getToken, parseFileType, parserString
+.import parseSubrangeType, getToken, parseFileType, parserString, parserError
 .import parseFuncOrProcHeader
 
 .bss
@@ -130,7 +130,7 @@ allowSubrangeShorthand: .res 1
     jmp parseRoutineTypeSpec
 
 :   lda #errInvalidType
-    jsr compilerError
+    jsr parserError
     lda #TYPE_VOID
     ; fall through to L9
 

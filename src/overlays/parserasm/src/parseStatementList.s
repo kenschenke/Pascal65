@@ -8,22 +8,29 @@
 .export parseStatementList
 
 .import parseStatement, tlStatementStart, parserError, parserToken, getToken, tokenIn
+.import tlStatementListNotAllowed
 
 lastStmtOffset = 0
 firstStmtOffset = 4
-terminatorOffset = 5
+terminatorOffset = 8
 
 .proc parseStatementList
     jsr pushA               ; terminator
     jsr pushQZero           ; firstStmt
     jsr pushQZero           ; lastStmt
 
-L1:
-    jsr parseStatement
+L1: jsr parseStatement
     jsr pushQ
 
     lda #<tlStatementStart
     ldx #>tlStatementStart
+    jsr tokenIn
+    bne :+
+    lda #errMissingSemicolon
+    jsr parserError
+    bra L2
+:   lda #<tlStatementListNotAllowed
+    ldx #>tlStatementListNotAllowed
     jsr tokenIn
     bne :+
     lda #errUnexpectedToken
@@ -78,11 +85,20 @@ L4: ldz #lastStmtOffset+3
     ldz #terminatorOffset
     nop
     lda (stackPointer),z
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; ldx #$88
+    ; brk
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     cmp parserToken
-    bne L5
+    beq L5
     lda parserToken
     cmp #tcEndOfFile
-    bne L5
+    beq L5
+    lda parserToken
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; ldx #$99
+    ; brk
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jmp L1
 
 L5: ldz #firstStmtOffset

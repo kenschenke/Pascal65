@@ -10,6 +10,7 @@
 
 .import getToken, parseSubroutineCall, parserType, parserValue, parserString
 .import parseVariable, parserToken, parseExpression, parseArrayLiteral
+.import parserError
 
 .data
 
@@ -186,13 +187,13 @@ LRParen:
     rts
 :   jsr popQ
     lda #errMissingRightParen
-    jsr compilerError
+    jsr parserError
     jsr pushQZero
     jmp DoNeg
 
 LNone:
     lda #errInvalidExpression
-    jsr compilerError
+    jsr parserError
 
 DoNeg:
     jsr popQ

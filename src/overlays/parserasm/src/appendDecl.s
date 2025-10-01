@@ -39,6 +39,7 @@ lastDeclOffset = 0
     inx
     cpx #4
     bne :-
+    bra L3
     rts
 L2: ; Append declaration to the last one
     ldz #lastDeclOffset         ; Set lastDecl's next to new declaration
@@ -52,6 +53,16 @@ L2: ; Append declaration to the last one
 :   lda ptr2,x
     nop
     sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    ; Set lastDecl to the new declaration
+L3: ldz #lastDeclOffset
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (stackPointer),z
     inz
     inx
     cpx #4

@@ -10,7 +10,7 @@
 .export parseEnumerationType
 
 .import parserValue, getToken, doResync, parserString, parserToken
-.import condGetToken
+.import condGetToken, parserError
 .import tlEnumConstStart, tlEnumConstFollow
 
 .bss
@@ -89,7 +89,7 @@ L2: ; comma
     bne :+
     jmp L1
 :   lda #errMissingComma
-    jsr compilerError
+    jsr parserError
     jmp L1
 L3: ; Saw comma. Skip extra commas and look for an identifier.
     jsr getToken
@@ -98,13 +98,13 @@ L3: ; Saw comma. Skip extra commas and look for an identifier.
     cmp #tcComma
     bne :+
     lda #errMissingIdentifier
-    jsr compilerError
+    jsr parserError
     bra L3
 :   lda parserToken
     cmp #tcIdentifier
     bne :+
     lda #errMissingIdentifier
-    jsr compilerError
+    jsr parserError
 
 :   inc parserValue
     bne :+
