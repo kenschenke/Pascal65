@@ -1,5 +1,5 @@
 
-PARSER_BASE = $8000
+PARSER_BASE = $6000
 
 parse = PARSER_BASE
 setUnitsList = PARSER_BASE + 3
