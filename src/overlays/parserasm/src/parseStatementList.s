@@ -85,20 +85,12 @@ L4: ldz #lastStmtOffset+3
     ldz #terminatorOffset
     nop
     lda (stackPointer),z
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; ldx #$88
-    ; brk
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     cmp parserToken
     beq L5
     lda parserToken
     cmp #tcEndOfFile
     beq L5
     lda parserToken
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; ldx #$99
-    ; brk
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jmp L1
 
 L5: ldz #firstStmtOffset
