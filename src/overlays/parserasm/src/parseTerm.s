@@ -6,6 +6,9 @@
 .include "4510macros.inc"
 .include "ast.inc"
 
+isVarInitOffset = 4
+exprOffset = 0
+
 .export parseTerm
 
 .import parseFactor, tokenIn, getToken, doResync, parserToken
@@ -13,6 +16,8 @@
 
 .proc parseTerm
     pha
+    jsr pushA
+    pla
     jsr parseFactor
     jsr pushQ
 
@@ -20,7 +25,6 @@
     ldx #>tlMulOps
     jsr tokenIn             ; if (tokenIn(tlMulOps))
     beq :+
-    pla
     bra L2
 
 :   lda parserToken
@@ -52,23 +56,29 @@
 
 L1: pha
     jsr getToken
-    pla
-    jsr pushA
-    ldz #0
+    ldz #isVarInitOffset
+    nop
+    lda (stackPointer),z
+    jsr parseTerm
+    stq ptr2
+    ldz #exprOffset
     neg
     neg
     nop
     lda (stackPointer),z
-    jsr pushQ
+    stq ptr1
     pla
-    jsr parseTerm
-    jsr pushQ
-    jsr pushQZero
-    jsr pushQZero
+    jsr pushA               ; kind
+    ldq ptr1
+    jsr pushQ               ; left
+    ldq ptr2
+    jsr pushQ               ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
     jsr exprCreate
     stq ptr1
     ldx #0
-    ldz #0
+    ldz #exprOffset
 :   lda ptr1,x
     nop
     sta (stackPointer),z
@@ -78,5 +88,8 @@ L1: pha
     bne :-
 
 L2: jsr popQ
+    stq ptr1
+    jsr popA
+    ldq ptr1
     rts
 .endproc

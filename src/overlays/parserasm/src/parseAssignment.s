@@ -24,28 +24,20 @@ targetOffset = 0
     ldx #errMissingColonEqual
     jsr condGetToken
 
-    ldz #targetOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr popQ
     stq ptr1
 
     lda #EXPR_ASSIGN
-    jsr pushA
+    jsr pushA               ; kind
 
     ldq ptr1
-    jsr pushQ
+    jsr pushQ               ; left
 
     ; <expr>
     lda #0
     jsr parseExpression
-    jsr pushQ
-    jsr pushQZero
-    jsr pushQZero
-    jsr exprCreate
-    stq ptr1
-    jsr popQ
-    ldq ptr1
-    rts
+    jsr pushQ               ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
+    jmp exprCreate
 .endproc

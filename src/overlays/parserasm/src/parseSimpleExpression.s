@@ -6,6 +6,9 @@
 .include "4510macros.inc"
 .include "ast.inc"
 
+isVarInitOffset = 4
+exprOffset = 0
+
 .export parseSimpleExpression
 
 .import parseTerm, tokenIn, getToken, doResync, parserToken
@@ -13,58 +16,65 @@
 
 .proc parseSimpleExpression
     pha
+    jsr pushA
+    pla
     jsr parseTerm
     jsr pushQ
 
-    lda #<tlAddOps
+L1: lda #<tlAddOps
     ldx #>tlAddOps
     jsr tokenIn             ; if (tokenIn(tlAddOps))
     beq :+
-    pla
-    bra L2
+    bra L3
 
 :   lda parserToken
     cmp #tcPlus
     bne :+
     lda #EXPR_ADD
-    bra L1
+    bra L2
 :   cmp #tcMinus
     bne :+
     lda #EXPR_SUB
-    bra L1
+    bra L2
 :   cmp #tcOR
     bne :+
     lda #EXPR_OR
-    bra L1
+    bra L2
 :   cmp #tcXOR
     bne :+
     lda #EXPR_BITWISE_XOR
-    bra L1
+    bra L2
 :   cmp #tcLShift
     bne :+
     lda #EXPR_BITWISE_LSHIFT
-    bra L1
+    bra L2
 :   lda #EXPR_BITWISE_RSHIFT
 
-L1: pha
+L2: pha
     jsr getToken
-    pla
-    jsr pushA
-    ldz #0
+    ldz #isVarInitOffset
+    nop
+    lda (stackPointer),z
+    jsr parseTerm
+    stq ptr2
+    ldz #exprOffset
     neg
     neg
     nop
     lda (stackPointer),z
-    jsr pushQ
+    stq ptr1
     pla
-    jsr parseTerm
-    jsr pushQ
-    jsr pushQZero
-    jsr pushQZero
+    jsr pushA               ; kind
+    ldq ptr1
+    jsr pushQ               ; left
+    ldq ptr2
+    jsr pushQ               ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
     jsr exprCreate
     stq ptr1
     ldx #0
-    ldz #0
+    ldz #exprOffset
 :   lda ptr1,x
     nop
     sta (stackPointer),z
@@ -72,7 +82,11 @@ L1: pha
     inx
     cpx #4
     bne :-
+    jmp L1
 
-L2: jsr popQ
+L3: jsr popQ
+    stq ptr1
+    jsr popA
+    ldq ptr1
     rts
 .endproc

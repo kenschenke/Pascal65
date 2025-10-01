@@ -58,6 +58,7 @@ LIdentifier:
     jsr parseVariable
     stq ptr1
     jsr popA
+    jsr popA
     ldq ptr1
     rts
 
