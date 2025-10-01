@@ -21,12 +21,16 @@ lastEnum: .res 4
 .code
 
 .proc parseEnumerationType
-    ; Start the value at 0. It gets incremented during each iteration.
+    ; Start the value at -1. It gets incremented during each iteration.
+    lda #$ff
+    tax
+    ldy #0
+    ldz #0
+    stq parserValue
     lda #0
     tax
     tay
     taz
-    stq parserValue
     stq firstEnum
 
     jsr getToken
@@ -37,11 +41,22 @@ L1: lda parserToken
     beq :+
     jmp L9
 
-:   lda #EXPR_WORD_LITERAL
-    jsr pushA
-    jsr pushQZero
-    jsr pushQZero
-    jsr pushQZero
+:   ; increment parserValue
+    lda parserValue
+    clc
+    adc #1
+    sta parserValue
+    lda parserValue+1
+    adc #0
+    sta parserValue+1
+
+    lda #EXPR_WORD_LITERAL
+    jsr pushA               ; kind
+    jsr pushQZero           ; left
+    jsr pushQZero           ; right
+    jsr pushQZero           ; name
+    ldq parserValue
+    jsr pushQ               ; value
     jsr exprCreate
     jsr pushQ
     ; Create a declaration
@@ -52,12 +67,12 @@ L1: lda parserToken
     jsr popQ
     stq ptr2
     lda #DECL_TYPE
-    jsr pushA
+    jsr pushA               ; kind
     ldq ptr1
-    jsr pushQ
-    jsr pushQZero
+    jsr pushQ               ; name
+    jsr pushQZero           ; type
     ldq ptr2
-    jsr pushQ
+    jsr pushQ               ; value expression
     jsr declCreate
     stq ptr2
     ldq firstEnum
@@ -79,7 +94,10 @@ L1: lda parserToken
     inx
     cpx #4
     bne :-
-L2: ; comma
+L2: ; update lastEnum
+    ldq ptr2
+    stq lastEnum
+    ; comma
     jsr getToken
     resync tlEnumConstFollow
     lda parserToken
@@ -106,9 +124,6 @@ L3: ; Saw comma. Skip extra commas and look for an identifier.
     lda #errMissingIdentifier
     jsr parserError
 
-:   inc parserValue
-    bne :+
-    inc parserValue+1
 :   jmp L1
 
     ; right paren
@@ -118,33 +133,35 @@ L9: lda #tcRParen
 
     ; Create the enumeration type
     lda #TYPE_ENUMERATION
-    jsr pushA
+    jsr pushA                   ; kind
     lda #0
-    jsr pushA
-    jsr pushQZero
+    jsr pushA                   ; isConst
+    jsr pushQZero               ; subtype
     ldq firstEnum
-    jsr pushQ
+    jsr pushQ                   ; params
     jsr typeCreate
     jsr pushQ
     ; Create the expression for the maximum value
     lda #EXPR_WORD_LITERAL
-    jsr pushQ
-    jsr pushQZero
-    jsr pushQZero
-    jsr pushQZero
+    jsr pushA                   ; kind
+    jsr pushQZero               ; left
+    jsr pushQZero               ; right
+    jsr pushQZero               ; name
+    ldq parserValue
+    jsr pushQ                   ; value
     jsr exprCreate
     stq ptr1
     jsr popQ
-    sta ptr2
+    stq ptr2
     ldz #type::max
     ldx #0
-:   lda ptr2,x
+:   lda ptr1,x
     nop
-    sta (ptr1),z
+    sta (ptr2),z
     inz
     inx
     cpx #4
     bne :-
-    ldq ptr1
+    ldq ptr2
     rts
 .endproc
