@@ -6,6 +6,9 @@
 .include "4510macros.inc"
 .include "ast.inc"
 
+exprOffset = 0
+isVarInitOffset = 4
+
 .export parseExpression
 
 .import parseSimpleExpression, tokenIn, getToken, doResync, parserToken
@@ -13,6 +16,8 @@
 
 .proc parseExpression
     pha
+    jsr pushA
+    pla
     jsr parseSimpleExpression
     jsr pushQ
 
@@ -20,7 +25,6 @@
     ldx #>tlRelOps
     jsr tokenIn             ; if (tokenIn(tlRelOps))
     beq :+
-    pla
     bra L2
 
 :   lda parserToken
@@ -48,23 +52,29 @@
 
 L1: pha
     jsr getToken
-    pla
-    jsr pushA                       ; expression kind
-    ldz #0
+    ldz #isVarInitOffset
+    nop
+    lda (stackPointer),z
+    jsr parseSimpleExpression
+    stq ptr2
+    ldz #exprOffset
     neg
     neg
     nop
     lda (stackPointer),z
-    jsr pushQ                       ; expr left
+    stq ptr1
     pla
-    jsr parseSimpleExpression
+    jsr pushA                       ; expression kind
+    ldq ptr1
+    jsr pushQ                       ; expr left
+    ldq ptr2
     jsr pushQ                       ; expr right
     jsr pushQZero                   ; name
     jsr pushQZero                   ; value
     jsr exprCreate
     stq ptr1
     ldx #0
-    ldz #0
+    ldz #exprOffset
 :   lda ptr1,x
     nop
     sta (stackPointer),z
@@ -76,5 +86,8 @@ L1: pha
 L2: resync tlExpressionFollow, tlStatementFollow, tlStatementStart
 
     jsr popQ
+    stq ptr1
+    jsr popA
+    ldq ptr1
     rts
 .endproc
