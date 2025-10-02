@@ -1,11 +1,11 @@
 .include "tokenizer.inc"
 
-.export tlAddOps, tlColonEqual, tlDeclarationFollow, tlDeclarationStart
-.export tlDO, tlEnumConstFollow, tlEnumConstStart
+.export tlAddOps, tlCaseLabelStart, tlColon, tlColonEqual, tlDeclarationFollow
+.export tlDeclarationStart, tlDO, tlEND, tlEnumConstFollow, tlEnumConstStart
 .export tlExpressionFollow, tlExpressionStart, tlFieldDeclFollow
 .export tlFormalParamsFollow, tlGlobalDirectives, tlHeaderFollow
 .export tlIdentifierFollow, tlIdentifierStart, tlIndexFollow
-.export tlIndexListFollow, tlIndexStart, tlMulOps, tlProcFuncStart
+.export tlIndexListFollow, tlIndexStart, tlMulOps, tlOF, tlProcFuncStart
 .export tlProgProcIdFollow, tlProgramEnd, tlRelOps, tlStatementStart
 .export tlStatementFollow, tlStatementListNotAllowed, tlSublistFollow
 .export tlSubrangeLimitFollow, tlTHEN, tlTODOWNTO, tlUnaryOps
@@ -13,10 +13,13 @@
 .data
 
 tlAddOps: .byte tcPlus, tcMinus, tcOR, tcXOR, tcLShift, tcRShift, tcDummy
+tlCaseLabelStart: .byte tcIdentifier, tcNumber, tcPlus, tcMinus, tcString, tcDummy
+tlColon: .byte tcColon, tcDummy
 tlColonEqual: .byte tcColonEqual, tcDummy
 tlDeclarationFollow: .byte tcSemicolon, tcIdentifier, tcDummy
 tlDeclarationStart: .byte tcCONST, tcTYPE, tcVAR, tcPROCEDURE, tcFUNCTION, tcDummy
 tlDO: .byte tcDO, tcDummy
+tlEND: .byte tcEND, tcDummy
 tlEnumConstFollow: .byte tcComma, tcIdentifier, tcRParen, tcSemicolon, tcDummy
 tlEnumConstStart: .byte tcIdentifier, tcDummy
 tlExpressionFollow: .byte tcComma, tcRParen, tcRBracket, tcColon, tcTHEN, tcTO, tcDOWNTO, tcDO, tcOF, tcDummy
@@ -32,6 +35,7 @@ tlIndexListFollow: .byte tcOF, tcIdentifier, tcLParen, tcARRAY, tcRECORD
                    .byte tcPlus, tcMinus, tcNumber, tcString, tcSemicolon, tcDummy
 tlIndexStart: .byte tcIdentifier, tcNumber, tcString, tcLParen, tcPlus, tcMinus, tcDummy
 tlMulOps: .byte tcStar, tcSlash, tcDIV, tcMOD, tcAND, tcAmpersand, tcBang, tcDummy
+tlOF: .byte tcOF, tcDummy
 tlProcFuncStart: .byte tcPROCEDURE, tcFUNCTION, tcDummy
 tlProgProcIdFollow: .byte tcLParen, tcColon, tcSemicolon, tcDummy
 tlProgramEnd: .byte tcPeriod, tcDummy
