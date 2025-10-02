@@ -24,7 +24,7 @@ bodyLabel: .asciiz "body: "
 else_bodyLabel: .asciiz "else_body: "
 nextLabel: .asciiz "next: "
 lineNumberLabel: .asciiz "lineNumber: "
-prompt: .byte "D:decl  F:ifaceDecl  I:init_expr  E:expr  B:body  L:else_body  N:next  ", $5f, ":back", $0d, $0d, $0
+prompt: .byte "D:decl  F:ifaceDecl  I:init  E:expr T:to  B:body  L:else  N:next  ", $5f, ":back", $0d, $0d, $0
 
 strSTMT_EXPR: .asciiz "STMT_EXPR"
 strSTMT_IF_ELSE: .asciiz "STMT_IF_ELSE"
@@ -86,6 +86,11 @@ stmtKinds: .byte .LOBYTE(strSTMT_EXPR), .HIBYTE(strSTMT_EXPR)
     lda #<exprLabel
     ldx #>exprLabel
     ldz #stmt::expr
+    jsr printStructAddr
+
+    lda #<to_exprLabel
+    ldx #>to_exprLabel
+    ldz #stmt::to_expr
     jsr printStructAddr
 
     ; isDownTo
@@ -187,8 +192,28 @@ L6: cmp #'l'
     jsr showStmt
 :   jsr popQ
     jmp showStmt
-L7: cmp #CH_BACKARROW
+L7: cmp #'i'
     bne L8
+    ldq ptr2
+    jsr pushQ
+    ldz #stmt::init_expr
+    jsr loadPtr
+    beq :+
+    jsr showExpr
+:   jsr popQ
+    jmp showStmt
+L8: cmp #'t'
+    bne L9
+    ldq ptr2
+    jsr pushQ
+    ldz #stmt::to_expr
+    jsr loadPtr
+    beq :+
+    jsr showExpr
+:   jsr popQ
+    jmp showStmt
+L9: cmp #CH_BACKARROW
+    bne L10
     rts
-L8: jmp L1
+L10: jmp L1
 .endproc

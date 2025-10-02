@@ -1,14 +1,14 @@
 .include "tokenizer.inc"
 
 .export tlAddOps, tlColonEqual, tlDeclarationFollow, tlDeclarationStart
-.export tlEnumConstFollow, tlEnumConstStart
+.export tlDO, tlEnumConstFollow, tlEnumConstStart
 .export tlExpressionFollow, tlExpressionStart, tlFieldDeclFollow
 .export tlFormalParamsFollow, tlGlobalDirectives, tlHeaderFollow
 .export tlIdentifierFollow, tlIdentifierStart, tlIndexFollow
 .export tlIndexListFollow, tlIndexStart, tlMulOps, tlProcFuncStart
 .export tlProgProcIdFollow, tlProgramEnd, tlRelOps, tlStatementStart
 .export tlStatementFollow, tlStatementListNotAllowed, tlSublistFollow
-.export tlSubrangeLimitFollow, tlTHEN, tlUnaryOps
+.export tlSubrangeLimitFollow, tlTHEN, tlTODOWNTO, tlUnaryOps
 
 .data
 
@@ -16,6 +16,7 @@ tlAddOps: .byte tcPlus, tcMinus, tcOR, tcXOR, tcLShift, tcRShift, tcDummy
 tlColonEqual: .byte tcColonEqual, tcDummy
 tlDeclarationFollow: .byte tcSemicolon, tcIdentifier, tcDummy
 tlDeclarationStart: .byte tcCONST, tcTYPE, tcVAR, tcPROCEDURE, tcFUNCTION, tcDummy
+tlDO: .byte tcDO, tcDummy
 tlEnumConstFollow: .byte tcComma, tcIdentifier, tcRParen, tcSemicolon, tcDummy
 tlEnumConstStart: .byte tcIdentifier, tcDummy
 tlExpressionFollow: .byte tcComma, tcRParen, tcRBracket, tcColon, tcTHEN, tcTO, tcDOWNTO, tcDO, tcOF, tcDummy
@@ -42,4 +43,5 @@ tlSublistFollow: .byte tcColon, tcDummy
 tlSubrangeLimitFollow: .byte tcDotDot, tcIdentifier, tcPlus, tcMinus, tcString
                        .byte tcRBracket, tcComma, tcSemicolon, tcOF, tcDummy
 tlTHEN: .byte tcTHEN, tcDummy
+tlTODOWNTO: .byte tcTO, tcDOWNTO, tcDummy
 tlUnaryOps: .byte tcPlus, tcMinus, tcDummy
