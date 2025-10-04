@@ -5,9 +5,9 @@
 .include "tokenizer.inc"
 .include "4510macros.inc"
 
-exprOffset = 0
-lastExprOffset = 4
-rootExprOffset = 8
+exprOffset = 8
+lastExprOffset = 0
+rootExprOffset = 4
 
 .export parseField
 
@@ -28,19 +28,14 @@ L1: lda parserToken
     ; Create a new FIELD expression. The left is the name expression
     ; for the record.
     lda #EXPR_NAME
-    jsr pushA
-    jsr pushQZero
-    jsr pushQZero
+    jsr pushA               ; kind
+    jsr pushQZero           ; left
+    jsr pushQZero           ; right
     lda #<parserString
     ldx #>parserString
     jsr nameCreate
-    jsr pushQ
-    jsr pushQZero
-    lda #0
-    sta parserValue
-    sta parserValue+1
-    sta parserValue+2
-    sta parserValue+3
+    jsr pushQ               ; name
+    jsr pushQZero           ; value
     jsr exprCreate
     stq ptr1
 
@@ -61,17 +56,13 @@ L1: lda parserToken
     lda (stackPointer),z
     stq ptr2
 L2: lda #EXPR_FIELD
-    jsr pushA
+    jsr pushA               ; kind
     ldq ptr2
-    jsr pushQ
+    jsr pushQ               ; left
     ldq ptr1
-    jsr pushQ
-    jsr pushQZero
-    lda #0
-    sta parserValue
-    sta parserValue+1
-    sta parserValue+2
-    sta parserValue+3
+    jsr pushQ               ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
     jsr exprCreate
     stq ptr1
 
@@ -102,5 +93,8 @@ L2: lda #EXPR_FIELD
 
 L3: jsr popQ
     jsr popQ
+    stq ptr1
+    jsr popQ
+    ldq ptr1
     rts
 .endproc
