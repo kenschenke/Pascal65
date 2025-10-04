@@ -16,23 +16,21 @@
     ; Loop to parse a list of subscripts separated by commas
 
 L1: jsr getToken
-    lda #EXPR_SUBSCRIPT
-    jsr pushA
     ldz #0
     neg
     neg
     nop
     lda (stackPointer),z
-    jsr pushQ
+    stq ptr1
+    lda #EXPR_SUBSCRIPT
+    jsr pushA               ; kind
+    ldq ptr1
+    jsr pushQ               ; left
     lda #0
     jsr parseExpression
-    jsr pushQ
-    jsr pushQZero
-    lda #0
-    sta parserValue
-    sta parserValue+1
-    sta parserValue+2
-    sta parserValue+3
+    jsr pushQ               ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
     jsr exprCreate
     stq ptr1
     ldz #0
@@ -46,7 +44,7 @@ L1: jsr getToken
     bne :-
     lda parserToken
     cmp #tcComma
-    bne L1
+    beq L1
 
     ; ] (right bracket)
     lda #tcRBracket
