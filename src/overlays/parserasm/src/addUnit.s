@@ -82,11 +82,11 @@ L3: stq units
 
 L4: ; declCreate
     lda #TYPE_UNIT
-    jsr pushA
+    jsr pushA               ; kind
     lda #0
-    jsr pushA
-    jsr pushQZero
-    jsr pushQZero
+    jsr pushA               ; const
+    jsr pushQZero           ; subtype
+    jsr pushQZero           ; params
     jsr typeCreate
     stq declType
     ldz #nameOffset+1
@@ -98,18 +98,24 @@ L4: ; declCreate
     lda (stackPointer),z
     jsr nameCreate
     stq ptr1
-    lda #DECL_USES
+    lda #DECL_USES          ; kind
     jsr pushA
-    ldq ptr1
+    ldq ptr1                ; name
     jsr pushQ
-    ldq declType
+    ldq declType            ; type
     jsr pushQ
-    jsr pushQZero
+    jsr pushQZero           ; value
     jsr declCreate
     stq ptr2
     jsr appendDecl
 
-    jsr popQ
+    ldq units
+    jsr isQZero
+    bne :+
+    ldq ptr2
+    stq units
+
+:   jsr popQ
     jsr popQ
     jsr popAX
     ldq ptr2

@@ -10,7 +10,7 @@
 ; AST LIB jump table
 
 .import declCreate, nameCreate, paramListCreate, typeCreate, stmtCreate
-.import exprCreate, unitCreate
+.import exprCreate, unitCreate, nameClone
 
 .segment "JMPTBL"
 
@@ -21,3 +21,4 @@ jmp typeCreate
 jmp stmtCreate
 jmp exprCreate
 jmp unitCreate
+jmp nameClone

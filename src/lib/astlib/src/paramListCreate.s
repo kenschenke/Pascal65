@@ -29,10 +29,14 @@
     bpl :-
 
     ; Set up the name
+    ldq ptr1
+    jsr pushQ
     plx
     pla
     jsr nameCreate
     stq ptr2
+    jsr popQ
+    stq ptr1
     ldz #param_list::name+3
     ldx #3
 :   lda ptr2,x
@@ -42,6 +46,6 @@
     dex
     bpl :-
 
-    lda ptr1
+    ldq ptr1
     rts
 .endproc

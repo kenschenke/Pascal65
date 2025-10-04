@@ -125,13 +125,13 @@ L2: lda #0
 :   jsr parseCompound
     stq ptr1
 L3: lda #STMT_BLOCK
-    jsr pushA
-    jsr pushQZero
+    jsr pushA                   ; kind
+    jsr pushQZero               ; expr
     ldq ptr1
-    jsr pushQ
+    jsr pushQ                   ; body
     lda currentLineNumber
     ldx currentLineNumber+1
-    jsr pushAX
+    jsr pushAX                  ; lineNumber
     jsr stmtCreate
     stq ptr1
     ldz #declOffset
@@ -162,6 +162,7 @@ L3: lda #STMT_BLOCK
     dez
     dex
     bpl :-
+    jsr popQ
     jsr popQ
     jsr popA
     jsr popA

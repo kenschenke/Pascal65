@@ -27,11 +27,11 @@ lnStr: .asciiz "ln"
     stq ptr1
     lda parserToken
     cmp #tcLParen
-    bne L1
+    beq L1
     cmp #tcSemicolon
-    bne L1
+    bne L2
     ; procedure/function call
-    lda #STMT_EXPR
+L1: lda #STMT_EXPR
     jsr pushA
     ldq ptr1
     jsr pushQ
@@ -39,15 +39,15 @@ lnStr: .asciiz "ln"
     jsr pushA
     jsr parseSubroutineCall
     jsr pushQ
-    bra L2
+    bra L3
 
-L1: lda #STMT_EXPR
+L2: lda #STMT_EXPR
     jsr pushA
     ldq ptr1
     jsr parseAssignment
     jsr pushQ
 
-L2: jsr pushQZero
+L3: jsr pushQZero
     lda currentLineNumber
     ldx currentLineNumber+1
     jsr pushAX

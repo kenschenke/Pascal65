@@ -11,7 +11,7 @@ CH_BACKARROW = 95
 
 .import showAddr, printz, printzLong, printStructAddr, printStructName
 .import printStructBool, printStructNumber, getKey, loadPtr, showSubExpr
-.import showDecl
+.import showParam
 
 .data
 
@@ -346,7 +346,7 @@ L4: cmp #'p'
     ldz #type::paramFields
     jsr loadPtr
     beq :+
-    jsr showDecl
+    jsr showParam
 :   jsr popQ
     jmp showType
 L5: cmp #CH_BACKARROW

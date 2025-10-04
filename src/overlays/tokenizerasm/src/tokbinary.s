@@ -17,10 +17,6 @@
 
 .import tokenCode, getChar, tokenValue, numberSize, tokenString
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-.import tokenizerCode
-;;;;;;;;;;;;;;;;;;;;;;;
-
 .bss
 
 ch: .res 1

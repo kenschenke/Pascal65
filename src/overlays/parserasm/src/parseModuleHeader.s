@@ -11,7 +11,7 @@
 
 .import parserToken, currentLineNumber, getToken, condGetToken
 .import tlProgProcIdFollow, tlDeclarationStart, tlStatementStart
-.import tlFormalParamsFollow, parserString, doResync, parserModuleType, parserError
+.import tlFormalParmsFollow, parserString, doResync, parserModuleType, parserError
 
 .bss
 
@@ -103,7 +103,7 @@ L3: jsr getToken
     beq L2
 
     ; closing paren
-    resync tlFormalParamsFollow, tlDeclarationStart, tlStatementStart
+    resync tlFormalParmsFollow, tlDeclarationStart, tlStatementStart
     lda #tcRParen
     ldx #errMissingRightParen
     jsr condGetToken

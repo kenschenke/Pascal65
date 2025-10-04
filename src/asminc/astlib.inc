@@ -18,3 +18,4 @@ typeCreate = ASTBASE + 9
 stmtCreate = ASTBASE + 12
 exprCreate = ASTBASE + 15
 unitCreate = ASTBASE + 18
+nameClone = ASTBASE + 21

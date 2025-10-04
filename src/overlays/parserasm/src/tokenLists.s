@@ -3,7 +3,7 @@
 .export tlAddOps, tlCaseLabelStart, tlColon, tlColonEqual, tlDeclarationFollow
 .export tlDeclarationStart, tlDO, tlEND, tlEnumConstFollow, tlEnumConstStart
 .export tlExpressionFollow, tlExpressionStart, tlFieldDeclFollow
-.export tlFormalParamsFollow, tlGlobalDirectives, tlHeaderFollow
+.export tlFormalParmsFollow, tlFuncIdFollow, tlGlobalDirectives, tlHeaderFollow
 .export tlIdentifierFollow, tlIdentifierStart, tlIndexFollow
 .export tlIndexListFollow, tlIndexStart, tlMulOps, tlOF, tlProcFuncStart
 .export tlProgProcIdFollow, tlProgramEnd, tlRelOps, tlStatementStart
@@ -25,7 +25,8 @@ tlEnumConstStart: .byte tcIdentifier, tcDummy
 tlExpressionFollow: .byte tcComma, tcRParen, tcRBracket, tcColon, tcTHEN, tcTO, tcDOWNTO, tcDO, tcOF, tcDummy
 tlExpressionStart: .byte tcPlus, tcMinus, tcIdentifier, tcNumber, tcString, tcNOT, tcLParen, tcAt, tcDummy
 tlFieldDeclFollow: .byte tcSemicolon, tcIdentifier, tcEND, tcDummy
-tlFormalParamsFollow: .byte tcRParen, tcSemicolon, tcDummy
+tlFormalParmsFollow: .byte tcRParen, tcSemicolon, tcDummy
+tlFuncIdFollow: .byte tcLParen, tcColon, tcSemicolon, tcDummy
 tlGlobalDirectives: .byte tcSTACKSIZE, tcDummy
 tlHeaderFollow: .byte tcSemicolon, tcDummy
 tlIdentifierFollow: .byte tcComma, tcIdentifier, tcColon, tcSemicolon, tcDummy
