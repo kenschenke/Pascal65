@@ -70,21 +70,19 @@ LPeriod:
 LUpArrow:
     cmp #tcUpArrow
     bne LDone
-    lda #EXPR_POINTER
-    jsr pushA
     ldz #0
     neg
     neg
     nop
     lda (stackPointer),z
-    jsr pushQ
-    jsr pushQZero
-    jsr pushQZero
-    lda #0
-    sta parserValue
-    sta parserValue+1
-    sta parserValue+2
-    sta parserValue+3
+    stq ptr1
+    lda #EXPR_POINTER
+    jsr pushA               ; kind
+    ldq ptr1
+    jsr pushQ               ; left
+    jsr pushQZero           ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
     jsr exprCreate
     stq ptr1
     ldx #0
