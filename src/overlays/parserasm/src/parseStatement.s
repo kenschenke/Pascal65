@@ -44,9 +44,11 @@ stmtOffset = 0
     jsr pushQ
     bra L1
 :   cmp #tcCASE
-    bne L1
+    bne :+
     jsr parseCASE
     jsr pushQ
+    bra L1
+:   jsr pushQZero
 
 L1: lda parserToken
     cmp #tcEndOfFile
