@@ -20,18 +20,31 @@ firstDeclOffset = 4
 
 newType: .res 4
 valueExpr: .res 4
-firstId: .res 4
 lastId: .res 4
 
 .code
 
 .proc parseFieldDeclarations
+    ; Calculate address of next stack variable (firstId)
+    lda #4
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    sta intOp1+2
+    sta intOp1+3
+    ldq stackPointer
+    sec
+    sbcq intOp1
+    stq ptr1
     jsr pushQZero       ; firstDecl
+    ldq ptr1
+    jsr pushQ           ; firstDecl address
     jsr pushQZero       ; lastDecl
     lda #0
     jsr pushA           ; isVarDecl
     jsr parseVarOrFieldDecls
     jsr popQ            ; pop lastDecl
+    jsr popQ            ; pop firstDecl address
     jsr popQ            ; pop firstDecl
     rts
 .endproc
@@ -64,25 +77,7 @@ L1: lda parserToken
     ldx #DECL_TYPE
 :   txa
     jsr parseIdSublist
-    stq firstId
-
-    ; Store firstId on the stack
-    ldz #firstDeclOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    jsr isQZero
-    bne :++
-    ldz #firstDeclOffset
-    ldx #0
-:   lda firstId,x
-    nop
-    sta (stackPointer),z
-    inz
-    inx
-    cpx #4
-    bne :-
+    jsr pushQ                   ; Store firstId on the stack
 
     ; colon
 :   resync tlSublistFollow, tlDeclarationFollow
@@ -111,8 +106,9 @@ L2: lda #0
     stq valueExpr
 
 L3: ; Now loop to assign the type to each identifier in the sublist.
-    ldq firstId
+    jsr popQ            ; firstId
     stq ptr1
+    jsr pushQ
 
 L4: ldq ptr1
     jsr isQZero
@@ -148,7 +144,7 @@ L4: ldq ptr1
     bra L4
 
 L5: ; Append the declaration
-    ldq firstId
+    jsr popQ            ; firstId
     stq ptr2
     jsr appendDecl
     ; Set lastDecl to lastId
