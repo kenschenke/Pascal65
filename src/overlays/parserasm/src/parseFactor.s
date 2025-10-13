@@ -79,7 +79,7 @@ LNumber:
     bne :+
     lda #EXPR_WORD_LITERAL
     bra LNumberExpr
-:   lda #EXPR_WORD_LITERAL
+:   lda #EXPR_DWORD_LITERAL
 LNumberExpr:
     jsr makeExpr
     jsr pushQ
