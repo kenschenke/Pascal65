@@ -259,7 +259,7 @@ L1: lda typeKind
 .proc parseStringConst
     lda sign
     cmp #tcDummy
-    bne :+
+    beq :+
     lda #errInvalidConstant
     jsr parserError
     ; Calculate the length of parserString (minus the quotes)
