@@ -184,7 +184,7 @@ L2: ldq ptr2
     resync tlIdentifierFollow
     lda parserToken
     cmp #tcComma
-    bne L4
+    bne L5
     ; Saw comma.
     ; Skip extra commas and look for an identifier
 L3: jsr getToken
@@ -195,10 +195,14 @@ L3: jsr getToken
     lda #errMissingIdentifier
     jsr parserError
     bra L3
-L4: lda parserToken
-    cmp #tcIdentifier
-    bne :+
+L4: cmp #tcIdentifier
+    beq :+
     lda #errMissingIdentifier
+    jsr parserError
+    jmp L1
+L5: cmp #tcIdentifier
+    bne :+
+    lda #errMissingComma
     jsr parserError
 :   jmp L1
 .endproc
