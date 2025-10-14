@@ -213,5 +213,12 @@ L9: jsr pushA
     jsr pushA
     lda #1
     jsr pushA
-    jmp parseFuncOrProcHeader
+    jsr parseFuncOrProcHeader
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    rts
 .endproc
