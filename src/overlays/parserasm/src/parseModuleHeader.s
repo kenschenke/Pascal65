@@ -9,7 +9,7 @@
 
 .export parseModuleHeader
 
-.import parserToken, currentLineNumber, getToken, condGetToken
+.import parserToken, currentLineNumber, getToken, condGetToken, isInUnitInterface
 .import tlProgProcIdFollow, tlDeclarationStart, tlStatementStart
 .import tlFormalParmsFollow, parserString, doResync, parserModuleType, parserError
 
@@ -22,6 +22,9 @@ lastArg: .res 4
 .code
 
 .proc parseModuleHeader
+    lda #0
+    sta isInUnitInterface
+
     lda parserToken
     cmp #tcPROGRAM              ; if (parserToken == tcPROGRAM)
     bne :+
