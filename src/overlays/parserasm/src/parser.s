@@ -37,7 +37,7 @@ units: .res 4
 
 .proc parserError
     ldx currentLineNumber
-    ldy currentLineNumber
+    ldy currentLineNumber+1
     jmp compilerError
 .endproc
 

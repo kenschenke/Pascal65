@@ -108,7 +108,7 @@ L2: resync tlColonEqual, tlExpressionStart
     sta (stackPointer),z
     bra L3
 :   lda #errMissingTOorDOWNTO
-    jsr compilerError
+    jsr parserError
 
 L3: jsr getToken
 

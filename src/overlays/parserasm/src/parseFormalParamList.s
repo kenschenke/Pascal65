@@ -11,7 +11,7 @@
 
 .import getToken, parserToken, doResync, condGetToken, parseArrayType, parserString
 .import tlIdentifierStart, tlIdentifierFollow, tlSublistFollow, tlDeclarationFollow
-.import tlFormalParmsFollow
+.import tlFormalParmsFollow, parserError
 
 .bss
 
@@ -122,7 +122,7 @@ L7: ldq lastId
     cmp #tcVAR
     bne L8
 :   lda #errMissingSemicolon
-    jsr compilerError
+    jsr parserError
     jmp L1
 L8: lda parserToken
     cmp #tcSemicolon
@@ -193,13 +193,13 @@ L3: jsr getToken
     cmp #tcComma
     bne L4
     lda #errMissingIdentifier
-    jsr compilerError
+    jsr parserError
     bra L3
 L4: lda parserToken
     cmp #tcIdentifier
     bne :+
     lda #errMissingIdentifier
-    jsr compilerError
+    jsr parserError
 :   jmp L1
 .endproc
 
@@ -292,7 +292,7 @@ L2: lda parserToken
     lda #TYPE_TEXT
     bra L3
 :   lda #errInvalidType
-    jsr compilerError
+    jsr parserError
     lda #TYPE_VOID
 L3: jsr pushA               ; kind
     lda #0

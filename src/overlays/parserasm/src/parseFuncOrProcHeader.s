@@ -13,7 +13,7 @@ isRtnTypeOffset = 0
 .export parseFuncOrProcHeader
 
 .import getToken, parserToken, parserString, doResync, parseFormalParamList
-.import tlFuncIdFollow, tlProgProcIdFollow
+.import tlFuncIdFollow, tlProgProcIdFollow, parserError
 .import tlDeclarationStart, tlStatementStart
 
 .bss
@@ -52,7 +52,7 @@ isPtr: .res 1
     lda (stackPointer),z
     bne L1
     lda #errMissingIdentifier
-    jsr compilerError
+    jsr parserError
 
     ; ( or : or ;
 L1: ldz #isFuncOffset
@@ -129,7 +129,7 @@ L3: ldx #TYPE_PROCEDURE
     cmp #tcColon
     beq :+
     lda #errMissingColon
-    jmp compilerError
+    jmp parserError
     rts
 
 :   jsr getToken
@@ -203,7 +203,7 @@ L1: lda #0
     lda #TYPE_STRING_VAR
     bra L2
 :   lda #errIncompatibleTypes
-    jsr compilerError
+    jsr parserError
     lda #TYPE_VOID
 
 L2: jsr pushA                   ; kind

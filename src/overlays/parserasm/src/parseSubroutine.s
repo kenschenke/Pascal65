@@ -12,6 +12,8 @@ subOffset = 0
 
 .export parseSubroutine
 
+.import parserError
+
 .bss
 
 ; These should only be used at the end of parseSubroutine while
@@ -66,7 +68,7 @@ strForward: .asciiz "forward"
     jsr tokenIn
     bne L1
 :   lda #errMissingSemicolon
-    jsr compilerError
+    jsr parserError
 
 L1: ldz #subOffset
     neg

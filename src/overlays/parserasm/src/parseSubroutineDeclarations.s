@@ -9,7 +9,7 @@
 
 .import tokenIn, parseSubroutine, appendDecl, isInUnitInterface, parserToken
 .import doResync, getToken
-.import tlProcFuncStart, tlDeclarationFollow, tlStatementStart
+.import tlProcFuncStart, tlDeclarationFollow, tlStatementStart, parserError
 
 .proc parseSubroutineDeclarations
 L1: lda #<tlProcFuncStart
@@ -45,7 +45,7 @@ L2: resync tlDeclarationFollow, tlProcFuncStart, tlStatementStart
     jsr tokenIn
     beq L1
 L3: lda #errMissingSemicolon
-    jsr compilerError
+    jsr parserError
     bra L1
 
 L9: jsr popQ

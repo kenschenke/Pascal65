@@ -7,7 +7,7 @@
 
 .export parseCaseLabel
 
-.import tokenIn, getToken, parserToken, parseExpression
+.import tokenIn, getToken, parserToken, parseExpression, parserError
 .import tlUnaryOps
 
 .bss
@@ -35,7 +35,7 @@ L1: lda parserToken
     lda signFlag
     bne L2
     lda #errInvalidConstant
-    jsr compilerError
+    jsr parserError
 
 L2: lda #0
     jsr parseExpression

@@ -11,7 +11,7 @@ isWriteWritennOffset = 8
 
 .export parseActualParmList
 
-.import getToken, parserToken, parseActualParm
+.import getToken, parserToken, parseActualParm, parserError
 
 .proc parseActualParmList
     jsr pushA               ; isWriteWriteln
@@ -84,7 +84,7 @@ L8: lda parserToken
     cmp #tcRParen
     beq :+
     lda #errMissingRightParen
-    jsr compilerError
+    jsr parserError
     bra L9
 :   jsr getToken
 

@@ -14,7 +14,7 @@ firstLabelOffset = 4
 
 .import parseCaseLabel, parserToken, getToken, doResync
 .import parseStatement, condGetToken, currentLineNumber, tokenIn
-.import tlColon, tlCaseLabelStart, tlStatementStart
+.import tlColon, tlCaseLabelStart, tlStatementStart, parserError
 
 .proc parseCaseBranch
     jsr pushQZero           ; firstLabel
@@ -81,7 +81,7 @@ L3: ldz #lastLabelOffset
     jsr tokenIn
     beq L1
     lda #errMissingConstant
-    jsr compilerError
+    jsr parserError
 
     ; colon
 L4: resync tlColon, tlStatementStart
