@@ -104,7 +104,7 @@ L2: ; update lastEnum
     cmp #tcComma
     beq L3
     cmp #tcIdentifier
-    bne :+
+    beq :+
     jmp L1
 :   lda #errMissingComma
     jsr parserError
@@ -120,7 +120,7 @@ L3: ; Saw comma. Skip extra commas and look for an identifier.
     bra L3
 :   lda parserToken
     cmp #tcIdentifier
-    bne :+
+    beq :+
     lda #errMissingIdentifier
     jsr parserError
 
