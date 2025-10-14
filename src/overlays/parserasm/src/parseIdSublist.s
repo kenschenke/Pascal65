@@ -77,7 +77,7 @@ L3: ldq newDecl
     cmp #tcComma
     beq L4
     cmp #tcIdentifier
-    beq :+
+    bne :+
     lda #errMissingComma
     jsr parserError
 :   jmp L1
