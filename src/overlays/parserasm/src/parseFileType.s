@@ -10,7 +10,7 @@ subtypeOffset = 0
 
 .export parseFileType
 
-.import getToken, parseTypeSpec, parserToken
+.import getToken, parseTypeSpec, parserToken, parserError
 
 .proc parseFileType
     jsr pushQZero           ; subtype
@@ -19,7 +19,7 @@ subtypeOffset = 0
     jsr getToken
     lda parserToken
     cmp #tcOF
-    bne L9
+    bne L2
 
     jsr getToken
     lda #0
@@ -39,15 +39,16 @@ subtypeOffset = 0
     nop
     lda (ptr1),z
     cmp #TYPE_FILE
-    beq L9
+    beq L1
     cmp #TYPE_TEXT
-    beq L9
+    beq L1
     cmp #TYPE_STRING_VAR
-    beq L9
-    ldx #errIncompatibleTypes
-    jsr compilerError
+    bne L2
 
-L9: jsr popQ
+L1: lda #errIncompatibleTypes
+    jsr parserError
+
+L2: jsr popQ
     stq ptr1
     lda #TYPE_FILE
     jsr pushA               ; kind
