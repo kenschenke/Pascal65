@@ -114,17 +114,20 @@ L3: ; Saw comma. Skip extra commas and look for an identifier.
     resync tlEnumConstStart, tlEnumConstFollow
     lda parserToken
     cmp #tcComma
-    bne :+
+    bne L4
     lda #errMissingIdentifier
     jsr parserError
     bra L3
-:   lda parserToken
-    cmp #tcIdentifier
-    beq :+
+L4: cmp #tcIdentifier
+    beq L6
     lda #errMissingIdentifier
     jsr parserError
-
-:   jmp L1
+    jmp L2
+L5: cmp #tcIdentifier
+    bne L6
+    lda #errMissingComma
+    jsr parserError
+L6: jmp L1
 
     ; right paren
 L9: lda #tcRParen
