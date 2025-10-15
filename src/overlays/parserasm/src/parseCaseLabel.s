@@ -33,7 +33,7 @@ L1: lda parserToken
     cmp #tcIdentifier
     bne L2
     lda signFlag
-    bne L2
+    beq L2
     lda #errInvalidConstant
     jsr parserError
 
