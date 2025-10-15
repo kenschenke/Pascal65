@@ -122,7 +122,7 @@ L4: cmp #tcIdentifier
     beq L6
     lda #errMissingIdentifier
     jsr parserError
-    jmp L2
+    jmp L3
 L5: cmp #tcIdentifier
     bne L6
     lda #errMissingComma
