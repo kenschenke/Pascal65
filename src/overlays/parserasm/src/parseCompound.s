@@ -5,11 +5,14 @@
 
 .export parseCompound
 
-.import getToken, parseStatementList, condGetToken
+.import getToken, parseStatementList, condGetToken, parserToken
 
 .proc parseCompound
+    lda parserToken
+    cmp #tcEND
+    beq :+
     jsr getToken
-    lda #tcEND
+:   lda #tcEND
     jsr parseStatementList
     jsr pushQ
 
