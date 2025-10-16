@@ -195,6 +195,8 @@ LRParen:
 LNone:
     lda #errInvalidExpression
     jsr parserError
+    jsr pushQZero
+    jsr getToken
 
 DoNeg:
     jsr popQ
