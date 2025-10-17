@@ -220,5 +220,19 @@ L9: jsr pushA
     neg
     nop
     lda (ptr1),z
+    ; Save the type but free the declaration
+    jsr pushQ
+    ldz #decl::type
+    lda #0
+    tax
+:   nop
+    sta (ptr1),z
+    inx
+    inz
+    cpx #4
+    bne :-
+    ldq ptr1
+    jsr astFree
+    jsr popQ
     rts
 .endproc
