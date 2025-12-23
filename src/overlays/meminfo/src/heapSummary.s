@@ -1,0 +1,162 @@
+;
+; heapSummary.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2025
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; heapSummary routine
+
+.include "asmlib.inc"
+.include "zeropage.inc"
+.include "cbm_kernal.inc"
+.include "4510macros.inc"
+
+.export heapSummary
+
+.data
+
+strNumAlloc: .asciiz ", Num alloc: "
+strNumFree: .asciiz ", Num free: "
+strHeapAlloc: .asciiz "Mem alloc: "
+
+.bss
+
+intBuf: .res 10
+matPtr: .res 4
+entriesAlloc: .res 2
+entriesFree: .res 2
+
+.code
+
+; This routine prints a one-line summary of the memory heap.
+;    Total memory allocated
+;    Number of MAT entries for free blocks
+;    Number of MAT entries for allocated blocks
+.proc heapSummary
+    ; Start at heapTop
+    ldq heapTop
+    stq matPtr
+
+    ; Keep a running total in intOp1
+    lda #0
+    sta intOp1
+    sta intOp1+1
+
+    sta entriesAlloc
+    sta entriesAlloc+1
+    sta entriesFree
+    sta entriesFree+1
+
+    ; Loop through the MAT entries
+L1: ldq matPtr
+    stq ptr1
+
+    ; Is the current MAT zero?
+    ldz #0
+:   nop
+    lda (ptr1),z
+    bne L2
+    inz
+    cpz #6
+    bne :-
+    bra L5
+
+    ; Is the MAT entry allocated?
+L2: ldz #1
+    nop
+    lda (ptr1),z
+    bpl L3                  ; Branch if not allocated
+    and #$7f
+    sta intOp2+1
+    dez
+    nop
+    lda (ptr1),z
+    sta intOp2
+    jsr addInt16
+    jsr incEntriesAlloc
+    bra L4
+
+    ; Entry is not allocated
+L3: jsr incEntriesFree
+
+    ; Move to the next MAT entry
+L4: lda #6
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq matPtr
+    sec
+    sbcq intOp32
+    stq matPtr
+    bra L1
+
+    ; Print the message and allocated memory
+L5: ldx #0
+:   lda strHeapAlloc,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   jsr writeIntOp1
+
+    ldx #0
+:   lda strNumAlloc,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda entriesAlloc
+    sta intOp1
+    lda entriesAlloc+1
+    sta intOp1+1
+    jsr writeIntOp1
+
+    ldx #0
+:   lda strNumFree,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda entriesFree
+    sta intOp1
+    lda entriesFree+1
+    sta intOp1+1
+    jsr writeIntOp1
+
+    lda #13
+    jsr CHROUT
+
+    rts
+.endproc
+
+.proc incEntriesAlloc
+    inc entriesAlloc
+    bne :+
+    inc entriesAlloc+1
+:   rts
+.endproc
+
+.proc incEntriesFree
+    inc entriesFree
+    bne :+
+    inc entriesFree+1
+:   rts
+.endproc
+
+.proc writeIntOp1
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt16
+    ldx #0
+:   lda intBuf,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   rts
+.endproc
