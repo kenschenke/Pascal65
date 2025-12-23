@@ -17,7 +17,7 @@ CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import initLib, showTree, clearKeyBuf
+.import initLib, showAST
 .import logError
 
 main:
@@ -30,9 +30,6 @@ main:
     and #$f8
     ora #$06
     sta $01
-
-    ; Clear the keyboard buffer
-    jsr clearKeyBuf
 
     ; Load the library
     jsr initLib
@@ -49,6 +46,6 @@ main:
     jsr initCompilerErrors
 
     ; Run the main loop
-    jsr showTree
+    jsr showAST
 
     rts

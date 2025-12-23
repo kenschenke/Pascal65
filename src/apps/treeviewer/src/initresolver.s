@@ -1,5 +1,5 @@
 ;
-; initlib.s
+; initresolver.s
 ; Ken Schenke (kenschenke@gmail.com)
 ; 
 ; Copyright (c) 2025
@@ -7,26 +7,27 @@
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
-; Routine to load the ASM.LIB from disk
+; Routine to load the resolver from disk
 
 .include "cbm_kernal.inc"
 .include "c64.inc"
 
 .data
 
-fnAsmLib: .byte "asm.lib,p,r"
-fnAsmLib2:
+fnResolver: .byte "resolver,p,r"
+fnResolver2:
 
 .code
 
-.export initLib
+.export initResolver
 
 .import loadfile
 
-.proc initLib
-    ldx #<fnAsmLib
-    ldy #>fnAsmLib
-    lda #fnAsmLib2-fnAsmLib
+.proc initResolver
+    ; Call SETNAM
+    ldx #<fnResolver
+    ldy #>fnResolver
+    lda #fnResolver2-fnResolver
     jsr loadfile
 
     rts

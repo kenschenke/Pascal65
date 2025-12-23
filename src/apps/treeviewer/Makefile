@@ -3,8 +3,10 @@ OBJDIR := obj
 SRCDIR := src
 TOKENIZERDIR := ../../overlays/tokenizerasm
 PARSERDIR := ../../overlays/parserasm
+RESOLVERDIR := ../../overlays/resolverasm
+DUMPASTDIR := ../../overlays/dumpast
+SHOWTREEDIR := ../../overlays/showtree
 ASMLIBDIR := ../../lib/asmlib
-ASTLIBDIR := ../../lib/astlib
 
 PROGRAM := treeviewer
 TARGET := mega65
@@ -16,26 +18,34 @@ D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
 ASMLIB = $(ASMLIBDIR)/bin/$(TARGET)/asmlib
-ASTLIB = $(ASTLIBDIR)/bin/$(TARGET)/astlib
 TOKENIZER = $(TOKENIZERDIR)/bin/$(TARGET)/tokenizer
 PARSER = $(PARSERDIR)/bin/$(TARGET)/parser
+RESOLVER = $(RESOLVERDIR)/bin/$(TARGET)/resolver
+DUMPAST = $(DUMPASTDIR)/bin/$(TARGET)/dumpast
+SHOWTREE = $(SHOWTREEDIR)/bin/$(TARGET)/showtree
 PRGFILE = $(BINTARGETDIR)/treeviewer
+SYSTEMPAS = ../../lib/system/system.pas
 
 BINFILES += $(PRGFILE)
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
+BINFILES += $(RESOLVER)
 BINFILES += $(ASMLIB)
-BINFILES += $(ASTLIB)
+BINFILES += $(DUMPAST)
+BINFILES += $(SHOWTREE)
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 
-TXTFILES := source.petscii errormsgs.petscii
+TXTFILES := source.petscii errormsgs.petscii system.petscii
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
 source.petscii: source.pas
 	dos2unix < source.pas | petcat -w2 -text -o source.petscii
+
+system.petscii: $(SYSTEMPAS)
+	dos2unix < $(SYSTEMPAS) | petcat -w2 -text -o system.petscii
 
 # abortmsgs.petscii: src/shared/abortmsgs.txt
 # 	dos2unix < src/shared/abortmsgs.txt | petcat -w2 -text -o abortmsgs.petscii
@@ -61,14 +71,20 @@ $(BINTARGETDIR): $(BINDIR)
 $(PARSER): FORCE
 	cd $(PARSERDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(RESOLVER): FORCE
+	cd $(RESOLVERDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(TOKENIZER): FORCE
 	cd $(TOKENIZERDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(DUMPAST): FORCE
+	cd $(DUMPASTDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(SHOWTREE): FORCE
+	cd $(SHOWTREEDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
-
-$(ASTLIB): FORCE
-	cd $(ASTLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 vpath %.s $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
@@ -84,10 +100,13 @@ $(D81FILE): $(BINFILES) $(TXTFILES) FORCE
 	-write $(PRGFILE) treeviewer,prg \
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(PARSER) parser,prg \
+	-write $(RESOLVER) resolver,prg \
+	-write $(DUMPAST) dumpast,prg \
+	-write $(SHOWTREE) showtree,prg \
 	-write $(ASMLIB) asm.lib,prg \
-	-write $(ASTLIB) ast.lib,prg \
 	-write source.petscii source.pas,seq \
-	-write errormsgs.petscii errormsgs.txt,seq
+	-write errormsgs.petscii errormsgs.txt,seq \
+	-write system.petscii system.pas,seq
 
 clean:
 	$(RM) $(BINFILES)
@@ -100,4 +119,4 @@ run: $(D81FILE)
 
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
-	etherload -m tokenizer.d81 -r $(BINTARGETDIR)/tokenizertest
+	etherload -m treeviewer.d81 -r $(BINTARGETDIR)/treeviewer
