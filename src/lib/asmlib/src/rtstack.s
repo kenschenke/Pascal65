@@ -15,6 +15,12 @@
 .export initRuntimeStack, rtPopA, rtPopAX, rtPopQ, rtPushA, rtPushAX, rtPushQ
 .export rtPushQZero
 
+.bss
+
+incNum: .res 1
+
+.code
+
 ; Initialize the runtime stack pointer
 .proc initRuntimeStack
     ; Initialize SP to $60000
@@ -28,10 +34,10 @@
 .endproc
 
 .proc decStackPointer
-    sta tmp1
+    sta incNum
     lda stackPointer
     sec
-    sbc tmp1
+    sbc incNum
     sta stackPointer
     bcs :+
     lda stackPointer+1
@@ -48,10 +54,10 @@
 .endproc
 
 .proc incStackPointer
-    sta tmp1
+    sta incNum
     lda stackPointer
     clc
-    adc tmp1
+    adc incNum
     sta stackPointer
     bcc :+
     lda stackPointer+1

@@ -13,7 +13,7 @@
 .include "error.inc"
 .include "4510macros.inc"
 
-.export initMemHeap, heapAlloc, heapFree
+.export initMemHeap, heapAlloc, heapFree, isHeapAllocated
 
 .import geInt16, ltInt16, geUint32, runtimeError
 
@@ -546,4 +546,51 @@ L7: clc
     stq ptr1
     jmp L4
 L9: rts
+.endproc
+
+; This routine checks the memory allocation table and determines if
+; a block of memory is allocated or not.
+; The address of the memory is passed in Q.
+;
+; On exit: The Z flag is set if the block is not allocated.
+.proc isHeapAllocated
+    ; Pointer to block in ptr2
+    stq ptr2
+
+    ; Copy heapTop to ptr1
+    ldq heapTop
+    stq ptr1
+
+    ; Loop through the MAT entries
+L1: ldz #0
+:   nop
+    lda (ptr1),z
+    bne L2
+    inz
+    cpz #6
+    bne :-
+    rts                     ; Return if the end of MAT is reached (Z flag set)
+
+    ; Compare the current entry to the one the caller is looking for.
+L2: ldx #0
+    ldz #2
+:   nop
+    lda (ptr1),z
+    cmp ptr2,x
+    bne L3
+    inx
+    inz
+    cpx #4
+    bne :-
+
+    ; Found the MAT entry. Is it allocated?
+    ldz #1
+    nop
+    lda (ptr1),z
+    and #$80
+    rts
+
+    ; MAT entry does not match - go to the next one
+L3: jsr incMATPtr
+    bra L1
 .endproc
