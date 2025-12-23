@@ -1,5 +1,4 @@
 .include "asmlib.inc"
-.include "astlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 .include "parser.inc"

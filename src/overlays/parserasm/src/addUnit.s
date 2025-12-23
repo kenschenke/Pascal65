@@ -1,6 +1,5 @@
 .include "ast.inc"
 .include "asmlib.inc"
-.include "astlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 
@@ -32,7 +31,7 @@ declType: .res 4
 
 L1: ldq thisUnit
     jsr isQZero
-    bne L2
+    beq L2
     stq ptr1
     ldz #unit::name
     neg
@@ -66,11 +65,11 @@ L2: ldq thisUnit
     stq thisUnit
     ldq lastUnit
     jsr isQZero
-    bne L3
+    beq L3
     stq ptr1
     ldz #unit::next
     ldx #0
-:   lda ptr1,x
+:   lda thisUnit,x
     nop
     sta (ptr1),z
     inz
@@ -78,7 +77,8 @@ L2: ldq thisUnit
     cpx #4
     bne :-
     bra L4
-L3: stq units
+L3: ldq thisUnit
+    stq units
 
 L4: ; declCreate
     lda #TYPE_UNIT

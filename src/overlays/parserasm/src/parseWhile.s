@@ -1,7 +1,6 @@
 .include "ast.inc"
 .include "error.inc"
 .include "asmlib.inc"
-.include "astlib.inc"
 .include "parser.inc"
 .include "zeropage.inc"
 .include "tokenizer.inc"

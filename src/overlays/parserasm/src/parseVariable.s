@@ -1,5 +1,4 @@
 .include "ast.inc"
-.include "astlib.inc"
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "tokenizer.inc"

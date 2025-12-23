@@ -2,7 +2,6 @@
 .include "error.inc"
 .include "parser.inc"
 .include "asmlib.inc"
-.include "astlib.inc"
 .include "zeropage.inc"
 .include "tokenizer.inc"
 .include "4510macros.inc"

@@ -1,5 +1,4 @@
 .include "tokenizer.inc"
-.include "astlib.inc"
 .include "error.inc"
 .include "4510macros.inc"
 .include "ast.inc"

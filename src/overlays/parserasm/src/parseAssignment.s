@@ -1,5 +1,4 @@
 .include "asmlib.inc"
-.include "astlib.inc"
 .include "parser.inc"
 .include "tokenizer.inc"
 .include "ast.inc"
