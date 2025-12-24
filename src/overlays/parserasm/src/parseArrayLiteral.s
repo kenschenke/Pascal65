@@ -12,7 +12,7 @@ arrayExprOffset = 0
 .export parseArrayLiteral
 
 .import makeExpr, parseExpression, tlExpressionStart, doResync
-.import getToken, parserToken, parserError
+.import getToken, parserToken, parserError, tlStatementFollow
 
 .proc parseArrayLiteral
     jsr pushQZero           ; lastExpr
@@ -24,9 +24,10 @@ arrayExprOffset = 0
     ; Parse comma-separated list of literals until a right paren
 L1: lda parserToken
     cmp #tcRParen
-    beq L4
+    bne :+
+    jmp L4
 
-    lda #1
+:   lda #1
     jsr parseExpression
     stq ptr1
     ldz #lastExprOffset
@@ -83,7 +84,9 @@ L3: ; lastExpr = expr
     beq L1
     lda #errUnexpectedToken
     jsr parserError
-    resync tlExpressionStart
+    resync tlExpressionStart, tlStatementFollow
+    jsr getToken
+    lda parserToken
     jmp L1
 
 L4: jsr popQ
