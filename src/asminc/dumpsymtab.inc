@@ -1,0 +1,4 @@
+
+DUMPAST_BASE = $5000
+
+dumpSymtabForDecl = DUMPAST_BASE

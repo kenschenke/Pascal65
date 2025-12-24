@@ -1,0 +1,4 @@
+
+SHOWTREE_BASE = $5000
+
+showTree = SHOWTREE_BASE
