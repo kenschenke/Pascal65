@@ -9,7 +9,7 @@
 ;
 ; ASM LIB entry points
 
-ASMBASE = $a000
+ASMBASE = $9000
 
 allocMemBuf = ASMBASE + 0
 freeMemBuf = ASMBASE + 3
@@ -52,3 +52,32 @@ isQZero = ASMBASE + 111
 pushQZero = ASMBASE + 114
 invertInt16 = ASMBASE + 117
 invertInt32 = ASMBASE + 120
+runtimeError = ASMBASE + 123
+multInt16 = ASMBASE + 126
+initScopeStack = ASMBASE + 129
+scopeBind = ASMBASE + 132
+scopeBindSymtab = ASMBASE + 135
+scopeLevel = ASMBASE + 138
+scopeLookup = ASMBASE + 141
+scopeLookupParent = ASMBASE + 144
+scopeEnter = ASMBASE + 147
+scopeEnterSymtab = ASMBASE + 150
+scopeExit = ASMBASE + 153
+symtabLookup = ASMBASE + 156
+declCreate = ASMBASE + 159
+nameCreate = ASMBASE + 162
+paramListCreate = ASMBASE + 165
+typeCreate = ASMBASE + 168
+stmtCreate = ASMBASE + 171
+exprCreate = ASMBASE + 174
+unitCreate = ASMBASE + 177
+nameClone = ASMBASE + 180
+astFree = ASMBASE + 183
+addTreeNode = ASMBASE + 186
+findInTree = ASMBASE + 189
+freeTree = ASMBASE + 192
+symbolCreate = ASMBASE + 195
+typeClone = ASMBASE + 198
+freeType = ASMBASE + 201
+freeSymbol = ASMBASE + 204
+isHeapAllocated = ASMBASE + 207
