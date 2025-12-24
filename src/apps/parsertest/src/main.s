@@ -7,18 +7,24 @@
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
-; Tokenizer tests entry point
+; Parser tests entry point
 
 .include "cbm_kernal.inc"
 .include "asmlib.inc"
 .include "error.inc"
+.include "meminfo.inc"
+.include "zeropage.inc"
 
 CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import initLib, runTest1
-.import logError
+.import initLib, runTests, runErrorTests
+.import logError, initMemInfo
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.import binaryTest
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 main:
     ; Set alphabet to upper and lower case
@@ -45,7 +51,27 @@ main:
     ldx #>logError
     jsr initCompilerErrors
 
-    ; Run the first test
-    jsr runTest1
+    lda #<onExit
+    sta exitHandler
+    lda #>onExit
+    sta exitHandler+1
 
+    jsr initMemInfo
+    jsr heapSummary
+
+    ; Run parser tests
+    jsr runTests
+
+    jsr initMemInfo
+    jsr heapSummary
+    jsr heapReport
+
+    ; Run parser error handling tests
+    ; jsr runErrorTests
+
+    rts
+
+onExit:
+    lda #13
+    jsr CHROUT
     rts

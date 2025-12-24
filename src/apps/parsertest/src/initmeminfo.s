@@ -1,5 +1,5 @@
 ;
-; initlib.s
+; initmeminfo.s
 ; Ken Schenke (kenschenke@gmail.com)
 ; 
 ; Copyright (c) 2025
@@ -7,26 +7,27 @@
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
-; Routine to load the ASM.LIB from disk
+; Routine to load the meminfo overlay from disk
 
 .include "cbm_kernal.inc"
 .include "c64.inc"
 
 .data
 
-fnAsmLib: .byte "asm.lib,p,r"
-fnAsmLib2:
+fnMemInfo: .byte "meminfo,p,r"
+fnMemInfo2:
 
 .code
 
-.export initLib
+.export initMemInfo
 
 .import loadfile
 
-.proc initLib
-    ldx #<fnAsmLib
-    ldy #>fnAsmLib
-    lda #fnAsmLib2-fnAsmLib
+.proc initMemInfo
+    ; Call SETNAM
+    ldx #<fnMemInfo
+    ldy #>fnMemInfo
+    lda #fnMemInfo2-fnMemInfo
     jsr loadfile
 
     rts

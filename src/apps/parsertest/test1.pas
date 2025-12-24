@@ -1,4 +1,0 @@
-Program Test;
-
-Begin
-End.
