@@ -21,10 +21,21 @@
 ; The first line of the file is ignored. The dump of symbol table starts on the second
 ; line and continues until "*)" is found at the start of a line.
 
+; Test 0: 5.224s   alloc: 18846, num alloc: 686, num free: 29
+; Test 1: 1.631s
+; Test 2: 1.706s
+; Test 3: 1.130s
+; Test 4: 1.308s
+; Test 5: 2.022s
+; Test 6: 2.134s
+; Test 7: 2.003s
+; test 8: 13.397s  alloc: 29648, num alloc: 1125, num free: 13397
+
 .include "c64.inc"
 .include "ast.inc"
 .include "asmlib.inc"
 .include "parser.inc"
+.include "meminfo.inc"
 .include "showtree.inc"
 .include "dumpsymtab.inc"
 .include "zeropage.inc"
@@ -35,15 +46,15 @@
 
 .export runTest, unitList
 
-.import initTokenizer, initParser, initDumpSymtab, viewDump, getKey, errorCount
-.import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits
+.import initTokenizer, initParser, initDumpSymtab, viewDump, getKey, errorCount, initMemInfo
+.import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
 
 .bss
 
 ch: .res 1
 testNum: .res 2
 sourceFn: .res 16
-intBuf: .res 10
+intBuf: .res 14
 tokens: .res 4
 astRoot: .res 4
 symtabBuf: .res 4
@@ -53,6 +64,7 @@ eofReached: .res 1
 lineNumber: .res 2
 foundDiff: .res 1
 unitList: .res 4
+isResolvingUnits: .res 1
 
 .data
 
@@ -113,6 +125,9 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     ; Format the filename for the tokenizer
     jsr makeSourceFn
 
+    ; Start the timer
+    jsr resetTicks
+
     ; Tokenize the source file
     lda #<strTokenizing
     ldx #>strTokenizing
@@ -149,19 +164,38 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
 
     jsr tokenizeAndParseUnits
 
+    ; Show the AST tree
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; jsr initShowTree
+    ; ldq astRoot
+    ; ldq unitList
+    ; stq ptr1
+    ; ldz #unit::astRoot
+    ; neg
+    ; neg
+    ; nop
+    ; lda (ptr1),z
+    ; jsr showTree
+    ; ldq astRoot
+    ; jsr astFree
+    ; jsr freeUnits
+    ; rts
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     lda #<strResolving
     ldx #>strResolving
     jsr printLine
     jsr initResolver
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; jsr initResolve
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ldq unitList
     jsr setResolverUnitsList
     jsr initScopeStack
     jsr injectSystemUnit
+    lda #0
+    sta isResolvingUnits
     plp
     bcc :+
+    lda #1
+    sta isResolvingUnits
     jsr resolveUnits
 
 :   ldq astRoot
@@ -234,6 +268,14 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     ; jsr viewDump
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    lda isResolvingUnits
+    beq :+
+    jsr initMemInfo
+    jsr heapSummary
+    :
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     ldq astRoot
     jsr astFree
 
@@ -258,11 +300,32 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     ldx #>strPass
     jsr printLine
 
-:   lda #13
-    jsr CHROUT
-
-    ldq symtabBuf
+:   ldq symtabBuf
     jsr freeMemBuf
+
+    ; Report the timer
+    jsr getTicks
+    stq intOp1
+    ; Load $3e8 (1000) into intOp32
+    lda #3
+    sta intOp32+1
+    lda #$e8
+    sta intOp32
+    lda #0
+    sta intOp32+2
+    sta intOp32+3
+    jsr divInt32            ; Divide by 1000 (convert microseconds to milliseconds)
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt32
+    lda #' '
+    jsr CHROUT
+    lda #<intBuf
+    ldx #>intBuf
+    jsr printLine
+
+    lda #13
+    jsr CHROUT
 
     rts
 .endproc

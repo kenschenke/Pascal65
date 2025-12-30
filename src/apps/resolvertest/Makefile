@@ -141,4 +141,4 @@ run: $(D81FILE)
 
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
-	etherload -m tokenizer.d81 -r $(BINTARGETDIR)/tokenizertest
+	etherload -m resolvertest.d81 -r $(BINTARGETDIR)/resolvertest
