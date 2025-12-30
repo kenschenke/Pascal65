@@ -22,7 +22,7 @@
 .import declCreate, nameCreate, paramListCreate, typeCreate, stmtCreate
 .import exprCreate, unitCreate, nameClone, freeAst
 .import addTreeNode, findInTree, freeTree, symbolCreate
-.import typeClone, freeType, freeSymbol, isHeapAllocated
+.import typeClone, freeType, freeSymbol, isHeapAllocated, writeInt32, divInt32
 
 .segment "JMPTBL"
 
@@ -96,3 +96,5 @@ jmp typeClone
 jmp freeType
 jmp freeSymbol
 jmp isHeapAllocated
+jmp writeInt32
+jmp divInt32

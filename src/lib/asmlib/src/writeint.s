@@ -11,16 +11,13 @@
 
 .include "zeropage.inc"
 
-.export writeInt16
+.export writeInt16, writeInt32
 
-.import subInt16, geInt16, invertInt16
+.import subInt16, geInt16, invertInt16, subInt32, invertInt32, geUint32, isNegInt32
 
 NUM_TENSTABLE = 8      ; 4 entries * 2 bytes
+NUM_WORDTBL = 36     ; nine entries * 4 bytes
 INTBUFLEN = 7
-
-.bss
-
-intBuf: .res 7          ; null-terminated petscii number
 
 .data
 
@@ -31,8 +28,22 @@ tensTable:
     .word 10
     .word 1
 
+tensTable32:
+    .dword 1000000000
+    .dword 100000000
+    .dword 10000000
+    .dword 1000000
+    .dword 100000
+    .dword 10000
+    .dword 1000
+    .dword 100
+    .dword 10
+    .dword 1
+
 spcl32768:
     .asciiz "-32768"
+spcl2147483648:
+    .asciiz "-2147483648"
 
 .code
 
@@ -155,3 +166,125 @@ Done:
     stx ptr2+1
     jmp clearbuf
 .endproc
+
+; number to write is in intOp1/intOp2
+; pointer to intbuf in A/X
+writeInt32:
+    jsr setup
+    ; See if the number is -2,147,483,648 : a special case.
+    lda intOp1
+    bne NotSpecl
+    lda intOp1 + 1
+    bne NotSpecl
+    lda intOp2
+    bne NotSpecl
+    lda intOp2 + 1
+    cmp #$80
+    bne NotSpecl
+    ; Number is -2,147,483,648
+    ; This is important because any other number can be negated.
+    ldx #0
+    ldy #0
+    ; Print -2147483648 to the screen then return
+LSpecl:
+    lda spcl2147483648,x
+    beq JmpDone
+    sta (ptr2),y
+    inx
+    iny
+    bne LSpecl
+
+NotSpecl:
+    ; Number is not -2,147,483,648
+    jsr isNegInt32       ; Is it negative?
+    beq NotNeg
+    lda #'-'        ; It is.  Print a negative sign
+    ldy #0
+    sta (ptr2),y
+    clc
+    lda ptr2
+    adc #1
+    sta ptr2
+    lda ptr2 + 1
+    adc #0
+    sta ptr2 + 1
+    jsr invertInt32      ; Make it a positive number
+    clc
+    bcc NotNeg
+
+JmpDone:
+    clc
+    bcc Done
+
+NotNeg:
+    ; Loop through tensTable32, comparing values until intOp1/intOp2 is less.
+    ; If the count is > 0 then write the digit.
+    lda #0
+    sta tmp3
+    sta tmp2
+LoopTbl:
+    lda #0
+    sta tmp1
+    ldy tmp2            ; current index into table
+    cpy #NUM_WORDTBL    ; end of the table?
+    beq PrintLastDigit
+LoopSub:
+    ldx #0
+LoopComp:
+    lda tensTable32,y
+    sta intOp32,x
+    iny
+    inx
+    cpx #4
+    bne LoopComp
+    jsr geUint32
+    beq IsDigitZero     ; intOp1/intOp2 < tensTable -- digit is zero
+    ; intOp1/intOp2 > tensTable.  Subtract the current tensTable value
+    ; and go around for another loop
+    phy
+    jsr subInt32
+    ply
+    ; Still > 0 - save the number for the next loop
+    dey
+    dey
+    dey
+    dey
+    inc tmp1
+    bne LoopSub
+
+IsDigitZero:
+    clc
+    lda tmp2
+    adc #4          ; move to the next entry
+    sta tmp2        ; in tensTable32
+    lda tmp1        ; see if the current digit
+    ora tmp3        ; is zero and we have not seen a non-zero digit yet
+    beq LoopTbl    ; not yet - skip writing it
+    lda #1
+    sta tmp3        ; we have not seen a non-zero digit
+    ; Digit is non-zero - print it
+    clc
+    lda tmp1
+    adc #'0'
+    ldy #0
+    sta (ptr2),y
+    clc
+    lda ptr2
+    adc #1
+    sta ptr2
+    lda ptr2 + 1
+    adc #0
+    sta ptr2 + 1
+    clc
+    bcc LoopTbl
+
+PrintLastDigit:
+    ; Print last digit
+    clc
+    lda intOp1
+    adc #'0'
+    ldy #0
+    sta (ptr2),y
+
+Done:
+    rts

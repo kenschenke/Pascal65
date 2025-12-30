@@ -81,3 +81,5 @@ typeClone = ASMBASE + 198
 freeType = ASMBASE + 201
 freeSymbol = ASMBASE + 204
 isHeapAllocated = ASMBASE + 207
+writeInt32 = ASMBASE + 210
+divInt32 = ASMBASE + 213
