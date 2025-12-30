@@ -28,6 +28,7 @@ intBuf: .res 10
 matPtr: .res 4
 entriesAlloc: .res 2
 entriesFree: .res 2
+totalAlloc: .res 4
 
 .code
 
@@ -40,10 +41,14 @@ entriesFree: .res 2
     ldq heapTop
     stq matPtr
 
-    ; Keep a running total in intOp1
+    ; Keep a running total in intOp32
     lda #0
-    sta intOp1
-    sta intOp1+1
+    sta totalAlloc
+    sta totalAlloc+1
+    sta totalAlloc+2
+    sta totalAlloc+3
+    sta intOp2
+    sta intOp2+1
 
     sta entriesAlloc
     sta entriesAlloc+1
@@ -70,12 +75,15 @@ L2: ldz #1
     lda (ptr1),z
     bpl L3                  ; Branch if not allocated
     and #$7f
-    sta intOp2+1
+    sta intOp1+1
     dez
     nop
     lda (ptr1),z
-    sta intOp2
-    jsr addInt16
+    sta intOp1
+    ldq totalAlloc
+    clc
+    adcq intOp1
+    stq totalAlloc
     jsr incEntriesAlloc
     bra L4
 
@@ -102,9 +110,19 @@ L5: ldx #0
     jsr CHROUT
     inx
     bne :-
-:   jsr writeIntOp1
-
+:   ldq totalAlloc
+    stq intOp1
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt32
     ldx #0
+:   lda intBuf,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+
+:   ldx #0
 :   lda strNumAlloc,x
     beq :+
     jsr CHROUT
