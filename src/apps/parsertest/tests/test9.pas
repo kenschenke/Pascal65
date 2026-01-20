@@ -8,6 +8,12 @@ D:DECL-TYPE test
       T:TYPE-ARRAY  1.. 5 OF TYPE-INTEGER
     D:DECL-VARIABLE arr2
       T:TYPE-ARRAY  0.. 4 OF TYPE-INTEGER
+    D:DECL-VARIABLE arr3
+      T:TYPE-ARRAY  1.. 5 OF TYPE-ARRAY  1.. 6 OF TYPE-INTEGER
+    D:DECL-VARIABLE arr4
+      T:TYPE-ARRAY  1.. 5 OF TYPE-ARRAY  1.. 6 OF TYPE-INTEGER
+    D:DECL-VARIABLE arr5
+      T:TYPE-ARRAY  0.. 4 OF TYPE-ARRAY  0.. 5 OF TYPE-INTEGER
     S:STMT-EXPR
       E:EXPR-ASSIGN
         Left:EXPR-SUBSCRIPT
@@ -59,6 +65,9 @@ Program Test;
 Var
   arr1 : Array[1..5] Of Integer;
   arr2 : Array[5] Of Integer;
+  arr3 : Array[1..5] Of Array[1..6] Of Integer;
+  arr4 : Array[1..5,1..6] Of Integer;
+  arr5 : Array[5,6] Of Integer;
 
 Begin
   arr1[3] := 5;

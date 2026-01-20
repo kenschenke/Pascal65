@@ -6,8 +6,8 @@
 .include "tokenizer.inc"
 .include "4510macros.inc"
 
-outerArrayOffset = 4
 arrayTypeOffset = 0
+outerArrayOffset = arrayTypeOffset + 4
 
 .export parseArrayType
 
@@ -131,9 +131,7 @@ L3: lda #tcRBracket
 
     ; Return the outer array type
     jsr popQ
-    stq ptr1
     jsr popQ
-    ldq ptr1
     rts
 .endproc
 

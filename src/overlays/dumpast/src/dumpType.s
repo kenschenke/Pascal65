@@ -256,8 +256,20 @@ L7: dec level
     nop
     lda (ptr1),z
     stq ptr1
-    jsr dumpTypeKind
-    jsr popQ
+    ; If the subtype is an array, dump the full type specification
+    ; instead of just the type kind.
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne L1
+    lda #<strTYPE_ARRAY
+    ldx #>strTYPE_ARRAY
+    jsr printz
+    jsr dumpArrayType
+    bra L2
+L1: jsr dumpTypeKind
+L2: jsr popQ
     stq ptr1
 
     rts
