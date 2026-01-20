@@ -4,11 +4,17 @@ decl test L:0 O:0 TYPE-PROGRAM S:0
     arr1 SYMBOL-GLOBAL L:1 O:0 TYPE-ARRAY S:16
     arr2 SYMBOL-GLOBAL L:1 O:1 TYPE-ARRAY S:16
     arr3 SYMBOL-GLOBAL L:1 O:2 TYPE-DECLARED S:46
+    arr4 SYMBOL-GLOBAL L:1 O:3 TYPE-ARRAY S:96
+    arr5 SYMBOL-GLOBAL L:1 O:4 TYPE-ARRAY S:96
+    arr6 SYMBOL-GLOBAL L:1 O:5 TYPE-ARRAY S:96
     arraytype SYMBOL-GLOBAL L:1 O:0 TYPE-ARRAY S:46
   decl arraytype L:1 O:0 TYPE-ARRAY S:46
   decl arr1 L:1 O:0 TYPE-ARRAY S:16
   decl arr2 L:1 O:1 TYPE-ARRAY S:16
   decl arr3 L:1 O:2 TYPE-ARRAY S:46
+  decl arr4 L:1 O:3 TYPE-ARRAY S:96
+  decl arr5 L:1 O:4 TYPE-ARRAY S:96
+  decl arr6 L:1 O:5 TYPE-ARRAY S:96
 *)
 
 Program Test;
@@ -19,6 +25,9 @@ Var
   arr1 : Array[1..5] Of Integer;
   arr2 : Array[5] Of Integer;
   arr3 : ArrayType;
+  arr4 : Array[1..5] Of Array[1..6] Of Integer;
+  arr5 : Array[1..5,1..6] Of Integer;
+  arr6 : Array[5,6] Of Integer;
 
 Begin
 End.
