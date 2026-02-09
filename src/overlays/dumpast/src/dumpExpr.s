@@ -17,6 +17,7 @@
 .export dumpExpr, dumpExprMember, dumpExprValue, dumpExprKind
 
 .import level, printz, dumpString, newLine, prefix, showPrefix, dumpChar, dumpHex, indent
+.import dumpTypeKind
 
 .bss
 
@@ -143,6 +144,16 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
 
 :   ldq ptr1
     jsr pushQ
+    jsr dumpExprValue
+
+    jsr popQ
+    stq ptr1
+    jsr pushQ
+    jsr dumpExprType
+
+    jsr popQ
+    stq ptr1
+    jsr pushQ
     ldz #expr::left
     neg
     neg
@@ -183,12 +194,7 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     dec level
 
 :   jsr popQ
-    stq ptr1
-
-    ; ldz #expr::name
-    ; jsr dumpString
-
-    jmp dumpExprValue
+    rts
 .endproc
 
 .proc dumpExprKind
@@ -200,6 +206,25 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     lda exprKinds,y
     ldx exprKinds+1,y
     jmp printz
+.endproc
+
+.proc dumpExprType
+    ldz #expr::evalType
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq :+
+    stq ptr1
+    lda #' '
+    jsr dumpChar
+    lda #'T'
+    jsr dumpChar
+    lda #':'
+    jsr dumpChar
+    jsr dumpTypeKind
+:   rts
 .endproc
 
 .proc dumpArrayLiteral
@@ -223,6 +248,13 @@ L1: ldq ptr1
     jsr indent
     jsr dumpExprKind
     jsr dumpExprValue
+
+    ldq ptr1
+    jsr pushQ
+    jsr dumpExprType
+    jsr popQ
+    stq ptr1
+
     jsr newLine
 
     ldz #expr::right
@@ -261,6 +293,10 @@ L1: ldq ptr1
     stq ptr1
     jsr dumpExprKind
     jsr dumpExprValue
+    jsr popQ
+    stq ptr1
+    jsr pushQ
+    jsr dumpExprType
     jsr popQ
     stq ptr1
 
