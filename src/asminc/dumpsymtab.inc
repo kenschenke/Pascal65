@@ -1,4 +1,4 @@
 
-DUMPAST_BASE = $5000
+DUMPSYMTAB_BASE = $5000
 
-dumpSymtabForDecl = DUMPAST_BASE
+dumpSymtabForDecl = DUMPSYMTAB_BASE

@@ -530,6 +530,9 @@ TYPE_FLAG_ISBYREF   = 4
 TYPE_FLAG_ISSTD     = 8
 TYPE_FLAG_ISRETVAL  = 16
 
+SHRT_MAX = $7fff
+LONG_MAX = $7fffffff
+
 .struct type
     kind .byte
     subtype .dword

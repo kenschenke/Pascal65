@@ -10,3 +10,4 @@ setDeclOffsets = RESOLVER_BASE + 15
 setUnitOffsets = RESOLVER_BASE + 18
 fixGlobalOffsets = RESOLVER_BASE + 21
 verifyFwdDeclarations = RESOLVER_BASE + 24
+initStandardRoutines = RESOLVER_BASE + 27
