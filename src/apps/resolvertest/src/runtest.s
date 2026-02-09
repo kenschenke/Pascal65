@@ -36,6 +36,7 @@
 .include "asmlib.inc"
 .include "parser.inc"
 .include "meminfo.inc"
+.include "dumpast.inc"
 .include "showtree.inc"
 .include "dumpsymtab.inc"
 .include "zeropage.inc"
@@ -48,6 +49,7 @@
 
 .import initTokenizer, initParser, initDumpSymtab, viewDump, getKey, errorCount, initMemInfo
 .import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
+.import initDumpAst
 
 .bss
 
@@ -83,7 +85,7 @@ strParsing: .asciiz "Parsing, "
 strResolving: .asciiz "Resolving, "
 strDumping: .asciiz "Dumping AST, "
 strPass: .asciiz "Pass"
-strErrorCount: .asciiz "Parsing errors encountered - press a key"
+strErrorCount: .asciiz "Errors encountered - press a key"
 
 .code
 
@@ -161,6 +163,10 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     ; Free the tokens
 :   ldq tokens
     jsr freeMemBuf
+
+    ; Reset error count
+    lda #0
+    sta errorCount
 
     jsr tokenizeAndParseUnits
 
@@ -259,8 +265,15 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     ; rts
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+    ; Check the error count
+    lda errorCount
+    beq :+
+
+    ; Show an error message and pause
+    jsr errorCountMessage
+
     ; Dump the symbol table
-    jsr initDumpSymtab
+:   jsr initDumpSymtab
     ldq astRoot
     jsr dumpSymtabForDecl
     stq symtabBuf

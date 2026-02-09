@@ -19,21 +19,25 @@ Procedure PublicProc(i : Integer);
 Var
   p : Boolean;
 Begin
-  Writeln('In Public Proc', i);
+  i := 1234;
+  p := true;
 End;
 
 Function PublicFunc(a : Boolean ) : Real;
 Var
   s : String;
 Begin
-  Writeln('In Public Func', s);
+  a := False;
+  s := 'Hello, World';
 End;
 
 Procedure PrivateProc(b : Word);
 Var
   c, d : Cardinal;
 Begin
-  Writeln('In Private Proc', c);
+  b := 1234;
+  c := 123456;
+  d := 234567;
 End;
 
 End.

@@ -8,6 +8,7 @@ TOKENIZERDIR := ../../overlays/tokenizerasm
 PARSERDIR := ../../overlays/parserasm
 SHOWTREEDIR := ../../overlays/showtree
 DUMPSYMTABDIR := ../../overlays/dumpsymtab
+DUMPASTDIR := ../../overlays/dumpast
 RESOLVERDIR := ../../overlays/resolverasm
 MEMINFODIR := ../../overlays/meminfo
 ASMLIBDIR := ../../lib/asmlib
@@ -26,6 +27,7 @@ TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
 SHOWTREE = ../../overlays/showtree/bin/$(TARGET)/showtree
 DUMPSYMTAB = ../../overlays/dumpsymtab/bin/$(TARGET)/dumpsymtab
+DUMPAST = ../../overlays/dumpast/bin/$(TARGET)/dumpast
 RESOLVER = ../../overlays/resolverasm/bin/$(TARGET)/resolver
 MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
 PRGFILE = $(BINTARGETDIR)/resolvertest
@@ -35,6 +37,7 @@ BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
 BINFILES += $(SHOWTREE)
 BINFILES += $(DUMPSYMTAB)
+BINFILES += $(DUMPAST)
 BINFILES += $(RESOLVER)
 BINFILES += $(MEMINFO)
 BINFILES += $(ASMLIB)
@@ -85,6 +88,9 @@ $(SHOWTREE): FORCE
 $(DUMPSYMTAB): FORCE
 	cd $(DUMPSYMTABDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(DUMPAST): FORCE
+	cd $(DUMPASTDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(MEMINFO): FORCE
 	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -115,6 +121,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PARSER) parser,prg \
 	-write $(RESOLVER) resolver,prg \
 	-write $(DUMPSYMTAB) dumpsymtab,prg \
+	-write $(DUMPAST) dumpast,prg \
 	-write $(SHOWTREE) showtree,prg \
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \

@@ -8,6 +8,17 @@
 ; https://opensource.org/licenses/MIT
 ;
 ; runTests routine
+;
+; Tests:
+;    0: System unit
+;    1: Scalar variable declarations
+;    2: Type definitions
+;    3: Constants
+;    4: Arrays
+;    5: Records
+;    6: Functions and procedures
+;    7: Pointers
+;    8: Units
 
 .export runTests
 
