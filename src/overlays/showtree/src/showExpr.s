@@ -21,7 +21,7 @@ CH_BACKARROW = 95
 .export showExpr, showSubExpr
 
 .import showAddr, printz, printzLong, printStructAddr, printStructName
-.import printStructBool, printStructNumber, getKey, loadPtr, printzLong
+.import printStructBool, printStructNumber, getKey, loadPtr, printzLong, showTypeKind
 
 .bss
 
@@ -190,8 +190,28 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     ; EvalType
     lda #<evalTypeLabel
     ldx #>evalTypeLabel
+    jsr printz
     ldz #expr::evalType
-    jsr printStructAddr
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr showAddr
+    ldq ptr2
+    jsr pushQ
+    ldz #expr::evalType
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    lda #' '
+    jsr CHROUT
+    jsr showTypeKind
+    jsr popQ
+    stq ptr2
+    lda #13
+    jsr CHROUT
 
     ; Value
     lda #<valueLabel
