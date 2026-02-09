@@ -19,7 +19,7 @@ interfaceDeclOffset = 4
 
 .data
 
-libraryStr: .asciiz "LIBRARY"
+libraryStr: .asciiz "library"
 
 .code
 
