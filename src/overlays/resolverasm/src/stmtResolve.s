@@ -169,11 +169,16 @@ L1: ldz #caseLabelOffset
     nop
     lda (ptr1),z
     jsr pushQ
-    jsr pushQ
+    jsr pushQZero
     lda #0
     jsr pushA
     jsr exprResolve
-    jsr restoreStmtPtr
+    ldz #caseLabelOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
     ldz #stmt::body
     neg
     neg
@@ -181,14 +186,19 @@ L1: ldz #caseLabelOffset
     lda (ptr1),z
     jsr stmtResolve
 
-    jsr restoreStmtPtr
+    ldz #caseLabelOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
     ldz #stmt::next
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #caseLabelOffset
+    ldz #0
     ldx #0
 :   lda ptr1,x
     nop
@@ -220,11 +230,17 @@ L3: ldz #exprOffset
     lda #0
     jsr pushA
     jsr exprResolve
-    ldz #expr::right
+    ldz #exprOffset
     neg
     neg
     nop
     lda (stackPointer),z
+    stq ptr1
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr1
     ldz #exprOffset
     ldx #0

@@ -29,9 +29,15 @@
 
     ldq ptr2
     jsr pushQ
+    lda #type::symtab
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
     ldq ptr1
     clc
-    adcq #type::symtab
+    adcq intOp32
     jsr pushQ
     jsr declResolve
 

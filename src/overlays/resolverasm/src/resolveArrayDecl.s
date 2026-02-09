@@ -34,7 +34,7 @@
     lda #0
     sta intOp2+1
     jsr gtInt16
-    bne :+
+    beq :+
     lda #errInvalidIndexType
     jsr resolverError
 :   rts

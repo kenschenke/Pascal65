@@ -16,8 +16,8 @@
 .include "4510macros.inc"
 
 symtabOffset = 0
-fieldExprOffset = 4
-recExprOffset = 8
+fieldExprOffset = symtabOffset + 4
+recExprOffset = fieldExprOffset + 4
 
 .export getEmbeddedRecordSymtab
 
@@ -65,13 +65,14 @@ recExprOffset = 8
     jsr resolverError
     jsr popQ
     jsr popQ
+    jsr popQ
     lda #0
     tax
     tay
     taz
     rts
 :   stq ptr1
-    lda #symbol::type
+    ldz #symbol::type
     neg
     neg
     nop
@@ -94,7 +95,7 @@ recExprOffset = 8
 :   cmp #TYPE_DECLARED
     bne L9
 
-    lda #type::name
+    ldz #type::name
     neg
     neg
     nop
@@ -105,6 +106,7 @@ recExprOffset = 8
     bne :+
     lda #errUndefinedIdentifier
     jsr resolverError
+    jsr popQ
     jsr popQ
     jsr popQ
     lda #0
@@ -121,9 +123,11 @@ recExprOffset = 8
     stq ptr2
 L9: jsr popQ
     jsr popQ
+    jsr popQ
     ldz #type::symtab
     neg
     neg
+    nop
     lda (ptr2),z
     rts
 .endproc

@@ -166,7 +166,6 @@ L2: jsr getTypePtr
     lda (ptr1),z
 
     ; Add the new symbol to the symbol table
-L3:
     stq ptr1            ; symtab pointer in ptr1
     ldq nodePtr
     stq ptr3

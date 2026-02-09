@@ -16,9 +16,9 @@
 .include "4510macros.inc"
 
 leftSymtabOffset = 0
-isRtnCallOffset = 4
-symtabOffset = 5
-exprOffset = 9
+isRtnCallOffset = leftSymtabOffset + 4
+symtabOffset = isRtnCallOffset + 1
+exprOffset = symtabOffset + 4
 
 .export exprResolve
 
@@ -197,7 +197,7 @@ L7: ldz #exprOffset
     jsr pushA               ; isRtnCall
     jsr exprResolve
     ; Resolve right expression
-    ldz #symtabOffset
+    ldz #leftSymtabOffset
     neg
     neg
     nop
