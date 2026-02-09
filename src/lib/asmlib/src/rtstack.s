@@ -13,7 +13,7 @@
 .include "4510macros.inc"
 
 .export initRuntimeStack, rtPopA, rtPopAX, rtPopQ, rtPushA, rtPushAX, rtPushQ
-.export rtPushQZero
+.export rtPushQZero, rtPushBlock, rtPopBlock
 
 .bss
 
@@ -33,6 +33,8 @@ incNum: .res 1
     rts
 .endproc
 
+; This routine decrements the stack pointer by the amount in A.
+; This is used when pushing a value onto the stack.
 .proc decStackPointer
     sta incNum
     lda stackPointer
@@ -53,6 +55,8 @@ incNum: .res 1
 :   rts
 .endproc
 
+; This routine increments the stack pointer by the amount in A.
+; This is used when popping a value off the stack.
 .proc incStackPointer
     sta incNum
     lda stackPointer
@@ -190,4 +194,16 @@ incNum: .res 1
     tay
     taz
     jmp rtPushQ
+.endproc
+
+; This routine pushes a block onto the stack.
+; The number of bytes is passed in A.
+.proc rtPushBlock
+    jmp decStackPointer
+.endproc
+
+; This routine pops a block from the stack.
+; The number of bytes is passed in A.
+.proc rtPopBlock
+    jmp incStackPointer
 .endproc

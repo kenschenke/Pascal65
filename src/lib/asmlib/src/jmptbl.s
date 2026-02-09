@@ -23,6 +23,7 @@
 .import exprCreate, unitCreate, nameClone, freeAst
 .import addTreeNode, findInTree, freeTree, symbolCreate
 .import typeClone, freeType, freeSymbol, isHeapAllocated, writeInt32, divInt32
+.import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab
 
 .segment "JMPTBL"
 
@@ -98,3 +99,8 @@ jmp freeSymbol
 jmp isHeapAllocated
 jmp writeInt32
 jmp divInt32
+jmp rtPushBlock
+jmp rtPopBlock
+jmp isConcatOperand
+jmp getBaseType
+jmp freeSymtab
