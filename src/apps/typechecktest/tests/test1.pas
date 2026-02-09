@@ -1,0 +1,94 @@
+(* Test 1 - Scalar Variable Assignments
+D:DECL-TYPE test
+  T:TYPE-PROGRAM
+  S:STMT-BLOCK
+    D:DECL-USES system
+      T:TYPE-UNIT
+    D:DECL-VARIABLE a
+      T:TYPE-SHORTINT
+    D:DECL-VARIABLE b
+      T:TYPE-BYTE
+    D:DECL-VARIABLE bool
+      T:TYPE-BOOLEAN
+    D:DECL-VARIABLE i
+      T:TYPE-INTEGER
+    D:DECL-VARIABLE w
+      T:TYPE-WORD
+    D:DECL-VARIABLE l
+      T:TYPE-LONGINT
+    D:DECL-VARIABLE c
+      T:TYPE-CARDINAL
+    D:DECL-VARIABLE r
+      T:TYPE-REAL
+    D:DECL-VARIABLE str
+      T:TYPE-STRING-VAR
+    D:DECL-VARIABLE ch
+      T:TYPE-CHARACTER
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-SHORTINT
+        Left:EXPR-NAME a T:TYPE-SHORTINT
+        Right:EXPR-BYTE-LITERAL 7b T:TYPE-SHORTINT
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-BYTE
+        Left:EXPR-NAME b T:TYPE-BYTE
+        Right:EXPR-BYTE-LITERAL ea T:TYPE-BYTE
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-BOOLEAN
+        Left:EXPR-NAME bool T:TYPE-BOOLEAN
+        Right:EXPR-BOOLEAN-LITERAL true T:TYPE-BOOLEAN
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-INTEGER
+        Left:EXPR-NAME i T:TYPE-INTEGER
+        Right:EXPR-WORD-LITERAL 3039 T:TYPE-INTEGER
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-WORD
+        Left:EXPR-NAME w T:TYPE-WORD
+        Right:EXPR-WORD-LITERAL 8707 T:TYPE-WORD
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-LONGINT
+        Left:EXPR-NAME l T:TYPE-LONGINT
+        Right:EXPR-DWORD-LITERAL 1e240 T:TYPE-LONGINT
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-CARDINAL
+        Left:EXPR-NAME c T:TYPE-CARDINAL
+        Right:EXPR-DWORD-LITERAL 8bd03835 T:TYPE-CARDINAL
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-REAL
+        Left:EXPR-NAME r T:TYPE-REAL
+        Right:EXPR-REAL-LITERAL 3.14 T:TYPE-REAL
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-STRING-LITERAL
+        Left:EXPR-NAME str T:TYPE-STRING-VAR
+        Right:EXPR-STRING-LITERAL Hello, World T:TYPE-STRING-LITERAL
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-CHARACTER
+        Left:EXPR-NAME ch T:TYPE-CHARACTER
+        Right:EXPR-CHARACTER-LITERAL 'x' T:TYPE-CHARACTER
+*)
+
+Program Test;
+
+Var
+  a : ShortInt;
+  b : Byte;
+  bool : Boolean;
+  i : Integer;
+  w : Word;
+  l : LongInt;
+  c : Cardinal;
+  r : Real;
+  str : String;
+  ch : Char;
+
+Begin
+  a := 123;
+  b := 234;
+  bool := True;
+  i := 12345;
+  w := 34567;
+  l := 123456;
+  c := 2345678901;
+  r := 3.14;
+  str := 'Hello, World';
+  ch := 'x';
+End.
