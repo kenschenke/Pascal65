@@ -9,6 +9,12 @@
 ;
 ; ASM LIB entry points
 
+; Magic File Handles
+; Used by read/write routines that are called by read/readln/write/writeln
+FH_STDIO   = $80    ; Use screen/keyboard for IO
+FH_STRING  = $81    ; Use string for IO
+FH_FILENUM = $82    ; File handle is on stack
+
 ASMBASE = $9000
 
 allocMemBuf = ASMBASE + 0
@@ -88,3 +94,4 @@ popBlock = ASMBASE + 219
 isConcatOperand = ASMBASE + 222
 getBaseType = ASMBASE + 225
 freeSymtab = ASMBASE + 228
+hexstr = ASMBASE + 231
