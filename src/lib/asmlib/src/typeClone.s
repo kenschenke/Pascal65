@@ -196,6 +196,16 @@ L6: jsr savePtrs
     ldz #type::max
     jsr storePtr
 
+    ; Copy the symtab
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr3
+    ldz #type::symtab
+    jsr storePtr
+
     ; Done
     ldq ptr2
     rts
