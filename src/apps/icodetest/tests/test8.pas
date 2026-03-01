@@ -1,0 +1,67 @@
+(* Test 8 - Arrays
+NEW IWS 10
+DIA ILS 0
+NEW IWS 56
+DIA ILS 0
+PSH IWU 0
+PSH IWU 0
+BRA LBL xxxxx
+LOC LBL xxxxx
+PSH IBS 5
+PSH VVR b 1 0
+PSH IBS 3
+AIX IBS 2
+SET IBS 4 IBS 2
+PSH IBS 6
+PSH VVR b 1 0
+PSH VVR 4 1 2
+PSH IBS 1
+ADD IBS 4 IBS 1 IBS 6
+AIX IBS 6
+SET IBS 4 IBS 2
+PSH IBS 2
+PSH VVR b 1 1
+PSH IBS 3
+AIX IBS 2
+MEM IBS 4
+PSH IBS 5
+AIX IBS 2
+SET IBS 4 IBS 2
+PSH IBS 7
+PSH VVR b 1 1
+PSH VVR 4 1 2
+PSH IBS 1
+ADD IBS 4 IBS 1 IBS 6
+AIX IBS 6
+MEM IBS 4
+PSH VVR 4 1 2
+PSH IBS 3
+MUL IBS 4 IBS 1 IBS 6
+AIX IBS 6
+SET IBS 4 IBS 2
+PSH IBS 8
+PSH VVR b 1 1
+PSH VVR 4 1 2
+AIX IBS 4
+MEM IBS 4
+PSH VVR 4 1 3
+PSH IBS 1
+ADD IBS 4 IBS 1 IBS 6
+AIX IBS 6
+SET IBS 4 IBS 2
+*)
+
+Program Test;
+
+Var
+  arr1 : Array[1..5] Of Integer;
+  arr2 : Array[5,5] Of Integer;
+  i, j : Integer;
+
+Begin
+  arr1[3] := 5;
+  arr1[i+1] := 6;
+  arr2[3,5] := 2;
+  arr2[i+1,i*3] := 7;
+  arr2[i][j+1] := 8;
+End.

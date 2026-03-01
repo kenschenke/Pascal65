@@ -16,31 +16,31 @@ D:DECL-TYPE test
         EXPR-BYTE-LITERAL 3
         Case Body:
           S:STMT-EXPR
-            E:EXPR-CALL
-              Left:EXPR-NAME writeln
+            E:EXPR-CALL T:TYPE-VOID
+              Left:EXPR-NAME writeln T:TYPE-PROCEDURE
               Right:EXPR-ARG
-                EXPR-STRING-LITERAL First three
+                EXPR-STRING-LITERAL First three T:TYPE-STRING-LITERAL
       S:STMT-CASE-LABEL
         EXPR-BYTE-LITERAL 4
         EXPR-BYTE-LITERAL 5
         Case Body:
           S:STMT-EXPR
-            E:EXPR-CALL
-              Left:EXPR-NAME writeln
+            E:EXPR-CALL T:TYPE-VOID
+              Left:EXPR-NAME writeln T:TYPE-PROCEDURE
               Right:EXPR-ARG
-                EXPR-STRING-LITERAL 4 and 5
+                EXPR-STRING-LITERAL 4 and 5 T:TYPE-STRING-LITERAL
           S:STMT-EXPR
-            E:EXPR-ASSIGN
-              Left:EXPR-NAME j
-              Right:EXPR-BYTE-LITERAL a
+            E:EXPR-ASSIGN T:TYPE-INTEGER
+              Left:EXPR-NAME j T:TYPE-INTEGER
+              Right:EXPR-BYTE-LITERAL a T:TYPE-SHORTINT
       S:STMT-CASE-LABEL
         EXPR-BYTE-LITERAL 6
         Case Body:
           S:STMT-EXPR
-            E:EXPR-CALL
-              Left:EXPR-NAME write
+            E:EXPR-CALL T:TYPE-VOID
+              Left:EXPR-NAME write T:TYPE-PROCEDURE
               Right:EXPR-ARG
-                EXPR-STRING-LITERAL Six
+                EXPR-STRING-LITERAL Six T:TYPE-STRING-LITERAL
 *)
 
 Program Test;

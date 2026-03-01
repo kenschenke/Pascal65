@@ -40,6 +40,16 @@ D:DECL-TYPE test
           EXPR-NAME str T:TYPE-STRING-VAR
     S:STMT-EXPR
       E:EXPR-CALL T:TYPE-VOID
+        Left:EXPR-NAME writeln T:TYPE-PROCEDURE
+        Right:EXPR-ARG
+          EXPR-STRING-LITERAL Hello, World T:TYPE-STRING-LITERAL
+    S:STMT-EXPR
+      E:EXPR-CALL T:TYPE-VOID
+        Left:EXPR-NAME writeln T:TYPE-PROCEDURE
+        Right:EXPR-ARG
+          EXPR-CHARACTER-LITERAL 'x' T:TYPE-CHARACTER
+    S:STMT-EXPR
+      E:EXPR-CALL T:TYPE-VOID
         Left:EXPR-NAME write T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME fh T:TYPE-FILE
@@ -66,6 +76,8 @@ Begin
   Writeln(i, ch);
   Writeln(arr);
   Writeln(str);
+  Writeln('Hello, World');
+  Writeln('x');
   Write(fh, i);
   Writeln(r:6:2)
 End.
