@@ -524,8 +524,7 @@ DN:
     jsr isQZero
     beq :+
     jsr freeType
-    :
-    ldz #typePtrOffset
+:   ldz #typePtrOffset
     jsr loadStackValue
     jsr typeClone
     stq ptr2
@@ -541,6 +540,7 @@ DN:
     inx
     cpx #4
     bne :-
+
     rts
 .endproc
 
@@ -1203,10 +1203,7 @@ L1: ldz #exprOffset
     beq :+
     jmp L8
 
-:   ldz #exprOffset
-    jsr loadStackValue
-    stq ptr1
-    ldz #expr::left
+:   ldz #expr::left
     neg
     neg
     nop

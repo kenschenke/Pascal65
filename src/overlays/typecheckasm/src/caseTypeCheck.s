@@ -22,7 +22,7 @@ exprKindOffset = subtypeOffset + 4
 .export caseTypeCheck
 
 .import loadStackValue, currentLineNumber, exprTypeCheck, typeCheckError
-.import getTypeConversion
+.import getTypeConversion, stmtTypeCheck
 
 .proc caseTypeCheck
     lda #.sizeof(type)
@@ -92,8 +92,19 @@ NE: ldz #exprOffset
     bne :-
     bra L2
 
-    ; Move to the next label
+    ; Type check the statements in the branch body
 NL: ldz #labelExprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #stmt::body
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr stmtTypeCheck
+
+    ; Move to the next label
+    ldz #labelExprOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::next

@@ -73,9 +73,8 @@ L1: ldz #argOffset
     ldq stackPointer
     jsr getBaseType
     stq exprType
-    ldq exprLeft
     stq ptr1
-    ldz #expr::kind
+    ldz #type::kind
     nop
     lda (ptr1),z
     cmp #TYPE_ARRAY
