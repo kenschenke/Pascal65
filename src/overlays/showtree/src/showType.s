@@ -22,7 +22,7 @@ CH_BACKARROW = 95
 
 .import showAddr, printz, printzLong, printStructAddr, printStructName
 .import printStructBool, printStructNumber, getKey, loadPtr, showSubExpr
-.import showParam, showDecl
+.import showParam, showDecl, showSymtab
 
 .data
 
@@ -38,7 +38,7 @@ minLabel: .asciiz "min: "
 maxLabel: .asciiz "max: "
 sizeLabel: .asciiz "size: "
 lineNumberLabel: .asciiz "lineNumber: "
-prompt: .byte "S:subtype  I:indextype  P:params  ", $5f, ":back", $0d, $0d, $0
+prompt: .byte "S:subtype  I:indextype  P:params  Y:symtab  ", $5f, ":back", $0d, $0d, $0
 
 strTYPE_VOID: .asciiz "TYPE_VOID"
 strTYPE_BYTE: .asciiz "TYPE_BYTE"
@@ -360,10 +360,20 @@ L4: cmp #'p'
     jsr showParam
 :   jsr popQ
     jmp showType
-L5: cmp #CH_BACKARROW
+L5: cmp #'y'
     bne L6
+    ldq ptr2
+    jsr pushQ
+    ldz #type::symtab
+    jsr loadPtr
+    beq :+
+    jsr showSymtab
+:   jsr popQ
+    jmp showType
+L6: cmp #CH_BACKARROW
+    bne L7
     rts
-L6: bra L2
+L7: bra L2
 .endproc
 
 ; This routine prints a flag's label

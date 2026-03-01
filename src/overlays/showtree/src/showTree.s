@@ -152,7 +152,7 @@ L2: lda #13
     rts
 .endproc
 
-; Prints the line number from the structure in ptr2
+; Prints a 16-bit number from the structure in ptr2
 ; Z - offset in structure
 .proc printStructNumber
     nop

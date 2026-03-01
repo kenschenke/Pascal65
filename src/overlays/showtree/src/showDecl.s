@@ -21,7 +21,7 @@ CH_BACKARROW = 95
 
 .import printz, printzLong, printStructAddr, printStructName
 .import printStructBool, printStructNumber, showStmt, getKey, loadPtr
-.import showType, showSubExpr, showAddr, showExpr, showTypeKind
+.import showType, showSubExpr, showAddr, showExpr, showTypeKind, showSymtab
 
 .data
 
@@ -36,7 +36,7 @@ nextLabel: .asciiz "next: "
 unitSymtabLabel: .asciiz "unitSymtab: "
 isLibraryLabel: .asciiz "isLibrary: "
 lineNumberLabel: .asciiz "line: "
-prompt: .byte "T:type  V:value  C:code  N:next  ", $5f, ":back", $0d, $0d, $0
+prompt: .byte "T:type  V:value  C:code  S:symtab  N:next  ", $5f, ":back", $0d, $0d, $0
 
 strDECL_CONST: .asciiz "DECL_CONST"
 strDECL_TYPE: .asciiz "DECL_TYPE"
@@ -113,7 +113,7 @@ declKinds: .byte .LOBYTE(strDECL_CONST), .HIBYTE(strDECL_CONST)
     ldz #decl::value
     jsr showSubExpr
 
-    ; Node
+    ; Symtab
     lda #<symtabLabel
     ldx #>symtabLabel
     ldz #decl::symtab
@@ -198,8 +198,18 @@ L4: cmp #'v'
     jsr showExpr
 :   jsr popQ
     jmp showDecl
-L5: cmp #CH_BACKARROW
+L5: cmp #'s'
     bne L6
+    ldq ptr2
+    jsr pushQ
+    ldz #decl::symtab
+    jsr loadPtr
+    beq :+
+    jsr showSymtab
+:   jsr popQ
+    jmp showDecl
+L6: cmp #CH_BACKARROW
+    bne L7
     rts
-L6: bra L1
+L7: jmp L1
 .endproc

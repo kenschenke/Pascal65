@@ -21,7 +21,8 @@ CH_BACKARROW = 95
 .export showExpr, showSubExpr
 
 .import showAddr, printz, printzLong, printStructAddr, printStructName
-.import printStructBool, printStructNumber, getKey, loadPtr, printzLong, showTypeKind
+.import printStructBool, printStructNumber, getKey, loadPtr, printzLong
+.import showTypeKind, showType
 
 .bss
 
@@ -40,7 +41,7 @@ precisionLabel: .asciiz "precision: "
 evalTypeLabel: .asciiz "evalType: "
 valueLabel: .asciiz "value: "
 lineNumberLabel: .asciiz "lineNumber: "
-prompt: .byte "L:left  R:right  S:symtab  ", $5f, ":back", $0d, $0d, $0
+prompt: .byte "L:left  R:right  S:symtab  T:type  ", $5f, ":back", $0d, $0d, $0
 strTRUE: .asciiz "true"
 strFALSE: .asciiz "false"
 
@@ -254,10 +255,20 @@ L2: cmp #'r'
     jsr showExpr
 :   jsr popQ
     jmp showExpr
-L3: cmp #CH_BACKARROW
+L3: cmp #'t'
     bne L4
+    ldq ptr2
+    jsr pushQ
+    ldz #expr::evalType
+    jsr loadPtr
+    beq :+
+    jsr showType
+:   jsr popQ
+    jmp showExpr
+L4: cmp #CH_BACKARROW
+    bne L5
     rts
-L4: bra L1
+L5: bra L1
 .endproc
 
 .proc showSubExpr
