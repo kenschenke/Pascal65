@@ -6,10 +6,10 @@
 .include "error.inc"
 .include "tokenizer.inc"
 
-isProgramOrUnitBlockOffset = 9
-isLibraryOffset = 8
 declOffset = 0
-interfaceDeclOffset = 4
+interfaceDeclOffset = declOffset + 4
+isProgramOrUnitBlockOffset = interfaceDeclOffset + 4
+isLibraryOffset = isProgramOrUnitBlockOffset + 1
 
 .export parseBlock
 
@@ -27,12 +27,15 @@ libraryStr: .asciiz "library"
 ; a unit block, or any block of code.
 ;
 ; Inputs: A contains a non-zero if this block is for a program or unit.
-; Returns: The Z flag is set if the block was a library.
+; Returns: Pointer to the statement block.
+;          isLibrary is left on the runtime stack
 .proc parseBlock
     pha
-    jsr pushA               ; isProgramOrUnitBlock
     lda #0
     jsr pushA               ; isLibrary
+    pla
+    pha
+    jsr pushA               ; isProgramOrUnitBlock
     jsr pushQZero           ; interfaceDecl
     pla
     jsr parseDeclarations   ; decl
@@ -163,7 +166,6 @@ L3: lda #STMT_BLOCK
     bpl :-
     jsr popQ
     jsr popQ
-    jsr popA
     jsr popA
     ldq ptr1
     rts

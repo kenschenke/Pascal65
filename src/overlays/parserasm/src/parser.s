@@ -4,7 +4,7 @@
 
 .export handleParse, parserError, setUnitsList, getUnitsList, units
 .export parserIcode, parserToken, currentLineNumber, parserString, parserValue, parserType
-.export parserModuleType, runtimeStackSize, isInUnitInterface
+.export parserModuleType, runtimeStackSize, isInUnitInterface, getRuntimeStackSize
 
 .import getToken, parseModule
 
@@ -31,6 +31,12 @@ units: .res 4
     ldx #0
     jsr setMemBufPos
 
+    ; Default of 512 bytes
+    lda #0
+    sta runtimeStackSize
+    lda #2
+    sta runtimeStackSize+1
+
     jsr getToken
     jmp parseModule
 .endproc
@@ -48,5 +54,11 @@ units: .res 4
 
 .proc getUnitsList
     ldq units
+    rts
+.endproc
+
+.proc getRuntimeStackSize
+    lda runtimeStackSize
+    ldx runtimeStackSize+1
     rts
 .endproc

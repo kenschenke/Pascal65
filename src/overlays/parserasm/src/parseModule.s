@@ -87,6 +87,12 @@ L3: lda #1
     dex
     bpl :-
 
+    ; isLibrary
+    jsr popA
+    ldz #decl::isLibrary
+    nop
+    sta (ptr2),z
+
     lda parserModuleType
     cmp #TYPE_UNIT                  ; if (parserModuleType == TYPE_UNIT)
     bne :+

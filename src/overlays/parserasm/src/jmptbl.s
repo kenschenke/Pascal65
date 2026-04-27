@@ -9,10 +9,11 @@
 ;
 ; parser entry points
 
-.import handleParse, setUnitsList, getUnitsList
+.import handleParse, setUnitsList, getUnitsList, getRuntimeStackSize
 
 .segment "JMPTBL"
 
 jmp handleParse
 jmp setUnitsList
 jmp getUnitsList
+jmp getRuntimeStackSize

@@ -105,6 +105,7 @@ L1: ldz #subOffset
 L3: lda #0
     jsr parseBlock
     stq ptr2
+    jsr popA                ; discard the isLibrary value
     ldz #subOffset
     neg
     neg
