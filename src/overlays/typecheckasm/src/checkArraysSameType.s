@@ -25,7 +25,6 @@ type1Offset = type2Offset + 4
     ldz #type1Offset
     jsr loadStackValue
     stq ptr1
-    brk
     ldz #type::subtype
     neg
     neg

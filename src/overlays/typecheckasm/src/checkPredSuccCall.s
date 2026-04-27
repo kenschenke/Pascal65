@@ -65,7 +65,6 @@ argOffset = retnTypeOffset + 4
     jmp DN
 :   cmp #EXPR_NAME
     beq :+
-    brk
     lda #errInvalidType
     jsr typeCheckError
     lda #TYPE_VOID

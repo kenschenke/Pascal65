@@ -155,7 +155,6 @@ L1: ldz #type::kind
     cmp #TYPE_PROCEDURE
     beq :+
     ; It's not a function or procedure
-    brk
     lda #errInvalidExpression
     jsr typeCheckError
     ldz #rtnTypePtrOffset
