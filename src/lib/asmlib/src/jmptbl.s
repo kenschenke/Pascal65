@@ -24,6 +24,8 @@
 .import addTreeNode, findInTree, freeTree, symbolCreate
 .import typeClone, freeType, freeSymbol, isHeapAllocated, writeInt32, divInt32
 .import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab, hexstr
+.import linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
+.import getLinkerTagsToFind, findLinkerTag
 
 .segment "JMPTBL"
 
@@ -105,3 +107,9 @@ jmp isConcatOperand
 jmp getBaseType
 jmp freeSymtab
 jmp hexstr
+jmp linkAddressLookup
+jmp linkAddressSet
+jmp initLinkerTags
+jmp freeLinkerTags
+jmp getLinkerTagsToFind
+jmp findLinkerTag
