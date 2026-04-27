@@ -13,7 +13,7 @@
 .include "4510macros.inc"
 .include "zeropage.inc"
 
-.export dumpHex
+.export dumpHex, dumpHexByte
 
 .import dumpChar, printz
 
@@ -47,6 +47,20 @@ L1: ldx index
     jsr showByte
     dec index
     bpl L1
+    rts
+.endproc
+
+; This routine outputs the byte in A, including a leading zero if less than $10
+.proc dumpHexByte
+    pha
+
+    ; Force a leading zero
+    lda #1
+    sta hasDigits
+
+    pla
+    jsr showByte
+
     rts
 .endproc
 

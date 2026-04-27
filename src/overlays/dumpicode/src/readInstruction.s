@@ -2,7 +2,7 @@
 
 .export readInstruction, instruction
 
-.import dumpMnemonic, readOperand
+.import dumpMnemonic, readOperand, dumpDataSegment
 
 .bss
 
@@ -18,7 +18,12 @@ instruction: .res 1
     jsr dumpMnemonic
 
     pla
-    bit #IC_MASK_TRINARY
+    cmp #IC_DAT
+    bne :+
+    jsr dumpDataSegment
+    rts
+
+:   bit #IC_MASK_TRINARY
     beq :+
     jsr readOperand
     jsr readOperand
