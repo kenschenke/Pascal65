@@ -4,6 +4,7 @@ PARSER_BASE = $5000
 parse = PARSER_BASE
 setParserUnitsList = PARSER_BASE + 3
 getParserUnitsList = PARSER_BASE + 6
+getParserStackSize = PARSER_BASE + 9
 
 .macro resync list1, list2, list3
     lda #<list1
