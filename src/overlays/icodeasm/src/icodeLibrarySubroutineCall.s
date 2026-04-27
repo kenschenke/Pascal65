@@ -63,7 +63,7 @@ exprOffset = symPtrOffset + 4
     ldz #rtnTypeOffset
     jsr loadStackValue
     stq ptr3
-    lda #isRtnPtrOffset
+    ldz #isRtnPtrOffset
     nop
     lda (stackPointer),z
     pha

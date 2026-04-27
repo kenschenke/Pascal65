@@ -12,6 +12,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "cbm_kernal.inc"
 
 symPtrOffset = 0
 isDeRefOffset = symPtrOffset + 4
@@ -638,9 +639,9 @@ L3: lda rightType+type::flags
     and #TYPE_FLAG_ISRETVAL
     beq :+
     lda #IC_PSH
-    jsr icodeWriteInstruction
+    jsr CHROUT
     lda #IC_RET
-    jsr icodeWriteInstruction
+    jsr CHROUT
     jmp DN
 :   lda rightType
     cmp #TYPE_ENUMERATION_VALUE
@@ -687,6 +688,8 @@ L4: ldq symPtr
     ldx #>lblRoutineEnter
     jsr icodeFormatLabel
     jsr icodeOper1Label
+    ldq symPtr
+    stq ptr1
     ldz #symbol::level
     nop
     lda (ptr1),z
@@ -722,14 +725,14 @@ L6: and #TYPE_FLAG_ISBYREF
 
     lda #IC_VVR
     ldx isByRef
-    beq IV
+    bne IV
     lda #IC_VDR
     bra IV
 
     ; Not isRead
 NR: lda #IC_VVW
     ldx isByRef
-    beq IV
+    bne IV
     lda #IC_VDW
 
 IV: jsr pushA               ; operation

@@ -27,12 +27,13 @@
 ;   15. Array literals
 ;   16. Read, Readln, Readstr
 ;   17. Write, Writeln, Writestr
+;   18. If, Then, Else
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 17
+NUM_TESTS = 18
 
 .bss
 

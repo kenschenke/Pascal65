@@ -50,6 +50,7 @@ argKind: .res 1
 ;   paramTypes
 ;   paramPtrs
 .proc icodeRoutineCall
+    ; Store local variables
     jsr pushQZero           ; current argument ptr
     lda #0
     jsr pushA               ; level
@@ -528,7 +529,7 @@ L1: pha
     nop
     lda (stackPointer),z
     jsr isTypeInteger
-    bne DN
+    beq DN
 
     ; Compare the arg type to the param type
     ldz #argPtrOffset

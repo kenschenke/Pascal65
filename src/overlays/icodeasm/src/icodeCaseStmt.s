@@ -58,8 +58,16 @@ L1: ldz #branchStmtOffset
     bne :+
     jmp DN
 
+    ; Branch label
+:   jsr formatBranchLabel
+    jsr icodeOper1Label
+    lda #IC_LOC
+    jsr icodeWriteInstruction
+
     ; Loop through the labels for this case branch
-:   stq ptr1
+    ldz #branchStmtOffset
+    jsr loadStackValue
+    stq ptr1
     ldz #stmt::expr
     neg
     neg
@@ -143,7 +151,7 @@ L3: ldz #branchStmtOffset
     jsr formatNextBanchLabel
     bra L5
 
-    ; There is no other branches. Jump to the end label.
+    ; There are no other branches. Jump to the end label.
 L4: jsr formatEndLabel
 L5: jsr icodeOper1Label
     lda #IC_BRA
