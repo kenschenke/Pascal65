@@ -228,7 +228,6 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
 .endproc
 
 .proc dumpArrayLiteral
-    jsr newLine
     inc level
 
     ldq ptr1
@@ -245,6 +244,7 @@ L1: ldq ptr1
     jsr isQZero
     beq L2
 
+    jsr newLine
     jsr indent
     jsr dumpExprKind
     jsr dumpExprValue
@@ -254,8 +254,6 @@ L1: ldq ptr1
     jsr dumpExprType
     jsr popQ
     stq ptr1
-
-    jsr newLine
 
     ldz #expr::right
     neg
@@ -267,7 +265,29 @@ L1: ldq ptr1
 
 L2: jsr popQ
     stq ptr1
+    jsr pushQ
     dec level
+
+    ; If there is another array literal after this, dump it too.
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq :+
+    stq ptr1
+    jsr newLine
+    jsr indent
+    lda #'E'
+    jsr dumpChar
+    lda #':'
+    jsr dumpChar
+    jsr dumpExprKind
+    jsr dumpArrayLiteral
+
+:   jsr popQ
+    stq ptr1
     rts
 .endproc
 
