@@ -8,13 +8,29 @@
 ; https://opensource.org/licenses/MIT
 ;
 ; runtests routine
+; Tests:
+;    1: Scalar variable declarations
+;    2: Uses statement
+;    3: Type definitions
+;    4: Constants
+;    5: Initial values
+;    6: If-then statements
+;    7: Loops
+;    8: Case statement
+;    9: Arrays
+;   10: Records
+;   11: Functions and procedures
+;   12: Pointers
+;   13: Operators and expressions
+;   14: Unit
+;   15: Array literals
 
 .export runTests
 
 .import runTest
 .import heapWalk
 
-NUM_TESTS = 14
+NUM_TESTS = 15
 
 .bss
 

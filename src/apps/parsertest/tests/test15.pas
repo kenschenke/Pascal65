@@ -1,0 +1,40 @@
+(* Test 15 - Array literals
+D:DECL-TYPE test
+  T:TYPE-PROGRAM
+  S:STMT-BLOCK
+    D:DECL-USES system
+      T:TYPE-UNIT
+    D:DECL-VARIABLE arr1
+      T:TYPE-ARRAY  1.. 5 OF TYPE-INTEGER
+      E:EXPR-ARRAY-LITERAL
+        EXPR-BYTE-LITERAL 10
+        EXPR-BYTE-LITERAL 20
+        EXPR-BYTE-LITERAL 30
+    D:DECL-VARIABLE arr2
+      T:TYPE-ARRAY  1.. 3 OF TYPE-ARRAY  1.. 5 OF TYPE-INTEGER
+      E:EXPR-ARRAY-LITERAL
+        EXPR-BYTE-LITERAL 11
+        EXPR-BYTE-LITERAL 21
+        EXPR-BYTE-LITERAL 31
+      E:EXPR-ARRAY-LITERAL
+        EXPR-BYTE-LITERAL 12
+        EXPR-BYTE-LITERAL 22
+        EXPR-BYTE-LITERAL 32
+        EXPR-BYTE-LITERAL 42
+      E:EXPR-ARRAY-LITERAL
+        EXPR-BYTE-LITERAL 13
+        EXPR-BYTE-LITERAL 23
+        EXPR-BYTE-LITERAL 33
+        EXPR-BYTE-LITERAL 43
+        EXPR-BYTE-LITERAL 53
+*)
+
+Program Test;
+
+Var
+  arr1 : Array[1..5] Of Integer = ($10, $20, $30);
+  arr2 : Array[1..3,1..5] Of Integer =
+    ( ($11, $21, $31), ($12, $22, $32, $42), ($13, $23, $33, $43, $53) );
+
+Begin
+End.
