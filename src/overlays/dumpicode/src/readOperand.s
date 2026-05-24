@@ -3,7 +3,11 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export readOperand
+.export readOperand, operandValue
+
+.ifndef __DEBUG__
+.export dumpLabelXXXXX
+.endif
 
 .import dumpMnemonic, dumpHexByte, dumpHex, dumpChar, instruction
 
