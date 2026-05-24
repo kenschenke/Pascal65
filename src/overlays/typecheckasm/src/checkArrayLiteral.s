@@ -230,7 +230,7 @@ L5: ldz #arrayTypeOffset
     lda intOp1+1
     sta intOp2+1
     ; Put elems in intOp1
-    lda #elemsOffset
+    ldz #elemsOffset
     nop
     lda (stackPointer),z
     sta intOp1

@@ -44,6 +44,7 @@ L1: ldz #exprOffset
     bne L2
     
     ; Expression is an embedded array literal.
+    ldq ptr1
     jsr pushQ               ; expression
     jsr pushQZero           ; record symtab
     lda #<dummyType
