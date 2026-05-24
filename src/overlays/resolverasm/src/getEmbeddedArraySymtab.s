@@ -58,7 +58,7 @@ typePtr: .res 4
     lda (stackPointer),z
     stq ptr1
     jsr isQZero
-    bne :+
+    beq :+
     jsr symtabLookup
     bra L1
 :   jsr scopeLookup
@@ -121,11 +121,17 @@ L4: jsr scopeLookup
     beq L7
 
 L5: stq ptr2
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr4
     ldq typePtr
     stq ptr1
     ldz #type::subtype
     ldx #0
-:   lda ptr2,x
+:   lda ptr4,x
     nop
     sta (ptr1),z
     inz
@@ -139,13 +145,17 @@ L5: stq ptr2
     lda (ptr2),z
     stq typePtr
     stq ptr1
-    bra L2
+    jmp L2
 
 L6: ldz #type::symtab
     neg
     neg
     nop
     lda (ptr1),z
+    stq ptr1
+    jsr popQ
+    jsr popQ
+    ldq ptr1
     rts
 
 L7: lda #errUndefinedIdentifier
