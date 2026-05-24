@@ -3,18 +3,18 @@
 ## Synopsis
 
 ```
-DIR <record declaration chunk number>
+DIR <record declaration label>
 ```
 
 ## Description
 
 The **DIR** instruction initializes a record by referencing the declaration
-chunk number. It is an interstitial messenger instruction that exists solely
+block label. It is an interstitial messenger instruction that exists solely
 to communicate from the intermediate code generation phase of the compiler to
 the object code generation phase.
 
 When the object code generation phase sees this instruction it generates a call
-into the runtime to initialize a record. The declaration chunk number is used to
+into the runtime to initialize a record. The declaration label is used to
 create a declaration block in the BSS segment of the PRG file that contains the
 necessary information to initialize the record.
 
