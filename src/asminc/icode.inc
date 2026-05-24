@@ -110,7 +110,6 @@ IC_DCC          = $4e  ; 0100 1110  1:label, 2:type - clone declaration (array o
 IC_SFH          = $4f  ; 0100 1111  Set file handle 1:file handle 2:0/output 1/input
 IC_CVI          = $50  ; 0101 0000  1:from type, 2:to type
 IC_DCF          = $51  ; 0101 0001  1:label, 2:type - free declaration (array or record)
-IC_DAT          = $52  ; 0101 0010  1:label, 2:length - data segment
 
 ; These instructions take three operands
 IC_MASK_TRINARY = $80
@@ -123,5 +122,6 @@ IC_BWO          = $86  ; 1000 0110  1:leftType, 2:rightType, 3:resultType (bitwi
 IC_BSL          = $87  ; 1000 0111  1:leftType, 2:rightType, 3:resultType (bitwise left-shift)
 IC_BSR          = $88  ; 1000 1000  1:leftType, 2:rightType, 3:resultType (bitwise right-shift)
 IC_JSR          = $89  ; 1000 1001  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
-IC_PRP          = $8a  ; 1001 1010  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
-IC_BWX          = $8b  ; 1001 1011  1:leftType, 2:rightType, 3:resultType (bitwise xor)
+IC_PRP          = $8a  ; 1000 1010  1:routineLabel, 2:routineLevel, 3:isLibraryRtn
+IC_BWX          = $8b  ; 1000 1011  1:leftType, 2:rightType, 3:resultType (bitwise xor)
+IC_DAT          = $8c  ; 1000 1100  1:type, 2:label, 3:length - data segment
