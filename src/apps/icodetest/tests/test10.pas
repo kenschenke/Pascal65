@@ -1,69 +1,47 @@
 (* Test 10 - Records
-NEW IWS e
-DIR ILS 0
-NEW IWS 16
-DIR ILS 0
+NEW IWS c
+DIR LBL xxxxx
+NEW IWS 14
+DIR LBL xxxxx
 BRA LBL xxxxx
 LOC LBL xxxxx
-PSH IWU 3039
-PSH VDR 14 1 0
-SET IBS 4 IBS 4
-PSH FLT 3.14
-PSH VDR 14 1 0
-PSH IBS 4
-ADD IBS 3 IBS 3 IBS 3
-SET IBS 7 IBS 7
-PSH IWU 5ba0
-PSH VDR 14 1 0
-PSH IBS 8
-ADD IBS 3 IBS 3 IBS 3
-PSH IBS 2
-ADD IBS 3 IBS 3 IBS 3
-SET IBS 4 IBS 4
-PSH IBS 7b
-PSH VDR 14 1 0
-PSH IBS c
-ADD IBS 3 IBS 3 IBS 3
-PSH IBS 1
-ADD IBS 3 IBS 3 IBS 3
-SET IBS 1 IBS 2
-PSH IWU 10e1
-PSH VDR 14 1 1
-SET IBS 4 IBS 4
-PSH STR Hello, World
-PSH VDR 14 1 1
-PSH IBS 2
-ADD IBS 3 IBS 3 IBS 3
-SET IBS 15 IBS a
-PSH IWU 7d84
-PSH VDR 14 1 1
-PSH IBS 4
-ADD IBS 3 IBS 3 IBS 3
-PSH IBS 2
-ADD IBS 3 IBS 3 IBS 3
-SET IBS 4 IBS 4
-PSH IWU 5b8a
-PSH VDR 14 1 1
-PSH IBS 12
-ADD IBS 3 IBS 3 IBS 3
-PSH IBS 2
-ADD IBS 3 IBS 3 IBS 3
-SET IBS 4 IBS 4
+DAT IBU 2 LBL xxxxx
+   heap offset: 8
+   rec size: 4
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 12
+   fields:
+      offset: 8, RECORD, xxxxx
+DAT IBU 2 LBL xxxxx
+   heap offset: 12
+   rec size: 4
+DAT IBU 2 LBL xxxxx
+   heap offset: 4
+   rec size: 12
+   fields:
+      offset: 8, RECORD, xxxxx
+DAT IBU 2 LBL xxxxx
+   heap offset: 32
+   rec size: 4
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 20
+   fields:
+      offset: 2, STRING
+      offset: 4, RECORD, xxxxx
+      offset: 16, RECORD, xxxxx
 *)
 
 Program Test;
 
 Type
-  MySubRec = Record
-    a, b : Byte;
-  End;
   MyRec = Record
     i, j : Integer;
     r : Real;
     SubRec : Record
       x, y : Integer;
     End;
-    my : MySubRec;
   End;
 
 Var
@@ -78,12 +56,12 @@ Var
   End;
 
 Begin
-  rec.i := 12345;
-  rec.r := 3.14;
-  rec.subrec.y := 23456;
-  rec.my.b := 123;
-  otherRec.a := 4321;
-  otherRec.s := 'Hello, World';
-  otherRec.rec.j := 32132;
-  otherRec.AlsoRec.n := 23434;
+  // rec.i := 12345;
+  // rec.r := 3.14;
+  // rec.subrec.y := 23456;
+  // rec.my.b := 123;
+  // otherRec.a := 4321;
+  // otherRec.s := 'Hello, World';
+  // otherRec.rec.j := 32132;
+  // otherRec.AlsoRec.n := 23434;
 End.

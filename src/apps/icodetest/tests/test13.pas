@@ -1,8 +1,8 @@
 (* Test 13 - Routines
 NEW IWS 10
-DIA ILS 0
+DIA LBL xxxxx
 NEW IWS 4
-DIR ILS 0
+DIR LBL xxxxx
 PSH FLT 
 BRA LBL xxxxx
 LOC LBL xxxxx
@@ -69,6 +69,18 @@ JSR LBL xxxxx IBS 0 IBS 0
 LOC LBL xxxxx
 DCF LBL xxxxx IBS 2
 POF IBS 0 IBS 0
+DAT IBU 5 LBL xxxxx
+   heap offset: 0
+   low bound: 1
+   high bound: 5
+   elem size: 2
+   elem type: 0
+   elem label: 
+   literals: 
+   num literals: 0
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 4
 *)
 
 Program Test;

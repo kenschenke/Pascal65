@@ -20,6 +20,7 @@
 .import icodeFileOpen, icodeFileClose, icodeWriteInstruction
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
 .import icodeUnitDeclarations, icodeVariableDeclarations
+.import icodeInitData, icodeWriteData, icodeFreeData
 
 .import operand1
 
@@ -44,6 +45,9 @@ icodeLabel: .res 20
 .proc icodeWriteX
     ; Keep a copy of the root
     stq astRoot
+
+    ; Initialize the data segments
+    jsr icodeInitData
 
     ; Open the icode temporary file
     jsr icodeFileOpen
@@ -123,6 +127,12 @@ icodeLabel: .res 20
     jsr icodeStmts
 
     jsr scopeExit
+
+    ; Write out the data segments
+    jsr icodeWriteData
+
+    ; Free data segments
+    jsr icodeFreeData
 
     ; Close the temporary file
     jsr icodeFileClose

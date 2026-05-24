@@ -204,13 +204,6 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     jsr pushQZero
     jsr declResolve
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; ldq astRoot
-    ; jsr astFree
-    ; jsr freeUnits
-    ; rts
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
     ldq astRoot
     jsr pushQ
     lda #0
@@ -218,17 +211,7 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     jsr pushAX
     lda #0
     jsr pushA
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; lda #'1'
-    ; jsr $ffd2
-    ; lda #':'
-    ; jsr $ffd2
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jsr setDeclOffsets
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; ldq stackPointer
-    ; brk
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jsr setUnitOffsets
     ldq astRoot
     jsr fixGlobalOffsets
@@ -306,13 +289,11 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     jsr initIcode
     jsr icodeFileErase
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     lda isResolvingUnits
     beq :+
     jsr initMemInfo
     jsr heapSummary
     :
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ldq astRoot
     jsr astFree

@@ -18,6 +18,7 @@
 .import icodeShortValue, icodeWordValue, icodeCharValue, icodeLongValue
 .import icodeBoolValue, icodeRealValue, heapOffset, icodeWriteInstruction
 .import icodeOper1Int, icodeOper1Long, icodeOper1String
+.import icodeOper1Label, icodeArrayInit, icodeLabel, icodeRecordInit
 
 .bss
 
@@ -25,6 +26,11 @@ declPtr: .res 4
 localVars: .res 4
 varIndex: .res 1
 symDecl: .res 4
+declInitLabel: .res 15
+
+.data
+
+diStr: .asciiz "di"
 
 .code
 
@@ -206,8 +212,40 @@ DN: lda varIndex
     jsr icodeOper1Int
     lda #IC_NEW
     jsr icodeWriteInstruction
+
+    jsr formatDeclLabel
+    lda #<declInitLabel
+    ldx #>declInitLabel
+    ldy #0
+    ldz #0
+    jsr pushQ               ; label
     ldq declPtr
-    jsr icodeOper1Long
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ               ; type
+    ldz #decl::value
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ               ; value
+    ldq declPtr
+    jsr pushQ               ; declaration
+    jsr icodeArrayInit
+
+    ; Copy declInitLabel to icodeLabel
+    ldx #0
+:   lda declInitLabel,x
+    sta icodeLabel,x
+    beq :+
+    inx
+    bne :-
+
+:   jsr icodeOper1Label
     lda #IC_DIA
     jsr icodeWriteInstruction
     rts
@@ -298,13 +336,38 @@ DN: lda varIndex
     jsr icodeOper1Int
     lda #IC_NEW
     jsr icodeWriteInstruction
-    
+
     lda #0
     sta heapOffset
     sta heapOffset+1
 
+    jsr formatDeclLabel
+    lda #<declInitLabel
+    ldx #>declInitLabel
+    ldy #0
+    ldz #0
+    jsr pushQ               ; label
     ldq declPtr
-    jsr icodeOper1Long
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ               ; type
+    ldq declPtr
+    jsr pushQ               ; declaration
+    jsr icodeRecordInit
+
+    ; Copy declInitLabel to icodeLabel
+    ldx #0
+:   lda declInitLabel,x
+    sta icodeLabel,x
+    beq :+
+    inx
+    bne :-
+
+:   jsr icodeOper1Label
     lda #IC_DIR
     jsr icodeWriteInstruction
     rts
@@ -406,5 +469,28 @@ L2: ldz #expr::value
     nop
     lda (ptr1),z
     jsr icodeWordValue
+    rts
+.endproc
+
+.proc formatDeclLabel
+    ldx #0
+:   lda diStr,x
+    beq :+
+    sta declInitLabel,x
+    inx
+    bne :-
+
+:   stx tmp1
+    ldq declPtr
+    stq intOp32
+    lda #<declInitLabel
+    clc
+    adc tmp1
+    pha
+    lda #>declInitLabel
+    adc #0
+    tax
+    pla
+    jsr hexstr
     rts
 .endproc

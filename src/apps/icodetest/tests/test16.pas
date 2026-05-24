@@ -2,7 +2,7 @@
 PSH IWU 0
 PSH CHR 
 NEW IWS 10
-DIA ILS 0
+DIA LBL xxxxx
 SST ILS 0
 PSH ILS 0
 BRA LBL xxxxx
@@ -33,6 +33,15 @@ PSH VDW 4 1 0
 PSH IWS 2
 INP IBS 19
 SFH IBS 0 IBS 1
+DAT IBU 5 LBL xxxxx
+   heap offset: 0
+   low bound: 1
+   high bound: 10
+   elem size: 1
+   elem type: 0
+   elem label: 
+   literals: 
+   num literals: 0
 *)
 
 Program Test;

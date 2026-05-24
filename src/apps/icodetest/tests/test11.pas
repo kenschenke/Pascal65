@@ -1,11 +1,11 @@
 (* Test 11 - Pointers
 PSH IWU 0
 NEW IWS 10
-DIA ILS 0
+DIA LBL xxxxx
 PSH IWU 0
 PSH IWU 0
 NEW IWS 8
-DIR ILS 0
+DIR LBL xxxxx
 PSH IWU 0
 PSH CHR 
 PSH ILS 0
@@ -75,6 +75,18 @@ POP
 POF IBS 1 IBS 0
 PSH VDW 9 1 6
 SET IBS 9 IBS 9
+DAT IBU 5 LBL xxxxx
+   heap offset: 0
+   low bound: 1
+   high bound: 5
+   elem size: 2
+   elem type: 0
+   elem label: 
+   literals: 
+   num literals: 0
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 8
 *)
 
 Program Test;

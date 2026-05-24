@@ -37,6 +37,9 @@ isByRef: .res 1
 
 .code
 
+; Parameters on stack, bottom to top:
+;    expression ptr
+;    isRead
 .proc icodeExpr
     lda #1
     jsr pushA
@@ -53,6 +56,10 @@ isByRef: .res 1
     ; Fall through to icodeExprPvt
 .endproc
 
+; Parameters on stack, bottom to top:
+;    expression ptr
+;    isRead
+;    isDeRef
 .proc icodeExprPvt
     jsr pushQZero               ; symPtr
 
@@ -904,9 +911,26 @@ L1: ldz #expr::kind
     ; Look up the array index
     ldz #expr::left
     jsr getChildExpr
+    ; If the left is a record field or a subscript, isRead should be 0.
+    ; Otherwise, it should be 1.
+    stq ptr1
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_FIELD
+    beq :+
+    cmp #EXPR_SUBSCRIPT
+    bne LF
+:   ldq ptr1
+    jsr pushQ
+    lda #0
+    jsr pushA
+    jsr icodeExpr
+    bra LR
+LF: ldq ptr1
     jsr icodeExprRead
     ; Put the address of the array variable into ptr1
-    ldz #expr::right
+LR: ldz #expr::right
     jsr getChildExpr
     jsr icodeExprRead
     bra L2
