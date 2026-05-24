@@ -1,3 +1,14 @@
+;
+; sourcefn.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2026
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; sourcefn routine
+
 .include "cbm_kernal.inc"
 .include "asmlib.inc"
 .include "c64.inc"
@@ -8,6 +19,7 @@
 
 prompt: .asciiz "Source file: "
 autosrc: .asciiz "autosrc"
+existMsg: .asciiz " does not exist."
 
 .bss
 
@@ -66,10 +78,8 @@ filename: .res 20
     jsr CLOSE
     ldx #0
     jsr CHKIN
-    lda #<filename
-    ldx #>filename
-    sec
-    rts
+    
+    jmp checkFn
 .endproc
 
 ; This routine prompts the user for the source filename to compile.
@@ -100,7 +110,45 @@ filename: .res 20
     lda #0
     sta filename,x      ; Null-terminate the filename
 
+    ; Fall through to checkFn
+.endproc
+
+; This routine checks if the file exists. If it does not, it
+; prints an error message then clears the carry bit and returns.
+.proc checkFn
+    ; Check if the file exists.
     lda #<filename
+    ldx #>filename
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    cmp #0
+    bne L1              ; Branch if the file exists
+
+    ; The file does not exist. Show a message then set the carry flag
+    ; and return.
+
+    lda #13
+    jsr CHROUT
+    jsr CHROUT
+    ldx #0
+:   lda filename,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   ldx #0
+:   lda existMsg,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda #13
+    jsr CHROUT
+    clc
+    rts
+
+L1: lda #<filename
     ldx #>filename
     sec
     rts

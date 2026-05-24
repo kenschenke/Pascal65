@@ -17,12 +17,16 @@ CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import clearKeyBuf, initLib, getSourceFn, runCompiler
+.import clearKeyBuf, initLib, getSourceFn, runCompiler, logError
+.import backupZeroPage, restoreZeroPage
 
 main:
     ; Save the stack pointer
     tsx
     stx savedStackPtr
+
+    ; Make a backup of page zero
+    jsr backupZeroPage
 
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
@@ -45,12 +49,25 @@ main:
     ; Load the library
     jsr initLib
 
+    ; Initialize the runtime stack
+    jsr stackInit
+
+    ; Initialize the memory heap
     jsr initMemHeap
+
+    ; Initialize error handling
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerErrors
 
     jsr getSourceFn
     bcs :+                      ; Branch if we have a filename
+    jsr restoreZeroPage
     rts
 
 :   jsr runCompiler
+
+    ; Restore page zero
+    jsr restoreZeroPage
 
     rts
