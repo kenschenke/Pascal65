@@ -86,7 +86,12 @@ L1: jsr getTypeKind
     bne L2
     rts             ; Nothing to do
 
-L2: jsr getTypePtr
+    ; Is this the PROGRAM declaration?
+L2: cmp #TYPE_PROGRAM
+    bne L3
+    rts             ; Nothing to do
+
+L3: jsr getTypePtr
     stq ptr2            ; decl type in ptr2
     ldz #declOffset
     neg
@@ -184,7 +189,6 @@ L2: jsr getTypePtr
     nop
     lda (stackPointer),z
     stq ptr4            ; ptr4 points to the symtab pointer
-    stq ptr4
     ldx #0
     ldz #0
 :   lda ptr2,x

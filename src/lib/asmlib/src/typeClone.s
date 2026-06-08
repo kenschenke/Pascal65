@@ -49,7 +49,7 @@
 L1: stq ptr2
 
     ; Clone the paramFields
-    ; If the type is a record, paramFields is a chain of decls.
+    ; If the type is a record or enumeration, paramFields is a chain of decls.
     ; If it's a procedure or function, paramFields is a chain of param_list.
 L2: ldz #type::paramFields
     neg
@@ -66,7 +66,11 @@ L2: ldz #type::paramFields
     lda (ptr1),z
     cmp #TYPE_RECORD
     bne :+
-    jsr cloneRecordFields
+    jsr cloneDeclFields
+    bra L3
+:   cmp #TYPE_ENUMERATION
+    bne :+
+    jsr cloneDeclFields
     bra L3
 :   cmp #TYPE_PROCEDURE
     bne :+
@@ -119,6 +123,7 @@ L3: stq ptr3
     ldz #type::flags
     nop
     lda (ptr1),z
+    ora #TYPE_FLAG_ISCLONED
     nop
     sta (ptr2),z
 
@@ -205,7 +210,7 @@ L6: jsr savePtrs
     stq ptr3
     ldz #type::symtab
     jsr storePtr
-
+    
     ; Done
     ldq ptr2
     rts
@@ -243,10 +248,10 @@ L6: jsr savePtrs
     rts
 .endproc
 
-; This routine clones a chain of record fields (decl structures).
+; This routine clones a chain of decl structures.
 ; The first decl in the chain is passed in ptr3.
 ; The first in the chain is returned in Q.
-.proc cloneRecordFields
+.proc cloneDeclFields
     jsr savePtrs
     ldq ptr3
     sec

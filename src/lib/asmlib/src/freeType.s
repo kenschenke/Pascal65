@@ -61,12 +61,17 @@
     ; Symtab
     jsr peekQ
     stq ptr1
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISCLONED
+    bne :+
     ldz #type::symtab
     jsr loadPtr
     jsr freeSymtab
 
     ; paramFields
-    jsr freeParamFields
+:   jsr freeParamFields
 
     ; Name
     jsr peekQ

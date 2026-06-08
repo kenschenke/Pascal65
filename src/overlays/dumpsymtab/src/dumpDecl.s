@@ -73,8 +73,11 @@ L1: ldz #0
     lda (ptr1),z
     stq ptr1
     jsr isQZero
-    beq L2
-    ldz #symbol::level
+    bne :+
+    lda #13
+    jsr dumpChar
+    bra L2
+:   ldz #symbol::level
     lda #'L'
     jsr printNumber
     lda #' '

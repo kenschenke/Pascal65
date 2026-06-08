@@ -1,5 +1,5 @@
 (* Test 2 - Type Definitions
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     agerange SYMBOL-GLOBAL L:1 O:0 TYPE-SUBRANGE S:1
     five SYMBOL-LOCAL L:0 O:0 TYPE-ENUMERATION-VALUE S:0

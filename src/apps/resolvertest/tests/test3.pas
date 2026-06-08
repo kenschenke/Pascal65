@@ -1,5 +1,5 @@
 (* Test 3 - Constants
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     greeting SYMBOL-GLOBAL L:1 O:2 TYPE-STRING-VAR S:2
     myint SYMBOL-GLOBAL L:1 O:0 TYPE-WORD S:2

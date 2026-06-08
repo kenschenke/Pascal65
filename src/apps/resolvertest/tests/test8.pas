@@ -1,5 +1,5 @@
 (* Test 8 - Test units
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     assign SYMBOL-GLOBAL L:0 O:0 TYPE-PROCEDURE S:0
     beginswith SYMBOL-GLOBAL L:0 O:0 TYPE-FUNCTION S:1

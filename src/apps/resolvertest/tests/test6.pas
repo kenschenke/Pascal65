@@ -1,5 +1,5 @@
 (* Test 6 - Functions and Procedures
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     myfunc SYMBOL-GLOBAL L:2 O:0 TYPE-FUNCTION S:2
     myproc SYMBOL-GLOBAL L:2 O:0 TYPE-PROCEDURE S:0

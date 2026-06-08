@@ -82,13 +82,6 @@ L1: jsr peekQ
     jsr loadPtr
     jsr freeType
 
-    ; Node
-    jsr peekQ
-    stq ptr1
-    ldz #expr::node
-    jsr loadPtr
-    jsr freeSymbol
-
     jsr rtPopQ
     jsr heapFree
     rts

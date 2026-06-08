@@ -1,5 +1,5 @@
 (* Test 1 - Scalar Variable Declarations
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     a SYMBOL-GLOBAL L:1 O:0 TYPE-SHORTINT S:1
     b SYMBOL-GLOBAL L:1 O:3 TYPE-BYTE S:1

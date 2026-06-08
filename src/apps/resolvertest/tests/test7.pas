@@ -1,5 +1,5 @@
 (* Test 7 - Pointers
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     arr SYMBOL-GLOBAL L:1 O:1 TYPE-ARRAY S:16
     functype SYMBOL-GLOBAL L:1 O:0 TYPE-ROUTINE-POINTER S:4

@@ -71,20 +71,6 @@ L2: jsr isHeapAllocated
     jsr loadPtr
     jsr freeSymtab
 
-    ; Node
-    jsr peekQ
-    stq ptr1
-    ldz #decl::node
-    jsr loadPtr
-    jsr freeSymbol
-
-    ; UnitSymbtab
-    jsr peekQ
-    stq ptr1
-    ldz #decl::unitSymtab
-    jsr loadPtr
-    jsr freeSymtab
-
     ; next
     jsr rtPopQ
     stq ptr1

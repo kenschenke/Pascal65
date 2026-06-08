@@ -1,5 +1,5 @@
 (* Test 4 - Arrays
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     arr1 SYMBOL-GLOBAL L:1 O:0 TYPE-ARRAY S:16
     arr2 SYMBOL-GLOBAL L:1 O:1 TYPE-ARRAY S:16

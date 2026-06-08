@@ -1,5 +1,5 @@
 (* Test 5 - Records
-decl test L:0 O:0 TYPE-PROGRAM S:0
+decl test 
   symtab
     myrec SYMBOL-GLOBAL L:1 O:0 TYPE-RECORD S:12
     otherrec SYMBOL-GLOBAL L:1 O:1 TYPE-RECORD S:20
