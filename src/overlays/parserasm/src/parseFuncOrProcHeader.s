@@ -135,19 +135,29 @@ L3: ldx #TYPE_PROCEDURE
     lda parserToken
     cmp #tcIdentifier
     bne L1
-    ; The return type must be a declared type
+    lda #TYPE_DECLARED
+    jsr pushA                   ; kind
+    lda #0
+    jsr pushA                   ; isConst
+    jsr pushQZero               ; subtype
+    jsr pushQZero               ; params
+    jsr typeCreate
+    stq returnType
     lda #<parserString
     ldx #>parserString
     jsr nameCreate
+    stq ptr2
+    ldq returnType
     stq ptr1
-    lda #TYPE_DECLARED
-    jsr pushA                   ; kind
-    ldq ptr1
-    jsr pushQ                   ; name
-    jsr pushQZero               ; type
-    jsr pushQZero               ; value
-    jsr declCreate
-    stq returnType
+    ldz #type::name
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
     jmp getToken
 
 L1: lda #0
