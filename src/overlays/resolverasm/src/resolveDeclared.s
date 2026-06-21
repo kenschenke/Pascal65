@@ -150,6 +150,82 @@ L4: ; Store the cloned type back into the declaration
     inz
     cpx #4
     bne :-
+
+    ; Save the type back into the symbol as well
+
+    ; If there's no symbol, we're done.
+    ldz #decl::node
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    bne :+
+    rts
+
+    ; If there's already a type in the symbol - free it.
+:   stq ptr1
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L5
+
+    stq ptr1                ; Store the old symbol type in ptr1
+
+    ; If the type is ENUMERATION, leave it alone.
+    ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr pushQ
+    ldq ptr1
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ENUMERATION
+    bne :+
+    jsr popQ
+    jsr popQ
+    rts
+
+:   jsr popQ
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    ldq ptr2
+    jsr pushQ               ; Save the cloned type on the runtime stack
+    ldq ptr1
+    jsr freeType
+    jsr popQ
+    stq ptr2
+
+    ; Load the declaration's symbol node back
+    ldz #declOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #decl::node
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    
+L5: ldz #symbol::type
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inx
+    inz
+    cpx #4
+    bne :-
     rts
 .endproc
 
