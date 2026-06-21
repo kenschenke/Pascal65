@@ -35,10 +35,20 @@
     stq ptr1
     ldz #type::subtype
     jsr loadPtr
+    stq ptr2
+    ldx #0
+:   lda ptr1,x
+    cmp ptr2,x
+    bne L1
+    inx
+    cpx #4
+    bne :-
+    bra L2
+L1: ldq ptr2
     jsr freeType
 
     ; Indextype
-    jsr peekQ
+L2: jsr peekQ
     stq ptr1
     ldz #type::indextype
     jsr loadPtr
@@ -71,10 +81,17 @@
     jsr freeSymtab
 
     ; paramFields
-:   jsr freeParamFields
+:   jsr peekQ
+    stq ptr1
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISCLONED
+    bne :+
+    jsr freeParamFields
 
     ; Name
-    jsr peekQ
+:   jsr peekQ
     stq ptr1
     ldz #type::name
     jsr loadPtr
@@ -88,9 +105,6 @@
 .endproc
 
 .proc freeParamFields
-    jsr peekQ
-    stq ptr1
-
     ldz #type::paramFields
     jsr loadPtr
     jsr isQZero

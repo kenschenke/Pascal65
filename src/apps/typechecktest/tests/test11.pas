@@ -13,11 +13,13 @@ D:DECL-TYPE test
       T:TYPE-PROCEDURE
         param: f
           T:TYPE-TEXT
+          flags: TYPE-FLAG-ISBYREF
       S:STMT-BLOCK
     D:DECL-TYPE fileproc
       T:TYPE-PROCEDURE
         param: f
           T:TYPE-FILE
+          flags: TYPE-FLAG-ISBYREF
       S:STMT-BLOCK
     S:STMT-EXPR
       E:EXPR-CALL T:TYPE-VOID
@@ -37,11 +39,11 @@ Var
   ft : Text;
   fh : File Of Integer;
 
-Procedure TextProc(f : Text);
+Procedure TextProc(Var f : Text);
 Begin
 End;
 
-Procedure FileProc(f : File);
+Procedure FileProc(Var f : File);
 Begin
 End;
 

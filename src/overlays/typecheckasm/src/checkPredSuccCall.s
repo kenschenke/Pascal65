@@ -129,7 +129,7 @@ L3: ldz #retnTypeOffset
     nop
     lda (stackPointer),z
     stq ptr2
-    ldz #type::subtype
+    ldz #type::typeId
     ldx #0
 :   lda ptr2,x
     nop

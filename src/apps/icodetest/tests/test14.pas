@@ -8,14 +8,14 @@ LOC LBL xxxxx
 RTS
 LOC LBL xxxxx
 PUF IBS 2 LBL xxxxx
-PSH VDR 18 1 0
+PSH VDW 18 1 0
 ASF IBS 2
 JSR LBL xxxxx IBS 0 IBS 0
 LOC LBL xxxxx
 POP
 POF IBS 0 IBS 0
 PUF IBS 2 LBL xxxxx
-PSH VDR 17 1 1
+PSH VDW 17 1 1
 ASF IBS 2
 JSR LBL xxxxx IBS 0 IBS 0
 LOC LBL xxxxx
@@ -29,11 +29,11 @@ Var
   ft : Text;
   fh : File Of Integer;
 
-Procedure TextProc(f : Text);
+Procedure TextProc(Var f : Text);
 Begin
 End;
 
-Procedure FileProc(f : File);
+Procedure FileProc(Var f : File);
 Begin
 End;
 

@@ -229,9 +229,12 @@ DN: lda #.sizeof(type)
     lda (stackPointer),z
     jsr isTypeInteger
     beq :+
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr4
     ldz #type::kind
     nop
-    lda (stackPointer),z
+    lda (ptr4),z
     cmp #TYPE_CHARACTER
     beq :+
     cmp #TYPE_ENUMERATION
@@ -240,9 +243,9 @@ DN: lda #.sizeof(type)
     jsr typeCheckError
 :   lda #type::kind
     nop
-    lda (stackPointer),z
+    lda (ptr4),z
     sta tmp1
-    ldz #type::subtype
+    ldz #type::typeId
     neg
     neg
     nop

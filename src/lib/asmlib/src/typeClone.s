@@ -36,7 +36,16 @@
     jsr isQZero
     beq L1
     stq ptr2                ; keep the subtype pointer in ptr2
-    ldq ptr1
+    ; Is the subtype the same as the type?
+    ldx #0
+:   lda ptr1,x
+    cmp ptr2,x
+    bne NE
+    inx
+    cpx #4
+    bne :-
+    bra L1
+NE: ldq ptr1
     jsr rtPushQ               ; store the type pointer on the stack
     ldq ptr2
     jsr typeClone           ; clone the subtype
@@ -59,35 +68,19 @@ L2: ldz #type::paramFields
     jsr isQZero
     beq L3
 
-    ; Clone param fields
+    ; Copy the paramFields
     stq ptr3
-    ldz #type::kind
+    ldz #type::paramFields
+    ldx #0
+:   lda ptr3,x
     nop
-    lda (ptr1),z
-    cmp #TYPE_RECORD
-    bne :+
-    jsr cloneDeclFields
-    bra L3
-:   cmp #TYPE_ENUMERATION
-    bne :+
-    jsr cloneDeclFields
-    bra L3
-:   cmp #TYPE_PROCEDURE
-    bne :+
-    jsr cloneRoutineParams
-    bra L3
-:   cmp #TYPE_FUNCTION
-    bne L3
-    jsr cloneRoutineParams
-    bra L3
-    lda #0
-    tax
-    tay
-    taz
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
 
-L3: stq ptr3
-
-    ; Save the type ptr on the stack first
+L3: ; Save the type ptr on the stack first
     ldq ptr1
     jsr rtPushQ
 
@@ -210,6 +203,15 @@ L6: jsr savePtrs
     stq ptr3
     ldz #type::symtab
     jsr storePtr
+
+    ; Copy the typeId
+    ldz #type::typeId
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    ldz #type::typeId
+    jsr storePtr
     
     ; Done
     ldq ptr2
@@ -245,31 +247,5 @@ L6: jsr savePtrs
     inx
     cpx #4
     bne :-
-    rts
-.endproc
-
-; This routine clones a chain of decl structures.
-; The first decl in the chain is passed in ptr3.
-; The first in the chain is returned in Q.
-.proc cloneDeclFields
-    jsr savePtrs
-    ldq ptr3
-    sec
-    jsr declClone
-    stq ptr3
-    jsr restorePtrs
-    ldq ptr3
-    rts
-.endproc
-
-; This routine clones a chain of routine parameters (param_list structures).
-; The first in the chain is returned in Q.
-.proc cloneRoutineParams
-    jsr savePtrs
-    ldq ptr3
-    jsr paramListClone
-    stq ptr3
-    jsr restorePtrs
-    ldq ptr3
     rts
 .endproc

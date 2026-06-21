@@ -34,6 +34,9 @@ namePtr: .res 4
 
 .code
 
+; Parameters passed on the runtime stack, bottom to top:
+;    Expression pointer to the first routine argument
+;    Pointer to the return type
 .proc checkFuncProcCall
     ; Push null pointers on the stack for the param and arg
     jsr pushQZero
@@ -282,14 +285,14 @@ L1: ldz #paramPtrOffset
     jsr loadStackValue
     jsr isQZero
     bne :+
-    ldq #argPtrOffset
+    ldz #argPtrOffset
     jsr loadStackValue
     jsr isQZero
     bne :+
     jmp DN
 
     ; Call exprTypeCheck for the argument
-:   ldz #exprOffset
+:   ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
     ldq stackPointer
@@ -302,9 +305,6 @@ L1: ldz #paramPtrOffset
     lda #0
     jsr pushA
     jsr exprTypeCheck
-    ldq stackPointer
-    jsr getBaseType
-    stq ptr2
 
     ; Get the type of the routine parameter
     ldz #paramPtrOffset
@@ -322,9 +322,12 @@ L1: ldz #paramPtrOffset
     nop
     lda (ptr1),z
     sta paramKind
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr2
     ldz #type::kind
     nop
-    lda (stackPointer),z
+    lda (ptr2),z
     sta argKind
 
     ; if (paramType.kind == TYPE_ENUMERATION)
@@ -356,6 +359,16 @@ EN: jsr checkEnumerationParam
     lda argKind
     cmp #TYPE_ARRAY
     bne :+
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr getBaseType
+    stq ptr1
     ldq stackPointer
     stq ptr2
     ldq ptr1
@@ -459,18 +472,39 @@ DN:
 .endproc
 
 .proc checkEnumerationParam
-    ; Compare paramType.subtype with argType.subtype
-    ldz #type::subtype
+    ; Compare paramType.typeId with argType.typeId
+    ; Look up argType typeId first
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr4
+    ldz #type::typeId
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    stq ptr4                    ; keep it in ptr4 for a second
+    ; Look up the paramType
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ; Save ptr4 on the stack
+    ldq ptr4
+    jsr pushQ
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr getBaseType
+    stq ptr1
+    ; Look up the param typeId
+    ldz #type::typeId
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr3
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr popQ
     stq ptr4
     ldx #0
 :   lda ptr3,x
@@ -546,7 +580,7 @@ DN:
     ldq ptr2
     jsr pushQ
     jsr isAssignableToString
-    beq :+
+    beq DN
     lda #errInvalidType
     jsr typeCheckError
 DN: rts
@@ -584,7 +618,16 @@ DN: rts
 L1: lda #errInvalidType
     jsr typeCheckError
     ; if (!(paramType.flags & TYPE_FLAG_ISBYREF))
-L2: ldz #type::flags
+L2: ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::flags
     nop
     lda (ptr1),z
     and #TYPE_FLAG_ISBYREF
@@ -737,13 +780,10 @@ L3: ldz #type::flags
     ldz #0
     stq ptr2
     plz
-    jsr loadStackValue
-    stq ptr1
     ldx #0
-    ldz #0
 :   lda ptr2,x
     nop
-    sta (ptr1),z
+    sta (stackPointer),z
     inz
     inx
     cpx #4

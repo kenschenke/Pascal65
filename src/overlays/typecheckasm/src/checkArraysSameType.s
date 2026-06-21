@@ -54,7 +54,18 @@ type1Offset = type2Offset + 4
     jsr typeCheckError
 
     ; Compare the indexes
-:   ldz #type1Offset
+:   ldz #type2Offset
+    jsr loadStackValue
+    jsr getBaseType
+    stq ptr2
+    ldz #type::indextype
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+
+    ldz #type1Offset
     jsr loadStackValue
     stq ptr1
     ldz #type::indextype
@@ -63,16 +74,6 @@ type1Offset = type2Offset + 4
     nop
     lda (ptr1),z
     stq ptr1
-
-    ldz #type2Offset
-    jsr loadStackValue
-    stq ptr2
-    ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr2
 
     ; Compare the min and max expressions
     ldz #type::min
@@ -89,7 +90,9 @@ type1Offset = type2Offset + 4
     beq :+
     lda #errInvalidType
     jsr typeCheckError
-:   rts
+:   jsr popQ
+    jsr popQ
+    rts
 .endproc
 
 ; This routine compares the kinds (EXPR_*) and the values

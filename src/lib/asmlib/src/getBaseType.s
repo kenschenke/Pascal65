@@ -38,6 +38,8 @@ L1: ldz #type::kind
     jmp DN
 :   cmp #TYPE_ENUMERATION_VALUE
     bne :+
+    ; Copy the subtype to the typeId
+    jsr copyTypeId
     jmp DN
 :   cmp #TYPE_DECLARED
     beq :+
@@ -60,13 +62,15 @@ L1: ldz #type::kind
     nop
     lda (ptr1),z
     jsr isQZero
-    beq DN
+    bne :+
+    jmp DN
 
-    stq ptr4
+:   stq ptr4
     jsr scopeLookup
     jsr isQZero
-    beq DN
-    stq ptr2
+    bne :+
+    jmp DN
+:   stq ptr2
     ldz #symbol::type
     neg
     neg
@@ -99,14 +103,24 @@ L2: ldz #type::kind
     nop
     lda (ptr1),z
     jsr isQZero
-    bne L1
-    ldz #symbol::type
+    beq :+
+    jmp L1
+:   ldz #symbol::type
     neg
     neg
     nop
     lda (ptr2),z
     stq ptr2
     ldz #type::subtype
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    ldz #type::typeId
     ldx #0
 :   lda ptr2,x
     nop
@@ -133,5 +147,24 @@ L8: cmp #TYPE_SUBRANGE
     jmp L1
 
 DN: ldq ptr1
+    rts
+.endproc
+
+.proc copyTypeId
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    ldz #type::typeId
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
     rts
 .endproc

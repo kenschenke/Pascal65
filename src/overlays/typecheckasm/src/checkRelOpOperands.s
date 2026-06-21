@@ -129,13 +129,13 @@ L1: lda #rightTypeOffset
     clc
     rts
 
-L2: ldz #type::subtype
+L2: ldz #type::typeId
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr3
-    ldz #type::subtype
+    ldz #type::typeId
     neg
     neg
     nop

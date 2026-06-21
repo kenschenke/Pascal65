@@ -530,6 +530,7 @@ TYPE_FLAG_ISBYREF   = 4
 TYPE_FLAG_ISSTD     = 8
 TYPE_FLAG_ISRETVAL  = 16
 TYPE_FLAG_ISCLONED  = 32
+TYPE_FLAG_ISTEMP    = 64
 
 SHRT_MAX = $7fff
 LONG_MAX = $7fffffff
@@ -537,6 +538,7 @@ LONG_MAX = $7fffffff
 .struct type
     kind .byte
     subtype .dword
+    typeId .dword
     indextype .dword
     flags .byte
     routineCode .byte               ; Routine code (rc*)

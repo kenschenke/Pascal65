@@ -35,6 +35,11 @@ indexType: .res 4
 
 .code
 
+; Parameters on the stack from bottom to top:
+;    Pointer to expression
+;    Pointer to record symbol table
+;    Pointer to type structure
+;    parentIsFuncCall byte (0 or non-zero)
 .proc exprTypeCheck
     ; Push the left and right types onto the stack
     lda #.sizeof(type)
@@ -140,28 +145,6 @@ LP: jsr pushA
     cpz #.sizeof(type)
     bne :-
 
-    ; Set the evalType of the expression by allocating a new type
-    ; and copying the leftType into it.
-;     lda #TYPE_VOID
-;     jsr pushA                   ; type kind
-;     lda #0
-;     jsr pushA                   ; isConst
-;     jsr pushQZero               ; subtype
-;     jsr pushQZero               ; params
-;     jsr typeCreate
-;     stq ptr2
-;     lda #leftTypeOffset
-;     jsr calcTypeBlockAddr
-;     stq ptr1
-;     ldz #0
-; :   nop
-;     lda (ptr1),z
-;     nop
-;     sta (ptr2),z
-;     inz
-;     cpz #.sizeof(type)
-;     bne :-
-
     ; Evaluate the next argument in the chain
     ldz #exprOffset
     jsr loadStackValue
@@ -183,19 +166,6 @@ LP: jsr pushA
     lda #0
     jsr pushA
     jsr exprTypeCheck
-
-;     ldz #exprOffset
-;     jsr loadStackValue
-;     stq ptr1
-;     ldx #0
-;     ldz #expr::evalType
-; :   lda ptr2,x
-;     nop
-;     sta (ptr1),z
-;     inz
-;     inx
-;     cpx #4
-;     bne :-
 
     jmp DN
 
@@ -477,6 +447,13 @@ DN:
     lda (ptr1),z
     jsr isQZero
     beq :+
+    stq ptr1
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISTEMP
+    beq :+
+    ldq ptr1
     jsr freeType
 :   rts
 .endproc
@@ -1151,6 +1128,12 @@ L2: ldz #type::kind
     jsr pushQZero
     jsr typeCreate
     stq ptr2
+    ldz #type::flags
+    nop
+    lda (ptr2),z
+    ora #TYPE_FLAG_ISTEMP
+    nop
+    sta (ptr2),z
 
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1318,8 +1301,6 @@ L8: stq ptr2
     nop
     lda (ptr2),z
     stq ptr2
-    ; ldz #rightTypeOffset
-    ; jsr copyToType
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
@@ -1508,13 +1489,27 @@ L2: lda #<arrayType
     bne L5
 L4: ldq indexType
     stq ptr1
-    ldz #type::kind
+    ldz #type::typeId
+    neg
+    neg
     nop
     lda (ptr1),z
+    stq ptr1
+    ldz #type::typeId
+    neg
+    neg
     nop
-    cmp (ptr2),z
-    beq L5
-    lda #errInvalidIndexType
+    lda (ptr2),z
+    stq ptr2
+    ldx #0
+:   lda ptr1,x
+    cmp ptr2,x
+    bne :+
+    inx
+    cpx #4
+    bne :-
+    bra L5
+:   lda #errInvalidIndexType
     jsr typeCheckError
     bra L5
 
@@ -1679,6 +1674,21 @@ L1: lda #leftTypeOffset
     lda (ptr3),z
     stq ptr4
     ldz #type::subtype
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (ptr1),z
+    inx
+    inz
+    cpx #4
+    bne :-
+    ldz #type::typeId
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr4
+    ldz #type::typeId
     ldx #0
 :   lda ptr4,x
     nop

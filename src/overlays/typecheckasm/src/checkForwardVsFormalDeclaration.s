@@ -62,19 +62,19 @@ L2: ldz #type::kind
     lda (ptr2),z
     cmp #TYPE_ENUMERATION
     bne L3
-    ldz #type::subtype
+    ldz #type::typeId
     neg
     neg
     nop
     lda (ptr2),z
     stq ptr2
-    ldz #type::subtype
+    ldz #type::typeId
     neg
     neg
     nop
     lda (ptr4),z
     stq ptr4
-    ; Compare the subtypes
+    ; Compare the typeIds
     ldx #0
 :   lda ptr2,x
     cmp ptr4,x

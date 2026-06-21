@@ -150,8 +150,20 @@ EN: ldz #leftTypeOffset
     ldz #leftTypeOffset
     jsr loadStackValue
     stq ptr1
+    ldz #type::typeId
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
     ldz #rightTypeOffset
     jsr loadStackValue
+    stq ptr2
+    ldz #type::typeId
+    neg
+    neg
+    nop
+    lda (ptr2),z
     stq ptr2
     ldx #0
 :   lda ptr1,x

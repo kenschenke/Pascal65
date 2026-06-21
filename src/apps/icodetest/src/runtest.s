@@ -220,6 +220,24 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     jsr getResolverUnitsList
     stq unitList
 
+    ; Show the AST tree
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; jsr initShowTree
+    ; ldq astRoot
+    ; ldq unitList
+    ; stq ptr1
+    ; ldz #unit::astRoot
+    ; neg
+    ; neg
+    ; nop
+    ; lda (ptr1),z
+    ; jsr showTree
+    ; ldq astRoot
+    ; jsr astFree
+    ; jsr freeUnits
+    ; rts
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     ; Check the error count
     lda errorCount
     beq :+
@@ -256,9 +274,20 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     ; rts
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+    ; Check the error count
+    lda errorCount
+    beq :+
+
+    ; Show an error message and pause
+    jsr errorCountMessage
+
     ; Free the PROGRAM scope symbol table
-    jsr scopeExit
+:   jsr scopeExit
     jsr freeSymtab
+
+    ; Reset the error count
+    lda #0
+    sta errorCount
 
     ; Generate the intermediate code
     lda #<strIcode

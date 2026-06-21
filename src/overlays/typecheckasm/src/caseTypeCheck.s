@@ -15,22 +15,26 @@
 
 typeOffset = 0
 exprOffset = typeOffset + .sizeof(type)
-labelExprOffset = exprOffset + 4
-subtypeOffset = labelExprOffset + 4
-exprKindOffset = subtypeOffset + 4
+labelStmtOffset = exprOffset + 4
+typeIdOffset = labelStmtOffset + 4
+exprKindOffset = typeIdOffset + 4
 
 .export caseTypeCheck
 
 .import loadStackValue, currentLineNumber, exprTypeCheck, typeCheckError
 .import getTypeConversion, stmtTypeCheck
 
+; Parameters passed on stack, bottom to top:
+;    Expression type kind (kind of expression in "Case Of ...")
+;    Expression typeId
+;    Statement for first branch label
 .proc caseTypeCheck
+    jsr pushQZero               ; store the current expression within each label
     lda #.sizeof(type)
     jsr pushBlock
-    jsr pushQZero               ; store the current expression within each label
 
     ; Loop through the case labels
-L1: ldz #labelExprOffset
+L1: ldz #labelStmtOffset
     jsr loadStackValue
     jsr isQZero
     bne :+
@@ -93,7 +97,7 @@ NE: ldz #exprOffset
     bra L2
 
     ; Type check the statements in the branch body
-NL: ldz #labelExprOffset
+NL: ldz #labelStmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::body
@@ -104,7 +108,7 @@ NL: ldz #labelExprOffset
     jsr stmtTypeCheck
 
     ; Move to the next label
-    ldz #labelExprOffset
+    ldz #labelStmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::next
@@ -113,7 +117,7 @@ NL: ldz #labelExprOffset
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #labelExprOffset
+    ldz #labelStmtOffset
     ldx #0
 :   lda ptr1,x
     nop
@@ -157,7 +161,7 @@ DN: lda #.sizeof(type)
     jsr typeCheckError
 :   ldz #exprKindOffset
     nop
-    sta (stackPointer),z
+    lda (stackPointer),z
     cmp #TYPE_ENUMERATION
     bne L3
     ldz #type::kind
@@ -167,13 +171,16 @@ DN: lda #.sizeof(type)
     beq L1
     cmp #TYPE_ENUMERATION_VALUE
     bne L3
-L1: ldz #type::subtype
+L1: ldq stackPointer
+    jsr getBaseType
+    stq ptr1
+    ldz #type::typeId
     neg
     neg
     nop
-    lda (stackPointer),z
+    lda (ptr1),z
     stq ptr1
-    ldz #subtypeOffset
+    ldz #typeIdOffset
     jsr loadStackValue
     stq ptr2
     ldx #0
