@@ -169,12 +169,6 @@ L2: rts
     ; Read the string length
     jsr CHRIN
     beq L2
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; pha
-    ; jsr CLRCHN
-    ; pla
-    ; brk
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     sta strlen
 
     ; Read the string
