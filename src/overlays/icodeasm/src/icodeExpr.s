@@ -584,6 +584,11 @@ L1: ldz #symPtrOffset
     inx
     cpx #.sizeof(type)
     bne :-
+    ; Clear the CLONED flag
+    lda #TYPE_FLAG_ISCLONED
+    eor #$ff
+    and rightType+type::flags
+    sta rightType+type::flags
 L1: lda rightType+type::flags
     bne L2
     ldz #exprOffset

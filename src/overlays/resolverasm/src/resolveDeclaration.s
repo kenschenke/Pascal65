@@ -69,6 +69,10 @@ L1: jsr getTypeKind
     bne L2
     jsr resolveRecordDecl
 
+    ; Copy the record's symbol table from the original type
+    ; into the cloned type in the declaration's symbol.
+    jsr storeSymtabInSymbolType
+
 L2: jsr getTypeKind
     cmp #TYPE_ENUMERATION
     bne L3
@@ -88,6 +92,8 @@ L4: jsr getTypeKind
 L5: jsr getTypePtr
     ldq ptr1
     jsr getTypeSize
+    sta intOp1
+    stx intOp1+1
     pha
     phx
     jsr getTypePtr
@@ -100,8 +106,56 @@ L5: jsr getTypePtr
     nop
     sta (ptr1),z
 
-    ; Resolve the declaration's value
+    ; Store it in the symbol's type too
     ldz #declOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #decl::node
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L6
+    stq ptr1
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::size
+    lda intOp1
+    nop
+    sta (ptr1),z
+    inz
+    lda intOp1+1
+    nop
+    sta (ptr1),z
+
+    ; If the type has a subtype, set its size as well
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L6
+    stq ptr1
+    jsr getTypeSize
+    ldz #type::size
+    nop
+    sta (ptr1),z
+    inz
+    txa
+    nop
+    sta (ptr1),z
+
+    ; Resolve the declaration's value
+L6: ldz #declOffset
     neg
     neg
     nop
@@ -113,14 +167,14 @@ L5: jsr getTypePtr
     nop
     lda (ptr1),z
     jsr isQZero
-    beq L6
+    beq L7
     jsr pushQ               ; expr
     jsr pushQZero           ; symtab
     lda #0
     jsr pushA               ; isRtnCall
     jsr exprResolve
 
-L6: ldz #declOffset
+L7: ldz #declOffset
     neg
     neg
     nop
@@ -130,7 +184,7 @@ L6: ldz #declOffset
     nop
     lda (ptr1),z
     cmp #DECL_USES
-    bne L7
+    bne L8
     ldz #decl::name
     neg
     neg
@@ -138,17 +192,17 @@ L6: ldz #declOffset
     lda (ptr1),z
     jsr injectUnit
 
-L7: ldz #decl::code
+L8: ldz #decl::code
     neg
     neg
     nop
     lda (ptr1),z
     jsr isQZero
-    beq L8
+    beq L9
     ldq ptr1
     jsr resolveDeclCode
 
-L8: jsr popA
+L9: jsr popA
     jsr popA
     jsr popQ
     jsr popQ
@@ -194,5 +248,60 @@ L1: jsr pushA
     ldz #type::kind
     nop
     lda (ptr1),z
+    rts
+.endproc
+
+; This routine stores the symbol table into the symbol's cloned type.
+; When a symbol is created for a record's declaration, the symbol gets
+; its own cloned copy of the record's type. The cloned copy needs to
+; have a copy of the record's symbol table also.
+;
+; ptr2 contains the symbol table to copy.
+.proc storeSymtabInSymbolType
+    ; Get the decl in ptr1
+    ldz #declOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1            ; decl in ptr1
+
+    ; Look up the decl's type
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+
+    ; Look up the type's symbol table
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2            ; symtab in ptr2
+
+    ldz #decl::node
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1            ; symbol in ptr1
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1            ; symbol type in ptr1
+    ldz #type::symtab
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
     rts
 .endproc

@@ -121,12 +121,16 @@ L4: jsr scopeLookup
     beq L7
 
 L5: stq ptr2
+    jsr pushQ
     ldz #symbol::type
     neg
     neg
     nop
     lda (ptr2),z
+    jsr typeClone
     stq ptr4
+    jsr popQ
+    stq ptr2
     ldq typePtr
     stq ptr1
     ldz #type::subtype

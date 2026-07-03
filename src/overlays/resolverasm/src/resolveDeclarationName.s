@@ -92,6 +92,7 @@ L2: cmp #TYPE_PROGRAM
     rts             ; Nothing to do
 
 L3: jsr getTypePtr
+    jsr typeClone
     stq ptr2            ; decl type in ptr2
     ldz #declOffset
     neg

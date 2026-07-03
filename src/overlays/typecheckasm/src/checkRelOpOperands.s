@@ -129,17 +129,29 @@ L1: lda #rightTypeOffset
     clc
     rts
 
-L2: ldz #type::typeId
+L2: ldz #type::subtype
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr3
-    ldz #type::typeId
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr3
+    ldz #type::subtype
     neg
     neg
     nop
     lda (ptr2),z
+    stq ptr4
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr4),z
     stq ptr4
     ldx #0
 :   lda ptr3,x

@@ -21,6 +21,7 @@ firstDeclOffset = 4
 newType: .res 4
 valueExpr: .res 4
 lastId: .res 4
+firstType: .res 1               ; Non-zero if the first decl for a typespec
 
 .code
 
@@ -89,6 +90,8 @@ L1: lda parserToken
     lda #0
     jsr parseTypeSpec
     stq newType
+    lda #1
+    sta firstType
 
     ; =
     lda parserToken
@@ -114,10 +117,12 @@ L4: ldq ptr1
     jsr isQZero
     beq L5
     stq lastId
-    ; Set type to newType
+    ; Set type
+    jsr getDeclType
+    stq ptr3
     ldz #decl::type
     ldx #0
-:   lda newType,x
+:   lda ptr3,x
     nop
     sta (ptr1),z
     inz
@@ -188,5 +193,35 @@ L7: ; skip extra semicolons
 
 L9: pla                     ; Discard isVarDecl
     ; leave lastDecl and firstDecl on stack
+    rts
+.endproc
+
+; This routine returns either:
+;    A clone of newType
+;
+;    or
+;
+;    newType if firstType is non-zero.
+.proc getDeclType
+    lda firstType
+    beq L1
+
+    lda #0
+    sta firstType
+    ldq newType
+    rts
+
+L1: ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr pushQ
+    ldq newType
+    jsr typeClone
+    stq ptr3
+    jsr popQ
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    ldq ptr3
     rts
 .endproc

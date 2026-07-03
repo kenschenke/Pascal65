@@ -25,12 +25,13 @@
 ;   13. Write, Writeln, Writestr
 ;   14. Pass by reference
 ;   15. Case statement
+;   16. Enumerations
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 15
+NUM_TESTS = 16
 
 .bss
 

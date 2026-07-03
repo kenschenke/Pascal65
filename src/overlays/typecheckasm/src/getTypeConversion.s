@@ -29,7 +29,6 @@ typeConversions: .byte TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_LONGINT
 ; The first expression kind is passed in A and the second in X.
 ; The resulting expression kind is returned in A.
 .proc getTypeConversion
-; brk
     dex
     phx
     sta tmp1

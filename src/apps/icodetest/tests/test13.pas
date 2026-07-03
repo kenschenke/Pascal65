@@ -17,6 +17,11 @@ PSH VVW 7 2 1
 SET IBS 7 IBS 7
 RTS
 LOC LBL xxxxx
+PSH VDR 4 2 0
+PSH FLT 3.14159
+ADD IBS 4 IBS 7 IBS 7
+PSH RET 
+SET IBS 7 IBS 7
 RTS
 LOC LBL xxxxx
 PSH IWU 3039
@@ -105,6 +110,7 @@ End;
 
 Function MyFunc(i : Integer) : Real;
 Begin
+  MyFunc := i + 3.14159;
 End;
 
 Procedure ArrayProc(Var a : MyArray);

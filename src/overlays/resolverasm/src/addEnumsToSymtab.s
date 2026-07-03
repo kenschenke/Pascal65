@@ -48,6 +48,7 @@ L1: ldq currentEnum
     lda #1
     jsr pushA                       ; isConst
     ldq enumType
+    jsr typeClone
     jsr pushQ                       ; subtype
     jsr pushQZero                   ; params
     jsr typeCreate

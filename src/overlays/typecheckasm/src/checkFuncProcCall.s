@@ -474,38 +474,49 @@ DN:
 .proc checkEnumerationParam
     ; Compare paramType.typeId with argType.typeId
     ; Look up argType typeId first
-    ldq stackPointer
-    jsr getBaseType
-    stq ptr4
-    ldz #type::typeId
-    neg
-    neg
-    nop
-    lda (ptr4),z
-    stq ptr4                    ; keep it in ptr4 for a second
-    ; Look up the paramType
     ldz #paramPtrOffset
     jsr loadStackValue
-    stq ptr1
-    ; Save ptr4 on the stack
-    ldq ptr4
-    jsr pushQ
+    stq ptr3
     ldz #param_list::type
     neg
     neg
     nop
-    lda (ptr1),z
+    lda (ptr3),z
     jsr getBaseType
-    stq ptr1
-    ; Look up the param typeId
-    ldz #type::typeId
+    stq ptr3
+    ldz #type::subtype
     neg
     neg
     nop
-    lda (ptr1),z
+    lda (ptr3),z
     stq ptr3
-    jsr popQ
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr3
+    ldq stackPointer
     stq ptr4
+    ldq ptr3
+    jsr pushQ                       ; Save ptr3 on the stack
+    ldq ptr4
+    jsr getBaseType
+    stq ptr4
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    stq ptr4
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    stq ptr4
+    jsr popQ                        ; Pop ptr3 back off stack
+    stq ptr3
     ldx #0
 :   lda ptr3,x
     cmp ptr4,x
@@ -527,11 +538,14 @@ DN:
     nop
     lda (ptr1),z
     stq ptr3
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr4
     ldz #type::paramFields
     neg
     neg
     nop
-    lda (stackPointer),z
+    lda (ptr4),z
     stq ptr4
     ldx #0
 :   lda ptr3,x

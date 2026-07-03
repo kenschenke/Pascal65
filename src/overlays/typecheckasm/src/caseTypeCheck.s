@@ -16,8 +16,8 @@
 typeOffset = 0
 exprOffset = typeOffset + .sizeof(type)
 labelStmtOffset = exprOffset + 4
-typeIdOffset = labelStmtOffset + 4
-exprKindOffset = typeIdOffset + 4
+paramFieldsOffset = labelStmtOffset + 4
+exprKindOffset = paramFieldsOffset + 4
 
 .export caseTypeCheck
 
@@ -26,7 +26,7 @@ exprKindOffset = typeIdOffset + 4
 
 ; Parameters passed on stack, bottom to top:
 ;    Expression type kind (kind of expression in "Case Of ...")
-;    Expression typeId
+;    Expression type paramFields
 ;    Statement for first branch label
 .proc caseTypeCheck
     jsr pushQZero               ; store the current expression within each label
@@ -174,13 +174,19 @@ DN: lda #.sizeof(type)
 L1: ldq stackPointer
     jsr getBaseType
     stq ptr1
-    ldz #type::typeId
+    ldz #type::subtype
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #typeIdOffset
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #paramFieldsOffset
     jsr loadStackValue
     stq ptr2
     ldx #0

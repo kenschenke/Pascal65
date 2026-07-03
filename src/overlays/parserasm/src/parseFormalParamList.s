@@ -21,6 +21,7 @@ lastId: .res 4
 paramType: .res 4
 firstParam: .res 4
 lastParam: .res 4
+firstType: .res 1
 
 .code
 
@@ -66,14 +67,22 @@ L2: jsr parseParamSubList
     
     ; <id-type>
 :   jsr parseParamType
+    lda #1
+    sta firstType
 
     ; Loop to assign the offset and type to each
     ; param in the list.
     ldq firstId
     stq ptr1
-L5: ldz #param_list::type
+L5: ldq ptr1
+    jsr pushQ
+    jsr getParamType
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    ldz #param_list::type
     ldx #0
-:   lda paramType,x
+:   lda ptr2,x
     nop
     sta (ptr1),z
     inz
@@ -137,6 +146,26 @@ L9: lda #tcRParen
     jsr condGetToken
 
     ldq firstParam
+    rts
+.endproc
+
+; This routine returns either:
+;    A clone of paramType
+;
+;    or
+;
+;    paramType if firstType is non-zero.
+.proc getParamType
+    lda firstType
+    beq L1
+
+    lda #0
+    sta firstType
+    ldq paramType
+    rts
+
+L1: ldq paramType
+    jsr typeClone
     rts
 .endproc
 

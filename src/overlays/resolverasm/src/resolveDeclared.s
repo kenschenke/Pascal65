@@ -105,6 +105,13 @@ L2: stq ptr2            ; save symbol ptr
     ; Set the subtype
     jsr getTypePtr
     ; Copy the decl type into the cloned type's subtype
+    ldq ptr2
+    jsr pushQ
+    ldq ptr1
+    jsr typeClone
+    stq ptr1
+    jsr popQ
+    stq ptr2
     ldz #type::subtype
     ldx #0
 :   lda ptr1,x
@@ -142,6 +149,24 @@ L4: ; Store the cloned type back into the declaration
     lda (stackPointer),z
     stq ptr1
     ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq :+
+    stq ptr3
+    ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr pushQ
+    ldq ptr3
+    jsr freeType
+    jsr popQ
+    stq ptr2
+    jsr popQ
+    stq ptr1
+:   ldz #decl::type
     ldx #0
 :   lda ptr2,x
     nop
@@ -201,6 +226,7 @@ L4: ; Store the cloned type back into the declaration
     ldq ptr1
     jsr freeType
     jsr popQ
+    jsr typeClone           ; Clone the decl's type so the symbol has its own copy
     stq ptr2
 
     ; Load the declaration's symbol node back

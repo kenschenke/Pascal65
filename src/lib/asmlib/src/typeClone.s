@@ -46,7 +46,7 @@
     bne :-
     bra L1
 NE: ldq ptr1
-    jsr rtPushQ               ; store the type pointer on the stack
+    jsr rtPushQ             ; store the type pointer on the stack
     ldq ptr2
     jsr typeClone           ; clone the subtype
     stq ptr2                ; subtype in ptr2
@@ -57,7 +57,7 @@ NE: ldq ptr1
     ; There is no subtype - put null in ptr2
 L1: stq ptr2
 
-    ; Clone the paramFields
+    ; Copy the paramFields
     ; If the type is a record or enumeration, paramFields is a chain of decls.
     ; If it's a procedure or function, paramFields is a chain of param_list.
 L2: ldz #type::paramFields
@@ -210,6 +210,7 @@ L6: jsr savePtrs
     neg
     nop
     lda (ptr1),z
+    stq ptr3
     ldz #type::typeId
     jsr storePtr
     

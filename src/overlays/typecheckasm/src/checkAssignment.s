@@ -146,11 +146,17 @@ EN: ldz #leftTypeOffset
     beq :+
     cmp #TYPE_ENUMERATION_VALUE
     bne PT
-:   ; The subtypes must be the same
+:   ; The paramFields must be the same
     ldz #leftTypeOffset
     jsr loadStackValue
     stq ptr1
-    ldz #type::typeId
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::paramFields
     neg
     neg
     nop
@@ -159,7 +165,13 @@ EN: ldz #leftTypeOffset
     ldz #rightTypeOffset
     jsr loadStackValue
     stq ptr2
-    ldz #type::typeId
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    ldz #type::paramFields
     neg
     neg
     nop

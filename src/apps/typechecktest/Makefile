@@ -140,6 +140,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/test13.pas test13.pas,seq \
 	-write $(PETSCIIDIR)/test14.pas test14.pas,seq \
 	-write $(PETSCIIDIR)/test15.pas test15.pas,seq \
+	-write $(PETSCIIDIR)/test16.pas test16.pas,seq \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq
 

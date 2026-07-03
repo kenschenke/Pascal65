@@ -245,7 +245,13 @@ DN: lda #.sizeof(type)
     nop
     lda (ptr4),z
     sta tmp1
-    ldz #type::typeId
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::paramFields
     neg
     neg
     nop
