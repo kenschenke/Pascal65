@@ -44,21 +44,17 @@
     jsr rtPopQ
     stq ptr1
 
-    ; Clone the name
-    jsr savePtrs
+    ; Copy the name
     ldz #param_list::name
-    neg
-    neg
-    nop
+    ldx #0
+:   nop
     lda (ptr1),z
-    stq ptr3
-    jsr isQZero
-    beq :+
-    jsr nameClone
-    stq ptr3
-:   jsr restorePtrs
-    ldz #param_list::name
-    jsr storePtr
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #NAMELEN
+    bne :-
 
     ; Clone the type
     jsr savePtrs

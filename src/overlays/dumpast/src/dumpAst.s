@@ -14,7 +14,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export dumpAst, level, indent, dumpString, printz, newLine, showPrefix, prefix
+.export dumpAst, level, indent, dumpString, dumpPtrString, printz, newLine, showPrefix, prefix
 .export dumpChar
 
 .import dumpDecl
@@ -85,8 +85,52 @@ L2: rts
 ; This routine dumps a string to the membuf.
 ; The offset in the structure is passed in Z.
 ; The pointer to the structure is in ptr1.
-; The routine is safe to call if the string is null.
+;
+; ptr1 is preserved.
 .proc dumpString
+    ; First, check if the string is empty
+    nop
+    lda (ptr1),z
+    beq L2
+
+    ; Write a space to the membuf
+    phz
+    ldq ptr1
+    jsr pushQ
+    lda #' '
+    jsr dumpChar
+    jsr popQ
+    stq ptr1
+    plz
+
+    ; Write the characters in the string, one at a time.
+    ; The start of each loop iteration assumes ptr1 is the structure
+    ; and Z contains the current offset
+L1: nop
+    lda (ptr1),z
+    beq L2
+    
+    sta tmp1                ; Store the character in tmp1
+    phz
+    ldq ptr1
+    jsr pushQ               ; Save ptr1
+    lda tmp1
+    jsr dumpChar
+
+    jsr popQ
+    stq ptr1
+    plz
+    inz
+    bra L1
+
+L2: rts
+.endproc
+
+; This routine dumps a string to the membuf.
+; The offset in the structure is passed in Z.
+; The pointer to the structure is in ptr1.
+; The routine is safe to call if the string is null.
+.proc dumpPtrString
     phz
     ldq ptr1
     jsr pushQ

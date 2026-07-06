@@ -16,7 +16,7 @@
 
 .export dumpType, dumpTypeMember, dumpTypeKind
 
-.import level, printz, dumpString, dumpExprValue, newLine, showPrefix, dumpChar, dumpDecl
+.import level, printz, dumpString, dumpPtrString, dumpExprValue, newLine, showPrefix, dumpChar, dumpDecl
 .import indent
 
 .bss
@@ -166,7 +166,7 @@ L5: cmp #TYPE_SUBRANGE
     bra L7
 
 L6: ldz #type::name
-    jsr dumpString
+    jsr dumpPtrString
 
     jsr newLine
 

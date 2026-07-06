@@ -10,9 +10,11 @@
 ; resolver overlay miscellaneous routines
 
 .include "asmlib.inc"
+.include "zeropage.inc"
 .include "4510macros.inc"
 
 .export currentLineNumber, resolverError, setUnitsList, getUnitsList, units
+.export calcNamePtr
 
 .bss
 
@@ -34,5 +36,18 @@ units: .res 4
 
 .proc getUnitsList
     ldq units
+    rts
+.endproc
+
+; Structure pointer in A/X/Y and structure offset in Z.
+; Address returned in Q.
+.proc calcNamePtr
+    stz intOp32
+    ldz #0
+    stz intOp32+1
+    stz intOp32+2
+    stz intOp32+3
+    clc
+    adcq intOp32
     rts
 .endproc

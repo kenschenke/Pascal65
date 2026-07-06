@@ -24,13 +24,6 @@ L1: jsr isQZero
     stq ptr1
     jsr rtPushQ
 
-    ; Name
-    ldz #param_list::name
-    jsr loadPtr
-    jsr isQZero
-    beq :+
-    jsr heapFree
-
     ; Type
 :   jsr peekQ
     stq ptr1

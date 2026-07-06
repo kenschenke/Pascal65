@@ -16,7 +16,7 @@
 
 .export paramListResolve
 
-.import getTypeSize
+.import getTypeSize, calcNamePtr
 
 .bss
 
@@ -82,10 +82,7 @@ L1: ldq paramPtr
     stq ptr1
 
     ldz #param_list::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     jsr pushQ               ; name
     jsr symbolCreate
     stq ptr3                ; new symbol in ptr3
@@ -107,12 +104,8 @@ L1: ldq paramPtr
     sta (ptr3),z
 
     ldq paramPtr
-    stq ptr1
     ldz #param_list::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr2
     sec
     jsr scopeBind

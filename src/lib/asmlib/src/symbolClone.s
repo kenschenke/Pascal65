@@ -59,12 +59,14 @@
 
     ; Copy the name
     ldz #symbol::name
+    ldx #0
 :   nop
     lda (ptr1),z
     nop
     sta (ptr2),z
     inz
-    cpz #NAMELEN
+    inx
+    cpx #NAMELEN
     bne :-
 
     ; Copy which

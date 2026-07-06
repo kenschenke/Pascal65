@@ -17,7 +17,7 @@
 
 .export dumpDecl
 
-.import dumpString, printz, dumpTypeMember, dumpStmtMember, level, newLine, showPrefix, dumpExpr
+.import dumpPtrString, printz, dumpTypeMember, dumpStmtMember, level, newLine, showPrefix, dumpExpr
 
 .data
 
@@ -48,7 +48,7 @@ kinds: .byte .LOBYTE(strDECL_CONST), .HIBYTE(strDECL_CONST)
     jsr printz
 
     ldz #decl::name
-    jsr dumpString
+    jsr dumpPtrString
 
     jsr newLine
     ldz #decl::type

@@ -19,7 +19,7 @@ symtabOffset = 0
 
 .export fixGlobalOffsets
 
-.import units
+.import units, calcNamePtr
 
 .bss
 
@@ -122,15 +122,9 @@ L1: jsr loadSymtab
     ldq units
     stq currentUnit
 
-    lda #symbol::name
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
     ldq ptr1
-    clc
-    adcq intOp32
+    ldz #symbol::name
+    jsr calcNamePtr
     stq name
 
 L1: ldq currentUnit

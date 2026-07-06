@@ -39,23 +39,20 @@
     bpl :-
 
     ; Set up the name
-    ldq ptr1
-    jsr rtPushQ
-    plx
     pla
-    jsr nameCreate
-    stq ptr2
-    jsr rtPopQ
-    stq ptr1
-    ldz #param_list::name+3
-    ldx #3
-:   lda ptr2,x
+    sta ptr2+1
+    pla
+    sta ptr2
+    ldz #param_list::name
+    ldy #0
+:   lda (ptr2),y
+    beq :+
     nop
     sta (ptr1),z
-    dez
-    dex
-    bpl :-
+    inz
+    iny
+    bne :-
 
-    ldq ptr1
+:   ldq ptr1
     rts
 .endproc

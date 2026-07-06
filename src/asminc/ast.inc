@@ -600,7 +600,7 @@ LONG_MAX = $7fffffff
 ;        params  : list of enumeration identifiers
 
 .struct param_list
-    name .dword
+    name .res 24
     type .dword
     next .dword
     lineNumber .word
