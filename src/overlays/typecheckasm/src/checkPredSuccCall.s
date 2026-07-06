@@ -123,21 +123,6 @@ L3: ldz #retnTypeOffset
     lda #TYPE_FLAG_ISCONST
     nop
     sta (ptr1),z
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr2
-    ldz #type::typeId
-    ldx #0
-:   lda ptr2,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
     bra RT
 
 DN: pha

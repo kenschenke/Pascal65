@@ -1690,21 +1690,6 @@ L1: lda #leftTypeOffset
     inz
     cpx #4
     bne :-
-    ldz #type::typeId
-    neg
-    neg
-    nop
-    lda (ptr3),z
-    stq ptr4
-    ldz #type::typeId
-    ldx #0
-:   lda ptr4,x
-    nop
-    sta (ptr1),z
-    inx
-    inz
-    cpx #4
-    bne :-
     ldz #type::paramFields
     neg
     neg

@@ -538,7 +538,6 @@ LONG_MAX = $7fffffff
 .struct type
     kind .byte
     subtype .dword
-    typeId .dword
     indextype .dword
     flags .byte
     routineCode .byte               ; Routine code (rc*)

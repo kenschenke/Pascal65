@@ -204,16 +204,6 @@ L6: jsr savePtrs
     ldz #type::symtab
     jsr storePtr
 
-    ; Copy the typeId
-    ldz #type::typeId
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr3
-    ldz #type::typeId
-    jsr storePtr
-    
     ; Done
     ldq ptr2
     rts

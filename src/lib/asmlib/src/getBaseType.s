@@ -38,8 +38,6 @@ L1: ldz #type::kind
     jmp DN
 :   cmp #TYPE_ENUMERATION_VALUE
     bne :+
-    ; Copy the subtype to the typeId
-    jsr copyTypeId
     jmp DN
 :   cmp #TYPE_DECLARED
     beq :+
@@ -120,15 +118,6 @@ L2: ldz #type::kind
     inx
     cpx #4
     bne :-
-    ldz #type::typeId
-    ldx #0
-:   lda ptr2,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
     jmp L1
 
 L8: cmp #TYPE_SUBRANGE
@@ -147,24 +136,5 @@ L8: cmp #TYPE_SUBRANGE
     jmp L1
 
 DN: ldq ptr1
-    rts
-.endproc
-
-.proc copyTypeId
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr2
-    ldz #type::typeId
-    ldx #0
-:   lda ptr2,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
     rts
 .endproc
