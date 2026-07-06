@@ -472,8 +472,8 @@ DN:
 .endproc
 
 .proc checkEnumerationParam
-    ; Compare paramType.typeId with argType.typeId
-    ; Look up argType typeId first
+    ; Compare paramType with argType.
+    ; Look up argType first
     ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr3

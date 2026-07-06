@@ -81,9 +81,8 @@ L1: lda #1
     lda parserToken
     cmp #tcComma
     beq L2
-    lda parserToken
-    ldx #<tlIndexStart
-    ldy #>tlIndexStart
+    lda #<tlIndexStart
+    ldx #>tlIndexStart
     jsr tokenIn
     bne L3
 L2: ; For each type spec after the first, create an element type object

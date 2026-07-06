@@ -659,7 +659,7 @@ L2: jsr popQ        ; initBuf
     stq ptr1
     jsr popQ
     stq ptr2
-    ldz #expr::value
+    ldz #decl::value
     neg
     neg
     nop

@@ -11,12 +11,13 @@
 .import parseSubrangeLimit, condGetToken, doResync, parserToken, parserError
 .import tlSubrangeLimitFollow, tlDeclarationStart
 
-nameOffset = 1
 allowShorthandOffset = 0
+nameOffset = allowShorthandOffset + 1
 
 .bss
 
 subrangeType: .res 4
+declaredType: .res 4
 minType: .res 1
 maxType: .res 1
 subrangeMin: .res 4
@@ -194,6 +195,7 @@ L3: lda minType
     jsr pushQZero
     jsr pushQZero
     jsr typeCreate
+    stq declaredType
     stq ptr2
     ldq subrangeType
     stq ptr1
@@ -211,12 +213,15 @@ L3: lda minType
     neg
     nop
     lda (stackPointer),z
+    jsr nameClone
+    stq ptr3
+    ldq declaredType
     stq ptr2
     ldz #type::name
     ldx #0
-:   lda ptr2,x
+:   lda ptr3,x
     nop
-    sta (ptr1),z
+    sta (ptr2),z
     inz
     inx
     cpx #4

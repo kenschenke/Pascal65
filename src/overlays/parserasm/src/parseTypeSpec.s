@@ -155,6 +155,7 @@ L9: jsr pushA
     cmp #tcDotDot
     bne :+
     lda #0
+    jsr pushA
     jmp parseSubrangeType
 :   lda #TYPE_DECLARED
     jsr pushA

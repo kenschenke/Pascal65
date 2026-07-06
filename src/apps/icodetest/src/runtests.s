@@ -30,12 +30,13 @@
 ;   18. If, Then, Else
 ;   19. Array literals
 ;   20. Array inside record
+;   21. Enumerations
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 20
+NUM_TESTS = 21
 
 .bss
 

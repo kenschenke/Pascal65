@@ -655,17 +655,28 @@ L3: lda rightType+type::flags
     lda #IC_RET
     jsr CHROUT
     jmp DN
-:   lda rightType
-    cmp #TYPE_ENUMERATION_VALUE
-    bne :+
-    ldq symPtr
+:   ldq symPtr
     stq ptr1
     ldz #symbol::decl
     neg
     neg
     nop
     lda (ptr1),z
+    jsr isQZero
+    beq :+
     stq ptr1
+    ldz #decl::kind
+    nop
+    lda (ptr1),z
+    cmp #DECL_VARIABLE
+    beq L4
+    ldz #decl::code
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    bne L4
     ldz #decl::value
     neg
     neg
@@ -681,14 +692,15 @@ L3: lda rightType+type::flags
     lda #IC_PSH
     jsr icodeWriteInstruction
     jmp DN
+L4: lda rightType
 :   cmp #TYPE_FUNCTION
-    beq L4
+    beq L5
     cmp #TYPE_PROCEDURE
-    beq L4
-    jmp L5
+    beq L5
+    jmp L6
 
     ; Function or procedure
-L4: ldq symPtr
+L5: ldq symPtr
     stq ptr1
     ldz #symbol::decl
     neg
@@ -712,7 +724,7 @@ L4: ldq symPtr
     jsr icodeWriteInstruction
     jmp DN
 
-L5: ldq rightType+type::subtype
+L6: ldq rightType+type::subtype
     jsr isQZero
     beq :+
     lda rightType
@@ -723,11 +735,11 @@ L5: ldq rightType+type::subtype
     ldz #type::flags
     nop
     lda (ptr1),z
-    bra L6
+    bra L7
 :   lda rightType+type::flags
 
     ; Flags in A
-L6: and #TYPE_FLAG_ISBYREF
+L7: and #TYPE_FLAG_ISBYREF
     sta isByRef
 
     ldz #isReadOffset

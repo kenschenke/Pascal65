@@ -5,8 +5,8 @@
 .include "tokenizer.inc"
 .include "4510macros.inc"
 
-nameOffset = 2
 limitOffset = 0
+nameOffset = limitOffset + 2
 
 .export parseSubrangeLimit
 

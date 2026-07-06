@@ -50,9 +50,12 @@ indexTypeOffset = 4
 
     ; If the index type is not an ordinal, the type must be a character
     ; ptr1 still points to the index type
-L1: ldz #type::kind
+L1: ldq ptr1
+    jsr getBaseType
+    stq ptr2
+    ldz #type::kind
     nop
-    lda (ptr1),z
+    lda (ptr2),z
     jsr isTypeOrdinal
     beq L2                  ; Branch if it's an ordinal
     ; Make sure the index type is a character
@@ -61,7 +64,7 @@ L1: ldz #type::kind
     lda (ptr1),z
     cmp #TYPE_CHARACTER
     beq L2
-    ldz #errInvalidIndexType
+    lda #errInvalidIndexType
     jsr typeCheckError
 
     ; If this an array of arrays, check the embedded array as well

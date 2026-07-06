@@ -1476,31 +1476,39 @@ L2: lda #<arrayType
     nop
     lda (ptr1),z
     cmp #TYPE_ENUMERATION
-    bne L3
-    lda #rightTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
-    cmp #TYPE_ENUMERATION
     beq L4
     cmp #TYPE_ENUMERATION_VALUE
-    bne L5
-L4: ldq indexType
+    bne L3
+L4: lda #rightTypeOffset
+    jsr calcTypeBlockAddr
+    jsr getBaseType
+    stq ptr2
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    ldq indexType
     stq ptr1
-    ldz #type::typeId
+    ldz #type::subtype
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #type::typeId
+    ldz #type::paramFields
     neg
     neg
     nop
-    lda (ptr2),z
-    stq ptr2
+    lda (ptr1),z
+    stq ptr1
     ldx #0
 :   lda ptr1,x
     cmp ptr2,x

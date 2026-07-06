@@ -48,6 +48,12 @@
     jsr isQZero
     beq :+
     stq ptr1
+    ldz #symbol::decl
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
     ldz #decl::value
     neg
     neg
@@ -81,6 +87,7 @@
 .endproc
 
 .proc getWordLimit
+    ldq ptr1
     ldz #expr::value
     nop
     lda (ptr1),z
@@ -90,6 +97,7 @@
     lda (ptr1),z
     sta intOp1+1
     ldz #expr::neg
+    nop
     lda (ptr1),z
     bne :+
     lda intOp1
