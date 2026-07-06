@@ -20,7 +20,7 @@ CH_BACKARROW = 95
 
 .export showParam
 
-.import showAddr, printz, printStructName
+.import showAddr, printz, printNamePtr
 .import printStructNumber, getKey, loadPtr
 .import showTypeKind, showType, printStructAddr
 
@@ -41,7 +41,7 @@ prompt: .byte "T:type  N:next  ", $5f, ":back", $0d, $0d, $0
     lda #<nameLabel
     ldx #>nameLabel
     ldz #param_list::name
-    jsr printStructName
+    jsr printNamePtr
 
     ; Type
     lda #<typeLabel

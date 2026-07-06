@@ -20,7 +20,7 @@ CH_BACKARROW = 95
 
 .export showExpr, showSubExpr
 
-.import showAddr, printz, printzLong, printStructAddr, printStructName
+.import showAddr, printz, printzLong, printStructAddr, printNamePtr
 .import printStructBool, printStructNumber, getKey, loadPtr, printzLong
 .import showTypeKind, showType
 
@@ -162,7 +162,7 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     lda #<nameLabel
     ldx #>nameLabel
     ldz #expr::name
-    jsr printStructName
+    jsr printNamePtr
 
     ; Node
     lda #<nodeLabel

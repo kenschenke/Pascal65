@@ -49,15 +49,6 @@ symPtr: .res 4
     jsr loadPtr
     jsr freeType
 
-    ; Name
-    jsr peekQ
-    stq ptr1
-    ldz #symbol::name
-    jsr loadPtr
-    jsr isQZero
-    beq :+
-    jsr heapFree
-
 :   jsr rtPopQ
     jsr heapFree
     rts

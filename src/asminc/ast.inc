@@ -1,3 +1,4 @@
+NAMELEN = 24
 
 .enum
     DECL_CONST
@@ -615,10 +616,8 @@ LONG_MAX = $7fffffff
     kind .byte
     node .dword
     type .dword
-    name .dword
+    name .res 24
     decl .dword
-    leftChild .dword
-    rightChild .dword
     which .word
     offset .word
     level .word

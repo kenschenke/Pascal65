@@ -57,21 +57,15 @@
     ldz #symbol::type
     jsr storePtr
 
-    ; Clone the name
-    jsr savePtrs
+    ; Copy the name
     ldz #symbol::name
-    neg
-    neg
-    nop
+:   nop
     lda (ptr1),z
-    stq ptr3
-    jsr isQZero
-    beq :+
-    jsr nameClone
-    stq ptr3
-:   jsr restorePtrs
-    ldz #symbol::name
-    jsr storePtr
+    nop
+    sta (ptr2),z
+    inz
+    cpz #NAMELEN
+    bne :-
 
     ; Copy which
     ldz #symbol::which

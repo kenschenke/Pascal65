@@ -55,32 +55,30 @@ nameOffset = 0
     ldx #symbol::type
     jsr storeFromStack
 
-    ; Clone the name
+    ; Copy the name
     ldz #nameOffset
     neg
     neg
     nop
     lda (stackPointer),z
     stq ptr2
-    ldq ptr1
-    jsr rtPushQ
-    ldq ptr2
-    jsr nameClone
-    stq ptr2
-    jsr rtPopQ
-    stq ptr1
-    ldx #0
-    ldz #symbol::name
-:   lda ptr2,x
+    lda #0
+    sta tmp1
+    lda #symbol::name
+    sta tmp2
+:   ldz tmp1
+    nop
+    lda (ptr2),z
+    beq :+
+    ldz tmp2
     nop
     sta (ptr1),z
-    inz
-    inx
-    cpx #4
+    inc tmp1
+    inc tmp2
     bne :-
 
     ; Pop the parameters off the stack
-    jsr rtPopQ
+:   jsr rtPopQ
     jsr rtPopQ
     jsr rtPopA
 

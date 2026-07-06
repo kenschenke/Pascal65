@@ -20,7 +20,7 @@ CH_BACKARROW = 95
 
 .export showType, showTypeKind
 
-.import showAddr, printz, printzLong, printStructAddr, printStructName
+.import showAddr, printz, printzLong, printStructAddr, printNamePtr
 .import printStructBool, printStructNumber, getKey, loadPtr, showSubExpr
 .import showParam, showDecl, showSymtab
 
@@ -280,7 +280,7 @@ L1: lda #13
     lda #<nameLabel
     ldx #>nameLabel
     ldz #type::name
-    jsr printStructName
+    jsr printNamePtr
 
     ; Min
     lda #<minLabel

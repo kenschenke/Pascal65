@@ -122,11 +122,15 @@ L1: jsr loadSymtab
     ldq units
     stq currentUnit
 
-    ldz #symbol::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    lda #symbol::name
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq ptr1
+    clc
+    adcq intOp32
     stq name
 
 L1: ldq currentUnit

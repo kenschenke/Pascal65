@@ -14,7 +14,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 
-.export showTree, printz, printzLong, printStructAddr, printStructName
+.export showTree, printz, printzLong, printStructAddr, printStructName, printNamePtr
 .export printStructBool, printStructNumber, loadPtr
 
 .import showAddr, showDecl, clearKeyBuf
@@ -115,7 +115,7 @@ falseMsg: .asciiz "false"
 ; A - low byte of label
 ; X - high byte of label
 ; Z - offset in structure in ptr2
-.proc printStructName
+.proc printNamePtr
     phz
     jsr printz
     plz
@@ -123,6 +123,28 @@ falseMsg: .asciiz "false"
     neg
     nop
     lda (ptr2),z
+    jsr printzLong
+    lda #13
+    jsr CHROUT
+    rts
+.endproc
+
+; Prints a string from a struct
+; A - low byte of label
+; X - high byte of label
+; Z - offset in structure in ptr2
+.proc printStructName
+    phz
+    jsr printz
+    pla
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq ptr2
+    clc
+    adcq intOp32
     jsr printzLong
     lda #13
     jsr CHROUT

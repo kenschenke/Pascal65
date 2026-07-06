@@ -19,7 +19,7 @@ CH_BACKARROW = 95
 
 .export showDecl
 
-.import printz, printzLong, printStructAddr, printStructName
+.import printz, printzLong, printStructAddr, printNamePtr
 .import printStructBool, printStructNumber, showStmt, getKey, loadPtr
 .import showType, showSubExpr, showAddr, showExpr, showTypeKind, showSymtab
 
@@ -72,7 +72,7 @@ declKinds: .byte .LOBYTE(strDECL_CONST), .HIBYTE(strDECL_CONST)
     lda #<nameLabel
     ldx #>nameLabel
     ldz #decl::name
-    jsr printStructName
+    jsr printNamePtr
 
     ; Type
     lda #<typeLabel

@@ -19,7 +19,7 @@ CH_BACKARROW = 95
 
 .export showStmt
 
-.import printz, printzLong, printStructAddr, printStructName
+.import printz, printzLong, printStructAddr
 .import printStructBool, printStructNumber, getKey, showDecl, loadPtr, showExpr
 
 .data
