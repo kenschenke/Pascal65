@@ -12,6 +12,11 @@ D:DECL-TYPE test
           E:EXPR-WORD-LITERAL 1
         D:DECL-TYPE blue
           E:EXPR-WORD-LITERAL 2
+    D:DECL-TYPE colorprocptr
+      T:TYPE-ROUTINE-POINTER
+        T:TYPE-PROCEDURE
+          param: c
+            T:TYPE-DECLARED colors
     D:DECL-VARIABLE color
       T:TYPE-ENUMERATION
         D:DECL-TYPE red
@@ -30,6 +35,11 @@ D:DECL-TYPE test
           E:EXPR-WORD-LITERAL 2
     D:DECL-VARIABLE i
       T:TYPE-INTEGER
+    D:DECL-VARIABLE cp
+      T:TYPE-ROUTINE-POINTER
+        T:TYPE-PROCEDURE
+          param: c
+            T:TYPE-DECLARED colors
     D:DECL-TYPE colorproc
       T:TYPE-PROCEDURE
         param: c
@@ -93,16 +103,23 @@ D:DECL-TYPE test
         Left:EXPR-NAME colorproc T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME green T:TYPE-ENUMERATION-VALUE
+    S:STMT-EXPR
+      E:EXPR-ASSIGN T:TYPE-VOID
+        Left:EXPR-NAME cp T:TYPE-ROUTINE-POINTER
+        Right:EXPR-ADDRESS-OF T:TYPE-ROUTINE-ADDRESS
+          Left:EXPR-NAME colorproc T:TYPE-PROCEDURE
 *)
 
 Program Test;
 
 Type
     Colors = (Red, Green, Blue);
+    ColorProcPtr = Procedure(c : Colors);
 
 Var
     color, otherColor : Colors;
     i : Integer;
+    cp : ColorProcPtr;
 
 Procedure ColorProc(c : Colors);
 Begin
@@ -121,4 +138,6 @@ Begin
     ColorProc(color);
     otherColor := ColorFunc(color);
     ColorProc(Green);
+
+    cp := @ColorProc;
 End.

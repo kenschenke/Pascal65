@@ -20,30 +20,39 @@ fwdParamsOffset = formalParamsOffset + 4
 
 .import loadStackValue, typeCheckError
 
+; Parameters on runtime stack, bottom to top:
+;    parameters of forward declaration
+;    parameters of formal declaration
 .proc checkForwardVsFormalDeclaration
 L1: ldz #fwdParamsOffset
     jsr loadStackValue
     stq ptr1
     jsr isQZero
-    beq DN
-    ldz #formalParamsOffset
+    bne :+
+    jmp DN
+:   ldz #formalParamsOffset
     jsr loadStackValue
     stq ptr3
     jsr isQZero
-    beq DN
+    bne :+
+    jmp DN
 
-    ldz #param_list::type
+:   ldz #param_list::type
     neg
     neg
     nop
     lda (ptr1),z
-    stq ptr2
+    jsr getBaseType
+    jsr pushQ
     ldz #param_list::type
     neg
     neg
     nop
     lda (ptr3),z
+    jsr getBaseType
     stq ptr4
+    jsr popQ
+    stq ptr2
 
     ; If fwdType.kind != formalType.kind
     ldz #type::kind
@@ -62,19 +71,7 @@ L2: ldz #type::kind
     lda (ptr2),z
     cmp #TYPE_ENUMERATION
     bne L3
-    ldz #type::typeId
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr2
-    ldz #type::typeId
-    neg
-    neg
-    nop
-    lda (ptr4),z
-    stq ptr4
-    ; Compare the typeIds
+    ; Compare the types
     ldx #0
 :   lda ptr2,x
     cmp ptr4,x

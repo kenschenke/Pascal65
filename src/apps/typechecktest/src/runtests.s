@@ -26,12 +26,13 @@
 ;   14. Pass by reference
 ;   15. Case statement
 ;   16. Enumerations
+;   17. Forward declarations
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 16
+NUM_TESTS = 17
 
 .bss
 
