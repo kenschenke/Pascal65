@@ -20,7 +20,7 @@ stmtOffset = 0
 
 .export verifyFwdDeclarations
 
-.import currentLineNumber, resolverError
+.import currentLineNumber, resolverError, calcNamePtr
 
 ; AST root passed in Q
 .proc verifyFwdDeclarations
@@ -45,12 +45,13 @@ L1: jsr loadDecl
     sta currentLineNumber+1
 
     ldz #decl::name
-    neg
-    neg
     nop
     lda (ptr1),z
     jsr isQZero
     beq L3
+    ldq ptr1
+    ldz #decl::name
+    jsr calcNamePtr
     stq ptr4
 
     ldz #decl::type

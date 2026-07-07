@@ -9,7 +9,7 @@ NAMELEN = 24
 
 .struct decl
     kind .byte              ; one of DECL_
-    name .dword             ; pointer to null-terminated name
+    name .res 24            ; null-terminated name
     type .dword             ; pointer to type structure
     value .dword            ; pointer to value expression
     node .dword             ; pointer to symbol structure

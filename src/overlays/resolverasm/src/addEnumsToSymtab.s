@@ -16,6 +16,8 @@
 
 .export addEnumsToSymtab
 
+.import calcNamePtr
+
 .bss
 
 currentEnum: .res 4
@@ -56,12 +58,8 @@ L1: ldq currentEnum
 
     ; Look up the enum name
     ldq currentEnum
-    stq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq name
 
     ; Create a symbol node

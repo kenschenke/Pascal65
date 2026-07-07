@@ -144,6 +144,8 @@ L2: ldz #decl::type
     bne :+
     lda #0
     tax
+    tay
+    taz
     jsr icodeWordValue
     jmp L3
 :   cmp #TYPE_ROUTINE_POINTER

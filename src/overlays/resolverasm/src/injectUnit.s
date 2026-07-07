@@ -17,7 +17,7 @@
 
 .export injectUnit
 
-.import findUnit, resolverError
+.import findUnit, resolverError, calcNamePtr
 
 .bss
 
@@ -66,12 +66,8 @@ L1: jsr isQZero
     bne :+
     jmp L4
 
-:   stq ptr1
-    ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+:   ldz #decl::name
+    jsr calcNamePtr
     stq ptr4
     stq symKey
     ldq usesDecl
@@ -98,12 +94,8 @@ L2: stq ptr1
     jsr typeClone
     stq ptr3
     ldq interfaceDecl
-    stq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     lda #SYMBOL_GLOBAL
     jsr pushA               ; kind

@@ -52,13 +52,30 @@ valueOffset = 0
     nop
     sta (ptr1),z
 
-    ; Store the name pointer
-    lda #nameOffset
-    ldx #decl::name
-    jsr storeFromStack
+    ; Store the name
+    ldz #nameOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr2                ; source name
+    lda #decl::name
+    sta tmp1                ; index in dest
+    lda #0
+    sta tmp2                ; index in source
+:   ldz tmp2
+    nop
+    lda (ptr2),z
+    beq :+
+    ldz tmp1
+    nop
+    sta (ptr1),z
+    inc tmp1
+    inc tmp2
+    bra :-
 
     ; Store the type pointer
-    lda #typeOffset
+:   lda #typeOffset
     ldx #decl::type
     jsr storeFromStack
 

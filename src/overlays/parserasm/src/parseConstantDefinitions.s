@@ -13,10 +13,10 @@ lastDeclOffset = 0
 
 .import parserToken, getToken, condGetToken, doResync, parseConstant, parserString
 .import tlDeclarationFollow, tlDeclarationStart, tlStatementStart, appendDecl
+.import saveParserString, lastParserString
 
 .bss
 
-name: .res 4
 type: .res 4
 
 .code
@@ -29,10 +29,7 @@ L1: lda parserToken
     cmp #tcIdentifier
     beq :+
     jmp L2
-:   lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq name
+:   jsr saveParserString
 
     ; =
     jsr getToken
@@ -47,7 +44,10 @@ L1: lda parserToken
     stq ptr1
     lda #DECL_CONST
     jsr pushA               ; kind
-    ldq name
+    lda #<lastParserString
+    ldx #>lastParserString
+    ldy #0
+    ldz #0
     jsr pushQ               ; name
     ldq type
     jsr pushQ               ; type

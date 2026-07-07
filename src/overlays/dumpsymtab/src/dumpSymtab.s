@@ -17,7 +17,7 @@
 
 .export dumpSymtab
 
-.import printz, newLine, dumpChar, dumpString, indent, printNumber, dumpType
+.import printz, newLine, dumpChar, indent, printNumber, dumpType
 
 .bss
 

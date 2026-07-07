@@ -65,37 +65,45 @@ L2: rts
 ; This routine dumps a string to the membuf.
 ; The offset in the structure is passed in Z.
 ; The pointer to the structure is in ptr1.
-; The routine is safe to call if the string is null.
+;
+; ptr1 is preserved.
 .proc dumpString
+    ; First, check if the string is empty
+    nop
+    lda (ptr1),z
+    beq L2
+
+    ; Write a space to the membuf
     phz
     ldq ptr1
     jsr pushQ
-    plz
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr isQZero
-    beq L3
-    jsr pushQ
     lda #' '
     jsr dumpChar
-    ldq memBuf
-    stq ptr1
     jsr popQ
-    stq ptr2
-    ldz #0
-L1: nop
-    lda (ptr2),z
-    beq L2
-    inz
-    bne L1
-L2: tza
-    ldx #0
-    jsr writeToMemBuf
-L3: jsr popQ
     stq ptr1
-    rts
+    plz
+
+    ; Write the characters in the string, one at a time.
+    ; The start of each loop iteration assumes ptr1 is the structure
+    ; and Z contains the current offset
+L1: nop
+    lda (ptr1),z
+    beq L2
+    
+    sta tmp1                ; Store the character in tmp1
+    phz
+    ldq ptr1
+    jsr pushQ               ; Save ptr1
+    lda tmp1
+    jsr dumpChar
+
+    jsr popQ
+    stq ptr1
+    plz
+    inz
+    bra L1
+
+L2: rts
 .endproc
 
 ; Char in A

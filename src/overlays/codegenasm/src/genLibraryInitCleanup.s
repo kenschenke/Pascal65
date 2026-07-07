@@ -19,7 +19,7 @@
 
 .export initLibraries, cleanupLibraries
 
-.import findUnit, genThreeAddr
+.import findUnit, genThreeAddr, calcNamePtr
 
 .data
 
@@ -84,11 +84,9 @@ L2: stq ptr1
     cmp #DECL_USES
     bne NX
 
+    ldq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     jsr findUnit
     jsr isQZero
     beq NX

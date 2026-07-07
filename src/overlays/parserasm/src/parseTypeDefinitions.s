@@ -10,12 +10,7 @@
 
 .import parserToken, parserString, getToken, condGetToken, parseTypeSpec, parserValue
 .import appendDecl, tlDeclarationFollow, tlDeclarationStart, tlStatementStart, doResync
-
-.bss
-
-name: .res 4
-
-.code
+.import saveParserString, lastParserString
 
 .proc parseTypeDefinitions
     ; Loop to parse a list of type definitions
@@ -26,10 +21,7 @@ L1: lda parserToken
     jmp L2
 
     ; <id>
-:   lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq name
+:   jsr saveParserString
 
     ; =
     jsr getToken
@@ -43,7 +35,10 @@ L1: lda parserToken
     stq ptr1
     lda #DECL_TYPE
     jsr pushA               ; kind
-    ldq name
+    lda #<lastParserString
+    ldx #>lastParserString
+    ldy #0
+    ldz #0
     jsr pushQ               ; name
     ldq ptr1
     jsr pushQ               ; type

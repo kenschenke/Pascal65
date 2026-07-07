@@ -11,10 +11,10 @@
 .import parserToken, currentLineNumber, getToken, condGetToken, isInUnitInterface
 .import tlProgProcIdFollow, tlDeclarationStart, tlStatementStart
 .import tlFormalParmsFollow, parserString, doResync, parserModuleType, parserError
+.import saveParserString, lastParserString
 
 .bss
 
-moduleName: .res 4
 paramList: .res 4
 lastArg: .res 4
 
@@ -53,10 +53,7 @@ L1: ; Zero out lastArg and paramList
     lda #errMissingIdentifier
     jsr parserError
 
-:   lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq moduleName
+:   jsr saveParserString
 
     ; ( or ;
     jsr getToken
@@ -123,7 +120,10 @@ L4: lda parserModuleType
 
     lda #DECL_TYPE
     jsr pushA
-    ldq moduleName
+    lda #<lastParserString
+    ldx #>lastParserString
+    ldy #0
+    ldz #0
     jsr pushQ
     ldq ptr1
     jsr pushQ

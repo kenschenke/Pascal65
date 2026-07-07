@@ -16,7 +16,7 @@
 
 .export loadLibraries
 
-.import loadLibrary, findUnit
+.import loadLibrary, findUnit, calcNamePtr
 
 .bss
 
@@ -59,11 +59,9 @@ L2: stq ptr1
     cmp #DECL_USES
     bne NX
 
+    ldq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq unitName
     jsr findUnit
     jsr isQZero

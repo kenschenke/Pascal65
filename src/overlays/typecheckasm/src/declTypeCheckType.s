@@ -18,7 +18,7 @@ declOffset = 4
 
 .export declTypeCheckType
 
-.import checkArray, checkForwardVsFormalDeclaration, loadStackValue
+.import checkArray, checkForwardVsFormalDeclaration, loadStackValue, calcNamePtr
 
 .proc declTypeCheckType
     ; If this is an array make sure the index type is
@@ -93,10 +93,7 @@ L3: ldz #typeOffset
     jsr loadStackValue
     stq ptr2                ; decl in ptr2
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     stq ptr3                ; symbol in ptr3

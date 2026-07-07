@@ -24,7 +24,7 @@ kindOffset = 0
 
 .import currentLineNumber, resolveDeclarationName, injectUnit
 .import exprResolve, getTypeSize, resolveArrayDecl, resolveDeclared
-.import resolveEnumDecl, resolveRecordDecl, resolveDeclCode
+.import resolveEnumDecl, resolveRecordDecl, resolveDeclCode, calcNamePtr
 
 .proc resolveDeclaration
     jsr determineScopeKind
@@ -47,12 +47,13 @@ kindOffset = 0
 
     ; Does the declaration have a name?
     ldz #decl::name
-    neg
-    neg
     nop
     lda (ptr1),z
     jsr isQZero
     beq L1
+    ldq ptr1
+    ldz #decl::name
+    jsr calcNamePtr
     jsr resolveDeclarationName
 
     ; Is this declaration a record?
@@ -185,11 +186,9 @@ L7: ldz #declOffset
     lda (ptr1),z
     cmp #DECL_USES
     bne L8
+    ldq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     jsr injectUnit
 
 L8: ldz #decl::code

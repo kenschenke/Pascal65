@@ -23,7 +23,7 @@ kindOffset = 0
 
 .export resolveDeclared
 
-.import getTypePtr, resolverError
+.import getTypePtr, resolverError, calcNamePtr
 
 .proc resolveDeclared
     jsr getTypePtr
@@ -263,12 +263,8 @@ L5: ldz #symbol::type
     neg
     nop
     lda (stackPointer),z
-    stq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     rts

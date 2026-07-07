@@ -70,18 +70,14 @@ L2: lda #TYPE_UNIT
     jsr pushQZero           ; subtype
     jsr pushQZero           ; params
     jsr typeCreate
-    jsr pushQ               ; save the type on the stack
-
-    lda #<strSystem
-    ldx #>strSystem
-    jsr nameCreate
-    stq ptr4
-    jsr popQ
-    stq ptr1
+    stq ptr1                ; type in ptr1
 
     lda #DECL_USES
     jsr pushA               ; kind
-    ldq ptr4
+    lda #<strSystem
+    ldx #>strSystem
+    ldy #0
+    ldz #0
     jsr pushQ               ; name
     ldq ptr1
     jsr pushQ               ; type

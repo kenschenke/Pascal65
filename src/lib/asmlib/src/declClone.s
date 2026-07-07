@@ -52,21 +52,17 @@
     nop
     sta (ptr2),z
 
-    ; Clone the name
-    jsr savePtrs
+    ; Copy the name
+    ldx #0
     ldz #decl::name
-    neg
-    neg
-    nop
+:   nop
     lda (ptr1),z
-    stq ptr3
-    jsr isQZero
-    beq :+
-    jsr nameClone
-    stq ptr3
-:   jsr restorePtrs
-    ldz #decl::name
-    jsr storePtr
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #NAMELEN
+    bne :-
 
     ; Clone the type
     jsr savePtrs

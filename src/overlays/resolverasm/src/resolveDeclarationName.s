@@ -22,7 +22,7 @@ kindOffset = 0
 
 .export resolveDeclarationName
 
-.import getTypeKind, getTypePtr
+.import getTypeKind, getTypePtr, calcNamePtr
 
 .bss
 
@@ -99,12 +99,8 @@ L3: jsr getTypePtr
     neg
     nop
     lda (stackPointer),z
-    stq ptr1            ; decl in ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr3            ; decl name in ptr3
     ldz #kindOffset
     nop
@@ -148,11 +144,9 @@ L3: jsr getTypePtr
     ldq ptr2
     stq ptr3
     ; Put name in ptr2
+    ldq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr2            ; name in ptr2
 
     ; If there is a symbol table, add the new symbol to it.

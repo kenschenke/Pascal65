@@ -5,7 +5,7 @@
 .export handleParse, parserError, setUnitsList, getUnitsList, units
 .export parserIcode, parserToken, currentLineNumber, parserString, parserValue, parserType
 .export parserModuleType, runtimeStackSize, isInUnitInterface, getRuntimeStackSize
-.export lastParserString, saveParserString
+.export lastParserString, saveParserString, calcNamePtr
 
 .import getToken, parseModule
 
@@ -73,5 +73,18 @@ units: .res 4
     inx
     cpx #81
     bne :-
+    rts
+.endproc
+
+; Structure pointer in A/X/Y and structure offset in Z.
+; Address returned in Q.
+.proc calcNamePtr
+    stz intOp32
+    ldz #0
+    stz intOp32+1
+    stz intOp32+2
+    stz intOp32+3
+    clc
+    adcq intOp32
     rts
 .endproc

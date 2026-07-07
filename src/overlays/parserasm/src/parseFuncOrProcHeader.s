@@ -14,10 +14,10 @@ isRtnTypeOffset = 0
 .import getToken, parserToken, parserString, doResync, parseFormalParamList
 .import tlFuncIdFollow, tlProgProcIdFollow, parserError
 .import tlDeclarationStart, tlStatementStart
+.import saveParserString, lastParserString
 
 .bss
 
-name: .res 4
 params: .res 4
 returnType: .res 4
 subtype: .res 4
@@ -32,7 +32,6 @@ isPtr: .res 1
     tax
     tay
     taz
-    stq name
     stq params
     stq returnType
 
@@ -40,10 +39,7 @@ isPtr: .res 1
     lda parserToken
     cmp #tcIdentifier
     bne :+
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq name
+    jsr saveParserString
     jsr getToken
     bra L1
 :   ldz #isRtnTypeOffset
@@ -110,7 +106,10 @@ L3: ldx #TYPE_PROCEDURE
     stq subtype
 :   lda #DECL_TYPE
     jsr pushA                   ; kind
-    ldq name
+    lda #<lastParserString
+    ldx #>lastParserString
+    ldy #0
+    ldz #0
     jsr pushQ                   ; name
     ldq subtype
     jsr pushQ                   ; type

@@ -57,17 +57,14 @@ L1: lda parserToken
     ldq parserValue
     jsr pushQ               ; value
     jsr exprCreate
-    jsr pushQ
-    ; Create a declaration
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq ptr1
-    jsr popQ
     stq ptr2
+    ; Create a declaration
     lda #DECL_TYPE
     jsr pushA               ; kind
-    ldq ptr1
+    lda #<parserString
+    ldx #>parserString
+    ldy #0
+    ldz #0
     jsr pushQ               ; name
     jsr pushQZero           ; type
     ldq ptr2

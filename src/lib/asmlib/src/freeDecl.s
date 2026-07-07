@@ -33,15 +33,6 @@ L2: jsr isHeapAllocated
     jsr rtPopQ
     rts
 
-    ; Name
-:   jsr peekQ
-    stq ptr1
-    ldz #decl::name
-    jsr loadPtr
-    jsr isQZero
-    beq :+
-    jsr heapFree
-
     ; Type
 :   jsr peekQ
     stq ptr1

@@ -96,7 +96,8 @@ L4: ; declCreate
     dez
     nop
     lda (stackPointer),z
-    jsr nameCreate
+    ldy #0
+    ldz #0
     stq ptr1
     lda #DECL_USES          ; kind
     jsr pushA

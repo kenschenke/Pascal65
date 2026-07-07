@@ -20,7 +20,7 @@ currentDecl = 3
 
 .export setDeclOffsets
 
-.import findUnit
+.import findUnit, calcNamePtr
 
 ; This routine calculates declaration offsets.
 ; On input on the runtime stack, bottom to top:
@@ -143,11 +143,9 @@ L9: jsr popA
 .endproc
 
 .proc setUnitOffsets
+    ldq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     jsr findUnit
     jsr isQZero
     bne :+

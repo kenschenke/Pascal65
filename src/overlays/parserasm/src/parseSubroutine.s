@@ -11,7 +11,7 @@ subOffset = 0
 
 .export parseSubroutine
 
-.import parserError
+.import parserError, calcNamePtr
 
 .bss
 
@@ -215,13 +215,8 @@ L4: ldz #isFuncOffset
     cpx #4
     bne :-
 L5: ldq declPtr
-    stq ptr1
     ldz #decl::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr nameClone
+    jsr calcNamePtr
     stq ptr1
     lda #DECL_VARIABLE
     jsr pushA                   ; kind

@@ -17,7 +17,7 @@
 
 .export genObjCode
 .export genThreeAddr, runtimeStackSize, setRuntimeStackSize
-.export genOneInstruction, genTwoInstruction, incCodeOffset
+.export genOneInstruction, genTwoInstruction, incCodeOffset, calcNamePtr
 
 .import writePrgHeader, processIcodeInstructions, prgCleanup
 .import initStringLiterals, writeStringLiterals, freeStringLiterals
@@ -214,5 +214,18 @@ astRoot: .res 4
     lda codeOffset+1
     adc #0
     sta codeOffset+1
+    rts
+.endproc
+
+; Structure pointer in A/X/Y and structure offset in Z.
+; Address returned in Q.
+.proc calcNamePtr
+    stz intOp32
+    ldz #0
+    stz intOp32+1
+    stz intOp32+2
+    stz intOp32+3
+    clc
+    adcq intOp32
     rts
 .endproc
