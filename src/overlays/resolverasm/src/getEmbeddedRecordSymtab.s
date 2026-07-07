@@ -21,7 +21,7 @@ recExprOffset = fieldExprOffset + 4
 
 .export getEmbeddedRecordSymtab
 
-.import getRecordSymtab, resolverError
+.import getRecordSymtab, resolverError, calcNamePtr
 
 ; On entry, runtime stack bottom to top
 ;    record expression ptr
@@ -51,12 +51,8 @@ recExprOffset = fieldExprOffset + 4
     neg
     nop
     lda (stackPointer),z
-    stq ptr2
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr calcNamePtr
     stq ptr4
     jsr symtabLookup
     jsr isQZero

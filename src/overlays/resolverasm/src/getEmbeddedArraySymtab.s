@@ -20,7 +20,7 @@ symtabOffset = 0
 
 .export getEmbeddedArraySymtab
 
-.import getRecordSymtab, resolverError
+.import getRecordSymtab, resolverError, calcNamePtr
 
 .bss
 
@@ -45,11 +45,9 @@ typePtr: .res 4
     cmp #EXPR_FIELD
     bne :+
     jmp getRecordSymtab
-:   ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+:   ldq ptr1
+    ldz #expr::name
+    jsr calcNamePtr
     stq ptr4
     ldz #symtabOffset
     neg

@@ -18,7 +18,7 @@ argOffset = retnTypeOffset + 4
 
 .export checkPredSuccCall
 
-.import loadStackValue, typeCheckError, isTypeInteger
+.import loadStackValue, typeCheckError, isTypeInteger, calcNamePtr
 
 .proc checkPredSuccCall
     ; Needs to have the first parameter
@@ -69,11 +69,9 @@ argOffset = retnTypeOffset + 4
     jsr typeCheckError
     lda #TYPE_VOID
     jmp DN
-:   ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+:   ldq ptr1
+    ldz #expr::name
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

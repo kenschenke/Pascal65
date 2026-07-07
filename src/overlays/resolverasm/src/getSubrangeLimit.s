@@ -16,6 +16,8 @@
 
 .export getSubrangeLimit
 
+.import calcNamePtr
+
 ; Subrange expression passed in Q
 ; Subrange limit returned in A/X
 .proc getSubrangeLimit
@@ -38,11 +40,9 @@
     rts
 :   cmp #EXPR_NAME
     bne :+
+    ldq ptr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

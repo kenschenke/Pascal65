@@ -9,7 +9,7 @@
 
 .import getToken, parseSubroutineCall, parserType, parserValue, parserString
 .import parseVariable, parserToken, parseExpression, parseArrayLiteral
-.import parserError
+.import parserError, saveParserString, lastParserString
 
 .data
 
@@ -39,9 +39,11 @@ offsetUnaryNeg = 0
 LIdentifier:
     cmp #tcIdentifier
     bne LNumber
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
+    jsr saveParserString
+    lda #<lastParserString
+    ldx #>lastParserString
+    ldy #0
+    ldz #0
     jsr pushQ
     jsr getToken
     lda parserToken

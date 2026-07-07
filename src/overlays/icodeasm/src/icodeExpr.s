@@ -27,7 +27,7 @@ exprOffset = isReadOffset + 1
 .import lblRoutineEnter, icodeFormatLabel, icodeOper1Label, icodeVar
 
 .import icodeBoolValue, icodeShortValue, icodeWordValue, icodeLongValue, icodeRealValue
-.import icodeCharValue, icodeOper1Word
+.import icodeCharValue, icodeOper1Word, calcNamePtr
 
 .bss
 
@@ -458,12 +458,8 @@ RT: lda #TYPE_ROUTINE_ADDRESS
 
     ldz #expr::right
     jsr getChildExpr
-    stq ptr2
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr calcNamePtr
     stq ptr4
 
     ldq ptr3
@@ -558,11 +554,9 @@ L1: ldz #symPtrOffset
     cpx #.sizeof(type)
     bne :-
 
+    ldq ptr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookupParent
     jsr isQZero
@@ -593,12 +587,8 @@ L1: lda rightType+type::flags
     bne L2
     ldz #exprOffset
     jsr loadStackValue
-    stq ptr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

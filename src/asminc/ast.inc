@@ -242,7 +242,7 @@ NAMELEN = 24
     kind .byte                  ; One of EXPR_
     left .dword                 ; Expression left node
     right .dword                ; Expression right node
-    name .dword                 ; Null-terminated name
+    name .res 24                ; Null-terminated name
     node .dword                 ; Symbol table node
     neg .byte                   ; Non-zero if unary neg
     width .dword                ; for EXPR_ARG, field width

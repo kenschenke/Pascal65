@@ -31,15 +31,14 @@ controlExprOffset = 9
     lda parserToken
     cmp #tcIdentifier
     bne L1
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq ptr1
     lda #EXPR_NAME
     jsr pushA               ; kind
     jsr pushQZero           ; left
     jsr pushQZero           ; right
-    ldq ptr1
+    lda #<parserString
+    ldx #>parserString
+    ldy #0
+    ldz #0
     jsr pushQ               ; name
     jsr pushQZero           ; value
     jsr exprCreate

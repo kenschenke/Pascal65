@@ -21,7 +21,7 @@ argOffset = routineCodeOffset + 1
 .export checkReadReadlnCall
 
 .import typeCheckError, loadStackValue, exprTypeCheck
-.import checkArraysSameType, isAssignmentCompatible
+.import checkArraysSameType, isAssignmentCompatible, calcNamePtr
 
 .bss
 
@@ -114,11 +114,9 @@ L1: ldz #argOffset
     lda #errInvalidVarParm
     jsr typeCheckError
     jmp NX
-:   ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+:   ldq ptr1
+    ldz #expr::name
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     stq ptr2

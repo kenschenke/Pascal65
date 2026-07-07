@@ -5,6 +5,7 @@
 .export handleParse, parserError, setUnitsList, getUnitsList, units
 .export parserIcode, parserToken, currentLineNumber, parserString, parserValue, parserType
 .export parserModuleType, runtimeStackSize, isInUnitInterface, getRuntimeStackSize
+.export lastParserString, saveParserString
 
 .import getToken, parseModule
 
@@ -14,6 +15,7 @@ parserIcode: .res 4
 parserToken: .res 1
 currentLineNumber: .res 2
 parserString: .res 81
+lastParserString: .res 81
 parserValue: .res 4
 parserType: .res 1
 runtimeStackSize: .res 2
@@ -60,5 +62,16 @@ units: .res 4
 .proc getRuntimeStackSize
     lda runtimeStackSize
     ldx runtimeStackSize+1
+    rts
+.endproc
+
+; Copy parserString to lastParserString
+.proc saveParserString
+    ldx #0
+:   lda parserString,x
+    sta lastParserString,x
+    inx
+    cpx #81
+    bne :-
     rts
 .endproc

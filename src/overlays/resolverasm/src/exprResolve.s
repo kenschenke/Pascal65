@@ -22,7 +22,7 @@ exprOffset = symtabOffset + 4
 
 .export exprResolve
 
-.import resolverError, getRecordSymtab
+.import resolverError, getRecordSymtab, calcNamePtr
 
 ; Runtime stack entry, bottom to top:
 ;    expr ptr
@@ -50,11 +50,9 @@ exprOffset = symtabOffset + 4
     beq :+
     jmp L5
 
-:   ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+:   ldq ptr1
+    ldz #expr::name
+    jsr calcNamePtr
     stq ptr4                ; name in ptr4
 
     ldz #symtabOffset

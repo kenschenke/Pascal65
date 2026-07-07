@@ -29,7 +29,7 @@ labelOffset = typePtrOffset + 4
 
 .export icodeArrayInit
 
-.import icodeSaveData, heapOffset, loadStackValue, icodeSaveData
+.import icodeSaveData, heapOffset, loadStackValue, icodeSaveData, calcNamePtr
 .import addStringArrayLiterals, addScalarArrayLiterals, addEmbeddedArrayOrRecord
 
 .bss
@@ -643,11 +643,9 @@ L2: jsr popQ        ; initBuf
     ; Name
 :   ldq ptr2
     jsr pushQ
+    ldq ptr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     stq ptr1

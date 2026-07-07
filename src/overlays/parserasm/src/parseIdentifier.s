@@ -7,7 +7,7 @@
 .export parseIdentifier
 
 .import parserString, getToken, parserToken, parseSubroutineCall, currentLineNumber
-.import parseAssignment, parseSubroutineCall
+.import parseAssignment, parseSubroutineCall, saveParserString, lastParserString
 
 .data
 
@@ -17,9 +17,11 @@ lnStr: .asciiz "ln"
 .code
 
 .proc parseIdentifier
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
+    jsr saveParserString
+    lda #<lastParserString
+    ldx #>lastParserString
+    ldy #0
+    ldz #0
     jsr pushQ
     jsr getToken
     jsr popQ
