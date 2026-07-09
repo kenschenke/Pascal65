@@ -16,7 +16,7 @@
 .export typeClone, savePtrs, restorePtrs, storePtr
 
 .import typeCreate
-.import exprClone, declClone, paramListClone, symbolClone, nameClone
+.import exprClone, declClone, paramListClone, symbolClone
 .import isQZero, rtPushQ, rtPopQ, rtPushA
 
 ; Pointer to type passed in Q
@@ -151,22 +151,17 @@ L3: ; Save the type ptr on the stack first
     nop
     sta (ptr2),z
 
-    ; Clone name
+    ; Copy the name
     ldz #type::name
-    neg
-    neg
-    nop
+    ldx #0
+:   nop
     lda (ptr1),z
-    jsr isQZero
-    beq L6
-    stq ptr3
-    jsr savePtrs
-    ldq ptr3
-    jsr nameClone
-    stq ptr3
-    jsr restorePtrs
-    ldz #type::name
-    jsr storePtr
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #NAMELEN
+    bne :-
 
     ; Clone the min expression
 L6: jsr savePtrs

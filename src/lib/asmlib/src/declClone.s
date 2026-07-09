@@ -15,9 +15,9 @@
 
 .export declClone
 
-.import savePtrs, restorePtrs, storePtr, nameClone, typeClone
+.import savePtrs, restorePtrs, storePtr, typeClone
 .import exprClone, symbolClone, stmtClone, heapAlloc
-.import nameClone, rtPopQ, rtPushQ, isQZero
+.import rtPopQ, rtPushQ, isQZero
 
 .proc declClone
     jsr isQZero

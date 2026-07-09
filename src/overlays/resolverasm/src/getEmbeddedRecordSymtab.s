@@ -91,11 +91,9 @@ recExprOffset = fieldExprOffset + 4
 :   cmp #TYPE_DECLARED
     bne L9
 
+    ldq ptr2
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

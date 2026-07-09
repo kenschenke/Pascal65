@@ -11,7 +11,7 @@ subOffset = 0
 
 .export parseSubroutine
 
-.import parserError, calcNamePtr
+.import parserError, calcNamePtr, copyNameToType
 
 .bss
 
@@ -194,26 +194,17 @@ L4: ldz #isFuncOffset
     ldq routineType
     stq ptr2
     ldz #type::name
-    neg
-    neg
     nop
     lda (ptr2),z
-    jsr isQZero
     beq L5
-    ; Clone the routine's return type name
-    jsr nameClone
+    ; Copy the routine's return type name
+    ldq ptr2
+    ldz #type::name
+    jsr calcNamePtr
     stq ptr2
     ldq returnType
     stq ptr1
-    ldz #type::name
-    ldx #0
-:   lda ptr2,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
+    jsr copyNameToType
 L5: ldq declPtr
     ldz #decl::name
     jsr calcNamePtr

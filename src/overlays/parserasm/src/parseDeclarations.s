@@ -4,15 +4,15 @@
 .include "4510macros.inc"
 
 lastDeclOffset = 0
-firstDeclOffset = 4
-isProgramOrUnitBlockOffset = 8
+firstDeclOffset = lastDeclOffset + 4
+isProgramOrUnitBlockOffset = firstDeclOffset + 4
 
 .export parseDeclarations
 
 .import units, addUnit, getToken, parserToken, tokenIn
 .import parseUsesReferences, parseConstantDefinitions
 .import parseTypeDefinitions, parseVariableDeclarations
-.import parseSubroutineDeclarations, tlProcFuncStart
+.import parseSubroutineDeclarations, tlProcFuncStart, loadStackValue
 
 .data
 
@@ -21,7 +21,7 @@ systemName: .asciiz "system"
 .code
 
 .proc parseDeclarations
-    jsr pushA
+    jsr pushA               ; isProgramOrUnitBlock
     jsr pushQZero           ; firstDecl
     jsr pushQZero           ; lastDecl
     ldq units
@@ -135,10 +135,7 @@ L6: jsr popQ
 ; Gets the lastDecl pointer and stores in ptr1
 .proc getLastDecl
     ldz #lastDeclOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     stq ptr1
     rts
 .endproc

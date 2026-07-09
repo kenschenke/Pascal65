@@ -40,8 +40,6 @@ declOffset = 4
     cmp #DECL_VARIABLE
     bne L1
     ldz #type::name
-    neg
-    neg
     nop
     lda (ptr1),z
     jsr isQZero

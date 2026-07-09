@@ -27,11 +27,9 @@ kindOffset = 0
 
 .proc resolveDeclared
     jsr getTypePtr
+    ldq ptr1
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

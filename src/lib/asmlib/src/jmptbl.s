@@ -20,7 +20,7 @@
 .import initScopeStack, scopeBind, scopeBindSymtab, scopeLevel, scopeLookup, scopeLookupParent
 .import scopeEnter, scopeEnterSymtab, scopeExit, symtabLookup
 .import declCreate, nameCreate, paramListCreate, typeCreate, stmtCreate
-.import exprCreate, unitCreate, nameClone, freeAst
+.import exprCreate, unitCreate, freeAst
 .import addTreeNode, findInTree, freeTree, symbolCreate
 .import typeClone, freeType, freeSymbol, isHeapAllocated, writeInt32, divInt32
 .import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab, hexstr
@@ -89,7 +89,7 @@ jmp typeCreate
 jmp stmtCreate
 jmp exprCreate
 jmp unitCreate
-jmp nameClone
+jmp $0000
 jmp freeAst
 jmp addTreeNode
 jmp findInTree

@@ -90,15 +90,6 @@ L2: jsr peekQ
     bne :+
     jsr freeParamFields
 
-    ; Name
-:   jsr peekQ
-    stq ptr1
-    ldz #type::name
-    jsr loadPtr
-    jsr isQZero
-    beq :+
-    jsr heapFree
-
 :   jsr rtPopQ
     jsr heapFree
     rts

@@ -15,7 +15,7 @@
 
 .export exprClone
 
-.import savePtrs, restorePtrs, storePtr, nameClone, symbolClone, typeClone
+.import savePtrs, restorePtrs, storePtr, symbolClone, typeClone
 .import heapAlloc, isQZero, rtPushQ, rtPopQ
 
 .proc exprClone

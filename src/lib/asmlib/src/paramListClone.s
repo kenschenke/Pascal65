@@ -15,7 +15,7 @@
 
 .export paramListClone
 
-.import savePtrs, restorePtrs, storePtr, nameClone, typeClone
+.import savePtrs, restorePtrs, storePtr, typeClone
 .import isQZero, heapAlloc, rtPushQ, rtPopQ
 
 .proc paramListClone

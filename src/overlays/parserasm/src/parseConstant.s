@@ -8,7 +8,7 @@
 .export parseConstant
 
 .import tokenIn, getToken, parserValue, parserString, parserToken, parserType
-.import copyQuotedString, parserError
+.import copyQuotedString, parserError, copyParserStringToType
 .import tlUnaryOps
 
 .bss
@@ -108,21 +108,10 @@ exprKind: .res 1
     jsr pushQZero           ; value
     jsr exprCreate
     stq expr
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq ptr3
+    ; Copy parserString to type.name
     ldq type
     stq ptr1
-    ldz #type::name
-    ldx #0
-:   lda ptr3,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
+    jsr copyParserStringToType
     jsr getToken
     ldq expr
     rts

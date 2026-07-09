@@ -215,14 +215,16 @@ L2: ldz #type::subtype
     neg
     nop
     lda (ptr1),z
+    jsr isQZero
     bne L4
     ldz #type::name
-    neg
-    neg
     nop
     lda (ptr1),z
     beq L4
     ; Look up the symbol by name
+    ldq ptr1
+    ldz #type::name
+    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

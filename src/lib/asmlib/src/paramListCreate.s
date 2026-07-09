@@ -15,7 +15,7 @@
 
 .export paramListCreate
 
-.import nameCreate, heapAlloc, rtPushQ, rtPopQ
+.import heapAlloc, rtPushQ, rtPopQ
 
 ; This routine creates a param_list structure
 ;
