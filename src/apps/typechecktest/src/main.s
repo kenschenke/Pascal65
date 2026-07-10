@@ -14,13 +14,16 @@
 .include "error.inc"
 .include "meminfo.inc"
 .include "zeropage.inc"
+.include "4510macros.inc"
 
 CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
 .import initLib, runTest, runTests, runErrorTests
-.import logError, initMemInfo
+.import logError, initMemInfo, printMilliseconds, printLine
+
+.export totalTicks
 
 main:
     ; Set alphabet to upper and lower case
@@ -55,6 +58,12 @@ main:
     jsr initMemInfo
     jsr heapSummary
 
+    lda #0
+    tax
+    tay
+    taz
+    stq totalTicks
+
     ; Run a test of the system unit
     ; lda #0
     ; tax
@@ -74,9 +83,27 @@ main:
     jsr heapSummary
     jsr heapReport
 
+    lda #<strTotal
+    ldx #>strTotal
+    jsr printLine
+
+    ldq totalTicks
+    stq intOp1
+    jsr printMilliseconds
+    lda #13
+    jsr CHROUT
+
     rts
 
 onExit:
     lda #13
     jsr CHROUT
     rts
+
+.bss
+
+totalTicks: .res 4
+
+.data
+
+strTotal: .asciiz "total:"

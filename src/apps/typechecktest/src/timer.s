@@ -1,11 +1,22 @@
 ; Routines to time tests
 
 .include "c64.inc"
+.include "asmlib.inc"
+.include "zeropage.inc"
+.include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export getTicks, resetTicks
+.export getTicks, resetTicks, printMilliseconds
+
+.import printLine
 
 VIC_PAL = $d06f
+
+.bss
+
+intBuf: .res 14
+
+.code
 
 ; 32-bit ticks returned in Q
 .proc getTicks
@@ -51,5 +62,27 @@ L1: sta CIA2_TA,x
     sta CIA2_CRA
     lda #$41
     sta CIA2_CRB
+    rts
+.endproc
+
+; Prints milliseconds. Microseconds in intOp1.
+.proc printMilliseconds
+    ; Load $3e8 (1000) into intOp32
+    lda #3
+    sta intOp32+1
+    lda #$e8
+    sta intOp32
+    lda #0
+    sta intOp32+2
+    sta intOp32+3
+    jsr divInt32            ; Divide by 1000 (convert microseconds to milliseconds)
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt32
+    lda #' '
+    jsr CHROUT
+    lda #<intBuf
+    ldx #>intBuf
+    jsr printLine
     rts
 .endproc

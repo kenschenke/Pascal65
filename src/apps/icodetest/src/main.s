@@ -15,13 +15,16 @@
 .include "meminfo.inc"
 .include "zeropage.inc"
 .include "icode.inc"
+.include "4510macros.inc"
 
 CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
 .import initLib, runTest, runTests, runErrorTests
-.import logError, initMemInfo, initIcode
+.import logError, initMemInfo, initIcode, printMilliseconds, printLine
+
+.export totalTicks
 
 main:
     ; Set alphabet to upper and lower case
@@ -56,6 +59,12 @@ main:
     jsr initMemInfo
     jsr heapSummary
 
+    lda #0
+    tax
+    tay
+    taz
+    stq totalTicks
+
     ; Run type checker tests
     jsr runTests
 
@@ -69,6 +78,16 @@ main:
     jsr heapSummary
     jsr heapReport
 
+    lda #<strTotal
+    ldx #>strTotal
+    jsr printLine
+
+    ldq totalTicks
+    stq intOp1
+    jsr printMilliseconds
+    lda #13
+    jsr CHROUT
+
     rts
 
 onExit:
@@ -76,4 +95,11 @@ onExit:
     jsr CHROUT
     rts
 
+.bss
+
 buf: .res 16
+totalTicks: .res 4
+
+.data
+
+strTotal: .asciiz "total:"

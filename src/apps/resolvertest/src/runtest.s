@@ -45,11 +45,11 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export runTest, unitList
+.export runTest, unitList, printLine
 
 .import initTokenizer, initParser, initDumpSymtab, viewDump, getKey, errorCount, initMemInfo
 .import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
-.import initDumpAst
+.import initDumpAst, printMilliseconds, totalTicks
 
 .bss
 
@@ -319,24 +319,11 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     ; Report the timer
     jsr getTicks
     stq intOp1
-    ; Load $3e8 (1000) into intOp32
-    lda #3
-    sta intOp32+1
-    lda #$e8
-    sta intOp32
-    lda #0
-    sta intOp32+2
-    sta intOp32+3
-    jsr divInt32            ; Divide by 1000 (convert microseconds to milliseconds)
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt32
-    lda #' '
-    jsr CHROUT
-    lda #<intBuf
-    ldx #>intBuf
-    jsr printLine
+    clc
+    adcq totalTicks
+    stq totalTicks
 
+    jsr printMilliseconds
     lda #13
     jsr CHROUT
 
