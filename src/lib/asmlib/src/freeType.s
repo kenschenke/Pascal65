@@ -16,23 +16,17 @@
 .export freeType
 
 .import freeParamList, freeSymbol, freeSymtab, freeExpr, freeDecl, loadPtr, isQZero
-.import rtPushQ, rtPopQ, heapFree, isHeapAllocated, peekQ
+.import rtPushQ, rtPopQ, heapFree, peekQ
 
 ; Pointer to type in Q
 .proc freeType
     jsr isQZero
     bne :+
     rts
-:   jsr rtPushQ
-    jsr peekQ
-    jsr isHeapAllocated
-    bne :+
-    jsr rtPopQ
-    rts
 
     ; Subtype
-:   jsr peekQ
-    stq ptr1
+:   stq ptr1
+    jsr rtPushQ
     ldz #type::subtype
     jsr loadPtr
     stq ptr2

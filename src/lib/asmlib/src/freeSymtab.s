@@ -15,24 +15,13 @@
 
 .export freeSymtab
 
-.import freeSymbol, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, isHeapAllocated, peekQ
-
-.bss
-
-symPtr: .res 4
-
-.code
+.import freeSymbol, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, peekQ
 
 .proc freeSymtab
-    stq symPtr
     jsr isQZero
     bne :+
     rts
-:   jsr isHeapAllocated
-    bne :+
-    rts
-:   ldq symPtr
-    stq ptr1
+:   stq ptr1
     jsr rtPushQ
 
     ; LeftChild

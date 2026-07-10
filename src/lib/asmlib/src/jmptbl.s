@@ -22,7 +22,7 @@
 .import declCreate, nameCreate, paramListCreate, typeCreate, stmtCreate
 .import exprCreate, unitCreate, freeAst
 .import addTreeNode, findInTree, freeTree, symbolCreate
-.import typeClone, freeType, freeSymbol, isHeapAllocated, writeInt32, divInt32
+.import typeClone, freeType, freeSymbol, writeInt32, divInt32
 .import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab, hexstr
 .import linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
 .import getLinkerTagsToFind, findLinkerTag
@@ -98,7 +98,7 @@ jmp symbolCreate
 jmp typeClone
 jmp freeType
 jmp freeSymbol
-jmp isHeapAllocated
+jmp $0000
 jmp writeInt32
 jmp divInt32
 jmp rtPushBlock

@@ -16,7 +16,7 @@
 .export freeDecl
 
 .import freeType, freeExpr, freeSymbol, freeSymtab, freeStmt, loadPtr
-.import isQZero, rtPushQ, rtPopQ, heapFree, isHeapAllocated, peekQ
+.import isQZero, rtPushQ, rtPopQ, heapFree,  peekQ
 
 ; Pointer to decl in Q
 ; Carry flag is set if the routine is to follow the "next" chain
@@ -28,13 +28,8 @@ L1: jsr peekQ
     jsr rtPopQ
     rts
 
-L2: jsr isHeapAllocated
-    bne :+
-    jsr rtPopQ
-    rts
-
     ; Type
-:   jsr peekQ
+L2: jsr peekQ
     stq ptr1
     ldz #decl::type
     jsr loadPtr
