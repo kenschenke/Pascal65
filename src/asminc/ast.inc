@@ -544,7 +544,7 @@ LONG_MAX = $7fffffff
     routineCode .byte               ; Routine code (rc*)
     paramFields .dword
     symtab .dword                   ; Symbol table for record
-    name .res 24
+    name .dword
     min .dword
     max .dword
     size .word

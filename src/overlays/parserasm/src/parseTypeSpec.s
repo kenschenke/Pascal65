@@ -133,11 +133,11 @@ allowSubrangeShorthand: .res 1
     lda #TYPE_VOID
     ; fall through to L9
 
-L9: jsr pushA               ; kind
+L9: jsr pushA
     lda #0
-    jsr pushA               ; isConst
-    jsr pushQZero           ; subtype
-    jsr pushQZero           ; params
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
     jsr typeCreate
     jsr pushQ
     jsr getToken
@@ -146,63 +146,36 @@ L9: jsr pushA               ; kind
 .endproc
 
 .proc parserIdentifierTypeSpec
-    ; Save the parser string on the stack
-    lda #NAMELEN
-    jsr pushBlock
-    ldz #0
-    ldx #0
-:   lda parserString,x
-    beq :+
-    nop
-    sta (stackPointer),z
-    inz
-    inx
-    bne :-
-:   nop
-    sta (stackPointer),z
+    lda #<parserString
+    ldx #>parserString
+    jsr nameCreate
+    jsr pushQ
     jsr getToken
     lda parserToken
     cmp #tcDotDot
     bne :+
-    ldq stackPointer
-    jsr pushQ
     lda #0
     jsr pushA
-    jsr parseSubrangeType
-    stq ptr1
-    lda #NAMELEN
-    jsr popBlock
-    ldq ptr1
-    rts
+    jmp parseSubrangeType
 :   lda #TYPE_DECLARED
-    jsr pushA               ; kind
+    jsr pushA
     lda #0
-    jsr pushA               ; isConst
-    jsr pushQZero           ; subtype
-    jsr pushQZero           ; params
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
     jsr typeCreate
     stq ptr1
-    ; Copy the parser string back off the stack
-    lda #0
-    sta tmp2                ; index for stack
-    lda #type::name
-    sta tmp1                ; index for type::name
-:   ldz tmp2
-    nop
-    lda (stackPointer),z
-    beq :+
-    ldz tmp1
+    jsr popQ
+    stq ptr2
+    ldz #type::name
+    ldx #0
+:   lda ptr2,x
     nop
     sta (ptr1),z
-    inc tmp1
-    inc tmp2
+    inz
+    inx
+    cpx #4
     bne :-
-:   ldz tmp1
-    nop
-    sta (ptr1),z
-    ; Pop the parser string back off the stack
-    lda #NAMELEN
-    jsr popBlock
     ldq ptr1
     rts
 .endproc
@@ -221,12 +194,12 @@ L9: jsr pushA               ; kind
     jsr parseTypeSpec
     stq ptr1
     lda #TYPE_POINTER
-    jsr pushA               ; kind
+    jsr pushA
     lda #0
-    jsr pushA               ; isConst
+    jsr pushA
     ldq ptr1
-    jsr pushQ               ; subtype
-    jsr pushQZero           ; params
+    jsr pushQ
+    jsr pushQZero
     jmp typeCreate
 .endproc
 

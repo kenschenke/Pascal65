@@ -479,8 +479,12 @@ L1: pha
     neg
     nop
     lda (ptr1),z
+    stq ptr1
     ldz #type::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     jsr scopeLookup
     jsr isQZero

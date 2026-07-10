@@ -435,9 +435,11 @@ RT: lda #TYPE_ROUTINE_ADDRESS
     lda (ptr1),z
     cmp #TYPE_DECLARED
     bne :+
-    ldq ptr1
     ldz #type::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     jsr scopeLookup
     stq ptr1
@@ -613,11 +615,7 @@ L2: lda rightType
     bne L3
     lda rightType+type::flags
     pha
-    lda #<rightType
-    ldx #>rightType
-    ldy #0
-    ldz #type::name
-    jsr calcNamePtr
+    ldq rightType+type::name
     stq ptr4
     jsr scopeLookup
     stq ptr1

@@ -430,6 +430,16 @@ DN:
 .proc freeTempType
     jsr calcTypeBlockAddr
     stq ptr1
+    jsr pushQ
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    beq :+
+    jsr heapFree
+:   jsr popQ
+    stq ptr1
     ldz #type::subtype
     neg
     neg
@@ -1061,16 +1071,27 @@ L3: lda #leftTypeOffset
     lda (ptr2),z
     nop
     sta (ptr1),z
-    ; Copy name from type in ptr2 to type in ptr1
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr isQZero
+    beq L4
+
+    jsr nameClone
+    stq ptr2
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr1
     ldz #type::name
     ldx #0
-:   nop
-    lda (ptr2),z
+:   lda ptr2,x
     nop
     sta (ptr1),z
     inz
     inx
-    cpx #NAMELEN
+    cpx #4
     bne :-
 L4: rts
 .endproc

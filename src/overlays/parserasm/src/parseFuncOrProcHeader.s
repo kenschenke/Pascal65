@@ -12,7 +12,7 @@ isRtnTypeOffset = 0
 .export parseFuncOrProcHeader
 
 .import getToken, parserToken, parserString, doResync, parseFormalParamList
-.import tlFuncIdFollow, tlProgProcIdFollow, parserError, copyParserStringToType
+.import tlFuncIdFollow, tlProgProcIdFollow, parserError
 .import tlDeclarationStart, tlStatementStart
 .import saveParserString, lastParserString
 
@@ -142,9 +142,21 @@ L3: ldx #TYPE_PROCEDURE
     jsr pushQZero               ; params
     jsr typeCreate
     stq returnType
-    ; Copy parserString to type.name
+    lda #<parserString
+    ldx #>parserString
+    jsr nameCreate
+    stq ptr2
+    ldq returnType
     stq ptr1
-    jsr copyParserStringToType
+    ldz #type::name
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
     jmp getToken
 
 L1: lda #0

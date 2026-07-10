@@ -55,22 +55,15 @@ L1: ldz #type::kind
     bra L1
 
 :   ldz #type::name
+    neg
+    neg
     nop
     lda (ptr1),z
     jsr isQZero
     bne :+
     jmp DN
 
-:   lda #type::name
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq ptr1
-    clc
-    adcq intOp32
-    stq ptr4
+:   stq ptr4
     jsr scopeLookup
     jsr isQZero
     bne :+
@@ -101,9 +94,8 @@ L2: ldz #type::kind
     nop
     lda (ptr1),z
     cmp #TYPE_ENUMERATION
-    beq :+
-    jmp L1
-:   ldz #type::subtype
+    bne L1
+    ldz #type::subtype
     neg
     neg
     nop

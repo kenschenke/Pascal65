@@ -9,7 +9,7 @@
 .export parseSubrangeType
 
 .import parseSubrangeLimit, condGetToken, doResync, parserToken, parserError
-.import tlSubrangeLimitFollow, tlDeclarationStart, copyNameToType
+.import tlSubrangeLimitFollow, tlDeclarationStart
 
 allowShorthandOffset = 0
 nameOffset = allowShorthandOffset + 1
@@ -172,8 +172,15 @@ L2: lda minType
     stq ptr2
     jsr isQZero
     beq L3
-    ; Copy name from ptr2 to type.name
-    jsr copyNameToType
+    ldz #type::name
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
 
     ; If the lower limit is a declared value (a constant),
     ; look up the underlying type and use that for the
@@ -182,18 +189,19 @@ L3: lda minType
     cmp #TYPE_DECLARED
     bne L4
     lda #TYPE_DECLARED
-    jsr pushA               ; kind
+    jsr pushA
     lda #1
-    jsr pushA               ; isConst
-    jsr pushQZero           ; subtype
-    jsr pushQZero           ; params
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
     jsr typeCreate
     stq declaredType
+    stq ptr2
     ldq subrangeType
     stq ptr1
     ldz #type::subtype
     ldx #0
-:   lda declaredType,x
+:   lda ptr2,x
     nop
     sta (ptr1),z
     inz
@@ -205,10 +213,19 @@ L3: lda minType
     neg
     nop
     lda (stackPointer),z
-    stq ptr2
+    jsr nameClone
+    stq ptr3
     ldq declaredType
-    stq ptr1
-    jsr copyNameToType
+    stq ptr2
+    ldz #type::name
+    ldx #0
+:   lda ptr3,x
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #4
+    bne :-
     bra L5
 L4: lda minType
     jsr pushA
@@ -230,8 +247,8 @@ L4: lda minType
     cpx #4
     bne :-
 
-L5: jsr popQ
-    jsr popA
+L5: jsr popA
+    jsr popQ
     ldq subrangeType
     rts
 .endproc

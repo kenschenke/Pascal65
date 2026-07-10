@@ -4,8 +4,8 @@
 .include "4510macros.inc"
 
 lastDeclOffset = 0
-firstDeclOffset = lastDeclOffset + 4
-nameOffset = firstDeclOffset + 4
+firstDeclOffset = 4
+nameOffset = 8
 
 .export addUnit
 

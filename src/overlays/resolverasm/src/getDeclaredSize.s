@@ -16,14 +16,16 @@
 
 .export getDeclaredSize
 
-.import getTypeSize, calcNamePtr
+.import getTypeSize
 
 ; Type is in ptr1
 ; Size returned in A/X
 .proc getDeclaredSize
-    ldq ptr1
     ldz #type::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     jsr scopeLookup
     jsr isQZero

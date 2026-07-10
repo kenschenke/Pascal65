@@ -1,4 +1,3 @@
-.include "ast.inc"
 .include "4510macros.inc"
 .include "zeropage.inc"
 .include "asmlib.inc"
@@ -6,8 +5,7 @@
 .export handleParse, parserError, setUnitsList, getUnitsList, units
 .export parserIcode, parserToken, currentLineNumber, parserString, parserValue, parserType
 .export parserModuleType, runtimeStackSize, isInUnitInterface, getRuntimeStackSize
-.export lastParserString, saveParserString, calcNamePtr, copyParserStringToType, copyNameToType
-.export loadStackValue
+.export lastParserString, saveParserString, calcNamePtr
 
 .import getToken, parseModule
 
@@ -88,55 +86,5 @@ units: .res 4
     stz intOp32+3
     clc
     adcq intOp32
-    rts
-.endproc
-
-; Copies parserString to the type in ptr1
-.proc copyParserStringToType
-    ldx #0
-    ldz #type::name
-L1: lda parserString,x
-    beq L2
-    nop
-    sta (ptr1),z
-    inx
-    inz
-    bne L1
-L2: nop
-    sta (ptr1),z
-    rts
-.endproc
-
-; Copies the null-terminated name in ptr2
-; to the type in ptr1
-.proc copyNameToType
-    lda #0
-    sta tmp2                ; source index in tmp2
-    lda #type::name
-    sta tmp1                ; dest index in tmp1
-L1: ldz tmp2
-    nop
-    lda (ptr2),z
-    beq L2
-    ldz tmp1
-    nop
-    sta (ptr1),z
-    inc tmp1
-    inc tmp2
-    bne L1
-L2: ldz tmp1
-    nop
-    sta (ptr1),z
-    rts
-.endproc
-
-; This routine retrieves a 4-byte value off the runtime stack.
-; The offset on the stack is passed in Z.
-; The value is returned in Q.
-.proc loadStackValue
-    neg
-    neg
-    nop
-    lda (stackPointer),z
     rts
 .endproc

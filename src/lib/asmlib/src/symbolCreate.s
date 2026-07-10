@@ -19,7 +19,7 @@ nameOffset = 0
 
 .export symbolCreate
 
-.import storeFromStack, heapAlloc, rtPopA, rtPopQ, rtPushQ
+.import storeFromStack, nameClone, heapAlloc, rtPopA, rtPopQ, rtPushQ
 
 ; Allocate a symbol structure and populate it with parameters.
 ; Inputs on runtime stack, bottom to top:

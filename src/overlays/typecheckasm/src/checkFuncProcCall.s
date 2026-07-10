@@ -231,16 +231,20 @@ L1: ldz #type::kind
     inx
     cpx #4
     bne :-
-    ; Copy name from ptr1 type to ptr2 type
     ldz #type::name
-    ldx #0
-:   nop
+    neg
+    neg
+    nop
     lda (ptr1),z
+    stq ptr3
+    ldx #0
+    ldz #type::name
+:   lda ptr3,x
     nop
     sta (ptr2),z
     inz
     inx
-    cpx #NAMELEN
+    cpx #4
     bne :-
 
 DN: lda #.sizeof(type)

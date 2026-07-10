@@ -10,7 +10,7 @@
 
 .import getToken, parserToken, doResync, condGetToken, parseArrayType, parserString
 .import tlIdentifierStart, tlIdentifierFollow, tlSublistFollow, tlDeclarationFollow
-.import tlFormalParmsFollow, parserError, copyParserStringToType
+.import tlFormalParmsFollow, parserError
 
 .bss
 
@@ -247,10 +247,21 @@ L5: cmp #tcIdentifier
     jsr pushQZero           ; params
     jsr typeCreate
     stq paramType
+    lda #<parserString
+    ldx #>parserString
+    jsr nameCreate
+    stq ptr2
     ldq paramType
     stq ptr1
-    ; Copy parserString to type.name
-    jsr copyParserStringToType
+    ldz #type::name
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
     jsr setByIsRefFlag
     jsr getToken
     jmp L8

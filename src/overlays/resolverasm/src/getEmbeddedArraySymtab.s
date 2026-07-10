@@ -95,9 +95,11 @@ L2: ldz #type::kind
     bra L2
 L3: cmp #TYPE_DECLARED
     bne L6
-    ldq ptr1
     ldz #type::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     ldz #symtabOffset
     neg

@@ -16,7 +16,7 @@
 
 .export dumpType, dumpTypeMember, dumpTypeKind
 
-.import level, printz, dumpString, dumpExprValue, newLine, showPrefix, dumpChar, dumpDecl
+.import level, printz, dumpString, dumpPtrString, dumpExprValue, newLine, showPrefix, dumpChar, dumpDecl
 .import indent
 
 .bss
@@ -138,8 +138,7 @@ kinds: .byte .LOBYTE(strTYPE_VOID), .HIBYTE(strTYPE_VOID)
     cmp #TYPE_ARRAY
     bne L1
     jsr dumpArrayType
-    jsr newLine
-    bra L7
+    bra L3
 
 L1: cmp #TYPE_RECORD
     bne L2
@@ -167,7 +166,7 @@ L5: cmp #TYPE_SUBRANGE
     bra L7
 
 L6: ldz #type::name
-    jsr dumpString
+    jsr dumpPtrString
 
     jsr newLine
 
@@ -464,6 +463,7 @@ L3: dec level
     inc level
     lda #0
     sta anyFlag
+    sta tmp3
     ldz #type::flags
     nop
     lda (ptr1),z
@@ -524,8 +524,6 @@ L3: dec level
 
     lda tmp1
     jsr pushA
-    lda anyFlag
-    jsr pushA
 
     lda anyFlag
     bne :+
@@ -536,7 +534,7 @@ L3: dec level
     lda #1
     sta anyFlag
 
-:   jsr popA
+:   lda tmp3
     beq :+
     lda #','
     jsr dumpChar
@@ -545,6 +543,8 @@ L3: dec level
 :   plx
     pla
     jsr printz
+    lda #1
+    sta tmp3
     jsr popA
     sta tmp1
     rts

@@ -3,12 +3,10 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
+firstDeclOffset = 4
 lastDeclOffset = 0
-firstDeclOffset = lastDeclOffset + 4
 
 .export appendDecl
-
-.import loadStackValue
 
 ; This routine appends the declaration in ptr2 to the list of
 ; declarations.
@@ -19,7 +17,10 @@ firstDeclOffset = lastDeclOffset + 4
 .proc appendDecl
     ; See if firstDecl is null
     ldz #firstDeclOffset
-    jsr loadStackValue
+    neg
+    neg
+    nop
+    lda (stackPointer),z
     stq ptr1                    ; Pointer to firstDecl on runtime stack
     ldz #0
     neg
@@ -42,7 +43,10 @@ firstDeclOffset = lastDeclOffset + 4
     rts
 L2: ; Append declaration to the last one
     ldz #lastDeclOffset         ; Set lastDecl's next to new declaration
-    jsr loadStackValue
+    neg
+    neg
+    nop
+    lda (stackPointer),z
     stq ptr1
     ldz #decl::next
     ldx #0

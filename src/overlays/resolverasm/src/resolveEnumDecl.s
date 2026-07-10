@@ -17,19 +17,19 @@
 
 .export resolveEnumDecl
 
-.import addEnumsToSymtab, resolverError, getTypePtr, calcNamePtr
+.import addEnumsToSymtab, resolverError, getTypePtr
 
 .proc resolveEnumDecl
     jsr getTypePtr
     ldz #type::name
+    neg
+    neg
     nop
     lda (ptr1),z
+    jsr isQZero
     beq L1
 
     ; Look up the enum name
-    ldq ptr1
-    ldz #type::name
-    jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
     jsr isQZero

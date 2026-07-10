@@ -16,7 +16,7 @@
 .export symbolClone
 
 .import savePtrs, restorePtrs, storePtr, declClone, typeClone
-.import isQZero, heapAlloc, rtPushQ, rtPopQ
+.import nameClone, isQZero, heapAlloc, rtPushQ, rtPopQ
 
 .proc symbolClone
     jsr isQZero

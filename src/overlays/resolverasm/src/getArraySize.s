@@ -26,7 +26,7 @@ typeOffset = 14
 
 .export getArraySize
 
-.import getSubrangeLimit, getTypeSize, calcNamePtr
+.import getSubrangeLimit, getTypeSize
 
 ; The array type is in ptr1 on entry
 ; The total array size is returned in A/X.
@@ -174,9 +174,11 @@ L1: ldz #subtypeOffset
 
 ; Indextype is still in ptr4
 .proc getDeclaredArraySize
-    ldq ptr4
     ldz #type::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr4),z
     stq ptr4                ; name in ptr4
     jsr scopeLookup
     jsr isQZero
