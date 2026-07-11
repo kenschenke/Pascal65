@@ -96,7 +96,7 @@ D:DECL-TYPE test
         T:TYPE-PROCEDURE
           param: rec
             T:TYPE-DECLARED myrec
-            flags: , TYPE-FLAG-ISBYREF
+            flags: TYPE-FLAG-ISBYREF
     D:DECL-VARIABLE ap
       T:TYPE-ROUTINE-POINTER
         T:TYPE-PROCEDURE
@@ -177,7 +177,7 @@ D:DECL-TYPE test
       T:TYPE-PROCEDURE
         param: rec
           T:TYPE-DECLARED myrec
-          flags: , TYPE-FLAG-ISBYREF
+          flags: TYPE-FLAG-ISBYREF
       S:STMT-BLOCK
     D:DECL-TYPE arrayproc
       T:TYPE-PROCEDURE
