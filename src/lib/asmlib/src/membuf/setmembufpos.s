@@ -52,7 +52,7 @@ L1: ; Is intOp1 < intOp2 (remaining < chunk length)?
     cmp #0
     bne LT                  ; Branch if intOp1 < intOp2
     ; Subtract chunk length from remaining seek position
-    jsr subInt16            ; intOp1 now containins remaining bytes to seek
+    jsr subInt16            ; intOp1 now contains remaining bytes to seek
     ; Copy next chunk pointer to ptr3
     ldz #MEMBUF_CHUNK::nextChunk+3
     ldx #3
@@ -77,13 +77,14 @@ LT: ldz #MEMBUF::posChunk
     sta (ptr1),z
     ; Store the current chunk ptr (ptr2) into the membuf currentChunk ptr
     ldz #MEMBUF::currentChunk
-    lda ptr2
+    ldx #0
+:   lda ptr2,x
     nop
     sta (ptr1),z
-    lda ptr2+1
     inz
-    nop
-    sta (ptr1),z
+    inx
+    cpx #4
+    bne :-
     ; Copy tmp1/tmp2 to the posGloal in the membuf header
     ldz #MEMBUF::posGlobal
     lda tmp1
