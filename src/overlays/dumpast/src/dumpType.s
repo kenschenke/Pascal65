@@ -138,7 +138,8 @@ kinds: .byte .LOBYTE(strTYPE_VOID), .HIBYTE(strTYPE_VOID)
     cmp #TYPE_ARRAY
     bne L1
     jsr dumpArrayType
-    bra L3
+    jsr newLine
+    bra L7
 
 L1: cmp #TYPE_RECORD
     bne L2
@@ -463,7 +464,6 @@ L3: dec level
     inc level
     lda #0
     sta anyFlag
-    sta tmp3
     ldz #type::flags
     nop
     lda (ptr1),z
@@ -524,6 +524,8 @@ L3: dec level
 
     lda tmp1
     jsr pushA
+    lda anyFlag
+    jsr pushA
 
     lda anyFlag
     bne :+
@@ -534,7 +536,7 @@ L3: dec level
     lda #1
     sta anyFlag
 
-:   lda tmp3
+:   jsr popA
     beq :+
     lda #','
     jsr dumpChar
@@ -543,8 +545,6 @@ L3: dec level
 :   plx
     pla
     jsr printz
-    lda #1
-    sta tmp3
     jsr popA
     sta tmp1
     rts
