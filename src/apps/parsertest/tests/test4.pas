@@ -19,6 +19,9 @@ D:DECL-TYPE test
     D:DECL-CONST no
       T:TYPE-BOOLEAN
       E:EXPR-BOOLEAN-LITERAL false
+    D:DECL-CONST null
+      T:TYPE-ADDRESS
+      E:EXPR-WORD-LITERAL 0
 *)
 
 Program Test;
@@ -29,6 +32,7 @@ Const
   Greeting = 'Hello World';
   Yes = True;
   No = False;
+  Null = Nil;
 
 Begin
 End.

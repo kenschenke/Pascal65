@@ -209,6 +209,7 @@ L1: lda typeKind
     jsr pushQZero
     jsr pushQZero
     jsr pushQZero
+    jsr pushQZero
     jsr exprCreate
     stq expr
     lda #TYPE_ADDRESS
