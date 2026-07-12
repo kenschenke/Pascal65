@@ -13,6 +13,12 @@ D:DECL-TYPE test
     D:DECL-CONST greeting
       T:TYPE-STRING-VAR
       E:EXPR-STRING-LITERAL Hello World
+    D:DECL-CONST yes
+      T:TYPE-BOOLEAN
+      E:EXPR-BOOLEAN-LITERAL true
+    D:DECL-CONST no
+      T:TYPE-BOOLEAN
+      E:EXPR-BOOLEAN-LITERAL false
 *)
 
 Program Test;
@@ -21,6 +27,8 @@ Const
   MyInt = 12345;
   Pi = 3.14159;
   Greeting = 'Hello World';
+  Yes = True;
+  No = False;
 
 Begin
 End.

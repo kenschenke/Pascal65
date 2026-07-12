@@ -232,7 +232,7 @@ L1: lda typeKind
     stq parserValue
     lda parserToken
     cmp #tcTRUE
-    beq :+
+    bne :+
     lda #1
     sta parserValue
 :   lda #EXPR_BOOLEAN_LITERAL
@@ -240,6 +240,8 @@ L1: lda typeKind
     jsr pushQZero
     jsr pushQZero
     jsr pushQZero
+    ldq parserValue
+    jsr pushQ
     jsr exprCreate
     stq expr
     lda #TYPE_BOOLEAN
