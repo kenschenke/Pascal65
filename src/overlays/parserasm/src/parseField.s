@@ -32,8 +32,7 @@ L1: lda parserToken
     jsr pushQZero           ; right
     lda #<parserString
     ldx #>parserString
-    ldy #0
-    ldz #0
+    jsr nameCreate
     jsr pushQ               ; name
     jsr pushQZero           ; value
     jsr exprCreate

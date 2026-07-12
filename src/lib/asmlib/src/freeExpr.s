@@ -38,8 +38,17 @@
     bne L1
     jsr freeValueString
 
-    ; Left
+    ; Name
 L1: jsr peekQ
+    stq ptr1
+    ldz #expr::name
+    jsr loadPtr
+    jsr isQZero
+    beq :+
+    jsr heapFree
+
+    ; Left
+:   jsr peekQ
     stq ptr1
     ldz #expr::left
     jsr loadPtr

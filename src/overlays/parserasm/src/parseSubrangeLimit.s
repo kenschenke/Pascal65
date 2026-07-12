@@ -37,14 +37,15 @@ exprKind: .res 1
     lda (stackPointer),z
     jsr isQZero
     beq L1
+    lda #<parserString
+    ldx #>parserString
+    jsr nameCreate
+    stq ptr1
     lda #EXPR_NAME
     jsr pushA               ; kind
     jsr pushQZero           ; left
     jsr pushQZero           ; right
-    lda #<parserString
-    ldx #>parserString
-    ldy #0
-    ldz #0
+    ldq ptr1
     jsr pushQ               ; name
     jsr pushQZero           ; value
     jsr exprCreate
@@ -246,14 +247,15 @@ L1: ldx #0
 .endproc
 
 .proc parseIdentifierLimit
+    lda #<parserString
+    ldx #>parserString
+    jsr nameCreate
+    stq ptr1
     lda #EXPR_NAME
     jsr pushA               ; kind
     jsr pushQZero           ; left
     jsr pushQZero           ; right
-    lda #<parserString
-    ldx #>parserString
-    ldy #0
-    ldz #0
+    ldq ptr1
     jsr pushQ               ; name
     jsr pushQZero           ; value
     jsr exprCreate

@@ -22,7 +22,7 @@ exprRightOffset = 0
 
 .import loadStackValue, isTypeInteger, isAssignableToString
 .import getTypeSize, typeCheckError, checkForwardVsFormalDeclaration
-.import isAssignmentCompatible, calcNamePtr
+.import isAssignmentCompatible
 
 .bss
 
@@ -384,8 +384,12 @@ DN: rts
     neg
     nop
     lda (ptr1),z
+    stq ptr1
     ldz #expr::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     jsr scopeLookup
     stq ptr2

@@ -20,7 +20,7 @@ CH_BACKARROW = 95
 
 .export showExpr, showSubExpr
 
-.import showAddr, printz, printzLong, printStructAddr, printStructName
+.import showAddr, printz, printzLong, printStructAddr, printNamePtr
 .import printStructBool, printStructNumber, getKey, loadPtr, printzLong
 .import showTypeKind, showType
 
@@ -162,7 +162,7 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     lda #<nameLabel
     ldx #>nameLabel
     ldz #expr::name
-    jsr printStructName
+    jsr printNamePtr
 
     ; Node
     lda #<nodeLabel
@@ -336,15 +336,11 @@ L5: bra L1
     jmp showBooleanValue
 :   cmp #EXPR_NAME
     bne :+
-    lda #expr::name
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq ptr2
-    clc
-    adcq intOp32
+    ldz #expr::name
+    neg
+    neg
+    nop
+    lda (ptr2),z
     jsr printzLong
     ; Fall through to next line
 :   lda #13

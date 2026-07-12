@@ -18,7 +18,7 @@ exprOffset = pTypeOffset + 4
 
 .export getArrayType
 
-.import loadStackValue, typeCheckError, exprTypeCheck, calcNamePtr
+.import loadStackValue, typeCheckError, exprTypeCheck
 
 .proc getArrayType
     ldz #exprOffset
@@ -68,8 +68,12 @@ L2: cmp #EXPR_NAME
     bne L3
     ldz #exprOffset
     jsr loadStackValue
+    stq ptr1
     ldz #expr::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     jsr scopeLookup
     jsr isQZero

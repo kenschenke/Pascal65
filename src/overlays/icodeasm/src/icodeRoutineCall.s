@@ -33,7 +33,7 @@ exprPtrOffset = symPtrOffset + 4
 
 .import loadStackValue, lblRoutineReturn, icodeFormatLabel, icodeVar
 .import icodeWriteInstruction, icodeOper1Short, icodeOper1Label, icodeOper2Label
-.import icodeExprRead, lblDeclInit, icodeOper2Short, icodeExpr, calcNamePtr
+.import icodeExprRead, lblDeclInit, icodeOper2Short, icodeExpr
 
 .bss
 
@@ -410,9 +410,12 @@ DN: jsr popA                ; param type kind
     jsr icodeExprRead
 
     jsr popQ
+    stq ptr1
     ldz #expr::name
-    jsr calcNamePtr
-    stq ptr4
+    neg
+    neg
+    nop
+    lda (ptr1),z
     jsr scopeLookup
     stq intOp32
     stq ptr2                    ; Save for later too

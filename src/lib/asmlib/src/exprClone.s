@@ -77,17 +77,21 @@
     ldz #expr::right
     jsr storePtr
 
-    ; Copy the name
+    ; Clone the name
+    jsr savePtrs
     ldz #expr::name
-    ldx #0
-:   nop
-    lda (ptr1),z
+    neg
+    neg
     nop
-    sta (ptr2),z
-    inz
-    inx
-    cpx #NAMELEN
-    bne :-
+    lda (ptr1),z
+    stq ptr3
+    jsr isQZero
+    beq :+
+    jsr nameClone
+    stq ptr3
+:   jsr restorePtrs
+    ldz #expr::name
+    jsr storePtr
 
     ; Clone the symbol table node
     jsr savePtrs

@@ -16,7 +16,7 @@
 
 .export dumpExpr, dumpExprMember, dumpExprValue, dumpExprKind
 
-.import level, printz, dumpString, dumpPtrString, newLine, prefix, showPrefix, dumpChar, dumpHex, indent
+.import level, printz, dumpPtrString, newLine, prefix, showPrefix, dumpChar, dumpHex, indent
 .import dumpTypeKind
 
 .bss
@@ -361,7 +361,7 @@ L2: jmp printz
 :   cmp #EXPR_NAME
     bne :+
     ldz #expr::name
-    jmp dumpString
+    jmp dumpPtrString
 :   cmp #EXPR_REAL_LITERAL
     bne :+
     ldz #expr::value

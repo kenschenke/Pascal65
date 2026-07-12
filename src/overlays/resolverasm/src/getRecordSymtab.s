@@ -21,7 +21,7 @@ symtabOffset = 0
 .export getRecordSymtab
 
 .import getEmbeddedRecordSymtab, getEmbeddedArraySymtab
-.import resolverError, calcNamePtr
+.import resolverError
 
 .bss
 
@@ -119,8 +119,11 @@ L2: cmp #EXPR_POINTER
     bne :-
 
 L3: ldz #expr::name
+    neg
+    neg
     nop
     lda (ptr1),z
+    jsr isQZero
     bne L4
     jsr popQ
     jsr popQ
@@ -130,10 +133,7 @@ L3: ldz #expr::name
     taz
     rts
 
-L4: ldq ptr1
-    ldz #expr::name
-    jsr calcNamePtr
-    stq ptr4                ; name in ptr4
+L4: stq ptr4                ; name in ptr4
     ldz #symtabOffset
     neg
     neg

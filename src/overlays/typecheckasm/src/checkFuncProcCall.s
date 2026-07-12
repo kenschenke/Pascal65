@@ -23,7 +23,7 @@ exprOffset = rtnTypePtrOffset + 4
 
 .import typeCheckError, loadStackValue, checkStdRoutine, exprTypeCheck
 .import getTypeConversion, checkArraysSameType, isTypeInteger
-.import checkForwardVsFormalDeclaration, isAssignableToString, calcNamePtr
+.import checkForwardVsFormalDeclaration, isAssignableToString
 
 .bss
 
@@ -74,8 +74,12 @@ namePtr: .res 4
     neg
     nop
     lda (ptr1),z
+    stq ptr1
     ldz #expr::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     stq namePtr
     jsr scopeLookup

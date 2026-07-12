@@ -14,8 +14,6 @@
 
 .export isExprATypeDeclaration
 
-.import calcNamePtr
-
 ; Expression passed in Q.
 ; On exit, the Z flag is set if the expression is a type declaration.
 .proc isExprATypeDeclaration
@@ -24,9 +22,11 @@
     cmp #EXPR_NAME
     bne DN
 
-    ldq ptr1
     ldz #expr::name
-    jsr calcNamePtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
     stq ptr4
     jsr scopeLookup
     stq ptr1

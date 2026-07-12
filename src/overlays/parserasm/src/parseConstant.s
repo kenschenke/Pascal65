@@ -96,16 +96,21 @@ exprKind: .res 1
     jsr typeCreate
     stq type
     jsr setTypePtr
-    lda #EXPR_NAME
-    jsr pushA               ; kind
-    jsr pushQZero           ; left
-    jsr pushQZero           ; right
     lda #<parserString
     ldx #>parserString
-    ldy #0
-    ldz #0
-    jsr pushQ               ; name
-    jsr pushQZero           ; value
+    jsr nameCreate
+    stq ptr1
+    lda #EXPR_NAME
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
+    ldq ptr1
+    jsr pushQ
+    lda #0
+    tax
+    tay
+    taz
+    stq parserValue
     jsr exprCreate
     stq expr
     lda #<parserString
@@ -171,12 +176,12 @@ L1: lda typeKind
     jsr nameCreate
     stq parserValue
 :   lda exprKind
-    jsr pushA               ; kind
-    jsr pushQZero           ; left
-    jsr pushQZero           ; right
-    jsr pushQZero           ; name
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
+    jsr pushQZero
     ldq parserValue
-    jsr pushQ               ; value
+    jsr pushQ
     jsr exprCreate
     stq expr
     lda sign
@@ -194,12 +199,16 @@ L1: lda typeKind
 .endproc
 
 .proc parseNilConst
+    lda #0
+    tax
+    tay
+    taz
+    stq parserValue
     lda #EXPR_WORD_LITERAL
-    jsr pushA                   ; kind
-    jsr pushQZero               ; left
-    jsr pushQZero               ; right
-    jsr pushQZero               ; name
-    jsr pushQZero               ; value
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
+    jsr pushQZero
     jsr exprCreate
     stq expr
     lda #TYPE_ADDRESS
@@ -227,12 +236,10 @@ L1: lda typeKind
     lda #1
     sta parserValue
 :   lda #EXPR_BOOLEAN_LITERAL
-    jsr pushA                   ; kind
-    jsr pushQZero               ; left
-    jsr pushQZero               ; right
-    jsr pushQZero               ; name
-    ldq parserValue
-    jsr pushQ                   ; value
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
+    jsr pushQZero
     jsr exprCreate
     stq expr
     lda #TYPE_BOOLEAN
@@ -281,12 +288,12 @@ L1: lda typeKind
     jsr typeCreate
     jsr setTypePtr
     lda #EXPR_CHARACTER_LITERAL
-    jsr pushA                   ; kind
-    jsr pushQZero               ; left
-    jsr pushQZero               ; right
-    jsr pushQZero               ; name
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
+    jsr pushQZero
     ldq parserValue
-    jsr pushQ                   ; value
+    jsr pushQ
     jsr exprCreate
     stq expr
     bra L2
@@ -302,12 +309,12 @@ L1: ; String
     jsr typeCreate
     jsr setTypePtr
     lda #EXPR_STRING_LITERAL
-    jsr pushA                   ; kind
-    jsr pushQZero               ; left
-    jsr pushQZero               ; right
-    jsr pushQZero               ; name
+    jsr pushA
+    jsr pushQZero
+    jsr pushQZero
+    jsr pushQZero
     ldq parserValue
-    jsr pushQ                   ; value
+    jsr pushQ
     jsr exprCreate
     stq expr
 

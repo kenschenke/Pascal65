@@ -64,30 +64,13 @@ valueOffset = 0
     ldx #expr::right
     jsr storeFromStack
 
-    ; Copy the name
-    lda #0
-    sta tmp1                ; tmp1 - index into source name
-    lda #expr::name
-    sta tmp2                ; tmp2 - offset in expr structure
-    ldz #nameOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr2
-:   ldz tmp1
-    nop
-    lda (ptr2),z
-    beq :+
-    ldz tmp2
-    nop
-    sta (ptr1),z
-    inc tmp1
-    inc tmp2
-    bne :-
+    ; Store the name pointer
+    lda #nameOffset
+    ldx #expr::name
+    jsr storeFromStack
 
     ; Store the value pointer
-:   lda #valueOffset
+    lda #valueOffset
     ldx #expr::value
     jsr storeFromStack
 

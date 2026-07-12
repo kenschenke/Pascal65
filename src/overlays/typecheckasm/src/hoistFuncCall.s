@@ -83,7 +83,7 @@ nameExprPtr: .res 4
     sta (ptr1),z
     inx
     inz
-    cpx #NAMELEN
+    cpx #4
     bne :-
     ; expression node (null)
     ldz #expr::node
