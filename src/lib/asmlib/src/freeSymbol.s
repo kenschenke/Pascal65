@@ -16,13 +16,24 @@
 .export freeSymbol
 
 .import freeDecl, freeType, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero
-.import peekQ
+.import isHeapAllocated, peekQ
+
+.bss
+
+symPtr: .res 4
+
+.code
 
 .proc freeSymbol
+    stq symPtr
     jsr isQZero
     bne :+
     rts
-:   stq ptr1
+:   jsr isHeapAllocated
+    bne :+
+    rts
+:   ldq symPtr
+    stq ptr1
     jsr rtPushQ
 
     ; Node
