@@ -436,6 +436,7 @@ DN:
     neg
     nop
     lda (ptr1),z
+    jsr isQZero
     beq :+
     jsr heapFree
 :   jsr popQ
@@ -567,6 +568,43 @@ DN:
     inz
     cpz #.sizeof(type)
     bne :-
+
+    ; Clone the name
+    ldq ptr3
+    jsr pushQ
+    ldq ptr4
+    jsr pushQ
+
+    ldq ptr1
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr isQZero
+    beq DN
+    stq ptr2
+    ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr nameClone
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    ldx #0
+    ldz #type::name
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
+DN: jsr popQ
+    stq ptr4
+    jsr popQ
+    stq ptr3
     rts
 .endproc
 
