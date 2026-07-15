@@ -215,16 +215,27 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     nop
     lda (ptr1),z
     jsr isQZero
-    beq :+
+    beq L1
     stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    bra L2
+L1: ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    bne L2
+    rts
+L2: pha
     lda #' '
     jsr dumpChar
     lda #'T'
     jsr dumpChar
     lda #':'
     jsr dumpChar
+    pla
     jsr dumpTypeKind
-:   rts
+    rts
 .endproc
 
 .proc dumpArrayLiteral

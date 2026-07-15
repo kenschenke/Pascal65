@@ -25,7 +25,7 @@ routineCodeOffset = argPtrOffset + 4
 
 .bss
 
-typePtr: .res 4
+exprPtr: .res 4
 
 .code
 
@@ -41,13 +41,7 @@ typePtr: .res 4
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     cmp #TYPE_FILE
@@ -80,22 +74,16 @@ L1: ldz #argPtrOffset
     jmp EL
 
 :   stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr2
-    stq typePtr
+    stq exprPtr
 
     ldz #readingBytesOffset
     nop
     lda (stackPointer),z
     bne RB
 
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
-    lda (ptr2),z
+    lda (ptr1),z
     pha
     ldz #expr::left
     neg
@@ -119,9 +107,9 @@ RB: ldz #expr::left
     nop
     lda (ptr1),z
     jsr pushQ
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
-    lda (ptr2),z
+    lda (ptr1),z
     cmp #TYPE_ARRAY
     beq AR
     cmp #TYPE_RECORD
@@ -132,9 +120,9 @@ NN: lda #0
 IE: jsr pushA
     jsr icodeExpr
 
-    ldq typePtr
+    ldq exprPtr
     stq ptr1
-    ldz #type::size+1
+    ldz #expr::evalTypeSize+1
     nop
     lda (ptr1),z
     tax
@@ -145,9 +133,9 @@ IE: jsr pushA
     lda #IC_PSH
     jsr icodeWriteInstruction
 
-    ldq typePtr
+    ldq exprPtr
     stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     cmp #TYPE_ARRAY

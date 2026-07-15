@@ -13,13 +13,10 @@
 
 .export getExprTypeKind
 
-.import getExprType
-
 ; Expression passed in Q
 .proc getExprTypeKind
-    jsr getExprType
     stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     rts

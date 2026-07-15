@@ -60,8 +60,8 @@ D:DECL-TYPE test
             D:DECL-TYPE blue
               E:EXPR-WORD-LITERAL 2
     S:STMT-EXPR
-      E:EXPR-ASSIGN T:TYPE-VOID
-        Left:EXPR-NAME color T:TYPE-DECLARED
+      E:EXPR-ASSIGN
+        Left:EXPR-NAME color T:TYPE-ENUMERATION
         Right:EXPR-NAME green T:TYPE-ENUMERATION-VALUE
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-INTEGER
@@ -69,42 +69,42 @@ D:DECL-TYPE test
         Right:EXPR-CALL T:TYPE-INTEGER
           Left:EXPR-NAME ord T:TYPE-FUNCTION
           Right:EXPR-ARG
-            EXPR-NAME color T:TYPE-DECLARED
+            EXPR-NAME color T:TYPE-ENUMERATION
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-ENUMERATION
-        Left:EXPR-NAME othercolor T:TYPE-DECLARED
+        Left:EXPR-NAME othercolor T:TYPE-ENUMERATION
         Right:EXPR-CALL T:TYPE-ENUMERATION
           Left:EXPR-NAME pred T:TYPE-FUNCTION
           Right:EXPR-ARG
-            EXPR-NAME color T:TYPE-DECLARED
+            EXPR-NAME color T:TYPE-ENUMERATION
     S:STMT-IF-ELSE
       E:EXPR-NE T:TYPE-BOOLEAN
-        Left:EXPR-NAME othercolor T:TYPE-DECLARED
+        Left:EXPR-NAME othercolor T:TYPE-ENUMERATION
         Right:EXPR-NAME red T:TYPE-ENUMERATION-VALUE
       If True:
         S:STMT-EXPR
-          E:EXPR-ASSIGN T:TYPE-VOID
-            Left:EXPR-NAME othercolor T:TYPE-DECLARED
+          E:EXPR-ASSIGN
+            Left:EXPR-NAME othercolor T:TYPE-ENUMERATION
             Right:EXPR-NAME red T:TYPE-ENUMERATION-VALUE
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME colorproc T:TYPE-PROCEDURE
         Right:EXPR-ARG
-          EXPR-NAME color T:TYPE-DECLARED
+          EXPR-NAME color T:TYPE-ENUMERATION
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-ENUMERATION
-        Left:EXPR-NAME othercolor T:TYPE-DECLARED
-        Right:EXPR-CALL T:TYPE-DECLARED
+        Left:EXPR-NAME othercolor T:TYPE-ENUMERATION
+        Right:EXPR-CALL T:TYPE-ENUMERATION
           Left:EXPR-NAME colorfunc T:TYPE-FUNCTION
           Right:EXPR-ARG
-            EXPR-NAME color T:TYPE-DECLARED
+            EXPR-NAME color T:TYPE-ENUMERATION
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME colorproc T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME green T:TYPE-ENUMERATION-VALUE
     S:STMT-EXPR
-      E:EXPR-ASSIGN T:TYPE-VOID
+      E:EXPR-ASSIGN
         Left:EXPR-NAME cp T:TYPE-ROUTINE-POINTER
         Right:EXPR-ADDRESS-OF T:TYPE-ROUTINE-ADDRESS
           Left:EXPR-NAME colorproc T:TYPE-PROCEDURE

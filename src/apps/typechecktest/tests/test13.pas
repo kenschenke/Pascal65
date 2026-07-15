@@ -18,44 +18,44 @@ D:DECL-TYPE test
     D:DECL-VARIABLE r
       T:TYPE-REAL
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME write T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME i T:TYPE-INTEGER
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME writeln T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME i T:TYPE-INTEGER
           EXPR-NAME ch T:TYPE-CHARACTER
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME writeln T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME arr T:TYPE-ARRAY
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME writeln T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME str T:TYPE-STRING-VAR
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME writeln T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-STRING-LITERAL Hello, World T:TYPE-STRING-LITERAL
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME writeln T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-CHARACTER-LITERAL 'x' T:TYPE-CHARACTER
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME write T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME fh T:TYPE-FILE
           EXPR-NAME i T:TYPE-INTEGER
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME writeln T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME r T:TYPE-REAL

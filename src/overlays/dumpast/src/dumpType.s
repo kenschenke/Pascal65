@@ -130,6 +130,9 @@ kinds: .byte .LOBYTE(strTYPE_VOID), .HIBYTE(strTYPE_VOID)
     lda #'T'
     jsr showPrefix
 
+    ldz #type::kind
+    nop
+    lda (ptr1),z
     jsr dumpTypeKind
     
     ldz #type::kind
@@ -184,9 +187,6 @@ L7: dec level
 .endproc
 
 .proc dumpTypeKind
-    ldz #type::kind
-    nop
-    lda (ptr1),z
     asl a
     tay
     lda kinds,y
@@ -269,7 +269,10 @@ L7: dec level
     jsr printz
     jsr dumpArrayType
     bra L2
-L1: jsr dumpTypeKind
+L1: ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr dumpTypeKind
 L2: jsr popQ
     stq ptr1
 
@@ -348,6 +351,9 @@ L3: jsr popQ
     nop
     lda (ptr1),z
     stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
     jsr dumpTypeKind
     jsr popQ
     stq ptr1

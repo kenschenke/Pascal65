@@ -89,15 +89,9 @@ L2: jsr isQZero
     lda (ptr1),z
     stq ptr1
     ; Get the case statement's expression type
-    ldz #expr::evalType
-    neg
-    neg
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
     pha
     ldq ptr1
     jsr icodeExprRead
@@ -107,13 +101,7 @@ L2: jsr isQZero
     jsr icodeOper1Short
     ldq labelExpr
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     jsr icodeOper2Short

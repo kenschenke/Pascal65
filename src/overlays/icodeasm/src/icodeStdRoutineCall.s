@@ -146,13 +146,7 @@ DN: pha
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     pha
@@ -177,13 +171,7 @@ DN: pha
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     pha
@@ -234,14 +222,7 @@ L1: jsr icodeWriteInstruction
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr getBaseType
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     cmp #TYPE_ENUMERATION

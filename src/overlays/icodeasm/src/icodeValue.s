@@ -19,7 +19,7 @@
 .export heapOffset
 
 .import icodeOper1Bool, icodeWriteInstruction, icodeOper1Char, icodeOper1Short
-.import icodeOper1Word, icodeOper1Long, icodeOper1Real, getExprType
+.import icodeOper1Word, icodeOper1Long, icodeOper1Real, getExprTypeKind
 .import icodeOper1String
 
 .bss
@@ -43,11 +43,7 @@ L1: stq ptr1
     lda (ptr1),z
     jsr icodeOper1Bool
     jsr popQ
-    jsr getExprType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     pha
 
 L2: lda #IC_PSH
@@ -71,11 +67,7 @@ L1: stq ptr1
     lda (ptr1),z
     jsr icodeOper1Char
     jsr popQ
-    jsr getExprType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     pha
 
 L2: lda #IC_PSH
@@ -155,17 +147,11 @@ L1: stq ptr1
 :   lda intOp1
     jsr icodeOper1Short
     jsr popQ
-    jsr getExprType
-    jsr isQZero
-    beq :+
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     sta tmp1
-    bra L2
-:   lda #TYPE_BYTE
-    sta tmp1
+    ; bra L2
+    ; lda #TYPE_BYTE
+    ; sta tmp1
 
 L2: lda #IC_PSH
     jsr icodeWriteInstruction

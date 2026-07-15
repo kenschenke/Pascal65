@@ -297,11 +297,7 @@ L1: ldz #exprOffset
 
     ldz #expr::left
     jsr getChildExpr
-    jsr getExprType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     cmp #TYPE_PROCEDURE
     beq RT
     cmp #TYPE_FUNCTION
@@ -351,22 +347,12 @@ RT: lda #TYPE_ROUTINE_ADDRESS
 
     ldz #expr::left
     jsr getChildExpr
-    jsr getExprType
-    jsr getBaseType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     jsr icodeOper1Short
 
     ldz #expr::right
     jsr getChildExpr
-    jsr getExprType
-    jsr getBaseType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     jsr icodeOper2Short
 
     lda #IC_SET
@@ -531,11 +517,7 @@ L1: ldz #symPtrOffset
     jsr icodeWriteInstruction
 :   ldz #expr::right
     jsr getChildExpr
-    jsr getExprType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
+    jsr getExprTypeKind
     pha
     ldz #isReadOffset
     nop
@@ -987,15 +969,9 @@ LR: ldz #expr::right
 L2: ldz #expr::right
     jsr getChildExpr
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
     jsr icodeOper1Short
     lda #IC_AIX
     jsr icodeWriteInstruction
@@ -1069,13 +1045,7 @@ L2: ldz #expr::right
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #expr::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     rts

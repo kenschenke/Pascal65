@@ -76,7 +76,6 @@ L1: ldz #argOffset
     jsr exprTypeCheck
     ldq stackPointer
     jsr getBaseType
-    ; jsr typeClone
     stq exprType
     ldq exprLeft
     stq ptr1

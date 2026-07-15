@@ -16,7 +16,7 @@ D:DECL-TYPE test
         EXPR-BYTE-LITERAL 3
         Case Body:
           S:STMT-EXPR
-            E:EXPR-CALL T:TYPE-VOID
+            E:EXPR-CALL
               Left:EXPR-NAME writeln T:TYPE-PROCEDURE
               Right:EXPR-ARG
                 EXPR-STRING-LITERAL First three T:TYPE-STRING-LITERAL
@@ -25,7 +25,7 @@ D:DECL-TYPE test
         EXPR-BYTE-LITERAL 5
         Case Body:
           S:STMT-EXPR
-            E:EXPR-CALL T:TYPE-VOID
+            E:EXPR-CALL
               Left:EXPR-NAME writeln T:TYPE-PROCEDURE
               Right:EXPR-ARG
                 EXPR-STRING-LITERAL 4 and 5 T:TYPE-STRING-LITERAL
@@ -37,7 +37,7 @@ D:DECL-TYPE test
         EXPR-BYTE-LITERAL 6
         Case Body:
           S:STMT-EXPR
-            E:EXPR-CALL T:TYPE-VOID
+            E:EXPR-CALL
               Left:EXPR-NAME write T:TYPE-PROCEDURE
               Right:EXPR-ARG
                 EXPR-STRING-LITERAL Six T:TYPE-STRING-LITERAL

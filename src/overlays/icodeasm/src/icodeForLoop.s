@@ -160,20 +160,14 @@ L2: jsr icodeWriteInstruction
     nop
     lda (ptr1),z
     stq ptr2                ; sym
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr3                ; controlType
 
     ldz #controlKindOffset
     nop
     lda (stackPointer),z
     pha
-    ldz #type::flags
+    ldz #expr::evalTypeFlags
     nop
-    lda (ptr3),z
+    lda (ptr1),z
     and #TYPE_FLAG_ISBYREF
     beq :+
     lda #IC_VVW

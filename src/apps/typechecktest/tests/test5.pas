@@ -24,7 +24,7 @@ D:DECL-TYPE test
         D:DECL-VARIABLE myfunc
           T:TYPE-REAL
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME myproc T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-WORD-LITERAL 3039 T:TYPE-INTEGER

@@ -493,6 +493,95 @@ DN:
 .proc saveEvalType
     ldz #exprOffset
     jsr loadStackValue
+    stq ptr1                    ; expression in ptr1
+
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr2                    ; type in ptr2
+
+    ; Set the evalTypeSize
+    ldz #type::size
+    nop
+    lda (ptr2),z
+    pha
+    inz
+    nop
+    lda (ptr2),z
+    pha
+    ldz #expr::evalTypeSize+1
+    pla
+    nop
+    sta (ptr1),z
+    pla
+    dez
+    nop
+    sta (ptr1),z
+
+    ; Set the evalTypeFlags
+    ldz #type::flags
+    nop
+    lda (ptr2),z
+    ldz #expr::evalTypeFlags
+    nop
+    sta (ptr1),z
+
+    ; Set the evalTypeKind
+    ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr getBaseType
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    ldz #expr::evalTypeKind
+    nop
+    sta (ptr1),z
+
+    ; Is expr kind EXPR_POINTER?
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_POINTER
+    beq L1                  ; branch if EXPR_POINTER
+    cmp #EXPR_FIELD
+    beq L1                  ; branch if EXPR_FIELD
+    cmp #EXPR_SUBSCRIPT
+    beq L1                  ; branch if EXPR_SUBSCRIPT
+
+    ldz #typePtrOffset
+    jsr loadStackValue
+    ; jsr getBaseType
+    stq ptr2                    ; type in ptr2
+
+    ; Is type TYPE_POINTER?
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_POINTER
+    beq L1                  ; branch if TYPE_POINTER
+
+    ; Is this a concat operand?
+    jsr isConcatType
+    beq L1
+
+    ; Is type TYPE_RECORD
+    ldq ptr2
+    jsr getBaseType
+    stq ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_RECORD
+    beq L1                  ; branch if TYPE_RECORD
+
+    rts
+
+    ; Clone the type
+L1: ldz #exprOffset
+    jsr loadStackValue
     stq ptr1
     ldz #expr::evalType
     neg
@@ -519,6 +608,48 @@ DN:
     cpx #4
     bne :-
 
+    rts
+.endproc
+
+.proc isConcatType
+    ; Preserve ptr1 and ptr2
+    ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr pushQ
+
+    ldq ptr2
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne :+
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr getBaseType
+    stq ptr1
+
+:   ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_CHARACTER
+    beq DN
+    cmp #TYPE_STRING_LITERAL
+    beq DN
+    cmp #TYPE_STRING_OBJ
+    beq DN
+    cmp #TYPE_STRING_VAR
+DN: php
+    jsr popQ
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    plp
     rts
 .endproc
 
@@ -1454,14 +1585,7 @@ L1: ldz #exprOffset
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr getBaseType
-    stq ptr1
-    ldz #expr::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     jsr isTypeInteger

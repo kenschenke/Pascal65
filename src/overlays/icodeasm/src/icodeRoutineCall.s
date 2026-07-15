@@ -367,13 +367,7 @@ DN: jsr popA                ; param type kind
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     jsr icodeOper1Short
@@ -535,13 +529,7 @@ L1: pha
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     sta argKind

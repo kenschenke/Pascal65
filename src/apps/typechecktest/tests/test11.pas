@@ -22,12 +22,12 @@ D:DECL-TYPE test
           flags: TYPE-FLAG-ISBYREF
       S:STMT-BLOCK
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME textproc T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME ft T:TYPE-TEXT
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME fileproc T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME fh T:TYPE-FILE

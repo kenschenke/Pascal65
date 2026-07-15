@@ -49,15 +49,9 @@ valType: .res 1
     bra SH
 
 :   stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
     cmp #TYPE_FILE
     beq FO
     cmp #TYPE_TEXT
@@ -101,15 +95,9 @@ L1: ldz #argPtrOffset
     beq :+
     jmp WB
 
-:   ldz #expr::evalType
-    neg
-    neg
+:   ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
     cmp #TYPE_RECORD
     bne :+
     jsr nextArg
@@ -160,15 +148,9 @@ L2: ldz #argPtrOffset
 L3: ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
     cmp #TYPE_ARRAY
     bne :+
     lda valType
@@ -190,17 +172,11 @@ WB: ldz #argPtrOffset
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     sta valType
-    ldz #type::size+1
+    ldz #expr::evalTypeSize+1
     nop
     lda (ptr1),z
     tax

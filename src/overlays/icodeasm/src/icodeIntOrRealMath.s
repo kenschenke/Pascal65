@@ -36,15 +36,9 @@ exprOffset = leftTypeOffset + 1
     lda #0
     jsr pushA           ; instruction
 
-    ldz #expr::evalType
-    neg
-    neg
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
     jsr pushA           ; resultType
 
     ldz #expr::left

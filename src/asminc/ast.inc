@@ -248,6 +248,9 @@ NAMELEN = 24
     width .dword                ; for EXPR_ARG, field width
     precision .dword            ; for EXPR_ARG, precision
     evalType .dword             ; The evaluated type from the semantic phase
+    evalTypeKind .byte          ; The evaluated type kind (TYPE_*)
+    evalTypeSize .word          ; The evaluated type size
+    evalTypeFlags .byte         ; The evaluated type flags
     value .dword                ; The value (byte, word, dword, real, char, boolean)
     lineNumber .word
 .endstruct

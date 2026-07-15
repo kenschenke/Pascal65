@@ -73,13 +73,7 @@ varTypeKind: .res 1
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     sta amountType
@@ -149,13 +143,7 @@ L2: ldz #argPtrOffset
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::kind
+    ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
     sta varTypeKind

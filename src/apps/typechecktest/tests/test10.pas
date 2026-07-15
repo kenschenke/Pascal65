@@ -99,12 +99,12 @@ D:DECL-TYPE test
           Right:EXPR-ARG
             EXPR-REAL-LITERAL 3.14 T:TYPE-REAL
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME dec T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME i T:TYPE-INTEGER
     S:STMT-EXPR
-      E:EXPR-CALL T:TYPE-VOID
+      E:EXPR-CALL
         Left:EXPR-NAME dec T:TYPE-PROCEDURE
         Right:EXPR-ARG
           EXPR-NAME i T:TYPE-INTEGER
