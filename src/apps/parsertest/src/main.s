@@ -64,6 +64,7 @@ main:
 
     jsr initMemInfo
     jsr heapSummary
+    lda #0
     jsr heapReport
 
     ; Run parser error handling tests

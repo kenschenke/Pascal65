@@ -9,6 +9,7 @@ BINTARGETDIR = $(BINDIR)/$(TARGET)
 OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 LIBFILE := $(BINTARGETDIR)/asmlib
 
+# Add -D __DEBUG__ for memory heap dumps
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)

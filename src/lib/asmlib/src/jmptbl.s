@@ -25,7 +25,7 @@
 .import typeClone, freeType, freeSymbol, isHeapAllocated, writeInt32, divInt32
 .import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab, hexstr
 .import linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
-.import getLinkerTagsToFind, findLinkerTag
+.import getLinkerTagsToFind, findLinkerTag, getMemHeapForBank
 
 .segment "JMPTBL"
 
@@ -113,3 +113,4 @@ jmp initLinkerTags
 jmp freeLinkerTags
 jmp getLinkerTagsToFind
 jmp findLinkerTag
+jmp getMemHeapForBank

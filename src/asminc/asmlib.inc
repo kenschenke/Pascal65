@@ -101,3 +101,4 @@ initLinkerTags = ASMBASE + 240
 freeLinkerTags = ASMBASE + 243
 getLinkerTagsToFind = ASMBASE + 246
 findLinkerTag = ASMBASE + 249
+getMemHeapForBank = ASMBASE + 252

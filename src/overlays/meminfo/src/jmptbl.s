@@ -9,9 +9,11 @@
 ;
 ; parser entry points
 
-.import heapSummary, heapReport
+.import heapSummary, heapReport, openHeapReport, closeHeapReport
 
 .segment "JMPTBL"
 
 jmp heapSummary
 jmp heapReport
+jmp openHeapReport
+jmp closeHeapReport

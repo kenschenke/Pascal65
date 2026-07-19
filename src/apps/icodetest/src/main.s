@@ -76,6 +76,7 @@ main:
 
     jsr initMemInfo
     jsr heapSummary
+    lda #0
     jsr heapReport
 
     lda #<strTotal

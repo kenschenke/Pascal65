@@ -26,6 +26,9 @@ tagsTree: .res 4
 tagsMemBuf: .res 4
 intBuf: .res 15
 key: .res 15
+walkDone: .res 1
+walkTreeNode: .res 4
+walkTreeStackSize: .res 2
 
 .code
 
@@ -53,6 +56,8 @@ key: .res 15
     ; Walk the tagsTree
     ldq tagsTree
     jsr walkTagsTree
+
+    rts
 .endproc
 
 .proc freeTagsTree
@@ -60,39 +65,54 @@ key: .res 15
     bne :+
     rts
 
-:   stq ptr1
-    jsr pushQ
+:   stq walkTreeNode
+    lda #0
+    sta walkTreeStackSize
+    sta walkTreeStackSize+1
+
+    ; Loop until done
+L1: ldq walkTreeNode
+    jsr isQZero
+    beq L2                      ; Branch if we don't have a current tree node.
+
+    ; We have a current tree node. Push it onto the stack.
+    jsr pushWalkStack
+    ldq walkTreeNode
+    stq ptr1
     ldz #TREENODE::left
     neg
     neg
     nop
     lda (ptr1),z
-    jsr freeTagsTree
+    stq walkTreeNode
+    bra L1
 
-    jsr popQ
+    ; Current tree node is null. 
+L2: lda walkTreeStackSize
+    ora walkTreeStackSize+1
+    bne L3                          ; Branch if the stack is not empty.
+    rts
+
+L3: jsr popWalkStack
+    ldq walkTreeNode
     stq ptr1
-    jsr pushQ
     ldz #TREENODE::right
     neg
     neg
     nop
     lda (ptr1),z
-    jsr freeTagsTree
+    stq walkTreeNode
 
-    jsr popQ
-    stq ptr1
-    jsr pushQ
     ldz #TREENODE::data
     neg
     neg
     nop
     lda (ptr1),z
     jsr heapFree
-
-    jsr popQ
+    ldq walkTreeNode
     jsr heapFree
 
-    rts
+    jmp L1
 .endproc
 
 .proc walkTagsTree
@@ -100,20 +120,44 @@ key: .res 15
     bne :+
     rts
 
-    ; Left child first
-:   stq ptr1
-    jsr pushQ
+:   stq walkTreeNode
+    lda #0
+    sta walkTreeStackSize
+    sta walkTreeStackSize+1
+
+    ; Loop until done
+L1: ldq walkTreeNode
+    jsr isQZero
+    beq L2                      ; Branch if we don't have a current tree node.
+
+    ; We have a current tree node. Push it onto the stack.
+    jsr pushWalkStack
+    ldq walkTreeNode
+    stq ptr1
     ldz #TREENODE::left
     neg
     neg
     nop
     lda (ptr1),z
-    jsr walkTagsTree
+    stq walkTreeNode
+    bra L1
 
-    ; Add the tag for the current node
-    jsr popQ
+    ; Current tree node is null. 
+L2: lda walkTreeStackSize
+    ora walkTreeStackSize+1
+    bne L3                          ; Branch if the stack is not empty.
+    rts
+
+L3: jsr popWalkStack
+    ldq walkTreeNode
     stq ptr1
-    jsr pushQ
+    ldz #TREENODE::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq walkTreeNode
+
     ldz #TREENODE::data
     neg
     neg
@@ -121,16 +165,32 @@ key: .res 15
     lda (ptr1),z
     jsr addTagToFind
 
-    ; Finally, the right child
+    jmp L1
+.endproc
+
+.proc pushWalkStack
+    ldq walkTreeNode
+    jsr pushQ
+    lda walkTreeStackSize
+    clc
+    adc #1
+    sta walkTreeStackSize
+    lda walkTreeStackSize+1
+    adc #0
+    sta walkTreeStackSize+1
+    rts
+.endproc
+
+.proc popWalkStack
     jsr popQ
-    stq ptr1
-    ldz #TREENODE::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr walkTagsTree
-    
+    stq walkTreeNode
+    lda walkTreeStackSize
+    sec
+    sbc #1
+    sta walkTreeStackSize
+    lda walkTreeStackSize+1
+    sbc #0
+    sta walkTreeStackSize+1
     rts
 .endproc
 

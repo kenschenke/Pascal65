@@ -24,6 +24,7 @@ strHeapAlloc: .asciiz "Mem alloc: "
 
 .bss
 
+bankNum: .res 1
 intBuf: .res 10
 matPtr: .res 4
 entriesAlloc: .res 2
@@ -37,10 +38,6 @@ totalAlloc: .res 4
 ;    Number of MAT entries for free blocks
 ;    Number of MAT entries for allocated blocks
 .proc heapSummary
-    ; Start at heapTop
-    ldq heapTop
-    stq matPtr
-
     ; Keep a running total in intOp32
     lda #0
     sta totalAlloc
@@ -55,6 +52,15 @@ totalAlloc: .res 4
     sta entriesFree
     sta entriesFree+1
 
+    ; Loop through the banks
+    lda #0
+    sta bankNum
+BN: lda bankNum
+    jsr getMemHeapForBank
+    jsr isQZero
+    beq L5
+    stq matPtr
+
     ; Loop through the MAT entries
 L1: ldq matPtr
     stq ptr1
@@ -67,7 +73,8 @@ L1: ldq matPtr
     inz
     cpz #6
     bne :-
-    bra L5
+    inc bankNum
+    bra BN
 
     ; Is the MAT entry allocated?
 L2: ldz #1
