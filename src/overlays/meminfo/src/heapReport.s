@@ -23,8 +23,8 @@
 
 bankTitle1: .asciiz "=============================="
 bankTitle2: .asciiz "Bank "
-header1: .asciiz "Addr   Size  Used"
-header2: .asciiz "-----  ----  ----"
+header1: .asciiz "Entry Addr   Size  Used"
+header2: .asciiz "----- -----  ----  ----"
 yes: .byte "yes", 13, 0
 no: .byte "no", 13, 0
 filename: .asciiz "heap.txt,s,w"
@@ -133,9 +133,15 @@ L3: lda hasHeader
     sta hasHeader
     jsr popQ
     stq ptr1
+
+    ; Print the MAT entry address
+:   ldq ptr1
+    jsr dumpHex
+    lda #' '
+    jsr CHROUT
     
     ; Print the entry's address
-:   ldz #2
+    ldz #2
     neg
     neg
     nop
