@@ -123,7 +123,6 @@ L2: lda #IC_PSH
     bne L1
     jsr icodeOper1Short
     lda #TYPE_BYTE
-    sta tmp1
     bra L2
 
 L1: stq ptr1
@@ -141,21 +140,19 @@ L1: stq ptr1
     eor #$ff
     clc
     adc #1
-    sta intOp1
+    jsr icodeOper1Short
+    jsr popQ
     lda #TYPE_SHORTINT
-    sta tmp1
+    bra L2
 :   lda intOp1
     jsr icodeOper1Short
     jsr popQ
     jsr getExprTypeKind
-    sta tmp1
-    ; bra L2
-    ; lda #TYPE_BYTE
-    ; sta tmp1
 
-L2: lda #IC_PSH
+L2: pha
+    lda #IC_PSH
     jsr icodeWriteInstruction
-    lda tmp1
+    pla
     rts
 .endproc
 
@@ -197,8 +194,11 @@ L1: stq ptr1
     ldx intOp1+1
     jsr icodeOper1Word
 
-L2: lda #IC_PSH
+L2: lda tmp1
+    pha
+    lda #IC_PSH
     jsr icodeWriteInstruction
-    lda tmp1
+    pla
+    ; lda tmp1
     rts
 .endproc

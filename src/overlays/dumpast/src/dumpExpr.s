@@ -411,7 +411,13 @@ L2: jmp printz
 .proc showNumberValue
     lda #' '
     jsr dumpChar
-    ldz #expr::value
+    ldz #expr::neg
+    nop
+    lda (ptr1),z
+    beq :+
+    lda #'-'
+    jsr dumpChar
+:   ldz #expr::value
     neg
     neg
     nop

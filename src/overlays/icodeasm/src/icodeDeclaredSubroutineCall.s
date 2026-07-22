@@ -96,6 +96,9 @@ exprOffset = symPtrOffset + 4
     adcq intOp32
     jsr pushQ               ; paramPtrs
     jsr icodeRoutineCall
+    ldz #levelOffset
+    nop
+    sta (stackPointer),z
 
     ; Call the routine
     ldz #isRtnPtrOffset

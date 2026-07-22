@@ -331,6 +331,7 @@ DN: jsr popA                ; param type kind
     jsr popQ                ; params
     jsr popA                ; paramNum
     jsr popA                ; level
+    pha                     ; save level for returning to caller
     jsr popQ                ; argument ptr
     jsr popQ                ; paramPtrs
     jsr popQ                ; paramTypes
@@ -339,6 +340,7 @@ DN: jsr popA                ; param type kind
     jsr popQ                ; typePtr
     jsr popQ                ; symPtr
     jsr popQ                ; exprPtr
+    pla                     ; pop level off stack for return to caller
     rts
 .endproc
 

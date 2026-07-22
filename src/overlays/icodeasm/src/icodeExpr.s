@@ -191,7 +191,6 @@ isByRef: .res 1
     bne :+
     ldq ptr1
     jsr icodeShortValue
-    lda #TYPE_BYTE
     jmp DN
 :   cmp #EXPR_WORD_LITERAL
     bne :+
