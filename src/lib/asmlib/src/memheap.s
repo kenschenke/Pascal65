@@ -581,19 +581,16 @@ L1: ldz #5              ; Is the current entry all zeros?
     adc lastBlock+3
     sta lastBlock+3
     ; Move to the next MAT entry
-L2: lda ptr4
+L2: lda #6
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq ptr4
     sec
-    sbc #6
-    sta ptr4
-    lda ptr4+1
-    sbc #0
-    sta ptr4+1
-    lda ptr4+2
-    sbc #0
-    sta ptr4+2
-    lda ptr4+3
-    sbc #0
-    sta ptr4+3
+    sbcq intOp32
+    stq ptr4
     jmp L1
 L3: ldq lastBlock
     rts
@@ -603,8 +600,11 @@ L3: ldq lastBlock
 ; there's enough left for the requested block.
 ; The Z flag is set if there is enough space.
 .proc checkFreeSpace
+    ; Get the end of the last block of allocated memory.
     jsr getEndOfLastBlock
-    stq intOp1
+    stq intOp1                  ; end of last block in intOp1
+
+    ; Add the requested new block size to it
     lda allocSize
     sta intOp32
     lda allocSize+1
@@ -615,9 +615,22 @@ L3: ldq lastBlock
     clc
     ldq intOp1
     adcq intOp32
+    stq intOp1                  ; last block + new size in intOp1
+
+    ; Add 6 (for new MAT entry)
+    lda #6
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    ldq intOp1
+    clc
+    adcq intOp32
     stq intOp1
+
     ldq ptr4
-    stq intOp32
+    stq intOp32                 ; address of last MAT in ptr4
+
+    ; If end of last block + new size + 6 >= address of last MAT then clear Z
     jsr geUint32
     rts
 .endproc
