@@ -51,6 +51,10 @@ linkerTags: .res 4
 ; This is a memory buffer of linker tags that need to be resolved by the linker.
 tagsToFind: .res 4
 
+; These are for freeing linker tags
+tagTreeNode: .res 4
+tagTreeStackSize: .res 2
+
 .code
 
 ; Finds a label in the binary tree.
@@ -91,25 +95,73 @@ tagsToFind: .res 4
     bne :+
     rts
 
-:   stq ptr1
-    jsr rtPushQ
+:   stq tagTreeNode
+    lda #0
+    sta tagTreeStackSize
+    sta tagTreeStackSize+1
 
-    ; Left child
-    ldz #TREENODE::left
-    jsr loadPtr
-    jsr freeLinkerTagsTree
+    ; Loop until done
+L1: ldq tagTreeNode
+    jsr isQZero
+    beq L2                  ; Branch if we don't have a current tree node.
 
-    ; Right child
-    jsr rtPopQ
+    ; We have a current tree node. Push it onto the stack.
+    jsr pushTagTreeStack
+    ldq tagTreeNode
     stq ptr1
-    jsr rtPushQ
+    ldz #TREENODE::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq tagTreeNode
+    bra L1
+
+    ; Current tree node is null.
+L2: lda tagTreeStackSize
+    ora tagTreeStackSize+1
+    bne L3                  ; Branch if the stack is not empty.
+    rts
+
+L3: jsr popTagTreeStack
+    ldq tagTreeNode
+    stq ptr1
     ldz #TREENODE::right
-    jsr loadPtr
-    jsr freeLinkerTagsTree
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq tagTreeNode
+    jsr isQZero
+    beq L1
 
-    jsr rtPopQ
     jsr heapFree
+    jmp L1
+.endproc
 
+.proc pushTagTreeStack
+    ldq tagTreeNode
+    jsr rtPushQ
+    lda tagTreeStackSize
+    clc
+    adc #1
+    sta tagTreeStackSize
+    lda tagTreeStackSize+1
+    adc #0
+    sta tagTreeStackSize+1
+    rts
+.endproc
+
+.proc popTagTreeStack
+    jsr rtPopQ
+    stq tagTreeNode
+    lda tagTreeStackSize
+    sec
+    sbc #1
+    sta tagTreeStackSize
+    lda tagTreeStackSize+1
+    sbc #0
+    sta tagTreeStackSize+1
     rts
 .endproc
 
