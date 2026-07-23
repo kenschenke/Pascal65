@@ -26,7 +26,6 @@ tagsTree: .res 4
 tagsMemBuf: .res 4
 intBuf: .res 15
 key: .res 15
-walkDone: .res 1
 walkTreeNode: .res 4
 walkTreeStackSize: .res 2
 
