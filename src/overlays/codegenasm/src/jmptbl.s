@@ -11,10 +11,11 @@
 
 ; .import icodeWriteX, icodeFileEraseX, setIcodeUnitsList
 
-.import genObjCode, setRuntimeStackSize, setCodeGenUnitList
+.import genObjCode, setRuntimeStackSize, setCodeGenUnitList, setChainProg
 
 .segment "JMPTBL"
 
 jmp genObjCode
 jmp setRuntimeStackSize
 jmp setCodeGenUnitList
+jmp setChainProg

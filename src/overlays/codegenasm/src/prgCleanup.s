@@ -19,7 +19,7 @@
 .export prgCleanup
 
 .import genOneInstruction, genTwoInstruction, incCodeOffset
-.import tagBSS_ZPBACKUP, tagBSS_EXITHANDLER
+.import tagBSS_ZPBACKUP, tagBSS_EXITHANDLER, chainPrgLength, writeChainCode
 
 .data
 
@@ -34,7 +34,7 @@ prgCleanupData:
     .byte OC_STA_ZEROPAGE, 1
 
     ; Close all open files and clear I/O channels
-    .byte OC_JSR, $e7, $ff      ; CLALL
+    .byte OC_JSR, .lobyte(CLALL), .hibyte(CLALL)
 
     ; Copy the backup of zero page back
     .byte OC_LDX_IMMEDIATE, 0
@@ -69,8 +69,12 @@ prgCleanupData:
     lda #PRG_CLEANUP_LENGTH
     jsr incCodeOffset
 
+    lda chainPrgLength
+    bne :+
     genTwoImmediate OC_LDA_IMMEDIATE, 0
     genOne OC_RTS
+    rts
 
+:   jsr writeChainCode
     rts
 .endproc
