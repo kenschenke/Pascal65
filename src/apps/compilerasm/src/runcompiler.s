@@ -206,6 +206,10 @@ strLinking: .asciiz "Linking"
     lda runtimeStackSize
     ldx runtimeStackSize+1
     jsr setCodeGenStackSize
+    lda #0
+    tax
+    tay
+    jsr setCodeGenProgramChain
     ldq astRoot
     jsr objCodeGen
 
