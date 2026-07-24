@@ -40,10 +40,10 @@ isSubscript: .res 1
     ldz #rightTypeOffset
     jsr typeKind
     cmp #TYPE_REAL
-    bne LC
+    beq LC
     jsr isTypeInteger
     bne LC                  ; Branch if not an integer
-    lda #TYPE_REAL
+LR: lda #TYPE_REAL
     jsr setResultKind
     lda #4
     ldx #0

@@ -21,7 +21,7 @@ Procedure TestShortAssign;
 Begin
 	b := 5;
     If b <> 5 Then Error(100);
-    b := b + 100;  // ***********************************
+    b := b + 100;
     If b <> 105 Then Error(101);
     b := 192;
     If b <> 192 Then Error(102);
@@ -37,15 +37,15 @@ Procedure TestIntAssign;
 Begin
     w := 5;
     If w <> 5 Then Error(200);
-    w := w + 1000;  // *******************************************
+    w := w + 1000;
     If w <> 1005 Then Error(201);
     w := 1024;
     If w <> 1024 Then Error(202);
-    w := w + 1000;  // *******************************************
+    w := w + 1000;
     If w <> 2024 Then Error(203);
     w := 40000;
     If w <> 40000 Then Error(204);
-    w := w + 10000;  // ********************************************
+    w := w + 10000;
     If w <> 50000 Then Error(205);
     i := -5;
     If i <> -5 Then Error(206);
