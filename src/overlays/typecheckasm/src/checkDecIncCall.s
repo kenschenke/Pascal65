@@ -54,6 +54,7 @@ argOffset = typeOffset + .sizeof(type)
     jsr pushA
     jsr exprTypeCheck
     ldq stackPointer
+    jsr getBaseType
     stq ptr1
     ldz #type::kind
     nop
