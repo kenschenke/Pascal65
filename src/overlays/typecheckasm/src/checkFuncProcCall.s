@@ -16,7 +16,8 @@
 argTypeOffset = 0           ; must be top of stack
 argPtrOffset = argTypeOffset + .sizeof(type)
 paramPtrOffset = argPtrOffset + 4
-rtnTypePtrOffset = paramPtrOffset + 4
+symTypeOffset = paramPtrOffset + 4
+rtnTypePtrOffset = symTypeOffset + 4
 exprOffset = rtnTypePtrOffset + 4
 
 .export checkFuncProcCall
@@ -27,7 +28,6 @@ exprOffset = rtnTypePtrOffset + 4
 
 .bss
 
-symType: .res 4
 paramKind: .res 1
 argKind: .res 1
 namePtr: .res 4
@@ -39,8 +39,11 @@ namePtr: .res 4
 ;    Pointer to the return type
 .proc checkFuncProcCall
     ; Push null pointers on the stack for the param and arg
-    jsr pushQZero
-    jsr pushQZero
+    jsr pushQZero               ; symType
+    jsr pushQZero               ; paramPtr
+    jsr pushQZero               ; argPtr
+
+    ; Add a type to the stack
     lda #.sizeof(type)
     jsr pushBlock
 
@@ -104,7 +107,10 @@ namePtr: .res 4
     neg
     nop
     lda (ptr1),z
-    stq symType
+    stq ptr1
+    ldz #symTypeOffset
+    jsr storePtr
+    ldq ptr1
     jsr getBaseType
     stq ptr1
     ldz #type::flags
@@ -133,7 +139,8 @@ namePtr: .res 4
     nop
     lda (ptr1),z
     stq ptr1
-    stq symType
+    ldz #symTypeOffset
+    jsr storePtr
 
     ; Is it a routine pointer?
 L1: ldz #type::kind
@@ -148,7 +155,8 @@ L1: ldz #type::kind
     nop
     lda (ptr1),z
     stq ptr1
-    stq symType
+    ldz #symTypeOffset
+    jsr storePtr
     
 :   ldz #type::kind
     nop
@@ -167,7 +175,8 @@ L1: ldz #type::kind
     lda #TYPE_VOID
     nop
     sta (ptr1),z
-    ldq symType
+    ldz #symTypeOffset
+    jsr loadStackValue
     stq ptr1
 
     ; Is this a standard routine?
@@ -189,12 +198,13 @@ L1: ldz #type::kind
     ldz #rtnTypePtrOffset
     jsr loadStackValue
     stq ptr2
-    ldq symType                 ; routine type
-    jsr pushQ
-    ldq ptr1                    ; first argument
-    jsr pushQ
-    ldq ptr2                    ; return type
-    jsr pushQ
+    ldz #symTypeOffset
+    jsr loadStackValue
+    jsr pushQ                   ; routine type
+    ldq ptr1
+    jsr pushQ                   ; first argument
+    ldq ptr2
+    jsr pushQ                   ; return type
     jsr checkStdRoutine
     bra DN
 
@@ -202,7 +212,8 @@ L1: ldz #type::kind
 :   jsr checkParams
 
     ; Is there a subtype (a function)?
-    ldq symType
+    ldz #symTypeOffset
+    jsr loadStackValue
     stq ptr1
     ldz #type::subtype
     neg
@@ -253,15 +264,17 @@ L1: ldz #type::kind
 
 DN: lda #.sizeof(type)
     jsr popBlock
-    jsr popQ
-    jsr popQ
-    jsr popQ
-    jsr popQ
+    jsr popQ                ; argPtr
+    jsr popQ                ; paramPtr
+    jsr popQ                ; symType
+    jsr popQ                ; returnType
+    jsr popQ                ; exprPtr
     rts
 .endproc
 
 .proc checkParams
-    ldq symType
+    ldz #symTypeOffset
+    jsr loadStackValue
     stq ptr1
     ldz #type::paramFields
     neg

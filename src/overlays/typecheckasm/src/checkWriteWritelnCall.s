@@ -15,7 +15,11 @@
 .include "4510macros.inc"
 
 typeOffset = 0
-routineCodeOffset = typeOffset + .sizeof(type)
+firstOffset = typeOffset + .sizeof(type)
+exprLeftOffset = firstOffset + 1
+exprTypeOffset = exprLeftOffset + 4
+fileTypeSubOffset = exprTypeOffset + 4
+routineCodeOffset = fileTypeSubOffset + .sizeof(type)
 argOffset = routineCodeOffset + 1
 
 .export checkWriteWritelnCall
@@ -23,26 +27,23 @@ argOffset = routineCodeOffset + 1
 .import typeCheckError, loadStackValue, exprTypeCheck, checkIntegerBaseType
 .import checkArraysSameType, isAssignmentCompatible, isTypeInteger
 
-.bss
-
-first: .res 1
-exprLeft: .res 4
-exprType: .res 4
-fileTypeSub: .res .sizeof(type)
-
-.code
-
 .proc checkWriteWritelnCall
+    lda #.sizeof(type)          ; fileTypeSub
+    jsr pushBlock
+    jsr pushQZero               ; exprType
+    jsr pushQZero               ; exprLeft
+
+    lda #1
+    jsr pushA                   ; first
+
     ; Push an empty type onto the stack
     lda #.sizeof(type)
     jsr pushBlock
 
-    lda #1
-    sta first
-
     lda #0
-    ldx #type::kind
-    sta fileTypeSub,x
+    ldz #fileTypeSubOffset
+    nop
+    sta (stackPointer),z
 
     ; Loop through the arguments
 L1: ldz #argOffset
@@ -57,23 +58,41 @@ L1: ldz #argOffset
     neg
     nop
     lda (ptr1),z
-    stq exprLeft
+    stq ptr1
+    ldz #exprLeftOffset
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
 
     ; Evaluate the argument expression type
     ldq stackPointer
     stq ptr1
-    ldq exprLeft
-    jsr pushQ
-    jsr pushQZero
+    ldz #exprLeftOffset
+    jsr loadStackValue
+    jsr pushQ                   ; expression
+    jsr pushQZero               ; record symbol table
     ldq ptr1
-    jsr pushQ
+    jsr pushQ                   ; type
     lda #0
-    jsr pushA
+    jsr pushA                   ; parentIsFuncCall
     jsr exprTypeCheck
     ldq stackPointer
     jsr getBaseType
-    stq exprType
     stq ptr1
+    ldz #exprTypeOffset
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
     ldz #type::kind
     nop
     lda (ptr1),z
@@ -124,18 +143,26 @@ L1: ldz #argOffset
 :   lda #errIncompatibleTypes
     jsr typeCheckError
 
-NX: lda first
+NX: ldz #firstOffset
+    nop
+    lda (stackPointer),z
     bne L2
-    ldx #type::kind
-    lda fileTypeSub,x
+    ldz #fileTypeSubOffset
+    nop
+    lda (stackPointer),z
     beq L2
     cmp #TYPE_ARRAY
     beq L2
     cmp #TYPE_RECORD
     beq L2
 
+    pha
+    ldz #exprTypeOffset
+    jsr loadStackValue
+    stq ptr1
+    pla
     jsr pushA
-    ldq exprType
+    ldq ptr1
     jsr pushQ
     jsr isAssignmentCompatible
     beq L2
@@ -143,7 +170,9 @@ NX: lda first
     jsr typeCheckError
 
 L2: lda #0
-    sta first
+    ldz #firstOffset
+    nop
+    sta (stackPointer),z
     ldz #argOffset
     jsr loadStackValue
     stq ptr1
@@ -163,18 +192,26 @@ L2: lda #0
     cpx #4
     bne :-
     lda #0
-    sta first
+    ldz #firstOffset
+    nop
+    sta (stackPointer),z
     jmp L1
 
 DN: lda #.sizeof(type)
-    jsr popBlock
-    jsr popA
-    jsr popQ
+    jsr popBlock            ; type
+    jsr popA                ; first
+    jsr popQ                ; exprLeft
+    jsr popQ                ; exprType
+    lda #.sizeof(type)
+    jsr popBlock            ; fileTypeSub
+    jsr popA                ; routineCode
+    jsr popQ                ; arg
     rts
 .endproc
 
 .proc checkArray
-    ldq exprType
+    ldz #exprTypeOffset
+    jsr loadStackValue
     stq ptr1
     ldz #type::subtype
     neg
@@ -183,15 +220,24 @@ DN: lda #.sizeof(type)
     lda (ptr1),z
     jsr getBaseType
     stq ptr1
-    ldx #type::kind
-    lda fileTypeSub,x
+    ldz #fileTypeSubOffset
+    nop
+    lda (stackPointer),z
     beq L1
-    ldq exprType
+    lda #fileTypeSubOffset
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq stackPointer
+    clc
+    adcq intOp32
+    stq ptr2
+    ldz #exprTypeOffset
+    jsr loadStackValue
     jsr pushQ
-    lda #<fileTypeSub
-    ldx #>fileTypeSub
-    ldy #0
-    ldz #0
+    ldq ptr2
     jsr pushQ
     jsr checkArraysSameType
     rts
@@ -207,7 +253,8 @@ L1: ldz #type::kind
 .endproc
 
 .proc checkRecord
-    ldq exprType
+    ldz #exprTypeOffset
+    jsr loadStackValue
     stq ptr1
     ldz #type::subtype
     neg
@@ -221,7 +268,21 @@ L1: ldz #type::kind
     nop
     lda (ptr1),z
     stq ptr2
-    ldq fileTypeSub+type::symtab
+    lda #fileTypeSubOffset
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq stackPointer
+    clc
+    adcq intOp32
+    stq ptr3
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr3),z
     stq ptr3
     ldx #0
 :   lda ptr2,x
@@ -237,7 +298,8 @@ L1: ldz #type::kind
 .endproc
 
 .proc checkWidthAndPrecision
-    ldq exprLeft
+    ldz #exprLeftOffset
+    jsr loadStackValue
     stq ptr1
     ldz #expr::width
     neg
@@ -246,7 +308,8 @@ L1: ldz #type::kind
     lda (ptr1),z
     jsr pushQ
     jsr checkIntegerBaseType
-    ldq exprLeft
+    ldz #exprLeftOffset
+    jsr loadStackValue
     stq ptr1
     ldz #expr::precision
     neg
@@ -259,7 +322,9 @@ L1: ldz #type::kind
 .endproc
 
 .proc checkFile
-    lda first
+    ldz #firstOffset
+    nop
+    lda (stackPointer),z
     bne :+
     lda #errIncompatibleTypes
     jsr typeCheckError
@@ -270,7 +335,8 @@ L1: ldz #type::kind
     beq :+
     lda #errIncompatibleTypes
     jsr typeCheckError
-:   ldq exprType
+:   ldz #exprTypeOffset
+    jsr loadStackValue
     stq ptr1
     ldz #type::subtype
     neg
@@ -284,13 +350,16 @@ L1: ldz #type::kind
     ldz #type::kind
     nop
     lda (ptr1),z
-    ldx #type::kind
-    sta fileTypeSub,x
+    ldz #fileTypeSubOffset
+    nop
+    sta (stackPointer),z
 :   rts
 .endproc
 
 .proc checkText
-    lda first
+    ldz #firstOffset
+    nop
+    lda (stackPointer),z
     bne :+
     lda #errIncompatibleTypes
     jsr typeCheckError
