@@ -576,6 +576,8 @@ DN:
     lda (ptr2),z
     cmp #TYPE_RECORD
     beq L1                  ; branch if TYPE_RECORD
+    cmp #TYPE_ARRAY
+    beq L1                  ; branch if TYPE_ARRAY
 
     rts
 
@@ -1774,10 +1776,11 @@ L5: ldz #typePtrOffset
     jsr loadStackValue
     stq ptr2
     ldq ptr1
-    jsr pushQ
+    jsr pushQ                   ; first argument
     ldq ptr2
-    jsr pushQ
+    jsr pushQ                   ; return type
     jsr checkFuncProcCall
+    
     rts
 .endproc
 
@@ -1803,6 +1806,7 @@ L5: ldz #typePtrOffset
     nop
     lda (ptr1),z
     stq ptr3                    ; symbol type in ptr3
+
     ldz #leftTypeOffset
     jsr copyToType
     ldz #type::subtype

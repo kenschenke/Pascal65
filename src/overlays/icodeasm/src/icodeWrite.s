@@ -36,6 +36,7 @@ lblDeclInit: .asciiz "di"
 astRoot: .res 4
 rootStmt: .res 4
 localVars: .res MAX_LOCAL_VARS
+localDecls: .res MAX_LOCAL_VARS*4
 currentLineNumber: .res 2
 icodeLabel: .res 20
 
@@ -67,7 +68,12 @@ icodeLabel: .res 20
     ldx #>localVars
     ldy #0
     ldz #0
-    stq ptr1
+    jsr pushQ                   ; localVars
+    lda #<localDecls
+    ldx #>localDecls
+    ldy #0
+    ldz #0
+    jsr pushQ                   ; localDecls
     ldq astRoot
     stq ptr2
     ldz #decl::code
@@ -82,6 +88,7 @@ icodeLabel: .res 20
     neg
     nop
     lda (ptr2),z
+    jsr pushQ                   ; declPtr
     jsr icodeVariableDeclarations
     jsr icodeUnitDeclarations
 

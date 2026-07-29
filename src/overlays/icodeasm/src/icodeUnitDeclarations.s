@@ -21,6 +21,7 @@
 
 thisUnit: .res 4
 localVars: .res MAX_LOCAL_VARS
+localDecls: .res MAX_LOCAL_VARS*4
 stmtPtr: .res 4
 numToPop: .res 1
 
@@ -57,23 +58,37 @@ L1: ldq thisUnit
     stq stmtPtr
     stq ptr1
 
+    lda #<localVars
+    ldx #>localVars
+    ldy #0
+    ldz #0
+    jsr pushQ               ; localVars
+    lda #<localDecls
+    ldx #>localDecls
+    ldy #0
+    ldz #0
+    jsr pushQ               ; localDecls
     ldz #stmt::decl
     neg
     neg
     nop
     lda (ptr1),z
-    jsr pushQ
-    lda #<localVars
-    ldx #>localVars
-    ldy #0
-    ldz #0
-    stq ptr1
-    jsr popQ
+    jsr pushQ               ; declPtr
     jsr icodeVariableDeclarations
     clc
     adc numToPop
     sta numToPop
 
+    lda #<localVars
+    ldx #>localVars
+    ldy #0
+    ldz #0
+    jsr pushQ                   ; localVars
+    lda #<localDecls
+    ldx #>localDecls
+    ldy #0
+    ldz #0
+    jsr pushQ                   ; localDecls
     ldq stmtPtr
     stq ptr1
     ldz #stmt::interfaceDecl
@@ -81,13 +96,7 @@ L1: ldq thisUnit
     neg
     nop
     lda (ptr1),z
-    jsr pushQ
-    lda #<localVars
-    ldx #>localVars
-    ldy #0
-    ldz #0
-    stq ptr1
-    jsr popQ
+    jsr pushQ                   ; declPtr
     jsr icodeVariableDeclarations
     clc
     adc numToPop

@@ -62,6 +62,10 @@ argKind: .res 1
     lda #0
     jsr pushA               ; param type kind
 
+    ldz #symPtrOffset
+    jsr loadStackValue
+    stq ptr1
+
     ; Populate the first argument pointer
     ldz #exprPtrOffset
     jsr loadStackValue

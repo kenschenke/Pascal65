@@ -518,6 +518,8 @@ L2: jsr popQ        ; initBuf
     jsr pushQ               ; declaration block membuf
     ldq ptr2
     jsr pushQ               ; first string literal
+    lda #0
+    jsr pushA               ; not real numbers
     jsr addStringArrayLiterals
     rts
 .endproc
@@ -526,10 +528,6 @@ L2: jsr popQ        ; initBuf
     lda #ARRAYDECL_SCALAR
     jsr writeArrayElemType
 
-    ; ldz #declPtrOffset
-    ; jsr loadStackValue
-    ; stq ptr1
-    ; ldz #decl::value
     ldz #exprInitOffset
     jsr loadStackValue
     jsr isQZero
@@ -549,8 +547,7 @@ L2: jsr popQ        ; initBuf
     nop
     lda (ptr2),z
     stq ptr2
-:   ; stq ptr2
-    ldz #initBufOffset
+:   ldz #initBufOffset
     jsr loadStackValue
     stq ptr1
     ldz #typePtrOffset
@@ -610,6 +607,8 @@ L2: jsr popQ        ; initBuf
     jsr pushQ               ; declaration block membuf
     ldq ptr2
     jsr pushQ               ; first real literal
+    lda #1
+    jsr pushA               ; real numbers
     jsr addStringArrayLiterals
     rts
 .endproc

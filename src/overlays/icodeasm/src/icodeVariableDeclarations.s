@@ -13,19 +13,21 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
+declPtrOffset = 0
+localDeclsOffset = declPtrOffset + 4
+localVarsOffset = localDeclsOffset + 4
+
 .export icodeVariableDeclarations
 
 .import icodeShortValue, icodeWordValue, icodeCharValue, icodeLongValue
 .import icodeBoolValue, icodeRealValue, heapOffset, icodeWriteInstruction
 .import icodeOper1Int, icodeOper1Long, icodeOper1String
 .import icodeOper1Label, icodeArrayInit, icodeLabel, icodeRecordInit
+.import loadStackValue
 
 .bss
 
-declPtr: .res 4
-localVars: .res 4
 varIndex: .res 1
-symDecl: .res 4
 declInitLabel: .res 15
 
 .data
@@ -34,32 +36,38 @@ diStr: .asciiz "di"
 
 .code
 
-; This routine expects two inputs:
-;    ptr1 - pointer to storage for local variable info
-;    Q - first declaration in chain
-;    Number of variables returned in A
+; This routine expects parameters passed on runtime stack, bottom to top:
+;    pointer to storage for local variable types
+;    pointer to storage for local variable declarations
+;    first declaration
+; Number of variables returned in A
 .proc icodeVariableDeclarations
-    stq declPtr
-
-    ldq ptr1
-    stq localVars
-
     lda #0
     sta varIndex
 
     ; Loop through the declarations
-L1: ldq declPtr
+L1: ldz #declPtrOffset
+    jsr loadStackValue
     jsr isQZero
     bne :+
     jmp DN
 
+    ; Zero out the localVar value for this declaration
 :   stq ptr1
-    ldq localVars
+    ldz #localVarsOffset
+    jsr loadStackValue
     stq ptr2
     ldz varIndex
     lda #0
     nop
     sta (ptr2),z
+
+    ; Zero out the localDecl value for this declaration
+    lda #0
+    tax
+    tay
+    taz
+    jsr storeLocalDeclValue
 
     ldz #decl::kind
     nop
@@ -86,14 +94,7 @@ L2: ldz #decl::type
     beq :+
     jmp NX
 
-:   ldz #decl::node
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq symDecl
-
-    ldz #type::kind
+:   ldz #type::kind
     nop
     lda (ptr2),z
     cmp #TYPE_BYTE
@@ -173,7 +174,8 @@ L2: ldz #decl::type
     jsr stringValue
 
     ; Is this a library declaration?
-L3: ldq declPtr
+L3: ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::isLibrary
     nop
@@ -185,21 +187,42 @@ L3: ldq declPtr
 
 L4: inc varIndex
 
-NX: ldq declPtr
+NX: ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::next
     neg
     neg
     nop
     lda (ptr1),z
-    stq declPtr
+    stq ptr1
+    ldz #declPtrOffset
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
     jmp L1
 
-DN: lda varIndex
+DN: jsr popQ
+    jsr popQ
+    jsr popQ
+    lda varIndex
     rts
 .endproc
 
 .proc arrayValue
+    ldz #localVarsOffset
+    jsr loadStackValue
+    stq ptr3
+    ldz varIndex
+    lda #LOCALVARS_ARRAY
+    nop
+    sta (ptr3),z
+
     lda #0
     sta heapOffset
     sta heapOffset+1
@@ -220,9 +243,12 @@ DN: lda varIndex
     ldx #>declInitLabel
     ldy #0
     ldz #0
-    jsr pushQ               ; label
-    ldq declPtr
+    stq ptr2
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
+    ldq ptr2
+    jsr pushQ               ; label
     ldz #decl::type
     neg
     neg
@@ -235,7 +261,7 @@ DN: lda varIndex
     nop
     lda (ptr1),z
     jsr pushQ               ; value
-    ldq declPtr
+    ldq ptr1
     jsr pushQ               ; declaration
     jsr icodeArrayInit
 
@@ -250,11 +276,18 @@ DN: lda varIndex
 :   jsr icodeOper1Label
     lda #IC_DIA
     jsr icodeWriteInstruction
+
+    ; Save the decl in localDecls
+    ldz #declPtrOffset
+    jsr loadStackValue
+    jsr storeLocalDeclValue
+
     rts
 .endproc
 
 .proc boolValue
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::value
     neg
@@ -266,7 +299,8 @@ DN: lda varIndex
 .endproc
 
 .proc charValue
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::value
     neg
@@ -283,7 +317,8 @@ DN: lda varIndex
     tay
     taz
     jsr icodeLongValue
-    ldq localVars
+    ldz #localVarsOffset
+    jsr loadStackValue
     stq ptr3
     ldz varIndex
     lda #LOCALVARS_FILE
@@ -297,7 +332,8 @@ DN: lda varIndex
 .endproc
 
 .proc longValue
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::value
     neg
@@ -309,7 +345,8 @@ DN: lda varIndex
 .endproc
 
 .proc realValue
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::value
     neg
@@ -321,7 +358,8 @@ DN: lda varIndex
 .endproc
 
 .proc recordValue
-    ldq localVars
+    ldz #localVarsOffset
+    jsr loadStackValue
     stq ptr3
     ldz varIndex
     lda #LOCALVARS_RECORD
@@ -348,16 +386,19 @@ DN: lda varIndex
     ldx #>declInitLabel
     ldy #0
     ldz #0
-    jsr pushQ               ; label
-    ldq declPtr
+    stq ptr2
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
+    ldq ptr2
+    jsr pushQ               ; label
     ldz #decl::type
     neg
     neg
     nop
     lda (ptr1),z
     jsr pushQ               ; type
-    ldq declPtr
+    ldq ptr1
     jsr pushQ               ; declaration
     jsr icodeRecordInit
 
@@ -376,7 +417,8 @@ DN: lda varIndex
 .endproc
 
 .proc shortValue
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::value
     neg
@@ -388,7 +430,8 @@ DN: lda varIndex
 .endproc
 
 .proc stringValue
-    ldq localVars
+    ldz #localVarsOffset
+    jsr loadStackValue
     stq ptr3
     ldz varIndex
     lda #LOCALVARS_DEL
@@ -396,7 +439,8 @@ DN: lda varIndex
     sta (ptr3),z
     inc varIndex
 
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::kind
     nop
@@ -463,7 +507,8 @@ L2: ldz #expr::value
 .endproc
 
 .proc wordValue
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq ptr1
     ldz #decl::value
     neg
@@ -483,7 +528,8 @@ L2: ldz #expr::value
     bne :-
 
 :   stx tmp1
-    ldq declPtr
+    ldz #declPtrOffset
+    jsr loadStackValue
     stq intOp32
     lda #<declInitLabel
     clc
@@ -494,5 +540,28 @@ L2: ldz #expr::value
     tax
     pla
     jsr hexstr
+    rts
+.endproc
+
+; Stores the value in Q in the localDecl for the varIndex
+.proc storeLocalDeclValue
+    stq ptr4
+
+    ldz #localDeclsOffset
+    jsr loadStackValue
+    stq ptr2
+
+    lda varIndex
+    asl a
+    asl a
+    taz
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #4
+    bne :-
     rts
 .endproc

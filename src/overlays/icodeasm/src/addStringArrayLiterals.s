@@ -4,7 +4,8 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-firstExprOffset = 0
+isRealOffset = 0
+firstExprOffset = isRealOffset + 1
 declBufOffset = firstExprOffset + 4
 
 .export addStringArrayLiterals
@@ -28,6 +29,7 @@ strLabel: .asciiz "strbuf"
 ; Passed on the stack, bottom to top:
 ;    Pointer to first string literal expression (never NULL)
 ;    Pointer to array declaration block membuf
+;    A 1 if the literals are real numbers
 .proc addStringArrayLiterals
     ; Allocate a membuf to hold the string literals
     jsr allocMemBuf
@@ -46,8 +48,38 @@ strLabel: .asciiz "strbuf"
 L1: stq exprPtr
     stq ptr2
 
-    ; Write the string literal to strMemBuf
+    ; Are these real number literals?
+    ldz #isRealOffset
+    nop
+    lda (stackPointer),z
+    beq L2                  ; branch if not
+
+    ; Is this a negative real number?
+    ldz #expr::neg
+    nop
+    lda (ptr2),z
+    beq L2                  ; branch if not
+
+    ; Write a negative sign to the membuf
     ldq strMemBuf
+    stq ptr1
+    lda #'-'
+    sta dummy
+    lda #<dummy
+    sta ptr2
+    lda #>dummy
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    lda #1
+    ldx #0
+    jsr writeToMemBuf
+    ldq exprPtr
+    stq ptr2
+
+    ; Write the string literal to strMemBuf
+L2: ldq strMemBuf
     stq ptr1
     ldz #expr::value
     neg
@@ -85,15 +117,22 @@ L1: stq exprPtr
     nop
     lda (ptr1),z
     jsr isQZero
-    bne L1
+    beq :+
+    jmp L1
 
     ; Done looping through the string literal expressions.
     ; Create a label for the string literals.
-    jsr formatStringLabel
+:   jsr formatStringLabel
 
-    ; Add a DAT segment for the string literals.
-    lda #ARRAYDECL_STRING
-    jsr pushA
+    ; Add a DAT segment for the literals.
+    ldz #isRealOffset
+    nop
+    lda (stackPointer),z
+    beq :+
+    lda #ARRAYDECL_REAL
+    bra L3
+:   lda #ARRAYDECL_STRING
+L3: jsr pushA
     ldq strMemBuf
     jsr pushQ
     lda #<labelBuf
@@ -157,6 +196,7 @@ L1: stq exprPtr
     ldx #0
     jsr writeToMemBuf
 
+    jsr popA
     jsr popQ
     jsr popQ
 

@@ -56,13 +56,13 @@ L1: stq exprPtr
     neg
     nop
     lda (ptr2),z
-    stq intOp32
+    stq intOp1
     ldz #expr::neg
     nop
     lda (ptr2),z
     beq :+
     jsr invertInt32
-:   ldq intOp32
+:   ldq intOp1
     stq dummy
     lda #<dummy
     sta ptr2

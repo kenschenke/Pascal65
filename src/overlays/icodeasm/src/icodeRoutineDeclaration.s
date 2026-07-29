@@ -13,9 +13,12 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
+; Local variables
 ; localVarsOffset must be zero
 localVarsOffset = 0
-numLocalsOffset = localVarsOffset + MAX_LOCAL_VARS
+localDeclsOffset = localVarsOffset + MAX_LOCAL_VARS
+numLocalsOffset = localDeclsOffset + MAX_LOCAL_VARS*4
+; Parameters passed from caller
 typeOffset = numLocalsOffset + 1
 declOffset = typeOffset + 4
 
@@ -31,6 +34,8 @@ declOffset = typeOffset + 4
 .proc icodeRoutineDeclaration
     lda #0
     jsr pushA               ; numLocals
+    lda #MAX_LOCAL_VARS*4
+    jsr pushBlock
     lda #MAX_LOCAL_VARS
     jsr pushBlock
 
@@ -99,8 +104,37 @@ declOffset = typeOffset + 4
     ; Push the local variables onto the stack
     ldq stackPointer
     stq ptr1
+    lda #localDeclsOffset
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq stackPointer
+    clc
+    adcq intOp32
+    stq ptr3
     ldz #declOffset
     jsr loadStackValue
+    stq ptr2
+    ldz #decl::code
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    ldz #stmt::decl
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    ldq ptr1
+    jsr pushQ               ; localVars storage
+    ldq ptr3
+    jsr pushQ               ; localDecls storage
+    ldq ptr2
+    jsr pushQ               ; first declaration
     jsr icodeVariableDeclarations
     ldz #numLocalsOffset
     nop
@@ -141,15 +175,29 @@ declOffset = typeOffset + 4
     nop
     lda (stackPointer),z
     pha
+    lda #localDeclsOffset
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
     ldq stackPointer
-    jsr pushQ
+    clc
+    adcq intOp32
+    stq ptr2
+    ldq stackPointer
+    jsr pushQ               ; localVars
+    ldq ptr2
+    jsr pushQ               ; localDecls
     pla
-    jsr pushA
+    jsr pushA               ; numLocals
     jsr icodeRoutineCleanup
     lda #IC_RTS
     jsr icodeWriteInstruction
 
 DN: lda #MAX_LOCAL_VARS
+    jsr popBlock
+    lda #MAX_LOCAL_VARS*4
     jsr popBlock
     jsr popA
     jsr popQ
