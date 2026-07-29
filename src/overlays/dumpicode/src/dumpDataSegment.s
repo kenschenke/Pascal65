@@ -94,7 +94,6 @@ fieldTypes:
     jmp dumpStringLiterals
 :   cmp #ARRAYDECL_REAL
     bne L1
-    brk
     jmp dumpStringLiterals
 
     ; Start a new line
