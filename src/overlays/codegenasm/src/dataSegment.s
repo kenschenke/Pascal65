@@ -43,18 +43,39 @@ segmentLabel: .res 20
 .proc freeDataSegment
     ldq dataSegment
     jsr isQZero
-    bne L1
+    bne :+
     rts
+
+    ; Rewind the membuf
+:   ldq dataSegment
+    stq ptr1
+    lda #0
+    tax
+    jsr setMemBufPos
 
     ; Loop through the memory buffer
 L1: ldq dataSegment
     jsr isMemBufAtEnd
-    bne L2
+    bne :+
     ldq dataSegment
     jsr freeMemBuf
     rts
 
-    ; Read the segment data and label
+    ; Read the segment data type
+:   ldq dataSegment
+    stq ptr1
+    lda #<buffer
+    sta ptr2
+    lda #>buffer
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    lda #1
+    ldx #0
+    jsr readFromMemBuf
+
+    ; Read the segment label
 L2: ldq dataSegment
     stq ptr1
     lda #<buffer
@@ -117,9 +138,9 @@ L2: ldq dataSegment
     ldx #0
     jsr writeToMemBuf
 
-    ; Write the data segment label
+    ; Write the data segment label (null-terminated)
     ldq dataSegment
-    stq ptr2
+    stq ptr1
     lda #<strbuf
     sta ptr2
     lda #>strbuf

@@ -158,6 +158,10 @@ DN: ; Close the output PRG file
     jsr CLRCHN
 
     jsr deleteObjFile
+
+    ldq tagsMemBuf
+    jsr freeMemBuf
+    
     rts
 .endproc
 

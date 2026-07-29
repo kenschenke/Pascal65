@@ -102,13 +102,17 @@ L3: jsr popWalkStack
     lda (ptr1),z
     stq walkTreeNode
 
+    ldq ptr1
+    jsr pushQ
+
     ldz #TREENODE::data
     neg
     neg
     nop
     lda (ptr1),z
     jsr heapFree
-    ldq walkTreeNode
+
+    jsr popQ
     jsr heapFree
 
     jmp L1

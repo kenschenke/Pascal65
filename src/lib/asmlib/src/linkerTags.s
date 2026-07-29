@@ -132,9 +132,8 @@ L3: jsr popTagTreeStack
     nop
     lda (ptr1),z
     stq tagTreeNode
-    jsr isQZero
-    beq L1
 
+    ldq ptr1
     jsr heapFree
     jmp L1
 .endproc
