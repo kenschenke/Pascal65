@@ -114,15 +114,30 @@ L2: ldz #type::kind
     jmp DN
 L3: ldz #retnTypeOffset
     jsr loadStackValue
-    stq ptr1
+    stq ptr2
     ldz #type::kind
     lda #TYPE_ENUMERATION
     nop
-    sta (ptr1),z
+    sta (ptr2),z
     ldz #type::flags
     lda #TYPE_FLAG_ISCONST
     nop
-    sta (ptr1),z
+    sta (ptr2),z
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr3
+    ldz #type::subtype
+    ldx #0
+:   lda ptr3,x
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #4
+    bne :-
     bra RT
 
 DN: pha
