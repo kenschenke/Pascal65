@@ -15,7 +15,8 @@
 .include "4510macros.inc"
 
 writingBytesOffset = 0
-argPtrOffset = writingBytesOffset + 1
+valTypeOffset = writingBytesOffset + 1
+argPtrOffset = valTypeOffset + 1
 routineCodeOffset = argPtrOffset + 4
 
 .export icodeWriteWritelnCall
@@ -23,16 +24,12 @@ routineCodeOffset = argPtrOffset + 4
 .import loadStackValue, icodeOper1Short, icodeOper2Short, icodeWriteInstruction
 .import icodeOper1Int, icodeExprRead
 
-.bss
-
-valType: .res 1
-
-.code
-
 ; Arguments passed on stack, from bottom to top
 ;   routine code
 ;   argument list
 .proc icodeWriteWritelnCall
+    lda #0
+    jsr pushA                   ; valType
     lda #0
     jsr pushA                   ; writingBytes
 
@@ -109,7 +106,9 @@ L1: ldz #argPtrOffset
     nop
     lda (ptr1),z
     jsr icodeExprRead
-    sta valType
+    ldz #valTypeOffset
+    nop
+    sta (stackPointer),z
 
     ldz #argPtrOffset
     jsr loadStackValue
@@ -153,7 +152,9 @@ L3: ldz #argPtrOffset
     lda (ptr1),z
     cmp #TYPE_ARRAY
     bne :+
-    lda valType
+    ldz #valTypeOffset
+    nop
+    lda (stackPointer),z
 :   jsr icodeOper1Short
     lda #IC_OUT
     jsr icodeWriteInstruction
@@ -167,7 +168,7 @@ WB: ldz #argPtrOffset
     neg
     neg
     nop
-    lda (stackPointer),z
+    lda (ptr1),z
     jsr icodeExprRead
     ldz #argPtrOffset
     jsr loadStackValue
@@ -175,7 +176,9 @@ WB: ldz #argPtrOffset
     ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
-    sta valType
+    ldz #valTypeOffset
+    nop
+    sta (stackPointer),z
     ldz #expr::evalTypeSize+1
     nop
     lda (ptr1),z
@@ -187,7 +190,9 @@ WB: ldz #argPtrOffset
     lda #IC_PSH
     jsr icodeWriteInstruction
 
-    lda valType
+    ldz #valTypeOffset
+    nop
+    lda (stackPointer),z
     cmp #TYPE_ARRAY
     beq AR
     cmp #TYPE_RECORD
@@ -208,23 +213,22 @@ EL: ldz #routineCodeOffset
     bne :+
     lda #IC_ONL
     jsr icodeWriteInstruction
-:   ldz #routineCodeOffset
-    nop
-    lda (stackPointer),z
-    cmp #rcWriteStr
-    bne :+
+    bra SF
+:   cmp #rcWriteStr
+    bne SF
     lda #IC_FSO
     jsr icodeWriteInstruction
-:   lda #0
+SF: lda #0
     jsr icodeOper1Short
     lda #0
     jsr icodeOper2Short
     lda #IC_SFH
     jsr icodeWriteInstruction
 
-    jsr popA
-    jsr popQ
-    jsr popA
+    jsr popA            ; writingBytes
+    jsr popA            ; valType
+    jsr popQ            ; argList
+    jsr popA            ; routineCode
     rts
 .endproc
 
@@ -248,4 +252,7 @@ EL: ldz #routineCodeOffset
     cpx #4
     bne :-
     rts
+.endproc
+
+.proc setOutputHandle
 .endproc
