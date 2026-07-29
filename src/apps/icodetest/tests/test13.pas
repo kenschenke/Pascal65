@@ -6,6 +6,8 @@ DIR LBL xxxxx
 PSH FLT 
 BRA LBL xxxxx
 LOC LBL xxxxx
+PSH IWU 0
+PSH CHR 
 PSH IBS 7b
 PSH VDW 4 2 0
 SET IBS 4 IBS 2
@@ -15,13 +17,25 @@ SET IBS 9 IBS 9
 PSH FLT 123.456
 PSH VVW 7 2 1
 SET IBS 7 IBS 7
+PSH IWU 929
+PSH VDW 4 2 3
+SET IBS 4 IBS 4
+PSH CHR m
+PSH VDW 9 2 4
+SET IBS 9 IBS 9
+POP
+POP
 RTS
 LOC LBL xxxxx
+PSH IWU d80
 PSH VDR 4 2 0
+PSH VDR 4 2 1
+ADD IBS 4 IBS 4 IBS 6
 PSH FLT 3.14159
-ADD IBS 4 IBS 7 IBS 7
+ADD IBS 6 IBS 7 IBS 7
 PSH RET 
 SET IBS 7 IBS 7
+POP
 RTS
 LOC LBL xxxxx
 PSH IWU 3039
@@ -102,15 +116,22 @@ Var
   fr : Real;
 
 Procedure MyProc(i : Integer; Var r : Real; ch : Char);
+Var
+  j : Integer;
+  c : Char;
 Begin
   i := 123;
   ch := 'k';
   r := 123.456;
+  j := 2345;
+  c := 'm';
 End;
 
 Function MyFunc(i : Integer) : Real;
+Var
+  k : Integer = 3456;
 Begin
-  MyFunc := i + 3.14159;
+  MyFunc := i + k + 3.14159;
 End;
 
 Procedure ArrayProc(Var a : MyArray);
