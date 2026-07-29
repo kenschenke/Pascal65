@@ -180,11 +180,13 @@ ST: ldz #rtnTypeOffset
     jsr pushQ
     jsr icodeStdRoutineCall
 
-DN: jsr popA            ; isLibrary
+DN: pha
+    jsr popA            ; isLibrary
     jsr popA            ; isRtnPtr
     jsr popQ            ; rtnType
     jsr popQ            ; symPtr
     jsr popQ            ; exprPtr
+    pla
     rts
 .endproc
 
