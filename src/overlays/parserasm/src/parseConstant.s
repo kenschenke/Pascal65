@@ -39,10 +39,7 @@ exprKind: .res 1
     jsr getToken
 
 :   lda parserToken
-    cmp #tcIdentifier
-    bne :+
-    jmp parseIdentifierConst
-:   cmp #tcNumber
+    cmp #tcNumber
     bne :+
     jmp parseNumberConst
 :   cmp #tcString
@@ -83,53 +80,6 @@ exprKind: .res 1
     iny
     cpx #4
     bne :-
-    rts
-.endproc
-
-.proc parseIdentifierConst
-    lda #TYPE_DECLARED
-    jsr pushA
-    lda #1
-    jsr pushA
-    jsr pushQZero
-    jsr pushQZero
-    jsr typeCreate
-    stq type
-    jsr setTypePtr
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq ptr1
-    lda #EXPR_NAME
-    jsr pushA
-    jsr pushQZero
-    jsr pushQZero
-    ldq ptr1
-    jsr pushQ
-    lda #0
-    tax
-    tay
-    taz
-    stq parserValue
-    jsr exprCreate
-    stq expr
-    lda #<parserString
-    ldx #>parserString
-    jsr nameCreate
-    stq ptr3
-    ldq type
-    stq ptr1
-    ldz #type::name
-    ldx #0
-:   lda ptr3,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
-    jsr getToken
-    ldq expr
     rts
 .endproc
 
