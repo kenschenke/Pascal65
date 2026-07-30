@@ -96,8 +96,9 @@ L2: ldz #type::kind
     stq ptr1
     bra L2
 L3: cmp #TYPE_DECLARED
-    bne L6
-    ldz #type::name
+    beq :+
+    jmp L6
+:   ldz #type::name
     neg
     neg
     nop
@@ -113,14 +114,26 @@ L3: cmp #TYPE_DECLARED
     stq ptr1
     jsr symtabLookup
     jsr isQZero
-    beq L7
-    bra L5
+    bne :+
+    jmp L7
+:   bra L5
 
 L4: jsr scopeLookup
     jsr isQZero
     beq L7
 
 L5: stq ptr2
+    ; Skip cloning the type if typePtr already has a subtype
+    ldq typePtr
+    stq ptr1
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    bne SC
+    ldq ptr2
     jsr pushQ
     ldz #symbol::type
     neg
@@ -142,7 +155,7 @@ L5: stq ptr2
     inx
     cpx #4
     bne :-
-    ldz #symbol::type
+SC: ldz #symbol::type
     neg
     neg
     nop
