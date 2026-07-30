@@ -1,16 +1,17 @@
 (* Case Tests *)
 
-Program Loops;
+Program CaseTest;
+
 Const
     IntValue = 1234;
     Letter = 'x';
-    LoveMonth = Feb;
 
 Type
     Months = (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec);
 
 Var
     anyErrors, caseError : Boolean;
+    ch : Char;
     i : Integer;
     c : Char;
     m : Months;
@@ -24,7 +25,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running case tests');
 
     i := 1234;
     caseError := true;
@@ -68,12 +69,12 @@ Begin
     m := Feb;
     Case m Of
         Apr, May, Jun: Error(12);
-        LoveMonth: caseError := false;
+        Feb: caseError := false;
     End;
     If caseError Then Error(13);
 
     If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
+        Write('Type a key to continue: ');
+        ch := GetKey;
     End;
 End.
