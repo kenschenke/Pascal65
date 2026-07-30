@@ -52,32 +52,19 @@ PSH VDW 9 1 9
 SET IBS 9 IBS 9
 *)
 
-Program Test;
+Program RecArray;
 
 Var
-  a : ShortInt;
-  b : Byte;
-  bool : Boolean;
-  i : Integer;
-  w : Word;
-  l : LongInt;
-  c : Cardinal;
-  r : Real;
-  str : String;
-  ch : Char;
+    i : Integer;
+	ar5 : Array[-3..3] Of Integer;
 
 Begin
-  a := 123;
-  a := -5;
-  b := 234;
-  bool := True;
-  i := 12345;
-  i := -1234;
-  w := 34567;
-  l := 123456;
-  l := -123456;
-  c := 2345678901;
-  r := 3.14;
-  str := 'Hello, World';
-  ch := 'x';
+	For i := 1 To 7 Do ar5[i-4] := i;
+	If ar5[-3] <> 1 Then Writeln('Error(19)');
+	If ar5[-2] <> 2 Then Writeln('Error(20)');
+	If ar5[-1] <> 3 Then Writeln('Error(21)');
+	If ar5[0]  <> 4 Then Writeln('Error(22)');
+	If ar5[1]  <> 5 Then Writeln('Error(23)');
+	If ar5[2]  <> 6 Then Writeln('Error(24)');
+	If ar5[3]  <> 7 Then Writeln('Error(25)');
 End.

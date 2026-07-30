@@ -681,9 +681,7 @@ L2: jsr popQ        ; initBuf
     nop
     lda (ptr1),z
     neg
-    clc
-    adc #1
-    ldx #0
+    ldx #$ff
     rts
 .endproc
 

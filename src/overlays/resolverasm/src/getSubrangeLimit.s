@@ -78,11 +78,9 @@
     ldx #0
     rts
     ; Negate the value in X
-    txa
-    eor #$ff
-    clc
-    adc #1
-    ldx #0
+:   txa
+    neg
+    ldx #$ff
     rts
 .endproc
 
