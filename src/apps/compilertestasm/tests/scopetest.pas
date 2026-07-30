@@ -2,6 +2,7 @@ Program ScopeTest;
 
 Var
     anyErrors : Boolean;
+	ch : Char;
 	i, j, z : Integer;
 	a : Boolean;
 
@@ -45,7 +46,7 @@ End;
 
 (* Main *)
 Begin
-	Writeln('Running');
+	Writeln('Running scope tests');
 	
 	a := True;
 	i := 5;
@@ -57,7 +58,7 @@ Begin
 	If Not a Then Error(12);
 
     If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
+        Write('Press a key to continue: ');
+        ch := GetKey;
     End;
 End.

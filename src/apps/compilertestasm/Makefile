@@ -157,6 +157,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/strroutines.pas strroutines.pas,seq \
 	-write $(PETSCIIDIR)/strtests.pas strtests.pas,seq \
 	-write $(PETSCIIDIR)/recarray.pas recarray.pas,seq \
+	-write $(PETSCIIDIR)/scopetest.pas scopetest.pas,seq \
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq
 
 clean:

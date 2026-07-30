@@ -32,6 +32,7 @@ strIncDec: .asciiz "incdec"
 strStrRoutines: .asciiz "strroutines"
 strStrTests: .asciiz "strtests"
 strRecArray: .asciiz "recarray"
+strScopeTest: .asciiz "scopetest"
 strSubtract: .asciiz "subtract"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
@@ -49,6 +50,7 @@ tests:
     .byte .lobyte(strStrRoutines), .hibyte(strStrRoutines)
     .byte .lobyte(strStrTests), .hibyte(strStrTests)
     .byte .lobyte(strRecArray), .hibyte(strRecArray)
+    .byte .lobyte(strScopeTest), .hibyte(strScopeTest)
     ; .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte $00, $00
 
