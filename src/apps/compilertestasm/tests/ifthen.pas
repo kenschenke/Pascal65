@@ -17,7 +17,7 @@ Begin
     i := 528;
     j := 1036;
 
-    Writeln('Running');
+    Writeln('Running if then tests');
 
     If i > 528 Then Error(1);
     If i > j Then Error(2);

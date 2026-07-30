@@ -55,7 +55,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running varinit tests');
 
     If bool1 <> False Then Error(1);
     If bool2 <> True Then Error(2);

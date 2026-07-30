@@ -81,7 +81,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running bitwise tests (part 2)');
 
 	TestBitwiseCardinal;
 

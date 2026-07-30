@@ -117,7 +117,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running subtract tests');
 
 	TestByteSubtract;
 	TestCardinalSubtract;

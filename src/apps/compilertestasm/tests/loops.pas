@@ -15,7 +15,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running loop tests');
 
     p1 := @i;
     p2 := @j;

@@ -147,6 +147,16 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write system.petscii system.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
 	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
+	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
+	-write $(PETSCIIDIR)/bitwisea.pas bitwisea.pas,seq \
+	-write $(PETSCIIDIR)/bitwiseb.pas bitwiseb.pas,seq \
+	-write $(PETSCIIDIR)/ifthen.pas ifthen.pas,seq \
+	-write $(PETSCIIDIR)/loops.pas loops.pas,seq \
+	-write $(PETSCIIDIR)/stdroutines.pas stdroutines.pas,seq \
+	-write $(PETSCIIDIR)/incdec.pas incdec.pas,seq \
+	-write $(PETSCIIDIR)/strroutines.pas strroutines.pas,seq \
+	-write $(PETSCIIDIR)/strtests.pas strtests.pas,seq \
+	-write $(PETSCIIDIR)/recarray.pas recarray.pas,seq \
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq
 
 clean:

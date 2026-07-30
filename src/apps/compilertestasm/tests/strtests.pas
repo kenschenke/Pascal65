@@ -34,7 +34,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running string tests');
 
     str := 'Test';
     If CompareStr(str, 'Test') <> 0 Then Error(1);

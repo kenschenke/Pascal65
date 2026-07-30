@@ -23,7 +23,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running standard routine tests');
 
     i := -1008;
     If Abs(-572) <> 572 Then Error(1);

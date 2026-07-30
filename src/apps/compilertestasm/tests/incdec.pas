@@ -24,7 +24,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running inc dec tests');
 
     b := 192;
     Inc(b);

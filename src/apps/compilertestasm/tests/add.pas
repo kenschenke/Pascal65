@@ -138,7 +138,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running add tests');
 
 	TestShortAdd;
 	TestByteAdd;

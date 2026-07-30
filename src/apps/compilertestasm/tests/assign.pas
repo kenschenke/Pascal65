@@ -106,7 +106,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running assign tests');
 
 	TestShortAssign;
     TestIntAssign;

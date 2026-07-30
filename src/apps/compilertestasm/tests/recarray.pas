@@ -46,7 +46,7 @@ End;
 Begin
     anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running record and array tests');
 	
 	myParent.c := 1234;
 	myParent.d := 2345;

@@ -16,7 +16,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running string routine tests');
 
     If CompareStr('', '') <> 0 Then Error(1);
     If CompareStr('test', 'test') <> 0 Then Error(2);

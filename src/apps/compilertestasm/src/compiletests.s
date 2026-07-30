@@ -9,18 +9,29 @@
 ;
 ; compileTests routine
 
+.include "meminfo.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 
 .export compileTests, nextTestPrg
 
-.import runCompiler
+.import runCompiler, initMemInfo
 
 .data
 
 pascalSuffix: .asciiz ".pas"
 strAdd: .asciiz "add"
 strAssign: .asciiz "assign"
+strVarInit: .asciiz "varinit"
+strBitwiseA: .asciiz "bitwisea"
+strBitwiseB: .asciiz "bitwiseb"
+strIfThen: .asciiz "ifthen"
+strLoops: .asciiz "loops"
+strStdRoutines: .asciiz "stdroutines"
+strIncDec: .asciiz "incdec"
+strStrRoutines: .asciiz "strroutines"
+strStrTests: .asciiz "strtests"
+strRecArray: .asciiz "recarray"
 strSubtract: .asciiz "subtract"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
@@ -28,7 +39,17 @@ strRun2: .asciiz " to begin tests"
 tests:
     .byte .lobyte(strAdd), .hibyte(strAdd)
     .byte .lobyte(strAssign), .hibyte(strAssign)
-    .byte .lobyte(strSubtract), .hibyte(strSubtract)
+    .byte .lobyte(strVarInit), .hibyte(strVarInit)
+    .byte .lobyte(strBitwiseA), .hibyte(strBitwiseA)
+    .byte .lobyte(strBitwiseB), .hibyte(strBitwiseB)
+    .byte .lobyte(strIfThen), .hibyte(strIfThen)
+    .byte .lobyte(strLoops), .hibyte(strLoops)
+    .byte .lobyte(strStdRoutines), .hibyte(strStdRoutines)
+    .byte .lobyte(strIncDec), .hibyte(strIncDec)
+    .byte .lobyte(strStrRoutines), .hibyte(strStrRoutines)
+    .byte .lobyte(strStrTests), .hibyte(strStrTests)
+    .byte .lobyte(strRecArray), .hibyte(strRecArray)
+    ; .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte $00, $00
 
 .bss
@@ -113,6 +134,10 @@ DN: lda #13
 
 :   lda #13
     jsr CHROUT
+
+    jsr initMemInfo
+    jsr heapReport
+    jsr heapSummary
 
     rts
 .endproc
