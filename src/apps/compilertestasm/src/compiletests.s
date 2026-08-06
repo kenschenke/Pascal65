@@ -39,6 +39,7 @@ strMultiply: .asciiz "multiply"
 strSubtract: .asciiz "subtract"
 strDivInt: .asciiz "divint"
 strTrig: .asciiz "trig"
+strVarTest: .asciiz "vartest"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -62,6 +63,7 @@ tests:
     .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte .lobyte(strDivInt), .hibyte(strDivInt)
     .byte .lobyte(strTrig), .hibyte(strTrig)
+    .byte .lobyte(strVarTest), .hibyte(strVarTest)
     .byte $00, $00
 
 .bss

@@ -163,7 +163,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/multiply.pas multiply.pas,seq \
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq \
 	-write $(PETSCIIDIR)/divint.pas divint.pas,seq \
-	-write $(PETSCIIDIR)/trig.pas trig.pas,seq
+	-write $(PETSCIIDIR)/trig.pas trig.pas,seq \
+	-write $(PETSCIIDIR)/vartest.pas vartest.pas,seq
 
 clean:
 	$(RM) $(TXTFILES)

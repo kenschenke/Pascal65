@@ -108,7 +108,7 @@ Begin
 End;
 
 Begin
-	Writeln('Running');
+	Writeln('Running var tests');
 	
     anyErrors := false;
 
