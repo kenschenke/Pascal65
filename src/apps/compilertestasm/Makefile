@@ -160,6 +160,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/scopetest.pas scopetest.pas,seq \
 	-write $(PETSCIIDIR)/casetest.pas casetest.pas,seq \
 	-write $(PETSCIIDIR)/procfunc.pas procfunc.pas,seq \
+	-write $(PETSCIIDIR)/multiply.pas multiply.pas,seq \
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq
 
 clean:

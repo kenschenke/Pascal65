@@ -68,7 +68,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running multiply tests');
 
 	TestByteMultiply;
 	TestCardinalMultiply;

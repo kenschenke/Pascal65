@@ -35,6 +35,7 @@ strRecArray: .asciiz "recarray"
 strScopeTest: .asciiz "scopetest"
 strCaseTest: .asciiz "casetest"
 strProcFunc: .asciiz "procfunc"
+strMultiply: .asciiz "multiply"
 strSubtract: .asciiz "subtract"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
@@ -55,6 +56,7 @@ tests:
     .byte .lobyte(strScopeTest), .hibyte(strScopeTest)
     .byte .lobyte(strCaseTest), .hibyte(strCaseTest)
     .byte .lobyte(strProcFunc), .hibyte(strProcFunc)
+    .byte .lobyte(strMultiply), .hibyte(strMultiply)
     ; .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte $00, $00
 
