@@ -74,7 +74,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running divint tests');
 
 	TestByteDivide;
 	TestCardinalDivide;

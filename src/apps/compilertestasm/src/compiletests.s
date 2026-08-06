@@ -37,6 +37,7 @@ strCaseTest: .asciiz "casetest"
 strProcFunc: .asciiz "procfunc"
 strMultiply: .asciiz "multiply"
 strSubtract: .asciiz "subtract"
+strDivInt: .asciiz "divint"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -57,7 +58,8 @@ tests:
     .byte .lobyte(strCaseTest), .hibyte(strCaseTest)
     .byte .lobyte(strProcFunc), .hibyte(strProcFunc)
     .byte .lobyte(strMultiply), .hibyte(strMultiply)
-    ; .byte .lobyte(strSubtract), .hibyte(strSubtract)
+    .byte .lobyte(strSubtract), .hibyte(strSubtract)
+    .byte .lobyte(strDivInt), .hibyte(strDivInt)
     .byte $00, $00
 
 .bss
