@@ -1155,6 +1155,7 @@ L4: lda #leftTypeOffset
     jsr copyToType
     lda #rightTypeOffset
     jsr calcTypeBlockAddr
+    jsr freeTypeName
     jsr getBaseType
     ldz #rightTypeOffset
     jsr copyToType
@@ -1186,6 +1187,21 @@ L4: lda #leftTypeOffset
     ldq ptr4
     jsr pushQ
     jsr checkAssignment
+    rts
+.endproc
+
+.proc freeTypeName
+    stq ptr1
+    jsr pushQ
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq :+
+    jsr heapFree
+:   jsr popQ
     rts
 .endproc
 
@@ -1780,7 +1796,7 @@ L5: ldz #typePtrOffset
     ldq ptr2
     jsr pushQ                   ; return type
     jsr checkFuncProcCall
-    
+
     rts
 .endproc
 

@@ -246,12 +246,19 @@ L1: ldz #type::kind
     inx
     cpx #4
     bne :-
+    ldq ptr2
+    jsr pushQ
     ldz #type::name
     neg
     neg
     nop
     lda (ptr1),z
-    stq ptr3
+    jsr isQZero
+    beq :+
+    jsr nameClone
+:   stq ptr3
+    jsr popQ
+    stq ptr2
     ldx #0
     ldz #type::name
 :   lda ptr3,x

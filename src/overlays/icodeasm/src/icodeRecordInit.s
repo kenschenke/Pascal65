@@ -354,81 +354,6 @@ DN: ldz #declMemBufOffset
 
 .proc embeddedArray
     jsr formatFieldLabel
-    ; Copy label -> fieldLabel
-    ; tmp1=labelOffset
-    ; tmp2=fieldLabelOffset
-;     ldz #labelOffset
-;     jsr loadStackValue
-;     stq ptr1
-;     lda #0
-;     sta tmp1
-;     lda #fieldLabelOffset
-;     sta tmp2
-; :   ldz tmp1
-;     nop
-;     lda (ptr1),z
-;     beq :+
-;     ldz tmp2
-;     nop
-;     sta (stackPointer),z
-;     inc tmp1
-;     inc tmp2
-;     bne :-
-; :   lda tmp2
-;     pha             ; Save fieldLabelOffset
-    ; Format declPtr
-    ; ldz #declPtrOffset
-    ; jsr loadStackValue
-    ; stq intOp32
-    ; lda #<intBuf
-    ; ldx #>intBuf
-    ; jsr hexstr
-;     lda heapOffset
-;     sta intOp1
-;     lda heapOffset+1
-;     sta intOp1+1
-;     lda #<intBuf
-;     ldx #>intBuf
-;     jsr writeInt16
-;     ; Concat intBuf onto fieldLabel
-;     pla         ; Restore fieldOffset
-;     sta tmp1
-;     ldx #0
-; :   lda intBuf,x
-;     beq :+
-;     ldz tmp1
-;     nop
-;     sta (stackPointer),z
-;     inx
-;     inz
-;     bne :-
-; :   lda #'.'
-;     nop
-;     sta (stackPointer),z
-;     inz
-;     phz         ; Save label offset
-;     ; Format fieldOffset
-;     ldz #fieldOffset
-;     nop
-;     lda (stackPointer),z
-;     sta intOp1
-;     inz
-;     nop
-;     lda (stackPointer),z
-;     sta intOp1+1
-;     lda #<intBuf
-;     ldx #>intBuf
-;     jsr writeInt16
-;     ; Concat intBuf onto fieldLabel
-;     plz             ; Restore label offset
-;     ldx #0
-; :   lda intBuf,x
-;     nop
-;     sta (stackPointer),z
-;     beq :+
-;     inz
-;     inx
-;     bne :-
     ; Save the heapOffset
     lda heapOffset
     pha
@@ -645,19 +570,6 @@ DN: ldz #declMemBufOffset
     lda tmp2
     pha
     
-    ; lda tmp2
-    ; pha             ; Save field label offset
-    ; lda heapOffset
-    ; sta intOp1
-    ; lda heapOffset+1
-    ; sta intOp1+1
-    ; lda #<intBuf
-    ; ldx #>intBuf
-    ; jsr writeInt16
-    ; ; Concat intBuf onto fieldLabel
-    ; pla         ; Restore fieldOffset
-    ; sta tmp1
-
     ; Format fieldOffset
     ldz #fieldOffset
     nop
