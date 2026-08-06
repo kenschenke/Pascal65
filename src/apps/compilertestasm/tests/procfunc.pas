@@ -41,7 +41,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running procedure and function tests');
 
     Proc(1234, 'x', Apr);
     i := 1234;
