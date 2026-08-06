@@ -44,7 +44,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running trig tests');
 
 	TestCos;
 	TestSin;

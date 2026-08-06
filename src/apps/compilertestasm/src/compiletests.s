@@ -38,6 +38,7 @@ strProcFunc: .asciiz "procfunc"
 strMultiply: .asciiz "multiply"
 strSubtract: .asciiz "subtract"
 strDivInt: .asciiz "divint"
+strTrig: .asciiz "trig"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -60,6 +61,7 @@ tests:
     .byte .lobyte(strMultiply), .hibyte(strMultiply)
     .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte .lobyte(strDivInt), .hibyte(strDivInt)
+    .byte .lobyte(strTrig), .hibyte(strTrig)
     .byte $00, $00
 
 .bss
