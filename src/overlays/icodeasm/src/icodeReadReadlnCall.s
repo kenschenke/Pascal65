@@ -49,19 +49,22 @@ exprPtr: .res 4
     cmp #TYPE_TEXT
     bne KI
 
-FI: cmp #TYPE_FILE
-    bne :+
+FI: pha
     ldz #expr::left
     neg
     neg
     nop
     lda (ptr1),z
     jsr icodeExprRead
+    lda #0
+    plx
+    cpx #TYPE_FILE
+    bne :+
     lda #1
-    ldz #readingBytesOffset
+:   ldz #readingBytesOffset
     nop
     sta (stackPointer),z
-:   jsr nextArg
+    jsr nextArg
     lda #FH_FILENUM
     bra SF
 
