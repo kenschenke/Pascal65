@@ -21,7 +21,7 @@ routineCodeOffset = argPtrOffset + 4
 .export icodeReadReadlnCall
 
 .import loadStackValue, icodeOper1Short, icodeOper2Short, icodeWriteInstruction
-.import icodeExpr, icodeOper1Int
+.import icodeExpr, icodeExprRead, icodeOper1Int
 
 .bss
 
@@ -51,6 +51,12 @@ exprPtr: .res 4
 
 FI: cmp #TYPE_FILE
     bne :+
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr icodeExprRead
     lda #1
     ldz #readingBytesOffset
     nop
