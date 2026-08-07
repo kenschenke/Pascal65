@@ -367,7 +367,7 @@ L1: ldz #type::kind
     nop
     lda (stackPointer),z
     cmp #rcWriteStr
-    beq :+
+    bne :+
     lda #errIncompatibleTypes
     jsr typeCheckError
 :   rts
