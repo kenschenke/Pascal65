@@ -268,11 +268,6 @@ DN: lda #.sizeof(type)
 .proc checkArray
     ldq exprType
     stq ptr1
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
     jsr getBaseType
     stq ptr1
     ldx #type::kind
@@ -287,11 +282,18 @@ DN: lda #.sizeof(type)
     jsr pushQ
     jsr checkArraysSameType
     rts
-L1: ldz #type::kind
+L1: ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::kind
     nop
     lda (ptr1),z
     cmp #TYPE_CHARACTER
     beq :+
+    brk
     lda #errIncompatibleTypes
     jsr typeCheckError
 :   rts
@@ -323,6 +325,7 @@ L1: ldz #type::kind
     lda #errIncompatibleTypes
     jsr typeCheckError
 :   ldq exprType
+    jsr getBaseType
     stq ptr1
     ldz #type::subtype
     neg
@@ -332,12 +335,7 @@ L1: ldz #type::kind
     jsr isQZero
     beq :+
     jsr getBaseType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    ldx #type::kind
-    sta fileTypeSub,x
+    jsr copyFileSubtype
 :   rts
 .endproc
 
@@ -347,4 +345,21 @@ L1: ldz #type::kind
     lda #errIncompatibleTypes
     jsr typeCheckError
 :   rts
+.endproc
+
+.proc copyFileSubtype
+    stq ptr1                ; subtype to copy from in ptr1
+
+    ; Copy the type from ptr1 to fileTypeSub
+    ldz #0
+    ldx #0
+:   nop
+    lda (ptr1),z
+    sta fileTypeSub,x
+    inz
+    inx
+    cpz #.sizeof(type)
+    bne :-
+
+    rts
 .endproc
