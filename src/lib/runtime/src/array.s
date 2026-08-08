@@ -1112,11 +1112,8 @@ L2: ldy #3                          ; Look at bit 0 - if 1 then this is a cloned
     bne :+                          ; Branch if a cloned file handle
     ; Close the file
     jsr saveArrayLocals
-    ldy #1
-    lda (ptr1),y
-    tax
-    dey
-    lda (ptr1),y
+    lda ptr1
+    ldx ptr1+1
     jsr fileClose
     jsr restoreArrayLocals
     ; Move ptr1 to the next file in the array
