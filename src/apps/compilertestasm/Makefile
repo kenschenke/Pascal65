@@ -164,7 +164,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq \
 	-write $(PETSCIIDIR)/divint.pas divint.pas,seq \
 	-write $(PETSCIIDIR)/trig.pas trig.pas,seq \
-	-write $(PETSCIIDIR)/vartest.pas vartest.pas,seq
+	-write $(PETSCIIDIR)/vartest.pas vartest.pas,seq \
+	-write $(PETSCIIDIR)/filetesta.pas filetesta.pas,seq \
+	-write $(PETSCIIDIR)/filetestb.pas filetestb.pas,seq
 
 clean:
 	$(RM) $(TXTFILES)

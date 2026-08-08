@@ -185,7 +185,7 @@ End;
 Begin
 	anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running file test A');
 
 	TestText;
     TestIntFile;
