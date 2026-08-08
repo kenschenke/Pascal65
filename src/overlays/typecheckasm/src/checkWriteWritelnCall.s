@@ -346,13 +346,7 @@ L1: ldz #type::kind
     jsr isQZero
     beq :+
     jsr getBaseType
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    ldz #fileTypeSubOffset
-    nop
-    sta (stackPointer),z
+    jsr copyFileSubtype
 :   rts
 .endproc
 
@@ -371,4 +365,31 @@ L1: ldz #type::kind
     lda #errIncompatibleTypes
     jsr typeCheckError
 :   rts
+.endproc
+
+.proc copyFileSubtype
+    stq ptr1                ; subtype to copy from in ptr1
+
+    ; Set ptr2 to point to the filesubtype on the stack
+    lda #fileTypeSubOffset
+    ldx #0
+    ldy #0
+    ldz #0
+    stq intOp32
+    ldq stackPointer
+    clc
+    adcq intOp32
+    stq ptr2
+
+    ; Copy the type from ptr1 to ptr2
+    ldz #0
+:   nop
+    lda (ptr1),z
+    nop
+    sta (ptr2),z
+    inz
+    cpz #.sizeof(type)
+    bne :-
+
+    rts
 .endproc
