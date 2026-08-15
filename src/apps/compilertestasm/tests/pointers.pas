@@ -49,7 +49,7 @@ Begin
 End;
 
 Begin
-	Writeln('Running');
+	Writeln('Running pointer tests');
 	
     anyErrors := false;
 
