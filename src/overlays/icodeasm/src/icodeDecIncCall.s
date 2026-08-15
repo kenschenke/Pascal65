@@ -107,9 +107,8 @@ L1: ldz #argPtrOffset
     nop
     lda (ptr1),z
     cmp #TYPE_POINTER
-    beq :+
-    bra L2
-:   ; The increment amount needs to be multiplied by the
+    bne L2
+    ; The increment amount needs to be multiplied by the
     ; size of the pointer's data type.
     ldz #type::subtype
     neg
@@ -129,8 +128,10 @@ L1: ldz #argPtrOffset
     jsr icodeWriteInstruction
     lda amountType
     jsr icodeOper1Short
-    lda amountType
+    lda #TYPE_INTEGER
     jsr icodeOper2Short
+    lda amountType
+    jsr icodeOper3Short
     lda #IC_MUL
     jsr icodeWriteInstruction
 
