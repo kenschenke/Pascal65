@@ -16,7 +16,7 @@
 .export typeClone, savePtrs, restorePtrs, storePtr
 
 .import typeCreate
-.import exprClone, declClone, paramListClone, symbolClone, nameClone
+.import exprClone, nameClone
 .import isQZero, rtPushQ, rtPopQ, rtPushA
 
 ; Pointer to type passed in Q
@@ -44,6 +44,10 @@
     inx
     cpx #4
     bne :-
+    lda #0
+    tax
+    tay
+    taz
     bra L1
 NE: ldq ptr1
     jsr rtPushQ             ; store the type pointer on the stack
@@ -65,11 +69,11 @@ L2: ldz #type::paramFields
     neg
     nop
     lda (ptr1),z
+    stq ptr3
     jsr isQZero
     beq L3
 
     ; Copy the paramFields
-    stq ptr3
     ldz #type::paramFields
     ldx #0
 :   lda ptr3,x
