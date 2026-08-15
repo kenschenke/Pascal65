@@ -287,8 +287,17 @@ L1: ldz #exprOffset
 .proc exprAddressOf
     ldz #expr::left
     jsr getChildExpr
-    jsr pushQ
+    jsr getExprTypeKind
+    cmp #TYPE_RECORD
+    beq L1
     lda #0
+    bra L2
+L1: lda #1
+L2: pha
+    ldz #expr::left
+    jsr getChildExpr
+    jsr pushQ
+    pla
     jsr pushA
     lda #0
     jsr pushA
