@@ -223,7 +223,8 @@ L2: jsr pushA                   ; kind
     stq returnType
     lda isPtr
     beq :+
-    lda #TYPE_POINTER           ; kind
+    lda #TYPE_POINTER
+    jsr pushA                   ; kind
     lda #0
     jsr pushA                   ; isConst
     ldq returnType

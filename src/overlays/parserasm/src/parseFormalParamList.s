@@ -340,7 +340,7 @@ L3: jsr pushA               ; kind
 L8: lda pointerParam
     bne :+
     rts
-    lda #TYPE_POINTER       ; kind
+:   lda #TYPE_POINTER       ; kind
     jsr pushA
     lda #0
     jsr pushA               ; isConst

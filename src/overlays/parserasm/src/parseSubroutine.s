@@ -12,6 +12,9 @@ subOffset = 0
 .export parseSubroutine
 
 .import parserError, calcNamePtr
+.import parserToken, parseFuncOrProcHeader, doResync, isInUnitInterface
+.import tokenIn, getToken, parserString, parseBlock
+.import tlHeaderFollow, tlDeclarationStart, tlStatementStart
 
 .bss
 
@@ -30,10 +33,6 @@ returnDecl: .res 4
 strForward: .asciiz "forward"
 
 .code
-
-.import parserToken, parseFuncOrProcHeader, doResync, isInUnitInterface
-.import tokenIn, getToken, parserString, parseBlock
-.import tlHeaderFollow, tlDeclarationStart, tlStatementStart
 
 .proc parseSubroutine
     ; <routine-header>
@@ -167,23 +166,8 @@ L4: ldz #isFuncOffset
     neg
     nop
     lda (ptr2),z
-    stq ptr2
     stq routineType
-    ; Create the return type
-    ldz #type::kind
-    nop
-    lda (ptr2),z
-    jsr pushA                   ; kind
-    lda #0
-    jsr pushA                   ; isConst
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    jsr pushQ                   ; subtype
-    jsr pushQZero               ; params
-    jsr typeCreate
+    jsr typeClone
     stq returnType
     stq ptr2
     ; Set the ISRETVAL flag
@@ -191,29 +175,6 @@ L4: ldz #isFuncOffset
     lda #TYPE_FLAG_ISRETVAL
     nop
     sta (ptr2),z
-    ldq routineType
-    stq ptr2
-    ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    jsr isQZero
-    beq L5
-    ; Clone the routine's return type name
-    jsr nameClone
-    stq ptr2
-    ldq returnType
-    stq ptr1
-    ldz #type::name
-    ldx #0
-:   lda ptr2,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
 L5: ldq declPtr
     ldz #decl::name
     jsr calcNamePtr
