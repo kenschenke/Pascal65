@@ -203,12 +203,10 @@ PT: ldz #leftTypeOffset
     nop
     lda (ptr1),z
     cmp #EXPR_BYTE_LITERAL
-    bne :+
+    beq DN
     cmp #EXPR_WORD_LITERAL
-    bne :+
-    ; Assignment is okay
-    jmp DN
-:   jsr checkPointerAssignment
+    beq DN
+    jsr checkPointerAssignment
     jmp DN
 
 RP: ldz #leftTypeOffset

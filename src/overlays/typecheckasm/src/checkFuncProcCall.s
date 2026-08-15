@@ -311,8 +311,17 @@ L1: ldz #paramPtrOffset
     bne :+
     jmp DN
 
+    ; Clear the rightType
+:   lda #0
+    taz
+:   nop
+    sta (stackPointer),z
+    inz
+    cpz #.sizeof(type)
+    bne :-
+
     ; Call exprTypeCheck for the argument
-:   ldz #argPtrOffset
+    ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
     ldq stackPointer
@@ -419,17 +428,17 @@ EN: jsr checkEnumerationParam
     jsr checkFileParam
     jmp NX
 
-    ; if (paramType.kind == TYPE_POINTER)
+    ; if (paramType.kind == TYPE_POINTER && argType.kind == TYPE_ADDRESS)
 :   lda paramKind
     cmp #TYPE_POINTER
     bne :+
     lda argKind
-    cmp #TYPE_POINTER
+    cmp #TYPE_ADDRESS
     bne :+
     jsr checkPointerParam
     jmp NX
 
-    ; if (paramType.kind == TYPE_ROUTINE_POINTER)
+    ; if (paramType.kind == TYPE_ROUTINE_POINTER && argType.kind == TYPE_ROUTINE_ADDRESS)
 :   lda paramKind
     cmp #TYPE_ROUTINE_POINTER
     bne :+
@@ -485,7 +494,21 @@ NX: ldz #paramPtrOffset
     lda (ptr1),z
     ldz #argPtrOffset
     jsr storePtr
-    jmp L1
+    ; If a subtype was allocated for the rightType of TYPE_ADDRESS, free it.
+    ldz #type::kind
+    nop
+    lda (stackPointer),z
+    cmp #TYPE_ADDRESS
+    bne :+
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    jsr isQZero
+    beq :+
+    jsr freeType
+:   jmp L1
 
 DN:
     rts
