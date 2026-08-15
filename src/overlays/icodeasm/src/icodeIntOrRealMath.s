@@ -88,7 +88,7 @@ L1: ldz #instructionOffset
     nop
     sta (stackPointer),z
     cmp #IC_MUL
-    bne L2
+    beq L2
     ldz #leftTypeOffset
     nop
     lda (stackPointer),z
