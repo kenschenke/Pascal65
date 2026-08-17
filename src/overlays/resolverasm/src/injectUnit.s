@@ -17,7 +17,7 @@
 
 .export injectUnit
 
-.import findUnit, resolverError, calcNamePtr
+.import findUnit, resolverError, calcNamePtr, addEnumsToSymtab
 
 .bss
 
@@ -136,6 +136,28 @@ L2: stq ptr1
     stq ptr2
     sec
     jsr scopeBind
+
+    ; If this an enumeration declaration, add the enum values to the symbol table too.
+    ldq interfaceDecl
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ENUMERATION
+    bne L3
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    jsr addEnumsToSymtab
 
     ; Go to the next declaration
 L3: ldq interfaceDecl
