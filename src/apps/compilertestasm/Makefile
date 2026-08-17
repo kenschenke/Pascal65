@@ -167,7 +167,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/vartest.pas vartest.pas,seq \
 	-write $(PETSCIIDIR)/filetesta.pas filetesta.pas,seq \
 	-write $(PETSCIIDIR)/filetestb.pas filetestb.pas,seq \
-	-write $(PETSCIIDIR)/pointers.pas pointers.pas,seq
+	-write $(PETSCIIDIR)/pointers.pas pointers.pas,seq \
+	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
+	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq
 
 clean:
 	$(RM) $(TXTFILES)

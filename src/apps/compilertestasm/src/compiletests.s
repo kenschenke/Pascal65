@@ -43,6 +43,7 @@ strVarTest: .asciiz "vartest"
 strFileTestA: .asciiz "filetesta"
 strFileTestB: .asciiz "filetestb"
 strPointers: .asciiz "pointers"
+strUnit: .asciiz "unit"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -68,6 +69,7 @@ tests:
     .byte .lobyte(strTrig), .hibyte(strTrig)
     .byte .lobyte(strVarTest), .hibyte(strVarTest)
     .byte .lobyte(strPointers), .hibyte(strPointers)
+    .byte .lobyte(strUnit), .hibyte(strUnit)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
     .byte $00, $00

@@ -6,6 +6,7 @@ Uses Unit1;
 
 Var
     anyErrors : Boolean;
+    ch : Char;
     i : Integer;
     rec : UnitRec;
     ar : UnitArray;
@@ -19,7 +20,7 @@ End;
 Begin
     anyErrors := false;
 
-    Writeln('Running');
+    Writeln('Running tests for units');
 
     PublicProc(6);
     If Shared <> 18 Then Error(1);
@@ -41,7 +42,7 @@ Begin
     If TestSystemOdd(123) <> True Then Error(7);
 
     If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
+        Write('Press a key: ');
+        ch := GetKey;
     End;
 End.
