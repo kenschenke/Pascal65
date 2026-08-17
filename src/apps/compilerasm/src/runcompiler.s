@@ -175,6 +175,8 @@ strLinking: .asciiz "Linking"
     jsr initTypeCheck
     ldq astRoot
     jsr declTypeCheck
+    ldq unitList
+    jsr typeCheckUnits
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
