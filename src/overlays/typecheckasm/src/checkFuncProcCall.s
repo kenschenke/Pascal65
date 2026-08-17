@@ -719,11 +719,31 @@ L3: rts
 .endproc
 
 .proc checkRoutinePointerParam
-    ldz #argPtrOffset
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
     neg
     neg
     nop
-    lda (stackPointer),z
+    lda (ptr1),z
+    jsr getBaseType
+    stq ptr1
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+
+    ldz #argPtrOffset
+    jsr loadStackValue
     stq ptr2
     ldz #expr::left
     neg
@@ -755,18 +775,6 @@ L3: rts
     nop
     lda (ptr2),z
     stq ptr2
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
     ldq ptr1
     jsr pushQ
     ldq ptr2
