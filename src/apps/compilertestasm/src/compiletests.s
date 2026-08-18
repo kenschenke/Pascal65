@@ -44,6 +44,9 @@ strFileTestA: .asciiz "filetesta"
 strFileTestB: .asciiz "filetestb"
 strPointers: .asciiz "pointers"
 strUnit: .asciiz "unit"
+strLibTest: .asciiz "libtest"
+strRtnArray: .asciiz "rtnarray"
+strRtnRecord: .asciiz "rtnrecord"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -66,10 +69,12 @@ tests:
     .byte .lobyte(strMultiply), .hibyte(strMultiply)
     .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte .lobyte(strDivInt), .hibyte(strDivInt)
+    .byte .lobyte(strUnit), .hibyte(strUnit)
     .byte .lobyte(strTrig), .hibyte(strTrig)
     .byte .lobyte(strVarTest), .hibyte(strVarTest)
     .byte .lobyte(strPointers), .hibyte(strPointers)
-    .byte .lobyte(strUnit), .hibyte(strUnit)
+    .byte .lobyte(strRtnArray), .hibyte(strRtnArray)
+    .byte .lobyte(strRtnRecord), .hibyte(strRtnRecord)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
     .byte $00, $00
