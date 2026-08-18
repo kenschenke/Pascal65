@@ -34,8 +34,13 @@ Begin
 	TestFunc := num * 2;
 End;
 
+Procedure TestCallFunc(ptr : FuncType);
 Begin
-	Writeln('Running');
+	i := ptr(1111);
+End;
+
+Begin
+	Writeln('Running routine pointer tests');
 	
     anyErrors := false;
 
@@ -53,6 +58,10 @@ Begin
 	i := 456;
 	TestCaller(@TestProc);
 	If i <> 789 Then Error(7);
+
+	i := 123;
+	TestCallFunc(@TestFunc);
+	If i <> 2222 Then Error(9);
 
 	If CompareStr('256', WriteStr(FuncPtr(128))) <> 0 Then Error(8);
 

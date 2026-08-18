@@ -171,7 +171,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
 	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
 	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
-	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq
+	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
+	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq
 
 clean:
 	$(RM) $(TXTFILES)
