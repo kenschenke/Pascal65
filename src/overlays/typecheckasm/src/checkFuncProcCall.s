@@ -499,8 +499,10 @@ NX: ldz #paramPtrOffset
     nop
     lda (stackPointer),z
     cmp #TYPE_ADDRESS
+    beq FR
+    cmp #TYPE_ROUTINE_ADDRESS
     bne :+
-    ldz #type::subtype
+FR: ldz #type::subtype
     neg
     neg
     nop
