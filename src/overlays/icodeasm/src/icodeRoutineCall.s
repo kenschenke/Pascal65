@@ -417,6 +417,12 @@ DN: jsr popA                ; param type kind
     nop
     lda (ptr1),z
     jsr scopeLookup
+    stq ptr2
+    ldz #symbol::decl
+    neg
+    neg
+    nop
+    lda (ptr2),z
     stq intOp32
     stq ptr2                    ; Save for later too
     lda #<lblDeclInit
