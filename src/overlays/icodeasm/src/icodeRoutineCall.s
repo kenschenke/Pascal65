@@ -323,9 +323,9 @@ LE: ldz #paramTypesOffset
     bra DN
 
     ; Activate the new stack frame
-:   ldz #symbol::level
+:   ldz #levelOffset
     nop
-    lda (ptr1),z
+    lda (stackPointer),z
     jsr icodeOper1Short
     lda #IC_ASF
     jsr icodeWriteInstruction
