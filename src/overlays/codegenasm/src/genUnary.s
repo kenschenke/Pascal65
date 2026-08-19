@@ -299,7 +299,7 @@ label: .res 16
     jsr linkAddressLookup
 
     genTwoImmediate OC_LDA_IMMEDIATE, 0
-    genTwoAbsolute OC_STA_ZEROPAGE, ZP_PTR1L
+    genTwoImmediate OC_STA_ZEROPAGE, ZP_PTR1L
 
     lda #<strbuf
     ldx #>strbuf
@@ -310,6 +310,7 @@ label: .res 16
     genTwoImmediate OC_LDA_IMMEDIATE, 0
     genTwoImmediate OC_STA_ZEROPAGE, ZP_PTR1H
     genTwoImmediate OC_LDY_IMMEDIATE, 0
+    genTwoImmediate OC_LDA_ZEROPAGE, ZP_SPL
     genTwoImmediate OC_STA_ZPINDIRECT, ZP_PTR1L
     genOne OC_INY
     genTwoImmediate OC_LDA_ZEROPAGE, ZP_SPH
