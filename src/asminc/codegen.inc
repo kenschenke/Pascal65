@@ -4,6 +4,7 @@ CODEGEN_BASE = $5000
 objCodeGen = CODEGEN_BASE
 setCodeGenStackSize = CODEGEN_BASE + 3
 setCodeGenUnitList = CODEGEN_BASE + 6
+setCodeGenProgramChain = CODEGEN_BASE + 9
 
 .macro genOne opcode
     lda #opcode
