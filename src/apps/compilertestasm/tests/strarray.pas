@@ -43,7 +43,7 @@ End;
 Begin
     anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running string array tests');
 
     If CompareStr(GlobalArr[1], 'One') <> 0 Then Error(10);
     If CompareStr(GlobalArr[2], 'Two') <> 0 Then Error(11);

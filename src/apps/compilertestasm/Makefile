@@ -185,7 +185,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
 	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
 	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
-	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq
+	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq \
+	-write $(PETSCIIDIR)/strrecord.pas strrecord.pas,seq \
+	-write $(PETSCIIDIR)/strarray.pas strarray.pas,seq
 
 clean:
 	$(RM) $(TXTFILES)

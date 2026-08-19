@@ -50,7 +50,7 @@ End;
 Begin
     anyErrors := false;
 
-	Writeln('Running');
+	Writeln('Running string record tests');
 
     If CompareStr(GlobalRec.str1, '') <> 0 Then Error(10);
     If CompareStr(GlobalRec.str2, '') <> 0 Then Error(11);

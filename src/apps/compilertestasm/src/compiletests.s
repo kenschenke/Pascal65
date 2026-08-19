@@ -48,6 +48,8 @@ strLibTest: .asciiz "libtest"
 strRtnArray: .asciiz "rtnarray"
 strRtnRecord: .asciiz "rtnrecord"
 strRtnPtrs: .asciiz "rtnptrs"
+strRecord: .asciiz "strrecord"
+strArray: .asciiz "strarray"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -78,6 +80,8 @@ tests:
     .byte .lobyte(strRtnArray), .hibyte(strRtnArray)
     .byte .lobyte(strRtnRecord), .hibyte(strRtnRecord)
     .byte .lobyte(strRtnPtrs), .hibyte(strRtnPtrs)
+    .byte .lobyte(strRecord), .hibyte(strRecord)
+    .byte .lobyte(strArray), .hibyte(strArray)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
     .byte $00, $00
