@@ -28,7 +28,7 @@ Begin
 End;
 
 Begin
-	Writeln('Running');
+	Writeln('Running library tests');
 	
     anyErrors := false;
 

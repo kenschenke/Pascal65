@@ -15,6 +15,7 @@ CODEGENDIR := ../../overlays/codegenasm
 MEMINFODIR := ../../overlays/meminfo
 ASMLIBDIR := ../../lib/asmlib
 SYSTEMLIBDIR := ../../lib/system
+DEMOLIBDIR := ../../lib/demolib
 RUNTIMEDIR := ../../lib/runtime
 
 PROGRAM := compilertest
@@ -25,6 +26,7 @@ OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
+DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
 TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
 ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
@@ -37,6 +39,7 @@ SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
 RUNTIME = ../../lib/runtime/bin/$(TARGET)/runtime
 PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 SYSTEMPAS = ../../lib/system/system.pas
+DEMOLIBPAS = ../../lib/demolib/demolib.pas
 
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
@@ -45,6 +48,7 @@ BINFILES += $(RESOLVER)
 BINFILES += $(TYPECHECK)
 BINFILES += $(MEMINFO)
 BINFILES += $(ASMLIB)
+BINFILES += $(DEMOLIB)
 BINFILES += $(PRGFILE)
 BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
@@ -56,7 +60,7 @@ ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 
-TXTFILES := errormsgs.petscii system.petscii
+TXTFILES := errormsgs.petscii system.petscii demolib.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
@@ -70,6 +74,9 @@ errormsgs.petscii: ../../shared/errormsgs.txt
 
 system.petscii: $(SYSTEMPAS)
 	dos2unix < $(SYSTEMPAS) | petcat -w2 -text -o system.petscii
+
+demolib.petscii: $(DEMOLIBPAS)
+	dos2unix < $(DEMOLIBPAS) | petcat -w2 -text -o demolib.petscii
 
 $(BINDIR):
 	mkdir -p $@
@@ -110,6 +117,9 @@ $(MEMINFO): FORCE
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(DEMOLIB): FORCE
+	cd $(DEMOLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(SYSTEMLIB): FORCE
 	cd $(SYSTEMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -141,10 +151,12 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(LINKER) linker,prg \
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
+	-write $(DEMOLIB) demolib.lib,prg \
 	-write $(SYSTEMLIB) system.lib,prg \
 	-write $(RUNTIME) runtime,prg \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
+	-write demolib.petscii demolib.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
 	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
 	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
@@ -170,6 +182,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/pointers.pas pointers.pas,seq \
 	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
 	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
+	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
 	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
 	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
 	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq
