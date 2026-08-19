@@ -473,7 +473,7 @@ DN: rts
     neg
     nop
     lda (ptr1),z
-    sta intOp32
+    stq intOp32
     lda #<strLibDecl
     ldx #>strLibDecl
     jsr formatEntryLabel

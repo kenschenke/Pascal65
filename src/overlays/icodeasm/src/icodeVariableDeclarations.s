@@ -23,7 +23,7 @@ localVarsOffset = localDeclsOffset + 4
 .import icodeBoolValue, icodeRealValue, heapOffset, icodeWriteInstruction
 .import icodeOper1Int, icodeOper1Long, icodeOper1String
 .import icodeOper1Label, icodeArrayInit, icodeLabel, icodeRecordInit
-.import loadStackValue
+.import loadStackValue, icodeFormatLabel
 
 .bss
 
@@ -33,6 +33,7 @@ declInitLabel: .res 15
 .data
 
 diStr: .asciiz "di"
+lblLibDecl: .asciiz "libdecl"
 
 .code
 
@@ -327,7 +328,21 @@ DN: jsr popQ
     rts
 .endproc
 
+; This routine writes the address of this library declaration
+; to the library's jump table
 .proc libraryDecl
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq intOp32
+    lda #<lblLibDecl
+    ldx #>lblLibDecl
+    jsr icodeFormatLabel
+    jsr icodeOper1Label
+    lda #IC_SSP
+    jsr icodeWriteInstruction
     rts
 .endproc
 
