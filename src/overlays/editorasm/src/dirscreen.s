@@ -18,10 +18,10 @@
 .export showDirScreen, showAllFiles, drawHorizLine
 
 .import renderCursor, clearScreen, rowPtrs, petsciiToScreenCode, screencols
-.import isQZero, editorReadKey, readDiskDir
+.import editorReadKey, readDiskDir
 .import freeDirEnts, fnBuf, openFile
-.import editorDrawMessageBar, statusmsg, statusmsg_dirty, scratchFile
-.import inputBufUsed, renameFile, screenrows, calcScreenPtr
+.import editorDrawMessageBar, statusmsg, statusmsg_dirty
+.import inputBufUsed, screenrows, calcScreenPtr
 .import editorSetAllRowsDirty, editorSetDefaultStatusMessage, anyDirtyRows
 
 PROMPT_ROW = 22
@@ -767,14 +767,9 @@ L6: lda selectedFile
     sta ptr1+1
     ; Pointer to inputBuf in ptr2
     lda #<inputBuf
-    sta ptr2
-    lda #>inputBuf
-    sta ptr2+1
-    lda #0
-    sta ptr1+2
-    sta ptr1+3
-    sta ptr2+2
-    sta ptr2+3
+    ldx #>inputBuf
+    ldy #0
+    ldz #0
     jsr renameFile
     jsr fillDirEnts
 DN: jsr drawPromptArea
@@ -838,12 +833,9 @@ L1: jsr editorReadKey
     bne L1
     ; User answered yes.
     lda #<fnBuf
-    sta ptr1
-    lda #>fnBuf
-    sta ptr1+1
-    lda #0
-    sta ptr1+2
-    sta ptr1+3
+    ldx #>fnBuf
+    ldy #0
+    ldz #0
     jsr scratchFile
     jsr fillDirEnts
 DN: jsr drawPromptArea

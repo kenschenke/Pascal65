@@ -18,8 +18,8 @@
 
 .export editorHasState, editorSaveState, editorRestoreState
 
-.import doesFileExist, helpTitle, firstFile, isQZero
-.import initFile, fnBuf, openFile, scratchFile, openHelpFile
+.import helpTitle, firstFile
+.import initFile, fnBuf, openFile, openHelpFile
 .import updateStatusBarFilename
 
 .data
@@ -120,18 +120,16 @@ L2: lda tmp1
     bne :-
     lda #0
     sta (ptr1),y
+    ldq ptr1
     jsr scratchFile
     rts
 .endproc
 
 .proc deleteTempPRG
     lda #<tempPRG
-    sta ptr1
-    lda #>tempPRG
-    sta ptr1+1
-    lda #0
-    sta ptr1+2
-    sta ptr1+3
+    ldx #>tempPRG
+    ldy #0
+    ldz #0
     jmp scratchFile
 .endproc
 

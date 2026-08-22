@@ -18,7 +18,7 @@
 
 .export freeDirEnts, readDiskDir
 
-.import isQZero, showAllFiles
+.import showAllFiles
 
 .bss
 

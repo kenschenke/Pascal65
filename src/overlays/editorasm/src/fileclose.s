@@ -9,11 +9,12 @@
 ;
 ; fileClose routine
 
+.include "asmlib.inc"
 .include "editor.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-.export fileClose
+.export fileClose, editorCloseAllFiles
 
 .import isDirty, fileFree, firstFile, editorDrawMessageBar, statusmsg
 .import editorHandleFileSave, statusmsg_dirty, editorReadKey
@@ -112,4 +113,13 @@ NO: jsr editorSetDefaultStatusMessage
     jsr editorDrawMessageBar
     clc
     rts
+.endproc
+
+.proc editorCloseAllFiles
+L1: ldq firstFile
+    jsr isQZero
+    bne L2
+    rts
+L2: jsr fileClose
+    bra L1
 .endproc

@@ -19,8 +19,7 @@
 
 .import screenrows, fnBuf
 .import editorDrawMessageBar, statusmsg, statusmsg_dirty
-.import fileWrite, renderCursor, makeFilename
-.import doesFileExist, scratchFile
+.import fileWrite, renderCursor
 .import editorReadKey, editorSetStatusMsg, editorSetDefaultStatusMessage
 
 .data
@@ -85,7 +84,6 @@ inputBufUsed: .res 1
     ldx #>fnBuf
     ldy #0
     ldz #0
-    stq ptr1
     jsr scratchFile
 
     ; Call SETLFS

@@ -81,8 +81,14 @@ directiveHasParam:
 ; Source filename pointer in A/X
 .proc handleTokenize
     jsr openSourceFile
+    bcc :+
+    lda #0
+    tax
+    tay
+    taz
+    rts
 
-    jsr allocMemBuf
+:   jsr allocMemBuf
     stq memBuf
 
     lda #0

@@ -9,6 +9,7 @@
 ;
 ; saveToExisting routine
 
+.include "asmlib.inc"
 .include "editor.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
@@ -17,7 +18,7 @@
 
 .export saveToExisting
 
-.import scratchFile, renameFile, isQZero, fileWrite, makeFilename
+.import fileWrite
 
 .data
 
@@ -64,7 +65,6 @@ tmpFn: .asciiz "tmp.txt"
     ldq currentFile
     clc
     adcq intOp32
-    stq ptr1
     jsr scratchFile
     ; Rename the temporary file to the original filename
     ldq ptr1

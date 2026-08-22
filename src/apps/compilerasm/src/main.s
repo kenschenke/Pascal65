@@ -70,4 +70,9 @@ main:
     ; Restore page zero
     jsr restoreZeroPage
 
+    ; Re-enable BASIC ROM
+    lda $01
+    ora #$01
+    sta $01
+
     rts

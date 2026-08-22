@@ -21,7 +21,7 @@
 
 .import titleScreen, anyDirtyRows, editorAllocLine
 .import updateStatusBarFilename, editorSetDefaultStatusMessage, initFile
-.import addCurrentFile, makeFilename, isQZero, resetScreenSettings
+.import addCurrentFile, resetScreenSettings
 
 .bss
 

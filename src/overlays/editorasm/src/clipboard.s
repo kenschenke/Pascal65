@@ -18,7 +18,7 @@
 .export editorClearSelection, editorCopySelection, editorDeleteSelection
 .export editorFreeClipboard, editorPasteClipboard
 
-.import editorSetStatusMsg, isQZero, editorRowAt, editorSetAllRowsDirty
+.import editorSetStatusMsg, editorRowAt, editorSetAllRowsDirty
 .import screenrows, calcScreenPtr
 .import editorSetDefaultStatusMessage, clipboard
 .import editorFreeLine, renderCursor, gapBuf

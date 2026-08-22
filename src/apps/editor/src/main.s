@@ -14,14 +14,20 @@
 .include "editor.inc"
 .include "asmlib.inc"
 
+CH_UPPERCASE = 142
+
 .segment "ENTRY"
 
-.import clearKeyBuf, editorRun, initEditor, initLib
+.import initLib, backupZeroPage, restoreZeroPage, editorLoop, logError
+.import runCompiledPrg, deleteZzprg
 
 main:
     ; Save the stack pointer
     tsx
     stx savedStackPtr
+
+    ; Make a backup of page zero
+    jsr backupZeroPage
 
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
@@ -39,15 +45,44 @@ main:
     lda #>_exit
     sta exitHandler+1
 
-    jsr clearKeyBuf             ; Clear the keyboard buffer
-
     ; Load the library
     jsr initLib
 
+    ; Initialize the memory heap
     jsr initMemHeap
 
-    jsr initEditor
+    ; Initialize error handling
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerErrors
 
-    jsr editorRun
+    ; Initialize the runtime stack
+    jsr stackInit
+
+    ; Delete "zzprg.prg" if it exists
+    jsr deleteZzprg
+
+    ; Launch the editor
+    jsr editorLoop
+    php
+
+    ; Restore page zero
+    jsr restoreZeroPage
+    plp
+    bcc :+
+    jmp runCompiledPrg
+
+    ; Re-enable BASIC ROM
+:   lda $01
+    ora #$01
+    sta $01
+
+    ; Clear the screen
+    lda #CH_CLRSCR
+    jsr CHROUT
+
+    ; Put the character set back to uppercase and graphics
+    lda #CH_UPPERCASE
+    jsr CHROUT
 
     rts

@@ -32,17 +32,6 @@ intBuf: .res 7
 
 .code
 
-.proc isQZero
-    cmp #0
-    bne :+
-    cpx #0
-    bne :+
-    cpy #0
-    bne :+
-    cpz #0
-:   rts
-.endproc
-
 .proc initScreen
     ldx #DEFAULT_COLS
     ldy #DEFAULT_ROWS

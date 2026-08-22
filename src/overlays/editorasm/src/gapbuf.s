@@ -18,7 +18,7 @@
 
 .import currentEditorRow, rowPtrs, petsciiToScreenCode
 .import incCurX, decCurX, editorCombineLines, renderCursor
-.import isQZero, editorInsertLine, screencols
+.import editorInsertLine, screencols
 
 .bss
 

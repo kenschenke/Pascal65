@@ -9,13 +9,14 @@
 ;
 ; editorInsertLine routine
 
+.include "asmlib.inc"
 .include "editor.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 
 .export editorInsertLine
 
-.import editorAllocLine, currentEditorRow, closeGapBuf, isQZero
+.import editorAllocLine, currentEditorRow, closeGapBuf
 
 ; This routine inserts a new line after the current line
 ; On exit:

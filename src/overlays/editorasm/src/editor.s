@@ -19,17 +19,17 @@
 .export statusmsg, statusmsg_dirty, anyDirtyRows, rowPtrs, editorRun, statusbar
 .export editorSetDefaultStatusMessage, updateStatusBarFilename
 .export editorSetAllRowsDirty, incCurX, decCurX, initFile
-.export colorPtrs, editorAllocLine, isQZero, editorFreeLine, editorSetStatusMsg
+.export colorPtrs, editorAllocLine, editorFreeLine, editorSetStatusMsg
 .export editorNewFile, firstFile, addCurrentFile, editorHandleFileSave
 .export editorHandleFileSaveAs
 
-.import readTitleFile, editorRefreshScreen, openHelpFile
+.import readTitleFile, editorRefreshScreen, openHelpFile, clearKeyBuf
 .import renderCursor, currentEditorRow, editGapBuf, initGapBuf, closeGapBuf
 .import editorEnterKey, editorReadKey, clearScreen, showDirScreen, showFileScreen
-.import saveToExisting, fileSaveAs, editorDrawMessageBar
+.import saveToExisting, fileSaveAs, editorDrawMessageBar, editorCloseAllFiles
 .import startTextSelection, editorCalcSelection, editorClearSelection, editorCopySelection
 .import editorDeleteSelection, editorPasteClipboard, initScreen, setupScreen
-.import editorSaveState, editorRestoreState, editorHasState, fnBuf, runCompiler
+.import editorSaveState, editorRestoreState, editorHasState, fnBuf
 
 .data
 
@@ -54,6 +54,7 @@ statusbar: .res DEFAULT_COLS
 statusmsg_dirty: .res 1
 anyDirtyRows: .res 1
 loopCode: .res 1
+compileFn: .res 17
 
 rowPtrs: .res 200           ; 50 rows * 4 bytes -- pointers to screen memory for each row
 colorPtrs: .res 200         ; 50 rows * 4 bytes -- pointers to color RAM
@@ -68,6 +69,8 @@ prevRow: .res 4
     sta statusmsg_dirty
     lda #1
     sta anyDirtyRows
+
+    jsr clearKeyBuf
 
     jsr initScreen
 
@@ -545,15 +548,20 @@ DN: rts
 .endproc
 
 ; This routine is the main loop of the editor. It runs until
-; the user exits with Ctrl+X. On exit, it JMPs to the KERNAL reset vector.
+; the user exits, or wants to run or compile code. The
+; EDITOR_LOOP value is returned in A.
 .proc editorRun
+    jsr initEditor
 L1: lda loopCode
     cmp #EDITOR_LOOP_CONTINUE
     bne L2
     jsr editorRefreshScreen
     jsr editorProcessKeypress
     bra L1
-L2: jmp ($fffc)
+L2: lda loopCode
+    ldx #<compileFn
+    ldy #>compileFn
+    rts
 .endproc
 
 .proc editorHandle25Rows
@@ -1079,10 +1087,29 @@ L3: jsr editorSaveState
     pla
     cmp #CH_F5 ; run
     bne L4
-    sec
+    lda #EDITOR_LOOP_RUN
     bra L5
-L4: clc
-L5: jmp runCompiler
+L4: lda #EDITOR_LOOP_COMPILE
+L5: sta loopCode
+    jsr copyCompileFn
+    jsr editorSaveState
+    jsr editorCloseAllFiles
+    rts
+.endproc
+
+; This routine copies the filename of the currently-open file to compileFn.
+.proc copyCompileFn
+    ldz #EDITFILE::filename
+    ldx #0
+:   nop
+    lda (currentFile),z
+    beq :+
+    sta compileFn,x
+    inx
+    inz
+    bne :-
+:   sta compileFn,x
+    rts
 .endproc
 
 ; This routine is called to handle keystrokes that are special
@@ -1336,17 +1363,6 @@ NO: pla
     sec                             ; Set the carry flag (flag is set)
 :   txa                             ; Copy the keystroke back to A
     rts
-.endproc
-
-.proc isQZero
-    cmp #0
-    bne :+
-    cpx #0
-    bne :+
-    cpy #0
-    bne :+
-    cpz #0
-:   rts
 .endproc
 
 .proc updateStatusBarFilename

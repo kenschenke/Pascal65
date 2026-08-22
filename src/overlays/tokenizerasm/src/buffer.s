@@ -48,8 +48,12 @@ lineNumberChanged: .res 1
     ; The file does not exist
     pla
     pla
-    lda #abortSourceFileOpenFailed
-    jsr abortRuntimeError
+    lda #errSourceFileOpenFailed
+    ldx #0
+    ldy #0
+    jsr compilerError
+    sec
+    rts
     ; Make CBM DOS filename (append ",s,r")
 :   plx
     pla
@@ -88,6 +92,7 @@ lineNumberChanged: .res 1
     sta currentLineNumber
     sta currentLineNumber+1
 
+    clc
     rts
 .endproc
 

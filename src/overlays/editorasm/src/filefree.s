@@ -16,8 +16,6 @@
 
 .export fileFree
 
-.import isQZero
-
 .bss
 
 filePtr: .res 4

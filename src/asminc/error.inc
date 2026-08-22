@@ -91,7 +91,8 @@ errInvalidSTRINGUse = 60
 errUnresolvedFwd = 61
 errIndexOutOfRange = 62
 errMissingQuote = 63
-numParserErrors = 64
+errSourceFileOpenFailed = 64
+numParserErrors = 65
 
 rteNone = 0
 rteStackOverflow = 1

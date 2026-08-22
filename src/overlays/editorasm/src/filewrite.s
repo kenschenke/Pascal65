@@ -9,12 +9,11 @@
 ;
 ; fileWrite routine
 
+.include "asmlib.inc"
 .include "editor.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
-
-.import isQZero
 
 .export fileWrite
 

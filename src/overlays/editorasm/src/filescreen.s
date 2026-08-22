@@ -20,7 +20,7 @@ FILES_PER_PAGE = 9
 
 .import editorSetStatusMsg, editorRefreshScreen, editorReadKey, editorSetDefaultStatusMessage
 .import showDirScreen, editorNewFile, drawHorizLine, rowPtrs, clearScreen, renderCursor
-.import petsciiToScreenCode, firstFile, isQZero, editorSetAllRowsDirty
+.import petsciiToScreenCode, firstFile, editorSetAllRowsDirty
 .import updateStatusBarFilename, anyDirtyRows, fileClose, editorHandleFileSave
 .import editorHandleFileSaveAs, calcScreenPtr, screenrows
 

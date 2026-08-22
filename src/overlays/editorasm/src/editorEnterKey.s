@@ -16,7 +16,7 @@
 
 .export editorEnterKey
 
-.import currentEditorRow, renderCursor, anyDirtyRows, screenrows, isQZero
+.import currentEditorRow, renderCursor, anyDirtyRows, screenrows
 .import editorInsertLine
 
 .proc editorEnterKey

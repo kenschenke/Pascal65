@@ -10,22 +10,45 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 
 BINTARGETDIR := $(BINDIR)/$(TARGET)
 D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
+RUNTIMEDIR := src/lib/runtime
+SCREENLIBDIR := src/lib/screen
+SPRITESDIR := src/lib/sprites
+SPRITEMOVEDIR := src/lib/spritemove
+SYSTEMLIBDIR := src/lib/system
+ASMLIBDIR := src/lib/asmlib
+TIMELIBDIR := src/lib/time
+TOKENIZERDIR := src/overlays/tokenizerasm
+PARSERDIR := src/overlays/parserasm
+RESOLVERDIR := src/overlays/resolverasm
+TYPECHECKDIR := src/overlays/typecheckasm
+EDITOROVLYDIR := src/overlays/editorasm
+ICODEDIR := src/overlays/icodeasm
+CODEGENDIR := src/overlays/codegenasm
+LINKERDIR := src/overlays/linkerasm
+COMPILERDIR := src/apps/compilerasm
+EDITORAPPDIR := src/apps/editor
 
-RUNTIME = src/lib/runtime/bin/$(TARGET)/runtime
-SCREENLIB = src/lib/screen/bin/$(TARGET)/screen
-SPRITESLIB = src/lib/sprites/bin/$(TARGET)/sprites
-SPRITEMOVELIB = src/lib/spritemove/bin/$(TARGET)/spritemove
-SYSTEMLIB = src/lib/system/bin/$(TARGET)/system
-DEBUGLIB = src/lib/debug/bin/$(TARGET)/debug
-ASMLIB = src/lib/asmlib/bin/$(TARGET)/asmlib
-TIMELIB = src/lib/time/bin/$(TARGET)/time
+RUNTIME = $(RUNTIMEDIR)/bin/$(TARGET)/runtime
+SCREENLIB = $(SCREENLIBDIR)/bin/$(TARGET)/screen
+SPRITESLIB = $(SPRITESDIR)/bin/$(TARGET)/sprites
+SPRITEMOVELIB = $(SPRITEMOVEDIR)/bin/$(TARGET)/spritemove
+SYSTEMLIB = $(SYSTEMLIBDIR)/bin/$(TARGET)/system
+ASMLIB = $(ASMLIBDIR)/bin/$(TARGET)/asmlib
+TIMELIB = $(TIMELIBDIR)/bin/$(TARGET)/time
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
-TOKENIZER = src/overlays/tokenizerasm/bin/$(TARGET)/tokenizer
-PARSER = src/overlays/parserasm/bin/$(TARGET)/parser
+TOKENIZER = $(TOKENIZERDIR)/bin/$(TARGET)/tokenizer
+PARSER = $(PARSERDIR)/bin/$(TARGET)/parser
+RESOLVER = $(RESOLVERDIR)/bin/$(TARGET)/resolver
+TYPECHECK = $(TYPECHECKDIR)/bin/$(TARGET)/typecheck
+EDITOROVLY = $(EDITOROVLYDIR)/bin/$(TARGET)/editor
+ICODE = $(ICODEDIR)/bin/$(TARGET)/icode
+CODEGEN = $(CODEGENDIR)/bin/$(TARGET)/codegen
+LINKER = $(LINKERDIR)/bin/$(TARGET)/linker
+COMPILER = $(COMPILERDIR)/bin/$(TARGET)/compiler
+EDITORAPP = $(EDITORAPPDIR)/bin/$(TARGET)/editor
 
-BINFILES := $(wildcard src/apps/editor/bin/$(TARGET)/editor*)
-BINFILES += $(wildcard src/apps/compiler/bin/$(TARGET)/compiler*)
-BINFILES += src/apps/compilerasm/bin/$(TARGET)/compilerasm
+BINFILES := $(EDITORAPP)
+BINFILES += $(COMPILER)
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
 BINFILES += $(SCREENLIB)
@@ -33,46 +56,42 @@ BINFILES += $(SPRITESLIB)
 BINFILES += $(SPRITEMOVELIB)
 BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
-BINFILES += $(DEBUGLIB)
 BINFILES += $(ASMLIB)
 BINFILES += $(TIMELIB)
+BINFILES += $(RESOLVER)
+BINFILES += $(TYPECHECK)
+BINFILES += $(ICODE)
+BINFILES += $(CODEGEN)
+BINFILES += $(LINKER)
+BINFILES += $(EDITOROVLY)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii hello.petscii debug.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
-all: $(RUNTIME) editor compiler compilerasm $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(DEBUGLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
 
-screen.petscii: src/lib/screen/screen.pas
-	dos2unix < src/lib/screen/screen.pas | petcat -w2 -text -o screen.petscii
+screen.petscii: $(SCREENLIBDIR)/screen.pas
+	dos2unix < $(SCREENLIBDIR)/screen.pas | petcat -w2 -text -o screen.petscii
 
 screendemo.petscii: examples/screendemo.pas
 	dos2unix < examples/screendemo.pas | petcat -w2 -text -o screendemo.petscii
 
-time.petscii: src/lib/time/time.pas
-	dos2unix < src/lib/time/time.pas | petcat -w2 -text -o time.petscii
+time.petscii: $(TIMELIBDIR)/time.pas
+	dos2unix < $(TIMELIBDIR)/time.pas | petcat -w2 -text -o time.petscii
 
 bubbles.petscii: examples/bubbles.pas
 	dos2unix < examples/bubbles.pas | petcat -w2 -text -o bubbles.petscii
 
-fivedice.petscii: examples/fivedice.pas
-	dos2unix < examples/fivedice.pas | petcat -w2 -text -o fivedice.petscii
+sprites.petscii: $(SPRITESDIR)/sprites.pas
+	dos2unix < $(SPRITESDIR)/sprites.pas | petcat -w2 -text -o sprites.petscii
 
-hello.petscii: hello.pas
-	dos2unix < hello.pas | petcat -w2 -text -o hello.petscii
+spritemove.petscii: $(SPRITEMOVEDIR)/spritemove.pas
+	dos2unix < $(SPRITEMOVEDIR)/spritemove.pas | petcat -w2 -text -o spritemove.petscii
 
-sprites.petscii: src/lib/sprites/sprites.pas
-	dos2unix < src/lib/sprites/sprites.pas | petcat -w2 -text -o sprites.petscii
-
-spritemove.petscii: src/lib/spritemove/spritemove.pas
-	dos2unix < src/lib/spritemove/spritemove.pas | petcat -w2 -text -o spritemove.petscii
-
-system.petscii: src/lib/system/system.pas
-	dos2unix < src/lib/system/system.pas | petcat -w2 -text -o system.petscii
-
-debug.petscii: src/lib/debug/debug.pas
-	dos2unix < src/lib/debug/debug.pas | petcat -w2 -text -o debug.petscii
+system.petscii: $(SYSTEMLIBDIR)/system.pas
+	dos2unix < $(SYSTEMLIBDIR)/system.pas | petcat -w2 -text -o system.petscii
 
 title.petscii: src/shared/title.txt
 	dos2unix < src/shared/title.txt | petcat -w2 -text -o title.petscii
@@ -81,7 +100,7 @@ license.petscii: license
 	dos2unix < license | petcat -w2 -text -o license.petscii
 
 $(RUNTIME):
-	cd src/lib/runtime && $(MAKE) TARGET=$(TARGET)
+	cd $(RUNTIMEDIR) && $(MAKE) TARGET=$(TARGET)
 
 abortmsgs.petscii: src/shared/abortmsgs.txt
 	dos2unix < src/shared/abortmsgs.txt | petcat -w2 -text -o abortmsgs.petscii
@@ -95,42 +114,55 @@ runtimemsgs.petscii: src/shared/runtimemsgs.txt
 $(LOADPROG):
 	cd src/lib/loadprog && $(MAKE) TARGET=$(TARGET)
 
-editor:
-	cd src/apps/editor && $(MAKE) TARGET=$(TARGET)
+editorapp:
+	cd $(EDITORAPPDIR) && $(MAKE) TARGET=$(TARGET)
 
 compiler:
-	cd src/apps/compiler && $(MAKE) TARGET=$(TARGET)
-
-compilerasm:
-	cd src/apps/compilerasm && $(MAKE) TARGET=$(TARGET)
-	cd src/overlays && $(MAKE) TARGET=$(TARGET)
+	cd $(COMPILERDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(SCREENLIB):
-	cd src/lib/screen && $(MAKE) TARGET=$(TARGET)
+	cd $(SCREENLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(SPRITESLIB):
-	cd src/lib/sprites && $(MAKE) TARGET=$(TARGET)
+	cd $(SPRITESDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(SPRITEMOVELIB):
-	cd src/lib/spritemove && $(MAKE) TARGET=$(TARGET)
+	cd $(SPRITEMOVEDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(SYSTEMLIB):
-	cd src/lib/system && $(MAKE) TARGET=$(TARGET)
+	cd $(SYSTEMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(TIMELIB):
-	cd src/lib/time && $(MAKE) TARGET=$(TARGET)
-
-$(DEBUGLIB):
-	cd src/lib/debug && $(MAKE) TARGET=$(TARGET)
+	cd $(TIMELIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(ASMLIB):
-	cd src/lib/asmlib && $(MAKE) TARGET=$(TARGET)
+	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
-$(TOKENIZER):
-	cd src/overlays/tokenizerasm && $(MAKE) TARGET=$(TARGET)
+$(TOKENIZER): FORCE
+	cd $(TOKENIZERDIR) && $(MAKE) TARGET=$(TARGET)
 
-$(PARSER):
-	cd src/overlays/parserasm && $(MAKE) TARGET=$(TARGET)
+$(PARSER): FORCE
+	cd $(PARSERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(RESOLVER): FORCE
+	cd $(RESOLVERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(TYPECHECK): FORCE
+	cd $(TYPECHECKDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(ICODE): FORCE
+	cd $(ICODEDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(CODEGEN): FORCE
+	cd $(CODEGENDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(LINKER): FORCE
+	cd $(LINKERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(EDITOROVLY): FORCE
+	cd $(EDITOROVLYDIR) && $(MAKE) TARGET=$(TARGET)
+
+FORCE:
 
 $(BINDIR):
 	mkdir -p $@
@@ -144,41 +176,37 @@ endif
 
 $(D81FILE): $(BINFILES) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write src/apps/compilerasm/bin/$(TARGET)/compilerasm compilerasm,prg \
-	-write src/apps/editor/bin/$(TARGET)/editor pascal65,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler compiler,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.1 compiler.1,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.2 compiler.2,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.3 compiler.3,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.4 compiler.4,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.5 compiler.5,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.6 compiler.6,prg \
-	-write src/apps/compiler/bin/$(TARGET)/compiler.7 compiler.7,prg \
+	-write $(EDITORAPP) pascal65,prg \
+	-write $(COMPILER) compiler,prg \
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(PARSER) parser,prg \
-	-write src/lib/runtime/bin/$(TARGET)/runtime runtime,prg \
-	-write src/lib/screen/bin/$(TARGET)/screen screen.lib,prg \
-	-write src/lib/sprites/bin/$(TARGET)/sprites sprites.lib,prg \
-	-write src/lib/spritemove/bin/$(TARGET)/spritemove spritemove.lib,prg \
-	-write src/lib/system/bin/$(TARGET)/system system.lib,prg \
-	-write src/lib/asmlib/bin/$(TARGET)/asmlib asm.lib,prg \
-	-write src/lib/time/bin/$(TARGET)/time time.lib,prg \
+	-write $(RESOLVER) resolver,prg \
+	-write $(TYPECHECK) typecheck,prg \
+	-write $(ICODE) icode,prg \
+	-write $(CODEGEN) codegen,prg \
+	-write $(LINKER) linker,prg \
+	-write $(EDITOROVLY) editor,prg \
+	-write $(RUNTIME) runtime,prg \
+	-write $(SCREENLIB) screen.lib,prg \
+	-write $(SPRITESLIB) sprites.lib,prg \
+	-write $(SPRITEMOVELIB) spritemove.lib,prg \
+	-write $(SYSTEMLIB) system.lib,prg \
+	-write $(ASMLIB) asm.lib,prg \
+	-write $(TIMELIB) time.lib,prg \
 	$(DRVWRITE) \
 	-write abortmsgs.petscii abortmsgs,seq \
-	-write errormsgs.petscii errormsgs,seq \
+	-write errormsgs.petscii errormsgs.txt,seq \
 	-write src/lib/loadprog/bin/$(TARGET)/loadprog loadprog,prg \
 	-write help.petscii help.txt,seq \
 	-write screen.petscii screen.pas,seq \
 	-write screendemo.petscii screendemo.pas,seq \
 	-write time.petscii time.pas,seq \
 	-write bubbles.petscii bubbles.pas,seq \
-	-write fivedice.petscii fivedice.pas,seq \
 	-write sprites.petscii sprites.pas,seq \
 	-write spritemove.petscii spritemove.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
-	-write license.petscii license.txt,seq \
-	-write hello.petscii hello.pas,seq
+	-write license.petscii license.txt,seq
 
 clean:
 	cd src/apps && $(MAKE) TARGET=$(TARGET) clean
@@ -186,7 +214,7 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
-run: $(RUNTIME) editor compiler compilerasm $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
+run: $(RUNTIME) editorapp compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
 
 load: $(D81FILE)
