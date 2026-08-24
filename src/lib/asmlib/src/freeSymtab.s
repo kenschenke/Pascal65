@@ -15,7 +15,11 @@
 
 .export freeSymtab
 
-.import freeSymbol, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, isHeapAllocated, peekQ
+.import freeSymbol, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, peekQ
+
+.ifdef __DEBUG__
+.import isHeapAllocated
+.endif
 
 .bss
 
@@ -28,9 +32,13 @@ symPtr: .res 4
     jsr isQZero
     bne :+
     rts
+.ifdef __DEBUG__
 :   jsr isHeapAllocated
     bne :+
+    ldz #$13
+    brk
     rts
+.endif
 :   ldq symPtr
     stq ptr1
     jsr rtPushQ

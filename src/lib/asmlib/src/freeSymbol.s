@@ -15,8 +15,11 @@
 
 .export freeSymbol
 
-.import freeDecl, freeType, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero
-.import isHeapAllocated, peekQ
+.import freeDecl, freeType, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, peekQ
+
+.ifdef __DEBUG__
+.import isHeapAllocated
+.endif
 
 .bss
 
@@ -29,9 +32,13 @@ symPtr: .res 4
     jsr isQZero
     bne :+
     rts
+.ifdef __DEBUG__
 :   jsr isHeapAllocated
     bne :+
+    ldz #$12
+    brk
     rts
+.endif
 :   ldq symPtr
     stq ptr1
     jsr rtPushQ
@@ -49,7 +56,7 @@ symPtr: .res 4
     jsr loadPtr
     jsr freeType
 
-:   jsr rtPopQ
+    jsr rtPopQ
     jsr heapFree
     rts
 .endproc

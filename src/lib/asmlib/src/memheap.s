@@ -12,28 +12,19 @@
 .include "zeropage.inc"
 .include "error.inc"
 .include "4510macros.inc"
-.ifdef __DEBUG__
-.include "c64.inc"
-.include "meminfo.inc"
-.include "cbm_kernal.inc"
-.endif
 
-.export initMemHeap, heapAlloc, heapFree, isHeapAllocated, getMemHeapForBank
+.export initMemHeap, heapAlloc, heapFree, getMemHeapForBank
+.ifdef __DEBUG__
+.export isHeapAllocated
+.endif
 
 .import geInt16, ltInt16, ltUint32, geUint32, runtimeError, rtPushQ, rtPopQ, isQZero
-
-.ifdef __DEBUG__
-.import writeInt16
-.endif
 
 .bss
 
 lastBlock: .res 4
 bankIndex: .res 1
 allocSize: .res 2
-.ifdef __DEBUG__
-intBuf: .res 10
-.endif
 
 .data
 
@@ -42,14 +33,6 @@ memBanks:
     .dword $42000, $4fffa   ; bank 4
     .dword $50000, $5effa   ; bank 5
     .dword $0               ; terminator
-
-.ifdef __DEBUG__
-memInfoFn: .asciiz "meminfo,p,r"
-memInfoFn2:
-allocSizeMsg: .asciiz "Requested allocation of "
-
-heapDumpMsg: .asciiz "Heap table dumped to heap.txt"
-.endif
 
 .code
 
@@ -269,9 +252,6 @@ L1: lda bankIndex
 
     ; Out of memory
     pla                     ; Discard the X register
-.ifdef __DEBUG__
-    jsr dumpHeap
-.endif
     lda #rteOutOfMemory
     jsr runtimeError
     rts
@@ -651,6 +631,7 @@ L3: ldq lastBlock
     rts
 :   stq ptr2            ; Save the memory block ptr in ptr2
     jsr setHeapForAddress
+.ifdef __DEBUG__
     ldq ptr2
     jsr rtPushQ
     ldq ptr2
@@ -661,6 +642,7 @@ L3: ldq lastBlock
     brk
 :   jsr rtPopQ
     stq ptr2
+.endif ; end of ifdef __DEBUG__
     ldq heapTop         ; Load the MAT pointer into ptr1
     stq ptr1
 L1: ldz #5              ; Is the current MAT entry all zeros?
@@ -779,6 +761,7 @@ L7: clc
 L9: rts
 .endproc
 
+.ifdef __DEBUG__
 ; This routine checks the memory allocation table and determines if
 ; a block of memory is allocated or not.
 ; The address of the memory is passed in Q.
@@ -831,71 +814,4 @@ L2: ldx #0
 L3: jsr incMATPtr
     bra L1
 .endproc
-
-.ifdef __DEBUG__
-.proc dumpHeap
-    ; Load the meminfo overlay
-    ; Call SETNAM
-    ldx #<memInfoFn
-    ldy #>memInfoFn
-    lda #memInfoFn2-memInfoFn
-    jsr SETNAM
-
-    ; Call SETLFS
-    ldx DEVNUM
-    lda #1
-    tay
-    iny
-    jsr SETLFS
-
-    ; Call LOAD
-    lda #0
-    jsr LOAD
-
-    ; Dump the heap report
-    jsr openHeapReport
-
-    ; Write the allocation size
-    lda allocSize
-    sta intOp1
-    lda allocSize+1
-    sta intOp1+1
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt16
-    ldx #0
-:   lda allocSizeMsg,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   ldx #0
-:   lda intBuf,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   lda #13
-    jsr CHROUT
-    jsr CHROUT
-
-    lda #1
-    jsr heapReport
-    jsr closeHeapReport
-
-    ; Write a message to the console
-    lda #13
-    jsr CHROUT
-    ldx #0
-:   lda heapDumpMsg,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   lda #13
-    jsr CHROUT
-    jsr CHROUT
-
-    rts
-.endproc
-.endif  ; end of ifdef __DEBUG__
+.endif ; end of ifdef __DEBUG__
