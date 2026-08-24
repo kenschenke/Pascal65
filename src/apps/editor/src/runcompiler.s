@@ -90,6 +90,10 @@ strEditorFn: .asciiz "pascal65"
 :   lda #13
     jsr CHROUT
 
+    ; Reset the error count
+    lda #0
+    sta errorCount
+
     ; Tokenize the source file
     lda #<strTokenizing
     ldx #>strTokenizing

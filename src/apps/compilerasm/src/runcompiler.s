@@ -75,6 +75,10 @@ strLinking: .asciiz "Linking"
 :   lda #13
     jsr CHROUT
 
+    ; Reset the error count
+    lda #0
+    sta errorCount
+
     ; Tokenize the source file
     lda #<strTokenizing
     ldx #>strTokenizing
@@ -119,10 +123,6 @@ strLinking: .asciiz "Linking"
 :   ldq tokens
     jsr freeMemBuf
 
-    ; Reset error count
-    lda #0
-    sta errorCount
-
     jsr tokenizeAndParseUnits
 
     lda #<strResolving
@@ -165,11 +165,7 @@ strLinking: .asciiz "Linking"
     ; Error - so don't continue
     rts
 
-    ; Reset the error count
-:   lda #0
-    sta errorCount
-
-    lda #<strTypeChecking
+:   lda #<strTypeChecking
     ldx #>strTypeChecking
     jsr printLine
     jsr initTypeCheck
