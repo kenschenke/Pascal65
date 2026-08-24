@@ -512,8 +512,7 @@ FR: ldz #type::subtype
     jsr freeType
 :   jmp L1
 
-DN:
-    rts
+DN: rts
 .endproc
 
 .proc checkEnumerationParam

@@ -293,7 +293,6 @@ L1: ldz #type::subtype
     lda (ptr1),z
     cmp #TYPE_CHARACTER
     beq :+
-    brk
     lda #errIncompatibleTypes
     jsr typeCheckError
 :   rts

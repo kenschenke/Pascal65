@@ -27,8 +27,8 @@ strLabel: .asciiz "scalar"
 .code
 
 ; Passed on the stack, bottom to top:
-;    Pointer to first literal expression (never NULL)
 ;    Pointer to array declaration block membuf
+;    Pointer to first literal expression (never NULL)
 ;    Size of each element (2 bytes)
 .proc addScalarArrayLiterals
     ; Allocate a membuf to hold the literals
