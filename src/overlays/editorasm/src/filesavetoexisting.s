@@ -65,6 +65,7 @@ tmpFn: .asciiz "tmp.txt"
     ldq currentFile
     clc
     adcq intOp32
+    stq ptr1
     jsr scratchFile
     ; Rename the temporary file to the original filename
     ldq ptr1
