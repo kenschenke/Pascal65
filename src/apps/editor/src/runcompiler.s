@@ -203,10 +203,6 @@ strEditorFn: .asciiz "pascal65"
     ldq unitList
     jsr typeCheckUnits
 
-    ; Free the PROGRAM scope symbol table
-    jsr scopeExit
-    jsr freeSymtab
-
     ; Generate the intermediate code
     lda #<strIcode
     ldx #>strIcode
@@ -216,6 +212,10 @@ strEditorFn: .asciiz "pascal65"
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+
+    ; Free the PROGRAM scope symbol table
+    jsr scopeExit
+    jsr freeSymtab
 
     ; Check the error count
     lda errorCount

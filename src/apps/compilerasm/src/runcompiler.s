@@ -178,10 +178,6 @@ strLinking: .asciiz "Linking"
     ldq unitList
     jsr typeCheckUnits
 
-    ; Free the PROGRAM scope symbol table
-    jsr scopeExit
-    jsr freeSymtab
-
     ; Generate the intermediate code
     lda #<strIcode
     ldx #>strIcode
@@ -191,6 +187,10 @@ strLinking: .asciiz "Linking"
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+
+    ; Free the PROGRAM scope symbol table
+    jsr scopeExit
+    jsr freeSymtab
 
     ; Check the error count
     lda errorCount

@@ -157,10 +157,6 @@ runtimeStackSize: .res 2
     ldq unitList
     jsr typeCheckUnits
 
-    ; Free the PROGRAM scope symbol table
-    jsr scopeExit
-    jsr freeSymtab
-
     ; Generate the intermediate code
     lda #'I'
     jsr CHROUT
@@ -169,6 +165,10 @@ runtimeStackSize: .res 2
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+
+    ; Free the PROGRAM scope symbol table
+    jsr scopeExit
+    jsr freeSymtab
 
     ; Check the error count
     lda errorCount
