@@ -23,6 +23,7 @@ pascalSuffix: .asciiz ".pas"
 strAdd: .asciiz "add"
 strAssign: .asciiz "assign"
 strVarInit: .asciiz "varinit"
+strConstants: .asciiz "constants"
 strBitwiseA: .asciiz "bitwisea"
 strBitwiseB: .asciiz "bitwiseb"
 strIfThen: .asciiz "ifthen"
@@ -57,6 +58,7 @@ tests:
     .byte .lobyte(strAdd), .hibyte(strAdd)
     .byte .lobyte(strAssign), .hibyte(strAssign)
     .byte .lobyte(strVarInit), .hibyte(strVarInit)
+    .byte .lobyte(strConstants), .hibyte(strConstants)
     .byte .lobyte(strBitwiseA), .hibyte(strBitwiseA)
     .byte .lobyte(strBitwiseB), .hibyte(strBitwiseB)
     .byte .lobyte(strIfThen), .hibyte(strIfThen)
