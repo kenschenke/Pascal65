@@ -18,7 +18,7 @@ CH_LOWERCASE = 14
 .segment "ENTRY"
 
 .import clearKeyBuf, initLib, getSourceFn, runCompiler, logError
-.import backupZeroPage, restoreZeroPage
+.import backupZeroPage, restoreZeroPage, showTitleBanner
 
 main:
     ; Save the stack pointer
@@ -31,6 +31,9 @@ main:
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
     jsr CHROUT
+
+    ; Show title
+    jsr showTitleBanner
 
     ; Disable BASIC ROM
     lda $01
