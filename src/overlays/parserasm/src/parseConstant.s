@@ -87,17 +87,11 @@ exprKind: .res 1
     lda parserType
     cmp #tyByte
     bne :+
-    lda #TYPE_BYTE
-    sta typeKind
-    lda #EXPR_BYTE_LITERAL
-    sta exprKind
+    jsr setByteInfo
     bra L1
 :   cmp #tyWord
     bne :+
-    lda #TYPE_WORD
-    sta typeKind
-    lda #EXPR_WORD_LITERAL
-    sta exprKind
+    jsr setWordInfo
     bra L1
 :   cmp #tyReal
     bne :+
@@ -106,10 +100,7 @@ exprKind: .res 1
     lda #EXPR_REAL_LITERAL
     sta exprKind
     bra L1
-:   lda #TYPE_CARDINAL
-    sta typeKind
-    lda #EXPR_DWORD_LITERAL
-    sta exprKind
+:   jsr setDwordInfo
 L1: lda typeKind
     jsr pushA
     lda #1
@@ -145,6 +136,45 @@ L1: lda typeKind
     sta (ptr1),z
 :   jsr getToken
     ldq expr
+    rts
+.endproc
+
+.proc setByteInfo
+    lda sign
+    cmp #tcDummy
+    beq L1
+    lda #TYPE_SHORTINT
+    bra L2
+L1: lda #TYPE_BYTE
+L2: sta typeKind
+    lda #EXPR_BYTE_LITERAL
+    sta exprKind
+    rts
+.endproc
+
+.proc setWordInfo
+    lda sign
+    cmp #tcDummy
+    beq L1
+    lda #TYPE_INTEGER
+    bra L2
+L1: lda #TYPE_WORD
+L2: sta typeKind
+    lda #EXPR_WORD_LITERAL
+    sta exprKind
+    rts
+.endproc
+
+.proc setDwordInfo
+    lda sign
+    cmp #tcDummy
+    beq L1
+    lda #TYPE_LONGINT
+    bra L2
+L1: lda #TYPE_CARDINAL
+L2: sta typeKind
+    lda #EXPR_DWORD_LITERAL
+    sta exprKind
     rts
 .endproc
 
