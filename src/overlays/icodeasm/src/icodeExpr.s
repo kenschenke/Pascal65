@@ -660,6 +660,8 @@ L3: lda rightType+type::flags
     lda (ptr1),z
     cmp #DECL_VARIABLE
     beq L4
+    cmp #DECL_CONST
+    beq L4
     ldz #decl::code
     neg
     neg
