@@ -18,7 +18,7 @@
 
 .import isDirty, fileFree, firstFile, editorDrawMessageBar, statusmsg
 .import editorHandleFileSave, statusmsg_dirty, editorReadKey
-.import editorSetDefaultStatusMessage
+.import editorSetDefaultStatusMessage, titleScreen
 
 .data
 
@@ -119,7 +119,13 @@ NO: jsr editorSetDefaultStatusMessage
 L1: ldq firstFile
     jsr isQZero
     bne L2
+
+    ; Free the title screen too
+    ldq titleScreen
+    jsr fileFree
+
     rts
+
 L2: jsr fileClose
     bra L1
 .endproc
