@@ -9,6 +9,7 @@
 ;
 ; Editor loop
 
+.include "asmlib.inc"
 .include "editor.inc"
 .include "editoroverlay.inc"
 
@@ -47,6 +48,7 @@ DB: jsr editorDebug
 
     ; Compile
 CP: jsr runCompiler
+    jsr clearMemHeap
     bra L1
 
 QT: clc

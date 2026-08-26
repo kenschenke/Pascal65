@@ -13,7 +13,7 @@
 .include "error.inc"
 .include "4510macros.inc"
 
-.export initMemHeap, heapAlloc, heapFree, getMemHeapForBank
+.export initMemHeap, heapAlloc, heapFree, getMemHeapForBank, clearMemHeap
 .ifdef __DEBUG__
 .export isHeapAllocated
 .endif
@@ -209,6 +209,75 @@ L2: ldq intOp32
     cpy #4
     bne :-
 
+    rts
+.endproc
+
+; This routine clears the memory heap, leaving only the first entry.
+; The first entry is the error messages.
+.proc clearMemHeap
+    ; Start at the first bank
+    lda #0
+    sta bankIndex
+
+L1: lda bankIndex
+    asl a
+    asl a
+    asl a                   ; multiply by 8
+    tax
+
+    ; Copy heap bottom for the current bank to ptr1
+    ldy #0
+    phx
+:   lda memBanks,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; Is this the last bank?
+    ldq ptr1
+    jsr isQZero
+    beq L3
+
+    ; Copy heap top for the current bank to ptr1
+    plx
+    ldy #0
+:   lda memBanks+4,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; Is this the first bank?
+    lda bankIndex
+    bne L2              ; Branch if not first bank
+    ; First bank - skip first entry
+    lda #6
+    ldx #0
+    ldy #0
+    ldz #0
+    stq intOp32
+    ldq ptr1
+    sec
+    sbcq intOp32
+    stq ptr1
+
+    ; Clear the entry at ptr1
+L2: lda #0
+    taz
+:   nop
+    sta (ptr1),z
+    inz
+    cpz #6
+    bne :-
+
+    ; Next memory bank
+    inc bankIndex
+    bne L1
+
+L3: pla
     rts
 .endproc
 

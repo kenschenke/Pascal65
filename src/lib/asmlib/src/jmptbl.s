@@ -25,7 +25,7 @@
 .import typeClone, freeType, freeSymbol, writeInt32, divInt32
 .import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab, hexstr
 .import linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
-.import getLinkerTagsToFind, findLinkerTag, getMemHeapForBank
+.import getLinkerTagsToFind, findLinkerTag, getMemHeapForBank, clearMemHeap
 
 .segment "JMPTBL"
 
@@ -98,7 +98,7 @@ jmp symbolCreate
 jmp typeClone
 jmp freeType
 jmp freeSymbol
-jmp $0000
+jmp clearMemHeap
 jmp writeInt32
 jmp divInt32
 jmp rtPushBlock
