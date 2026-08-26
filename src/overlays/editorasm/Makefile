@@ -8,6 +8,7 @@ BINTARGETDIR = $(BINDIR)/$(TARGET)
 OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 LIBFILE := $(BINTARGETDIR)/editor
 
+# Add -D __DEBUG__ to enable F8 debug key in editor
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)

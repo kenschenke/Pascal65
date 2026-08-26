@@ -27,6 +27,7 @@ CODEGENDIR := src/overlays/codegenasm
 LINKERDIR := src/overlays/linkerasm
 COMPILERDIR := src/apps/compilerasm
 EDITORAPPDIR := src/apps/editor
+MEMINFODIR := src/overlays/meminfo
 
 RUNTIME = $(RUNTIMEDIR)/bin/$(TARGET)/runtime
 SCREENLIB = $(SCREENLIBDIR)/bin/$(TARGET)/screen
@@ -46,6 +47,7 @@ CODEGEN = $(CODEGENDIR)/bin/$(TARGET)/codegen
 LINKER = $(LINKERDIR)/bin/$(TARGET)/linker
 COMPILER = $(COMPILERDIR)/bin/$(TARGET)/compiler
 EDITORAPP = $(EDITORAPPDIR)/bin/$(TARGET)/editor
+MEMINFO = $(MEMINFODIR)/bin/$(TARGET)/meminfo
 
 BINFILES := $(EDITORAPP)
 BINFILES += $(COMPILER)
@@ -64,6 +66,7 @@ BINFILES += $(ICODE)
 BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
 BINFILES += $(EDITOROVLY)
+BINFILES += $(MEMINFO)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
@@ -162,6 +165,9 @@ $(LINKER): FORCE
 $(EDITOROVLY): FORCE
 	cd $(EDITOROVLYDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(MEMINFO): FORCE
+	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
+
 FORCE:
 
 $(BINDIR):
@@ -185,6 +191,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(ICODE) icode,prg \
 	-write $(CODEGEN) codegen,prg \
 	-write $(LINKER) linker,prg \
+	-write $(MEMINFO) meminfo,prg \
 	-write $(EDITOROVLY) editor,prg \
 	-write $(RUNTIME) runtime,prg \
 	-write $(SCREENLIB) screen.lib,prg \

@@ -16,6 +16,10 @@
 
 .import initEditor, runCompiler
 
+.ifdef __DEBUG__
+.import editorDebug
+.endif
+
 .proc editorLoop
 L1: jsr initEditor      ; load the editor overlay from disk
     jsr editorRun
@@ -23,6 +27,10 @@ L1: jsr initEditor      ; load the editor overlay from disk
     beq QT
     cmp #EDITOR_LOOP_COMPILE
     beq CP
+.ifdef __DEBUG__
+    cmp #EDITOR_LOOP_DEBUG
+    beq DB
+.endif
     cmp #EDITOR_LOOP_RUN
     bne L1
 
@@ -30,6 +38,12 @@ L1: jsr initEditor      ; load the editor overlay from disk
     jsr runCompiler
     sec
     rts
+
+.ifdef __DEBUG__
+    ; Debug
+DB: jsr editorDebug
+    bra L1
+.endif
 
     ; Compile
 CP: jsr runCompiler

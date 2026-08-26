@@ -31,6 +31,10 @@
 .import editorDeleteSelection, editorPasteClipboard, initScreen, setupScreen
 .import editorSaveState, editorRestoreState, editorHasState, fnBuf
 
+.ifdef __DEBUG__
+.import editorCloseAllFiles
+.endif
+
 .data
 
 defaultStatusMsg: .byte "F1: open  F3: save  F5: run  F7: compile  ", $5f, ": files  Ctrl-X: quit", $0
@@ -245,6 +249,11 @@ L2: ldz #EDITFILE::nextFile
 :   cmp #CH_F7
     bne :+
     jmp editorHandleRunAndCompile
+.ifdef __DEBUG__
+:   cmp #CH_F8
+    bne :+
+    jmp editorHandleDebugKey
+.endif
 :   cmp #CH_HELP
     bne :+
     jmp openHelpFile
@@ -304,6 +313,15 @@ L2: ldz #EDITFILE::nextFile
     jmp editGapBuf
 DN: rts
 .endproc
+
+.ifdef __DEBUG__
+.proc editorHandleDebugKey
+    jsr editorCloseAllFiles
+    lda #EDITOR_LOOP_DEBUG
+    sta loopCode
+    rts
+.endproc
+.endif
 
 .proc editorCursorUp
     ; First, make sure the cursor position > 0
