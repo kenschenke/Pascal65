@@ -14,6 +14,19 @@ reference for compiler maintenance and language developers.
 
 The Pascal65 intermediate code consists of instructions followed by
 operands. The type of instruction defines the number of expected operands.
+The intermediate code instructions are designed to be executed by a stack-based
+virtual machine or translated directly into object code.
+
+The intermediate code is designed to be entirely self-contained. References within
+the code are done using labels. For example, the instructions for a loop would
+use a label to mark the start of the loop and a [BRA](../mne/bra) instruction
+would reference that label to cause the code to execute at the start of the loop
+for each iteration.
+
+In addition to execution instructions, literal data can also be stored within the code.
+A [DAT](../mne/dat) instruction defines a data segment containing literal data.
+This might be a string literal or an array literal or a data block defining an array
+or record schema. These blocks of data are referenced within the code using a label.
 
 ## Operands
 
@@ -27,9 +40,11 @@ topic for more information.
 
 ### Variable
 
-A variable reference is used when to designate a variable. This operand
+A variable reference is used to designate a variable. This operand
 includes enough information for the intermediate code to either read the
-value of the variable or locate the address to update the value.
+value of the variable or locate the address to update the value. See the
+[variables](../variables) page for more information on how variables are
+managed and how they are referenced.
 
 ### Label
 
@@ -133,8 +148,10 @@ The following instructions take three operands.
 |[BWA](../mne/bwa)    |85       |1000 0101   |Bitwise and two numbers                   |
 |[BWO](../mne/bwo)    |86       |1000 0110   |Bitwise or two numbers                    |
 |[BWX](../mne/bwx)    |8b       |1000 1011   |Bitwise xor two numbers                   |
+|[DAT](../mne/dat)    |8c       |1000 1100   |Define a data segment                     |
 |[DVI](../mne/dvi)    |84       |1000 0100   |Integer divide two numbers                |
 |[JSR](../mne/jsr)    |89       |1000 1001   |Call a routine                            |
 |[MUL](../mne/mul)    |83       |1000 0011   |Multiply two numbers                      |
+|[PRP](../mne/prp)    |8a       |1000 1010   |Push a routine pointer                    |
 |[SUB](../mne/sub)    |82       |1000 0010   |Subtract two numbers                      |
 

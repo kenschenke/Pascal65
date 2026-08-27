@@ -1,0 +1,203 @@
+CONFIG := compilertestasm.cfg
+
+SRCDIR := src
+OBJDIR := obj
+BINDIR := bin
+TESTSDIR := tests
+PETSCIIDIR := petscii
+TOKENIZERDIR := ../../overlays/tokenizerasm
+ICODEDIR := ../../overlays/icodeasm
+PARSERDIR := ../../overlays/parserasm
+RESOLVERDIR := ../../overlays/resolverasm
+TYPECHECKDIR := ../../overlays/typecheckasm
+LINKERDIR := ../../overlays/linkerasm
+CODEGENDIR := ../../overlays/codegenasm
+MEMINFODIR := ../../overlays/meminfo
+ASMLIBDIR := ../../lib/asmlib
+SYSTEMLIBDIR := ../../lib/system
+DEMOLIBDIR := ../../lib/demolib
+RUNTIMEDIR := ../../lib/runtime
+
+PROGRAM := compilertest
+TARGET := mega65
+
+BINTARGETDIR = $(BINDIR)/$(TARGET)
+OBJTARGETDIR = $(OBJDIR)/$(TARGET)
+D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
+
+ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
+DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
+TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
+PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
+ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
+RESOLVER = ../../overlays/resolverasm/bin/$(TARGET)/resolver
+TYPECHECK = ../../overlays/typecheckasm/bin/$(TARGET)/typecheck
+MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
+CODEGEN = ../../overlays/codegenasm/bin/$(TARGET)/codegen
+LINKER = ../../overlays/linkerasm/bin/$(TARGET)/linker
+SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
+RUNTIME = ../../lib/runtime/bin/$(TARGET)/runtime
+PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
+SYSTEMPAS = ../../lib/system/system.pas
+DEMOLIBPAS = ../../lib/demolib/demolib.pas
+
+BINFILES += $(TOKENIZER)
+BINFILES += $(PARSER)
+BINFILES += $(ICODE)
+BINFILES += $(RESOLVER)
+BINFILES += $(TYPECHECK)
+BINFILES += $(MEMINFO)
+BINFILES += $(ASMLIB)
+BINFILES += $(DEMOLIB)
+BINFILES += $(PRGFILE)
+BINFILES += $(CODEGEN)
+BINFILES += $(LINKER)
+BINFILES += $(SYSTEMLIB)
+BINFILES += $(RUNTIME)
+
+ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
+
+SOURCES := $(wildcard $(SRCDIR)/*.s)
+OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+
+TXTFILES := errormsgs.petscii system.petscii demolib.petscii
+
+TESTS := $(wildcard $(TESTSDIR)/*.pas)
+ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
+TXTFILES += $(patsubst $(TESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(TESTS))
+TXTFILES += $(patsubst $(ERRORTESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(ERRORTESTS))
+
+all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE) $(D81FILE)
+
+errormsgs.petscii: ../../shared/errormsgs.txt
+	dos2unix < ../../shared/errormsgs.txt | petcat -w2 -text -o errormsgs.petscii
+
+system.petscii: $(SYSTEMPAS)
+	dos2unix < $(SYSTEMPAS) | petcat -w2 -text -o system.petscii
+
+demolib.petscii: $(DEMOLIBPAS)
+	dos2unix < $(DEMOLIBPAS) | petcat -w2 -text -o demolib.petscii
+
+$(BINDIR):
+	mkdir -p $@
+
+$(BINTARGETDIR): $(BINDIR)
+	mkdir -p $@
+
+$(OBJDIR):
+	mkdir -p $@
+
+$(OBJTARGETDIR): $(OBJDIR)
+	mkdir -p $@
+
+$(PARSER): FORCE
+	cd $(PARSERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(RESOLVER): FORCE
+	cd $(RESOLVERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(TYPECHECK): FORCE
+	cd $(TYPECHECKDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(TOKENIZER): FORCE
+	cd $(TOKENIZERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(ICODE): FORCE
+	cd $(ICODEDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(CODEGEN): FORCE
+	cd $(CODEGENDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(LINKER): FORCE
+	cd $(LINKERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(MEMINFO): FORCE
+	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
+
+$(ASMLIB): FORCE
+	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(DEMOLIB): FORCE
+	cd $(DEMOLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(SYSTEMLIB): FORCE
+	cd $(SYSTEMLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(RUNTIME): FORCE
+	cd $(RUNTIMEDIR) && $(MAKE) TARGET=$(TARGET)
+
+vpath %.s $(SRCDIR)
+$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+	ca65 $(ASFLAGS) -o $@ $<
+
+vpath %.pas $(TESTSDIR)
+$(PETSCIIDIR)/%.pas: %.pas | $(PETSCIIDIR)
+	dos2unix < $< | petcat -w2 -text -o $@
+
+$(PRGFILE): $(OBJECTS)
+	ld65 -o $(PRGFILE) -C $(CONFIG) $(OBJECTS)
+
+FORCE:
+
+$(D81FILE): $(BINFILES) $(TXTFILES)
+	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
+	-write $(PRGFILE) compiler,prg \
+	-write $(TOKENIZER) tokenizer,prg \
+	-write $(ICODE) icode,prg \
+	-write $(PARSER) parser,prg \
+	-write $(RESOLVER) resolver,prg \
+	-write $(TYPECHECK) typecheck,prg \
+	-write $(CODEGEN) codegen,prg \
+	-write $(LINKER) linker,prg \
+	-write $(MEMINFO) meminfo,prg \
+	-write $(ASMLIB) asm.lib,prg \
+	-write $(DEMOLIB) demolib.lib,prg \
+	-write $(SYSTEMLIB) system.lib,prg \
+	-write $(RUNTIME) runtime,prg \
+	-write errormsgs.petscii errormsgs.txt,seq \
+	-write system.petscii system.pas,seq \
+	-write demolib.petscii demolib.pas,seq \
+	-write $(PETSCIIDIR)/add.pas add.pas,seq \
+	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
+	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
+	-write $(PETSCIIDIR)/bitwisea.pas bitwisea.pas,seq \
+	-write $(PETSCIIDIR)/bitwiseb.pas bitwiseb.pas,seq \
+	-write $(PETSCIIDIR)/ifthen.pas ifthen.pas,seq \
+	-write $(PETSCIIDIR)/loops.pas loops.pas,seq \
+	-write $(PETSCIIDIR)/stdroutines.pas stdroutines.pas,seq \
+	-write $(PETSCIIDIR)/incdec.pas incdec.pas,seq \
+	-write $(PETSCIIDIR)/strroutines.pas strroutines.pas,seq \
+	-write $(PETSCIIDIR)/strtests.pas strtests.pas,seq \
+	-write $(PETSCIIDIR)/recarray.pas recarray.pas,seq \
+	-write $(PETSCIIDIR)/scopetest.pas scopetest.pas,seq \
+	-write $(PETSCIIDIR)/casetest.pas casetest.pas,seq \
+	-write $(PETSCIIDIR)/procfunc.pas procfunc.pas,seq \
+	-write $(PETSCIIDIR)/multiply.pas multiply.pas,seq \
+	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq \
+	-write $(PETSCIIDIR)/divint.pas divint.pas,seq \
+	-write $(PETSCIIDIR)/trig.pas trig.pas,seq \
+	-write $(PETSCIIDIR)/vartest.pas vartest.pas,seq \
+	-write $(PETSCIIDIR)/filetesta.pas filetesta.pas,seq \
+	-write $(PETSCIIDIR)/filetestb.pas filetestb.pas,seq \
+	-write $(PETSCIIDIR)/pointers.pas pointers.pas,seq \
+	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
+	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
+	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
+	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
+	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
+	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq \
+	-write $(PETSCIIDIR)/strrecord.pas strrecord.pas,seq \
+	-write $(PETSCIIDIR)/strarray.pas strarray.pas,seq \
+	-write $(PETSCIIDIR)/constants.pas constants.pas,seq
+
+clean:
+	$(RM) $(TXTFILES)
+	$(RM) $(D81FILE)
+	$(RM) $(OBJECTS)
+
+run: $(D81FILE)
+	xmega65 -besure -8 $(D81FILE)
+
+load: $(D81FILE)
+	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
+	etherload -m compiler.d81 -r $(BINTARGETDIR)/compiler

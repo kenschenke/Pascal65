@@ -1,0 +1,54 @@
+(* Test 1 - Scalar Variable Initial Values
+D:DECL-TYPE test
+  T:TYPE-PROGRAM
+  S:STMT-BLOCK
+    D:DECL-USES system
+      T:TYPE-UNIT
+    D:DECL-VARIABLE a
+      T:TYPE-SHORTINT
+      E:EXPR-BYTE-LITERAL 7b T:TYPE-SHORTINT
+    D:DECL-VARIABLE b
+      T:TYPE-BYTE
+      E:EXPR-BYTE-LITERAL ea T:TYPE-BYTE
+    D:DECL-VARIABLE bool
+      T:TYPE-BOOLEAN
+      E:EXPR-BOOLEAN-LITERAL true T:TYPE-BOOLEAN
+    D:DECL-VARIABLE i
+      T:TYPE-INTEGER
+      E:EXPR-WORD-LITERAL 3039 T:TYPE-INTEGER
+    D:DECL-VARIABLE w
+      T:TYPE-WORD
+      E:EXPR-WORD-LITERAL 8707 T:TYPE-WORD
+    D:DECL-VARIABLE l
+      T:TYPE-LONGINT
+      E:EXPR-DWORD-LITERAL 1e240 T:TYPE-LONGINT
+    D:DECL-VARIABLE c
+      T:TYPE-CARDINAL
+      E:EXPR-DWORD-LITERAL 8bd03835 T:TYPE-CARDINAL
+    D:DECL-VARIABLE r
+      T:TYPE-REAL
+      E:EXPR-REAL-LITERAL 3.14 T:TYPE-REAL
+    D:DECL-VARIABLE str
+      T:TYPE-STRING-VAR
+      E:EXPR-STRING-LITERAL Hello, World T:TYPE-STRING-LITERAL
+    D:DECL-VARIABLE ch
+      T:TYPE-CHARACTER
+      E:EXPR-CHARACTER-LITERAL 'x' T:TYPE-CHARACTER
+*)
+
+Program Test;
+
+Var
+  a : ShortInt = 123;
+  b : Byte = 234;
+  bool : Boolean = True;
+  i : Integer = 12345;
+  w : Word = 34567;
+  l : LongInt = 123456;
+  c : Cardinal = 2345678901;
+  r : Real = 3.14;
+  str : String = 'Hello, World';
+  ch : Char = 'x';
+
+Begin
+End.

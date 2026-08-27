@@ -15,12 +15,11 @@
 
 .export freeMemBuf
 
-.import heapFree
+.import heapFree, isQZero
 
 .bss
 
 hdrPtr: .res 4
-chunkPtr: .res 4
 nextChunkPtr: .res 4
 
 .code
@@ -33,43 +32,29 @@ nextChunkPtr: .res 4
     stq ptr1
 
     ; Loop through the chunks
-    ldz #MEMBUF::firstChunk+3
-    ldx #3
-:   nop
-    lda (ptr1),z                ; Copy the firstChunk ptr to chunkPtr
-    sta chunkPtr,x
-    dez
-    dex
-    bpl :-
-L1: ; Check if chunkPtr is zero
-    lda chunkPtr
-    ora chunkPtr+1
-    ora chunkPtr+2
-    ora chunkPtr+3
-    beq FH                      ; branch chunkPtr is zero
-    ; Put the current chunk pointer in ptr1
-    ldq chunkPtr
+    ldz #MEMBUF::firstChunk
+    neg
+    neg
+    nop
+    lda (ptr1),z
+L1: ; Check if next chunk is null
+    jsr isQZero
+    beq FH                      ; branch if null
     stq ptr1
     ; Copy the next chunk pointer to nextChunkPtr
-    ldz #MEMBUF_CHUNK::nextChunk+3
-    ldx #3
-:   nop
+    ldz #MEMBUF_CHUNK::nextChunk
+    neg
+    neg
+    nop
     lda (ptr1),z
-    sta nextChunkPtr,x
-    dez
-    dex
-    bpl :-
+    stq nextChunkPtr
     ; Free the current chunk
-    ldq chunkPtr
+    ldq ptr1
     jsr heapFree
-    ; Copy nextChunkPtr to chunkPtr
-    ldx #3
-:   lda nextChunkPtr,x
-    sta chunkPtr,x
-    dex
-    bpl :-
-    bne L1
+    ldq nextChunkPtr
+    bra L1
 FH: ; Free the header
     ldq hdrPtr
-    jmp heapFree
+    jsr heapFree
+    rts
 .endproc

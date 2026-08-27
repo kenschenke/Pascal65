@@ -13,13 +13,26 @@
 .include "error.inc"
 .include "4510macros.inc"
 
-.export initMemHeap, heapAlloc, heapFree
+.export initMemHeap, heapAlloc, heapFree, getMemHeapForBank, clearMemHeap
+.ifdef __DEBUG__
+.export isHeapAllocated
+.endif
 
-.import geInt16, ltInt16, geUint32, runtimeError
+.import geInt16, ltInt16, ltUint32, geUint32, runtimeError, rtPushQ, rtPopQ, isQZero
 
 .bss
 
 lastBlock: .res 4
+bankIndex: .res 1
+allocSize: .res 2
+
+.data
+
+memBanks:
+    .dword $12000, $1cffa   ; bank 1
+    .dword $42000, $4fffa   ; bank 4
+    .dword $50000, $5effa   ; bank 5
+    .dword $0               ; terminator
 
 .code
 
@@ -37,41 +50,240 @@ lastBlock: .res 4
 ; MAT then a new block of the requested size is allocated and
 ; added to the end of the MAT.
 
-; This routine intiailizes the two memory heap pointers in zero page.
-; heapBottom = bottom of heap where memory is allocated
-; heapTop = top of heap where memory allocation table goes
+; This routine initializes the memory banks.
 .proc initMemHeap
-    ; The memory heap starts at $42000
-    ; This leaves room for screen RAM at $407fc
-    lda #$00
-    ldy #$04
-    ldx #$20
-    taz
-    stq heapBottom          ; Store 0x00042000 in heapBottom
-
-    ;  Z  Y  X  A
-    ; 00 05 ff fa
-    lda #$fa
-    ldy #$05
-    ldx #$ff
-    ldz #$00
-    stq heapTop             ; Store 0x00060000-6 in heapTop
-
-    ; Store six zeros for the first entry in the MAT
-    ldz #5
+    ; Initialize the MAT for each of the memory banks
+    lda #<memBanks
+    sta ptr1
+    lda #>memBanks
+    sta ptr1+1
     lda #0
-:   nop
-    sta (heapTop),z
-    dez
-    bpl :-
+    sta ptr1+2
+    sta ptr1+3
 
+    lda #0
+    sta bankIndex
+L1: lda bankIndex
+    asl a
+    asl a
+    asl a
+    taz
+    clc
+    adc #4
+    pha
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L2
+
+    plz
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    lda #0
+    taz
+:   nop
+    sta (ptr2),z
+    inz
+    cpz #6
+    bne :-
+
+    inc bankIndex
+    bra L1
+
+L2: pla
+    rts
+.endproc
+
+; This routine returns the top of the memory heap MAT for a given bank.
+; The bank number is passed in A and the address of the MAT is returned in Q.
+;
+; Bank numbers start at 0.
+;
+; If a bank number is out of range, NULL is returned.
+.proc getMemHeapForBank
+    sta tmp1                ; caller's bank number in tmp1
+
+    ; Start at bank index 0
+    lda #0
+    sta bankIndex
+
+    ; Loop through the banks
+L1: lda bankIndex
+    asl a
+    asl a
+    asl a
+    tax
+
+    ; Copy the heap bottom into ptr1
+    ldy #0
+:   lda memBanks,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; Is this the last entry?
+    phx                     ; Save the X register
+    ldq ptr1
+    jsr isQZero
+    bne L2
+    pla                     ; Discard the X register
+    lda #0
+    tax
+    tay
+    taz
+    rts                     ; Return null
+
+    ; Is this the bank the caller wants?
+L2: plx                     ; Restore the X register
+    lda tmp1
+    cmp bankIndex
+    bne L3                  ; Branch if not
+
+    ; This is the bank the caller wants.
+    ; Copy the heap top into ptr1 then return it.
+    ldy #0
+:   lda memBanks,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+    ldq ptr1
+    rts
+
+    ; Move to the next bank
+L3: inc bankIndex
+    bra L1
+.endproc
+
+; This routine sets heapBottom and heapTop for the address
+; passed in Q. It looks through the memBanks list to find
+; the bank containing the address.
+.proc setHeapForAddress
+    stq intOp1              ; Store the address in intOp1/intOp2
+
+    lda #0
+    sta bankIndex
+
+    ; Loop through the banks
+L1: lda bankIndex
+    asl a
+    asl a
+    asl a                   ; Multiply by 8
+    clc
+    adc #4
+    tax
+    ldy #0
+:   lda memBanks,x
+    sta intOp32,y
+    inx
+    iny
+    cpy #4
+    bne :-
+    jsr ltUint32            ; Is address < heapTop?
+    bne L2                  ; Branch if so
+
+    inc bankIndex
+    bra L1
+
+L2: ldq intOp32
+    stq heapTop
+
+    lda bankIndex
+    asl a
+    asl a
+    asl a
+    tax
+    ldy #0
+:   lda memBanks,x
+    sta heapBottom,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    rts
+.endproc
+
+; This routine clears the memory heap, leaving only the first entry.
+; The first entry is the error messages.
+.proc clearMemHeap
+    ; Start at the first bank
+    lda #0
+    sta bankIndex
+
+L1: lda bankIndex
+    asl a
+    asl a
+    asl a                   ; multiply by 8
+    tax
+
+    ; Copy heap bottom for the current bank to ptr1
+    ldy #0
+    phx
+:   lda memBanks,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; Is this the last bank?
+    ldq ptr1
+    jsr isQZero
+    beq L3
+
+    ; Copy heap top for the current bank to ptr1
+    plx
+    ldy #0
+:   lda memBanks+4,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; Is this the first bank?
+    lda bankIndex
+    bne L2              ; Branch if not first bank
+    ; First bank - skip first entry
+    lda #6
+    ldx #0
+    ldy #0
+    ldz #0
+    stq intOp32
+    ldq ptr1
+    sec
+    sbcq intOp32
+    stq ptr1
+
+    ; Clear the entry at ptr1
+L2: lda #0
+    taz
+:   nop
+    sta (ptr1),z
+    inz
+    cpz #6
+    bne :-
+
+    ; Next memory bank
+    inc bankIndex
+    bne L1
+
+L3: pla
     rts
 .endproc
 
 ; Size to allocate in A/X
 ; If allocation fails, a runtime error is triggered.
 ; Pointer to memory returned in Q
-;   tmp1/tmp2 - requested buffer size
 ;   ptr1 - current location in MAT
 ;   ptr2 - location in MAT of smallest availble block
 ;          that satisfies requested buffer size.
@@ -79,8 +291,64 @@ lastBlock: .res 4
 ;          This is used when a new block is to be added
 ;          at the end of the heap.
 .proc heapAlloc
+    sta allocSize
+    stx allocSize+1
+
+    ; Start at the first bank
+    lda #0
+    sta bankIndex
+
+L1: lda bankIndex
+    asl a
+    asl a
+    asl a                   ; multiply by 8
+    tax
+
+    ; Populate heapBottom
+    ldy #0
+:   lda memBanks,x
+    sta heapBottom,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; Is heapBottom null?
+    phx                     ; Save X
+    ldq heapBottom
+    jsr isQZero
+    bne L2
+
+    ; Out of memory
+    pla                     ; Discard the X register
+    lda #rteOutOfMemory
+    jsr runtimeError
+    rts
+
+    ; Populate heapTop
+L2: plx                     ; Get X back off the stack
+    ldy #0
+:   lda memBanks,x
+    sta heapTop,y
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    jsr heapAllocBank
+    jsr isQZero
+    bne L3
+
+    ; heapAllocBank returned null.
+    ; Move to the next bank and try again.
+    inc bankIndex
+    bra L1
+
+L3: rts
+.endproc
+
+.proc heapAllocBank
     ; Algorithm:
-    ;   Store A/X in tmp1/tmp2
     ;   Start with ptr1 pointing to heapTop and $00000000 in ptr2
     ;   Loop through entire MAT and update ptr2 when a smaller
     ;       available block is found.
@@ -89,16 +357,9 @@ lastBlock: .res 4
     ;   If ptr2 contains a block, mark it as allocated and
     ;       return the memory address in Q.
 
-    ; Initialization
-    sta tmp1
-    stx tmp2
     ; Copy heapTop to ptr1
-    neg
-    neg
-    lda heapTop
-    neg
-    neg
-    sta ptr1
+    ldq heapTop
+    stq ptr1
     ; Zero out ptr2 and ptr3
     lda #0
     ldx #3
@@ -117,19 +378,15 @@ L2: nop
     bpl L2
     ; End of MAT reached.
     ; If ptr3 is zero, this is the first heap entry.
-    lda ptr3
-    ora ptr3+1
-    ora ptr3+2
-    ora ptr3+3
+    ldq ptr3
+    jsr isQZero
     bne L3
     ; This is the first entry in the heap
     jmp NewEntry
 L3: ; Reached the end of the MAT. Check if ptr2 is non-zero.
     ; It points to the smallest available MAT entry.
-    lda ptr2
-    ora ptr2+1
-    ora ptr2+2
-    ora ptr2+3
+    ldq ptr2
+    jsr isQZero
     bne L31
     ; ptr2 is zero which means there are no available blocks
     ; in the MAT that can hold the requested allocation.
@@ -151,19 +408,17 @@ L4: ldz #1
     nop
     lda (ptr1),z
     sta intOp1
-    lda tmp1
+    lda allocSize
     sta intOp2          ; Store desired block size in intOp2
-    lda tmp2
+    lda allocSize+1
     sta intOp2+1
     jsr geInt16         ; Is current block size > desired block size?
     beq L5              ; It is not.
     ; The block is big enough, but is it larger than
     ; previous blocks that were big enough?
     ; intOp1 still contains the current block's size
-    lda ptr2            ; Is ptr2 zero?
-    ora ptr2+1
-    ora ptr2+2
-    ora ptr2+3
+    ldq ptr2            ; Is ptr2 zero?
+    jsr isQZero
     bne L41
     ; Ptr2 is zero, which means the current block is the
     ; first on that has been big enough.
@@ -221,19 +476,24 @@ ReUseEntry:
     jmp L99
 NewEntry:               ; Add a new entry to the MAT
     jsr checkFreeSpace
-    ldz #0
-    lda tmp1            ; Load the requested buffer size
+    beq :+
+    ; Not enough space. Return null.
+    lda #0
+    tax
+    tay
+    taz
+    rts
+:   ldz #0
+    lda allocSize       ; Load the requested buffer size
     nop
     sta (ptr1),z        ; Store it in the first two bytes
     inz                 ; of the MAT entry.
-    lda tmp2            ; Load the high byte of the buffer size
+    lda allocSize+1     ; Load the high byte of the buffer size
     ora #$80            ; Set the "allocated" bit
     nop
     sta (ptr1),z
-    lda ptr3            ; Check if ptr3 is non-zero
-    ora ptr3+1          ; If so, use it to calculate the address
-    ora ptr3+2          ; of the next heap block.
-    ora ptr3+3
+    ldq ptr3            ; Check if ptr3 is non-zero
+    jsr isQZero         ; If so, use it to calculate the address of the next heap block
     bne L6
     ; ptr3 is zero, which means this is the first block in the MAT.
     ; Copy the heapBottom pointer into the first MAT entry and store
@@ -294,9 +554,7 @@ L7: ; Increment ptr1 to the next block entry
     sta (ptr1),z
     dez
     bpl :-
-L99:neg                 ; Load the block's address into Q
-    neg                 ; for return to the caller.
-    lda tmp1
+L99:ldq tmp1            ; Load the block's address into Q
     rts
 .endproc
 
@@ -372,34 +630,33 @@ L1: ldz #5              ; Is the current entry all zeros?
     adc lastBlock+3
     sta lastBlock+3
     ; Move to the next MAT entry
-L2: lda ptr4
+L2: lda #6
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq ptr4
     sec
-    sbc #6
-    sta ptr4
-    lda ptr4+1
-    sbc #0
-    sta ptr4+1
-    lda ptr4+2
-    sbc #0
-    sta ptr4+2
-    lda ptr4+3
-    sbc #0
-    sta ptr4+3
+    sbcq intOp32
+    stq ptr4
     jmp L1
-L3: neg
-    neg
-    lda lastBlock
+L3: ldq lastBlock
     rts
 .endproc
 
 ; This routine checks the amount of free space in the heap to see if
-; there's enough left for the requested block. If not, a runtime error is triggered.
+; there's enough left for the requested block.
+; The Z flag is set if there is enough space.
 .proc checkFreeSpace
+    ; Get the end of the last block of allocated memory.
     jsr getEndOfLastBlock
-    stq intOp1
-    lda tmp1
+    stq intOp1                  ; end of last block in intOp1
+
+    ; Add the requested new block size to it
+    lda allocSize
     sta intOp32
-    lda tmp2
+    lda allocSize+1
     sta intOp32+1
     lda #0
     sta intOp32+2
@@ -407,15 +664,24 @@ L3: neg
     clc
     ldq intOp1
     adcq intOp32
+    stq intOp1                  ; last block + new size in intOp1
+
+    ; Add 6 (for new MAT entry)
+    lda #6
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    ldq intOp1
+    clc
+    adcq intOp32
     stq intOp1
+
     ldq ptr4
-    stq intOp32
+    stq intOp32                 ; address of last MAT in ptr4
+
+    ; If end of last block + new size + 6 >= address of last MAT then clear Z
     jsr geUint32
-    beq :+
-    ; The block won't fit. Abort with a runtime error
-    lda #rteOutOfMemory
-    jsr runtimeError
-:   rts
+    rts
 .endproc
 
 ; Free a block of memory from the heap
@@ -429,7 +695,23 @@ L3: neg
     ;   ptr2 - the memory block to free
 
     ; Initialization
-    stq ptr2            ; Save the memory block ptr in ptr2
+    jsr isQZero
+    bne :+
+    rts
+:   stq ptr2            ; Save the memory block ptr in ptr2
+    jsr setHeapForAddress
+.ifdef __DEBUG__
+    ldq ptr2
+    jsr rtPushQ
+    ldq ptr2
+    jsr isHeapAllocated
+    bne :+
+    jsr rtPopQ
+    ldz #$22
+    brk
+:   jsr rtPopQ
+    stq ptr2
+.endif ; end of ifdef __DEBUG__
     ldq heapTop         ; Load the MAT pointer into ptr1
     stq ptr1
 L1: ldz #5              ; Is the current MAT entry all zeros?
@@ -547,3 +829,58 @@ L7: clc
     jmp L4
 L9: rts
 .endproc
+
+.ifdef __DEBUG__
+; This routine checks the memory allocation table and determines if
+; a block of memory is allocated or not.
+; The address of the memory is passed in Q.
+;
+; On exit: The Z flag is set if the block is not allocated.
+.proc isHeapAllocated
+    jsr isQZero
+    bne :+
+    lda #0
+    rts
+
+    ; Pointer to block in ptr2
+:   stq ptr2
+    jsr setHeapForAddress
+
+    ; Copy heapTop to ptr1
+    ldq heapTop
+    stq ptr1
+
+    ; Loop through the MAT entries
+L1: ldz #0
+:   nop
+    lda (ptr1),z
+    bne L2
+    inz
+    cpz #6
+    bne :-
+    rts                     ; Return if the end of MAT is reached (Z flag set)
+
+    ; Compare the current entry to the one the caller is looking for.
+L2: ldx #0
+    ldz #2
+:   nop
+    lda (ptr1),z
+    cmp ptr2,x
+    bne L3
+    inx
+    inz
+    cpx #4
+    bne :-
+
+    ; Found the MAT entry. Is it allocated?
+    ldz #1
+    nop
+    lda (ptr1),z
+    and #$80
+    rts
+
+    ; MAT entry does not match - go to the next one
+L3: jsr incMATPtr
+    bra L1
+.endproc
+.endif ; end of ifdef __DEBUG__

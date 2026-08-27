@@ -1,0 +1,4 @@
+
+DUMPAST_BASE = $5000
+
+dumpAst = DUMPAST_BASE

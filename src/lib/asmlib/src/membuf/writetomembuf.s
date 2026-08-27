@@ -15,13 +15,14 @@
 
 .export writeToMemBuf
 
-.import initMemBufChunk, membufIsZero, ltUint16
+.import initMemBufChunk, membufIsZero, ltUint16, isQZero
 
 .bss
 
 callerPtr: .res 4
 membufPtr: .res 4
 dataSize: .res 2
+toCopy: .res 1
 
 .code
 
@@ -45,6 +46,8 @@ dataSize: .res 2
     bne :+              ; Branch if firstChunk is non-null
     ldq membufPtr
     jsr initMemBufChunk ; Allocate the first chunk
+    ldq membufPtr
+    stq ptr1
 :   ; Check if currentChunk is null
     ldz #MEMBUF::currentChunk
     jsr membufIsZero
@@ -82,27 +85,41 @@ L11:
     sec
     nop
     sbc (ptr1),z
-    sta tmp1                ; tmp1 = toCopy
+    sta toCopy
     lda dataSize+1
     bne L2                  ; high byte of dataSize is non-zero. definitely bigger.
-    lda tmp1                ; if length > toCopy
+    lda toCopy              ; if length > toCopy
     cmp dataSize
     bcc L2
     ; length <= MEMBUF_CHUNK_LEN - posChunk
     lda dataSize
-    sta tmp1
+    sta toCopy
 L2: ; ptr2 is the caller's data buffer
     ldq callerPtr
     stq ptr2
-    ; ptr3 is the membuf data buffer
-    ldz #MEMBUF::currentChunk+3
-    ldx #3
-:   nop
+    lda toCopy
+    bne :+
+    jmp NX
+:   ldz #MEMBUF::posChunk
+    nop
     lda (ptr1),z
-    sta ptr3,x
-    dez
-    dex
-    bpl :-
+    clc
+    adc toCopy
+    sec
+    sbc #MEMBUF_CHUNK_LEN
+    beq :+
+    bmi :+
+    ldz #MEMBUF::posChunk
+    nop
+    lda (ptr1),z
+    ldx toCopy
+    ; ptr3 is the membuf data buffer
+:   ldz #MEMBUF::currentChunk
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr3
     ; Add the data offset to ptr3
     lda #MEMBUF_CHUNK::data
     sta intOp32
@@ -119,10 +136,6 @@ L2: ; ptr2 is the caller's data buffer
     nop
     lda (ptr1),z
     sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
     ldq ptr3
     clc
     adcq intOp32
@@ -134,20 +147,14 @@ L2: ; ptr2 is the caller's data buffer
     nop
     sta (ptr3),z
     inz
-    cpz tmp1
+    cpz toCopy
     bne :-
     ; Move posChunk forward by toCopy
     ldz #MEMBUF::posChunk
     nop
     lda (ptr1),z
     clc
-    adc tmp1
-    nop
-    sta (ptr1),z
-    inz
-    nop
-    lda (ptr1),z
-    adc #0
+    adc toCopy
     nop
     sta (ptr1),z
     ; Move posGlobal forward by toCopy
@@ -155,7 +162,7 @@ L2: ; ptr2 is the caller's data buffer
     nop
     lda (ptr1),z
     clc
-    adc tmp1
+    adc toCopy
     nop
     sta (ptr1),z
     inz
@@ -167,7 +174,7 @@ L2: ; ptr2 is the caller's data buffer
     ; Decrease length by toCopy
     lda dataSize
     sec
-    sbc tmp1
+    sbc toCopy
     sta dataSize
     lda dataSize+1
     sbc #0
@@ -177,23 +184,24 @@ L2: ; ptr2 is the caller's data buffer
     ora dataSize+1
     beq DN
     ; Check if the next chunk is already allocated
+NX: ldq membufPtr
+    stq ptr1
     ldz #MEMBUF::currentChunk
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr3
-    ldz #MEMBUF_CHUNK::nextChunk+3
-    ldx #3
-:   nop
+    ldz #MEMBUF_CHUNK::nextChunk
+    neg
+    neg
+    nop
     lda (ptr3),z
+    jsr isQZero
     bne L3
-    dez
-    dex
-    bpl :-
     ; nextChunk is null - allocate a new chunk
     ; But first, update callerPtr
-    lda tmp1
+    lda toCopy
     sta intOp32
     lda #0
     sta intOp32+1
@@ -208,13 +216,7 @@ L2: ; ptr2 is the caller's data buffer
     ldq membufPtr
     stq ptr1
     bra L4
-L3: ; Copy nextChunk to currentChunk
-    ldz #MEMBUF_CHUNK::nextChunk
-    neg
-    neg
-    nop
-    lda (ptr3),z
-    stq ptr4
+L3: stq ptr4
     ldz #MEMBUF::currentChunk+3
     ldx #3
 :   lda ptr4,x

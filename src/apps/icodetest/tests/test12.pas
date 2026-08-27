@@ -1,0 +1,124 @@
+(* Test 12 - Standard Routines
+PSH IWU 0
+PSH IBS 0
+PSH ILS 0
+PSH FLT 
+PSH CHR 
+PSH IBS 0
+PSH IWU 0
+PSH ILS 0
+PSH IWU 0
+BRA LBL xxxxx
+LOC LBL xxxxx
+PSH IWU 3039
+ABS IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH IBS 7b
+ABS IBS 2
+PSH VDW 2 1 1
+SET IBS 2 IBS 2
+PSH ILS 1e240
+ABS IBS 6
+PSH VDW 6 1 2
+SET IBS 6 IBS 6
+PSH FLT 3.14
+ABS IBS 7
+PSH VDW 7 1 3
+SET IBS 7 IBS 7
+PSH IWU 3039
+SQR IBS 4
+PSH VDW 6 1 2
+SET IBS 6 IBS 6
+PSH IBS 7b
+SQR IBS 2
+PSH VDW 6 1 2
+SET IBS 6 IBS 6
+PSH ILS 1e240
+SQR IBS 6
+PSH VDW 6 1 2
+SET IBS 6 IBS 6
+PSH FLT 3.14
+SQR IBS 7
+PSH VDW 7 1 3
+SET IBS 7 IBS 7
+PSH IWU 3039
+PRE IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH CHR c
+PRE IBS 9
+PSH VDW 9 1 4
+SET IBS 9 IBS 9
+PSH IWU 1
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH CHR c
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH VDR 4 1 0
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH FLT 3.14
+TRU
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH VDR 4 1 0
+PSH IBS 1
+SUB IBS 4 IBS 1 IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH VDR 4 1 0
+PSH IBS 2
+ADD IBS 4 IBS 2 IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PSH VDR 1b 1 8
+PSH IBS 1
+PSH IWS 4
+MUL IBS 1 IBS 4 IBS 1
+ADD IBS 1b IBS 1 IBS 1b
+PSH VDW 1b 1 8
+SET IBS 1b IBS 1b
+*)
+
+Program Test;
+
+Type
+  Colors = (Red, Green, Blue);
+
+Var
+  i : Integer;
+  s : ShortInt;
+  l : LongInt;
+  r : Real;
+  ch : Char;
+  b : Byte;
+  w : Word;
+  dw : Cardinal;
+  p : ^Real;
+
+Begin
+  i := Abs(12345);
+  s := Abs(123);
+  l := Abs(123456);
+  r := Abs(3.14);
+
+  l := Sqr(12345);
+  l := Sqr(123);
+  l := Sqr(123456);
+  r := Sqr(3.14);
+
+  i := Pred(12345);
+  ch := Pred('c');
+
+  i := Ord(Green);
+  i := Ord('c');
+  i := Ord(i);
+
+  i := Trunc(3.14);
+
+  Dec(i);
+  Inc(i, 2);
+  Inc(p);
+End.

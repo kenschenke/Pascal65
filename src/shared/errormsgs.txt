@@ -61,3 +61,5 @@ Missing Unit Decl
 Invalid STRING use
 Unresolved Forward
 Index Out Of Range
+Missing Quote
+Fail to open src file

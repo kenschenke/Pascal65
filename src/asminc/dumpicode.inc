@@ -1,0 +1,4 @@
+
+DUMPICODE_BASE = $5000
+
+dumpIcode = DUMPICODE_BASE

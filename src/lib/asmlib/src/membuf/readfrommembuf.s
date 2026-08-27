@@ -15,7 +15,7 @@
 
 .export readFromMemBuf, membufIsZero
 
-.import subInt16
+.import subInt16, isQZero
 
 ; Reads bytes from the membuf.
 ; Membuf header is in ptr1
@@ -152,16 +152,11 @@ L4: lda intOp1
     beq DN
     ; If there's no nextChunk, we're done
     ldz #MEMBUF_CHUNK::nextChunk
-    ldx #3
+    neg
+    neg
     nop
     lda (ptr4),z
-    inz
-:   nop
-    ora (ptr4),z
-    inz
-    dex
-    bne :-
-    ora #0
+    jsr isQZero
     beq DN
     ; Set posChunk to 0
     ldz #MEMBUF::posChunk

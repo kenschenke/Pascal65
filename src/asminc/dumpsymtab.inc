@@ -1,0 +1,4 @@
+
+DUMPSYMTAB_BASE = $5000
+
+dumpSymtabForDecl = DUMPSYMTAB_BASE

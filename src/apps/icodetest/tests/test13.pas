@@ -1,0 +1,152 @@
+(* Test 13 - Routines
+NEW IWS 10
+DIA LBL xxxxx
+NEW IWS 4
+DIR LBL xxxxx
+PSH FLT 
+BRA LBL xxxxx
+LOC LBL xxxxx
+PSH IWU 0
+PSH CHR 
+PSH IBS 7b
+PSH VDW 4 2 0
+SET IBS 4 IBS 2
+PSH CHR k
+PSH VDW 9 2 2
+SET IBS 9 IBS 9
+PSH FLT 123.456
+PSH VVW 7 2 1
+SET IBS 7 IBS 7
+PSH IWU 929
+PSH VDW 4 2 3
+SET IBS 4 IBS 4
+PSH CHR m
+PSH VDW 9 2 4
+SET IBS 9 IBS 9
+POP
+POP
+RTS
+LOC LBL xxxxx
+PSH IWU d80
+PSH VDR 4 2 0
+PSH VDR 4 2 1
+ADD IBS 4 IBS 4 IBS 6
+PSH FLT 3.14159
+ADD IBS 6 IBS 7 IBS 7
+PSH RET 
+SET IBS 7 IBS 7
+POP
+RTS
+LOC LBL xxxxx
+PSH IWU 3039
+PSH VVR b 2 0
+MEM IBS b
+PSH IBS 3
+AIX IBS 2
+SET IBS 4 IBS 4
+RTS
+LOC LBL xxxxx
+PSH IWU 3039
+PSH VDR 14 2 0
+PSH IBS 2
+ADD IBS 3 IBS 3 IBS 3
+SET IBS 4 IBS 4
+RTS
+LOC LBL xxxxx
+PUF IBS 2 LBL xxxxx
+PSH IWU 3039
+PSH VDW 7 1 2
+PSH CHR x
+ASF IBS 2
+JSR LBL xxxxx IBS 2 IBS 0
+LOC LBL xxxxx
+POP
+POP
+POP
+POF IBS 0 IBS 0
+PUF IBS 2 LBL xxxxx
+PSH IWU 10e1
+ASF IBS 2
+JSR LBL xxxxx IBS 2 IBS 0
+LOC LBL xxxxx
+POP
+POF IBS 1 IBS 0
+PSH VDW 7 1 2
+SET IBS 7 IBS 7
+PUF IBS 2 LBL xxxxx
+PSH VDW b 1 0
+ASF IBS 2
+JSR LBL xxxxx IBS 2 IBS 0
+LOC LBL xxxxx
+POP
+POF IBS 0 IBS 0
+PUF IBS 2 LBL xxxxx
+PSH VDR 14 1 1
+DCC LBL xxxxx IBS 2
+ASF IBS 2
+JSR LBL xxxxx IBS 2 IBS 0
+LOC LBL xxxxx
+DCF LBL xxxxx IBS 2
+POF IBS 0 IBS 0
+DAT IBU 5 LBL xxxxx
+   heap offset: 0
+   low bound: 1
+   high bound: 5
+   elem size: 2
+   elem type: 0
+   elem label: 
+   literals: 
+   num literals: 0
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 4
+*)
+
+Program Test;
+
+Type
+  MyArray = Array[1..5] Of Integer;
+  MyRec = Record
+    a, b : Integer;
+  End;
+
+Var
+  arr : MyArray;
+  rec : MyRec;
+  fr : Real;
+
+Procedure MyProc(i : Integer; Var r : Real; ch : Char);
+Var
+  j : Integer;
+  c : Char;
+Begin
+  i := 123;
+  ch := 'k';
+  r := 123.456;
+  j := 2345;
+  c := 'm';
+End;
+
+Function MyFunc(i : Integer) : Real;
+Var
+  k : Integer = 3456;
+Begin
+  MyFunc := i + k + 3.14159;
+End;
+
+Procedure ArrayProc(Var a : MyArray);
+Begin
+  a[3] := 12345;
+End;
+
+Procedure RecProc(r : MyRec);
+Begin
+  r.b := 12345;
+End;
+
+Begin
+  MyProc(12345, fr, 'x');
+  fr := MyFunc(4321);
+  ArrayProc(arr);
+  RecProc(rec);
+End.

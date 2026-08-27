@@ -49,6 +49,7 @@ ARRAYDECL_ARRAY = 5
 
 .bss
 initPtr: .res 2
+isRealNeg: .res 1
 
 ; Local variables used by initArrayDeclaration
 numElems: .res 2
@@ -217,16 +218,20 @@ L1:
     jmp DN
 
     ; Array of reals -- store each element separately.
-    ; The first byte of a real literal is non-zero
-    ; if the real is negative. Following that is a null-terminated
-    ; string representation of the value. Each has to be converted
+    ; Real literals are stored as null-terminated strings and are converted to
+    ; real numbers by the runtime. Each has to be converted
     ; to internal FLOAT representation then copied into the array.
-L1: ldy #0
+L1: lda #0
+    sta isRealNeg
+    ldy #0
     lda (ptr4),y                ; Read the "negative" flag
-    pha                         ; Store it away
+    cmp #'-'
+    bne L2
+    lda #1
+    sta isRealNeg
     iny                         ; Increase index for reading null-terminated value
     ; Copy the null-terminated string into FPBUF
-    ldx #0                      ; X is index into FPBUF
+L2: ldx #0                      ; X is index into FPBUF
 :   lda (ptr4),y                ; Load character from real literal string
     sta FPBUF,x                 ; Store it in FPBUF
     beq :+                      ; If zero, skip ahead (done reading string)
@@ -242,7 +247,7 @@ L1: ldy #0
     bcc :+
     inc ptr4 + 1
 :   jsr FPINP                   ; Convert the string literal into a FLOAT
-    pla                         ; Read the "negative" flag
+    lda isRealNeg               ; Is the real number negative?
     beq :+                      ; Skip ahead if zero
     ldx #FPLSW                  ; Negate the value
     ldy #3
@@ -1107,11 +1112,8 @@ L2: ldy #3                          ; Look at bit 0 - if 1 then this is a cloned
     bne :+                          ; Branch if a cloned file handle
     ; Close the file
     jsr saveArrayLocals
-    ldy #1
-    lda (ptr1),y
-    tax
-    dey
-    lda (ptr1),y
+    lda ptr1
+    ldx ptr1+1
     jsr fileClose
     jsr restoreArrayLocals
     ; Move ptr1 to the next file in the array

@@ -1,0 +1,58 @@
+(* Test 5 - For loops
+PSH IWU 1
+PSH IWU 0
+BRA LBL xxxxx
+LOC LBL xxxxx
+PSH IBS 1
+PSH VDW 4 1 0
+SET IBS 4 IBS 2
+LOC LBL xxxxx
+PSH VDR 4 1 0
+PSH IBS 5
+GRT IBS 4 IBS 2
+BIT LBL xxxxx
+PSH VDR 4 1 0
+PSH IBS 5
+MUL IBS 4 IBS 2 IBS 6
+PSH VDW 4 1 1
+SET IBS 4 IBS 6
+PSH VDR 4 1 0
+SUC IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+BRA LBL xxxxx
+LOC LBL xxxxx
+PSH IBS 5
+PSH VDW 4 1 0
+SET IBS 4 IBS 2
+LOC LBL xxxxx
+PSH VDR 4 1 0
+PSH IBS 1
+LST IBS 4 IBS 2
+BIT LBL xxxxx
+PSH VDR 4 1 0
+PSH IBS 5
+MUL IBS 4 IBS 2 IBS 6
+PSH VDW 4 1 1
+SET IBS 4 IBS 6
+PSH VDR 4 1 0
+PRE IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+BRA LBL xxxxx
+LOC LBL xxxxx
+*)
+
+Program Test;
+
+Var
+  i : Integer = 1;
+  j : Integer;
+
+Begin
+  For i := 1 To 5 Do
+    j := i * 5;
+  
+  For i := 5 DownTo 1 Do
+    j := i * 5;
+End.

@@ -1,141 +1,169 @@
-SRCDIR := src
-OBJDIR := obj
 BINDIR := bin
-DRVDIR := ../../../drv
+OBJDIR := obj
+SRCDIR := src
+TESTSDIR := tests
+ERRORTESTSDIR := errortests
+PETSCIIDIR := petscii
+TOKENIZERDIR := ../../overlays/tokenizerasm
+ICODEDIR := ../../overlays/icodeasm
+PARSERDIR := ../../overlays/parserasm
+SHOWTREEDIR := ../../overlays/showtree
+DUMPICODEDIR := ../../overlays/dumpicode
+RESOLVERDIR := ../../overlays/resolverasm
+TYPECHECKDIR := ../../overlays/typecheckasm
+MEMINFODIR := ../../overlays/meminfo
+ASMLIBDIR := ../../lib/asmlib
 
 PROGRAM := icodetest
-D81FILE := $(BINDIR)/$(PROGRAM).d81
-PRGFILE := $(BINDIR)/$(PROGRAM)
-TARGET := c64
-CC65TARGET = c64
-c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
-c128_EMUCMD = x128 -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
-mega65_EMUCMD := xmega65 -besure -8
-EMUCMD = $($(TARGET)_EMUCMD)
-DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
+TARGET := mega65
 
-SHAREDSRCDIR = ../../shared
-SHAREDCHUNKSDIR = $(SHAREDSRCDIR)/chunks
-SHAREDICODEDIR = $(SHAREDSRCDIR)/icode
-SHAREDMEMBUFDIR = $(SHAREDSRCDIR)/membuf
-LIBSRCDIR = ../../lib/common
+BINTARGETDIR := $(BINDIR)/$(TARGET)
+OBJTARGETDIR := $(OBJDIR)/$(TARGET)
+D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 
-c64_CFLAGS =
-c128_CFLAGS =
-mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
-CFLAGS = $($(TARGET)_CFLAGS) -D __TEST__ -I ../../include
-ASFLAGS = --asm-include-dir ../../asminc
-LDFLAGS = 
+ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
-SOURCES := $(wildcard $(SRCDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDCHUNKSDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDICODEDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDICODEDIR)/*.s)
-SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.c)
-SOURCES += $(wildcard $(SHAREDMEMBUFDIR)/*.s)
-SOURCES += $(SHAREDSRCDIR)/common.c
-SOURCES += $(SHAREDSRCDIR)/error.c
-SOURCES += $(SHAREDSRCDIR)/symtab.c
-SOURCES += $(SHAREDSRCDIR)/tests.c
-SOURCES += $(SHAREDSRCDIR)/types.c
-SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
+ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
+TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
+PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
+ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
+SHOWTREE = ../../overlays/showtree/bin/$(TARGET)/showtree
+DUMPICODE = ../../overlays/dumpicode/bin/$(TARGET)/dumpicode
+RESOLVER = ../../overlays/resolverasm/bin/$(TARGET)/resolver
+TYPECHECK = ../../overlays/typecheckasm/bin/$(TARGET)/typecheck
+MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
+PRGFILE = $(BINTARGETDIR)/icodetest
+SYSTEMPAS = ../../lib/system/system.pas
 
-ifeq ($(TARGET),mega65)
-LIBCSRCDIR = ../../mega65-libc/src
-SOURCES += $(wildcard $(SRCDIR)/*.s)
-SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
-SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)
-endif
+BINFILES += $(TOKENIZER)
+BINFILES += $(PARSER)
+BINFILES += $(ICODE)
+BINFILES += $(SHOWTREE)
+BINFILES += $(DUMPICODE)
+BINFILES += $(RESOLVER)
+BINFILES += $(TYPECHECK)
+BINFILES += $(MEMINFO)
+BINFILES += $(ASMLIB)
+BINFILES += $(PRGFILE)
 
-CONFIG := cfg-$(TARGET).cfg
+SOURCES := $(wildcard $(SRCDIR)/*.s)
+OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 
-OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
+TXTFILES := errormsgs.petscii system.petscii
 
-DEPENDS := $(OBJECTS:.o=.d)
+TESTS := $(wildcard $(TESTSDIR)/*.pas)
+ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
+TXTFILES += $(patsubst $(TESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(TESTS))
+TXTFILES += $(patsubst $(ERRORTESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(ERRORTESTS))
 
-all: $(BINDIR) $(OBJDIR) $(D81FILE)
+all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
-$(BINDIR):
-	mkdir -p $@
+errormsgs.petscii: ../../shared/errormsgs.txt
+	dos2unix < ../../shared/errormsgs.txt | petcat -w2 -text -o errormsgs.petscii
+
+system.petscii: $(SYSTEMPAS)
+	dos2unix < $(SYSTEMPAS) | petcat -w2 -text -o system.petscii
 
 $(OBJDIR):
 	mkdir -p $@
 
-vpath %.c $(SRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+$(OBJTARGETDIR): $(OBJDIR)
+	mkdir -p $@
+
+$(BINDIR):
+	mkdir -p $@
+
+$(BINTARGETDIR): $(BINDIR)
+	mkdir -p $@
+
+$(PARSER): FORCE
+	cd $(PARSERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(RESOLVER): FORCE
+	cd $(RESOLVERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(TYPECHECK): FORCE
+	cd $(TYPECHECKDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(TOKENIZER): FORCE
+	cd $(TOKENIZERDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(ICODE): FORCE
+	cd $(ICODEDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(SHOWTREE): FORCE
+	cd $(SHOWTREEDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(DUMPICODE): FORCE
+	cd $(DUMPICODEDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(MEMINFO): FORCE
+	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
+
+$(ASMLIB): FORCE
+	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 vpath %.s $(SRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+	ca65 $(ASFLAGS) -o $@ $<
 
-vpath %.c $(SHAREDSRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+vpath %.pas $(TESTSDIR)
+$(PETSCIIDIR)/%.pas: %.pas | $(PETSCIIDIR)
+	dos2unix < $< | petcat -w2 -text -o $@
 
-vpath %.s $(SHAREDSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+vpath %.pas $(ERRORTESTSDIR)
+$(PETSCIIDIR)/%.pas: %.pas | $(PETSCIIDIR)
+	dos2unix < $< | petcat -w2 -text -o $@
 
-vpath %.c $(SHAREDCHUNKSDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+$(PRGFILE): $(OBJECTS)
+	ld65 -o $(PRGFILE) -C icodetest.cfg $(OBJECTS)
 
-vpath %.s $(SHAREDCHUNKSDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+FORCE:
 
-vpath %.c $(SHAREDICODEDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath %.s $(SHAREDICODEDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath %.c $(SHAREDMEMBUFDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath %.s $(SHAREDMEMBUFDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-ifeq ($(TARGET),mega65)
-vpath %.c $(LIBCSRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
-
-vpath %.s $(LIBCSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-endif
-
-vpath %.s $(LIBSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-$(BINDIR)/$(PROGRAM): $(OBJECTS)
-	cl65 -t $(CC65TARGET) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
-
-ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM)
+$(D81FILE): $(BINFILES) $(TXTFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(BINDIR)/$(PROGRAM) $(PROGRAM)
-else
-$(D81FILE): $(BINDIR)/$(PROGRAM)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write $(DRVFILE) $(TARGET)-reu.emd,prg
-endif
+	-write $(PRGFILE) icodetest,prg \
+	-write $(TOKENIZER) tokenizer,prg \
+	-write $(ICODE) icode,prg \
+	-write $(PARSER) parser,prg \
+	-write $(RESOLVER) resolver,prg \
+	-write $(TYPECHECK) typecheck,prg \
+	-write $(DUMPICODE) dumpicode,prg \
+	-write $(SHOWTREE) showtree,prg \
+	-write $(MEMINFO) meminfo,prg \
+	-write $(ASMLIB) asm.lib,prg \
+	-write $(PETSCIIDIR)/test1.pas test1.pas,seq \
+	-write $(PETSCIIDIR)/test2.pas test2.pas,seq \
+	-write $(PETSCIIDIR)/test3.pas test3.pas,seq \
+	-write $(PETSCIIDIR)/test4.pas test4.pas,seq \
+	-write $(PETSCIIDIR)/test5.pas test5.pas,seq \
+	-write $(PETSCIIDIR)/test6.pas test6.pas,seq \
+	-write $(PETSCIIDIR)/test7.pas test7.pas,seq \
+	-write $(PETSCIIDIR)/test8.pas test8.pas,seq \
+	-write $(PETSCIIDIR)/test9.pas test9.pas,seq \
+	-write $(PETSCIIDIR)/test10.pas test10.pas,seq \
+	-write $(PETSCIIDIR)/test11.pas test11.pas,seq \
+	-write $(PETSCIIDIR)/test12.pas test12.pas,seq \
+	-write $(PETSCIIDIR)/test13.pas test13.pas,seq \
+	-write $(PETSCIIDIR)/test14.pas test14.pas,seq \
+	-write $(PETSCIIDIR)/test15.pas test15.pas,seq \
+	-write $(PETSCIIDIR)/test16.pas test16.pas,seq \
+	-write $(PETSCIIDIR)/test17.pas test17.pas,seq \
+	-write $(PETSCIIDIR)/test18.pas test18.pas,seq \
+	-write $(PETSCIIDIR)/test19.pas test19.pas,seq \
+	-write $(PETSCIIDIR)/test20.pas test20.pas,seq \
+	-write $(PETSCIIDIR)/test21.pas test21.pas,seq \
+	-write $(PETSCIIDIR)/test22.pas test22.pas,seq \
+	-write errormsgs.petscii errormsgs.txt,seq \
+	-write system.petscii system.pas,seq
 
 clean:
-	$(RM) $(OBJECTS)
-	$(RM) $(DEPENDS)
-	$(RM) $(PROGRAM)
-	$(RM) $(BINDIR)/*
+	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
 run: $(D81FILE)
-	$(EMUCMD) $<
+	xmega65 -besure -8 $(D81FILE)
+
+load: $(D81FILE)
+	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
+	etherload -m icodetest.d81 -r $(BINTARGETDIR)/icodetest

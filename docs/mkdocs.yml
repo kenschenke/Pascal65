@@ -138,6 +138,7 @@ nav:
   - Intermediate Code:
     - Introduction: icode/intro.md
     - Literals: icode/literals.md
+    - Variables: icode/variables.md
     - Data Types: icode/types.md
     - Instructions:
       - ABS: icode/mne/abs.md
@@ -159,6 +160,7 @@ nav:
       - CNL: icode/mne/cnl.md
       - CPY: icode/mne/cpy.md
       - CVI: icode/mne/cvi.md
+      - DAT: icode/mne/dat.md
       - DCF: icode/mne/dcf.md
       - DEF: icode/mne/def.md
       - DEL: icode/mne/del.md
@@ -189,6 +191,7 @@ nav:
       - POP: icode/mne/pop.md
       - PPF: icode/mne/ppf.md
       - PRE: icode/mne/pre.md
+      - PRP: icode/mne/prp.md
       - PSH: icode/mne/psh.md
       - PUF: icode/mne/puf.md
       - ROU: icode/mne/rou.md

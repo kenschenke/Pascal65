@@ -10,6 +10,8 @@
  ; https://opensource.org/licenses/MIT
 ;;;
 
+MAX_ERROR_LENGTH = 23
+
 abortInvalidCommandLineArgs = 256-1
 abortSourceFileOpenFailed   = 256-2
 abortIFormFileOpenFailed    = 256-3
@@ -82,7 +84,15 @@ errMissingVariable = 53
 errCodeSegmentOverflow = 54
 errUnimplementedFeature = 55
 errIdentifierTooLong = 56
-numParserErrors = 57
+errMissingINTERFACE = 57
+errMissingIMPLEMENTATION = 58
+errMissingUnitDeclaration = 59
+errInvalidSTRINGUse = 60
+errUnresolvedFwd = 61
+errIndexOutOfRange = 62
+errMissingQuote = 63
+errSourceFileOpenFailed = 64
+numParserErrors = 65
 
 rteNone = 0
 rteStackOverflow = 1

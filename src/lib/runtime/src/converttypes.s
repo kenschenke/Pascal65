@@ -57,6 +57,8 @@
     beq SINT8
     cmp #TYPE_WORD
     beq UINT16
+    cmp #TYPE_ENUMERATION_VALUE
+    beq UINT16
     cmp #TYPE_ADDRESS
     beq UINT16
     cmp #TYPE_POINTER
