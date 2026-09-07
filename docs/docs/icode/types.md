@@ -7,8 +7,8 @@
 |3       |TYPE_WORD             |Unsigned 16-bit integer|
 |4       |TYPE_INTEGER          |Signed 16-bit integer  |
 |5       |TYPE_CARDINAL         |Unsigned 32-bit integer|
-|6       |TYPE_LONGINT          |Signed 32-bit integher |
-|7       |TYPE_REAL             |Floating point integer |
+|6       |TYPE_LONGINT          |Signed 32-bit integer  |
+|7       |TYPE_REAL             |Floating point number  |
 |8       |TYPE_BOOLEAN          |Boolean value          |
 |9       |TYPE_CHARACTER        |Character value        |
 |10      |TYPE_STRING_LITERAL   |String literal         |
