@@ -63,6 +63,9 @@ $(BINDIR):
 $(BINTARGETDIR): $(BINDIR)
 	mkdir -p $@
 
+$(PETSCIIDIR):
+	mkdir -p $@
+
 $(PARSER): FORCE
 	cd $(PARSERDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -138,6 +141,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 
 clean:
 	$(RM) $(TXTFILES)
+	$(RM) $(OBJECTS)
 	$(RM) $(D81FILE)
 
 run: $(D81FILE)

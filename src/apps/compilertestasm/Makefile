@@ -90,6 +90,9 @@ $(OBJDIR):
 $(OBJTARGETDIR): $(OBJDIR)
 	mkdir -p $@
 
+$(PETSCIIDIR):
+	mkdir -p $@
+
 $(PARSER): FORCE
 	cd $(PARSERDIR) && $(MAKE) TARGET=$(TARGET)
 

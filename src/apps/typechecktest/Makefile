@@ -147,6 +147,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 
 clean:
 	$(RM) $(TXTFILES)
+	$(RM) $(OBJECTS)
 	$(RM) $(D81FILE)
 
 run: $(D81FILE)
