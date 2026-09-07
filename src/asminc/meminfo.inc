@@ -1,5 +1,5 @@
 
-MEMINFO_BASE = $5000
+MEMINFO_BASE = $4000
 
 heapSummary = MEMINFO_BASE
 heapReport = MEMINFO_BASE + 3

@@ -1,5 +1,5 @@
 
-CODEGEN_BASE = $5000
+CODEGEN_BASE = $4000
 
 objCodeGen = CODEGEN_BASE
 setCodeGenStackSize = CODEGEN_BASE + 3

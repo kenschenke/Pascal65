@@ -1,5 +1,5 @@
 
-ICODE_BASE = $5000
+ICODE_BASE = $4000
 
 icodeWrite = ICODE_BASE
 icodeFileErase = ICODE_BASE + 3

@@ -1,4 +1,4 @@
 
-EDITOR_BASE = $5000
+EDITOR_BASE = $4000
 
 editorRun = EDITOR_BASE

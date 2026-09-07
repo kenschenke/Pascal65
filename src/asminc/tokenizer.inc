@@ -1,11 +1,13 @@
 
 CH_EOF = $7f
 
-TOKENIZER_BASE = $5000
+TOKENIZER_BASE = $4000
 
 tokenize = TOKENIZER_BASE
 
+.ifndef MAX_LINE_LENGTH
 MAX_LINE_LENGTH = 80
+.endif
 
 ; Tokenizer character codes
 .enum

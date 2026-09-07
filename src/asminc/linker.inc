@@ -1,4 +1,4 @@
-LINKER_BASE = $5000
+LINKER_BASE = $4000
 
 genPrgFile = LINKER_BASE
 
