@@ -21,9 +21,9 @@
 .import editorSetStatusMsg, editorRowAt, editorSetAllRowsDirty
 .import screenrows, calcScreenPtr
 .import editorSetDefaultStatusMessage, clipboard
-.import editorFreeLine, renderCursor, gapBuf
+.import editorFreeLine, renderCursor, editBuf
 .import editorAllocLine
-.import updateStatusBarFilename
+.import updateStatusBarFilename, syntaxHighlight
 
 .data
 
@@ -36,6 +36,7 @@ currentScreenRow: .res 1
 endHighlight: .res 2
 linePtr: .res 4
 lineIndex: .res 1
+prevLineContinuedComment: .res 1
 
 .code
 
@@ -424,11 +425,11 @@ L1: ; Are we at the end of the clipboard buffer?
     ; Read one character from the clipboard
     ldq clipboard
     stq ptr1
-    lda #<gapBuf
+    lda #<editBuf
     clc
     adc lineIndex
     sta ptr2
-    lda #>gapBuf
+    lda #>editBuf
     adc #0
     sta ptr2+1
     lda #0
@@ -437,9 +438,9 @@ L1: ; Are we at the end of the clipboard buffer?
     lda #1
     ldx #0
     jsr readFromMemBuf
-    lda #<gapBuf
+    lda #<editBuf
     sta ptr1
-    lda #>gapBuf
+    lda #>editBuf
     sta ptr1+1
     ldy lineIndex
     lda (ptr1),y
@@ -516,7 +517,7 @@ DN: jsr editorSetAllRowsDirty
     ldz #0
     lda lineIndex
     beq L1
-:   lda gapBuf,x
+:   lda editBuf,x
     nop
     sta (ptr2),z
     inx
@@ -524,7 +525,31 @@ DN: jsr editorSetAllRowsDirty
     dec lineIndex
     bne :-
 
-L1: ldz #EDITFILE::firstLine
+L1: ; Allocate a buffer for the syntax highlighting
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq NP
+    ldz #EDITLINE::length
+    nop
+    lda (ptr3),z
+    beq NP
+    ldx #0
+    jsr heapAlloc
+    stq ptr2
+    ldq linePtr
+    stq ptr3
+    ldz #EDITLINE::syntaxHL
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr3),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
+NP: ldz #EDITFILE::firstLine
     neg
     neg
     nop
@@ -549,6 +574,8 @@ L1: ldz #EDITFILE::firstLine
     dez
     dex
     bpl :-
+    lda #0
+    sta prevLineContinuedComment
     bra DN
 
 L2: ldz #EDITFILE::cy
@@ -584,9 +611,49 @@ L2: ldz #EDITFILE::cy
     dez
     dex
     bpl :-
+    ; Is the next line inside a continued multi-line comment?
+    ldz #EDITLINE::continuedComment
+    nop
+    lda (ptr4),z
+    sta prevLineContinuedComment
+
+DN: ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq NH
+
+    ; Run the syntax highlighting for the buffer
+    ldq linePtr
+    stq ptr3
+    ldz #EDITLINE::length
+    nop
+    lda (ptr3),z
+    beq NH
+    ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr2
+    clc
+    lda prevLineContinuedComment
+    beq :+
+    sec
+:   ldz #EDITLINE::length
+    nop
+    lda (ptr3),z
+    jsr syntaxHighlight
+    ldq linePtr
+    stq ptr3
 
     ; Increment number of lines in the file
-DN: ldz #EDITFILE::numLines
+NH: ldz #EDITFILE::numLines
     nop
     lda (currentFile),z
     sta intOp1

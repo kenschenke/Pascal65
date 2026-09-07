@@ -24,7 +24,7 @@
 .export editorHandleFileSaveAs
 
 .import readTitleFile, editorRefreshScreen, openHelpFile, clearKeyBuf
-.import renderCursor, currentEditorRow, editGapBuf, initGapBuf, closeGapBuf
+.import renderCursor, currentEditorRow, editBufKey, initEditBuf, closeEditBuf
 .import editorEnterKey, editorReadKey, clearScreen, showDirScreen, showFileScreen
 .import saveToExisting, fileSaveAs, editorDrawMessageBar, editorCloseAllFiles
 .import startTextSelection, editorCalcSelection, editorClearSelection, editorCopySelection
@@ -86,7 +86,16 @@ prevRow: .res 4
 
     jsr editorSetDefaultStatusMessage
 
+    ; Set color 45 to denim blue
+    lda #3
+    sta $d12d
+    lda #4
+    sta $d22d
     lda #6
+    sta $d32d
+
+    ; Set border and background to color 45
+    lda #45
     sta $d020
     sta $d021
 
@@ -113,7 +122,7 @@ prevRow: .res 4
 :   lda #EDITOR_LOOP_CONTINUE
     sta loopCode
 
-    jsr initGapBuf
+    jsr initEditBuf
     
     rts
 .endproc
@@ -305,12 +314,12 @@ L2: ldz #EDITFILE::nextFile
     pla                     ; Pop the keystroke back off the stack
 :   cmp #CH_ENTER
     bne :+
-    jsr editGapBuf
+    jsr editBufKey
     jmp editorEnterKey
 :   cmp #CH_TAB
     bne :+
 :   ; Any other keystroke handled by editGapBuf
-    jmp editGapBuf
+    jmp editBufKey
 DN: rts
 .endproc
 
@@ -332,7 +341,7 @@ DN: rts
     nop
     ora (currentFile),z
     beq DN                  ; Branch if row is already 0
-    jsr closeGapBuf
+    jsr closeEditBuf
     clc
     jsr renderCursor
     ldz #EDITFILE::cy
@@ -374,7 +383,7 @@ DN: rts
     jsr geInt16
     bne DN
 
-    jsr closeGapBuf
+    jsr closeEditBuf
 
     clc
     jsr renderCursor
@@ -397,7 +406,7 @@ DN: rts
 .endproc
 
 .proc editorCursorLeft
-    jsr editGapBuf
+    jsr editBufKey
     bcs DN                  ; Branch if editGapBuf handled the key
     ; First, make sure the cursor position > 0
     ldz #EDITFILE::cx
@@ -430,7 +439,7 @@ DN: jsr editorCalcSelection
 .endproc
 
 .proc editorCursorRight
-    jsr editGapBuf
+    jsr editBufKey
     bcs DN                  ; Branch if editGapBuf handled the key
     ; First, check if the cursor is at the end of the line
     ldz #EDITFILE::cx
@@ -494,7 +503,7 @@ DN: jsr editorCalcSelection
 .endproc
 
 .proc editorHome
-    jsr editGapBuf
+    jsr editBufKey
     bcs DN                  ; Branch if editGapBuf handled the key
     clc
     jsr renderCursor
@@ -698,7 +707,7 @@ L2: lda loopCode
 ; This routine handles the user pressing Ctrl+K or Esc+K
 ; which moves the cursor to the last character on the line
 .proc editorHandleCtrlK
-    jsr closeGapBuf
+    jsr closeEditBuf
     clc
     jsr renderCursor
     jsr currentEditorRow
@@ -717,7 +726,7 @@ L2: lda loopCode
 .proc editorHandleCtrlN
     clc
     jsr renderCursor
-    jsr closeGapBuf
+    jsr closeEditBuf
     ; Add screenrows to rowOff (top row on screen)
     ldz #EDITFILE::rowOff
     nop
@@ -814,7 +823,7 @@ L2: lda loopCode
 .proc editorHandleCtrlP
     clc
     jsr renderCursor
-    jsr closeGapBuf
+    jsr closeEditBuf
     ; Subtract screenrows from rowOff (top row on screen)
     ldz #EDITFILE::rowOff
     nop
@@ -877,7 +886,7 @@ L2: lda loopCode
 ; which pastes from the clipboard.
 .proc editorHandleCtrlU
     ; First, we want to close out any open gap buffer
-    jsr closeGapBuf
+    jsr closeEditBuf
     jsr editorPasteClipboard
     rts
 .endproc
@@ -1004,7 +1013,7 @@ L2: lda loopCode
 ; which begins a text selection.
 .proc editorHandleCtrlY
     ; First, we want to close out any open gap buffer
-    jsr closeGapBuf
+    jsr closeEditBuf
     jsr startTextSelection
     jsr editorCalcSelection
     rts
@@ -1023,7 +1032,7 @@ L2: lda loopCode
     nop
     lda (currentFile),z
     beq DN
-    jsr closeGapBuf
+    jsr closeEditBuf
     ; See if a filename has been set
     ldz #EDITFILE::filename
     nop
@@ -1048,7 +1057,7 @@ DN: sec
     ldq currentFile
     jsr isQZero
     beq DN
-    jsr closeGapBuf
+    jsr closeEditBuf
     jsr fileSaveAs
     sta tmp1
     bcs :+
@@ -1094,7 +1103,7 @@ L1: ; See if the file is read-only (the help file)
     pla
     rts
 
-L2: jsr closeGapBuf
+L2: jsr closeEditBuf
     jsr editorSaveAllFiles
     jsr editorAnyUnsavedFiles
     beq L3

@@ -46,7 +46,18 @@ L1: ldq ptr2
     lda (ptr2),z
     beq L2
     ; Free the line contents
+    ldq ptr2
+    jsr pushQ
     ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr heapFree
+    jsr popQ
+    stq ptr2
+    ; Free the syntax highlighting
+    ldz #EDITLINE::syntaxHL
     neg
     neg
     nop

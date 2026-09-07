@@ -18,11 +18,12 @@
 .export editorRefreshScreen, editorScroll, renderCursor, editorRowAt
 .export petsciiToScreenCode, currentEditorRow, clearScreen
 .export editorDrawMessageBar, calcScreenPtr, initScreen, setupScreen
-.export resetScreenSettings
+.export resetScreenSettings, syntaxHighlightToColor, calcColorPtr
 
 .import anyDirtyRows, titleScreen, rowPtrs
 .import screenrows, screencols, statusmsg, statusmsg_dirty, statusbar
 .import editorSetAllRowsDirty, colorPtrs, editorHighlightSelection
+.import isEditBufActive, getEditBufSyntaxColor
 
 .bss
 
@@ -235,18 +236,21 @@ DN: rts
 ; Zero-based row in Y
 ; Column in X
 ; Length in A
-; Buffer in ptr1
+; Text buffer in ptr1
+; Syntax highlight buffer in ptr2
 ; C flag is set if row is to be reversed
 ; Note: ptr4 is destroyed as well as tmp1, tmp2, tmp3, and tmp4
 .proc drawRow
+    phy                 ; save row on stack
+    pha                 ; Save length on stack
     sta tmp1            ; length in tmp1
     lda #0
     sta tmp2            ; reverse flag in tmp2
+    stx tmp4            ; starting column in tmp4
     bcc :+
     lda #1
     sta tmp2
 :   jsr calcScreenPtr
-    stx tmp4            ; starting column in tmp4
     lda #0
     sta tmp3            ; caller's buffer offset in tmp3
 L1: ldz tmp3
@@ -263,6 +267,48 @@ L1: ldz tmp3
     inc tmp4
     dec tmp1
     bne L1
+
+    ; Fill in syntax highlighting
+    pla                 ; pop length off stack
+    sta tmp1            ; and put it in tmp1
+    ldq ptr2
+    jsr isQZero
+    bne :+
+    pla                 ; discard row number
+    rts
+:   ply                 ; row number in Y
+    jsr calcColorPtr
+    ; Loop through the characters
+    ldz #0
+L2: nop
+    lda (ptr2),z
+    jsr syntaxHighlightToColor
+L3: nop
+    sta (ptr1),z
+    inz
+    cpz tmp1
+    bne L2
+    rts
+.endproc
+
+.proc syntaxHighlightToColor
+    cmp #SYNTAXHL_COMMENT
+    bne :+
+    lda #SYNTAXCOLOR_COMMENT
+    rts
+:   cmp #SYNTAXHL_KEYWORD
+    bne :+
+    lda #SYNTAXCOLOR_KEYWORD
+    rts
+:   cmp #SYNTAXHL_NUMBER
+    bne :+
+    lda #SYNTAXCOLOR_NUMBER
+    rts
+:   cmp #SYNTAXHL_STRING
+    bne :+
+    lda #SYNTAXCOLOR_STRING
+    rts
+:   lda #SYNTAXCOLOR_NONE
     rts
 .endproc
 
@@ -376,6 +422,7 @@ L1: ldz tmp3
     beq L1
 
     stq ptr1
+
     ldz #EDITFILE::cx
     nop
     lda (ptr1),z
@@ -436,7 +483,14 @@ L1: ldz tmp3
     iny
     bne :-
 
-L1: ldy screenrows
+L1: ; Set ptr2 to null
+    lda #0
+    tax
+    tay
+    taz
+    stq ptr2
+
+    ldy screenrows
     ldx #0
     lda #<statusbar
     sta ptr1
@@ -455,8 +509,14 @@ L1: ldy screenrows
     lda statusmsg_dirty
     bne :+
     rts
+    ; Set ptr2 to null
+:   lda #0
+    tax
+    tay
+    taz
+    stq ptr2
     ; Calculate length of status message
-:   ldx #0
+    ldx #0
 :   lda statusmsg,x
     beq :+
     inx
@@ -590,11 +650,22 @@ L2: ldz #EDITLINE::next
     ; Copy ptr4 to ptr1
     ldq ptr4
     stq ptr1
+    ; Fill in ptr2
+    ldq ptr2
+    jsr pushQ
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
     ldx #0
     ldy screenY
     lda screenX
     clc
     jsr drawRow
+    jsr popQ
+    stq ptr2
 
     ; Clear the dirty flag for the current row
 L3: ldz #EDITLINE::dirty
@@ -644,12 +715,20 @@ L1: ldz #EDITLINE::buffer
     lda (ptr2),z
     beq L2              ; Skip if the line is blank
     stq ptr1            ; line buffer in ptr1
+    ldq ptr2
+    jsr pushQ
     ldz #EDITLINE::length
     nop
     lda (ptr2),z
     sta tmp2            ; length
     lsr a               ; divide by 2
     sta tmp1            ; store line length / 2 in tmp1
+    ; Set ptr2 to null
+    lda #0
+    tax
+    tay
+    taz
+    stq ptr2
     lda screencols
     lsr a
     sec
@@ -659,6 +738,8 @@ L1: ldz #EDITLINE::buffer
     ldy screenY
     clc
     jsr drawRow
+    jsr popQ
+    stq ptr2
     ; Go to the line in the title screen
 L2: inc screenY
     ldz #EDITLINE::next
@@ -768,7 +849,6 @@ DN: rts
 
 ; This routine renders the cursor at the current position
 ; Carry is set if the cursor is to be drawn, cleared otherwise
-; If the cursor is to be drawn, the color is orange. White otherwise.
 .proc renderCursor
     lda #0
     bcc :+
@@ -808,10 +888,13 @@ DN: rts
     ldx tmp1
     bne DR              ; draw the cursor
     and #$7f
-    ldx #COLOR_WHITE
-    bne ST
+    pha
+    jsr getColorAtPos
+    tax
+    pla
+    bra ST
 DR: ora #$80
-    ldx #COLOR_ORANGE
+    ldx #COLOR_CURSOR
 ST: nop
     sta (ptr4),z
     phx                 ; Store color on the CPU stack
@@ -830,6 +913,58 @@ ST: nop
     sta tmp1
     stx tmp2
 
+    jsr calcColorPtr
+
+    ldz tmp2        ; Column number
+    lda tmp1        ; Color
+    nop
+    sta (ptr1),z
+    rts
+.endproc
+
+; This routine looks up the color of the character at the current position.
+.proc getColorAtPos
+    ldq currentFile
+    bne L1
+    lda #COLOR_WHITE
+    rts
+L1: ; If an edit buffer is currently active, the color needs to come from
+    ; there instead of the line.
+    jsr isEditBufActive
+    bne L2
+    jsr getEditBufSyntaxColor
+    bra L4
+L2: ldz #EDITFILE::cy+1
+    nop
+    lda (currentFile),z
+    tax
+    dez
+    nop
+    lda (currentFile),z
+    jsr editorRowAt
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr isQZero
+    bne L3
+    lda #COLOR_WHITE
+    rts
+L3: stq ptr2
+    ldz #EDITFILE::cx
+    nop
+    lda (currentFile),z
+    taz
+    nop
+    lda (ptr2),z
+L4: jsr syntaxHighlightToColor
+    rts
+.endproc
+
+; This routine calculates the pointer to color RAM for the given row, passed in Y.
+; The row pointer is placed in ptr1.
+.proc calcColorPtr
     tya             ; Copy row to A
     asl a           ; Multiply by 4
     rol a
@@ -845,10 +980,6 @@ ST: nop
     inx
     lda colorPtrs,x
     sta ptr1+3
-    ldz tmp2        ; Column number
-    lda tmp1        ; Color
-    nop
-    sta (ptr1),z
     rts
 .endproc
 

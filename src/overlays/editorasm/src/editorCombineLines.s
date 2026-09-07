@@ -17,7 +17,8 @@
 .export editorCombineLines
 
 .import editorRowAt, editorSetAllRowsDirty, editorFreeLine
-.import currentEditorRow, renderCursor
+.import currentEditorRow, renderCursor, currentEditorRow
+.import syntaxHighlight
 
 .bss
 
@@ -68,10 +69,11 @@ newBuffer: .res 4
     sta combinedLength      ; Combined length in tmp2
     pla                     ; Pop the previous line's capacity from the stack
     cmp combinedLength      ; Is previous row capacity > combined length?
-    bcs L1                  ; Branch if combined length <= previous row capacity
+    bcc :+                  ; Branch if combined length > previous row capacity
+    jmp L1
     ; The combined row length will not fit in the previous row's existing buffer.
     ; A new buffer needs to be allocated.
-    lda combinedLength
+:   lda combinedLength
     ldx #0
     jsr heapAlloc           ; Allocate a big enough buffer for the combined row
     stq ptr4                ; New buffer in ptr4
@@ -114,6 +116,35 @@ newBuffer: .res 4
     dez
     dex
     bpl :-
+    ; Allocate a buffer for the syntax highlighting
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq L1
+    ; Free the old syntax highlight buffer (if it exists)
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    jsr isQZero
+    beq :+
+    jsr heapFree
+:   lda combinedLength
+    ldx #0
+    jsr heapAlloc
+    stq ptr4
+    ldq prevLine
+    stq ptr3
+    ldz #EDITLINE::syntaxHL
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (ptr3),z
+    inz
+    inx
+    cpx #4
+    bne :-
 L1: ldq currentLine
     stq ptr2
     ldz #EDITLINE::buffer
@@ -227,7 +258,37 @@ L1: ldq currentLine
     lda prevLength
     nop
     sta (currentFile),z
+    ; Recalculate syntax highlighting for the new combined row.
+    jsr recalcSyntaxHighlight
     jsr editorSetAllRowsDirty
     rts
 .endproc
 
+.proc recalcSyntaxHighlight
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    bne L1
+    rts
+L1: jsr currentEditorRow
+    ldz #EDITLINE::length
+    nop
+    lda (ptr2),z
+    pha
+    ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    pla
+    clc
+    jsr syntaxHighlight
+    rts
+.endproc

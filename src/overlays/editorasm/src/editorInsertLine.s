@@ -16,7 +16,7 @@
 
 .export editorInsertLine
 
-.import editorAllocLine, currentEditorRow, closeGapBuf
+.import editorAllocLine, currentEditorRow, closeEditBuf
 
 ; This routine inserts a new line after the current line
 ; On exit:
@@ -81,7 +81,7 @@ L0: ldz #EDITFILE::firstLine
     dex
     bpl :-
     ; The editing buffer needs to be saved
-    jsr closeGapBuf
+    jsr closeEditBuf
     rts
 
 L1: jsr currentEditorRow    ; Current line in ptr2

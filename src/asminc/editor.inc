@@ -80,7 +80,33 @@ CH_LL_CORNER = 109
 CH_LR_CORNER = 125
 
 COLOR_WHITE = 1
-COLOR_ORANGE = 8
+
+COLOR_CURSOR = 67 ; lemon tart
+
+SYNTAXHL_NONE = 0
+SYNTAXHL_NUMBER = 1
+SYNTAXHL_KEYWORD = 2
+SYNTAXHL_STRING = 3
+SYNTAXHL_COMMENT = 4
+
+SYNTAXCOLOR_NONE = COLOR_WHITE ; white
+SYNTAXCOLOR_NUMBER = 5 ; green
+SYNTAXCOLOR_KEYWORD = 65 ; rambutan (orange)
+SYNTAXCOLOR_STRING = 10 ; light red
+SYNTAXCOLOR_COMMENT = 12 ; light grey
+
+; Syntax highlighting character codes
+.enum
+    shLetter
+    shDigit
+    shSpecial
+    shQuote
+    shWhiteSpace
+    shDollar
+    shHash
+    shPercent
+    shError
+.endenum
 
 .struct EDITFILE
     nextFile .dword         ; Pointer to the next EDITFILE record
@@ -92,6 +118,7 @@ COLOR_ORANGE = 8
     numLines .word          ; # of lines in file
     readOnly .byte          ; non-zero if file is read-only
     dirty .byte             ; non-zero if file is modified
+    isPascal .byte          ; non-zero if the file is a Pascal source file
     filename .res 17        ; null-terminated filename
     inSelection .byte       ; non-zero if text is selected
     selectionY .word        ; anchor point Y for selection
@@ -101,9 +128,11 @@ COLOR_ORANGE = 8
 
 .struct EDITLINE
     buffer .dword           ; Pointer to buffer containing line text
+    syntaxHL .dword         ; Pointer to buffer containing syntax highlighting
     length .byte            ; Number of characters used in buffer
     capacity .byte          ; Size of buffer
-    dirty .byte             ; Non-zero if row needs to be re-rendered
+    dirty .byte             ; Non-zero if line needs to be re-rendered
+    continuedComment .byte  ; Non-zero if the line starts with a continued multi-line comment
     next .dword             ; Pointer to next line or null
 .endstruct
 

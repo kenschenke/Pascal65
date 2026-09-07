@@ -21,7 +21,7 @@
 
 .import titleScreen, anyDirtyRows, editorAllocLine
 .import updateStatusBarFilename, editorSetDefaultStatusMessage, initFile
-.import addCurrentFile, resetScreenSettings
+.import addCurrentFile, resetScreenSettings, syntaxHighlight
 
 .bss
 
@@ -30,12 +30,16 @@ lastLine: .res 4
 thisLine: .res 4
 fnBuf: .res 20          ; filename buffer in bank 0 for SETNAM
 
+; This is non-zero if a multiline comment is carried over from the previous line
+multilineCommentCarry: .res 1
+
 .data
 
 titleFilename: .byte "title.txt,s,r"
 titleFilename2:
 helpFilename: .asciiz "help.txt"
 helpTitle: .asciiz "Help File"
+pasExtension: .asciiz "pas"
 
 .code
 
@@ -44,6 +48,8 @@ helpTitle: .asciiz "Help File"
 .proc openFile
     ; Allocate a file
     jsr initFile
+    ; See if the file is Pascal
+    jsr setIsPascal
     ; Call SETLFS
     ldx DEVNUM
     lda #1
@@ -75,6 +81,8 @@ helpTitle: .asciiz "Help File"
     jsr OPEN
     ldx #1
     jsr CHKIN
+    lda #0
+    sta multilineCommentCarry
     jsr readFile
     lda #1
     jsr CLOSE
@@ -130,6 +138,51 @@ helpTitle: .asciiz "Help File"
     bne :-
 :   jsr updateStatusBarFilename
     rts
+.endproc
+
+; This routine looks at the filename in fnBuf and determines if it ends in ".pas"
+; and sets the isPascal value in currentFile.
+.proc setIsPascal
+    lda #0
+    ldz #EDITFILE::isPascal
+    nop
+    sta (currentFile),z
+
+    ; Find the end of the string
+    ldx #0
+L1: lda fnBuf,x
+    beq L2
+    inx
+    bne L1
+
+    ; Subtract 4
+L2: txa
+    sec
+    sbc #4
+    bpl L3              ; Branch if the filename length is >= 4
+    rts
+
+L3: tax
+    lda fnBuf,x
+    cmp #'.'
+    beq :+
+    rts
+:   inx
+    ldy #0
+L4: lda fnBuf,x
+    and #$7f            ; Convert to lower case
+    cmp pasExtension,y
+    bne L5
+    inx
+    iny
+    cpy #3
+    bne L4
+
+    lda #1
+    ldz #EDITFILE::isPascal
+    nop
+    sta (currentFile),z
+L5: rts
 .endproc
 
 ; This routine reads a file into the editor. The file is already open
@@ -198,8 +251,14 @@ L4: cmp #13             ; Is that a CR?
     nop
     sta (ptr1),z
     cmp #0
-    beq L1                      ; Skip allocating and copying if the length is zero
-    pha                         ; Push the line length onto the CPU stack
+    bne :+                      ; Skip allocating and copying if the length is zero
+    ; Save the multilineCommentCarry
+    ldz #EDITLINE::continuedComment
+    lda multilineCommentCarry
+    nop
+    sta (ptr1),z
+    jmp L1
+:   pha                         ; Push the line length onto the CPU stack
     ldx #0
     jsr heapAlloc               ; Allocate a buffer for the line data
     stq ptr2
@@ -213,7 +272,39 @@ L4: cmp #13             ; Is that a CR?
     dez
     dex
     bpl :-
+    ; Allocate a buffer for the syntax highlighting
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq NP                      ; Branch if not a Pascal file (skip allocating syntaxHL buffer)
+    pla
+    pha
+    ldx #0
+    jsr heapAlloc
+    stq ptr2
+    ldq thisLine
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    ; Set the multi-line comment flag
+    lda multilineCommentCarry
+    ldz #EDITLINE::continuedComment
+    nop
+    sta (ptr1),z
     ; Copy the contents of lineBuf into the new line (contents in ptr2)
+NP: ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
     pla                         ; Pop the line length off the CPU stack
     sta tmp1                    ; and put it in tmp1
     ldx #0
@@ -225,6 +316,37 @@ L4: cmp #13             ; Is that a CR?
     inx
     cpx tmp1
     bne :-
+    ; Fill in the syntax highlighting for the line
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq L1                      ; skip syntax highlighting if not a Pascal file
+    ldq thisLine
+    stq ptr3
+    ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr2
+    clc
+    lda multilineCommentCarry
+    beq :+
+    sec
+:   lda tmp1                    ; line length
+    jsr syntaxHighlight
+    bcc :+
+    lda #1
+    sta multilineCommentCarry
+    bra L1
+:   lda #0
+    sta multilineCommentCarry
     ; Add the new line to the linked list of lines
 L1: jsr addLine
     ldq thisLine                ; Copy thisLine to lastLine

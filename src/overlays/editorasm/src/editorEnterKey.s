@@ -17,7 +17,7 @@
 .export editorEnterKey
 
 .import currentEditorRow, renderCursor, anyDirtyRows, screenrows
-.import editorInsertLine
+.import editorInsertLine, syntaxHighlight
 
 .proc editorEnterKey
     ; ptr2 - current line
@@ -45,12 +45,9 @@
     bne :+                  ; Branch if length is not zero
     jmp MD                  ; Nothing else to do
 
-    ; Save ptr1 on the CPU stack
+    ; Save ptr1 on the runtime stack
 :   ldq ptr1
-    pha
-    phx
-    phy
-    phz
+    jsr pushQ
 
     ; Truncate the current line and copy characters to new line
     ldz #EDITFILE::cx
@@ -69,12 +66,15 @@
     jsr currentEditorRow    ; Get the current row back into ptr2
     pla
     sta tmp1                ; New line length
-    ; Pop ptr1 back off the CPU stack
-    plz
-    ply
-    plx
-    pla
+    pha                     ; Save new line length on CPU stack
+    ; Pop ptr1 back off the runtime stack
+    jsr popQ
     stq ptr1
+    ldz #EDITLINE::continuedComment
+    nop
+    lda (ptr2),z
+    nop
+    sta (ptr1),z
     ; Save the newly allocated line buffer into the new line
     ldz #EDITLINE::buffer+3
     ldx #3
@@ -126,6 +126,36 @@
     ldz #EDITLINE::length
     nop
     sta (ptr2),z
+    ; Allocate a buffer for the syntax highlighting
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq NP
+    ldq ptr2
+    jsr pushQ
+    ldq ptr1
+    jsr pushQ
+    pla
+    ldx #0
+    jsr heapAlloc
+    stq ptr4
+    jsr popQ
+    stq ptr2
+    ldz #EDITLINE::syntaxHL
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    jsr updateSyntaxHighlight
+    jsr popQ
+    stq ptr2
+    bra MD
+
+NP: pla
     ; Mark all rows dirty, starting at the current row and continuing
     ; through the visible rows
 MD: ldz #EDITFILE::cy
@@ -204,3 +234,37 @@ DN: clc
 :   rts
 .endproc
 
+; This routine updates the syntax highlighting for the row in ptr2
+.proc updateSyntaxHighlight
+    ldq ptr2
+    jsr pushQ
+    ldz #EDITLINE::length
+    nop
+    lda (ptr2),z
+    sta tmp1
+    ldz #EDITLINE::continuedComment
+    nop
+    lda (ptr2),z
+    sta tmp2
+    ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    clc
+    lda tmp2
+    beq :+
+    sec
+:   lda tmp1
+    jsr syntaxHighlight
+    jsr popQ
+    stq ptr2
+    rts
+.endproc
