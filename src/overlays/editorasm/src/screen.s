@@ -271,15 +271,15 @@ L1: ldz tmp3
     ; Fill in syntax highlighting
     pla                 ; pop length off stack
     sta tmp1            ; and put it in tmp1
+    ply
+    jsr calcColorPtr
     ldq ptr2
     jsr isQZero
     bne :+
-    pla                 ; discard row number
+    jsr clearRowColor
     rts
-:   ply                 ; row number in Y
-    jsr calcColorPtr
     ; Loop through the characters
-    ldz #0
+:   ldz #0
 L2: nop
     lda (ptr2),z
     jsr syntaxHighlightToColor
@@ -288,6 +288,18 @@ L3: nop
     inz
     cpz tmp1
     bne L2
+    rts
+.endproc
+
+.proc clearRowColor
+    lda #SYNTAXHL_NONE
+    jsr syntaxHighlightToColor
+    ldz #0
+L1: nop
+    sta (ptr1),z
+    inz
+    cpz tmp1
+    bne L1
     rts
 .endproc
 
