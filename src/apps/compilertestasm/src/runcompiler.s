@@ -45,6 +45,10 @@ runtimeStackSize: .res 2
     stx sourceFn+1
     stx ptr1+1
 
+    ; Clear the error count
+    lda #0
+    sta errorCount
+
     ; Print the filename
     ldy #0
 :   lda (ptr1),y
