@@ -203,4 +203,4 @@ run: $(D81FILE)
 
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
-	etherload -m compiler.d81 -r $(BINTARGETDIR)/compiler
+	etherload -m compilertest.d81 -r $(BINTARGETDIR)/compilertest
