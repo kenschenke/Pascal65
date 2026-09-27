@@ -15,6 +15,7 @@ EDITOR_LOOP_QUIT = 1
 EDITOR_LOOP_COMPILE = 2
 EDITOR_LOOP_RUN = 3
 EDITOR_LOOP_DEBUG = 4
+EDITOR_LOOP_THEME = 5
 
 DEFAULT_COLS = 80
 DEFAULT_ROWS = 25
@@ -59,6 +60,7 @@ CH_CURS_LEFT = 157
 CH_F1 = 241
 CH_F2 = 242
 CH_F3 = 243
+CH_F4 = 244
 CH_F5 = 245
 CH_F7 = 247
 CH_F8 = 248
@@ -79,21 +81,17 @@ CH_RIGHT_TEE = 115
 CH_LL_CORNER = 109
 CH_LR_CORNER = 125
 
-COLOR_WHITE = 1
-
-COLOR_CURSOR = 67 ; lemon tart
-
-SYNTAXHL_NONE = 0
 SYNTAXHL_NUMBER = 1
 SYNTAXHL_KEYWORD = 2
 SYNTAXHL_STRING = 3
 SYNTAXHL_COMMENT = 4
+SYNTAXHL_OPERATOR = 5
+SYNTAXHL_IDENTIFIER = 6
+SYNTAXHL_CURSOR = 7
+SYNTAXHL_FOREGROUND = 8
+SYNTAXHL_BACKGROUND = 9
 
-SYNTAXCOLOR_NONE = COLOR_WHITE ; white
-SYNTAXCOLOR_NUMBER = 5 ; green
-SYNTAXCOLOR_KEYWORD = 65 ; rambutan (orange)
-SYNTAXCOLOR_STRING = 10 ; light red
-SYNTAXCOLOR_COMMENT = 12 ; light grey
+THEME_SIZE = 52         ; 16 byte name + 36 bytes in colors
 
 ; Syntax highlighting character codes
 .enum
@@ -141,4 +139,24 @@ SYNTAXCOLOR_COMMENT = 12 ; light grey
     blocks .res 3           ; number of blocks on disk in PETSCII, space-filled
     type .res 3             ; space-filled file type - SEQ, PRG, etc
     next .res 4             ; pointer to next file in directory or NULL
+.endstruct
+
+.struct THEME
+    name .res 16            ; space-filled, not null-terminated theme name
+    ; Each theme consists of nine colors.
+    ; Each color needs four bytes: color index, red, green, and blue.
+    ;    The red, green, and blue values are 0-15
+    ;    The index is 0-31.
+    ; The nine colors are stored in this order:
+    ;    SYNTAXHL_NUMBER
+    ;    SYNTAXHL_KEYWORD
+    ;    SYNTAXHL_STRING
+    ;    SYNTAXHL_COMMENT
+    ;    SYNTAXHL_OPERATOR
+    ;    SYNTAXHL_IDENTIFIER
+    ;    SYNTAXHL_CURSOR
+    ;    SYNTAXHL_UI
+    ;    SYNTAXHL_BACKGROUND
+    colors .res 36
+    next .dword            ; For a linked list
 .endstruct

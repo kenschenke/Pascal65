@@ -1,6 +1,6 @@
 Welcome to Pascal65
 -----------------------------
-Copyright 2022-25 Ken Schenke
+Copyright 2022-26 Ken Schenke
 kenschenke@gmail.com
 
 This is the help page for Pascal65.
@@ -29,4 +29,5 @@ Save File                     F3
 Other File Functions      Back arrow
 Run Pascal File               F5
 Compile Pascal File           F7
+Syntax Highlighting Colors    F4
 Exit                          Ctrl+X

@@ -19,7 +19,7 @@
 
 .import incCurX, renderCursor, currentEditorRow, rowPtrs
 .import editorInsertLine, syntaxHighlight, calcColorPtr
-.import syntaxHighlightToColor, petsciiToScreenCode, screencols
+.import themeColors, petsciiToScreenCode, screencols
 .import decCurX, editorCombineLines, editorRowAt, anyDirtyRows
 
 .bss
@@ -519,13 +519,13 @@ RC: ; The user hit the right arrow in the last column
 .endproc
 
 ; This routine returns one of SYNTAXHL_* defines values or
-; SYNTAXHL_NONE if this is not a Pascal file being edited.
+; SYNTAXHL_FOREGROUND if this is not a Pascal file being edited.
 .proc getEditBufSyntaxColor
     ldz #EDITFILE::isPascal
     nop
     lda (currentFile),z
     bne L1
-    lda #SYNTAXHL_NONE
+    lda #SYNTAXHL_FOREGROUND
     rts
 
 L1: ldz #EDITFILE::cx
@@ -678,7 +678,8 @@ L1: lda editBuf,y
     jsr petsciiToScreenCode
     sta (ptr3),y
     lda syntaxBuf,y
-    jsr syntaxHighlightToColor
+    tax
+    lda themeColors,x
     nop
     sta (ptr1),z
     iny

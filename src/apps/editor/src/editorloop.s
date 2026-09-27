@@ -11,18 +11,33 @@
 
 .include "asmlib.inc"
 .include "editor.inc"
+.include "themes.inc"
 .include "editoroverlay.inc"
 
 .export editorLoop
 
-.import initEditor, runCompiler
+.import initEditor, initThemes, runCompiler
 
 .ifdef __DEBUG__
 .import editorDebug
 .endif
 
+.bss
+
+themeColors: .res 10
+
+.code
+
 .proc editorLoop
+    ; Load the default theme's colors into the buffer
+    jsr initThemes
+    lda #<themeColors
+    ldx #>themeColors
+    jsr loadDefaultTheme
+
 L1: jsr initEditor      ; load the editor overlay from disk
+    lda #<themeColors
+    ldx #>themeColors
     jsr editorRun
     cmp #EDITOR_LOOP_QUIT
     beq QT
@@ -32,6 +47,8 @@ L1: jsr initEditor      ; load the editor overlay from disk
     cmp #EDITOR_LOOP_DEBUG
     beq DB
 .endif
+    cmp #EDITOR_LOOP_THEME
+    beq TH
     cmp #EDITOR_LOOP_RUN
     bne L1
 
@@ -49,6 +66,14 @@ DB: jsr editorDebug
     ; Compile
 CP: jsr runCompiler
     jsr clearMemHeap
+    bra L1
+
+    ; Themes
+TH: jsr initThemes
+    jsr showThemesScreen
+    lda #<themeColors
+    ldx #>themeColors
+    jsr loadDefaultTheme
     bra L1
 
 QT: clc

@@ -128,7 +128,7 @@ highlightCode: .res 1
 ; This routine is called when the syntax highlighter encounters a letter. It looks at
 ; characters in the buffer until it finds a character other than a letter or digit.
 ; It checks the word against the list of reserved words. If it is a reserved word,
-; the highlight codes are set to SYNTAXHL_KEYWORD. Otherwise, the codes are SYNTAXHL_NONE.
+; the highlight codes are set to SYNTAXHL_KEYWORD. Otherwise, the codes are SYNTAXHL_IDENTIFIER.
 .proc syntaxWord
     lda #$ff
     sta highlightCode
@@ -174,14 +174,14 @@ L1: nop
 L2: cpx syntaxCount
     bne :+
     ; Reached the end of the line
-    lda #SYNTAXHL_NONE
+    lda #SYNTAXHL_IDENTIFIER
     sta highlightCode
     stx wordLength
     rts
 :   cpx #MAX_RESERVED_LENGTH
     bne L3
     ; Too long to be a reserved word
-    lda #SYNTAXHL_NONE
+    lda #SYNTAXHL_IDENTIFIER
     sta highlightCode
     stx wordLength
     rts
@@ -216,7 +216,7 @@ L2: inx
 .endproc
 
 ; This routine checks wordBuffer against the list of reserved words.
-; The highlight code is returned in A, SYNTAXHL_NONE or SYNTAXHL_KEYWORD.
+; The highlight code is returned in A, SYNTAXHL_IDENTIFIER or SYNTAXHL_KEYWORD.
 .proc getHighlightCode
     lda wordLength
     asl a
@@ -230,7 +230,7 @@ L2: inx
     lda ptr3
     ora ptr3+1
     bne L1
-    lda #SYNTAXHL_NONE
+    lda #SYNTAXHL_IDENTIFIER
     sta highlightCode
     rts
 
@@ -240,7 +240,7 @@ L1: ldy #0
     lda (ptr3),y
     bne L2
     ; End of the table
-    lda #SYNTAXHL_NONE
+    lda #SYNTAXHL_IDENTIFIER
     sta highlightCode
     rts
 

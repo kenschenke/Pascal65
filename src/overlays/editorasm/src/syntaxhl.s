@@ -16,11 +16,15 @@
 ; Syntax highlighting is done by calculating the highlight value of each
 ; character in a line of text. The value is one of the following:
 ;
-;    SYNTAXHL_NONE
 ;    SYNTAXHL_NUMBER
 ;    SYNTAXHL_KEYWORD
 ;    SYNTAXHL_STRING
 ;    SYNTAXHL_COMMENT
+;    SYNTAXHL_OPERATOR
+;    SYNTAXHL_IDENTIFIER
+;    SYNTAXHL_CURSOR
+;    SYNTAXHL_FOREGROUND
+;    SYNTAXHL_BACKGROUND
 ;
 ; These are stored in a buffer in the EDITLINE structure that corresponds
 ; to the characters on that line. While rendering, the screen code uses
@@ -133,8 +137,12 @@ L2: jsr syntaxCharCode
     lda #0
     jsr syntaxNumber
     jmp L1
-:   lda #SYNTAXHL_NONE
-    ldz syntaxIndex
+:   cmp #ccSpecial
+    bne :+
+    lda #SYNTAXHL_OPERATOR
+    bra L3
+:   lda #SYNTAXHL_FOREGROUND
+L3: ldz syntaxIndex
     nop
     sta (ptr2),z
     inc syntaxIndex
@@ -233,14 +241,8 @@ L2: jsr syntaxCharCode
     rts
 :   cmp #ccLetter
     bne :+
-    ; Convert to lower case
-    ldz syntaxIndex
-    nop
-    lda (ptr1),z
-    jsr syntaxIsHexLetter
-    bne :+
     pla
-    lda #0
+    jsr syntaxIsHexLetter
     rts
 :   pla
     rts
@@ -267,7 +269,7 @@ L2: jsr syntaxCharCode
 ; This routine is called when the .. operator is found.
 .proc syntaxDotDot
     ldz syntaxIndex
-    lda #SYNTAXHL_NONE
+    lda #SYNTAXHL_OPERATOR
     nop
     sta (ptr2),z
     inz

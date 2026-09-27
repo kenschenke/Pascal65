@@ -21,7 +21,7 @@
 .export editorSetAllRowsDirty, incCurX, decCurX, initFile
 .export colorPtrs, editorAllocLine, editorFreeLine, editorSetStatusMsg
 .export editorNewFile, firstFile, addCurrentFile, editorHandleFileSave
-.export editorHandleFileSaveAs
+.export editorHandleFileSaveAs, themeColors
 
 .import readTitleFile, editorRefreshScreen, openHelpFile, clearKeyBuf
 .import renderCursor, currentEditorRow, editBufKey, initEditBuf, closeEditBuf
@@ -59,6 +59,7 @@ statusmsg_dirty: .res 1
 anyDirtyRows: .res 1
 loopCode: .res 1
 compileFn: .res 17
+themeColors: .res 10
 
 rowPtrs: .res 200           ; 50 rows * 4 bytes -- pointers to screen memory for each row
 colorPtrs: .res 200         ; 50 rows * 4 bytes -- pointers to color RAM
@@ -86,19 +87,6 @@ prevRow: .res 4
 
     jsr editorSetDefaultStatusMessage
 
-    ; Set color 45 to denim blue
-    lda #3
-    sta $d12d
-    lda #4
-    sta $d22d
-    lda #6
-    sta $d32d
-
-    ; Set border and background to color 45
-    lda #45
-    sta $d020
-    sta $d021
-
     jsr clearScreen
 
     ; Read the title file
@@ -124,6 +112,23 @@ prevRow: .res 4
 
     jsr initEditBuf
     
+    rts
+.endproc
+
+; Source in A/X
+.proc copyThemeColors
+    sta ptr1
+    stx ptr1+1
+
+    ldy #1
+    ldx #1
+L1: lda (ptr1),y
+    sta themeColors,x
+    iny
+    inx
+    cpy #10
+    bne L1
+
     rts
 .endproc
 
@@ -258,6 +263,9 @@ L2: ldz #EDITFILE::nextFile
 :   cmp #CH_F7
     bne :+
     jmp editorHandleRunAndCompile
+:   cmp #CH_F4
+    bne :+
+    jmp editorHandleTheme
 .ifdef __DEBUG__
 :   cmp #CH_F8
     bne :+
@@ -577,7 +585,11 @@ DN: rts
 ; This routine is the main loop of the editor. It runs until
 ; the user exits, or wants to run or compile code. The
 ; EDITOR_LOOP value is returned in A.
+; A/X contains pointer to the theme colors block to copy from
 .proc editorRun
+    ; Call copyThemeColors to load the theme colors into the buffer
+    ; since the source pointer is in A/X.
+    jsr copyThemeColors
     jsr initEditor
 L1: lda loopCode
     cmp #EDITOR_LOOP_CONTINUE
@@ -1136,6 +1148,14 @@ L5: sta loopCode
     inz
     bne :-
 :   sta compileFn,x
+    rts
+.endproc
+
+.proc editorHandleTheme
+    jsr editorSaveState
+    jsr editorCloseAllFiles
+    lda #EDITOR_LOOP_THEME
+    sta loopCode
     rts
 .endproc
 

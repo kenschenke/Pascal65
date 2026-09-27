@@ -28,6 +28,8 @@ LINKERDIR := src/overlays/linkerasm
 COMPILERDIR := src/apps/compilerasm
 EDITORAPPDIR := src/apps/editor
 MEMINFODIR := src/overlays/meminfo
+THEMESDIR := src/overlays/themes
+THEMESDAT := src/shared/themes.dat
 
 RUNTIME = $(RUNTIMEDIR)/bin/$(TARGET)/runtime
 SCREENLIB = $(SCREENLIBDIR)/bin/$(TARGET)/screen
@@ -48,6 +50,7 @@ LINKER = $(LINKERDIR)/bin/$(TARGET)/linker
 COMPILER = $(COMPILERDIR)/bin/$(TARGET)/compiler
 EDITORAPP = $(EDITORAPPDIR)/bin/$(TARGET)/editor
 MEMINFO = $(MEMINFODIR)/bin/$(TARGET)/meminfo
+THEMES = $(THEMESDIR)/bin/$(TARGET)/themes
 
 BINFILES := $(EDITORAPP)
 BINFILES += $(COMPILER)
@@ -67,6 +70,7 @@ BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
 BINFILES += $(EDITOROVLY)
 BINFILES += $(MEMINFO)
+BINFILES += $(THEMES)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
@@ -168,6 +172,9 @@ $(EDITOROVLY): FORCE
 $(MEMINFO): FORCE
 	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
 
+$(THEMES): FORCE
+	cd $(THEMESDIR) && $(MAKE) TARGET=$(TARGET)
+
 FORCE:
 
 $(BINDIR):
@@ -180,7 +187,7 @@ ifneq ($(TARGET),mega65)
 DRVWRITE := -write $(DRVFILE) $(TARGET)-reu.emd
 endif
 
-$(D81FILE): $(BINFILES) $(TXTFILES)
+$(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDAT)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(EDITORAPP) pascal65,prg \
 	-write $(COMPILER) compiler,prg \
@@ -193,6 +200,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(LINKER) linker,prg \
 	-write $(MEMINFO) meminfo,prg \
 	-write $(EDITOROVLY) editor,prg \
+	-write $(THEMES) themes,prg \
 	-write $(RUNTIME) runtime,prg \
 	-write $(SCREENLIB) screen.lib,prg \
 	-write $(SPRITESLIB) sprites.lib,prg \
@@ -213,7 +221,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write spritemove.petscii spritemove.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
-	-write license.petscii license.txt,seq
+	-write license.petscii license.txt,seq \
+	-write $(THEMESDAT) themes.dat,seq \
+	-write $(THEMESDAT) themes.def,seq
 
 clean:
 	cd src/apps && $(MAKE) TARGET=$(TARGET) clean

@@ -18,12 +18,12 @@
 .export editorRefreshScreen, editorScroll, renderCursor, editorRowAt
 .export petsciiToScreenCode, currentEditorRow, clearScreen
 .export editorDrawMessageBar, calcScreenPtr, initScreen, setupScreen
-.export resetScreenSettings, syntaxHighlightToColor, calcColorPtr
+.export resetScreenSettings, calcColorPtr, clearRowColor, setScreenColorToForeground
 
 .import anyDirtyRows, titleScreen, rowPtrs
 .import screenrows, screencols, statusmsg, statusmsg_dirty, statusbar
 .import editorSetAllRowsDirty, colorPtrs, editorHighlightSelection
-.import isEditBufActive, getEditBufSyntaxColor
+.import isEditBufActive, getEditBufSyntaxColor, themeColors
 
 .bss
 
@@ -230,6 +230,30 @@ DN: rts
 .proc clearScreen
     lda #CH_CLRSCR
     jsr CHROUT
+    
+    rts
+.endproc
+
+; This routine sets the foreground color for the entire screen to the foreground color.
+.proc setScreenColorToForeground
+    lda #0
+    sta tmp1
+
+    lda screenrows
+    ; Add two rows for the status bar and message row
+    clc
+    adc #2
+    sta tmp2
+
+    ; Loop through the screen rows
+L1: ldy tmp1
+    jsr calcColorPtr
+    jsr clearRowColor
+    inc tmp1
+    lda tmp1
+    cmp tmp2
+    bne L1
+
     rts
 .endproc
 
@@ -282,7 +306,8 @@ L1: ldz tmp3
 :   ldz #0
 L2: nop
     lda (ptr2),z
-    jsr syntaxHighlightToColor
+    tax
+    lda themeColors,x
 L3: nop
     sta (ptr1),z
     inz
@@ -291,36 +316,17 @@ L3: nop
     rts
 .endproc
 
+; This routine assumes that ptr1 points to the start of the row's color buffer
+; and screencols contains the number of columns on the screen.
 .proc clearRowColor
-    lda #SYNTAXHL_NONE
-    jsr syntaxHighlightToColor
+    ldx #SYNTAXHL_FOREGROUND
+    lda themeColors,x
     ldz #0
 L1: nop
     sta (ptr1),z
     inz
-    cpz tmp1
+    cpz screencols
     bne L1
-    rts
-.endproc
-
-.proc syntaxHighlightToColor
-    cmp #SYNTAXHL_COMMENT
-    bne :+
-    lda #SYNTAXCOLOR_COMMENT
-    rts
-:   cmp #SYNTAXHL_KEYWORD
-    bne :+
-    lda #SYNTAXCOLOR_KEYWORD
-    rts
-:   cmp #SYNTAXHL_NUMBER
-    bne :+
-    lda #SYNTAXCOLOR_NUMBER
-    rts
-:   cmp #SYNTAXHL_STRING
-    bne :+
-    lda #SYNTAXCOLOR_STRING
-    rts
-:   lda #SYNTAXCOLOR_NONE
     rts
 .endproc
 
@@ -906,7 +912,11 @@ DN: rts
     pla
     bra ST
 DR: ora #$80
-    ldx #COLOR_CURSOR
+    pha
+    ldx #SYNTAXHL_CURSOR
+    lda themeColors,x
+    tax
+    pla
 ST: nop
     sta (ptr4),z
     phx                 ; Store color on the CPU stack
@@ -938,7 +948,8 @@ ST: nop
 .proc getColorAtPos
     ldq currentFile
     bne L1
-    lda #COLOR_WHITE
+    ldx #SYNTAXHL_FOREGROUND
+    lda themeColors,x
     rts
 L1: ; If an edit buffer is currently active, the color needs to come from
     ; there instead of the line.
@@ -961,7 +972,8 @@ L2: ldz #EDITFILE::cy+1
     lda (ptr2),z
     jsr isQZero
     bne L3
-    lda #COLOR_WHITE
+    ldx #SYNTAXHL_FOREGROUND
+    lda themeColors,x
     rts
 L3: stq ptr2
     ldz #EDITFILE::cx
@@ -970,7 +982,8 @@ L3: stq ptr2
     taz
     nop
     lda (ptr2),z
-L4: jsr syntaxHighlightToColor
+L4: tax
+    lda themeColors,x
     rts
 .endproc
 

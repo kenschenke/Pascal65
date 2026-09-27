@@ -24,7 +24,7 @@
 
     ; Loop until the end of the string or line
 L1: ldz syntaxIndex
-    cmp syntaxCount
+    cpz syntaxCount
     bne L2
     rts
 

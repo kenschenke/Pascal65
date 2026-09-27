@@ -21,7 +21,7 @@
 .import editorReadKey, readDiskDir
 .import freeDirEnts, fnBuf, openFile
 .import editorDrawMessageBar, statusmsg, statusmsg_dirty
-.import inputBufUsed, screenrows, calcScreenPtr
+.import inputBufUsed, screenrows, calcScreenPtr, setScreenColorToForeground
 .import editorSetAllRowsDirty, editorSetDefaultStatusMessage, anyDirtyRows
 
 PROMPT_ROW = 22
@@ -907,6 +907,7 @@ DN: rts
     clc
     jsr renderCursor        ; Clear the cursor
     jsr clearScreen
+    jsr setScreenColorToForeground
 
     ; Calculate the number of directory rows to show on the screen
     lda screenrows

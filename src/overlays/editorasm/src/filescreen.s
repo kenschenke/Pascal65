@@ -20,9 +20,9 @@ FILES_PER_PAGE = 9
 
 .import editorSetStatusMsg, editorRefreshScreen, editorReadKey, editorSetDefaultStatusMessage
 .import showDirScreen, editorNewFile, drawHorizLine, rowPtrs, clearScreen, renderCursor
-.import petsciiToScreenCode, firstFile, editorSetAllRowsDirty
+.import petsciiToScreenCode, firstFile, editorSetAllRowsDirty, setScreenColorToForeground
 .import updateStatusBarFilename, anyDirtyRows, fileClose, editorHandleFileSave
-.import editorHandleFileSaveAs, calcScreenPtr, screenrows
+.import editorHandleFileSaveAs, calcScreenPtr, screenrows, clearRowColor
 
 .bss
 
@@ -534,6 +534,7 @@ L2: lda tmp1
     clc
     jsr renderCursor        ; Clear the cursor
     jsr clearScreen
+    jsr setScreenColorToForeground
 
     ; Draw the first row
     ldq rowPtrs
