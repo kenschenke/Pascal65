@@ -765,11 +765,15 @@ L6: lda selectedFile
     sta ptr1
     lda #>fnBuf
     sta ptr1+1
+    lda #0
+    sta ptr1+2
+    sta ptr1+3
     ; Pointer to inputBuf in ptr2
     lda #<inputBuf
     ldx #>inputBuf
     ldy #0
     ldz #0
+    stq ptr2
     jsr renameFile
     jsr fillDirEnts
 DN: jsr drawPromptArea
