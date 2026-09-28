@@ -840,6 +840,7 @@ L1: jsr editorReadKey
     ldx #>fnBuf
     ldy #0
     ldz #0
+    stq ptr1
     jsr scratchFile
     jsr fillDirEnts
 DN: jsr drawPromptArea
