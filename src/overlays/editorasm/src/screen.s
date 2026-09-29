@@ -268,13 +268,12 @@ L1: ldy tmp1
     phy                 ; save row on stack
     pha                 ; Save length on stack
     sta tmp1            ; length in tmp1
-    lda #0
-    sta tmp2            ; reverse flag in tmp2
     stx tmp4            ; starting column in tmp4
+    lda #0
     bcc :+
     lda #1
-    sta tmp2
-:   jsr calcScreenPtr
+:   sta tmp2
+    jsr calcScreenPtr
     lda #0
     sta tmp3            ; caller's buffer offset in tmp3
 L1: ldz tmp3
@@ -439,11 +438,9 @@ L1: nop
     jsr isQZero
     beq L1
 
-    stq ptr1
-
     ldz #EDITFILE::cx
     nop
-    lda (ptr1),z
+    lda (currentFile),z
     clc
     adc #1
     sta intOp1
