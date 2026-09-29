@@ -606,6 +606,8 @@ L1: lda #0
 
 .proc renderBuffer
     ; First, do syntax highlighting for the edit buffer
+    jsr calcEditLength
+    pha                     ; Save the buffer length on the stack
     ldz #EDITFILE::isPascal
     nop
     lda (currentFile),z
@@ -624,8 +626,6 @@ L1: lda #0
     lda #0
     sta ptr2+2
     sta ptr2+3
-    jsr calcEditLength
-    pha                     ; Save the buffer length on the stack
     clc
     lda continuedFromComment
     beq :+
@@ -677,9 +677,17 @@ NP: ldq screenPtr
 L1: lda editBuf,y
     jsr petsciiToScreenCode
     sta (ptr3),y
-    lda syntaxBuf,y
+    phz
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    bne LP
+    ldx #SYNTAXHL_FOREGROUND
+    bra LC
+LP: lda syntaxBuf,y
     tax
-    lda themeColors,x
+LC: lda themeColors,x
+    plz
     nop
     sta (ptr1),z
     iny
@@ -839,7 +847,13 @@ L6: ldz #EDITLINE::next
     ; Copy the contents of the current line into the buffer
     jsr currentEditorRow
     ldq ptr2
-    stq ptr3
+    jsr isQZero
+    bne :+
+    ; If there is no current editor row, skip the rest of the setup
+    lda #0
+    sta continuedFromComment
+    bra L1
+:   stq ptr3
     ldz #EDITLINE::continuedComment
     nop
     lda (ptr3),z
@@ -853,7 +867,6 @@ L6: ldz #EDITLINE::next
     ldz #EDITLINE::length
     nop
     lda (ptr3),z
-    sta tmp1                    ; Store line length in tmp1 (for later)
     beq L1                      ; Branch if the line is empty
     tax
     ldy #0
