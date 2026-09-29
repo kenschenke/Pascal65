@@ -17,7 +17,7 @@
 .include "asmlib.inc"
 
 .export readTitleFile, openFile, openFileRO, openHelpFile, fnBuf
-.export helpTitle
+.export helpTitle, setIsPascal
 
 .import titleScreen, anyDirtyRows, editorAllocLine
 .import updateStatusBarFilename, editorSetDefaultStatusMessage, initFile

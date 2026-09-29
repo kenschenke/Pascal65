@@ -14,13 +14,15 @@
 .include "4510macros.inc"
 .include "zeropage.inc"
 .include "asmlib.inc"
+.include "editor.inc"
 
 .export fileSaveAs
 
 .import screenrows, fnBuf
 .import editorDrawMessageBar, statusmsg, statusmsg_dirty
-.import fileWrite, renderCursor
+.import fileWrite, renderCursor, setIsPascal, editorSetAllRowsDirty
 .import editorReadKey, editorSetStatusMsg, editorSetDefaultStatusMessage
+.import editorRefreshScreen, syntaxHighlight, anyDirtyRows
 
 .data
 
@@ -31,6 +33,8 @@ overwritePrompt: .asciiz " already exists. Overwrite Y/N?"
 .bss
 
 inputBufUsed: .res 1
+currentLine: .res 4
+multilineCommentCarry: .res 1
 
 .code
 
@@ -113,7 +117,19 @@ L1: ldx DEVNUM
     jsr CLOSE
     ldx #0
     jsr CHKOUT
-    lda inputBufUsed
+
+    ; Set the isPascal flag
+    jsr setIsPascal
+
+    ; If the file is a Pascal file, the isPascal flag will be set by setIsPascal
+    ; and the editor needs to redraw the lines for syntax highlighting.
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    beq :+
+    jsr syntaxHighlightAllRows
+
+:   lda inputBufUsed
     sec
 DN: rts
 .endproc
@@ -152,5 +168,105 @@ NO: jsr editorSetDefaultStatusMessage
     rts
 YES:
     sec
+    rts
+.endproc
+
+.proc syntaxHighlightAllRows
+    lda #0
+    sta multilineCommentCarry
+
+    ldz #EDITFILE::firstLine
+    neg
+    neg
+    nop
+    lda (currentFile),z
+    stq currentLine
+
+    lda #1
+    sta anyDirtyRows
+
+    ; Loop through the rows in the file, running syntax highlighting on each row.
+L1: ldq currentLine
+    bne L2
+    rts
+
+L2: stq ptr3
+
+    ; Make sure a syntax highlight buffer is allocated for the current line.
+    jsr ensureSyntaxHighlightBuffer
+
+    ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr2
+    clc
+    lda multilineCommentCarry
+    beq L3
+    sec
+L3: ldz #EDITLINE::length
+    nop
+    lda (ptr3),z
+    jsr syntaxHighlight
+    lda #0
+    bcc L4
+    lda #1
+L4: sta multilineCommentCarry
+    ldq currentLine
+    stq ptr3
+
+    lda #1
+    ldz #EDITLINE::dirty
+    nop
+    sta (ptr3),z
+
+    ; Go to the next line
+    ldz #EDITLINE::next
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq currentLine
+    bra L1
+.endproc
+
+; This routine ensures that a syntax highlight buffer is allocated for the current line.
+; This routine checks if a syntax highlight buffer exists for the current line.
+; If it does not exist, it allocates one. The current line is in ptr3.
+.proc ensureSyntaxHighlightBuffer
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    jsr isQZero
+    beq L1
+    rts
+
+L1: ldz #EDITLINE::capacity
+    nop
+    lda (ptr3),z
+    ldx #0
+    jsr heapAlloc
+    stq ptr1
+    ldq currentLine
+    stq ptr3
+    ldx #0
+    ldz #EDITLINE::syntaxHL
+:   lda ptr1,x
+    nop
+    sta (ptr3),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
     rts
 .endproc
