@@ -1,6 +1,7 @@
 0.35-beta
     NEW: Compiler rewritten in 100% assembly language
     NEW: Syntax highlighting added to editor
+    NEW: Syntax highlighting themes
 
 0.34-beta Sep 12 2025
     FIX: System unit was not being automatically included in other units
