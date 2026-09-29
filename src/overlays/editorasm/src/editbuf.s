@@ -674,7 +674,9 @@ NP: ldq screenPtr
     ldz #0
     pla
     sta tmp1
-L1: lda editBuf,y
+L1: cpy tmp1
+    beq LD
+    lda editBuf,y
     jsr petsciiToScreenCode
     sta (ptr3),y
     phz
@@ -692,11 +694,10 @@ LC: lda themeColors,x
     sta (ptr1),z
     iny
     inz
-    cpy tmp1
-    bne L1
+    bra L1
 
     ; Clear the rest of the row on the screen
-    lda #' '
+LD: lda #' '
     jsr petsciiToScreenCode
 L2: cpy screencols
     beq L3
