@@ -158,8 +158,16 @@ L1: nop
 ; non-alphanumeric character or the word exceeds MAX_RESERVED_LENGTH.
 .proc copySyntaxWord
     ldz syntaxIndex
+    lda syntaxCount
+    sec
+    sbc syntaxIndex
+    sta wordIndex
     ldx #0
-L1: nop
+L1: cpx wordIndex
+    bne :+
+    stx wordLength
+    rts
+:   nop
     lda (ptr1),z
     jsr syntaxCharCode
     cmp #shLetter
@@ -171,7 +179,7 @@ L1: nop
     stx wordLength
     rts
 
-L2: cpx syntaxCount
+L2: cpx wordIndex
     bne :+
     ; Reached the end of the line
     lda #SYNTAXHL_IDENTIFIER

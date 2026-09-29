@@ -674,6 +674,11 @@ NP: ldq screenPtr
     ldz #0
     pla
     sta tmp1
+;     cmp screencols
+;     bcc :+
+;     lda screencols
+;     sta tmp1
+; :   
 L1: cpy tmp1
     beq LD
     lda editBuf,y
@@ -706,6 +711,16 @@ L2: cpy screencols
     bne L2
 
 L3: rts
+;     ldx #SYNTAXHL_FOREGROUND
+;     lda themeColors,x
+;     ldz tmp1
+; L4: cpz screencols
+;     beq L5
+;     nop
+;     sta (ptr1),z
+;     inz
+;     bra L4
+; L5: rts
 .endproc
 
 ; This routine returns the continuedComment value of the next row.

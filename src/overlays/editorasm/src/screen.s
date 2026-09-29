@@ -215,6 +215,7 @@ L2: dec tmp1
 
 ; Zero-based row passed in Y, starting column in X
 .proc clearRow
+    phy
     jsr calcScreenPtr
     txa
     taz
@@ -224,6 +225,18 @@ L2: dec tmp1
     inz
     cpz screencols
     bcc :-
+
+    ply
+    jsr calcColorPtr
+    ldz tmp1
+    ldx #SYNTAXHL_FOREGROUND
+    lda themeColors,x
+:   nop
+    sta (ptr1),z
+    inz
+    cpz screencols
+    bcc :-
+
 DN: rts
 .endproc
 
@@ -621,10 +634,11 @@ L2: ldz #EDITLINE::next
     ldz #EDITLINE::dirty
     nop
     lda (ptr2),z        ; Is the row dirty?
-    beq MV              ; Branch if not
+    bne :+              ; Branch if not
+    jmp MV
 
     ; Row is dirty and needs to be rendered
-    ldz #EDITLINE::buffer
+:   ldz #EDITLINE::buffer
     neg
     neg
     nop
@@ -658,8 +672,15 @@ L2: ldz #EDITLINE::next
     nop
     lda (ptr2),z
     beq NX              ; Skip drawing if line length is zero
+    cmp tmp3
+    bcc NX              ; Line ends before the first visible column
+    beq NX
     sec
     sbc tmp3
+    cmp screencols
+    bcc :+
+    lda screencols
+:
     sta screenX
 
     ; Copy ptr4 to ptr1
