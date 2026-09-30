@@ -228,6 +228,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDAT)
 clean:
 	cd src/apps && $(MAKE) TARGET=$(TARGET) clean
 	cd src/lib && $(MAKE) TARGET=$(TARGET) clean
+	cd src/overlays && $(MAKE) TARGET=$(TARGET) clean
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
