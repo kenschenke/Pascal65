@@ -85,6 +85,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
+	$(RM) $(OBJECTS)
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)
