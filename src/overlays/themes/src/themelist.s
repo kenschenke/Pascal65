@@ -66,6 +66,41 @@ listTitle: .asciiz "Themes"
 helpText1: .asciiz "Use Arrows and Return"
 helpText2: .asciiz "to select theme"
 
+; This is the MEGA65's default system palette
+systemPalette:
+    .byte  0,  0,  0    ; Black
+    .byte 15, 15, 15    ; White
+    .byte 15,  0,  0    ; Red
+    .byte  0, 15, 15    ; Cyan
+    .byte 15,  0, 15    ; Purple
+    .byte  0, 15,  0    ; Green
+    .byte  0,  0, 15    ; Blue
+    .byte 15, 15,  0    ; Yellow
+    .byte 15,  6,  0    ; Orange
+    .byte 10,  4,  0    ; Brown
+    .byte 15,  7,  7    ; Light Red (Pink)
+    .byte  5,  5,  5    ; Dark Gray
+    .byte  8,  8,  8    ; Medium Gray
+    .byte  9, 15,  9    ; Light Green
+    .byte  9,  9, 15    ; Light Blue
+    .byte 11, 11, 11    ; Light Gray
+    .byte 14,  0,  0    ; Guru Meditation
+    .byte 15,  5,  0    ; Rambutan
+    .byte 15, 11,  0    ; Carrot
+    .byte 14, 14,  0    ; Lemon Tart
+    .byte  7, 15,  0    ; Pandan
+    .byte  6, 14,  6    ; Seasick Green
+    .byte  9, 14,  3    ; Soylent Green
+    .byte  0, 15,  9    ; Slimer Green
+    .byte  0, 13, 13    ; The Other Cyan
+    .byte  0,  9, 15    ; Sea Sky
+    .byte  0,  3, 15    ; Smurf Blue
+    .byte  0,  0, 14    ; Screen Of Death
+    .byte  7,  0, 15    ; Plum Sauce
+    .byte 12,  0, 15    ; Sour Grape
+    .byte 15,  0, 11    ; Bubble Gum
+    .byte 15,  3,  6    ; Hot Tamales
+
 .code
 
 .proc initThemeList
@@ -477,6 +512,7 @@ L2: lda currentScreenRow
 
     inc selectedThemeNum
     jsr setCurrentTheme
+    jsr resetSystemPalette
     jsr copyColorsFromTheme
     jsr showHelpText
     jsr refreshScreen
@@ -496,6 +532,7 @@ L2: lda currentScreenRow
     beq :+
     dec selectedThemeNum
     jsr setCurrentTheme
+    jsr resetSystemPalette
     jsr copyColorsFromTheme
     jsr refreshScreen
     jsr showHelpText
@@ -604,6 +641,29 @@ L2: nop
     inz
     nop
     sta (ptr1),z
+
+    rts
+.endproc
+
+; This routine resets the system palette to the MEGA65's default colors.
+; This is done as themes are selected in the list to ensure that colors
+; not used in the theme are the system defaults.
+.proc resetSystemPalette
+    ldx #0          ; X is index into systemPalette
+    ldy #0          ; Y is index in VIC color registers
+
+L1: lda systemPalette,x
+    sta $d100,y
+    inx
+    lda systemPalette,x
+    sta $d200,y
+    inx
+    lda systemPalette,x
+    sta $d300,y
+    inx
+    iny
+    cpy #31
+    bne L1
 
     rts
 .endproc
