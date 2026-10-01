@@ -1,4 +1,4 @@
-0.35-beta
+0.35-beta Sep 30 2026
     NEW: Compiler rewritten in 100% assembly language
     NEW: Syntax highlighting added to editor
     NEW: Syntax highlighting themes
