@@ -19,6 +19,8 @@
 .proc isExprATypeDeclaration
     stq ptr1
     ldz #expr::kind
+    nop
+    lda (ptr1),z
     cmp #EXPR_NAME
     bne DN
 

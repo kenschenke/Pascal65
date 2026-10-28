@@ -63,3 +63,6 @@ Unresolved Forward
 Index Out Of Range
 Missing Quote
 Fail to open src file
+Invalid type cast
+Loss of precision
+Mixed sign comparison

@@ -120,6 +120,7 @@ strEditorFn: .asciiz "pascal65"
     ldx #>strParsing
     jsr printLine
     jsr initParser
+    jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokens

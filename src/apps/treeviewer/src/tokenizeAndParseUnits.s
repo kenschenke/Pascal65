@@ -56,6 +56,7 @@ L2: ldq currentUnit
     stq tokenHeap
 
     jsr initParser
+    jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokenHeap

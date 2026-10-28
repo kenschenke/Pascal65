@@ -27,25 +27,52 @@
 ;   15. Case statement
 ;   16. Enumerations
 ;   17. Forward declarations
+;   18. Type Casts
+
+.include "asmlib.inc"
+.include "cbm_kernal.inc"
 
 .export runTests
 
-.import runTest
+.import runTest, logError, printLine
 
-NUM_TESTS = 17
+NUM_TESTS = 18
 
 .bss
 
 testNum: .res 2
 
+.data
+
+strRunning: .asciiz "Running type checking tests"
+
 .code
 
 .proc runTests
+    ; Initialize error handling
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerErrors
+
+    ; Initialize compiler warnings
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerWarnings
+
     ; Start with test 1
     lda #1
     sta testNum
     lda #0
     sta testNum+1
+
+    lda #13
+    jsr CHROUT
+    lda #<strRunning
+    ldx #>strRunning
+    jsr printLine
+    lda #13
+    jsr CHROUT
+    jsr CHROUT
 
 L1: lda testNum
     ldx testNum+1
@@ -64,5 +91,7 @@ L2: inc testNum
     inc testNum+1
     bra L1
 
-L3: rts
+L3: lda #13
+    jsr CHROUT
+    rts
 .endproc

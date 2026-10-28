@@ -10,10 +10,14 @@
 ; parser entry points
 
 .import handleParse, setUnitsList, getUnitsList, getRuntimeStackSize
+.import parserInit, registerExpectWarnHandler, registerExpectErrorHandler
 
 .segment "JMPTBL"
 
+jmp parserInit
 jmp handleParse
 jmp setUnitsList
 jmp getUnitsList
 jmp getRuntimeStackSize
+jmp registerExpectWarnHandler
+jmp registerExpectErrorHandler

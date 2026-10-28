@@ -15,13 +15,35 @@
 
 rightTypeOffset = 0
 leftTypeOffset = rightTypeOffset + .sizeof(type)
-rightTypePtrOffset = leftTypeOffset + .sizeof(type)
+rightExprOffset = leftTypeOffset + .sizeof(type)
+leftExprOffset = rightExprOffset + 4
+rightTypePtrOffset = leftExprOffset + 4
 leftTypePtrOffset = rightTypePtrOffset + 4
 
 .export checkRelOpOperands
 
-.import typeCheckError, loadStackValue, isTypeNumeric
+.import typeCheckError, loadStackValue, isTypeNumeric, isTypeInteger, isSigned
+.import typeCheckWarning
 
+.bss
+
+leftIsSigned: .res 1
+
+.code
+
+; This routine checks the operands for the relative operator (less-than, greather-than, etc).
+; It looks for compatibility or any warnings about sign differences (comparing
+; a signed value with an unsigned value).
+;
+; Inputs (on runtime stack, from bottom to top)
+;    Left type pointer
+;    Right type pointer
+;    Left expression pointer
+;    Right expression pointer
+;
+; The routine also adds two local values to the runtime stack:
+;    A type structure for the left
+;    A type structure for the right
 .proc checkRelOpOperands
     lda #.sizeof(type)
     jsr pushBlock
@@ -70,6 +92,10 @@ L2: lda #leftTypeOffset
     jsr checkPointerOperands
     bcs DN
 
+    ; If both operands are an integer type, check if the signs match.
+    ; If both are not signed or both are not unsigned, issue a warning.
+    jsr checkIntegerOperands
+
     ldz #leftTypePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -94,6 +120,8 @@ DN: lda #.sizeof(type)
     jsr popBlock
     lda #.sizeof(type)
     jsr popBlock
+    jsr popQ
+    jsr popQ
     jsr popQ
     jsr popQ
     rts
@@ -246,6 +274,105 @@ L5: ldz #type::kind
     lda #errIncompatibleTypes
     jsr typeCheckError
 L6: rts
+.endproc
+
+; If both operands are an integer type, check if the signs match.
+; If both are not signed or both are not unsigned, issue a warning.
+; If one side is a constant AND it's negative, a warning is issued
+; if the other side is an unsigned variable.
+.proc checkIntegerOperands
+    lda #leftTypeOffset
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isTypeInteger
+    beq :+
+    jmp DN
+    ; Check if the left operand is a constant
+:   ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISCONST
+    beq LeftNotConst
+    ; The left operand is a constant. Check if the value is negated.
+    ldz #leftExprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::neg
+    nop
+    lda (ptr1),z
+    beq DN
+    lda #rightTypeOffset
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isSigned
+    beq DN
+    lda #warnMixedSignComparison
+    jsr typeCheckWarning
+    rts
+LeftNotConst:
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isSigned
+    eor #$01
+StoreLeftSigned:
+    sta leftIsSigned
+
+    lda #rightTypeOffset
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isTypeInteger
+    bne DN
+    ; Check if the right operand is a constant
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISCONST
+    beq RightNotConst
+    ; The right operand is a constant. Check if the value is negated.
+    ldz #rightExprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::neg
+    nop
+    lda (ptr1),z
+    beq DN
+    ; If the left is an unsigned variable, issue a warning.
+    lda #leftTypeOffset
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isSigned
+    beq DN
+    lda #warnMixedSignComparison
+    jsr typeCheckWarning
+    rts
+
+RightNotConst:
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isSigned
+    eor #$01
+CompareSigned:
+    cmp leftIsSigned
+    beq DN
+
+    lda #warnMixedSignComparison
+    jsr typeCheckWarning
+
+DN: rts
 .endproc
 
 ; This routine returns the type kind for the type offset in Z

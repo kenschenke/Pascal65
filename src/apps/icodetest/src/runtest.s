@@ -139,6 +139,7 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     ldx #>strParsing
     jsr printLine
     jsr initParser
+    jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokens

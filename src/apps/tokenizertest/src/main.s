@@ -45,6 +45,11 @@ main:
     ldx #>logError
     jsr initCompilerErrors
 
+    ; Initialize compiler warnings
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerWarnings
+
     ; Load the tokenizer
     jsr initTokenizer
 

@@ -24,6 +24,7 @@ exprOffset = rtnTypePtrOffset + 4
 
 .import typeCheckError, loadStackValue, checkStdRoutine, exprTypeCheck
 .import getTypeConversion, checkArraysSameType, isTypeInteger
+.import checkIntegerPrecisionWarning
 .import checkForwardVsFormalDeclaration, isAssignableToString
 
 .bss
@@ -411,6 +412,9 @@ EN: jsr checkEnumerationParam
 :   lda paramKind
     jsr isTypeInteger
     bne :+
+    lda argKind
+    jsr isTypeInteger
+    bne :+
     jsr checkIntegerParam
     jmp NX
 
@@ -605,14 +609,19 @@ DN: rts
 .endproc
 
 .proc checkIntegerParam
-    lda argKind
-    ldx paramKind
-    jsr getTypeConversion
-    cmp #TYPE_VOID
-    bne :+
-    lda #errInvalidType
-    jsr typeCheckError
-:   rts
+    ldz #argPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    lda paramKind
+    ldx argKind
+    jsr checkIntegerPrecisionWarning
+    rts
 .endproc
 
 .proc checkStringVarParam

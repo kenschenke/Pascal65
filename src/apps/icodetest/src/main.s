@@ -21,7 +21,7 @@ CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import initLib, runTest, runTests, runErrorTests
+.import initLib, runTest, runTests, runErrorTests, logWarning
 .import logError, initMemInfo, initIcode, printMilliseconds, printLine
 
 .export totalTicks
@@ -50,6 +50,10 @@ main:
     lda #<logError
     ldx #>logError
     jsr initCompilerErrors
+
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerWarnings
 
     lda #<onExit
     sta exitHandler

@@ -72,7 +72,7 @@ Begin
 	i2 := i3 + 5;
 	If i2 <> 5683 Then Error(261);
 	b := 200;
-	i := b + 300;
+	i := Integer(b) + 300;
 	If i <> 500 Then Error(262);
 End;
 
@@ -131,7 +131,7 @@ Begin
 	w2 := w3 + 5;
 	If w2 <> 583 Then Error(511);
 	i := -5;
-	w2 := w3 + i;
+	w2 := Word(w3 + i);
 	If w2 <> 573 Then Error(512); 
 End;
 

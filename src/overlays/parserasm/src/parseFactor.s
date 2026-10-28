@@ -28,13 +28,55 @@ offsetUnaryNeg = 0
 
     lda parserToken
     cmp #tcMinus
-    bne LIdentifier
+    bne LByte
     lda #1
     ldz #offsetUnaryNeg
     nop
     sta (stackPointer),z
     jsr getToken
     lda parserToken
+
+LByte:
+    cmp #tcBYTE
+    bne LShortInt
+    lda #TYPE_BYTE
+    jsr handleTypeCast
+    rts
+
+LShortInt:
+    cmp #tcSHORTINT
+    bne LWord
+    lda #TYPE_SHORTINT
+    jsr handleTypeCast
+    rts
+
+LWord:
+    cmp #tcWORD
+    bne LInteger
+    lda #TYPE_WORD
+    jsr handleTypeCast
+    rts
+
+LInteger:
+    cmp #tcINTEGER
+    bne LCardinal
+    lda #TYPE_INTEGER
+    jsr handleTypeCast
+    rts
+
+LCardinal:
+    cmp #tcCARDINAL
+    bne LLongInt
+    lda #TYPE_CARDINAL
+    jsr handleTypeCast
+    rts
+
+LLongInt:
+    cmp #tcLONGINT
+    bne LIdentifier
+    lda #TYPE_LONGINT
+    jsr handleTypeCast
+    rts
 
 LIdentifier:
     cmp #tcIdentifier
@@ -304,5 +346,72 @@ L3: lda #0
 .proc copyStringHelper
     jsr nameCreate
     stq parserValue
+    rts
+.endproc
+
+; This routine is called when the parser encounters a data type
+; token (e.g., tcByte, tcWord, etc.). The routine verifies that
+; the type token is followed by a LParen. It then creates an
+; AST expression node of EXPR_CAST. It also cleans up the
+; runtime stack so parseFactor can return directly from the call.
+;
+; Inputs:
+;    A - TYPE_* kind of the data type to cast to
+.proc handleTypeCast
+    pha                 ; save the evalTypeKind
+
+    ; Look at the next token and verify it's a LParen.
+    jsr getToken
+    lda parserToken
+    cmp #tcLParen
+    beq :+
+
+    lda #errInvalidExpression
+    jsr parserError
+    pla                 ; discard the evalTypeKind
+    jsr popA
+    jsr popA
+    lda #0
+    tax
+    tay
+    taz
+    rts
+
+:   jsr getToken        ; Consume the LParen
+
+    lda #EXPR_CAST
+    jsr pushA           ; kind
+    lda #0
+    jsr parseExpression
+    jsr pushQ           ; left
+    jsr pushQZero       ; right
+    jsr pushQZero       ; name
+    jsr pushQZero       ; value
+    jsr exprCreate
+    stq ptr1
+
+    ldz #expr::evalTypeKind
+    pla
+    nop
+    sta (ptr1),z
+
+    ldq ptr1
+    jsr pushQ
+
+    ; The next token should be the closing RParen
+    lda parserToken
+    cmp #tcRParen
+    beq :+
+
+    lda #errMissingRightParen
+    jsr parserError
+
+:   jsr getToken        ; Consume the RParen
+    
+    jsr popQ
+    stq ptr1
+    jsr popA
+    jsr popA
+    ldq ptr1
     rts
 .endproc

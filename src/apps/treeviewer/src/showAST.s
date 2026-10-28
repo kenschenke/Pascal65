@@ -38,6 +38,7 @@ sourceFn: .asciiz "source.pas"
     stq tokenHeap
 
     jsr initParser
+    jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokenHeap

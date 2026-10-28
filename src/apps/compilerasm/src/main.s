@@ -17,7 +17,7 @@ CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import clearKeyBuf, initLib, getSourceFn, runCompiler, logError
+.import clearKeyBuf, initLib, getSourceFn, runCompiler, logError, logWarning
 .import backupZeroPage, restoreZeroPage, showTitleBanner
 
 main:
@@ -62,6 +62,11 @@ main:
     lda #<logError
     ldx #>logError
     jsr initCompilerErrors
+
+    ; Initialize compiler warnings
+    lda #<logWarning
+    ldx #>logWarning
+    jsr initCompilerWarnings
 
     jsr getSourceFn
     bcs :+                      ; Branch if we have a filename

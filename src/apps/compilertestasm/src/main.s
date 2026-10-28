@@ -17,7 +17,7 @@ CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import clearKeyBuf, initLib, compileTests, logError
+.import clearKeyBuf, initLib, compileTests, logError, logWarning
 .import backupZeroPage, restoreZeroPage
 
 main:
@@ -59,6 +59,11 @@ main:
     lda #<logError
     ldx #>logError
     jsr initCompilerErrors
+
+    ; Initialize compiler warnings
+    lda #<logWarning
+    ldx #>logWarning
+    jsr initCompilerWarnings
 
     jsr compileTests
 

@@ -82,8 +82,8 @@ Begin
     w3 := $1357;
     w := w2 ! $1357; If w <> $d7ff Then Error(22);
     w := $1357 ! w2; If w <> $d7ff Then Error(23);
-    w := $1357 ! $d5aa; If w <> $d7ff Then Error(24);
-    w := $d5aa ! $1357; If w <> $d7ff Then Error(25);
+    w := Word($1357 ! $d5aa); If w <> $d7ff Then Error(24);
+    w := Word($d5aa ! $1357); If w <> $d7ff Then Error(25);
     w := w2 & $1357; If w <> $1102 Then Error(26);
     w := $1357 & w2; If w <> $1102 Then Error(27);
     w := w3 & $d5aa; If w <> $1102 Then Error(28);

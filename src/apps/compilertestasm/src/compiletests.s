@@ -51,6 +51,7 @@ strRtnRecord: .asciiz "rtnrecord"
 strRtnPtrs: .asciiz "rtnptrs"
 strRecord: .asciiz "strrecord"
 strArray: .asciiz "strarray"
+strTypeCast: .asciiz "typecast"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -84,6 +85,7 @@ tests:
     .byte .lobyte(strRtnPtrs), .hibyte(strRtnPtrs)
     .byte .lobyte(strRecord), .hibyte(strRecord)
     .byte .lobyte(strArray), .hibyte(strArray)
+    .byte .lobyte(strTypeCast), .hibyte(strTypeCast)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
     .byte $00, $00

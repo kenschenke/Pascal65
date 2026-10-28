@@ -23,9 +23,10 @@ exprOffset = recordSymtabOffset + 4
 .export exprTypeCheck
 
 .import loadStackValue, evalArrayLiteral, exprLiteral, typeCheckError
-.import isTypeInteger, realOperands, integerOperands, checkRelOpOperands
+.import isTypeInteger, realOperands, checkRelOpOperands
 .import checkBoolOperand, getTypeConversion, getTypeSize, isExprATypeDeclaration
 .import isExprAFuncCall, checkAssignment, checkFuncProcCall, getArrayType, hoistFuncCall
+.import checkTypeCast, isExprARoutineCall, getBinaryExpressionType
 
 .bss
 
@@ -375,6 +376,10 @@ RC: jsr pushA
     bne :+
     jsr evalPointer
     jmp DN
+:   cmp #EXPR_CAST
+    bne :+
+    ; Nothing to do
+    jmp DN
 :   lda #errInvalidType
     jsr typeCheckError
     ldz #typePtrOffset
@@ -495,7 +500,15 @@ DN:
     jsr loadStackValue
     stq ptr1                    ; expression in ptr1
 
-    ldz #typePtrOffset
+    ; Skip this for EXPR_CAST
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_CAST
+    bne :+
+    rts
+
+:   ldz #typePtrOffset
     jsr loadStackValue
     stq ptr2                    ; type in ptr2
 
@@ -655,31 +668,27 @@ DN: php
     rts
 .endproc
 
-; This routine loads the arguments for a call to
-; realOperands or integerOperands. They take the same arguments.
-.proc loadMathOperandsArgs
-    lda #rightTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    pha
-    lda #leftTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    pha
-    ldz #typePtrOffset
+; This routine loads the arguments to getBinaryExpressionType
+.proc loadBinaryExpressionArgs
+    ldz #exprOffset
     jsr loadStackValue
     stq ptr1
-    pla
-    jsr pushA
-    pla
-    jsr pushA
-    ldq ptr1
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr2
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ
+    ldq ptr2
     jsr pushQ
     rts
 .endproc
@@ -818,14 +827,14 @@ L1: lda #leftTypeOffset
     rts
 
     ; Addition
-L2: jsr loadMathOperandsArgs
-    jsr realOperands
+L2: jsr loadBinaryExpressionArgs
+    jsr getBinaryExpressionType
     rts
 .endproc
 
 .proc evalDivIntMod
-    jsr loadMathOperandsArgs
-    jsr integerOperands
+    jsr loadBinaryExpressionArgs
+    jsr getBinaryExpressionType
     rts
 .endproc
 
@@ -877,12 +886,27 @@ L1: lda #errIncompatibleTypes
     sta (ptr1),z
     rts
 
-L5: jsr loadMathOperandsArgs
-    jsr realOperands
+L5: jsr loadBinaryExpressionArgs
+    jsr getBinaryExpressionType
     rts
 .endproc
 
 .proc evalRelOp
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr3
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr4
     lda #leftTypeOffset
     jsr calcTypeBlockAddr
     stq ptr1
@@ -892,6 +916,10 @@ L5: jsr loadMathOperandsArgs
     ldq ptr1
     jsr pushQ
     ldq ptr2
+    jsr pushQ
+    ldq ptr3
+    jsr pushQ
+    ldq ptr4
     jsr pushQ
     jsr checkRelOpOperands
     ldz #typePtrOffset
@@ -938,45 +966,8 @@ L5: jsr loadMathOperandsArgs
 .endproc
 
 .proc evalBitwiseOp
-    lda #rightTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    pha
-    lda #leftTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    plx
-    jsr getTypeConversion
-    pha
-    ldz #typePtrOffset
-    jsr loadStackValue
-    stq ptr1
-    ldz #type::kind
-    pla
-    nop
-    sta (ptr1),z
-    cmp #TYPE_VOID
-    bne :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
-    rts
-:   ldz #type::kind
-    nop
-    lda (ptr1),z
-    jsr getTypeSize
-    ldz #type::size
-    nop
-    sta (ptr1),z
-    inz
-    txa
-    nop
-    sta (ptr1),z
+    jsr loadBinaryExpressionArgs
+    jsr getBinaryExpressionType
     rts
 .endproc
 
@@ -1788,9 +1779,38 @@ L5: ldz #typePtrOffset
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
+
+    ; If the callee resolves to a TYPE declaration rather than a routine,
+    ; this is an explicit type-cast expression (TypeName(expr)) and not
+    ; a function/procedure call.
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isExprARoutineCall
+    beq L1
+
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr2
+
+    ldz #exprOffset
+    jsr loadStackValue
+    jsr pushQ                   ; expression (the call/cast node)
+    ldq ptr2
+    jsr pushQ                   ; return type
+    jsr checkTypeCast
+    rts
+
+L1: ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr2
+
     ldq ptr1
     jsr pushQ                   ; first argument
     ldq ptr2

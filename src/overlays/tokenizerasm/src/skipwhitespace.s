@@ -81,7 +81,7 @@ L1: lda ch
 L2: jsr getChar                 ; Get the next character
     sta ch
     cmp #'$'                    ; Is it a dollar sign?
-    bne L3                      ; Branch if not
+    bne L4                      ; Branch if not
     ; Found a dollar sign
     jsr getChar
     ; Check for a compiler directive
@@ -89,10 +89,15 @@ L2: jsr getChar                 ; Get the next character
     ; If a compiler directive was found, skip processing
     lda tokenCode
     cmp #tcSTACKSIZE
-    bne L1
-    rts
+    beq L3
+    cmp #tcEXPECTWARN
+    beq L3
+    cmp #tcEXPECTERROR
+    bne L4
 
-L3: cmp #'*'
+L3: rts
+
+L4: cmp #'*'
     bne L1
     jsr getChar
     sta ch

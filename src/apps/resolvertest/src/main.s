@@ -50,6 +50,11 @@ main:
     ldx #>logError
     jsr initCompilerErrors
 
+    ; Initialize compiler warnings
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerWarnings
+
     lda #<onExit
     sta exitHandler
     lda #>onExit

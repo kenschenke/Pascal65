@@ -45,6 +45,11 @@ main:
     ldx #>logError
     jsr initCompilerErrors
 
+    ; Initialize compiler warnings
+    lda #<logError
+    ldx #>logError
+    jsr initCompilerWarnings
+
     ; Run the main loop
     jsr showAST
 

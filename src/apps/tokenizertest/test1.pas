@@ -26,4 +26,6 @@ Var While With
 Begins
 (* $StackSize 1024 *);
 If (* Then Embedded Comment *) Else
-
+i := 123456; (* $ExpectWarn 123 *)
+num := 112233; (* $ExpectError 234 *)
+End.

@@ -10,7 +10,7 @@ OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 LIBFILE := $(BINTARGETDIR)/asmlib
 
 # Add -D __DEBUG__ for memory bug checks
-ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
+ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__ -D __DEBUG__
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(wildcard $(MEMBUFDIR)/*.s)

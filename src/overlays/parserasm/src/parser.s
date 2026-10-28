@@ -5,7 +5,9 @@
 .export handleParse, parserError, setUnitsList, getUnitsList, units
 .export parserIcode, parserToken, currentLineNumber, parserString, parserValue, parserType
 .export parserModuleType, runtimeStackSize, isInUnitInterface, getRuntimeStackSize
-.export lastParserString, saveParserString, calcNamePtr
+.export lastParserString, saveParserString, calcNamePtr, parserInit
+.export registerExpectWarnHandler, registerExpectErrorHandler
+.export expectWarnHandler, expectErrorHandler
 
 .import getToken, parseModule
 
@@ -22,8 +24,19 @@ runtimeStackSize: .res 2
 parserModuleType: .res 1
 isInUnitInterface: .res 1
 units: .res 4
+expectWarnHandler: .res 2
+expectErrorHandler: .res 2
 
 .code
+
+.proc parserInit
+    lda #0
+    sta expectWarnHandler
+    sta expectWarnHandler+1
+    sta expectErrorHandler
+    sta expectErrorHandler+1
+    rts
+.endproc
 
 .proc handleParse
     stq parserIcode
@@ -62,6 +75,18 @@ units: .res 4
 .proc getRuntimeStackSize
     lda runtimeStackSize
     ldx runtimeStackSize+1
+    rts
+.endproc
+
+.proc registerExpectWarnHandler
+    sta expectWarnHandler
+    stx expectWarnHandler+1
+    rts
+.endproc
+
+.proc registerExpectErrorHandler
+    sta expectErrorHandler
+    stx expectErrorHandler+1
     rts
 .endproc
 

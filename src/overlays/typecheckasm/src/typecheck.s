@@ -13,7 +13,7 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-.export currentLineNumber, typeCheckError, loadStackValue, calcNamePtr
+.export currentLineNumber, typeCheckError, loadStackValue, calcNamePtr, typeCheckWarning
 
 .bss
 
@@ -25,6 +25,12 @@ currentLineNumber: .res 2
     ldx currentLineNumber
     ldy currentLineNumber+1
     jmp compilerError
+.endproc
+
+.proc typeCheckWarning
+    ldx currentLineNumber
+    ldy currentLineNumber+1
+    jmp compilerWarning
 .endproc
 
 ; This routine loads a pointer from the stack and leaves it in Q.

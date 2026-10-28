@@ -13,6 +13,8 @@ isVarInitOffset = 4
 .import parseSimpleExpression, tokenIn, getToken, doResync, parserToken
 .import tlRelOps, tlExpressionFollow, tlStatementFollow, tlStatementStart
 
+; This routine parses an expression and returns the expression in Q.
+; On input, A is non-zero for isVarInit
 .proc parseExpression
     pha
     jsr pushA

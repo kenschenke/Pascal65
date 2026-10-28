@@ -236,6 +236,7 @@ NAMELEN = 24
     EXPR_BITWISE_XOR
     EXPR_ADDRESS_OF
     EXPR_POINTER
+    EXPR_CAST
 .endenum
 
 .struct expr
@@ -484,6 +485,14 @@ NAMELEN = 24
 ;    Address-Of:  @identifier
 ;        kind: EXPR_ADDRESS_OF
 ;        left: identifier expression
+;    
+;    Type Cast:  TypeName(expression)
+;        kind: EXPR_CAST
+;        left: expression being cast
+;        evalType/evalTypeKind: the target (cast-to) type
+;
+;        A EXPR_CALL whose callee resolves to a DECL_TYPE is rewritten into
+;        this node by the type checker (see checkTypeCast).
 
 .enum
     TYPE_VOID

@@ -15,7 +15,7 @@
 .include "c64.inc"
 .include "error.inc"
 
-.export rtInitCompilerErrors, rtCompilerError
+.export rtInitCompilerErrors, rtCompilerError, rtCompilerWarning, rtInitCompilerWarnings
 
 .import heapAlloc, exit, rtPushQ
 
@@ -27,6 +27,7 @@
 parserErrors: .res 4
 count: .res 1
 logCompilerError: .res 2
+logCompilerWarning: .res 2
 
 .data
 
@@ -52,6 +53,12 @@ tooManyErrMsgs: .asciiz "Too many error messages in file"
     sta logCompilerError
     stx logCompilerError+1
     jmp loadParserErrors
+.endproc
+
+.proc rtInitCompilerWarnings
+    sta logCompilerWarning
+    stx logCompilerWarning+1
+    rts
 .endproc
 
 ; Log a compile-time error
@@ -88,6 +95,42 @@ L1: ldq ptr1
     plx
     pla
     jmp (logCompilerError)
+.endproc
+
+; Log a compile-time error
+; Inputs:
+;    A - error number from errors.inc -- errXXX
+;    X - low byte of current line number
+;    Y - high byte of current line number
+.proc rtCompilerWarning
+    phx
+    phy
+    pha
+    lda #MAX_ERROR_LENGTH+1
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq parserErrors
+    stq ptr1
+    pla
+    sta count
+    pha
+L1: ldq ptr1
+    clc
+    adcq intOp32
+    stq ptr1
+    dec count
+    bne L1
+
+    ldq ptr1
+    jsr rtPushQ
+
+    ply
+    plx
+    pla
+    jmp (logCompilerWarning)
 .endproc
 
 ; This routine calculates the size of the buffer necessary to load all error messages.

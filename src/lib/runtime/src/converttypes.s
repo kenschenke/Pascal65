@@ -53,6 +53,10 @@
     beq Done
     cmp #TYPE_BYTE
     beq UINT8
+    cmp #TYPE_CHARACTER
+    beq UINT8
+    cmp #TYPE_BOOLEAN
+    beq UINT8
     cmp #TYPE_SHORTINT
     beq SINT8
     cmp #TYPE_WORD
@@ -96,6 +100,10 @@ Done:
 .proc convertUINT8
     cpx #TYPE_SHORTINT
     beq Done
+    cpx #TYPE_CHARACTER
+    beq Done
+    cpx #TYPE_BOOLEAN
+    beq Done
     cpx #TYPE_WORD
     beq @To16
     cpx #TYPE_INTEGER
@@ -130,6 +138,10 @@ Done:
 .proc convertSINT8
     cpx #TYPE_BYTE
     beq Done
+    cpx #TYPE_CHARACTER
+    beq Done
+    cpx #TYPE_BOOLEAN
+    beq Done
     cpx #TYPE_WORD
     beq Done
     cpx #TYPE_INTEGER
@@ -161,6 +173,10 @@ Done:
     beq Done
     cpx #TYPE_BYTE
     beq Done
+    cpx #TYPE_CHARACTER
+    beq Done
+    cpx #TYPE_BOOLEAN
+    beq Done
     cpx #TYPE_INTEGER
     beq Done
     cpx #TYPE_POINTER
@@ -189,6 +205,10 @@ Done:
 
 .proc convertSINT16
     cpx #TYPE_BYTE
+    beq Done
+    cpx #TYPE_CHARACTER
+    beq Done
+    cpx #TYPE_BOOLEAN
     beq Done
     cpx #TYPE_SHORTINT
     beq Done

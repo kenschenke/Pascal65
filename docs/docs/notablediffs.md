@@ -4,6 +4,8 @@ Pascal65 is not a complete implementation of the Pascal standard.  The following
 notable differences.
 
 * Sets are not implemented
+* Explicit [type casting](langref/datatypes.md#type-casting) of scalar/ordinal types, e.g.
+  `Byte(someWord)`, is supported as an extension to standard Pascal
 
 ## Code Comments ##
 

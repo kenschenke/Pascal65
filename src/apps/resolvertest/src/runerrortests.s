@@ -156,6 +156,7 @@ L3: rts
     ldx #>strParsing
     jsr printLine
     jsr initParser
+    jsr parserInit
     lda #0
     tax
     tay

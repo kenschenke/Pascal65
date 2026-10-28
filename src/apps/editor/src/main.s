@@ -18,7 +18,7 @@ CH_UPPERCASE = 142
 
 .segment "ENTRY"
 
-.import initLib, backupZeroPage, restoreZeroPage, editorLoop, logError
+.import initLib, backupZeroPage, restoreZeroPage, editorLoop, logError, logWarning
 .import runCompiledPrg, deleteZzprg
 
 main:
@@ -55,6 +55,11 @@ main:
     lda #<logError
     ldx #>logError
     jsr initCompilerErrors
+
+    ; Initialize warning handling
+    lda #<logWarning
+    ldx #>logWarning
+    jsr initCompilerWarnings
 
     ; Initialize the runtime stack
     jsr stackInit

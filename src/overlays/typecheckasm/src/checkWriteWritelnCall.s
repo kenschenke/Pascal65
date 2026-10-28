@@ -164,6 +164,7 @@ NX: ldz #firstOffset
     jsr pushA
     ldq ptr1
     jsr pushQ
+    jsr pushQZero
     jsr isAssignmentCompatible
     beq L2
     lda #errIncompatibleTypes

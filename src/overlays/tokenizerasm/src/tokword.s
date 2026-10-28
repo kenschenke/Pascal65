@@ -89,9 +89,11 @@ rw9: .byte "interface", tcINTERFACE
      .byte "stacksize", tcSTACKSIZE
      .byte $0
 
-rw10: .byte $0
+rw10: .byte "expectwarn", tcEXPECTWARN
+      .byte $0
 
-rw11: .byte $0
+rw11: .byte "expecterror", tcEXPECTERROR
+      .byte $0
 
 rw12: .byte $0
 

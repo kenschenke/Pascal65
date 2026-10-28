@@ -14,7 +14,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export logError, errorCount
+.export logError, errorCount, logWarning
 
 .bss
 
@@ -24,6 +24,7 @@ strBuf: .res 10
 .data
 
 strError: .asciiz "*** ERROR: "
+strWarning: .asciiz "*** WARNING: "
 strLine: .asciiz " -- line "
 
 .code
@@ -47,7 +48,33 @@ strLine: .asciiz " -- line "
     bne :-
 
     ; Print the message
-:   jsr popQ
+:   jmp logMessage
+.endproc
+
+; Called when the compiler flags an warning.
+; Inputs:
+;    A/X - the source code line
+;    Y   - the error number (error.inc)
+;    Runtime stack - null-terminated error message
+.proc logWarning
+    sta intOp1
+    stx intOp1+1
+    inc errorCount              ; treat warnings as errors
+
+    ; Print the error header
+    ldx #0
+:   lda strWarning,x
+    beq DN
+    jsr CHROUT
+    inx
+    bne :-
+
+    ; Print the message
+DN: ; Fall through to logMessage
+.endproc
+
+.proc logMessage
+    jsr popQ
     stq ptr1
     ldz #0
 :   nop

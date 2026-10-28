@@ -229,6 +229,7 @@ NX: lda first
     jsr pushA
     ldq exprType
     jsr pushQ
+    jsr pushQZero
     jsr isAssignmentCompatible
     beq L2
     lda #errIncompatibleTypes

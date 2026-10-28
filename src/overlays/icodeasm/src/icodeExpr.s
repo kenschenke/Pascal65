@@ -32,6 +32,7 @@ exprOffset = isReadOffset + 1
 .bss
 
 rightType: .res .sizeof(type)
+castTargetKind: .res 1
 symPtr: .res 4
 isByRef: .res 1
 
@@ -182,6 +183,10 @@ isByRef: .res 1
     bne :+
     jsr exprAddressOf
     jmp DN
+:   cmp #EXPR_CAST
+    bne :+
+    jsr exprCast
+    jmp DN
 :   cmp #EXPR_BOOLEAN_LITERAL
     bne :+
     ldq ptr1
@@ -315,6 +320,33 @@ L2: pha
     rts
 
 RT: lda #TYPE_ROUTINE_ADDRESS
+    rts
+.endproc
+
+; This routine generates icode for an explicit type-cast expression
+; (TypeName(expr)), rewritten by the type checker into an EXPR_CAST
+; node whose left child is the expression being cast and whose own
+; evalTypeKind is the target (cast-to) type.
+.proc exprCast
+    ldz #exprOffset
+    jsr loadStackValue
+    jsr getExprTypeKind
+    sta castTargetKind
+
+    ldz #expr::left
+    jsr getChildExpr
+    jsr icodeExprRead            ; A = the operand's current type kind
+
+    cmp castTargetKind
+    beq DN                       ; already the target type; nothing to convert
+
+    jsr icodeOper1Short
+    lda castTargetKind
+    jsr icodeOper2Short
+    lda #IC_CVI
+    jsr icodeWriteInstruction
+
+DN: lda castTargetKind
     rts
 .endproc
 

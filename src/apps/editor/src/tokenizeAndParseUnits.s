@@ -71,6 +71,7 @@ L2: ldq currentUnit
     rts
 
 :   jsr initParser
+    jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokenHeap

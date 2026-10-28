@@ -61,6 +61,8 @@ MAX_LINE_LENGTH = 80
     tcTRUE
 
     tcSTACKSIZE
+    tcEXPECTERROR
+    tcEXPECTWARN
 
     tcUpArrow
     tcStar

@@ -21,21 +21,24 @@ D:DECL-TYPE test
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-SHORTINT
         Left:EXPR-NAME a T:TYPE-SHORTINT
-        Right:EXPR-ADD T:TYPE-CARDINAL
-          Left:EXPR-NAME b T:TYPE-BYTE
-          Right:EXPR-BYTE-LITERAL 1 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-SHORTINT
+          Left:EXPR-ADD T:TYPE-BYTE
+            Left:EXPR-NAME b T:TYPE-BYTE
+            Right:EXPR-BYTE-LITERAL 1 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-SHORTINT
         Left:EXPR-NAME a T:TYPE-SHORTINT
-        Right:EXPR-MUL T:TYPE-CARDINAL
-          Left:EXPR-NAME b T:TYPE-BYTE
-          Right:EXPR-BYTE-LITERAL 3 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-SHORTINT
+          Left:EXPR-MUL T:TYPE-BYTE
+            Left:EXPR-NAME b T:TYPE-BYTE
+            Right:EXPR-BYTE-LITERAL 3 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-SHORTINT
         Left:EXPR-NAME a T:TYPE-SHORTINT
-        Right:EXPR-SUB T:TYPE-CARDINAL
-          Left:EXPR-NAME b T:TYPE-BYTE
-          Right:EXPR-BYTE-LITERAL 5 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-SHORTINT
+          Left:EXPR-SUB T:TYPE-BYTE
+            Left:EXPR-NAME b T:TYPE-BYTE
+            Right:EXPR-BYTE-LITERAL 5 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-REAL
         Left:EXPR-NAME r T:TYPE-REAL
@@ -45,15 +48,17 @@ D:DECL-TYPE test
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-SHORTINT
         Left:EXPR-NAME a T:TYPE-SHORTINT
-        Right:EXPR-DIVINT T:TYPE-CARDINAL
-          Left:EXPR-NAME b T:TYPE-BYTE
-          Right:EXPR-BYTE-LITERAL 6 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-SHORTINT
+          Left:EXPR-DIVINT T:TYPE-BYTE
+            Left:EXPR-NAME b T:TYPE-BYTE
+            Right:EXPR-BYTE-LITERAL 6 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-SHORTINT
         Left:EXPR-NAME a T:TYPE-SHORTINT
-        Right:EXPR-MOD T:TYPE-CARDINAL
-          Left:EXPR-NAME b T:TYPE-BYTE
-          Right:EXPR-BYTE-LITERAL 2 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-SHORTINT
+          Left:EXPR-MOD T:TYPE-BYTE
+            Left:EXPR-NAME b T:TYPE-BYTE
+            Right:EXPR-BYTE-LITERAL 2 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-BOOLEAN
         Left:EXPR-NAME bool T:TYPE-BOOLEAN
@@ -149,19 +154,21 @@ D:DECL-TYPE test
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-INTEGER
         Left:EXPR-NAME i T:TYPE-INTEGER
-        Right:EXPR-ADD T:TYPE-LONGINT
-          Left:EXPR-NAME b T:TYPE-BYTE
-          Right:EXPR-MUL T:TYPE-LONGINT
-            Left:EXPR-NAME j T:TYPE-INTEGER
-            Right:EXPR-BYTE-LITERAL 5 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-INTEGER
+          Left:EXPR-ADD T:TYPE-INTEGER
+            Left:EXPR-NAME b T:TYPE-BYTE
+            Right:EXPR-MUL T:TYPE-INTEGER
+              Left:EXPR-NAME j T:TYPE-INTEGER
+              Right:EXPR-BYTE-LITERAL 5 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-INTEGER
         Left:EXPR-NAME i T:TYPE-INTEGER
-        Right:EXPR-MUL T:TYPE-LONGINT
-          Left:EXPR-ADD T:TYPE-LONGINT
-            Left:EXPR-NAME b T:TYPE-BYTE
-            Right:EXPR-NAME j T:TYPE-INTEGER
-          Right:EXPR-BYTE-LITERAL 5 T:TYPE-SHORTINT
+        Right:EXPR-TYPE-CAST T:TYPE-INTEGER
+          Left:EXPR-MUL T:TYPE-INTEGER
+            Left:EXPR-ADD T:TYPE-INTEGER
+              Left:EXPR-NAME b T:TYPE-BYTE
+              Right:EXPR-NAME j T:TYPE-INTEGER
+            Right:EXPR-BYTE-LITERAL 5 T:TYPE-SHORTINT
     S:STMT-EXPR
       E:EXPR-ASSIGN T:TYPE-REAL
         Left:EXPR-NAME r T:TYPE-REAL
@@ -187,12 +194,12 @@ Var
   str : String;
 
 Begin
-  a := b + 1;
-  a := b * 3;
-  a := b - 5;
+  a := ShortInt(b + 1);
+  a := ShortInt(b * 3);
+  a := ShortInt(b - 5);
   r := b / 4;
-  a := b Div 6;
-  a := b Mod 2;
+  a := ShortInt(b Div 6);
+  a := ShortInt(b Mod 2);
   bool := b < 2;
   bool := b <= 8;
   bool := b > 7;
@@ -207,8 +214,8 @@ Begin
   i := j >> 5;
   i := Not j;
   i := a Xor i;
-  i := b + j * 5;
-  i := (b + j) * 5;
+  i := Integer(b + j * 5);
+  i := Integer((b + j) * 5);
   r := r + 3.14;
   str := str + 'World';
 End.

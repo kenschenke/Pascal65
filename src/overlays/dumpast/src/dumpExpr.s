@@ -65,6 +65,7 @@ strEXPR_BITWISE_RSHIFT: .asciiz "EXPR-BITWISE-RSHIFT"
 strEXPR_BITWISE_XOR: .asciiz "EXPR-BITWISE-XOR"
 strEXPR_ADDRESS_OF: .asciiz "EXPR-ADDRESS-OF"
 strEXPR_POINTER: .asciiz "EXPR-POINTER"
+strEXPR_TYPE_CAST: .asciiz "EXPR-TYPE-CAST"
 
 exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
            .byte .LOBYTE(strEXPR_SUB), .HIBYTE(strEXPR_SUB)
@@ -102,6 +103,7 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
            .byte .LOBYTE(strEXPR_BITWISE_XOR), .HIBYTE(strEXPR_BITWISE_XOR)
            .byte .LOBYTE(strEXPR_ADDRESS_OF), .HIBYTE(strEXPR_ADDRESS_OF)
            .byte .LOBYTE(strEXPR_POINTER), .HIBYTE(strEXPR_POINTER)
+           .byte .LOBYTE(strEXPR_TYPE_CAST), .HIBYTE(strEXPR_TYPE_CAST)
 
 .code
 

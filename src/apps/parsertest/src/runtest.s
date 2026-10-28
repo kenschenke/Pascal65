@@ -113,6 +113,7 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     ldx #>strParsing
     jsr printLine
     jsr initParser
+    jsr parserInit
     lda #0
     tax
     tay

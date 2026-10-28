@@ -21,7 +21,7 @@ CH_LOWERCASE = 14
 .segment "ENTRY"
 
 .import initLib, runTest, runTests, runErrorTests
-.import logError, initMemInfo, printMilliseconds, printLine
+.import initMemInfo, printMilliseconds, printLine
 
 .export totalTicks
 
@@ -45,11 +45,6 @@ main:
     ; Initialize the memory heap
     jsr initMemHeap
 
-    ; Initialize error handling
-    lda #<logError
-    ldx #>logError
-    jsr initCompilerErrors
-
     lda #<onExit
     sta exitHandler
     lda #>onExit
@@ -64,20 +59,11 @@ main:
     taz
     stq totalTicks
 
-    ; Run a test of the system unit
-    ; lda #0
-    ; tax
-    ; sec
-    ; jsr runTest
-
     ; Run type checker tests
     jsr runTests
 
-    ; Run the unit test
-    ; lda #8
-    ; ldx #0
-    ; sec
-    ; jsr runTest
+    ; Run warning and error tests
+    jsr runErrorTests
 
     jsr initMemInfo
     jsr heapSummary

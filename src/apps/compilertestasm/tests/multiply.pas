@@ -45,7 +45,7 @@ Begin
     If 2147483748 * 0 <> 0 Then Error(12);
     If 0 * 2147483748 <> 0 Then Error(13);
 	b2 := 80;
-	d := b2 * 8;
+	d := Cardinal(b2) * 8;
 	If d <> 640 Then Error(14);
 End;
 
@@ -61,7 +61,7 @@ Begin
     If 0 <> 12345 * 0 Then Error(21);
     If 0 <> 0 * 12345 Then Error(22);
 	b2 := 80;
-	l := b2 * 8;
+	l := LongInt(b2) * 8;
 	If l <> 640 Then Error(23);
 End;
 

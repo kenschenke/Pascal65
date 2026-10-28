@@ -1,3 +1,8 @@
+0.36-beta
+    NEW: Compiler warning for possible loss of precision
+    NEW: Explicit type casting, e.g. Byte(someWord)
+    NEW: Warning when an expression might result in a loss of precision
+
 0.35-beta Sep 30 2026
     NEW: Compiler rewritten in 100% assembly language
     NEW: Syntax highlighting added to editor

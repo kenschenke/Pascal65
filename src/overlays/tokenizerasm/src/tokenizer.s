@@ -75,7 +75,11 @@ directiveHasParam:
 .proc isCompilerDirective
     lda tokenCode
     cmp #tcSTACKSIZE
-    rts
+    beq DN
+    cmp #tcEXPECTWARN
+    beq DN
+    cmp #tcEXPECTERROR
+DN: rts
 .endproc
 
 ; Source filename pointer in A/X

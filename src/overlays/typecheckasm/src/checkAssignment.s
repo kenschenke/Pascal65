@@ -119,10 +119,15 @@ SV: ldz #leftTypeOffset
 IC: ldz #rightTypeOffset
     jsr loadStackValue
     stq ptr2
+    ldz #exprRightOffset
+    jsr loadStackValue
+    stq ptr3
     ldz #leftTypeOffset
     jsr typeKind
     jsr pushA
     ldq ptr2
+    jsr pushQ
+    ldq ptr3
     jsr pushQ
     jsr isAssignmentCompatible
     bne EN
@@ -231,6 +236,25 @@ DN: jsr popQ
 ; This routine returns the type kind in A for the left or right type.
 ; The left or right stack offset is passed in Z.
 .proc typeKind
+    ; If the stack offset is rightTypeOffset and the right expression is a type cast,
+    ; then the kind should be evalTypeKind
+    ; cpz #rightTypeOffset
+    ; bne L1
+    ; ldz #exprRightOffset
+    ; jsr loadStackValue
+    ; stq ptr1
+    ; ldz #expr::kind
+    ; nop
+    ; lda (ptr1),z
+    ; cmp #EXPR_CAST
+    ; bne L1
+    ; ldz #expr::evalTypeKind
+    ; nop
+    ; lda (ptr1),z
+    ; brk
+    ; rts
+
+; L1:
     jsr loadStackValue
     stq ptr1
     ldz #type::kind

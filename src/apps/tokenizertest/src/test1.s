@@ -178,7 +178,25 @@ results: .byte tzLineNum, $03, $00              ; 0
          .byte tzToken, tcIF                    ; 547
          .byte tzToken, tcELSE                  ; 549
          .byte tzLineNum, $1d, $00              ; 551
-         .byte tzToken, tcEndOfFile             ; 554
+         .byte tzIdentifier, $01, "i"           ; 554
+         .byte tzToken, tcColonEqual            ; 557
+         .byte tzCardinal, $40, $e2, $01, $00   ; 559
+         .byte $06, "123456"                    ; 564
+         .byte tzToken, tcSemicolon             ; 571
+         .byte tzToken, tcEXPECTWARN            ; 573
+         .byte tzByte, $7b, $03, "123"          ; 575
+         .byte tzLineNum, $1e, $00              ; 581
+         .byte tzIdentifier, $03, "num"         ; 584
+         .byte tzToken, tcColonEqual            ; 589
+         .byte tzCardinal, $69, $b6, $01, $00   ; 591
+         .byte $06, "112233"                    ; 596
+         .byte tzToken, tcSemicolon             ; 603
+         .byte tzToken, tcEXPECTERROR           ; 605
+         .byte tzByte, $ea, $03, "234"          ; 607
+         .byte tzLineNum, $1f, $00              ; 613
+         .byte tzToken, tcEND                   ; 616
+         .byte tzToken, tcPeriod                ; 618
+         .byte tzToken, tcEndOfFile             ; 620
 
 .code
 
@@ -213,7 +231,7 @@ results: .byte tzLineNum, $03, $00              ; 0
     jsr CHROUT
     rts
 
-L1: stq ptr1
+L1: ldq ptr1
     lda #0
     ldx #0
     jsr setMemBufPos

@@ -32,12 +32,13 @@
 ;   20. Array inside record
 ;   21. Enumerations
 ;   22. Constants
+;   23. Type casts
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 22
+NUM_TESTS = 23
 
 .bss
 

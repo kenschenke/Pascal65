@@ -92,7 +92,10 @@ errUnresolvedFwd = 61
 errIndexOutOfRange = 62
 errMissingQuote = 63
 errSourceFileOpenFailed = 64
-numParserErrors = 65
+errInvalidTypeCast = 65
+warnLossOfPrecision = 66
+warnMixedSignComparison = 67
+numParserErrors = 68
 
 rteNone = 0
 rteStackOverflow = 1

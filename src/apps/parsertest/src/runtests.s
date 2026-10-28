@@ -24,13 +24,14 @@
 ;   13: Operators and expressions
 ;   14: Unit
 ;   15: Array literals
+;   16: Type casts
 
 .export runTests
 
 .import runTest
 .import heapWalk
 
-NUM_TESTS = 15
+NUM_TESTS = 16
 
 .bss
 

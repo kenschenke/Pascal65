@@ -82,6 +82,7 @@ runtimeStackSize: .res 2
     lda #'P'
     jsr CHROUT
     jsr initParser
+    jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokens
@@ -98,7 +99,7 @@ runtimeStackSize: .res 2
     beq :+
 
     ; Error - so don't continue
-    rts
+    jmp Infinite
 
     ; Free the tokens
 :   ldq tokens
@@ -147,7 +148,7 @@ runtimeStackSize: .res 2
     beq :+
 
     ; Error - so don't continue
-    rts
+    jmp Infinite
 
     ; Reset the error count
 :   lda #0
@@ -179,7 +180,7 @@ runtimeStackSize: .res 2
     beq :+
 
     ; Error - so don't continue
-    rts
+    jmp Infinite
 
 :   lda #'G'
     jsr CHROUT
@@ -219,4 +220,7 @@ L2: jsr setCodeGenProgramChain
     jsr CHROUT
     
     rts
+
+Infinite:
+    bra Infinite
 .endproc
