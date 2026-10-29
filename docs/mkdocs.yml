@@ -107,6 +107,7 @@ nav:
     - Introduction to Libraries: libraries/libraries.md
     - Interface File: libraries/interface.md
     - Object File: libraries/objfile.md
+    - Pre-compiled Header: libraries/header.md
     - Runtime Stack: libraries/stack.md
     - Runtime Library: libraries/runtime.md
     - Writing Routines: libraries/routines.md

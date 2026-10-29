@@ -8,6 +8,7 @@
 ; https://opensource.org/licenses/MIT
 
 .include "ast.inc"
+.include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 

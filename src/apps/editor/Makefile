@@ -21,6 +21,7 @@ SOURCES += $(wildcard $(EDITORDIR)/*.s)
 SOURCES += $(wildcard $(FILESCREENSDIR)/*.s)
 SOURCES += $(wildcard $(FILEIODIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+OBJECTS += $(OBJTARGETDIR)/hdrload.o $(OBJTARGETDIR)/hdrtables.o
 
 all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE)
 
@@ -49,6 +50,11 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) -o $@ $<
 
 vpath %.s $(FILEIODIR)
+$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+	ca65 $(ASFLAGS) -o $@ $<
+
+# Pre-compiled library header loader
+vpath %.s ../../shared/hdr
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) -o $@ $<
 

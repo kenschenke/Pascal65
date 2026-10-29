@@ -7,3 +7,4 @@ clean:
 	cd compiler && $(MAKE) TARGET=$(TARGET) clean
 	cd compilerasm && $(MAKE) TARGET=$(TARGET) clean
 	cd editor && $(MAKE) TARGET=$(TARGET) clean
+	cd mkhdr && $(MAKE) TARGET=$(TARGET) clean

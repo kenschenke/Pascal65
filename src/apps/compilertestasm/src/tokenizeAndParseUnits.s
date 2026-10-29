@@ -18,17 +18,19 @@
 
 .export tokenizeAndParseUnits
 
-.import unitList, initTokenizer, initParser
+.import unitList, initTokenizer, initParser, loadHeader
 
 .data
 
 strPas: .asciiz ".pas"
+strHdr: .asciiz "hdr"
 
 .bss
 
 any: .res 1
 currentUnit: .res 4
 filename: .res 13
+hdrFilename: .res 13
 tokenHeap: .res 4
 
 .code
@@ -60,30 +62,35 @@ L2: ldq currentUnit
     ldq ptr1
     jsr formatFilename
 
-    jsr initTokenizer
+    ; Library units have a pre-compiled header. Use it instead of parsing
+    ; the source if one exists.
+    jsr formatHdrFilename
+    lda #<hdrFilename
+    ldx #>hdrFilename
+    jsr loadHeader
+    bcc :+
+    stq ptr2
+    jsr storeAstRoot
+    jmp L3
+
+:   jsr initTokenizer
     lda #<filename
     ldx #>filename
     jsr tokenize
     stq tokenHeap
 
-    jsr initParser
+    jsr isQZero
+    bne :+
+    rts
+
+:   jsr initParser
     jsr parserInit
     ldq unitList
     jsr setParserUnitsList
     ldq tokenHeap
     jsr parse
     stq ptr2
-    ldq currentUnit
-    stq ptr1
-    ldz #unit::astRoot
-    ldx #0
-:   lda ptr2,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
+    jsr storeAstRoot
     jsr getParserUnitsList
     stq unitList
 
@@ -105,6 +112,45 @@ L4: lda any
     jmp L1
 
 L5: rts
+.endproc
+
+; Store the AST root in ptr2 into the current unit
+.proc storeAstRoot
+    ldq currentUnit
+    stq ptr1
+    ldz #unit::astRoot
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    rts
+.endproc
+
+; Format the pre-compiled header filename from filename by
+; replacing its ".pas" extension with ".hdr".
+.proc formatHdrFilename
+    ldy #0
+:   lda filename,y
+    sta hdrFilename,y
+    beq :+
+    iny
+    bne :-
+:   ldx #0
+    tya
+    sec
+    sbc #3                      ; back up over "pas"
+    tay
+:   lda strHdr,x
+    sta hdrFilename,y
+    beq :+
+    iny
+    inx
+    bne :-
+:   rts
 .endproc
 
 ; Null-terminated system name passed in Q
