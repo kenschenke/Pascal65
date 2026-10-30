@@ -452,7 +452,6 @@ DN: jsr popQ
     lda #LOCALVARS_DEL
     nop
     sta (ptr3),z
-    inc varIndex
 
     ldz #declPtrOffset
     jsr loadStackValue

@@ -11,10 +11,6 @@ Type
 Var
 	anyErrors : Boolean;
     errList : String;
-    // Unused. Changing the layout of the globals has made this test
-    // report false failures. Local file variables are not zeroed on
-    // entry, so Assign can free a stale pointer and corrupt memory.
-    ch : Char;
 
 Procedure Error(num : Integer);
 Begin
@@ -190,12 +186,18 @@ End;
 Procedure ReportFailure;
 Var
     f : Text;
+    acc : String;
 Begin
-    // Own file, with no read of an earlier entry, which hung here
-    // (see the note on ch above)
-    Assign(f, 'testfaila');
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'filetesta:' + errList + '; ';
+    Assign(f, 'testfailed');
     Rewrite(f);
-    Writeln(f, 'filetesta:', errList, '; ');
+    Writeln(f, acc);
     Close(f);
 End;
 

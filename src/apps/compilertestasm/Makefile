@@ -243,7 +243,7 @@ test:
 # PASS/FAIL like the other test suites, then the first program in the chain is
 # run from the disk image. Each program loads the next, and the last one
 # ("done") prints PASS. A test that finds a problem records its name and error
-# numbers in a "testfail*" file on the disk, which "done" prints before FAIL. A
+# numbers in the "testfailed" file on the disk, which "done" prints before FAIL. A
 # runtime error ends the chain early, so the result line is never printed.
 testset:
 	$(RM) $(D81FILE)
