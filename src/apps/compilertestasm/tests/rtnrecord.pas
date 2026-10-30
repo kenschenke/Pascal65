@@ -9,7 +9,7 @@ Type
 
 Var
 	anyErrors : Boolean;
-    ch : Char;
+    errList : String;
     i : Integer;
     rec1, rec2 : RecType;
 
@@ -17,6 +17,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('RtnRecord (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure ProcByValue(rec : RecType);
@@ -49,10 +50,29 @@ Begin
     rec.str := 'Rec 2 Modified';
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'rtnrecord:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	Writeln('Running record routine tests');
 	
     anyErrors := false;
+    errList := '';
 
     // Initialize rec1 and rec2
     rec1.a := 11111;
@@ -84,8 +104,5 @@ Begin
     For i := 1 To 5 Do
         If rec2.arr[i] <> i*7 Then Error(27);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

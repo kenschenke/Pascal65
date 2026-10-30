@@ -25,7 +25,7 @@
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
-.import nextTestPrg
+.import nextTestPrg, failTests
 
 .bss
 
@@ -99,7 +99,7 @@ runtimeStackSize: .res 2
     beq :+
 
     ; Error - so don't continue
-    jmp Infinite
+    jmp failTests
 
     ; Free the tokens
 :   ldq tokens
@@ -148,7 +148,7 @@ runtimeStackSize: .res 2
     beq :+
 
     ; Error - so don't continue
-    jmp Infinite
+    jmp failTests
 
     ; Reset the error count
 :   lda #0
@@ -180,7 +180,7 @@ runtimeStackSize: .res 2
     beq :+
 
     ; Error - so don't continue
-    jmp Infinite
+    jmp failTests
 
 :   lda #'G'
     jsr CHROUT
@@ -216,11 +216,15 @@ L2: jsr setCodeGenProgramChain
     jsr genPrgFile
     jsr freeLinkerTags
 
+    ; An error or warning from code generation or linking fails the test
+    lda errorCount
+    beq :+
+    jmp failTests
+:
+
     lda #13
     jsr CHROUT
     
     rts
 
-Infinite:
-    bra Infinite
 .endproc

@@ -6,6 +6,7 @@ Type
 
 Var
     anyErrors : Boolean;
+    errList : String;
     i : Integer;
     c : Char;
     m : Months;
@@ -14,6 +15,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('ProcFunc (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure Proc(num : Integer; ch : Char; mon : Months);
@@ -38,8 +40,27 @@ Begin
     EnumSucc := Succ(mon);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'procfunc:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
     anyErrors := false;
+    errList := '';
 
     Writeln('Running procedure and function tests');
 
@@ -56,8 +77,5 @@ Begin
     If EnumSucc(May) <> Jun Then Error(8);
     If EnumSucc(m) <> May Then Error(9);
 
-    If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
-    End;
+    If anyErrors Then ReportFailure;
 End.

@@ -2,7 +2,7 @@ Program ScopeTest;
 
 Var
     anyErrors : Boolean;
-	ch : Char;
+    errList : String;
 	i, j, z : Integer;
 	a : Boolean;
 
@@ -10,6 +10,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('ScopeTest (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure Proc1(i : Integer);
@@ -45,7 +46,26 @@ Begin (* Proc1 *)
 End;
 
 (* Main *)
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
 Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'scopetest:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
+Begin
+    errList := '';
 	Writeln('Running scope tests');
 	
 	a := True;
@@ -57,8 +77,5 @@ Begin
 	If z <> 15 Then Error(11);
 	If Not a Then Error(12);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

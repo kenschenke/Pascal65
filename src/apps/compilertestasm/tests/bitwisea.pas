@@ -2,7 +2,7 @@ Program BitwiseTest;
 
 Var
 	anyErrors : Boolean;
-	ch : Char;
+    errList : String;
 	i : Integer;
 	b, b2, b3 : Byte;
 	w, w2, w3 : Word;
@@ -12,6 +12,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('Bitwise (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestBitwiseByte;
@@ -141,16 +142,32 @@ Begin
 	If w2 <> $aaaa Then Error(42);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'bitwisea:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running bitwise tests (part 1)');
 
 	TestBitwiseByte;
 	TestBitwiseWord;
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

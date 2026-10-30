@@ -2,12 +2,17 @@ Program FileTest;
 
 Var
 	anyErrors : Boolean;
+    errList : String;
+    // Unused. Changing the layout of the globals has made this test
+    // report false failures. Local file variables are not zeroed on
+    // entry, so Assign can free a stale pointer and corrupt memory.
     ch : Char;
 
 Procedure Error(num : Integer);
 Begin
     Writeln('FileTest (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestNotAssigned;
@@ -142,8 +147,21 @@ Begin
     Close(f);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+Begin
+    // Own file, with no read of an earlier entry, which hung here
+    // (see the note on ch above)
+    Assign(f, 'testfailb');
+    Rewrite(f);
+    Writeln(f, 'filetestb:', errList, '; ');
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running file test B');
 
@@ -156,8 +174,5 @@ Begin
     TestFileCurrentlyOpen;
     TestTooManyOpen;
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

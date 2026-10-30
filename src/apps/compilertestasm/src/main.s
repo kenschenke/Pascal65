@@ -19,8 +19,14 @@ CH_LOWERCASE = 14
 
 .import clearKeyBuf, initLib, compileTests, logError, logWarning
 .import backupZeroPage, restoreZeroPage
+.import testInit, testPass, testFail
+
+.export failTests
 
 main:
+    ; Remember the stack pointer so a failure can return straight to BASIC
+    jsr testInit
+
     ; Save the stack pointer
     tsx
     stx savedStackPtr
@@ -39,9 +45,9 @@ main:
     sta $01
 
     ; Set up the exit handler
-    lda #<_exit
+    lda #<onExit
     sta exitHandler
-    lda #>_exit
+    lda #>onExit
     sta exitHandler+1
 
     jsr clearKeyBuf             ; Clear the keyboard buffer
@@ -70,4 +76,20 @@ main:
     ; Restore page zero
     jsr restoreZeroPage
 
+.ifdef TESTSET
+    jsr testPass
+.endif
+
     rts
+
+; Called when a runtime error ends the compiler
+onExit:
+    lda #13
+    jsr CHROUT
+    ; Fall through to failTests
+
+; Called when a compile produces an error or warning. Reports the failure
+; and returns straight to BASIC.
+failTests:
+    jsr restoreZeroPage
+    jmp testFail

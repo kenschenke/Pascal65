@@ -2,7 +2,7 @@ Program AddTest;
 
 Var
 	anyErrors : Boolean;
-	ch : Char;
+    errList : String;
 	b, b2, b3 : Byte;
 	s, s2, s3 : ShortInt;
 	i, i2, i3 : Integer;
@@ -15,6 +15,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('Add (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestByteAdd;
@@ -135,8 +136,27 @@ Begin
 	If w2 <> 573 Then Error(512); 
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'add:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running add tests');
 
@@ -147,8 +167,5 @@ Begin
 	TestLongIntAdd;
 	TestCardinalAdd;
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

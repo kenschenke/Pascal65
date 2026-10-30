@@ -5,6 +5,7 @@ Type
 
 Var
 	anyErrors : Boolean;
+    errList : String;
     ch : Char = 'k';
     bool1 : Boolean;
     bool2 : Boolean = True;
@@ -34,6 +35,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('VarInit (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure ProcInit;
@@ -52,8 +54,27 @@ Begin
     End;
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'varinit:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running varinit tests');
 
@@ -110,8 +131,5 @@ Begin
 
     ProcInit;
 
-    If anyErrors Then Begin
-        Write('Press any key');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

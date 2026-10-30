@@ -4,7 +4,7 @@ Uses DemoLib;
 
 Var
 	anyErrors : Boolean;
-    ch : Char;
+    errList : String;
     ar : DemoArray;
     i : Integer;
     str : String;
@@ -14,6 +14,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('LibTest (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure MyCallbackProc(num : Integer);
@@ -27,10 +28,29 @@ Begin
     MyCallbackFunc := 12121;
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'libtest:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	Writeln('Running library tests');
 	
     anyErrors := false;
+    errList := '';
 
     If DemoArea(5, 6) <> 30 Then Error(1);
 
@@ -134,8 +154,5 @@ Begin
     RegisterDemoFunc(@MyCallbackFunc);
     If TestDemoFunc <> 12121 Then Error(34);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

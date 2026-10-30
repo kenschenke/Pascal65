@@ -52,10 +52,20 @@ strRtnPtrs: .asciiz "rtnptrs"
 strRecord: .asciiz "strrecord"
 strArray: .asciiz "strarray"
 strTypeCast: .asciiz "typecast"
+strDone: .asciiz "done"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
+; The complete list of tests is too large to compile onto one D81 disk image.
+; When the TESTSET symbol is defined (see the Makefile test target) the list
+; is split in two. Each set ends by chaining to "done", which reports the
+; overall PASS to the test harness. Without TESTSET the whole list is built.
+.ifndef TESTSET
+TESTSET = 0
+.endif
+
 tests:
+.if TESTSET <> 2
     .byte .lobyte(strAdd), .hibyte(strAdd)
     .byte .lobyte(strAssign), .hibyte(strAssign)
     .byte .lobyte(strVarInit), .hibyte(strVarInit)
@@ -73,6 +83,8 @@ tests:
     .byte .lobyte(strCaseTest), .hibyte(strCaseTest)
     .byte .lobyte(strProcFunc), .hibyte(strProcFunc)
     .byte .lobyte(strMultiply), .hibyte(strMultiply)
+.endif
+.if TESTSET <> 1
     .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte .lobyte(strDivInt), .hibyte(strDivInt)
     .byte .lobyte(strUnit), .hibyte(strUnit)
@@ -88,6 +100,10 @@ tests:
     .byte .lobyte(strTypeCast), .hibyte(strTypeCast)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
+.endif
+.if TESTSET <> 0
+    .byte .lobyte(strDone), .hibyte(strDone)
+.endif
     .byte $00, $00
 
 .bss

@@ -262,7 +262,7 @@ load: $(D81FILE)
 # at the first failure. Each suite builds itself, runs headless, and reports
 # PASS or FAIL (see src/apps/testcommon/runtest.sh). Set TEST_TIMEOUT to change
 # the per-suite time limit in seconds.
-TESTDIRS := tokenizertest parsertest resolvertest typechecktest icodetest
+TESTDIRS := tokenizertest parsertest resolvertest typechecktest icodetest compilertestasm
 
 test:
 	@for t in $(TESTDIRS); do \

@@ -4,17 +4,37 @@ Program StrRoutines;
 
 Var
     anyErrors : Boolean;
-    ch : Char;
+    errList : String;
     str : String;
 
 Procedure Error(num : Integer);
 Begin
     Writeln('StrRoutines (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
+End;
+
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'strroutines:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
 End;
 
 Begin
     anyErrors := false;
+    errList := '';
 
     Writeln('Running string routine tests');
 
@@ -75,8 +95,5 @@ Begin
     If StrPos(str, 'd', 11) <> 11 Then Error(43);
     If StrPos(str, 'd', 12) <> 0 Then Error(44);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey();
-    End;
+    If anyErrors Then ReportFailure;
 End.

@@ -9,6 +9,7 @@ Type
 
 Var
     anyErrors : Boolean;
+    errList : String;
 	a, d : MyArray;
 	k, m : Integer;
 	r, s : MyRecord;
@@ -21,6 +22,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('VarTest (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure Proc1(i : Integer; Var j : Integer);
@@ -107,10 +109,29 @@ Begin
 	Proc9(a10);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'vartest:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	Writeln('Running var tests');
 	
     anyErrors := false;
+    errList := '';
 
 	k := 1;
 	m := 11;
@@ -172,8 +193,5 @@ Begin
 	If a[2] <> 5 Then Error(36);
 	If a[3] <> 6 Then Error(37);
 
-    If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
-    End;
+    If anyErrors Then ReportFailure;
 End.

@@ -6,6 +6,7 @@ Type
 
 Var
     anyErrors : Boolean;
+    errList : String;
     c : Char;
     i : Integer;
     m : Months;
@@ -19,10 +20,30 @@ Procedure Error(num : Integer);
 Begin
     Writeln('StdRoutines (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
+End;
+
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'incdec:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
 End;
 
 Begin
     anyErrors := false;
+    errList := '';
 
     Writeln('Running inc dec tests');
 
@@ -151,8 +172,5 @@ Begin
     Dec(c, 3);
     If c <> 'c' Then Error(70);
 
-    If anyErrors Then Begin
-        Write('Type any key to continue: ');
-        c := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

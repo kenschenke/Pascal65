@@ -2,7 +2,7 @@ Program AssignTest;
 
 Var
 	anyErrors : Boolean;
-    ch : Char;
+    errList : String;
 	b : Byte;
 	s : ShortInt;
 	i : Integer;
@@ -15,6 +15,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('Assign (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestShortAssign;
@@ -103,8 +104,27 @@ Begin
     TestReal(r, 123456.0, 403);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'assign:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running assign tests');
 
@@ -113,8 +133,5 @@ Begin
     TestLongAssign;
     TestRealAssign;
 
-    If anyErrors Then Begin
-        Write('Press any key');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

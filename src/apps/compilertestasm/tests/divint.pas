@@ -2,7 +2,7 @@ Program DivIntTest;
 
 Var
 	anyErrors : Boolean;
-	ch : Char;
+    errList : String;
 	b, b2, b3 : Byte;
 	s, s2, s3 : ShortInt;
 	i, i2, i3 : Integer;
@@ -15,6 +15,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('DivInt (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestByteDivide;
@@ -71,8 +72,27 @@ Begin
     If 0 <> 0 Div 12345 Then Error(20);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'divint:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running divint tests');
 
@@ -81,8 +101,5 @@ Begin
 	TestIntegerDivide;
 	TestWordDivide;
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

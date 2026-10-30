@@ -2,6 +2,7 @@ Program SubtractTest;
 
 Var
 	anyErrors : Boolean;
+    errList : String;
 	b, b2, b3 : Byte;
 	s, s2, s3 : ShortInt;
 	i, i2, i3 : Integer;
@@ -14,6 +15,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('Subtract (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestByteSubtract;
@@ -114,8 +116,27 @@ Begin
 	If 140000 - 40000 <> 100000 Then Error(49);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'subtract:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running subtract tests');
 
@@ -126,8 +147,5 @@ Begin
 	TestShortSubtract;
 	TestWordSubtract;
 
-    If anyErrors Then Begin
-        Write('Type any number to continue: ');
-        Readln(i);
-    End;
+    If anyErrors Then ReportFailure;
 End.

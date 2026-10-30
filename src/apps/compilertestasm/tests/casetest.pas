@@ -11,7 +11,7 @@ Type
 
 Var
     anyErrors, caseError : Boolean;
-    ch : Char;
+    errList : String;
     i : Integer;
     c : Char;
     m : Months;
@@ -20,10 +20,30 @@ Procedure Error(num : Integer);
 Begin
     Writeln('Case (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
+End;
+
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'casetest:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
 End;
 
 Begin
     anyErrors := false;
+    errList := '';
 
     Writeln('Running case tests');
 
@@ -73,8 +93,5 @@ Begin
     End;
     If caseError Then Error(13);
 
-    If anyErrors Then Begin
-        Write('Type a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

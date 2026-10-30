@@ -14,17 +14,37 @@ Const
 
 Var
 	anyErrors : Boolean;
-    ch : Char;
+    errList : String;
     s : ShortInt;
 
 Procedure Error(num : Integer);
 Begin
     Writeln('Constants (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
+End;
+
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'constants:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
 End;
 
 Begin
 	anyErrors := false;
+	errList := '';
 
 	Writeln('Running constants tests');
 
@@ -39,8 +59,5 @@ Begin
     If CardinalConst <> 12345678 Then Error(9);
     If Abs(RealConst-123.456) > 0.01 Then Error(10);
 
-    If anyErrors Then Begin
-        Write('Press any key');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

@@ -4,8 +4,8 @@ Program StrTests;
 
 Var
     anyErrors : Boolean;
+    errList : String;
     arr : Array[1..4] Of Char;
-    ch : Char;
     str, str2 : String;
     i : Integer;
 
@@ -13,6 +13,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('StrTests (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Function StrTest1 : String;
@@ -31,8 +32,27 @@ Begin
     s3 := 'Test32';
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'strtests:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
     anyErrors := false;
+    errList := '';
 
     Writeln('Running string tests');
 
@@ -93,8 +113,5 @@ Begin
     For i := 1 To Length(str) Do
         If str[i] <> str2[i] Then Error(21);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey();
-    End;
+    If anyErrors Then ReportFailure;
 End.

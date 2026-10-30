@@ -9,7 +9,7 @@ Type
 
 Var
 	anyErrors : Boolean;
-    ch : Char;
+    errList : String;
     i : Integer;
     ar1, ar2 : ArrayType;
 
@@ -17,6 +17,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('RtnArray (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure ProcByValue(arr : ArrayType);
@@ -45,10 +46,29 @@ Begin
     End;
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'rtnarray:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	Writeln('Running array routine tests');
 	
     anyErrors := false;
+    errList := '';
 
     // Initialize ar1 and ar2
     For i := 1 To 5 Do Begin
@@ -81,8 +101,5 @@ Begin
             WriteStr('ar2 modified ', i)) <> 0 Then Error(25);
     End;
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

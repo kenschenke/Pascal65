@@ -5,7 +5,7 @@ Type
 
 Var
     anyErrors : Boolean;
-	ch : Char;
+    errList : String;
     i : Integer;
     GlobalArr : MyArray = ('One', 'Two', 'Three', 'Four', 'Five');
     EmptyArr : MyArray;
@@ -15,6 +15,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('StrArray (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestPassByReference(Var LocalArr : MyArray);
@@ -40,8 +41,27 @@ Begin
     For i := 1 To 5 Do LocalArr[i] := WriteStr('Modified ', i);
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'strarray:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
     anyErrors := false;
+    errList := '';
 
 	Writeln('Running string array tests');
 
@@ -88,8 +108,5 @@ Begin
     If Length(PartialArr[4]) <> 0 Then Error(65);
     If Length(PartialArr[5]) <> 0 Then Error(66);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue:');
-		ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.

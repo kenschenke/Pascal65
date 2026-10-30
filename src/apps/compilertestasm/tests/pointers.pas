@@ -8,7 +8,7 @@ Type
 
 Var
     anyErrors : Boolean;
-	ch : Char;
+    errList : String;
 	i : Integer;
 	j : Integer;
 	iPtr, iPtr2 : ^Integer;
@@ -21,6 +21,7 @@ Procedure Error(num : Integer);
 Begin
     Writeln('PointerTest (', num, ')');
     anyErrors := true;
+    If Length(errList) < 60 Then errList := errList + WriteStr(' ', num);
 End;
 
 Procedure TestByRef(Var p : ^Integer);
@@ -48,10 +49,29 @@ Begin
 	ReturnPtr := @i;
 End;
 
+Procedure ReportFailure;
+Var
+    f : Text;
+    acc : String;
+Begin
+    // Keep entries from earlier tests
+    acc := '';
+    Assign(f, 'testfailed');
+    Reset(f);
+    If IOResult = 0 Then Readln(f, acc);
+    Close(f);
+    If Length(acc) < 150 Then acc := acc + 'pointers:' + errList + '; ';
+    Assign(f, 'testfailed');
+    Rewrite(f);
+    Writeln(f, acc);
+    Close(f);
+End;
+
 Begin
 	Writeln('Running pointer tests');
 	
     anyErrors := false;
+    errList := '';
 
 	// Test accessing variable through pointer
 	i := 12345;
@@ -147,8 +167,5 @@ Begin
 	iPtr := nil;
 	If iPtr <> nil Then Error(26);
 
-    If anyErrors Then Begin
-        Write('Press a key to continue: ');
-        ch := GetKey;
-    End;
+    If anyErrors Then ReportFailure;
 End.
