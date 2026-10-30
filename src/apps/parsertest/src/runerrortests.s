@@ -23,6 +23,7 @@
 NUM_TESTS = 12
 
 .export runErrorTests
+.import testFail
 
 .import initTokenizer, initParser, getKey
 .import errorCount, errorLine, errorNum
@@ -280,8 +281,7 @@ L2: rts
     jsr printLine
     lda #13
     jsr CHROUT
-    jsr getKey
-    rts
+    jmp testFail
 .endproc
 
 .proc unexpectedErrorLine
@@ -324,8 +324,7 @@ L2: rts
     jsr printLine
     lda #13
     jsr CHROUT
-    jsr getKey
-    rts
+    jmp testFail
 .endproc
 
 .proc unexpectedErrorNum
@@ -367,6 +366,5 @@ L2: rts
     jsr printLine
     lda #13
     jsr CHROUT
-    jsr getKey
-    rts
+    jmp testFail
 .endproc

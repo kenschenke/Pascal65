@@ -5,6 +5,7 @@
 .include "cbm_kernal.inc"
 
 .export runTest1
+.import testFail
 
 .import errorNum, errorCount
 
@@ -229,7 +230,7 @@ results: .byte tzLineNum, $03, $00              ; 0
     bne :-
     lda #13
     jsr CHROUT
-    rts
+    jmp testFail
 
 L1: ldq ptr1
     lda #0
@@ -336,7 +337,7 @@ L4: ldx #0
     jsr printNum
     lda #13
     jsr CHROUT
-    rts
+    jmp testFail
 .endproc
 
 ; Print the number in A/X

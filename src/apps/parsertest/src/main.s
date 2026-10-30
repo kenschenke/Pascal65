@@ -26,7 +26,11 @@ CH_LOWERCASE = 14
 .import binaryTest
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+.import testInit, testPass, testFail
+
 main:
+    jsr testInit
+
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
     jsr CHROUT
@@ -75,9 +79,10 @@ main:
     ; Run parser error handling tests
     ; jsr runErrorTests
 
+    jsr testPass
     rts
 
 onExit:
     lda #13
     jsr CHROUT
-    rts
+    jmp testFail

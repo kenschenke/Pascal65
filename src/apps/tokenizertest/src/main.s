@@ -20,7 +20,11 @@ CH_LOWERCASE = 14
 .import initLib, initTokenizer, runTest1, runTest2, runTest3
 .import runTest4, runTest5, logError
 
+.import testInit, testPass, testFail
+
 main:
+    jsr testInit
+
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
     jsr CHROUT
@@ -68,4 +72,5 @@ main:
     ; Run the fifth test
     jsr runTest5
 
+    jsr testPass
     rts

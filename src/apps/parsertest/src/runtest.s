@@ -32,6 +32,7 @@
 .include "4510macros.inc"
 
 .export runTest, unitList
+.import testFail
 
 .import initTokenizer, initParser, initDumpAst, viewDump, getKey, errorCount
 .import initShowTree, freeUnits
@@ -168,12 +169,13 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     jsr compareLines
 
     lda foundDiff
-    bne :+
-    lda #<strPass
+    beq :+
+    jmp testFail
+:   lda #<strPass
     ldx #>strPass
     jsr printLine
 
-:   lda #13
+    lda #13
     jsr CHROUT
 
     ldq astBuf
@@ -192,8 +194,7 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     lda #<strErrorCount
     ldx #>strErrorCount
     jsr printLine
-    jsr getKey
-    rts
+    jmp testFail
 .endproc
 
 .proc compareLines
@@ -312,27 +313,7 @@ L3: lda #$0d
     ldx #>dumpBuf
     jsr printLine
 
-    lda #13
-    jsr CHROUT
-    lda #<strPrompt
-    ldx #>strPrompt
-    jsr printLine
-
-L4: jsr getKey
-    cmp #'v'
-    bne :+
-    ldq astBuf
-    jsr viewDump
-    jmp L3
-:   cmp #'V'
-    bne :+
-    ldq astBuf
-    jsr viewDump
-    jmp L3
-:   cmp #13
-    bne L4
-    sec
-    rts
+    jmp testFail
 .endproc
 
 ; This routine prints a null-terminated string. The address

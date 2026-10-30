@@ -19,6 +19,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
+.import testFail
 .export runErrorTest, logExpectedWarning, logExpectedError
 
 MAX_EXPECTED_ERRORS = 64
@@ -196,10 +197,7 @@ strPass: .asciiz "Pass"
     lda pauseForErrors
     beq :+
 
-    lda #<strPause
-    ldx #>strPause
-    jsr printLine
-    jsr getKey
+    jmp testFail
 
 :   lda #<strPass
     ldx #>strPass
@@ -272,7 +270,7 @@ strPass: .asciiz "Pass"
     jsr printLine
     lda #13
     jsr CHROUT
-    rts
+    jmp testFail
 
 :   asl a
     asl a
@@ -316,7 +314,7 @@ strPass: .asciiz "Pass"
     jsr printLine
     lda #13
     jsr CHROUT
-    rts
+    jmp testFail
 
 :   asl a
     asl a

@@ -257,3 +257,17 @@ run: $(RUNTIME) editorapp compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITES
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
 	etherload -m pascal65.d81 -r src/apps/editor/bin/$(TARGET)/editor
+
+# Runs the test programs in the emulator (xmega65) one after another and stops
+# at the first failure. Each suite builds itself, runs headless, and reports
+# PASS or FAIL (see src/apps/testcommon/runtest.sh). Set TEST_TIMEOUT to change
+# the per-suite time limit in seconds.
+TESTDIRS := tokenizertest parsertest resolvertest typechecktest icodetest
+
+test:
+	@for t in $(TESTDIRS); do \
+		$(MAKE) -C src/apps/$$t TARGET=$(TARGET) test || exit 1; \
+	done
+	@echo "All tests passed"
+
+.PHONY: test

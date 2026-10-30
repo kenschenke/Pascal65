@@ -48,6 +48,7 @@ BINFILES += $(PRGFILE)
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+OBJECTS += $(OBJTARGETDIR)/testresult.o
 
 TXTFILES := errormsgs.petscii system.petscii
 
@@ -106,7 +107,7 @@ $(MEMINFO): FORCE
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
-vpath %.s $(SRCDIR)
+vpath %.s $(SRCDIR) ../testcommon
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) -o $@ $<
 
@@ -165,6 +166,11 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(OBJECTS)
 	$(RM) $(D81FILE)
+
+test: all
+	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
+
+.PHONY: test
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)

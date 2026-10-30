@@ -5,6 +5,7 @@
 .include "asmlib.inc"
 
 .export runTest4
+.import testFail
 
 .import errorNum, errorCount, errorLine
 
@@ -47,7 +48,8 @@ passMsg: .asciiz "Passed"
     inx
     bne :-
 :   lda #13
-    jmp CHROUT
+    jsr CHROUT
+    jmp testFail
 
 L1: lda errorCount
     cmp #2
@@ -60,7 +62,8 @@ L1: lda errorCount
     inx
     bne :-
 :   lda #13
-    jmp CHROUT
+    jsr CHROUT
+    jmp testFail
 
 L2: lda errorLine
     cmp #4
@@ -78,7 +81,8 @@ L3: ldx #0
     inx
     bne :-
 :   lda #13
-    jmp CHROUT
+    jsr CHROUT
+    jmp testFail
 
     ; It passed
 L4: ldx #0

@@ -25,7 +25,11 @@ CH_LOWERCASE = 14
 
 .export totalTicks
 
+.import testInit, testPass, testFail
+
 main:
+    jsr testInit
+
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
     jsr CHROUT
@@ -80,12 +84,13 @@ main:
     lda #13
     jsr CHROUT
 
+    jsr testPass
     rts
 
 onExit:
     lda #13
     jsr CHROUT
-    rts
+    jmp testFail
 
 .bss
 

@@ -22,6 +22,7 @@ BINFILES += $(PRGFILE)
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+OBJECTS += $(OBJTARGETDIR)/testresult.o
 
 TXTFILES := test1.petscii test2.petscii test3.petscii test4.petscii test5.petscii errormsgs.petscii
 
@@ -63,7 +64,7 @@ $(BINDIR):
 $(BINTARGETDIR): $(BINDIR)
 	mkdir -p $@
 
-vpath %.s $(SRCDIR)
+vpath %.s $(SRCDIR) ../testcommon
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) -o $@ $<
 
@@ -86,6 +87,11 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 	$(RM) $(OBJECTS)
+
+test: all
+	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
+
+.PHONY: test
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)
