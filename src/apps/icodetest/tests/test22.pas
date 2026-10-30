@@ -12,10 +12,11 @@ PSH CHR
 BRA LBL xxxxx
 LOC LBL xxxxx
 PSH VDR 3 1 0
+CVI IBS 3 IBS 4
 PSH IWU 2b67
-ADD IBS 3 IBS 3 IBS 3
+ADD IBS 4 IBS 3 IBS 4
 PSH VDW 4 1 5
-SET IBS 4 IBS 3
+SET IBS 4 IBS 4
 PSH VDR 7 1 1
 PSH IBS 2
 MUL IBS 7 IBS 2 IBS 7
@@ -51,7 +52,7 @@ Var
   ch : Char;
 
 Begin
-  i := MyInt + 11111;
+  i := Integer(MyInt) + 11111;
   r := Pi * 2;
   str := Greeting + LetterX;
   b := Yes;
