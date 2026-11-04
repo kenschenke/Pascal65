@@ -43,7 +43,7 @@ Const
 
 Var
     Game : Record
-        DiceValues : Array[1..5] Of Integer;
+        DiceValues : Array[1..5] Of Byte;
         DiceToRoll : Array[1..5] Of Boolean;
         TotalUpper : Integer;
         TotalScore : Integer;
@@ -107,7 +107,7 @@ End;
         value: 1-5
         score: score offset in Scores[] array
 *)
-Procedure CalcFaceScore(value, score : Integer);
+Procedure CalcFaceScore(value : Byte; score : Integer);
 Var
     i, n : Integer;
 Begin
@@ -391,9 +391,9 @@ Begin
 End;
 
 (* Returns a random value between 1 and 6 *)
-Function MakeDiceValue : Integer;
+Function MakeDiceValue : Byte;
 Begin
-    MakeDiceValue := Round((Peek($d7ef) / 256) * 5.0) + 1;
+    MakeDiceValue := Byte(Round((Peek($d7ef) / 256) * 5.0)) + 1;
 End;
 
 (* Resets game values and scores *)
@@ -452,7 +452,7 @@ End;
 (* Render each of the five dice *)
 Procedure ShowDice;
 Var
-    i : Integer;
+    i : Byte;
 Begin
     For i := 1 To 5 Do Begin
         If Game.DiceToRoll[i] Then

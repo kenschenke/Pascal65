@@ -78,7 +78,7 @@ BINFILES += $(MEMINFO)
 BINFILES += $(THEMES)
 BINFILES += $(MKHDR)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
 
 all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
@@ -90,6 +90,9 @@ screen.petscii: $(SCREENLIBDIR)/screen.pas
 
 screendemo.petscii: examples/screendemo.pas
 	dos2unix < examples/screendemo.pas | petcat -w2 -text -o screendemo.petscii
+
+fivedice.petscii: examples/fivedice.pas
+	dos2unix < examples/fivedice.pas | petcat -w2 -text -o fivedice.petscii
 
 time.petscii: $(TIMELIBDIR)/time.pas
 	dos2unix < $(TIMELIBDIR)/time.pas | petcat -w2 -text -o time.petscii
@@ -225,6 +228,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDAT) $(HDRFILES)
 	-write help.petscii help.txt,seq \
 	-write screen.petscii screen.pas,seq \
 	-write screendemo.petscii screendemo.pas,seq \
+	-write fivedice.petscii fivedice.pas,seq \
 	-write time.petscii time.pas,seq \
 	-write bubbles.petscii bubbles.pas,seq \
 	-write sprites.petscii sprites.pas,seq \
