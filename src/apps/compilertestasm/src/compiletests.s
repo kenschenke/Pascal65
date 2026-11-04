@@ -31,6 +31,7 @@ strLoops: .asciiz "loops"
 strStdRoutines: .asciiz "stdroutines"
 strIncDec: .asciiz "incdec"
 strStrRoutines: .asciiz "strroutines"
+strWriteWidth: .asciiz "writewidth"
 strStrTests: .asciiz "strtests"
 strRecArray: .asciiz "recarray"
 strScopeTest: .asciiz "scopetest"
@@ -79,6 +80,7 @@ tests:
     .byte .lobyte(strStdRoutines), .hibyte(strStdRoutines)
     .byte .lobyte(strIncDec), .hibyte(strIncDec)
     .byte .lobyte(strStrRoutines), .hibyte(strStrRoutines)
+    .byte .lobyte(strWriteWidth), .hibyte(strWriteWidth)
     .byte .lobyte(strStrTests), .hibyte(strStrTests)
     .byte .lobyte(strRecArray), .hibyte(strRecArray)
     .byte .lobyte(strScopeTest), .hibyte(strScopeTest)

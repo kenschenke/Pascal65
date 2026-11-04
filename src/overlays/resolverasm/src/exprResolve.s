@@ -221,6 +221,46 @@ L7: ldz #exprOffset
     jsr pushA               ; isRtnCall
     jsr exprResolve
 
+    ; An argument to Write, Writeln, or WriteStr can have field width and
+    ; precision expressions. Resolve them in the current scope.
+    ldz #exprOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_ARG
+    bne L9
+    ldz #expr::width
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ               ; width expr pointer (can be null)
+    jsr pushQZero           ; symtab
+    lda #0
+    jsr pushA               ; isRtnCall
+    jsr exprResolve
+    ldz #exprOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #expr::precision
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ               ; precision expr pointer (can be null)
+    jsr pushQZero           ; symtab
+    lda #0
+    jsr pushA               ; isRtnCall
+    jsr exprResolve
+
 L9: jsr popQ
     jsr popA
     jsr popQ

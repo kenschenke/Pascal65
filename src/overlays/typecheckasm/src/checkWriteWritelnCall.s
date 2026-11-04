@@ -126,15 +126,15 @@ L1: ldz #argOffset
     jmp NX
 :   cmp #TYPE_STRING_LITERAL
     bne :+
-    ; do nothing
+    jsr checkWidthAndPrecision
     jmp NX
 :   cmp #TYPE_STRING_VAR
     bne :+
-    ; do nothing
+    jsr checkWidthAndPrecision
     jmp NX
 :   cmp #TYPE_STRING_OBJ
     bne :+
-    ; do nothing
+    jsr checkWidthAndPrecision
     jmp NX
 :   jsr isTypeInteger
     bne :+
@@ -298,16 +298,30 @@ L1: ldz #type::kind
     rts
 .endproc
 
-; This routine used to check expr::width and expr::precision of the
-; argument's expression (exprLeft). They are set on the EXPR_ARG node
-; instead, never on exprLeft, so it never had anything to check. Now that
-; width and precision share storage with name and value, reading them from
-; exprLeft would misread its name or value, so this does nothing.
-;
-; TODO: check the EXPR_ARG node's width and precision. Note that
-; checkIntegerBaseType requires TYPE_INTEGER exactly, which a literal such
-; as the 6 in Writeln(r:6:2) is not.
+; This routine checks the field width and precision expressions of the
+; current argument (the EXPR_ARG node at argOffset). Each one is optional.
+; If present, it can be an expression of any integer type.
 .proc checkWidthAndPrecision
+    ldz #argOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::width
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ
+    jsr checkIntegerBaseType
+    ldz #argOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::precision
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ
+    jsr checkIntegerBaseType
     rts
 .endproc
 

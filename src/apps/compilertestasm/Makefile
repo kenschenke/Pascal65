@@ -192,6 +192,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/stdroutines.pas stdroutines.pas,seq \
 	-write $(PETSCIIDIR)/incdec.pas incdec.pas,seq \
 	-write $(PETSCIIDIR)/strroutines.pas strroutines.pas,seq \
+	-write $(PETSCIIDIR)/writewidth.pas writewidth.pas,seq \
 	-write $(PETSCIIDIR)/strtests.pas strtests.pas,seq \
 	-write $(PETSCIIDIR)/recarray.pas recarray.pas,seq \
 	-write $(PETSCIIDIR)/scopetest.pas scopetest.pas,seq \

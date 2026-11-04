@@ -20,7 +20,7 @@
 
 .import runErrorTest, logExpectedWarning, logExpectedError, printLine
 
-NUM_TESTS = 4
+NUM_TESTS = 5
 
 .bss
 

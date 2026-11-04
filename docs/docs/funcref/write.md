@@ -28,12 +28,13 @@ character, string literal, and string data type. They do not support arrays or r
 If a parameter is followed by a colon and a value, the output is right-justified within
 the field width. If the value is wider than the field width, the value is output without
 any spaces. The field width can be an integer literal or any expression that results in
-an integer.
+an integer of any size (Byte, ShortInt, Word, Integer, Cardinal, or LongInt).
 
 ## Precision
 
 If the value is a real data type and the field width is followed by another colon and
-an integer value, it specifies the number of digits to the right of the decimal point.
+an integer expression of any size, it specifies the number of digits to the right of
+the decimal point.
 The value is rounded if necessary.
 
 ## Examples ##
