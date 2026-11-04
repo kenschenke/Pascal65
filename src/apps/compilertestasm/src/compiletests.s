@@ -9,13 +9,12 @@
 ;
 ; compileTests routine
 
-.include "meminfo.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 
 .export compileTests, nextTestPrg
 
-.import runCompiler, initMemInfo
+.import runCompiler
 
 .data
 
@@ -194,10 +193,6 @@ DN: lda #13
 
 :   lda #13
     jsr CHROUT
-
-    jsr initMemInfo
-    jsr heapReport
-    jsr heapSummary
 
     rts
 .endproc

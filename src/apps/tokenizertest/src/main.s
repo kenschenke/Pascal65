@@ -22,7 +22,7 @@ CH_LOWERCASE = 14
 .import initLib, initTokenizer, runTest1, runTest2, runTest3
 .import runTest4, runTest5, logError
 
-.import testInit, testPass, testFail, testMemCheck
+.import testInit, testPass, testFail, testMemCheck, testLeakCheck
 
 main:
     poisonBss                   ; Must run before anything writes BSS
@@ -79,5 +79,10 @@ main:
     ; Run the fifth test
     jsr runTest5
 
-    jsr testPass
+    ; Everything the tests allocated must be freed
+    jsr testLeakCheck
+    bcc :+
+    jmp testFail
+
+:   jsr testPass
     rts

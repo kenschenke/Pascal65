@@ -30,6 +30,12 @@
 ; once the heap is initialized. It frees a block twice and fails the test if
 ; that does not execute BRK.
 ;
+; testLeakCheck reports any heap block still allocated and returns with the
+; carry set, so the caller can fail the test. Call it once the tests have
+; freed everything. The buffers that hold the compile-time
+; error messages (see initCompilerErrors) are never freed, so blocks of that
+; size are not counted.
+;
 ; In a debug build (make DEBUG=1, which make test always uses) testInit also
 ; fails the test if main did not start with poisonBss, by checking that a BSS
 ; byte nothing writes holds the poison byte.
@@ -39,9 +45,13 @@
 .include "asmlib.inc"
 .include "4510macros.inc"
 .include "poisonbss.inc"
+.include "error.inc"
 
 .export testInit, testPass, testFail, testMemCheck, testRestoreBrk
-.export brkCatch, brkCode
+.export testLeakCheck, brkCatch, brkCode
+
+; The size of the block initCompilerErrors allocates for the error messages
+ERROR_BUFFER_SIZE = numParserErrors * (MAX_ERROR_LENGTH + 1)
 
 CH_HOME = $13
 CH_DOWN = $11
@@ -57,6 +67,11 @@ brkCatch: .res 2
 checkSP: .res 1
 checkBlock: .res 4
 bssCanary: .res 1           ; Never written. poisonBss should have filled it.
+leakBank: .res 1
+leakEntry: .res 2           ; The MAT entry being looked at
+leakBlocks: .res 2          ; Number of leaked blocks
+leakBytes: .res 4           ; Total size of the leaked blocks
+leakBuf: .res 12
 
 .data
 
@@ -69,6 +84,9 @@ strNoCheck: .byte 13, "asmlib has no memory checks. rebuild it with "
     .byte "memcheck=1.", 13, 0
 strNoPoison: .byte 13, "bss was not poisoned. main must start with "
     .byte "poisonbss.", 13, 0
+strLeak: .byte 13, "memory leak: ", 0
+strLeakBlocks: .asciiz " blocks, "
+strLeakBytes: .byte " bytes", 13, 0
 
 ; The codes the memory checks put in Z, and the routines they are in
 brkCodes: .byte $11, $12, $13, $14, $22
@@ -237,6 +255,123 @@ caught:
     sta brkCatch
     sta brkCatch+1
     rts
+.endproc
+
+; Looks for heap blocks that are still allocated, other than the error message
+; buffers. If there are any it prints how many and their total size and returns
+; with the carry set. The caller then fails the test. Otherwise the carry is
+; clear. Walks the MAT of every bank (see memheap.s). Each
+; entry is two bytes: the block size, with the high bit of the second byte set
+; if the block is allocated. Two $00 bytes end the MAT, which grows downward.
+.proc testLeakCheck
+    lda #0
+    sta leakBank
+    sta leakBlocks
+    sta leakBlocks+1
+    sta leakBytes
+    sta leakBytes+1
+    sta leakBytes+2
+    sta leakBytes+3
+
+BN: lda leakBank
+    jsr getMemHeapForBank
+    jsr isQZero
+    beq DN                  ; No more banks
+    stq ptr1
+
+    ; Read the MAT entry
+L1: ldz #0
+    nop
+    lda (ptr1),z
+    sta leakEntry
+    inz
+    nop
+    lda (ptr1),z
+    sta leakEntry+1
+    ora leakEntry
+    bne :+
+    inc leakBank            ; End of this bank's MAT
+    bra BN
+
+:   lda leakEntry+1
+    bpl NX                  ; Branch if the block is free
+    and #$7f
+    sta leakEntry+1
+
+    ; The error message buffers are never freed
+    cmp #>ERROR_BUFFER_SIZE
+    bne LK
+    lda leakEntry
+    cmp #<ERROR_BUFFER_SIZE
+    beq NX
+
+LK: inc leakBlocks
+    bne :+
+    inc leakBlocks+1
+:   lda leakBytes
+    clc
+    adc leakEntry
+    sta leakBytes
+    lda leakBytes+1
+    adc leakEntry+1
+    sta leakBytes+1
+    bcc NX
+    inc leakBytes+2
+
+    ; Move to the next entry, two bytes down
+NX: lda ptr1
+    sec
+    sbc #2
+    sta ptr1
+    bcs L1
+    lda ptr1+1
+    bne :+
+    dec ptr1+2
+:   dec ptr1+1
+    bra L1
+
+DN: lda leakBlocks
+    ora leakBlocks+1
+    bne :+
+    clc
+    rts
+
+    ; Report the leak
+:   jsr CLRCHN              ; Output to the screen
+    lda #<strLeak
+    ldx #>strLeak
+    jsr printZString
+    lda leakBlocks
+    sta intOp1
+    lda leakBlocks+1
+    sta intOp1+1
+    lda #<leakBuf
+    ldx #>leakBuf
+    jsr writeInt16
+    jsr printLeakBuf
+    lda #<strLeakBlocks
+    ldx #>strLeakBlocks
+    jsr printZString
+    ldq leakBytes
+    stq intOp1
+    lda #<leakBuf
+    ldx #>leakBuf
+    jsr writeInt32
+    jsr printLeakBuf
+    lda #<strLeakBytes
+    ldx #>strLeakBytes
+    jsr printZString
+    sec
+    rts
+
+printLeakBuf:
+    ldx #0
+:   lda leakBuf,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   rts
 .endproc
 
 ; Prints the zero-terminated string in A/X where the cursor is

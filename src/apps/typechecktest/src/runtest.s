@@ -35,7 +35,6 @@
 .include "ast.inc"
 .include "asmlib.inc"
 .include "parser.inc"
-.include "meminfo.inc"
 .include "dumpast.inc"
 .include "showtree.inc"
 .include "zeropage.inc"
@@ -48,7 +47,7 @@
 .export runTest, unitList, printLine
 .import testFail
 
-.import initTokenizer, initParser, viewDump, getKey, errorCount, initMemInfo
+.import initTokenizer, initParser, viewDump, getKey, errorCount
 .import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
 .import initTypeCheck, initDumpAst, printMilliseconds, totalTicks
 
@@ -299,14 +298,6 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     ldq astRoot
     jsr dumpAst
     stq astBuf
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    lda isResolvingUnits
-    beq :+
-    jsr initMemInfo
-    jsr heapSummary
-    :
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ldq astRoot
     jsr astFree

@@ -12,7 +12,6 @@
 .include "cbm_kernal.inc"
 .include "asmlib.inc"
 .include "error.inc"
-.include "meminfo.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 
@@ -25,9 +24,9 @@ CH_LOWERCASE = 14
 .export totalTicks
 
 .import initLib, runTest, runTests, runErrorTests
-.import logError, initMemInfo, printMilliseconds, printLine
+.import logError, printMilliseconds, printLine
 
-.import testInit, testPass, testFail, testMemCheck
+.import testInit, testPass, testFail, testMemCheck, testLeakCheck
 
 main:
     poisonBss                   ; Must run before anything writes BSS
@@ -71,9 +70,6 @@ main:
     lda #>onExit
     sta exitHandler+1
 
-    jsr initMemInfo
-    jsr heapSummary
-
     lda #0
     tax
     tay
@@ -95,10 +91,11 @@ main:
     sec
     jsr runTest
 
-    jsr initMemInfo
-    jsr heapSummary
-    lda #0
-    jsr heapReport
+    ; Everything the tests allocated must be freed
+    jsr testLeakCheck
+    bcc :+
+    jmp testFail
+:
 
     lda #<strTotal
     ldx #>strTotal

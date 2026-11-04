@@ -22,6 +22,7 @@ CH_LOWERCASE = 14
 .import clearKeyBuf, initLib, compileTests, logError, logWarning
 .import backupZeroPage, restoreZeroPage
 .import testInit, testPass, testFail, testMemCheck, testRestoreBrk
+.import testLeakCheck
 
 .export failTests
 
@@ -80,7 +81,13 @@ main:
 
     jsr compileTests
 
+    ; Everything the compiles allocated must be freed
+    jsr testLeakCheck
+    bcc :+
+    jmp failTests
+
     ; Restore page zero
+:
     jsr restoreZeroPage
 
 .ifdef TESTSET

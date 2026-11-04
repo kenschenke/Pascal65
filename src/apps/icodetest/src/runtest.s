@@ -26,7 +26,6 @@
 .include "icode.inc"
 .include "asmlib.inc"
 .include "parser.inc"
-.include "meminfo.inc"
 .include "showtree.inc"
 .include "zeropage.inc"
 .include "resolver.inc"
@@ -39,7 +38,7 @@
 .export runTest, unitList, printLine
 .import testFail
 
-.import initTokenizer, initParser, viewDump, getKey, errorCount, initMemInfo
+.import initTokenizer, initParser, viewDump, getKey, errorCount
 .import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
 .import initTypeCheck, initDumpIcode, initIcode, initShowTree
 .import printMilliseconds, totalTicks
@@ -320,12 +319,6 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     ; Erase the temporary icode file
     jsr initIcode
     jsr icodeFileErase
-
-    lda isResolvingUnits
-    beq :+
-    jsr initMemInfo
-    jsr heapSummary
-    :
 
     ldq astRoot
     jsr astFree
