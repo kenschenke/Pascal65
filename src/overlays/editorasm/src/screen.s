@@ -925,7 +925,9 @@ DN: rts
     bne DR              ; draw the cursor
     and #$7f
     pha
+    phz                 ; getColorAtPos clobbers Z (the screen column)
     jsr getColorAtPos
+    plz
     tax
     pla
     bra ST
