@@ -93,8 +93,10 @@ $(SHOWTREE): FORCE
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+include ../debug.mk
+
 vpath %.s $(SRCDIR)
-$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+$(OBJTARGETDIR)/%.o: %.s $(FLAGSFILE) | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 

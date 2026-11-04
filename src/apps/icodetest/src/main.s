@@ -19,6 +19,8 @@
 
 CH_LOWERCASE = 14
 
+.include "poisonbss.inc"
+
 .segment "ENTRY"
 
 .import initLib, runTest, runTests, runErrorTests, logWarning
@@ -29,6 +31,8 @@ CH_LOWERCASE = 14
 .import testInit, testPass, testFail, testMemCheck
 
 main:
+    poisonBss                   ; Must run before anything writes BSS
+
     jsr testInit
 
     ; Set alphabet to upper and lower case

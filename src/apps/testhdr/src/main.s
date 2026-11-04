@@ -16,11 +16,15 @@
 
 CH_LOWERCASE = 14
 
+.include "poisonbss.inc"
+
 .segment "ENTRY"
 
 .import initLib, runTests, logError, initMemInfo
 
 main:
+    poisonBss                   ; Must run before anything writes BSS
+
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
     jsr CHROUT

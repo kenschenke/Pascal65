@@ -79,6 +79,20 @@ Each suite calls `testMemCheck` right after `initMemHeap`. It frees a block twic
 
 A test that expects a BRK (memtest's bad-free tests do) sets `brkCatch` to its own handler. The trap jumps there, with the code in `brkCode`, instead of failing.
 
+### Uninitialized memory
+
+The emulator zeros RAM at startup, but real hardware doesn't. The test
+programs, `mkhdr`, `testhdr` and `treeviewer` start `main` with the
+`poisonBss` macro (`src/asminc/poisonbss.inc`). In a debug build it fills the
+program's BSS with `$A5`, so code that reads BSS before writing it fails in the
+emulator as it would on hardware. In other builds it's empty.
+
+`make DEBUG=1` in one of those app directories makes a debug build. It defines
+`__DEBUG__` (see `src/apps/debug.mk`). A suite's `test` target always makes
+one, and `testInit` then fails the test if BSS wasn't filled. New programs must
+call `poisonBss` and include `debug.mk`. The compiler and editor programs,
+overlays and asmlib don't fill BSS. `heapAlloc` zeros every block it returns.
+
 ### Heap Tests
 
 `memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.

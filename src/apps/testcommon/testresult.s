@@ -29,11 +29,16 @@
 ; testMemCheck makes sure asmlib was built with the memory checks. Call it
 ; once the heap is initialized. It frees a block twice and fails the test if
 ; that does not execute BRK.
+;
+; In a debug build (make DEBUG=1, which make test always uses) testInit also
+; fails the test if main did not start with poisonBss, by checking that a BSS
+; byte nothing writes holds the poison byte.
 
 .include "cbm_kernal.inc"
 .include "zeropage.inc"
 .include "asmlib.inc"
 .include "4510macros.inc"
+.include "poisonbss.inc"
 
 .export testInit, testPass, testFail, testMemCheck, testRestoreBrk
 .export brkCatch, brkCode
@@ -51,6 +56,7 @@ brkCode: .res 1
 brkCatch: .res 2
 checkSP: .res 1
 checkBlock: .res 4
+bssCanary: .res 1           ; Never written. poisonBss should have filled it.
 
 .data
 
@@ -61,6 +67,8 @@ strDoubleFree: .byte ": freeing unallocated memory (double free?) in ", 0
 strUnknown: .byte ": not a memory check", 0
 strNoCheck: .byte 13, "asmlib has no memory checks. rebuild it with "
     .byte "memcheck=1.", 13, 0
+strNoPoison: .byte 13, "bss was not poisoned. main must start with "
+    .byte "poisonbss.", 13, 0
 
 ; The codes the memory checks put in Z, and the routines they are in
 brkCodes: .byte $11, $12, $13, $14, $22
@@ -95,7 +103,20 @@ nameHeapFree: .asciiz "heapFree"
     lda #>brkTrap
     sta BRKVEC+1
     cli
+
+.ifdef __DEBUG__
+    ; Fail if BSS was not filled with the poison byte (see poisonbss.inc)
+    lda bssCanary
+    cmp #POISON_BYTE
+    bne :+
     rts
+:   lda #<strNoPoison
+    ldx #>strNoPoison
+    jsr printZString
+    jmp testFail
+.else
+    rts
+.endif
 .endproc
 
 .proc testPass

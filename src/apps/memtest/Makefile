@@ -57,8 +57,10 @@ $(BINDIR):
 $(BINTARGETDIR): $(BINDIR)
 	mkdir -p $@
 
+include ../debug.mk
+
 vpath %.s $(SRCDIR) ../testcommon
-$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+$(OBJTARGETDIR)/%.o: %.s $(FLAGSFILE) | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
@@ -74,12 +76,12 @@ $(COVSRC) $(COVMAP): $(MEMHEAP) cov/mkcov.py | $(COVDIR)
 	python3 cov/mkcov.py $(MEMHEAP) $(COVSRC) $(COVMAP)
 
 # The tests need the memory checks (asmlib MEMCHECK=1), so the instrumented
-# copy has them too
+# copy has them too. A debug build already defines __DEBUG__.
 $(COVDIR)/memheap_cov.o: $(COVSRC)
-	ca65 $(ASFLAGS) -D __DEBUG__ $(DEPFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(if $(filter 1,$(DEBUG)),,-D __DEBUG__) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
-$(COVDIR)/main.o: $(SRCDIR)/main.s | $(COVDIR)
+$(COVDIR)/main.o: $(SRCDIR)/main.s $(FLAGSFILE) | $(COVDIR)
 	ca65 $(ASFLAGS) -D COVERAGE $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
@@ -100,12 +102,17 @@ clean:
 	$(RM) -r $(COVDIR)
 	$(RM) $(COVPRG) $(COVD81) $(COVBIN)
 
-test: all
+test:
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 all
 	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
+
+# Like test, coverage runs a debug build.
+coverage:
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 covrun
 
 # The disk is made fresh for each run because the test saves the coverage
 # map to it.
-coverage: $(COVPRG) $(COVMAP)
+covrun: $(COVPRG) $(COVMAP)
 	$(RM) $(COVD81) $(COVBIN)
 	c1541 -format memtestcov,8a d81 $(COVD81) \
 	-write $(COVPRG) memtest,prg \
@@ -114,7 +121,7 @@ coverage: $(COVPRG) $(COVMAP)
 	c1541 -attach $(COVD81) -read memtest.cov $(COVBIN)
 	python3 cov/covreport.py $(COVMAP) $(COVBIN)
 
-.PHONY: all clean test coverage
+.PHONY: all clean test coverage covrun
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)

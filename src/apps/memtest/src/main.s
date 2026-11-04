@@ -222,9 +222,13 @@ HEADER = 4                  ; chain pointer at the start of each block
     jsr cmpBankTop
 .endmacro
 
+.include "poisonbss.inc"
+
 .segment "ENTRY"
 
 main:
+    poisonBss                   ; Must run before anything writes BSS
+
     jsr testInit
 
     ; Disable BASIC ROM

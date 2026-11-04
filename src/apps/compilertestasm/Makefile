@@ -158,8 +158,10 @@ $(SYSTEMLIB): FORCE
 $(RUNTIME): FORCE
 	cd $(RUNTIMEDIR) && $(MAKE) TARGET=$(TARGET)
 
+include ../debug.mk
+
 vpath %.s $(SRCDIR) $(HDRSHAREDDIR) ../testcommon
-$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+$(OBJTARGETDIR)/%.o: %.s $(FLAGSFILE) | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
@@ -264,7 +266,7 @@ test:
 # runtime error ends the chain early, so the result line is never printed.
 testset:
 	$(RM) $(D81FILE)
-	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) all
+	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
 	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE)
 	c1541 $(D81FILE) -read $(FIRSTTEST$(TESTSET)) $(BINTARGETDIR)/$(PROGRAM)-first.prg
 	../testcommon/runtest.sh $(PROGRAM)-run $(BINTARGETDIR)/$(PROGRAM)-first.prg $(D81FILE)

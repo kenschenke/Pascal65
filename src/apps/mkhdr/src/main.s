@@ -15,12 +15,16 @@
 
 CH_LOWERCASE = 14
 
+.include "poisonbss.inc"
+
 .segment "ENTRY"
 
 .import clearKeyBuf, initLib, getSourceFn, makeHeader, logError, logWarning
 .import backupZeroPage, restoreZeroPage
 
 main:
+    poisonBss                   ; Must run before anything writes BSS
+
     ; Save the stack pointer
     tsx
     stx savedStackPtr

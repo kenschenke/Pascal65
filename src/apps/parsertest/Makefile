@@ -92,8 +92,10 @@ $(MEMINFO): FORCE
 $(SHOWTREE): FORCE
 	cd $(SHOWTREEDIR) && $(MAKE) TARGET=$(TARGET)
 
+include ../debug.mk
+
 vpath %.s $(SRCDIR) ../testcommon
-$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+$(OBJTARGETDIR)/%.o: %.s $(FLAGSFILE) | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
@@ -155,7 +157,8 @@ clean:
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(D81FILE)
 
-test: all
+test:
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 all
 	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
 
 .PHONY: test

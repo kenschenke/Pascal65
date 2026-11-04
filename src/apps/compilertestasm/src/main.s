@@ -15,6 +15,8 @@
 
 CH_LOWERCASE = 14
 
+.include "poisonbss.inc"
+
 .segment "ENTRY"
 
 .import clearKeyBuf, initLib, compileTests, logError, logWarning
@@ -24,6 +26,8 @@ CH_LOWERCASE = 14
 .export failTests
 
 main:
+    poisonBss                   ; Must run before anything writes BSS
+
     ; Remember the stack pointer so a failure can return straight to BASIC
     jsr testInit
 
