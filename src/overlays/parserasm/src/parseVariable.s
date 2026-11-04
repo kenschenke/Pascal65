@@ -1,3 +1,14 @@
+;
+; parseVariable.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2026
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; Parse a variable reference
+
 .include "ast.inc"
 .include "asmlib.inc"
 .include "zeropage.inc"

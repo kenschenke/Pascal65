@@ -1,3 +1,14 @@
+;
+; resync.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2026
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; Resynchronize the parser after a syntax error
+
 .include "zeropage.inc"
 .include "error.inc"
 .include "asmlib.inc"

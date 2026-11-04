@@ -1,3 +1,14 @@
+;
+; parseFileType.s
+; Ken Schenke (kenschenke@gmail.com)
+; 
+; Copyright (c) 2026
+; Use of this source code is governed by an MIT-style
+; license that can be found in the LICENSE file or at
+; https://opensource.org/licenses/MIT
+;
+; Parse a FILE type definition
+
 .include "ast.inc"
 .include "error.inc"
 .include "asmlib.inc"
