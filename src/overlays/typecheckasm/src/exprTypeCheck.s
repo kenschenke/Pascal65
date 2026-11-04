@@ -558,13 +558,27 @@ DN:
     nop
     lda (ptr1),z
     cmp #EXPR_POINTER
-    beq L1                  ; branch if EXPR_POINTER
+    beq PFS                 ; branch if EXPR_POINTER
     cmp #EXPR_FIELD
-    beq L1                  ; branch if EXPR_FIELD
+    beq PFS                 ; branch if EXPR_FIELD
     cmp #EXPR_SUBSCRIPT
-    beq L1                  ; branch if EXPR_SUBSCRIPT
+    beq PFS                 ; branch if EXPR_SUBSCRIPT
+    bra PT
 
-    ldz #typePtrOffset
+    ; The result of a pointer, field, or subscript expression is only ever
+    ; looked at again when it is a pointer, record, array, or string. A
+    ; number or Boolean doesn't need its own copy of the type.
+PFS:
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_BYTE
+    bcc L1
+    cmp #TYPE_BOOLEAN+1
+    bcs L1
+    rts
+
+PT: ldz #typePtrOffset
     jsr loadStackValue
     ; jsr getBaseType
     stq ptr2                    ; type in ptr2
@@ -578,10 +592,40 @@ DN:
 
     ; Is this a concat operand?
     jsr isConcatType
-    beq L1
+    bne NC                  ; branch if not a concat type
+
+    ; Plain characters and string objects don't need their own copy of the
+    ; type. The expression's evalTypeKind and evalTypeSize are enough. Mark
+    ; the expression so isConcatOperand still recognizes it. Character arrays
+    ; and string variables are still cloned.
+    ldq ptr2
+    jsr getBaseType
+    stq ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_CHARACTER
+    beq NoClone
+    cmp #TYPE_STRING_LITERAL
+    beq NoClone
+    cmp #TYPE_STRING_OBJ
+    beq NoClone
+    jmp L1
+
+NoClone:
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::evalTypeFlags
+    nop
+    lda (ptr1),z
+    ora #TYPE_FLAG_CONCAT
+    nop
+    sta (ptr1),z
+    rts
 
     ; Is type TYPE_RECORD
-    ldq ptr2
+NC: ldq ptr2
     jsr getBaseType
     stq ptr2
     ldz #type::kind

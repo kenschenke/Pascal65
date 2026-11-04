@@ -158,8 +158,20 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     ldz #expr::right
     jsr showSubExpr
 
+    ; Name and node share storage with the value and with the width and
+    ; precision, so only show them for the kinds that use them.
+    ldz #expr::kind
+    nop
+    lda (ptr2),z
+    cmp #EXPR_ARG
+    bne :+
+    jmp ShowNeg
+:   jsr isRawLiteral
+    bcc :+
+    jmp ShowNeg
+
     ; Name
-    lda #<nameLabel
+:   lda #<nameLabel
     ldx #>nameLabel
     ldz #expr::name
     jsr printNamePtr
@@ -171,10 +183,17 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     jsr printStructAddr
 
     ; Neg
+ShowNeg:
     lda #<negLabel
     ldx #>negLabel
     ldz #expr::neg
     jsr printStructBool
+
+    ldz #expr::kind
+    nop
+    lda (ptr2),z
+    cmp #EXPR_ARG
+    bne ShowEvalType
 
     ; Width
     lda #<widthLabel
@@ -189,6 +208,7 @@ exprKinds: .byte .LOBYTE(strEXPR_ADD), .HIBYTE(strEXPR_ADD)
     jsr printStructAddr
 
     ; EvalType
+ShowEvalType:
     lda #<evalTypeLabel
     ldx #>evalTypeLabel
     jsr printz
@@ -295,6 +315,27 @@ L5: bra L1
     jsr showValue
     jsr popQ
     stq ptr2
+    rts
+.endproc
+
+
+; Sets carry if the expression kind in A stores its value directly in the
+; value member rather than a pointer.
+.proc isRawLiteral
+    cmp #EXPR_BOOLEAN_LITERAL
+    beq Yes
+    cmp #EXPR_BYTE_LITERAL
+    beq Yes
+    cmp #EXPR_WORD_LITERAL
+    beq Yes
+    cmp #EXPR_DWORD_LITERAL
+    beq Yes
+    cmp #EXPR_CHARACTER_LITERAL
+    beq Yes
+    clc
+    rts
+Yes:
+    sec
     rts
 .endproc
 

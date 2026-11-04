@@ -52,6 +52,8 @@ strRtnPtrs: .asciiz "rtnptrs"
 strRecord: .asciiz "strrecord"
 strArray: .asciiz "strarray"
 strTypeCast: .asciiz "typecast"
+strCharArray: .asciiz "chararray"
+strExprClone: .asciiz "exprclone"
 strDone: .asciiz "done"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
@@ -98,6 +100,8 @@ tests:
     .byte .lobyte(strRecord), .hibyte(strRecord)
     .byte .lobyte(strArray), .hibyte(strArray)
     .byte .lobyte(strTypeCast), .hibyte(strTypeCast)
+    .byte .lobyte(strCharArray), .hibyte(strCharArray)
+    .byte .lobyte(strExprClone), .hibyte(strExprClone)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
 .endif

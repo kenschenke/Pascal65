@@ -43,11 +43,11 @@ strTotalAlloc: .asciiz "Total allocated size: "
     stq ptr1
 
 L1: ldz #0
-    neg
-    neg
     nop
     lda (ptr1),z
-    jsr isQZero
+    inz
+    nop
+    ora (ptr1),z
     beq L2              ; end of the heap entries
 
     jsr incHeapEntries
@@ -67,7 +67,7 @@ L2: lda #13
 .endproc
 
 .proc decPtr
-    lda #6
+    lda #2
     sta intOp32
     lda #0
     sta intOp32+1

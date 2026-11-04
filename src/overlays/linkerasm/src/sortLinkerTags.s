@@ -26,6 +26,8 @@ tagsTree: .res 4
 tagsMemBuf: .res 4
 intBuf: .res 15
 key: .res 15
+lastKey: .res 15
+lastNode: .res 4
 walkTreeNode: .res 4
 walkTreeStackSize: .res 2
 
@@ -213,6 +215,7 @@ L3: jsr popWalkStack
     tay
     taz
     stq tagsTree
+    stq lastNode
 
     jsr getLinkerTagsToFind
     stq tagsToFind
@@ -282,10 +285,14 @@ L1: ldq tagsToFind
     nop
     sta (ptr1),z
 
-    ; Format the offset as a string
+    ; Format the offset as a string. writeInt16 is signed and would turn an
+    ; offset over 32767 into a negative number, so use writeInt32.
+    lda #0
+    sta intOp2
+    sta intOp2+1
     lda #<intBuf
     ldx #>intBuf
-    jsr writeInt16
+    jsr writeInt32
     ; Count the length of the string
     ldx #0
 :   lda intBuf,x
@@ -317,8 +324,45 @@ L4: lda intBuf,y
     iny
     bne L4
 
-    ; Add the TAGTOFIX structure to the binary tree
-L5: ldq tagsTree
+    ; Add the TAGTOFIX structure to the binary tree.
+    ;
+    ; The tags normally arrive in order of offset, so each new key is larger
+    ; than the last one added. Walking down from the root every time would
+    ; take as long as the tree is deep, so a key that is larger than the last
+    ; one is added directly after the last node.
+L5: ldq lastNode
+    jsr isQZero
+    beq Gen                     ; No nodes yet
+    ldx #0
+CK: lda key,x
+    cmp lastKey,x
+    bne CD
+    cmp #0
+    beq Gen                     ; Equal keys
+    inx
+    bra CK
+CD: bcc Gen                     ; Key is smaller than the last one
+
+    ; Larger than the last key. Add it after the last node.
+    ldq lastNode
+    stq ptr1
+    lda #<key
+    sta ptr2
+    lda #>key
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    ldq tagToFix
+    stq ptr3
+    jsr addTreeNode
+    ldq ptr4
+    stq lastNode
+    jmp CopyKey
+
+    ; Add the node starting at the root of the tree
+Gen:
+    ldq tagsTree
     stq ptr1
     lda #<key
     sta ptr2
@@ -332,9 +376,20 @@ L5: ldq tagsTree
     jsr addTreeNode
     ldq tagsTree
     jsr isQZero
-    bne :+
-    ldq ptr4
+    bne L6
+    ldq ptr4                    ; This is the first node
     stq tagsTree
+    stq lastNode
+    bra CopyKey
+L6: jmp L1
+
+CopyKey:
+    ldx #0
+:   lda key,x
+    sta lastKey,x
+    beq :+
+    inx
+    bne :-
 :   jmp L1
 
 DN: rts

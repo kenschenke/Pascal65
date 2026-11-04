@@ -76,14 +76,6 @@ L1: ldq paramPtr
     lda (ptr1),z
     jsr typeClone
     jsr pushQ               ; type
-    
-    ; Restore ptr1 in case typeClone stomped on it
-    ldq paramPtr
-    stq ptr1
-
-    ldz #param_list::name
-    jsr calcNamePtr
-    jsr pushQ               ; name
     jsr symbolCreate
     stq ptr3                ; new symbol in ptr3
 

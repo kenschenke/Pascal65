@@ -71,7 +71,7 @@ L1: ldq matPtr
     lda (ptr1),z
     bne L2
     inz
-    cpz #6
+    cpz #2
     bne :-
     inc bankNum
     bra BN
@@ -98,7 +98,7 @@ L2: ldz #1
 L3: jsr incEntriesFree
 
     ; Move to the next MAT entry
-L4: lda #6
+L4: lda #2
     sta intOp32
     lda #0
     sta intOp32+1

@@ -493,14 +493,8 @@ L2: jsr popQ        ; initBuf
     lda #ARRAYDECL_STRING
     jsr writeArrayElemType
 
-    ldz #declPtrOffset
+    ldz #exprInitOffset
     jsr loadStackValue
-    stq ptr1
-    ldz #decl::value
-    neg
-    neg
-    nop
-    lda (ptr1),z
     jsr isQZero
     bne :+
     jsr finishOutArrayBlock
@@ -582,14 +576,8 @@ L2: jsr popQ        ; initBuf
     lda #ARRAYDECL_REAL
     jsr writeArrayElemType
 
-    ldz #declPtrOffset
+    ldz #exprInitOffset
     jsr loadStackValue
-    stq ptr1
-    ldz #decl::value
-    neg
-    neg
-    nop
-    lda (ptr1),z
     jsr isQZero
     bne :+
     jsr finishOutArrayBlock

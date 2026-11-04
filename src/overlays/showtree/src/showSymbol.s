@@ -20,15 +20,13 @@ CH_BACKARROW = 95
 
 .export showSymbol
 
-.import showAddr, printz, printStructAddr, printStructName
+.import showAddr, printz, printStructAddr
 .import getKey, loadPtr, showTypeKind, showType, printStructNumber
 
 .data
 
 kindLabel: .asciiz "kind: "
-nodeLabel: .asciiz "node: "
 typeLabel: .asciiz "type: "
-nameLabel: .asciiz "name: "
 declLabel: .asciiz "decl: "
 offsetLabel: .asciiz "offset: "
 levelLabel: .asciiz "level: "
@@ -55,12 +53,6 @@ symbolKinds: .byte .LOBYTE(strSYMBOL_LOCAL), .HIBYTE(strSYMBOL_LOCAL)
     lda #13
     jsr CHROUT
 
-    ; Node
-    lda #<nodeLabel
-    ldx #>nodeLabel
-    ldz #symbol::node
-    jsr printStructAddr
-
     ; Type
     lda #<typeLabel
     ldx #>typeLabel
@@ -86,12 +78,6 @@ symbolKinds: .byte .LOBYTE(strSYMBOL_LOCAL), .HIBYTE(strSYMBOL_LOCAL)
     stq ptr2
     lda #13
     jsr CHROUT
-
-    ; Name
-    lda #<nameLabel
-    ldx #>nameLabel
-    ldz #symbol::name
-    jsr printStructName
 
     ; Decl
     lda #<declLabel

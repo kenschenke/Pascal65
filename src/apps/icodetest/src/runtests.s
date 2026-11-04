@@ -38,7 +38,7 @@
 
 .import runTest
 
-NUM_TESTS = 23
+NUM_TESTS = 24
 
 .bss
 

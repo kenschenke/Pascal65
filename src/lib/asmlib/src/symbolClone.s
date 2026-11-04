@@ -15,8 +15,8 @@
 
 .export symbolClone
 
-.import savePtrs, restorePtrs, storePtr, declClone, typeClone
-.import nameClone, isQZero, heapAlloc, rtPushQ, rtPopQ
+.import savePtrs, restorePtrs, storePtr, typeClone
+.import isQZero, heapAlloc, rtPushQ, rtPopQ
 
 .proc symbolClone
     jsr isQZero
@@ -56,30 +56,6 @@
     jsr restorePtrs
     ldz #symbol::type
     jsr storePtr
-
-    ; Copy the name
-    ldz #symbol::name
-    ldx #0
-:   nop
-    lda (ptr1),z
-    nop
-    sta (ptr2),z
-    inz
-    inx
-    cpx #NAMELEN
-    bne :-
-
-    ; Copy which
-    ldz #symbol::which
-    nop
-    lda (ptr1),z
-    nop
-    sta (ptr2),z
-    inz
-    nop
-    lda (ptr1),z
-    nop
-    sta (ptr2),z
 
     ; Copy offset
     ldz #symbol::offset

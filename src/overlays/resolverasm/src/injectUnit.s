@@ -93,16 +93,10 @@ L2: stq ptr1
     lda (ptr1),z
     jsr typeClone
     stq ptr3
-    ldq interfaceDecl
-    ldz #decl::name
-    jsr calcNamePtr
-    stq ptr4
     lda #SYMBOL_GLOBAL
     jsr pushA               ; kind
     ldq ptr3
     jsr pushQ               ; type
-    ldq ptr4
-    jsr pushQ               ; name
     jsr symbolCreate
     stq ptr1
     stq newSym

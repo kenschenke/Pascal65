@@ -4,6 +4,7 @@
     NEW: Warning when an expression might result in a loss of precision
     NEW: Add pre-compiled headers for libraries
     FIX: Stack corruption bug when setting up local string variables
+    FIX: Reduced compiler's memory usage for compiling larger programs
 
 0.35-beta Sep 30 2026
     NEW: Compiler rewritten in 100% assembly language

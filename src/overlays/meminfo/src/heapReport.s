@@ -35,6 +35,7 @@ filename2:
 bankNum: .res 1
 intBuf: .res 10
 matPtr: .res 4
+blkPtr: .res 4
 hasHeader: .res 1           ; non-zero if the header has been printed for the current bank
 includeAllEntries: .res 1
 
@@ -97,6 +98,8 @@ L2: rts
 
 ; matPtr is already filled in
 .proc heapReportForBank
+    ldq heapBottom
+    stq blkPtr
     lda #0
     sta hasHeader
 
@@ -110,7 +113,7 @@ L1: ldq matPtr
     lda (ptr1),z
     bne L2
     inz
-    cpz #6
+    cpz #2
     bne :-
     jmp L5
 
@@ -141,11 +144,7 @@ L3: lda hasHeader
     jsr CHROUT
     
     ; Print the entry's address
-    ldz #2
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    ldq blkPtr
     jsr dumpHex
     lda #' '
     jsr CHROUT
@@ -204,7 +203,27 @@ L4: ldx #0
     bne :-
 
     ; Move to the next MAT entry
-NX: lda #6
+NX:
+    ; Add this entry's size to the block address
+    ldq matPtr
+    stq ptr1
+    ldz #0
+    nop
+    lda (ptr1),z
+    sta intOp1
+    inz
+    nop
+    lda (ptr1),z
+    and #$7f
+    sta intOp1+1
+    lda #0
+    sta intOp2
+    sta intOp2+1
+    ldq blkPtr
+    clc
+    adcq intOp1
+    stq blkPtr
+    lda #2
     sta intOp32
     lda #0
     sta intOp32+1

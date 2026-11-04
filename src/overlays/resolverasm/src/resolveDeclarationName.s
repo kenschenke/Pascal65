@@ -94,22 +94,12 @@ L2: cmp #TYPE_PROGRAM
 L3: jsr getTypePtr
     jsr typeClone
     stq ptr2            ; decl type in ptr2
-    ldz #declOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    ldz #decl::name
-    jsr calcNamePtr
-    stq ptr3            ; decl name in ptr3
     ldz #kindOffset
     nop
     lda (stackPointer),z
     jsr pushA           ; kind
     ldq ptr2
     jsr pushQ           ; type
-    ldq ptr3
-    jsr pushQ           ; name
     jsr symbolCreate
     stq ptr2            ; symbol in ptr2
     stq nodePtr

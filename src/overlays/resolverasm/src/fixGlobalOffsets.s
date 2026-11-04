@@ -122,8 +122,10 @@ L1: jsr loadSymtab
     ldq units
     stq currentUnit
 
+    ; The symbol's name is the key of the symbol table node on the stack
+    jsr loadSymtab
     ldq ptr1
-    ldz #symbol::name
+    ldz #TREENODE::key
     jsr calcNamePtr
     stq name
 

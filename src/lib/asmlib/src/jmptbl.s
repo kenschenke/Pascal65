@@ -26,6 +26,7 @@
 .import rtPushBlock, rtPopBlock, isConcatOperand, getBaseType, freeSymtab, hexstr
 .import linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
 .import getLinkerTagsToFind, findLinkerTag, getMemHeapForBank, clearMemHeap
+.import astFreeBodies
 
 .segment "JMPTBL"
 
@@ -116,3 +117,4 @@ jmp findLinkerTag
 jmp getMemHeapForBank
 jmp rtInitCompilerWarnings
 jmp rtCompilerWarning
+jmp astFreeBodies

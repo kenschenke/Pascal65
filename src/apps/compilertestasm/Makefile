@@ -215,6 +215,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/strarray.pas strarray.pas,seq \
 	-write $(PETSCIIDIR)/constants.pas constants.pas,seq \
 	-write $(PETSCIIDIR)/typecast.pas typecast.pas,seq \
+	-write $(PETSCIIDIR)/chararray.pas chararray.pas,seq \
+	-write $(PETSCIIDIR)/exprclone.pas exprclone.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 
@@ -222,6 +224,11 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 	$(RM) $(OBJECTS)
+ifndef TESTSET
+	@for s in $(TESTSETS); do \
+		$(MAKE) TARGET=$(TARGET) TESTSET=$$s clean || exit 1; \
+	done
+endif
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)

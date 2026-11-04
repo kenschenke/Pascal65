@@ -298,27 +298,16 @@ L1: ldz #type::kind
     rts
 .endproc
 
+; This routine used to check expr::width and expr::precision of the
+; argument's expression (exprLeft). They are set on the EXPR_ARG node
+; instead, never on exprLeft, so it never had anything to check. Now that
+; width and precision share storage with name and value, reading them from
+; exprLeft would misread its name or value, so this does nothing.
+;
+; TODO: check the EXPR_ARG node's width and precision. Note that
+; checkIntegerBaseType requires TYPE_INTEGER exactly, which a literal such
+; as the 6 in Writeln(r:6:2) is not.
 .proc checkWidthAndPrecision
-    ldz #exprLeftOffset
-    jsr loadStackValue
-    stq ptr1
-    ldz #expr::width
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr pushQ
-    jsr checkIntegerBaseType
-    ldz #exprLeftOffset
-    jsr loadStackValue
-    stq ptr1
-    ldz #expr::precision
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr pushQ
-    jsr checkIntegerBaseType
     rts
 .endproc
 

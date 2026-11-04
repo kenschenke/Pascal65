@@ -97,6 +97,12 @@ L1: ldz #argPtrOffset
     nop
     lda (ptr1),z
     stq ptr1
+    ; Only a pointer expression has an evalType to look at
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_POINTER
+    bne L2
     ldz #expr::evalType
     neg
     neg

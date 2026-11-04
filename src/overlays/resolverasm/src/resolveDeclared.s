@@ -122,14 +122,33 @@ L2: stq ptr2            ; save symbol ptr
     cpx #4
     bne :-
     bra L4              ; skip freeing the current declaration's type
-L3: ; Free the declaration's current type
-    jsr lookupDeclSymbol
+L3: ; Copy the size to the type of the declaration's symbol. Use the
+    ; declaration's own symbol. Looking it up by name can't find the symbol
+    ; of a record field, which is in the record's symbol table, not in scope.
+    ldz #declOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
     stq ptr1
+    ldz #decl::node
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    bne :+
+    jsr lookupDeclSymbol
+    jsr isQZero
+    beq L4                  ; no symbol
+:   stq ptr1
     ldz #symbol::type
     neg
     neg
     nop
     lda (ptr1),z
+    jsr isQZero
+    beq L4                  ; symbol has no type
     stq ptr1
     ldz #type::size
     nop

@@ -13,19 +13,20 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-kindOffset = 8
-typeOffset = 4
-nameOffset = 0
+kindOffset = 4
+typeOffset = 0
 
 .export symbolCreate
 
-.import storeFromStack, nameClone, heapAlloc, rtPopA, rtPopQ, rtPushQ
+.import storeFromStack, heapAlloc, rtPopA, rtPopQ
 
 ; Allocate a symbol structure and populate it with parameters.
 ; Inputs on runtime stack, bottom to top:
 ;    SYMBOL_* kind - 1 byte
 ;    type pointer  - 4 bytes
-;    name pointer  - 4 bytes
+;
+; The symbol does not hold a name. The name is the key of the symbol table
+; node that points to the symbol.
 ; Returns pointer to symbol structure in Q
 .proc symbolCreate
     ; Allocate the structure
@@ -55,30 +56,7 @@ nameOffset = 0
     ldx #symbol::type
     jsr storeFromStack
 
-    ; Copy the name
-    ldz #nameOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr2
-    lda #0
-    sta tmp1
-    lda #symbol::name
-    sta tmp2
-:   ldz tmp1
-    nop
-    lda (ptr2),z
-    beq :+
-    ldz tmp2
-    nop
-    sta (ptr1),z
-    inc tmp1
-    inc tmp2
-    bne :-
-
     ; Pop the parameters off the stack
-:   jsr rtPopQ
     jsr rtPopQ
     jsr rtPopA
 

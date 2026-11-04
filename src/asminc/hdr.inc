@@ -25,7 +25,7 @@
 ; Pointer fields the parser never fills in (symbol, symbol table, and
 ; evaluated-type pointers) are written as zero.
 
-HDR_VERSION = 1
+HDR_VERSION = 2
 
 HDR_REC_DECL  = 1
 HDR_REC_TYPE  = 2

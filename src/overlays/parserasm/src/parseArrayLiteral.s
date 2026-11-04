@@ -11,7 +11,7 @@ arrayExprOffset = 0
 
 .export parseArrayLiteral
 
-.import makeExpr, parseExpression, tlExpressionStart, doResync
+.import parseExpression, tlExpressionStart, doResync
 .import getToken, parserToken, parserError, tlStatementFollow
 
 .proc parseArrayLiteral
@@ -37,33 +37,19 @@ L1: lda parserToken
     jsr isQZero
     bne L3
 
-    ; If the new expression is an array literal itself, set arrayExpr to it.
-    ldz #expr::kind
-    nop
-    lda (ptr1),z
-    cmp #EXPR_ARRAY_LITERAL
-    bne L2
-    ldz #arrayExprOffset
-    ldx #0
-:   lda ptr1,x
-    nop
-    sta (stackPointer),z
-    inz
-    inx
-    cpx #4
-    bne :-
-    bra L5
-
-    ; If this is the first expression (arrayExpr == null) and the parsed
-    ; expression is an array literal itself, set arrayExpr to it.
-    ; Otherwise, create an EXPR_ARRAY_LITERAL expression and set the new
-    ; expression to 
-
-    ; Create an EXPR_ARRAY_LITERAL
+    ; This is the first expression. Create an EXPR_ARRAY_LITERAL to hold it
+    ; and the expressions that follow, even if the first one is itself an
+    ; array literal. Each level of a nested literal has its own wrapper.
 L2: ldq ptr1                ; save the new expression on the stack
     jsr pushQ
+    ; Not makeExpr: it would put the last token's value in the new expression.
     lda #EXPR_ARRAY_LITERAL
-    jsr makeExpr
+    jsr pushA               ; kind
+    jsr pushQZero           ; left
+    jsr pushQZero           ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
+    jsr exprCreate
     stq ptr3                ; put the array literal expression in ptr3
     jsr popQ
     stq ptr1                ; put the new expression back into ptr1

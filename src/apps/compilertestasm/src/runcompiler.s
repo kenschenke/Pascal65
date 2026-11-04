@@ -25,6 +25,7 @@
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
+.import freeUnitBodies
 .import nextTestPrg, failTests
 
 .bss
@@ -182,7 +183,12 @@ runtimeStackSize: .res 2
     ; Error - so don't continue
     jmp failTests
 
-:   lda #'G'
+:   ; Free what code generation doesn't need
+    ldq astRoot
+    jsr astFreeBodies
+    jsr freeUnitBodies
+
+    lda #'G'
     jsr CHROUT
     jsr initCodeGen
     ldq unitList

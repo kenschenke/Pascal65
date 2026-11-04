@@ -15,7 +15,7 @@
 
 .export freeSymbol
 
-.import freeDecl, freeType, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, peekQ
+.import freeType, loadPtr, heapFree, rtPopQ, rtPushQ, isQZero, peekQ
 
 .ifdef __DEBUG__
 .import isHeapAllocated
@@ -43,15 +43,7 @@ symPtr: .res 4
     stq ptr1
     jsr rtPushQ
 
-    ; Node
-    ldz #symbol::node
-    jsr loadPtr
-    sec
-    jsr freeDecl
-
     ; Type
-    jsr peekQ
-    stq ptr1
     ldz #symbol::type
     jsr loadPtr
     jsr freeType

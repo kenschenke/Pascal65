@@ -45,7 +45,7 @@ nameExprPtr: .res 4
     nop
     sta (ptr1),z
     inz
-    cpz #.sizeof(type)
+    cpz #.sizeof(expr)
     bne :-
 
     ; Convert the original EXPR_NAME into a EXPR_CALL

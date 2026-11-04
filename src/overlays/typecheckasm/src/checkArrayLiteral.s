@@ -87,7 +87,7 @@ L1: ldz #exprOffset
     nop
     lda (ptr1),z
     cmp #EXPR_ARRAY_LITERAL
-    bne L2
+    beq L2
     lda #errInvalidConstant
     jsr typeCheckError
 

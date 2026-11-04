@@ -35,7 +35,16 @@
     lda (ptr1),z
     jsr isQZero
     bne :+
-    lda #1
+
+    ; No evalType. Plain characters and string objects are marked instead.
+    ldz #expr::evalTypeFlags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_CONCAT
+    beq NO
+    lda #0                  ; Set the Z flag
+    rts
+NO: lda #1
     rts
 
 :   jsr getBaseType

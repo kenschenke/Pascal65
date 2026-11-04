@@ -19,7 +19,7 @@
 
 ; Conditional target codes. The target depends on the record's contents.
 TK_COND_PARAMFIELDS = $81       ; type.paramFields
-TK_COND_EXPRVALUE   = $82       ; expr.value
+TK_COND_EXPRVALUE   = $82       ; expr.name / expr.value
 
 .bss
 
@@ -76,12 +76,9 @@ descType:
 descExpr:
     .byte expr::left, HDR_REC_EXPR
     .byte expr::right, HDR_REC_EXPR
-    .byte expr::name, HDR_REC_NAME
+    .byte expr::name, TK_COND_EXPRVALUE
     .byte expr::node, HDR_TK_ZERO
-    .byte expr::width, HDR_TK_ZERO
-    .byte expr::precision, HDR_TK_ZERO
     .byte expr::evalType, HDR_TK_ZERO
-    .byte expr::value, TK_COND_EXPRVALUE
     .byte $ff
 
 descParam:
@@ -166,18 +163,34 @@ ParamFields:
     beq IsDecl
     bra IsRaw
 
-    ; expr.value is a name for string and real literals. Otherwise it's a value.
+    ; expr.name, expr.value, and expr.width share storage. It holds a value
+    ; for the literals that store it directly, nothing for EXPR_ARG (write
+    ; arguments never appear in a library), and a name for everything else,
+    ; including string and real literals, whose value is a pointer to text.
 ExprValue:
     ldz #expr::kind
     nop
     lda (ptr1),z
-    cmp #EXPR_STRING_LITERAL
-    beq IsName
-    cmp #EXPR_REAL_LITERAL
-    beq IsName
+    cmp #EXPR_BOOLEAN_LITERAL
+    beq IsRaw
+    cmp #EXPR_BYTE_LITERAL
+    beq IsRaw
+    cmp #EXPR_WORD_LITERAL
+    beq IsRaw
+    cmp #EXPR_DWORD_LITERAL
+    beq IsRaw
+    cmp #EXPR_CHARACTER_LITERAL
+    beq IsRaw
+    cmp #EXPR_ARG
+    beq IsZero
+    bra IsName
 
 IsRaw:
     lda #HDR_TK_RAW
+    clc
+    rts
+IsZero:
+    lda #HDR_TK_ZERO
     clc
     rts
 IsParam:

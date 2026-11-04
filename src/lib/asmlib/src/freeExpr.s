@@ -24,31 +24,48 @@
     rts
 :   jsr rtPushQ
 
-    ; Value
+    ; The name, value, and width members share storage, so what needs to
+    ; be freed depends on the kind of expression.
     jsr peekQ
     stq ptr1
     ldz #expr::kind
     nop
     lda (ptr1),z
-    cmp #EXPR_REAL_LITERAL
-    bne :+
-    jsr freeValueString
-    bra L1
-:   cmp #EXPR_STRING_LITERAL
-    bne L1
-    jsr freeValueString
+    cmp #EXPR_ARG
+    beq FreeArg
+    cmp #EXPR_BOOLEAN_LITERAL
+    beq L1
+    cmp #EXPR_BYTE_LITERAL
+    beq L1
+    cmp #EXPR_WORD_LITERAL
+    beq L1
+    cmp #EXPR_DWORD_LITERAL
+    beq L1
+    cmp #EXPR_CHARACTER_LITERAL
+    beq L1
 
-    ; Name
-L1: jsr peekQ
-    stq ptr1
+    ; Name, or the text of a string or real literal
     ldz #expr::name
     jsr loadPtr
     jsr isQZero
-    beq :+
+    beq L1
     jsr heapFree
+    bra L1
+
+    ; Width and precision
+FreeArg:
+    ldz #expr::width
+    jsr loadPtr
+    jsr freeExpr
+
+    jsr peekQ
+    stq ptr1
+    ldz #expr::precision
+    jsr loadPtr
+    jsr freeExpr
 
     ; Left
-:   jsr peekQ
+L1: jsr peekQ
     stq ptr1
     ldz #expr::left
     jsr loadPtr
@@ -58,20 +75,6 @@ L1: jsr peekQ
     jsr peekQ
     stq ptr1
     ldz #expr::right
-    jsr loadPtr
-    jsr freeExpr
-
-    ; Width
-    jsr peekQ
-    stq ptr1
-    ldz #expr::width
-    jsr loadPtr
-    jsr freeExpr
-
-    ; Precision
-    jsr peekQ
-    stq ptr1
-    ldz #expr::precision
     jsr loadPtr
     jsr freeExpr
 
@@ -85,13 +88,4 @@ L1: jsr peekQ
     jsr rtPopQ
     jsr heapFree
     rts
-.endproc
-
-.proc freeValueString
-    ldz #expr::value
-    jsr loadPtr
-    jsr isQZero
-    beq :+
-    jsr heapFree
-:   rts
 .endproc

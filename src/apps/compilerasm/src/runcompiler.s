@@ -19,12 +19,20 @@
 .include "typecheck.inc"
 .include "icode.inc"
 .include "resolver.inc"
+.include "meminfo.inc"
 .include "4510macros.inc"
 
 .export runCompiler, unitList
+.ifdef __HEAPPROFILE__
+.export profileExit
+.endif
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
+.import freeUnitBodies
+.ifdef __HEAPPROFILE__
+.import initMemInfo
+.endif
 
 .bss
 
@@ -166,7 +174,17 @@ strLinking: .asciiz "Linking"
     ; Error - so don't continue
     rts
 
+.ifdef __HEAPPROFILE__
+    ; Profile before type checking (shows as "Resolving")
+:   jsr initMemInfo
+    jsr heapProfile
+.endif
+
+.ifdef __HEAPPROFILE__
+    lda #<strTypeChecking
+.else
 :   lda #<strTypeChecking
+.endif
     ldx #>strTypeChecking
     jsr printLine
     jsr initTypeCheck
@@ -174,6 +192,12 @@ strLinking: .asciiz "Linking"
     jsr declTypeCheck
     ldq unitList
     jsr typeCheckUnits
+
+.ifdef __HEAPPROFILE__
+    ; Profile after type checking (shows as "Type checking")
+    jsr initMemInfo
+    jsr heapProfile
+.endif
 
     ; Generate the intermediate code
     lda #<strIcode
@@ -184,6 +208,14 @@ strLinking: .asciiz "Linking"
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+
+.ifdef __HEAPPROFILE__
+    ; Build with PROFILEFLAGS="-D __HEAPPROFILE__" to show a heap profile
+    ; once the AST is complete. The meminfo overlay replaces icode in
+    ; overlay space, which is fine because icode is finished.
+    jsr initMemInfo
+    jsr heapProfile
+.endif
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
@@ -196,7 +228,13 @@ strLinking: .asciiz "Linking"
     ; Error - so don't continue
     rts
 
-:   lda #<strCodeGen
+:   ; The statements and expressions have been turned into intermediate
+    ; code. Free them to make room for code generation.
+    ldq astRoot
+    jsr astFreeBodies
+    jsr freeUnitBodies
+
+    lda #<strCodeGen
     ldx #>strCodeGen
     jsr printLine
     jsr initCodeGen
@@ -212,10 +250,22 @@ strLinking: .asciiz "Linking"
     ldq astRoot
     jsr objCodeGen
 
+.ifdef __HEAPPROFILE__
+    ; Second profile: the AST is still allocated and code generation is done.
+    jsr initMemInfo
+    jsr heapProfile
+.endif
+
     ldq astRoot
     jsr astFree
 
     jsr freeUnits
+
+.ifdef __HEAPPROFILE__
+    ; Third profile: everything is freed except what linking needs.
+    jsr initMemInfo
+    jsr heapProfile
+.endif
 
     lda #<strLinking
     ldx #>strLinking
@@ -241,3 +291,12 @@ strLinking: .asciiz "Linking"
     jsr CHROUT
     rts
 .endproc
+
+.ifdef __HEAPPROFILE__
+; Exit handler for profiling builds
+.proc profileExit
+    jsr initMemInfo
+    jsr heapProfile
+    rts
+.endproc
+.endif

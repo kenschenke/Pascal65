@@ -268,7 +268,19 @@ L1: ldq ptr1
     jsr popQ
     stq ptr1
 
-    ldz #expr::right
+    ; An element that is an array literal has its own elements to dump
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_ARRAY_LITERAL
+    bne :+
+    ldq ptr1
+    jsr pushQ
+    jsr dumpArrayLiteral
+    jsr popQ
+    stq ptr1
+
+:   ldz #expr::right
     neg
     neg
     nop
@@ -278,29 +290,7 @@ L1: ldq ptr1
 
 L2: jsr popQ
     stq ptr1
-    jsr pushQ
     dec level
-
-    ; If there is another array literal after this, dump it too.
-    ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr isQZero
-    beq :+
-    stq ptr1
-    jsr newLine
-    jsr indent
-    lda #'E'
-    jsr dumpChar
-    lda #':'
-    jsr dumpChar
-    jsr dumpExprKind
-    jsr dumpArrayLiteral
-
-:   jsr popQ
-    stq ptr1
     rts
 .endproc
 

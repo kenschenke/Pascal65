@@ -67,8 +67,6 @@ L1: ldq currentEnum
     jsr pushA                       ; kind
     ldq newType
     jsr pushQ                       ; type
-    ldq name
-    jsr pushQ                       ; name
     jsr symbolCreate
     stq newSymbol
     stq ptr3

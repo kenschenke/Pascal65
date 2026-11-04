@@ -21,7 +21,7 @@ valueOffset = 0
 
 .export exprCreate
 
-.import storeFromStack, heapAlloc, rtPopA, rtPopQ
+.import storeFromStack, heapAlloc, rtPopA, rtPopQ, isQZero
 
 ; Allocate an expr structure and populate it with parameters.
 ; Inputs on runtime stack, bottom to top:
@@ -64,15 +64,24 @@ valueOffset = 0
     ldx #expr::right
     jsr storeFromStack
 
-    ; Store the name pointer
-    lda #nameOffset
-    ldx #expr::name
-    jsr storeFromStack
-
-    ; Store the value pointer
+    ; Name and value share storage in the expr. Callers pass zero for the
+    ; one they don't use, so store the value first and then the name only
+    ; if there is one.
     lda #valueOffset
     ldx #expr::value
     jsr storeFromStack
+
+    ldz #nameOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    jsr isQZero
+    beq :+
+    lda #nameOffset
+    ldx #expr::name
+    jsr storeFromStack
+:
 
     ; Pop the parameters off the stack
     jsr rtPopQ

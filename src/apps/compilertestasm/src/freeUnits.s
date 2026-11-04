@@ -14,7 +14,7 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-.export freeUnits
+.export freeUnits, freeUnitBodies
 
 .import unitList
 
@@ -42,6 +42,37 @@ L1: ldq thisUnit
 
     ldq thisUnit
     jsr heapFree
+    ldq thisUnit
+    stq ptr1
+    ldz #unit::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq thisUnit
+    bra L1
+
+L2: rts
+.endproc
+
+; Frees the statements and expressions in every unit, which are no longer
+; needed after intermediate code has been generated.
+.proc freeUnitBodies
+    ldq unitList
+    stq thisUnit
+
+L1: ldq thisUnit
+    jsr isQZero
+    beq L2
+
+    stq ptr1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr astFreeBodies
+
     ldq thisUnit
     stq ptr1
     ldz #unit::next

@@ -63,6 +63,31 @@ intbuf: .res 10
     nop
     sta (stackPointer),z
 
+    ; The init expression passed in is the array literal for this array. Its
+    ; left expression is the first element. From here on exprInit is the
+    ; literal for the current element.
+    ldz #exprInitOffset
+    jsr loadStackValue
+    jsr isQZero
+    beq SK
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #exprInitOffset
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
+SK:
     ; Loop while index <= highBound
 L1: jsr formatElemLabel
     ldz #elemTypeOffset
@@ -87,9 +112,7 @@ L2: ldz #exprInitOffset
     neg
     nop
     lda (ptr1),z
-    jsr isQZero
-    beq NX
-    ; exprInit = exprInit.right
+    ; exprInit = exprInit.right (zero when there are no more literals)
     stq ptr1
     ldz #exprInitOffset
     ldx #0
@@ -175,17 +198,9 @@ DN: jsr popAX           ; index
 
     ldz #exprInitOffset
     jsr loadStackValue
-    stq ptr3
-    jsr isQZero
-    beq :+
-    ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr3),z
-    stq ptr3
+    stq ptr3                ; literal for this element (or zero)
 
-:   ldz #declPtrOffset
+    ldz #declPtrOffset
     jsr loadStackValue
     stq ptr4
 

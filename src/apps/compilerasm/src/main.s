@@ -19,6 +19,9 @@ CH_LOWERCASE = 14
 
 .import clearKeyBuf, initLib, getSourceFn, runCompiler, logError, logWarning
 .import backupZeroPage, restoreZeroPage, showTitleBanner
+.ifdef __HEAPPROFILE__
+.import profileExit
+.endif
 
 main:
     ; Save the stack pointer
@@ -46,6 +49,13 @@ main:
     sta exitHandler
     lda #>_exit
     sta exitHandler+1
+.ifdef __HEAPPROFILE__
+    ; Show a heap profile on exit, such as when memory runs out
+    lda #<profileExit
+    sta exitHandler
+    lda #>profileExit
+    sta exitHandler+1
+.endif
 
     jsr clearKeyBuf             ; Clear the keyboard buffer
 

@@ -96,8 +96,6 @@ L1: ldx stdRtnListNdx
     jsr pushA
     ldq ptr1
     jsr pushQ
-    jsr getCurrentRtnName
-    jsr pushQ
     jsr symbolCreate
     stq ptr3
     jsr getCurrentRtnName

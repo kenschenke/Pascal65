@@ -243,6 +243,15 @@ SignedYes:
     ; Already flagged a warning for this expression, so skip more checking.
     lda #0              ; Set the Z flag so the caller doesn't issure another warning.
     rts
+:   ; Only a literal holds its value in the expression. A named constant
+    ; shares that storage with its name pointer, so there is no value to check.
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_NAME
+    bne :+
+    lda #0              ; Set the Z flag: nothing to warn about
+    rts
 :   lda leftKind
     cmp #TYPE_BYTE
     bne :+

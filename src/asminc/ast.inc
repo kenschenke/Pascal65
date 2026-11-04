@@ -243,18 +243,36 @@ NAMELEN = 24
     kind .byte                  ; One of EXPR_
     left .dword                 ; Expression left node
     right .dword                ; Expression right node
-    name .dword                 ; Null-terminated name
-    node .dword                 ; Symbol table node
+    ; The next two members hold different things depending on the kind, so
+    ; they share storage. See the notes below the structure.
+    .union
+        name .dword             ; Null-terminated name (EXPR_NAME, etc.)
+        value .dword            ; The value (byte, word, dword, char, boolean)
+                                ; or, for string and real literals, a pointer
+                                ; to the null-terminated text
+        width .dword            ; for EXPR_ARG, field width expression
+    .endunion
+    .union
+        node .dword             ; Symbol table node
+        precision .dword        ; for EXPR_ARG, precision expression
+    .endunion
     neg .byte                   ; Non-zero if unary neg
-    width .dword                ; for EXPR_ARG, field width
-    precision .dword            ; for EXPR_ARG, precision
     evalType .dword             ; The evaluated type from the semantic phase
     evalTypeKind .byte          ; The evaluated type kind (TYPE_*)
     evalTypeSize .word          ; The evaluated type size
     evalTypeFlags .byte         ; The evaluated type flags
-    value .dword                ; The value (byte, word, dword, real, char, boolean)
-    lineNumber .word
 .endstruct
+
+;    name/value/width share a slot and node/precision share a slot:
+;        - EXPR_ARG uses width and precision. It has no name, value, or node.
+;        - The literal kinds use value. EXPR_BOOLEAN_LITERAL,
+;          EXPR_BYTE_LITERAL, EXPR_WORD_LITERAL, EXPR_DWORD_LITERAL, and
+;          EXPR_CHARACTER_LITERAL store the value itself. EXPR_STRING_LITERAL
+;          and EXPR_REAL_LITERAL store a pointer to heap-allocated text,
+;          which is the same thing as a name as far as ownership goes.
+;        - Every other kind uses name (possibly zero) and node.
+;    Do not read name from a raw literal or either member of EXPR_ARG
+;    without checking the kind first.
 
 ;    The expr structure stores information on an expression, literal, or
 ;    function/procedure call.
@@ -544,6 +562,10 @@ TYPE_FLAG_ISSTD     = %00001000
 TYPE_FLAG_ISRETVAL  = %00010000
 TYPE_FLAG_ISCLONED  = %00100000
 TYPE_FLAG_ISTEMP    = %01000000
+; Used only in expr::evalTypeFlags, never in a type structure. Set when the
+; expression is a character or string object/literal that has no evalType of
+; its own, so isConcatOperand can still tell it can be concatenated.
+TYPE_FLAG_CONCAT    = %10000000
 
 SHRT_MAX = $7fff
 LONG_MAX = $7fffffff
@@ -626,11 +648,8 @@ LONG_MAX = $7fffffff
 
 .struct symbol
     kind .byte
-    node .dword
     type .dword
-    name .res 24
     decl .dword
-    which .word
     offset .word
     level .word
 .endstruct
