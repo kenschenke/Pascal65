@@ -19,7 +19,7 @@ CH_LOWERCASE = 14
 
 .import clearKeyBuf, initLib, compileTests, logError, logWarning
 .import backupZeroPage, restoreZeroPage
-.import testInit, testPass, testFail
+.import testInit, testPass, testFail, testMemCheck, testRestoreBrk
 
 .export failTests
 
@@ -61,6 +61,9 @@ main:
     ; Initialize the memory heap
     jsr initMemHeap
 
+    ; Make sure asmlib catches double frees
+    jsr testMemCheck
+
     ; Initialize error handling
     lda #<logError
     ldx #>logError
@@ -78,6 +81,8 @@ main:
 
 .ifdef TESTSET
     jsr testPass
+.else
+    jsr testRestoreBrk
 .endif
 
     rts

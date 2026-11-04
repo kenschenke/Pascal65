@@ -20,7 +20,7 @@ CH_LOWERCASE = 14
 .import initLib, initTokenizer, runTest1, runTest2, runTest3
 .import runTest4, runTest5, logError
 
-.import testInit, testPass, testFail
+.import testInit, testPass, testFail, testMemCheck
 
 main:
     jsr testInit
@@ -43,6 +43,9 @@ main:
 
     ; Initialize the memory heap
     jsr initMemHeap
+
+    ; Make sure asmlib catches double frees
+    jsr testMemCheck
 
     ; Initialize error handling
     lda #<logError

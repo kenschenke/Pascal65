@@ -21,8 +21,9 @@
 ;
 ; An allocation that fails ends with runtimeError, which goes through asmlib's
 ; exit routine. The test points exitHandler at itself to catch that. Freeing
-; memory that is not allocated executes BRK (asmlib is built with __DEBUG__).
-; The test points the KERNAL's BRK vector at itself to catch that.
+; memory that is not allocated executes BRK (asmlib must be built with
+; MEMCHECK=1). testresult.s traps BRK and fails the test. A test that expects
+; the BRK catches it with brkCatch (see expectBrk).
 ;
 ; When a check fails the test number, the check number within the test, and
 ; the expected and actual values are printed, then RESULT: FAIL.
@@ -36,7 +37,8 @@
 .include "4510macros.inc"
 
 .import initLib
-.import testInit, testPass, testFail
+.import testInit, testPass, testFail, testMemCheck
+.import brkCatch, brkCode
 .ifdef COVERAGE
 .import covInstall, covSave
 .endif
@@ -48,8 +50,6 @@ B1 = $42000
 T1 = $4fffa
 B2 = $50000
 T2 = $5effa
-
-BRKVEC = $0316              ; KERNAL BRK vector
 
 NUM_SLOTS = 16
 NUM_BANKS = 3
@@ -238,12 +238,13 @@ main:
     jsr covInstall
 .endif
     jsr stackInit
+    jsr initMemHeap
+    jsr testMemCheck
 
     ; An unexpected runtime error (such as running out of memory) fails
     tsx
     stx mainSP
     jsr restoreExit
-    jsr installBrk
 
     lda #0
     sta testIdx
@@ -267,7 +268,6 @@ L1: lda testIdx
     jmp L1
 
 L2: jsr initMemHeap
-    jsr restoreBrk
 .ifdef COVERAGE
     jsr covSave
 .endif
@@ -829,8 +829,8 @@ L2: ldq runAddr
 .endproc
 
 ;-----------------------------------------------------------------------------
-; Test 15: freeing memory that is not allocated. asmlib is built with
-; __DEBUG__, so heapFree checks first and executes BRK. The heap must be
+; Test 15: freeing memory that is not allocated. With asmlib built with
+; MEMCHECK=1, heapFree checks first and executes BRK. The heap must be
 ; unchanged.
 .proc testBadFree
     ALLOC_AT 0, 10, B0
@@ -1548,68 +1548,43 @@ caught:
     jmp failNow
 .endproc
 
-; Checks that freeing the address in expVal executes BRK
+; Checks that freeing the address in expVal executes BRK, and that the BRK
+; is heapFree's memory check (code $22)
 .proc expectBrk
     jsr countCheck
-    lda #1
-    sta brkExpected
-    ; brkHandler restores this stack pointer, so it returns to expectBrk's
-    ; caller
+    lda #<caught
+    sta brkCatch
+    lda #>caught
+    sta brkCatch+1
+    ; caught restores this stack pointer, so it returns to expectBrk's caller
     tsx
     stx brkSP
     ldq expVal
     jsr heapFree
     lda #0
-    sta brkExpected
+    sta brkCatch
+    sta brkCatch+1
+    SET32 gotVal, 0
     lda #<msgNoBrk
     sta failMsg
     lda #>msgNoBrk
     sta failMsg+1
     jmp failNow
-.endproc
 
-.proc installBrk
-    sei
-    lda BRKVEC
-    sta oldBrk
-    lda BRKVEC+1
-    sta oldBrk+1
-    lda #<brkHandler
-    sta BRKVEC
-    lda #>brkHandler
-    sta BRKVEC+1
-    cli
-    rts
-.endproc
-
-.proc restoreBrk
-    sei
-    lda oldBrk
-    sta BRKVEC
-    lda oldBrk+1
-    sta BRKVEC+1
-    cli
-    rts
-.endproc
-
-; The KERNAL jumps here on BRK
-.proc brkHandler
-    cli
-    lda brkExpected
-    beq unexpected
-    lda #0
-    sta brkExpected
+    ; testresult.s's brkTrap jumps here
+caught:
     ldx brkSP
     txs
-    rts
-unexpected:
-    SET32 expVal, 0
+    lda #0
+    sta brkCatch
+    sta brkCatch+1
+    SET32 expVal, $22
     SET32 gotVal, 0
-    lda #<msgBrk
-    sta failMsg
-    lda #>msgBrk
-    sta failMsg+1
-    jmp failNow
+    lda brkCode
+    sta gotVal
+    lda #<msgBrkCode
+    ldx #>msgBrkCode
+    jmp compare
 .endproc
 
 ; Works out the space left at the end of bank A for a new block. Sets
@@ -1827,7 +1802,6 @@ L2: ldx cbBank
 
 ; Prints the failure and fails the test
 .proc failNow
-    jsr restoreBrk
     jsr restoreExit
     lda #13
     jsr CHROUT
@@ -1917,8 +1891,6 @@ testVec: .res 2
 checkNum: .res 2
 mainSP: .res 1
 brkSP: .res 1
-brkExpected: .res 1
-oldBrk: .res 2
 failMsg: .res 2
 expVal: .res 4
 gotVal: .res 4
@@ -1969,6 +1941,6 @@ msgBank: .asciiz "wrong bank info"
 msgContent: .asciiz "wrong block contents"
 msgFiller: .asciiz "filler misplaced"
 msgNoOOM: .asciiz "expected out of memory"
-msgNoBrk: .asciiz "expected brk for bad free"
-msgBrk: .asciiz "unexpected brk"
+msgNoBrk: .asciiz "no brk for bad free. build asmlib with memcheck=1"
+msgBrkCode: .asciiz "brk was not heapfree's check"
 msgExit: .asciiz "unexpected runtime error"

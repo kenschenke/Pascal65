@@ -25,7 +25,7 @@ CH_LOWERCASE = 14
 
 .export totalTicks
 
-.import testInit, testPass, testFail
+.import testInit, testPass, testFail, testMemCheck
 
 main:
     jsr testInit
@@ -48,6 +48,9 @@ main:
 
     ; Initialize the memory heap
     jsr initMemHeap
+
+    ; Make sure asmlib catches double frees
+    jsr testMemCheck
 
     lda #<onExit
     sta exitHandler

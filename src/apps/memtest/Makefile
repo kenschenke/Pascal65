@@ -65,7 +65,8 @@ $(D81FILE): $(BINFILES)
 $(COVSRC) $(COVMAP): $(MEMHEAP) cov/mkcov.py | $(COVDIR)
 	python3 cov/mkcov.py $(MEMHEAP) $(COVSRC) $(COVMAP)
 
-# asmlib is built with __DEBUG__, so the instrumented copy is too
+# The tests need the memory checks (asmlib MEMCHECK=1), so the instrumented
+# copy has them too
 $(COVDIR)/memheap_cov.o: $(COVSRC)
 	ca65 $(ASFLAGS) -D __DEBUG__ -o $@ $<
 
