@@ -1,169 +1,106 @@
-SRCDIR := src
-OBJDIR := obj
 BINDIR := bin
-DRVDIR := ../../../drv
+OBJDIR := obj
+SRCDIR := src
 
 PROGRAM := memtest
-D81FILE := $(BINDIR)/$(PROGRAM).d81
-PRGFILE := $(BINDIR)/$(PROGRAM)
 TARGET := mega65
-CC65TARGET = c64
-c64_EMUCMD = x64sc -reu -warp -kernal kernal -VICIIdsize +confirmonexit -autostart
-c128_EMUCMD = x128 -reu +warp -kernal kernal -VICIIdsize +confirmonexit -autostart
-mega65_EMUCMD := xmega65 -besure -8
-EMUCMD = $($(TARGET)_EMUCMD)
-DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 
-ifdef GCC
+BINTARGETDIR := $(BINDIR)/$(TARGET)
+OBJTARGETDIR := $(OBJDIR)/$(TARGET)
+D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 
-SHAREDSRCDIR = ../../shared
-CHUNKSSRCDIR = ../../shared/chunks/gnuc
-MEMBUFSRCDIR = ../../shared/membuf/gnuc
-LIBSRCDIR = ../../lib/common
-RUNTIMESRCDIR = ../../lib/runtime/src
+ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
-else
+ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
+PRGFILE = $(BINTARGETDIR)/memtest
 
-SHAREDSRCDIR = ../../shared
-CHUNKSSRCDIR = ../../shared/chunks
-MEMBUFSRCDIR = ../../shared/membuf
-LIBSRCDIR = ../../lib/common
-RUNTIMESRCDIR = ../../lib/runtime/src
+BINFILES += $(ASMLIB)
+BINFILES += $(PRGFILE)
 
-endif
+SOURCES := $(wildcard $(SRCDIR)/*.s)
+OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+OBJECTS += $(OBJTARGETDIR)/testresult.o
 
-c64_CFLAGS =
-c128_CFLAGS =
-mega65_CFLAGS = -D __MEGA65__ -I ../../mega65-libc/include
-ASFLAGS = --asm-include-dir ../../asminc
+# The coverage build (see cov/mkcov.py). It runs the same tests against an
+# instrumented copy of memheap.s and reports which lines never ran.
+MEMHEAP := ../../lib/asmlib/src/memheap.s
+COVDIR := $(OBJTARGETDIR)/cov
+COVSRC := $(COVDIR)/memheap_cov.s
+COVMAP := $(COVDIR)/memheap_cov.map
+COVPRG := $(BINTARGETDIR)/memtestcov
+COVD81 := $(BINTARGETDIR)/memtestcov.d81
+COVBIN := $(BINTARGETDIR)/memtest.cov
+COVOBJECTS := $(COVDIR)/main.o $(filter-out $(OBJTARGETDIR)/main.o,$(OBJECTS))
+COVOBJECTS += $(COVDIR)/memheap_cov.o $(COVDIR)/covshim.o $(COVDIR)/covpatch.o
 
-ifdef GCC
-CC = gcc
-CFLAGS = $($(TARGET)_CFLAGS) -fpack-struct=1 -m32 -c -D COMPILERTEST -D __TEST__ -I ../../include
-LDFLAGS = -m32
-else
-CC = cl65
-CFLAGS = $($(TARGET)_CFLAGS) -W error -D COMPILERTEST -D __TEST__ -O -I ../../include -t $(CC65TARGET) -c --create-dep $(@:.o=.d)
-LDFLAGS = --mapfile compiler.map -C $(CONFIG) -t $(CC65TARGET)
-endif
-
-SOURCES := $(wildcard $(SRCDIR)/*.c)
-
-ifndef GCC
-ifeq ($(TARGET),mega65)
-SOURCES += $(wildcard $(SRCDIR)/*.s)
-else
-SOURCES += $(SRCDIR)/flushcache.s
-endif
-endif
-
-SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.c)
-SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.c)
-SOURCES += $(SHAREDSRCDIR)/tests.c
-
-ifndef GCC
-SOURCES += $(wildcard $(CHUNKSSRCDIR)/*.s)
-SOURCES += $(wildcard $(MEMBUFSRCDIR)/*.s)
-SOURCES += $(wildcard $(LIBSRCDIR)/*.s)
-SOURCES += $(RUNTIMESRCDIR)/floatinput.s
-SOURCES += $(RUNTIMESRCDIR)/floatmult.s
-SOURCES += $(RUNTIMESRCDIR)/floatnorm.s
-SOURCES += $(RUNTIMESRCDIR)/floatutil.s
-SOURCES += $(RUNTIMESRCDIR)/strtofloat.s
-
-ifeq ($(TARGET),mega65)
-LIBCSRCDIR = ../../mega65-libc/src
-SOURCES += $(wildcard $(LIBCSRCDIR)/*.c)
-SOURCES += $(wildcard $(LIBCSRCDIR)/*.s)
-endif
-endif
-
-CONFIG := cfg-$(TARGET).cfg
-
-OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJDIR)/,$(notdir $(SOURCES)))))
-
-DEPENDS := $(OBJECTS:.o=.d)
-
-all: $(BINDIR) $(OBJDIR) $(D81FILE)
-
-$(BINDIR):
-	mkdir -p $@
+all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
 $(OBJDIR):
 	mkdir -p $@
 
-vpath %.c $(SRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -o $@ $<
+$(OBJTARGETDIR): $(OBJDIR)
+	mkdir -p $@
 
-vpath %.c $(SHAREDSRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -o $@ $<
+$(COVDIR): | $(OBJTARGETDIR)
+	mkdir -p $@
 
-vpath %.c $(CHUNKSSRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	$(CC)$(CFLAGS) -o $@ $<
+$(BINDIR):
+	mkdir -p $@
 
-vpath %.c $(MEMBUFSRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -o $@ $<
+$(BINTARGETDIR): $(BINDIR)
+	mkdir -p $@
 
-ifndef GCC
-vpath %.s $(SRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+vpath %.s $(SRCDIR) ../testcommon
+$(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
+	ca65 $(ASFLAGS) -o $@ $<
 
-vpath %.s $(SHAREDSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
+$(PRGFILE): $(OBJECTS)
+	ld65 -o $(PRGFILE) -C memtest.cfg $(OBJECTS)
 
-vpath %.s $(CHUNKSSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath %.s $(MEMBUFSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath %.s $(LIBSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-vpath %.s $(RUNTIMESRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-
-ifeq ($(TARGET),mega65)
-vpath %.c $(LIBCSRCDIR)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	cl65 -t $(CC65TARGET) $(CFLAGS) -o $@ $<
-
-vpath %.s $(LIBCSRCDIR)
-$(OBJDIR)/%.o: %.s | $(OBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(ASFLAGS) -o $@ $<
-endif
-endif
-
-$(BINDIR)/$(PROGRAM): $(OBJECTS)
-	$(CC) $(LDFLAGS) -o $(BINDIR)/$(PROGRAM) $(OBJECTS)
-
-ifeq ($(TARGET),mega65)
-$(D81FILE): $(BINDIR)/$(PROGRAM)
+$(D81FILE): $(BINFILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(BINDIR)/$(PROGRAM) $(PROGRAM)
-else
-$(D81FILE): $(BINDIR)/$(PROGRAM)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(BINDIR)/$(PROGRAM) $(PROGRAM) \
-	-write $(DRVFILE) $(TARGET)-reu.emd,prg
-endif
+	-write $(PRGFILE) memtest,prg \
+	-write $(ASMLIB) asm.lib,prg
+
+$(COVSRC) $(COVMAP): $(MEMHEAP) cov/mkcov.py | $(COVDIR)
+	python3 cov/mkcov.py $(MEMHEAP) $(COVSRC) $(COVMAP)
+
+# asmlib is built with __DEBUG__, so the instrumented copy is too
+$(COVDIR)/memheap_cov.o: $(COVSRC)
+	ca65 $(ASFLAGS) -D __DEBUG__ -o $@ $<
+
+$(COVDIR)/main.o: $(SRCDIR)/main.s | $(COVDIR)
+	ca65 $(ASFLAGS) -D COVERAGE -o $@ $<
+
+$(COVDIR)/covshim.o: cov/covshim.s | $(COVDIR)
+	ca65 $(ASFLAGS) -o $@ $<
+
+$(COVDIR)/covpatch.o: cov/covpatch.s | $(COVDIR)
+	ca65 $(ASFLAGS) -o $@ $<
+
+$(COVPRG): $(COVOBJECTS) | $(BINTARGETDIR)
+	ld65 -o $(COVPRG) -C memtest.cfg $(COVOBJECTS)
 
 clean:
-	$(RM) $(OBJECTS)
-	$(RM) $(DEPENDS)
-	$(RM) $(PROGRAM)
-	$(RM) $(BINDIR)/*
-	$(RM) $(D81FILE)
+	$(RM) $(D81FILE) $(PRGFILE) $(OBJECTS)
+	$(RM) -r $(COVDIR)
+	$(RM) $(COVPRG) $(COVD81) $(COVBIN)
+
+test: all
+	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
+
+# The disk is made fresh for each run because the test saves the coverage
+# map to it.
+coverage: $(COVPRG) $(COVMAP)
+	$(RM) $(COVD81) $(COVBIN)
+	c1541 -format memtestcov,8a d81 $(COVD81) \
+	-write $(COVPRG) memtest,prg \
+	-write $(ASMLIB) asm.lib,prg
+	../testcommon/runtest.sh memtestcov $(COVPRG) $(COVD81)
+	c1541 -attach $(COVD81) -read memtest.cov $(COVBIN)
+	python3 cov/covreport.py $(COVMAP) $(COVBIN)
+
+.PHONY: all clean test coverage
 
 run: $(D81FILE)
-	$(EMUCMD) $<
+	xmega65 -besure -8 $(D81FILE)

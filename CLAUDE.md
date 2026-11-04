@@ -48,10 +48,14 @@ The project has seven test suites, located in `src/apps`:
   - resolvertest
   - typechecktest
   - icodetest
-  - defragtest (heap defragmenter in asmlib)
+  - memtest (memory heap allocator in asmlib)
   - compilertestasm
 
 Each suite's `make test` goes through `src/apps/testcommon/runtest.sh`, which looks for a `RESULT: PASS` or `RESULT: FAIL` line in an emulator screen dump. New suites should reuse it and `testresult.s`.
+
+### Heap Tests
+
+`memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.
 
 ### Compiler Tests
 
@@ -83,7 +87,7 @@ Source lines are limited to 80 characters. This limitation includes comments.
 
 ### Python
 
-It isn't installed. Use perl or sed.
+Python 3 is installed in WSL only (`python3`), which is where the Makefiles run it. On Windows, `python3` is only the Microsoft Store stub.
 
 ### Line endings
 

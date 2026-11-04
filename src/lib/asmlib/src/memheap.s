@@ -181,6 +181,9 @@ L3: inc bankIndex
 ; This routine sets heapBottom and heapTop for the address
 ; passed in Q. It looks through the memBanks list to find
 ; the bank containing the address.
+;
+; The carry is clear on return if a bank was found. It is set if the
+; address is above the top of the last bank.
 .proc setHeapForAddress
     stq intOp1              ; Store the address in intOp1/intOp2
 
@@ -192,9 +195,21 @@ L1: lda bankIndex
     asl a
     asl a
     asl a                   ; Multiply by 8
-    clc
-    adc #4
     tax
+
+    ; Is this the terminator? It has no heap top to compare against.
+    lda memBanks,x
+    ora memBanks+1,x
+    ora memBanks+2,x
+    ora memBanks+3,x
+    bne :+
+    sec                     ; Past the last bank
+    rts
+
+:   inx                     ; Move to the heap top
+    inx
+    inx
+    inx
     ldy #0
 :   lda memBanks,x
     sta intOp32,y
@@ -224,6 +239,7 @@ L2: ldq intOp32
     cpy #4
     bne :-
 
+    clc
     rts
 .endproc
 
@@ -299,7 +315,8 @@ L3: pla
 .endproc
 
 ; Size to allocate in A/X
-; If allocation fails, a runtime error is triggered.
+; If allocation fails, a runtime error is triggered. A size of $8000 or
+; more always fails. A size of zero allocates one byte.
 ; Pointer to memory returned in Q
 ;   ptr1 - current location in MAT
 ;   ptr2 - location in MAT of smallest availble block
@@ -310,7 +327,22 @@ L3: pla
 .proc heapAlloc
     sta allocSize
     stx allocSize+1
-    lda #0
+
+    ; A MAT entry holds a size of up to $7fff. The high bit is the
+    ; "allocated" flag, so a larger request can never be satisfied.
+    txa
+    bpl :+
+    lda #rteOutOfMemory
+    jmp runtimeError
+
+    ; A size of zero would make an entry of $00 $80, which is a spare
+    ; entry. Allocate one byte instead so the block has an address of
+    ; its own.
+:   ora allocSize
+    bne :+
+    inc allocSize
+
+:   lda #0
     sta triedDefrag
 
     ; Start at the first bank
@@ -639,7 +671,6 @@ NewEntry:
     bne :+
     rts
 :   stq ptr2            ; Save the memory block ptr in ptr2
-    jsr setHeapForAddress
 .ifdef __DEBUG__
     ldq ptr2
     jsr rtPushQ
@@ -652,7 +683,11 @@ NewEntry:
 :   jsr rtPopQ
     stq ptr2
 .endif ; end of ifdef __DEBUG__
-    ldq heapTop         ; Load the MAT pointer into ptr1
+    ldq ptr2
+    jsr setHeapForAddress
+    bcc :+
+    rts                 ; Above the last bank. Not a heap address.
+:   ldq heapTop         ; Load the MAT pointer into ptr1
     stq ptr1
     ldq heapBottom
     stq tmp1
@@ -891,8 +926,12 @@ DEnd:
     ; Pointer to block in ptr2
 :   stq ptr2
     jsr setHeapForAddress
+    bcc :+
+    lda #0                  ; Above the last bank: not allocated
+    rts
 
     ; Copy heapTop to ptr1
+:
     ldq heapTop
     stq ptr1
     ldq heapBottom
