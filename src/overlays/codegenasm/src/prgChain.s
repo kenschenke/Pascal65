@@ -39,9 +39,17 @@ tagPromptMsg: .asciiz "promptmsg"
 
 ; The following blocks handle chain-loading the next PRG.
 
-; This block of code is what is copied up to $9000
+; The loader is copied to CHAIN_LOADER and runs from there. The next PRG
+; loads at $2001 and can be as large as it likes without overwriting the
+; loader, because $1600 - $1EFF is free for program use on the MEGA65.
+; The loader and the filename must fit below $1F00.
+CHAIN_LOADER = $1600
+
+; This block of code is what is copied to CHAIN_LOADER
 CHAINCALL_STRLEN = 10
 CHAINCALL_LENGTH = 28
+CHAIN_FILENAME = CHAIN_LOADER + CHAINCALL_LENGTH
+.assert CHAIN_FILENAME + 255 <= $1F00, error, "Chain loader does not fit"
 prgChainCall:
     .byte OC_LDA_IMMEDIATE, 0
     .byte OC_LDX_IMMEDIATE, 8   ; device
@@ -49,8 +57,8 @@ prgChainCall:
     .byte OC_JSR, .lobyte(SETLFS), .hibyte(SETLFS)
 
     .byte OC_LDA_IMMEDIATE, 0   ; strlen(name)
-    .byte OC_LDX_IMMEDIATE, $1c ; lower name address
-    .byte OC_LDY_IMMEDIATE, $90 ; upper name address
+    .byte OC_LDX_IMMEDIATE, .lobyte(CHAIN_FILENAME) ; lower name address
+    .byte OC_LDY_IMMEDIATE, .hibyte(CHAIN_FILENAME) ; upper name address
     .byte OC_JSR, .lobyte(SETNAM), .hibyte(SETNAM)
 
     .byte OC_LDA_IMMEDIATE, 0
@@ -62,7 +70,7 @@ prgChainCall:
     ; filename to load
 
 ; This block of code is placed at the end of the clean up code in the PRG.
-; It copies the loader up to $9000 then JMPs to that code.
+; It copies the loader to CHAIN_LOADER then JMPs to that code.
 CHAINCODE_SRCL = 1
 CHAINCODE_SRCH = 5
 CHAINCODE_COPYLENGTH = 17
@@ -72,14 +80,14 @@ prgChainCode:
     .byte OC_STA_ZEROPAGE, ZP_PTR2L
     .byte OC_LDA_IMMEDIATE, 0           ; high byte of source
     .byte OC_STA_ZEROPAGE, ZP_PTR2H
-    .byte OC_LDA_IMMEDIATE, $00         ; low byte of $9000
+    .byte OC_LDA_IMMEDIATE, .lobyte(CHAIN_LOADER)
     .byte OC_STA_ZEROPAGE, ZP_PTR1L
-    .byte OC_LDA_IMMEDIATE, $90         ; high byte of $9000
+    .byte OC_LDA_IMMEDIATE, .hibyte(CHAIN_LOADER)
     .byte OC_STA_ZEROPAGE, ZP_PTR1H
     .byte OC_LDA_IMMEDIATE, 0           ; low byte of length to copy
     .byte OC_LDX_IMMEDIATE, 0           ; high byte of length to copy
     .byte OC_JSR, .lobyte(RT_MEMCOPY), .hibyte(RT_MEMCOPY)
-    .byte OC_JMP, $00, $90      ; JMP to $9000
+    .byte OC_JMP, .lobyte(CHAIN_LOADER), .hibyte(CHAIN_LOADER)
     ; filename to load
 
 ; This block of code is placed at the end of the clean up code in the PRG.
@@ -135,9 +143,9 @@ DN: rts
 ; 
 ; ... object code for PRG ...
 ; If the user is to be prompted, a JSR to the prompt code is put here.
-; prgChainCode: copies the loader to $9000
-; JMP $9000
-; prgChainCall: this is the loader that is copied to $9000
+; prgChainCode: copies the loader to CHAIN_LOADER
+; JMP CHAIN_LOADER
+; prgChainCall: this is the loader that is copied to CHAIN_LOADER
 ; ... filename of next PRG to load ...
 ; prgChainPrompt: If the user is to be prompted, the prompt routine is put here.
 
@@ -152,7 +160,7 @@ DN: rts
     jsr linkAddressLookup
     genThree OC_JSR, 0
 
-    ; Write the code that copies to the loader to $9000
+    ; Write the code that copies the loader to CHAIN_LOADER
 :   lda #<tagChainCode
     ldx #>tagChainCode
     ldy #LINKADDR_LOW
@@ -181,7 +189,7 @@ DN: rts
     txa
     jsr incCodeOffset
 
-    ; Write the code that is copied up to the $9000
+    ; Write the code that is copied to CHAIN_LOADER
 
     lda #<tagChainCode
     ldx #>tagChainCode
