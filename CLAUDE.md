@@ -111,6 +111,11 @@ Source lines are limited to 80 characters. This limitation includes comments.
 
 ## Environment
 
+### WSL
+
+The build and test environment is run entirely inside WSL. All the tools needed for building and
+testing are in the WSL path. The ca65 in WSL is the Windows build.
+
 ### Python
 
 Python 3 is installed in WSL only (`python3`), which is where the Makefiles run it. On Windows, `python3` is only the Microsoft Store stub.
@@ -132,3 +137,4 @@ The repo's autocrlf setting means `git diff` shows LF, so don't read those as a 
 - NEVER reference any C code when debugging or writing code.
 - NEVER modify any C code or C header files.
 - When adding new behavior, add or update tests for that component.
+- NEVER commit to Git without permission.
