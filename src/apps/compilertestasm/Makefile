@@ -81,6 +81,13 @@ HDRFILES := $(wildcard ../../lib/hdr/*.hdr)
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 OBJECTS += $(OBJTARGETDIR)/hdrload.o $(OBJTARGETDIR)/hdrtables.o $(OBJTARGETDIR)/testresult.o
+DEPENDS := $(OBJECTS:.o=.d)
+DEPFLAGS = --create-dep $(@:.o=.dep)
+# ca65 is the Windows build, which names cc65's own headers by Windows
+# paths. Their colons break make, and they never change, so drop them.
+# sed writes a new file rather than renaming one (-i), which can fail on
+# a OneDrive folder.
+FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 TXTFILES := errormsgs.petscii system.petscii demolib.petscii
 
@@ -153,7 +160,8 @@ $(RUNTIME): FORCE
 
 vpath %.s $(SRCDIR) $(HDRSHAREDDIR) ../testcommon
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 vpath %.pas $(TESTSDIR)
 $(PETSCIIDIR)/%.pas: %.pas | $(PETSCIIDIR)
@@ -225,6 +233,7 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 	$(RM) $(OBJECTS)
+	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 ifndef TESTSET
 	@for s in $(TESTSETS); do \
 		$(MAKE) TARGET=$(TARGET) TESTSET=$$s clean || exit 1; \
@@ -261,3 +270,5 @@ testset:
 	../testcommon/runtest.sh $(PROGRAM)-run $(BINTARGETDIR)/$(PROGRAM)-first.prg $(D81FILE)
 
 .PHONY: test testset
+
+-include $(DEPENDS)

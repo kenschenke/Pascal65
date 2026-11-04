@@ -32,6 +32,13 @@ COVD81 := $(BINTARGETDIR)/memtestcov.d81
 COVBIN := $(BINTARGETDIR)/memtest.cov
 COVOBJECTS := $(COVDIR)/main.o $(filter-out $(OBJTARGETDIR)/main.o,$(OBJECTS))
 COVOBJECTS += $(COVDIR)/memheap_cov.o $(COVDIR)/covshim.o $(COVDIR)/covpatch.o
+DEPENDS := $(sort $(OBJECTS:.o=.d) $(COVOBJECTS:.o=.d))
+DEPFLAGS = --create-dep $(@:.o=.dep)
+# ca65 is the Windows build, which names cc65's own headers by Windows
+# paths. Their colons break make, and they never change, so drop them.
+# sed writes a new file rather than renaming one (-i), which can fail on
+# a OneDrive folder.
+FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
@@ -52,7 +59,8 @@ $(BINTARGETDIR): $(BINDIR)
 
 vpath %.s $(SRCDIR) ../testcommon
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(PRGFILE): $(OBJECTS)
 	ld65 -o $(PRGFILE) -C memtest.cfg $(OBJECTS)
@@ -68,22 +76,27 @@ $(COVSRC) $(COVMAP): $(MEMHEAP) cov/mkcov.py | $(COVDIR)
 # The tests need the memory checks (asmlib MEMCHECK=1), so the instrumented
 # copy has them too
 $(COVDIR)/memheap_cov.o: $(COVSRC)
-	ca65 $(ASFLAGS) -D __DEBUG__ -o $@ $<
+	ca65 $(ASFLAGS) -D __DEBUG__ $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(COVDIR)/main.o: $(SRCDIR)/main.s | $(COVDIR)
-	ca65 $(ASFLAGS) -D COVERAGE -o $@ $<
+	ca65 $(ASFLAGS) -D COVERAGE $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(COVDIR)/covshim.o: cov/covshim.s | $(COVDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(COVDIR)/covpatch.o: cov/covpatch.s | $(COVDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(COVPRG): $(COVOBJECTS) | $(BINTARGETDIR)
 	ld65 -o $(COVPRG) -C memtest.cfg $(COVOBJECTS)
 
 clean:
 	$(RM) $(D81FILE) $(PRGFILE) $(OBJECTS)
+	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) -r $(COVDIR)
 	$(RM) $(COVPRG) $(COVD81) $(COVBIN)
 
@@ -105,3 +118,5 @@ coverage: $(COVPRG) $(COVMAP)
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)
+
+-include $(DEPENDS)

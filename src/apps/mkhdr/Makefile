@@ -42,6 +42,13 @@ SHAREDSRC := backupZeroPage initlib loadfile inittokenizer initparser keybuf \
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 OBJECTS += $(addprefix $(OBJTARGETDIR)/,$(addsuffix .o,$(SHAREDSRC) hdrtables))
+DEPENDS := $(OBJECTS:.o=.d)
+DEPFLAGS = --create-dep $(@:.o=.dep)
+# ca65 is the Windows build, which names cc65's own headers by Windows
+# paths. Their colons break make, and they never change, so drop them.
+# sed writes a new file rather than renaming one (-i), which can fail on
+# a OneDrive folder.
+FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 TXTFILES := errormsgs.petscii $(LIBPETSCII)
 
@@ -88,7 +95,8 @@ $(ASMLIB): FORCE
 
 vpath %.s $(SRCDIR) $(COMPILERDIR)/src $(HDRSHAREDDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(PRGFILE): $(OBJECTS)
 	ld65 -o $(PRGFILE) -C $(CONFIG) $(OBJECTS)
@@ -114,6 +122,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(OBJECTS)
+	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(D81FILE)
 
 run: $(D81FILE)
@@ -122,3 +131,5 @@ run: $(D81FILE)
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
 	etherload -m mkhdr.d81 -r $(BINTARGETDIR)/mkhdr
+
+-include $(DEPENDS)

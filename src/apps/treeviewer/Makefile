@@ -36,6 +36,13 @@ BINFILES += $(SHOWTREE)
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+DEPENDS := $(OBJECTS:.o=.d)
+DEPFLAGS = --create-dep $(@:.o=.dep)
+# ca65 is the Windows build, which names cc65's own headers by Windows
+# paths. Their colons break make, and they never change, so drop them.
+# sed writes a new file rather than renaming one (-i), which can fail on
+# a OneDrive folder.
+FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 TXTFILES := source.petscii errormsgs.petscii system.petscii
 
@@ -88,7 +95,8 @@ $(ASMLIB): FORCE
 
 vpath %.s $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(PRGFILE): $(OBJECTS)
 	ld65 -o $(PRGFILE) -C treeviewer.cfg $(OBJECTS)
@@ -111,6 +119,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) FORCE
 clean:
 	$(RM) $(BINFILES)
 	$(RM) $(OBJECTS)
+	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(TXTFILES)
 	$(RM) $(D81FILE)
 
@@ -120,3 +129,5 @@ run: $(D81FILE)
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
 	etherload -m treeviewer.d81 -r $(BINTARGETDIR)/treeviewer
+
+-include $(DEPENDS)

@@ -13,6 +13,13 @@ ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+DEPENDS := $(OBJECTS:.o=.d)
+DEPFLAGS = --create-dep $(@:.o=.dep)
+# ca65 is the Windows build, which names cc65's own headers by Windows
+# paths. Their colons break make, and they never change, so drop them.
+# sed writes a new file rather than renaming one (-i), which can fail on
+# a OneDrive folder.
+FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 all: $(BINTARGETDIR) $(OBJTARGETDIR) $(LIBFILE)
 
@@ -30,10 +37,14 @@ $(OBJTARGETDIR): $(OBJDIR)
 
 vpath %.s $(SRCDIR)
 $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
-	ca65 $(ASFLAGS) -o $@ $<
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
 
 $(LIBFILE): $(OBJECTS) $(CONFIG)
 	ld65 -o $(LIBFILE) -C $(CONFIG) $(OBJECTS)
 
 clean:
 	$(RM) $(LIBFILE) $(OBJECTS)
+	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
+
+-include $(DEPENDS)
