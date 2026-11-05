@@ -27,6 +27,102 @@ declOffset = typeOffset + 4
 .import loadStackValue, icodeRoutineDeclarations, icodeFormatLabel
 .import lblRoutineEnter, icodeOper1Label, icodeWriteInstruction
 .import icodeVariableDeclarations, icodeRoutineCleanup, icodeStmts
+.import icodeArrayInit, formatArrayDeclLabel, icodeLabel, heapOffset
+
+.bss
+
+paramPtr: .res 4
+paramSym: .res 4
+paramType: .res 4
+paramLabel: .res 20
+
+.code
+
+; The name is the first field of a parameter, so a parameter's address is
+; also the address of its name.
+.assert param_list::name = 0, error, "param_list::name must be first"
+
+; This routine writes the declaration block for each of the routine's
+; dynamic array parameters. A variable's block is written with its
+; declaration, but a parameter has no declaration and SetLength needs the
+; block. Only the data is written; a parameter's array comes from the caller.
+; The routine's scope must be entered. Its stack frame is on the runtime
+; stack, so typeOffset still applies.
+.proc dynArrayParamDecls
+    ldz #typeOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq paramPtr
+
+L1: ldq paramPtr
+    jsr isQZero
+    bne :+
+    rts
+:   stq ptr4
+    jsr scopeLookup
+    jsr isQZero
+    beq NX
+    stq paramSym
+    stq ptr1
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr getBaseType
+    stq paramType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne NX
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq NX
+
+    ; icodeLabel is reused while the block is written, so copy the label
+    ldq paramSym
+    jsr formatArrayDeclLabel
+    ldx #0
+:   lda icodeLabel,x
+    sta paramLabel,x
+    beq :+
+    inx
+    bne :-
+
+:   lda #0
+    sta heapOffset
+    sta heapOffset+1
+    lda #<paramLabel
+    ldx #>paramLabel
+    ldy #0
+    ldz #0
+    jsr pushQ               ; label
+    ldq paramType
+    jsr pushQ               ; type
+    jsr pushQZero           ; value (a parameter has no literals)
+    ldq paramSym
+    jsr pushQ               ; declaration
+    jsr icodeArrayInit
+
+NX: ldq paramPtr
+    stq ptr1
+    ldz #param_list::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq paramPtr
+    jmp L1
+.endproc
 
 ; Parameters are passed on the stack, bottom to top:
 ;   Declaration
@@ -91,7 +187,9 @@ declOffset = typeOffset + 4
     beq :+
     jsr scopeEnterSymtab
 
-:   ldz #declOffset
+:   jsr dynArrayParamDecls
+
+    ldz #declOffset
     jsr loadStackValue
     stq intOp32
     lda #<lblRoutineEnter

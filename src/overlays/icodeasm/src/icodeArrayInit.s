@@ -31,8 +31,13 @@ labelOffset = typePtrOffset + 4
 
 .import icodeSaveData, heapOffset, loadStackValue, icodeSaveData
 .import addStringArrayLiterals, addScalarArrayLiterals, addEmbeddedArrayOrRecord
+.import icodeSuppress
+
+.export countArrayLiterals
 
 .bss
+
+litCount: .res 2
 
 declBuf: .res 2
 buffer: .res 3
@@ -101,7 +106,36 @@ buffer: .res 3
 
     jsr calcNumElements
 
+    ; A dynamic array's declared limits are 0..-1. Its length comes from
+    ; its literals instead, and it is empty without them.
+    jsr isDynamic
+    beq :+
+    ldz #exprInitOffset
+    jsr loadStackValue
+    jsr countArrayLiterals
+    ldz #numElementsOffset
+    nop
+    sta (stackPointer),z
+    inz
+    pha
+    txa
+    nop
+    sta (stackPointer),z
+    ; The high bound is the count less one (the low bound is 0)
+    pla
+    sec
+    sbc #1
+    ldz #highBoundOffset
+    nop
+    sta (stackPointer),z
+    txa
+    sbc #0
+    inz
+    nop
+    sta (stackPointer),z
+
     ; Look up the element type
+:
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -341,7 +375,19 @@ L2: jsr popQ        ; initBuf
     lda (stackPointer),z
     sta intOp2+1
 
-    ldz #elemTypeOffset
+    ; A dynamic array (only of records, since it can't hold arrays) still
+    ; needs the declaration block for its first element, which the runtime
+    ; uses for elements SetLength adds. That is one element, and the
+    ; instructions that initialize it are not written: the array is empty.
+    jsr isDynamic
+    beq :+
+    lda intOp1
+    sta intOp2
+    lda intOp1+1
+    sta intOp2+1
+    inc icodeSuppress
+
+:   ldz #elemTypeOffset
     jsr loadStackValue
     jsr getBaseType
     stq ptr1
@@ -370,6 +416,66 @@ L2: jsr popQ        ; initBuf
     ldq ptr3
     jsr pushQ               ; exprInit
     jsr addEmbeddedArrayOrRecord
+
+    jsr isDynamic
+    beq :+
+    dec icodeSuppress
+:   rts
+.endproc
+
+; This routine checks if the array type is dynamic.
+; A is non-zero (Z clear) if it is.
+.proc isDynamic
+    ldz #typePtrOffset
+    jsr loadStackValue
+    jsr getBaseType
+    stq ptr1
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISDYNAMIC
+    rts
+.endproc
+
+; This routine counts the literals in an array literal expression.
+; The expression is passed in Q (it may be zero).
+; The count is returned in A/X.
+.proc countArrayLiterals
+    stq ptr1
+    lda #0
+    sta litCount
+    sta litCount+1
+    ldq ptr1
+    jsr isQZero
+    beq DN
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_ARRAY_LITERAL
+    bne L1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+
+L1: ldq ptr1
+    jsr isQZero
+    beq DN
+    inc litCount
+    bne :+
+    inc litCount+1
+:   ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    bra L1
+
+DN: lda litCount
+    ldx litCount+1
     rts
 .endproc
 

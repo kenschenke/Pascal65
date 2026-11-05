@@ -36,12 +36,17 @@
 ;   24. Three level array literal
 ;   25. Arrays indexed by a declared type
 ;   26. For loop with a subrange control variable
+;   27. Dynamic arrays: SetLength, Length, Low and High
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 26
+NUM_TESTS = 27
+
+; This test calls System unit routines (Length), so the System unit is
+; resolved for it.
+SYSTEM_UNIT_TEST = 27
 
 .bss
 
@@ -56,9 +61,9 @@ testNum: .res 2
     lda #0
     sta testNum+1
 
-L1: lda testNum
+L1: jsr usesSystemUnit
+    lda testNum
     ldx testNum+1
-    clc
     jsr runTest
 
     lda testNum
@@ -74,4 +79,18 @@ L2: inc testNum
     bra L1
 
 L3: rts
+.endproc
+
+; This routine sets the carry flag if the current test resolves the System
+; unit and clears it if not.
+.proc usesSystemUnit
+    lda testNum+1
+    bne NO
+    lda testNum
+    cmp #SYSTEM_UNIT_TEST
+    bne NO
+    sec
+    rts
+NO: clc
+    rts
 .endproc

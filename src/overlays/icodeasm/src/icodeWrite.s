@@ -15,12 +15,12 @@
 
 .export icodeWriteX, currentLineNumber, loadStackValue
 .export icodeLabel, icodeFormatLabel, lblRoutineEnter, lblRoutineReturn
-.export lblDeclInit
+.export lblDeclInit, lblParamDeclInit
 
 .import icodeFileOpen, icodeFileClose, icodeWriteInstruction
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
 .import icodeUnitDeclarations, icodeVariableDeclarations
-.import icodeInitData, icodeWriteData, icodeFreeData
+.import icodeInitData, icodeWriteData, icodeFreeData, icodeSuppress
 
 .import operand1
 
@@ -30,6 +30,9 @@ lblMain: .asciiz "main"
 lblRoutineEnter: .asciiz "rtnenter"
 lblRoutineReturn: .asciiz "rtnreturn"
 lblDeclInit: .asciiz "di"
+; Declaration block for a dynamic array parameter. A parameter has no decl,
+; so its label is made from its symbol.
+lblParamDeclInit: .asciiz "dp"
 
 .bss
 
@@ -46,6 +49,9 @@ icodeLabel: .res 20
 .proc icodeWriteX
     ; Keep a copy of the root
     stq astRoot
+
+    lda #0
+    sta icodeSuppress
 
     ; Initialize the data segments
     jsr icodeInitData

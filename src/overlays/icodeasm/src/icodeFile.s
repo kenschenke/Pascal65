@@ -15,9 +15,16 @@
 .include "4510macros.inc"
 
 .export icodeFileOpen, icodeFileClose, icodeWriteInstruction, writeOperand
-.export icodeFileEraseX
+.export icodeFileEraseX, icodeSuppress
 
 .import operand1, operand2, operand3
+
+.bss
+
+; While non-zero, icodeWriteInstruction writes nothing. A dynamic array of
+; records uses it to build the declaration blocks for its elements without
+; the instructions that would initialize them. It is a count, so it nests.
+icodeSuppress: .res 1
 
 .data
 
@@ -88,7 +95,11 @@ L1: ldx DEVNUM
 ;    0100 xxxx - bit 6 is set for instructions that take two operands
 ;    1000 xxxx - bit 7 is set for instructions that take three operands
 .proc icodeWriteInstruction
-    bit #IC_MASK_TRINARY
+    ldx icodeSuppress
+    beq :+
+    rts
+
+:   bit #IC_MASK_TRINARY
     beq :+
     jsr writeThreeOper
     rts

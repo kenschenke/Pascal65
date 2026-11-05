@@ -4,6 +4,7 @@ Program TestArrayRtns;
 
 Type
     TDyn = Array Of Integer;
+    PDyn = ^TDyn;
 
 Var
     a : Array Of Integer;
@@ -15,6 +16,7 @@ Var
     l : LongInt;
     r : Real;
     str : String;
+    p : PDyn;
 
 Begin
     // Valid calls
@@ -46,6 +48,9 @@ Begin
     SetLength(a, 'x');          (* $ExpectError 30 *)
     SetLength(a, str);          (* $ExpectError 30 *)
     SetLength(5, 5);            (* $ExpectError 30 *)
+    // The array must be named, not a pointer dereference
+    SetLength(p^, 5);           (* $ExpectError 30 *)
+    i := Length(p^);
 
     // Length
     b := Length(a, s);          (* $ExpectError 50 *)

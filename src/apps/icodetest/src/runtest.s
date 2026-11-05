@@ -38,7 +38,8 @@
 .export runTest, unitList, printLine
 .import testFail
 
-.import initTokenizer, initParser, viewDump, getKey, errorCount
+.import initTokenizer, initParser, viewDump, getKey, errorCount, errorNum
+.import errorLine
 .import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
 .import initTypeCheck, initDumpIcode, initIcode, initShowTree
 .import printMilliseconds, totalTicks
@@ -80,6 +81,8 @@ strIcode: .asciiz "Icode, "
 strDumping: .asciiz "Dumping, "
 strPass: .asciiz "Pass"
 strErrorCount: .asciiz "Errors encountered - press a key"
+strErrorNum: .asciiz "Error "
+strErrorLine: .asciiz " on line "
 
 .code
 
@@ -371,7 +374,37 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     lda #<strErrorCount
     ldx #>strErrorCount
     jsr printLine
+
+    ; Show the first error and its line
+    lda #13
+    jsr CHROUT
+    lda #<strErrorNum
+    ldx #>strErrorNum
+    jsr printLine
+    lda errorNum
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    jsr printInt
+    lda #<strErrorLine
+    ldx #>strErrorLine
+    jsr printLine
+    lda errorLine
+    sta intOp1
+    lda errorLine+1
+    sta intOp1+1
+    jsr printInt
     jmp testFail
+.endproc
+
+; This routine prints the integer in intOp1.
+.proc printInt
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt16
+    lda #<intBuf
+    ldx #>intBuf
+    jmp printLine
 .endproc
 
 .proc compareLines

@@ -94,6 +94,7 @@ strIC_JSR: .byte "JSR"
 strIC_PRP: .byte "PRP"
 strIC_BWX: .byte "BWX"
 strIC_DAT: .byte "DAT"
+strIC_SAL: .byte "SAL"
 
 mne:
 .byte IC_CHR, .LOBYTE(strIC_CHR), .HIBYTE(strIC_CHR)
@@ -181,23 +182,40 @@ mne:
 .byte IC_PRP, .LOBYTE(strIC_PRP), .HIBYTE(strIC_PRP)
 .byte IC_BWX, .LOBYTE(strIC_BWX), .HIBYTE(strIC_BWX)
 .byte IC_DAT, .LOBYTE(strIC_DAT), .HIBYTE(strIC_DAT)
+.byte IC_SAL, .LOBYTE(strIC_SAL), .HIBYTE(strIC_SAL)
+
+.bss
+
+mneCode: .res 1
 
 .code
 
 ; This routine dumps the mnemonic in A as a string, i.e. "BRA"
+; The table is longer than 255 bytes, so it is walked with a pointer.
 .proc dumpMnemonic
-    ldx #0
-L1: cmp mne,x
-    beq L2
-    inx
-    inx
-    inx
-    bne L1
-
-L2: inx
-    lda mne,x
+    sta mneCode
+    lda #<mne
     sta ptr2
-    lda mne+1,x
+    lda #>mne
+    sta ptr2+1
+L1: ldy #0
+    lda (ptr2),y
+    cmp mneCode
+    beq L2
+    lda ptr2
+    clc
+    adc #3
+    sta ptr2
+    bcc L1
+    inc ptr2+1
+    bra L1
+
+L2: iny
+    lda (ptr2),y
+    tax
+    iny
+    lda (ptr2),y
+    stx ptr2
     sta ptr2+1
 
     ldq memBuf

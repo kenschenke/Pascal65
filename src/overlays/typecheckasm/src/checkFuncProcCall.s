@@ -562,6 +562,16 @@ FR: ldz #type::subtype
     jsr isQZero
     beq :+
     jsr freeType
+    ; Free the copy of a type name the argument may have put in rightType
+    ; (a dereferenced pointer to a named type does). L1 clears rightType.
+:   ldz #type::name
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    jsr isQZero
+    beq :+
+    jsr heapFree
 :   jmp L1
 
 DN: rts

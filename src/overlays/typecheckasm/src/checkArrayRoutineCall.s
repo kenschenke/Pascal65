@@ -31,6 +31,7 @@ argOffset = typeOffset + .sizeof(type)
 .proc checkArrayFuncCall
     lda #.sizeof(type)
     jsr pushBlock
+    jsr zeroArgType
 
     ; There must be exactly one argument
     ldz #argOffset
@@ -63,7 +64,8 @@ WN: lda #errWrongNumberOfParams
     lda #errInvalidType
     jsr typeCheckError
 
-DN: lda #.sizeof(type)
+DN: jsr freeArgTypeName
+    lda #.sizeof(type)
     jsr popBlock
     jsr popQ
     rts
@@ -75,6 +77,7 @@ DN: lda #.sizeof(type)
 .proc checkSetLengthCall
     lda #.sizeof(type)
     jsr pushBlock
+    jsr zeroArgType
 
     ; There must be exactly two arguments
     ldz #argOffset
@@ -101,13 +104,29 @@ WN: lda #errWrongNumberOfParams
     jsr typeCheckError
     jmp DN
 
-    ; The first argument must be a dynamic array and not a constant
+    ; The first argument must be a dynamic array variable, named (not a
+    ; pointer dereference), and not a constant. The intermediate code
+    ; names the array's declaration block from the variable's symbol.
 :   ldz #argOffset
     jsr checkArgType
     ldz #type::flags
     nop
     lda (stackPointer),z
     and #TYPE_FLAG_ISCONST
+    bne BA
+    ldz #argOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_NAME
     bne BA
     ldq stackPointer
     jsr isDynamicArray
@@ -116,7 +135,8 @@ BA: lda #errInvalidType
     jsr typeCheckError
 
     ; The second argument must be an integer
-L1: lda #0
+L1: jsr freeArgTypeName
+    lda #0
     taz
 :   nop
     sta (stackPointer),z
@@ -144,7 +164,8 @@ L1: lda #0
     lda #errInvalidType
     jsr typeCheckError
 
-DN: lda #.sizeof(type)
+DN: jsr freeArgTypeName
+    lda #.sizeof(type)
     jsr popBlock
     jsr popQ
     rts
@@ -176,6 +197,33 @@ DN: lda #.sizeof(type)
     lda #0
     jsr pushA
     jmp exprTypeCheck
+.endproc
+
+; Evaluating an argument can put a copy of a type name in the type block
+; (a dereferenced pointer to a named type does). This routine frees it.
+.proc freeArgTypeName
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    jsr isQZero
+    beq DN
+    jsr heapFree
+    jmp zeroArgType
+DN: rts
+.endproc
+
+; This routine zeroes the type block at the top of the runtime stack.
+.proc zeroArgType
+    lda #0
+    taz
+:   nop
+    sta (stackPointer),z
+    inz
+    cpz #.sizeof(type)
+    bne :-
+    rts
 .endproc
 
 ; This routine checks if the type in Q is a dynamic array.

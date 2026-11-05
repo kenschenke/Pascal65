@@ -23,7 +23,7 @@ localVarsOffset = localDeclsOffset + 4
 .import icodeBoolValue, icodeRealValue, heapOffset, icodeWriteInstruction
 .import icodeOper1Int, icodeOper1Long, icodeOper1String
 .import icodeOper1Label, icodeArrayInit, icodeLabel, icodeRecordInit
-.import loadStackValue, icodeFormatLabel
+.import loadStackValue, icodeFormatLabel, countArrayLiterals
 
 .bss
 
@@ -228,14 +228,21 @@ DN: jsr popQ
     sta heapOffset
     sta heapOffset+1
 
-    ldz #type::size+1
+    ldz #type::flags
+    nop
+    lda (ptr2),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq :+
+    jsr dynArraySize
+    bra L1
+:   ldz #type::size+1
     nop
     lda (ptr2),z
     tax
     dez
     nop
     lda (ptr2),z
-    jsr icodeOper1Int
+L1: jsr icodeOper1Int
     lda #IC_NEW
     jsr icodeWriteInstruction
 
@@ -283,6 +290,51 @@ DN: jsr popQ
     jsr loadStackValue
     jsr storeLocalDeclValue
 
+    rts
+.endproc
+
+; This routine calculates the heap size of a dynamic array: the 6-byte
+; header and an element for each literal it is initialized with.
+; The array type is in ptr2. The size is returned in A/X.
+.proc dynArraySize
+    ; Element size
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr getBaseType
+    stq ptr3
+    ldz #type::size
+    nop
+    lda (ptr3),z
+    sta intOp2
+    inz
+    nop
+    lda (ptr3),z
+    sta intOp2+1
+
+    ; Number of literals
+    ldz #declPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #decl::value
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr countArrayLiterals
+    sta intOp1
+    stx intOp1+1
+
+    jsr multInt16
+    lda #6
+    sta intOp2
+    lda #0
+    sta intOp2+1
+    jsr addInt16
+    lda intOp1
+    ldx intOp1+1
     rts
 .endproc
 

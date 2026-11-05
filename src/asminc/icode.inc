@@ -91,6 +91,9 @@ IC_SCV          = $37  ; 0011 0111  1:type -- string convert for routine paramet
 IC_ASF          = $38  ; 0011 1000  1:routineLevel - activate stack frame
 IC_SSP          = $39  ; 0011 1001  1:label - store stack pointer at label
 IC_MEM          = $3a  ; 0011 1010  1:type
+IC_SAL          = $3b  ; 0011 1011  1:label of the array declaration block
+                       ; variable ref of the array under the new length
+                       ; (LongInt) on stack - set array length
 
 ; These instructions take two operands
 IC_MASK_BINARY  = $40  ; 0100 0000
