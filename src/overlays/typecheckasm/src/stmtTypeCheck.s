@@ -21,6 +21,12 @@ stmtOffset = typeOffset + .sizeof(type)
 .import loadStackValue, currentLineNumber, exprTypeCheck
 .import typeCheckError, isTypeInteger, caseTypeCheck, declTypeCheck
 
+.bss
+
+forKind: .res 1             ; kind of a For loop's control variable
+
+.code
+
 ; stmt passed in Q
 .proc stmtTypeCheck
     jsr pushQ
@@ -165,14 +171,25 @@ DN: lda #.sizeof(type)
 :   rts
 .endproc
 
+; The control variable of a For loop can be an integer, a Char or an
+; enumeration, including subranges of them. The final value must be of
+; the same kind. The kinds come from the evalTypeKind of the expressions,
+; which is the kind of the base type. The kind of the initial assignment
+; isn't used because an enumeration assignment has no result type.
 .proc checkFor
     ldz #stmt::init_expr
     jsr callExprTypeCheck
-    ldz #type::kind
-    nop
-    lda (stackPointer),z
-    jsr isTypeInteger
-    beq :+
+    ldz #stmtOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #stmt::init_expr
+    jsr loadExprPtr
+    stq ptr1
+    ldz #expr::left         ; the control variable
+    jsr loadExprPtr
+    jsr getForKind
+    sta forKind
+    bne :+
     lda #errInvalidType
     jsr typeCheckError
 :   ldz #stmtOffset
@@ -180,12 +197,22 @@ DN: lda #.sizeof(type)
     stq ptr1
     ldz #stmt::to_expr
     jsr callExprTypeCheck
-    ldz #type::kind
-    nop
-    lda (stackPointer),z
-    jsr isTypeInteger
-    beq :+
+    ldz #stmtOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #stmt::to_expr
+    jsr loadExprPtr
+    jsr getForKind
+    ldx forKind
+    beq :++                 ; the control variable was already reported
+    tax
+    bne :+
     lda #errInvalidType
+    jsr typeCheckError
+    bra :++
+:   cmp forKind
+    beq :+
+    lda #errIncompatibleTypes
     jsr typeCheckError
 :   ldz #stmtOffset
     jsr loadStackValue
@@ -196,6 +223,40 @@ DN: lda #.sizeof(type)
     nop
     lda (ptr1),z
     jsr stmtTypeCheck
+    rts
+.endproc
+
+; Loads the pointer at offset Z of ptr1 into Q
+.proc loadExprPtr
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    rts
+.endproc
+
+; Classifies the expression in Q for a For loop. Returns TYPE_INTEGER for
+; any integer type, TYPE_CHARACTER or TYPE_ENUMERATION, or zero if the
+; type can't control a For loop. The flags are set from A.
+.proc getForKind
+    stq ptr4
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr4),z
+    jsr isTypeInteger
+    bne :+
+    lda #TYPE_INTEGER
+    rts
+:   cmp #TYPE_CHARACTER
+    beq L1
+    cmp #TYPE_ENUMERATION
+    beq L1
+    cmp #TYPE_ENUMERATION_VALUE
+    bne :+
+    lda #TYPE_ENUMERATION
+    bra L1
+:   lda #0
+L1: ora #0                  ; set the flags from A for the caller
     rts
 .endproc
 

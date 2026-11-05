@@ -66,6 +66,7 @@ typeOffset = 14
     cmp #TYPE_DECLARED
     bne :+
     jsr getDeclaredArraySize
+    jsr setIndexLimits
     bra L1
 :   ldz #type::min
     neg
@@ -245,6 +246,8 @@ L1: ldz #subtypeOffset
     cmp #TYPE_WORD
     beq L1
     bra L2
+    ; A constant is the number of elements, as in Array[10],
+    ; so the index runs from 0 to the constant less one.
 L1: ldz #symbol::decl
     neg
     neg
@@ -256,14 +259,23 @@ L1: ldz #symbol::decl
     neg
     nop
     lda (ptr3),z
+    jsr isQZero
+    beq L2                  ; not a constant
     stq ptr4                ; value expression in ptr4
     ldz #expr::value+1
     nop
     lda (ptr4),z
-    txa
+    tax
     dez
     nop
     lda (ptr4),z
+    sec
+    sbc #1
+    pha
+    txa
+    sbc #0
+    tax
+    pla
     ldz #maxOffset
     jsr storeAX
 L2: ldq ptr2
@@ -282,6 +294,73 @@ L2: ldq ptr2
     pla
     nop
     sta (ptr2),z
+    rts
+.endproc
+
+; A declared index type, such as a subrange or enumeration declared
+; in the Type section, is only a name. This routine stores the limits
+; getDeclaredArraySize found in the index type's min and max, as
+; word literals. The rest of the compiler reads an array's limits from
+; there, as it does for a subrange written in the array declaration.
+; A type can be sized more than once, so limits already there are kept.
+.proc setIndexLimits
+    ldz #indexTypeOffset
+    jsr getPtr              ; index type in ptr4
+    ldz #type::min
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    jsr isQZero
+    bne L1                  ; limits already set
+    ldz #minOffset
+    jsr getAX
+    jsr makeLimitExpr
+    stq ptr3                ; before Z, which is part of Q, is changed
+    ldz #type::min
+    jsr storeLimit
+    ldz #maxOffset
+    jsr getAX
+    jsr makeLimitExpr
+    stq ptr3
+    ldz #type::max
+    jsr storeLimit
+L1: rts
+.endproc
+
+; This routine creates a word literal expression for the
+; 16-bit value in A/X. The expression is returned in Q.
+.proc makeLimitExpr
+    pha
+    phx
+    lda #EXPR_WORD_LITERAL
+    jsr pushA               ; kind
+    jsr pushQZero           ; left
+    jsr pushQZero           ; right
+    jsr pushQZero           ; name
+    plx
+    pla
+    ldy #0
+    ldz #0
+    jsr pushQ               ; value
+    jmp exprCreate
+.endproc
+
+; This routine stores the expression in ptr3 in the index type
+; at offset Z (type::min or type::max).
+.proc storeLimit
+    phz
+    ldz #indexTypeOffset
+    jsr getPtr              ; index type in ptr4
+    plz
+    ldx #0
+:   lda ptr3,x
+    nop
+    sta (ptr4),z
+    inz
+    inx
+    cpx #4
+    bne :-
     rts
 .endproc
 

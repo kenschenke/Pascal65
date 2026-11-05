@@ -209,6 +209,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/casetest.pas casetest.pas,seq \
 	-write $(PETSCIIDIR)/procfunc.pas procfunc.pas,seq \
 	-write $(PETSCIIDIR)/multiply.pas multiply.pas,seq \
+	-write $(PETSCIIDIR)/forord.pas forord.pas,seq \
+	-write $(PETSCIIDIR)/declordr.pas declordr.pas,seq \
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq \
 	-write $(PETSCIIDIR)/divint.pas divint.pas,seq \
 	-write $(PETSCIIDIR)/trig.pas trig.pas,seq \
@@ -228,6 +230,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/typecast.pas typecast.pas,seq \
 	-write $(PETSCIIDIR)/chararray.pas chararray.pas,seq \
 	-write $(PETSCIIDIR)/exprclone.pas exprclone.pas,seq \
+	-write $(PETSCIIDIR)/namedidx.pas namedidx.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 

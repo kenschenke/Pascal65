@@ -25,13 +25,14 @@
 ;   14: Unit
 ;   15: Array literals
 ;   16: Type casts
+;   17: Declaration sections out of order
 
 .export runTests
 
 .import runTest
 .import heapWalk
 
-NUM_TESTS = 16
+NUM_TESTS = 17
 
 .bss
 

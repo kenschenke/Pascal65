@@ -67,6 +67,9 @@ L1: ldz #isProgramOrUnitBlockOffset
     jsr parseUsesReferences
     jsr storeLastDecl
 
+    ; The Const, Type, Var and routine sections can come in any order
+    ; and more than once. Each one loops back here, and the loop ends
+    ; at a token that starts none of them.
 L2: lda parserToken
     cmp #tcCONST
     bne L3
@@ -79,6 +82,7 @@ L2: lda parserToken
     jsr pushQ
     jsr parseConstantDefinitions
     jsr storeLastDecl
+    jmp L2
 
 L3: lda parserToken
     cmp #tcTYPE
@@ -92,6 +96,7 @@ L3: lda parserToken
     jsr pushQ
     jsr parseTypeDefinitions
     jsr storeLastDecl
+    jmp L2
 
 L4: lda parserToken
     cmp #tcVAR
@@ -105,6 +110,7 @@ L4: lda parserToken
     jsr pushQ
     jsr parseVariableDeclarations
     jsr storeLastDecl
+    jmp L2
 
 L5: lda #<tlProcFuncStart
     ldx #>tlProcFuncStart
@@ -118,6 +124,7 @@ L5: lda #<tlProcFuncStart
     jsr pushQ
     jsr parseSubroutineDeclarations
     jsr storeLastDecl
+    jmp L2
 
 L6: jsr popQ
     jsr popQ

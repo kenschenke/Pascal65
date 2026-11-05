@@ -137,7 +137,23 @@ L5: jsr getTypePtr
     nop
     sta (ptr1),z
 
+    ; The symbol's type is a copy made before the declaration's type
+    ; was sized. If it's an array, size it as well. That stores the
+    ; limits of a declared index type in the copy (see getArraySize).
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne :+
+    ldq ptr1
+    jsr pushQ
+    ldq ptr1                ; pushQ does not preserve Q
+    jsr getTypeSize
+    jsr popQ
+    stq ptr1
+
     ; If the type has a subtype, set its size as well
+:
     ldz #type::subtype
     neg
     neg

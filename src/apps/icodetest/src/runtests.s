@@ -33,12 +33,15 @@
 ;   21. Enumerations
 ;   22. Constants
 ;   23. Type casts
+;   24. Three level array literal
+;   25. Arrays indexed by a declared type
+;   26. For loop with a subrange control variable
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 24
+NUM_TESTS = 26
 
 .bss
 

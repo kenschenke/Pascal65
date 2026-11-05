@@ -54,6 +54,9 @@ strArray: .asciiz "strarray"
 strTypeCast: .asciiz "typecast"
 strCharArray: .asciiz "chararray"
 strExprClone: .asciiz "exprclone"
+strNamedIdx: .asciiz "namedidx"
+strForOrd: .asciiz "forord"
+strDeclOrdr: .asciiz "declordr"
 strDone: .asciiz "done"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
@@ -86,6 +89,8 @@ tests:
     .byte .lobyte(strCaseTest), .hibyte(strCaseTest)
     .byte .lobyte(strProcFunc), .hibyte(strProcFunc)
     .byte .lobyte(strMultiply), .hibyte(strMultiply)
+    .byte .lobyte(strForOrd), .hibyte(strForOrd)
+    .byte .lobyte(strDeclOrdr), .hibyte(strDeclOrdr)
 .endif
 .if TESTSET <> 1
     .byte .lobyte(strSubtract), .hibyte(strSubtract)
@@ -103,6 +108,7 @@ tests:
     .byte .lobyte(strTypeCast), .hibyte(strTypeCast)
     .byte .lobyte(strCharArray), .hibyte(strCharArray)
     .byte .lobyte(strExprClone), .hibyte(strExprClone)
+    .byte .lobyte(strNamedIdx), .hibyte(strNamedIdx)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
 .endif
