@@ -566,6 +566,11 @@ TYPE_FLAG_ISTEMP    = %01000000
 ; expression is a character or string object/literal that has no evalType of
 ; its own, so isConcatOperand can still tell it can be concatenated.
 TYPE_FLAG_CONCAT    = %10000000
+; Used only in a type structure, never in expr::evalTypeFlags. It shares
+; its bit with TYPE_FLAG_CONCAT, so exprTypeCheck clears it when it copies
+; a type's flags to an expression. Set on a TYPE_ARRAY declared without
+; index limits (Array Of T). Its index type is an Integer subrange 0..-1.
+TYPE_FLAG_ISDYNAMIC = %10000000
 
 SHRT_MAX = $7fff
 LONG_MAX = $7fffffff
@@ -626,6 +631,8 @@ LONG_MAX = $7fffffff
 ;        max       : high index value
 ;        subtype   : element type
 ;        indextype : index type
+;        flags     : TYPE_FLAG_ISDYNAMIC for a dynamic array (Array Of T).
+;                    Its indextype is an Integer subrange 0..-1 (empty).
 ;
 ;    Enumeration:
 ;        kind    : TYPE_ENUMERATION

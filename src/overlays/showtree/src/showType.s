@@ -109,6 +109,7 @@ strTYPE_FLAG_ISFORWARD: .asciiz "ISFORWARD"
 strTYPE_FLAG_ISBYREF: .asciiz "ISBYREF"
 strTYPE_FLAG_ISSTD: .asciiz "ISSTD"
 strTYPE_FLAG_ISRETVAL: .asciiz "ISRETVAL"
+strTYPE_FLAG_ISDYNAMIC: .asciiz "ISDYNAMIC"
 
 str_rcNA: .asciiz "n/a"
 str_rcDeclared: .asciiz "rcDeclared"
@@ -235,6 +236,12 @@ routineCodes: .byte .LOBYTE(str_rcDeclared), .HIBYTE(str_rcDeclared)
     sta tmp2
     ldx #<strTYPE_FLAG_ISRETVAL
     ldy #>strTYPE_FLAG_ISRETVAL
+    jsr printFlag
+
+    lda #TYPE_FLAG_ISDYNAMIC
+    sta tmp2
+    ldx #<strTYPE_FLAG_ISDYNAMIC
+    ldy #>strTYPE_FLAG_ISDYNAMIC
     jsr printFlag
 
     lda #13

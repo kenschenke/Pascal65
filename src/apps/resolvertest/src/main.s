@@ -91,6 +91,9 @@ main:
     sec
     jsr runTest
 
+    ; Run resolver error tests
+    jsr runErrorTests
+
     ; Everything the tests allocated must be freed
     jsr testLeakCheck
     bcc :+

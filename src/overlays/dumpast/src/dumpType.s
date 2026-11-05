@@ -27,6 +27,7 @@ anyFlag: .res 1
 
 strOF: .asciiz " OF "
 strDotDot: .asciiz ".."
+strDYNAMIC: .asciiz "DYNAMIC"
 strParam: .asciiz "param:"
 strFlags: .asciiz "flags: "
 strReturn: .asciiz "return: "
@@ -199,7 +200,18 @@ L7: dec level
     lda #' '
     jsr dumpChar
 
-    ldq ptr1
+    ; A dynamic array has no limits to show
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq :+
+    lda #<strDYNAMIC
+    ldx #>strDYNAMIC
+    jsr printz
+    bra OF
+
+:   ldq ptr1
     jsr pushQ
     ldz #type::indextype
     neg
@@ -245,7 +257,7 @@ L7: dec level
     jsr popQ
     stq ptr1
 
-    lda #<strOF
+OF: lda #<strOF
     ldx #>strOF
     jsr printz
 

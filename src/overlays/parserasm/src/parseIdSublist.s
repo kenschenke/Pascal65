@@ -20,7 +20,7 @@
 .export parseIdSublist
 
 .import parserToken, parserValue, doResync, getToken, parserString
-.import tlIdentifierFollow, tlIdentifierStart, parserError
+.import tlIdentifierFollow, tlIdentifierStart, parserError, currentLineNumber
 
 .bss
 
@@ -58,6 +58,15 @@ L1: lda parserToken
     jsr pushQZero           ; value
     jsr declCreate
     stq newDecl
+    stq ptr1
+    ldz #decl::lineNumber
+    lda currentLineNumber
+    nop
+    sta (ptr1),z
+    inz
+    lda currentLineNumber+1
+    nop
+    sta (ptr1),z
 
     ; Add the new declaration to the list
     ldq firstId

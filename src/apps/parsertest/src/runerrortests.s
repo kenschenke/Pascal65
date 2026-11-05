@@ -20,14 +20,14 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 12
+NUM_TESTS = 15
 
 .export runErrorTests
 .import testFail
 
 .import initTokenizer, initParser, getKey
 .import errorCount, errorLine, errorNum
-.import heapWalk
+.import heapWalk, freeUnits, unitList
 
 .bss
 
@@ -68,7 +68,9 @@ errors: .byte $06, $00, errMissingIdentifier        ; Missing identifier after P
         .byte $09, $00, errMissingComma             ; Missing comma parsing enumeration
         .byte $09, $00, errMissingIdentifier        ; Missing identifier parsing enumeration
         .byte $09, $00, errInvalidExpression        ; Invalid expression
-        .byte $09, $00, errMissingRightParen        ; Missing right paren in array literal
+        .byte $09, $00, errMultiDimDynArray         ; Dynamic array of arrays
+        .byte $09, $00, errMultiDimDynArray         ; Array of dynamic arrays
+        .byte $0b, $00, errDynArrayInRecord         ; Dynamic array record field
 
 .code
 
@@ -162,10 +164,13 @@ L3: rts
     tax
     tay
     taz
+    stq unitList
     jsr setParserUnitsList
     ldq tokens
     jsr parse
     stq astRoot
+    jsr getParserUnitsList
+    stq unitList
 
     ; Free the tokens
     ldq tokens
@@ -174,6 +179,9 @@ L3: rts
     ; Free the AST
     ldq astRoot
     jsr astFree
+
+    ; Free the units the parser added (the System unit)
+    jsr freeUnits
 
     ; Check the error information
     lda pErrors

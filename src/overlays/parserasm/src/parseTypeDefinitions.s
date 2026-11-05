@@ -21,7 +21,13 @@
 
 .import parserToken, parserString, getToken, condGetToken, parseTypeSpec, parserValue
 .import appendDecl, tlDeclarationFollow, tlDeclarationStart, tlStatementStart, doResync
-.import saveParserString, lastParserString
+.import saveParserString, lastParserString, currentLineNumber
+
+.bss
+
+typeLine: .res 2
+
+.code
 
 .proc parseTypeDefinitions
     ; Loop to parse a list of type definitions
@@ -33,6 +39,10 @@ L1: lda parserToken
 
     ; <id>
 :   jsr saveParserString
+    lda currentLineNumber
+    sta typeLine
+    lda currentLineNumber+1
+    sta typeLine+1
 
     ; =
     jsr getToken
@@ -56,6 +66,15 @@ L1: lda parserToken
     jsr pushQZero           ; value
     jsr declCreate
     stq ptr2
+    ; The declaration is on the line with the type's name
+    ldz #decl::lineNumber
+    lda typeLine
+    nop
+    sta (ptr2),z
+    inz
+    lda typeLine+1
+    nop
+    sta (ptr2),z
     jsr appendDecl
 
     ; Semicolon

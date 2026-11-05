@@ -68,6 +68,13 @@ exprKind: .res 1
 :   lda #errInvalidConstant
     jsr parserError
     jsr getToken
+    ; There is no type either. Clear the caller's type pointer
+    ; so it isn't left holding a stale value.
+    lda #0
+    tax
+    tay
+    taz
+    jsr setTypePtr
     lda #0
     tax
     tay

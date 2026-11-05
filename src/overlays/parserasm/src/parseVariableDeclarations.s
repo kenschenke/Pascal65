@@ -23,7 +23,7 @@ firstDeclOffset = 4
 .export parseVariableDeclarations, parseFieldDeclarations
 
 .import parserToken, doResync, condGetToken, parseTypeSpec, parseIdSublist
-.import appendDecl, parseExpression, getToken
+.import appendDecl, parseExpression, getToken, parserError
 .import tlSublistFollow, tlDeclarationFollow, tlDeclarationStart
 .import tlFieldDeclFollow, tlStatementStart
 
@@ -103,6 +103,26 @@ L1: lda parserToken
     stq newType
     lda #1
     sta firstType
+
+    ; A record field can't be a dynamic array
+    pla
+    pha                         ; Peek at isVarDecl
+    bne :+
+    ldq newType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne :+
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq :+
+    lda #errDynArrayInRecord
+    jsr parserError
+:
 
     ; =
     lda parserToken

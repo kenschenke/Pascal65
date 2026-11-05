@@ -74,14 +74,14 @@ main:
     ; Run parser tests
     jsr runTests
 
+    ; Run parser error handling tests
+    jsr runErrorTests
+
     ; Everything the tests allocated must be freed
     jsr testLeakCheck
     bcc :+
     jmp testFail
 :
-
-    ; Run parser error handling tests
-    ; jsr runErrorTests
 
     jsr testPass
     rts

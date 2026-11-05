@@ -530,10 +530,12 @@ DN:
     nop
     sta (ptr1),z
 
-    ; Set the evalTypeFlags
+    ; Set the evalTypeFlags. TYPE_FLAG_ISDYNAMIC shares its bit with
+    ; TYPE_FLAG_CONCAT, which means something else in an expression.
     ldz #type::flags
     nop
     lda (ptr2),z
+    and #<~TYPE_FLAG_ISDYNAMIC
     ldz #expr::evalTypeFlags
     nop
     sta (ptr1),z

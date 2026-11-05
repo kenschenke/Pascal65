@@ -14,6 +14,14 @@ D:DECL-TYPE test
       T:TYPE-ARRAY  1.. 5 OF TYPE-ARRAY  1.. 6 OF TYPE-INTEGER
     D:DECL-VARIABLE arr5
       T:TYPE-ARRAY  0.. 4 OF TYPE-ARRAY  0.. 5 OF TYPE-INTEGER
+    D:DECL-VARIABLE arr6
+      T:TYPE-ARRAY DYNAMIC OF TYPE-INTEGER
+    D:DECL-VARIABLE arr7
+      T:TYPE-ARRAY DYNAMIC OF TYPE-CHARACTER
+    D:DECL-VARIABLE arr8
+      T:TYPE-ARRAY DYNAMIC OF TYPE-STRING-VAR
+    D:DECL-VARIABLE arr9
+      T:TYPE-ARRAY DYNAMIC OF TYPE-RECORD
     S:STMT-EXPR
       E:EXPR-ASSIGN
         Left:EXPR-SUBSCRIPT
@@ -68,6 +76,12 @@ Var
   arr3 : Array[1..5] Of Array[1..6] Of Integer;
   arr4 : Array[1..5,1..6] Of Integer;
   arr5 : Array[5,6] Of Integer;
+  arr6 : Array Of Integer;
+  arr7 : Array Of Char;
+  arr8 : Array Of String;
+  arr9 : Array Of Record
+    i : Integer;
+  End;
 
 Begin
   arr1[3] := 5;

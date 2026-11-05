@@ -95,7 +95,9 @@ errSourceFileOpenFailed = 64
 errInvalidTypeCast = 65
 warnLossOfPrecision = 66
 warnMixedSignComparison = 67
-numParserErrors = 68
+errMultiDimDynArray = 68
+errDynArrayInRecord = 69
+numParserErrors = 70
 
 rteNone = 0
 rteStackOverflow = 1
