@@ -1197,7 +1197,27 @@ L4: lda #leftTypeOffset
     ldz #rightTypeOffset
     jsr copyToType
 
+    ; An array can't be assigned as a whole, only its elements
     lda #leftTypeOffset
+    jsr calcTypeBlockAddr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne L5
+    lda #errArrayAssignment
+    jsr typeCheckError
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::kind
+    lda #TYPE_VOID
+    nop
+    sta (ptr1),z
+    rts
+
+L5: lda #leftTypeOffset
     jsr calcTypeBlockAddr
     stq ptr1
     lda #rightTypeOffset

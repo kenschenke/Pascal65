@@ -76,10 +76,14 @@ L2: ldz #decl::code
     beq L3
     jsr scopeExit
  
-    ; Check the decl's type
+    ; Check the decl's type. Checking a routine's body changed the line.
 L3: ldz #declOffset
     jsr loadStackValue
     stq ptr1
+    ldz #decl::lineNumber
+    jsr getDeclMember
+    sta currentLineNumber
+    stx currentLineNumber+1
     ldz #decl::type
     jsr getDeclMember
     jsr isQZero

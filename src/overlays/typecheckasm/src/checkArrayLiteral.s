@@ -21,7 +21,7 @@ arrayTypeOffset = valueOffset + 4
 
 .export checkArrayLiteral
 
-.import loadStackValue, typeCheckError, checkAssignment
+.import loadStackValue, typeCheckError, checkAssignment, isDynamicArray
 
 .bss
 
@@ -176,8 +176,14 @@ L4: ldz #elemsOffset
     bne :-
     jmp L1
 
-    ; Make sure the array literal does not have too many elements
+    ; Make sure the array literal does not have too many elements.
+    ; A dynamic array's literal sets its length, so it has no limit.
 L5: ldz #arrayTypeOffset
+    jsr loadStackValue
+    jsr isDynamicArray
+    bne :+
+    jmp DN
+:   ldz #arrayTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #type::indextype
@@ -243,6 +249,7 @@ L5: ldz #arrayTypeOffset
     lda #errIndexOutOfRange
     jsr typeCheckError
 
+DN:
 :   jsr popAX
     jsr popQ
     jsr popQ

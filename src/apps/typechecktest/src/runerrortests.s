@@ -12,6 +12,8 @@
 ; Tests:
 ;    1: Assignment type cast warnings
 ;    2: Procedure call type cast warnings
+;    7: SetLength, Length, Low, and High
+;    8: Array assignment, parameters, return types and literals
 
 .include "asmlib.inc"
 .include "cbm_kernal.inc"
@@ -20,7 +22,7 @@
 
 .import runErrorTest, logExpectedWarning, logExpectedError, printLine
 
-NUM_TESTS = 6
+NUM_TESTS = 8
 
 .bss
 

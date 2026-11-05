@@ -26,12 +26,24 @@ exprOffset = rtnTypePtrOffset + 4
 .import getTypeConversion, checkArraysSameType, isTypeInteger
 .import checkIntegerPrecisionWarning
 .import checkForwardVsFormalDeclaration, isAssignableToString
+.import isDynamicArray
 
 .bss
 
 paramKind: .res 1
 argKind: .res 1
 namePtr: .res 4
+; Non-zero while checking a call to the System unit's Length.
+; checkParams keeps it on the CPU stack around exprTypeCheck because
+; an argument can contain another call.
+isLibLength: .res 1
+; Set by checkParams when isLibLength and the argument is an array.
+isArrayLength: .res 1
+
+.data
+
+strLength: .asciiz "length"
+strArrayLength: .asciiz "#length"
 
 .code
 
@@ -207,12 +219,22 @@ L1: ldz #type::kind
     ldq ptr2
     jsr pushQ                   ; return type
     jsr checkStdRoutine
-    bra DN
+    jmp DN
 
     ; Check the parameters
+:   jsr checkLibLength
+    bcc :+
+    jmp DN                      ; wrong number of arguments for Length
 :   jsr checkParams
 
+    ; Was it Length with an array argument?
+    lda isArrayLength
+    beq :+
+    jsr routeArrayLength
+    jmp DN
+
     ; Is there a subtype (a function)?
+:
     ldz #symTypeOffset
     jsr loadStackValue
     stq ptr1
@@ -334,9 +356,32 @@ L1: ldz #paramPtrOffset
     jsr pushQ
     lda #0
     jsr pushA
+    lda isLibLength
+    pha
     jsr exprTypeCheck
+    pla
+    sta isLibLength
+    ; A call in the argument may have set it.
+    lda #0
+    sta isArrayLength
+
+    ; Length of an array is checked as a standard routine
+    lda isLibLength
+    beq :+
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne :+
+    lda #1
+    sta isArrayLength
+    jmp NX
 
     ; Get the type of the routine parameter
+:
     ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
@@ -389,7 +434,10 @@ EN: jsr checkEnumerationParam
     lda argKind
     cmp #TYPE_ARRAY
     bne :+
-    ldz #paramPtrOffset
+    jsr checkDynamicParam
+    bcc AR
+    jmp NX
+AR: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
@@ -517,6 +565,38 @@ FR: ldz #type::subtype
 :   jmp L1
 
 DN: rts
+.endproc
+
+; This routine makes sure an array argument and an array parameter are
+; both static or both dynamic. If not, it reports an error and returns
+; with the carry set.
+.proc checkDynamicParam
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isDynamicArray
+    php
+    ldq stackPointer
+    jsr isDynamicArray
+    beq L1
+    ; The argument is static
+    plp
+    bne OK
+    bra ER
+    ; The argument is dynamic
+L1: plp
+    beq OK
+ER: lda #errStaticDynArrayMismatch
+    jsr typeCheckError
+    sec
+    rts
+OK: clc
+    rts
 .endproc
 
 .proc checkEnumerationParam
@@ -846,6 +926,145 @@ L3: ldz #type::flags
     lda #errInvalidVarParm
     jsr typeCheckError
 :   rts
+.endproc
+
+; This routine looks for a call to the System unit's Length. It sets
+; isLibLength if it is one and clears isArrayLength. Length takes one
+; argument. If it has another number of them, this routine reports an
+; error and returns with the carry set.
+.proc checkLibLength
+    lda #0
+    sta isLibLength
+    sta isArrayLength
+
+    ; Is the routine's name "length"?
+    ldq namePtr
+    stq ptr1
+    ldx #0
+:   txa
+    taz
+    nop
+    lda (ptr1),z
+    cmp strLength,x
+    bne NO
+    inx
+    cmp #0
+    bne :-
+
+    ; Is it a library routine?
+    ldq namePtr
+    stq ptr4
+    jsr scopeLookup
+    jsr isQZero
+    beq NO
+    stq ptr1
+    ldz #symbol::decl
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq NO
+    stq ptr1
+    ldz #decl::isLibrary
+    nop
+    lda (ptr1),z
+    beq NO
+    lda #1
+    sta isLibLength
+
+    ; There must be exactly one argument
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq WN
+    stq ptr1
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq NO
+WN: lda #errWrongNumberOfParams
+    jsr typeCheckError
+    lda #0
+    sta isLibLength
+    ; Return its declared type so the caller doesn't report another error
+    ldz #rtnTypePtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::kind
+    lda #TYPE_BYTE
+    nop
+    sta (ptr1),z
+    sec
+    rts
+
+NO: clc
+    rts
+.endproc
+
+; This routine finishes a call to Length with an array argument. Length
+; returns an Integer and the call's routine becomes the standard routine
+; for an array's length, so code generation treats it as one.
+.proc routeArrayLength
+    lda #0
+    sta isArrayLength
+    sta isLibLength
+
+    ; The return type is an Integer
+    ldz #rtnTypePtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::kind
+    lda #TYPE_INTEGER
+    nop
+    sta (ptr1),z
+    ldz #type::size
+    lda #2
+    nop
+    sta (ptr1),z
+    inz
+    lda #0
+    nop
+    sta (ptr1),z
+
+    ; Point the routine name at the standard routine
+    lda #<strArrayLength
+    ldx #>strArrayLength
+    ldy #0
+    ldz #0
+    stq ptr4
+    jsr scopeLookup
+    jsr isQZero
+    beq DN
+    stq ptr3
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #expr::node
+    ldx #0
+:   lda ptr3,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+DN: rts
 .endproc
 
 ; This routine stores the 24-bit pointer in A/X/Y

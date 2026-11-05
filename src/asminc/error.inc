@@ -97,7 +97,10 @@ warnLossOfPrecision = 66
 warnMixedSignComparison = 67
 errMultiDimDynArray = 68
 errDynArrayInRecord = 69
-numParserErrors = 70
+errArrayAssignment = 70
+errArrayReturnType = 71
+errStaticDynArrayMismatch = 72
+numParserErrors = 73
 
 rteNone = 0
 rteStackOverflow = 1

@@ -153,6 +153,8 @@ strPass: .asciiz "Pass"
     jsr initScopeStack
     jsr initStandardRoutines
     jsr injectSystemUnit
+    ; Resolve the System unit so tests can call its routines (Length)
+    jsr resolveUnits
 
     ldq astRoot
     jsr pushQ

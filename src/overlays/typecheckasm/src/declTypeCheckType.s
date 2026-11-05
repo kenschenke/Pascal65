@@ -19,6 +19,7 @@ declOffset = 4
 .export declTypeCheckType
 
 .import checkArray, checkForwardVsFormalDeclaration, loadStackValue, calcNamePtr
+.import typeCheckError
 
 .proc declTypeCheckType
     ; If this is an array make sure the index type is
@@ -72,9 +73,35 @@ L1: ; if (decl.kind == DECL_TYPE)
     jsr pushQ
     jsr checkArray
 
+    ; A function can't return an array, static or dynamic
+L3: ldz #typeOffset
+    jsr loadStackValue
+    stq ptr1                ; type in ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_FUNCTION
+    bne L5
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L5
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne L5
+    lda #errArrayReturnType
+    jsr typeCheckError
+
     ; If this is a function or procedure, check for a forward declaration and make
     ; sure the forward declaration matches the formal declaration.
-L3: ldz #typeOffset
+L5: ldz #typeOffset
     jsr loadStackValue
     stq ptr1                ; type in ptr1
     ldz #type::kind

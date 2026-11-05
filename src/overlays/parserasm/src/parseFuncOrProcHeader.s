@@ -25,7 +25,7 @@ isRtnTypeOffset = 0
 .import getToken, parserToken, parserString, doResync, parseFormalParamList
 .import tlFuncIdFollow, tlProgProcIdFollow, parserError
 .import tlDeclarationStart, tlStatementStart
-.import saveParserString, lastParserString
+.import saveParserString, lastParserString, currentLineNumber
 
 .bss
 
@@ -33,11 +33,17 @@ params: .res 4
 returnType: .res 4
 subtype: .res 4
 isPtr: .res 1
+rtnLine: .res 2
 
 .code
 
 .proc parseFuncOrProcHeader
     jsr getToken
+    ; The declaration is on the line with the routine's name
+    lda currentLineNumber
+    sta rtnLine
+    lda currentLineNumber+1
+    sta rtnLine+1
 
     lda #0
     tax
@@ -127,6 +133,14 @@ L3: ldx #TYPE_PROCEDURE
     jsr pushQZero               ; value
     jsr declCreate
     stq ptr1
+    ldz #decl::lineNumber
+    lda rtnLine
+    nop
+    sta (ptr1),z
+    inz
+    lda rtnLine+1
+    nop
+    sta (ptr1),z
     jsr popA                    ; pop isRtnType parameter off stack
     jsr popA                    ; pop isFunc parameter off stack
     ldq ptr1

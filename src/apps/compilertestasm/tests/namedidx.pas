@@ -2,8 +2,8 @@ Program NamedIndexTest;
 
 // Arrays whose index is a declared (named) type: a subrange, an enumeration
 // or a constant number of elements. The bounds in each array's runtime
-// header come from the named type. Indexing checks them, a character array
-// takes its length from them and array assignment copies that many elements.
+// header come from the named type. Indexing checks them and a character
+// array takes its length from them.
 
 Const
     Count = 4;
@@ -136,13 +136,13 @@ Begin
     For j := 5 To 9 Do arr[j] := j;
 End;
 
-// A declared array type, assigned and passed to routines
+// A declared array type, copied element by element and passed to routines
 Procedure TestArrayType;
 Begin
     Fill(x);
     If x[5] <> 5 Then Error(900);
     If x[9] <> 9 Then Error(901);
-    y := x;
+    For i := 5 To 9 Do y[i] := x[i];
     If y[5] <> 5 Then Error(902);
     If y[9] <> 9 Then Error(903);
     If Sum(x) <> 35 Then Error(904);

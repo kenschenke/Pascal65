@@ -68,3 +68,6 @@ Loss of precision
 Mixed sign comparison
 Multi-dim dynamic array
 Dynamic array in record
+Array assignment
+Function returns array
+Static vs dynamic array

@@ -22,6 +22,7 @@ typePtrOffset = argPtrOffset + 4
 
 .import loadStackValue, checkReadReadlnCall, checkWriteWritelnCall, checkAbsSqrCall
 .import checkPredSuccCall, checkStdParms, checkDecIncCall
+.import checkSetLengthCall, checkArrayFuncCall
 
 .proc checkStdRoutine
     ; Zero out the return type
@@ -100,6 +101,18 @@ typePtrOffset = argPtrOffset + 4
     bne :+
     jsr decInc
     jmp DN
+:   cmp #rcSetLength
+    bne :+
+    jsr setLength
+    jmp DN
+:   cmp #rcLow
+    beq AF
+    cmp #rcHigh
+    beq AF
+    cmp #rcLength
+    bne :+
+AF: jsr arrayFunc
+    jmp DN
 :   lda #TYPE_VOID
     jsr setReturnType
 
@@ -129,6 +142,27 @@ DN: jsr popQ
     jsr pushA
     jsr checkStdParms
     lda #TYPE_INTEGER
+    jsr setReturnType
+    rts
+.endproc
+
+; Low, High, and Length of an array
+.proc arrayFunc
+    ldz #argPtrOffset
+    jsr loadStackValue
+    jsr pushQ
+    jsr checkArrayFuncCall
+    lda #TYPE_INTEGER
+    jsr setReturnType
+    rts
+.endproc
+
+.proc setLength
+    ldz #argPtrOffset
+    jsr loadStackValue
+    jsr pushQ
+    jsr checkSetLengthCall
+    lda #TYPE_VOID
     jsr setReturnType
     rts
 .endproc

@@ -22,13 +22,18 @@
 strAbs: .asciiz "abs"
 strDec: .asciiz "dec"
 strEoln: .asciiz "eoln"
+strHigh: .asciiz "high"
 strInc: .asciiz "inc"
+; Not a valid identifier, so a program can't call it by name.
+strLength: .asciiz "#length"
+strLow: .asciiz "low"
 strOrd: .asciiz "ord"
 strPred: .asciiz "pred"
 strRead: .asciiz "read"
 strReadln: .asciiz "readln"
 strReadstr: .asciiz "readstr"
 strRound: .asciiz "round"
+strSetLength: .asciiz "setlength"
 strSqr: .asciiz "sqr"
 strSucc: .asciiz "succ"
 strTrunc: .asciiz "trunc"
@@ -54,6 +59,10 @@ stdRtnList: .byte rcReadln, TYPE_PROCEDURE, .lobyte(strReadln), .hibyte(strReadl
             .byte rcTrunc, TYPE_FUNCTION, .lobyte(strTrunc), .hibyte(strTrunc)
             .byte rcWrite, TYPE_PROCEDURE, .lobyte(strWrite), .hibyte(strWrite)
             .byte rcWriteStr, TYPE_FUNCTION, .lobyte(strWritestr), .hibyte(strWritestr)
+            .byte rcLow, TYPE_FUNCTION, .lobyte(strLow), .hibyte(strLow)
+            .byte rcHigh, TYPE_FUNCTION, .lobyte(strHigh), .hibyte(strHigh)
+            .byte rcSetLength, TYPE_PROCEDURE, .lobyte(strSetLength), .hibyte(strSetLength)
+            .byte rcLength, TYPE_FUNCTION, .lobyte(strLength), .hibyte(strLength)
             .byte 0
 
 .bss

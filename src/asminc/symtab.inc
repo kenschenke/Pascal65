@@ -50,6 +50,13 @@
     rcTrunc
     rcDec
     rcInc
+    rcSetLength
+    rcLow
+    rcHigh
+    ; Length of an array. The program can't call it by name. The type
+    ; checker points a call to the System unit's Length at it when the
+    ; argument is an array.
+    rcLength
 .endenum
 
 .if .sizeof(SYMTABNODE) <> CHUNK_LEN
