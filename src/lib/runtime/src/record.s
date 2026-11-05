@@ -293,10 +293,10 @@ DN: rts
     ldx ptr1+1
     jsr pusheax
     ldy #1                      ; Load declaration ptr into A/X
-    lda (ptr1),y
+    lda (ptr2),y
     tax
     dey
-    lda (ptr1),y
+    lda (ptr2),y
     jmp freeRecordDeclaration   ; Recursive call to free sub-record
 .endproc
 
@@ -329,10 +329,10 @@ DN: rts
     ldx ptr1+1
     jsr pusheax
     ldy #1                      ; Load declaration ptr into A/X
-    lda (ptr1),y
+    lda (ptr2),y
     tax
     dey
-    lda (ptr1),y
+    lda (ptr2),y
     jmp freeArrayDeclaration   ; Free the array
 .endproc
 
@@ -529,10 +529,10 @@ DN: rts
     ; Put the target heap and source heap on the stack (in that order)
     lda ptr2
     ldx ptr2+1
-    jsr popeax
+    jsr pusheax
     lda ptr1
     ldx ptr1+1
-    jsr popeax
+    jsr pusheax
     ; Load the pointer to the sub-record's declaration block
     ldy #1
     lda (ptr3),y

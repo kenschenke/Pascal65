@@ -157,6 +157,11 @@ label: .res 16
     jsr ppfOper
     rts
 
+:   cmp #IC_SAL
+    bne :+
+    jsr salOper
+    rts
+
 :   cmp #IC_DIA
     bne :+
     lda #ARRAYDECL_ARRAY
@@ -280,6 +285,27 @@ label: .res 16
     genOne OC_PHA
     genOne OC_TXA
     genOne OC_PHA
+    rts
+.endproc
+
+; SetLength. The runtime takes the array's declaration block in A/X.
+; The array's slot address and the new length are on the runtime stack.
+.proc salOper
+    lda #<strbuf
+    ldx #>strbuf
+    ldy #LINKADDR_LOW
+    ldz #1
+    jsr linkAddressLookup
+    genTwoImmediate OC_LDA_IMMEDIATE, 0
+
+    lda #<strbuf
+    ldx #>strbuf
+    ldy #LINKADDR_HIGH
+    ldz #1
+    jsr linkAddressLookup
+    genTwoImmediate OC_LDX_IMMEDIATE, 0
+
+    genThree OC_JSR, RT_SETARRAYLENGTH
     rts
 .endproc
 

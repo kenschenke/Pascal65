@@ -101,7 +101,7 @@ overlays and asmlib don't fill BSS. `heapAlloc` zeros every block it returns.
 
 ### Compiler Tests
 
-`compilertestasm` runs as two sets because all the compiled programs don't fit on one D81. The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in set 1 or set 2) and to the D81 file list in the Makefile.
+`compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
 ### Adding a test program
 

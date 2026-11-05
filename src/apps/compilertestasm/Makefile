@@ -21,11 +21,14 @@ RUNTIMEDIR := ../../lib/runtime
 PROGRAM := compilertest
 TARGET := mega65
 
-# The test target builds and runs the tests in two sets (see compiletests.s)
-# because the programs produced by the whole list do not fit on one disk image.
-TESTSETS := 1 2
+# The test target builds and runs the tests in three sets (see
+# compiletests.s) because the programs produced by the whole list do not fit
+# on one disk image. A set's disk also needs room for the files its tests
+# write (filetesta and filetestb in set 2).
+TESTSETS := 1 2 3
 FIRSTTEST1 := add
 FIRSTTEST2 := subtract
+FIRSTTEST3 := dynarraya
 ifdef TESTSET
 PROGRAM := compilertest$(TESTSET)
 endif
@@ -231,6 +234,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/chararray.pas chararray.pas,seq \
 	-write $(PETSCIIDIR)/exprclone.pas exprclone.pas,seq \
 	-write $(PETSCIIDIR)/namedidx.pas namedidx.pas,seq \
+	-write $(PETSCIIDIR)/dynarraya.pas dynarraya.pas,seq \
+	-write $(PETSCIIDIR)/dynarrayb.pas dynarrayb.pas,seq \
+	-write $(PETSCIIDIR)/dynarrayc.pas dynarrayc.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 

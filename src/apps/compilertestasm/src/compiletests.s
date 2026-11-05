@@ -57,20 +57,23 @@ strExprClone: .asciiz "exprclone"
 strNamedIdx: .asciiz "namedidx"
 strForOrd: .asciiz "forord"
 strDeclOrdr: .asciiz "declordr"
+strDynArrayA: .asciiz "dynarraya"
+strDynArrayB: .asciiz "dynarrayb"
+strDynArrayC: .asciiz "dynarrayc"
 strDone: .asciiz "done"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
 ; The complete list of tests is too large to compile onto one D81 disk image.
 ; When the TESTSET symbol is defined (see the Makefile test target) the list
-; is split in two. Each set ends by chaining to "done", which reports the
+; is split in three. Each set ends by chaining to "done", which reports the
 ; overall PASS to the test harness. Without TESTSET the whole list is built.
 .ifndef TESTSET
 TESTSET = 0
 .endif
 
 tests:
-.if TESTSET <> 2
+.if TESTSET = 0 || TESTSET = 1
     .byte .lobyte(strAdd), .hibyte(strAdd)
     .byte .lobyte(strAssign), .hibyte(strAssign)
     .byte .lobyte(strVarInit), .hibyte(strVarInit)
@@ -92,7 +95,7 @@ tests:
     .byte .lobyte(strForOrd), .hibyte(strForOrd)
     .byte .lobyte(strDeclOrdr), .hibyte(strDeclOrdr)
 .endif
-.if TESTSET <> 1
+.if TESTSET = 0 || TESTSET = 2
     .byte .lobyte(strSubtract), .hibyte(strSubtract)
     .byte .lobyte(strDivInt), .hibyte(strDivInt)
     .byte .lobyte(strUnit), .hibyte(strUnit)
@@ -111,6 +114,11 @@ tests:
     .byte .lobyte(strNamedIdx), .hibyte(strNamedIdx)
     .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
     .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
+.endif
+.if TESTSET = 0 || TESTSET = 3
+    .byte .lobyte(strDynArrayA), .hibyte(strDynArrayA)
+    .byte .lobyte(strDynArrayB), .hibyte(strDynArrayB)
+    .byte .lobyte(strDynArrayC), .hibyte(strDynArrayC)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)

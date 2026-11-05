@@ -71,7 +71,7 @@
 .import initArrayDeclaration, initRecordDeclaration
 .import freeArrayDeclaration, freeRecordDeclaration
 .import cloneArrayDeclaration, cloneRecordDeclaration
-.import getArraySize, getRecordSize
+.import getArrayHeapSize, getRecordSize
 
 .bss
 heapAddr: .res 2
@@ -116,7 +116,14 @@ DN: lda heapAddr
     stx declAddr+1
     cpy #5                          ; Are we cloning an array
     bne :+                          ; Branch if not
-    jsr getArraySize                ; Calculate the size of the array
+    ; The size comes from the source array's header, not the declaration
+    ; block, because a dynamic array's length changes at runtime.
+    ldy #1                          ; Source address at the top of the stack
+    lda (sp),y
+    tax
+    dey
+    lda (sp),y
+    jsr getArrayHeapSize            ; Calculate the size of the array
     jmp L1                          ; Skip to L1
 :   jsr getRecordSize               ; Get the size of the record
 L1: jsr heapAlloc                   ; Allocate some memory for the cloned array or record

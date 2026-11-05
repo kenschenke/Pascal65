@@ -29,7 +29,8 @@ ARRAYDECL_ARRAY = 5
 
 .export writeCharArray, readCharArrayFromInput, calcArrayElem
 .export initArrayDeclaration, freeArrayDeclaration, cloneArrayDeclaration
-.export getArraySize
+.export getArrayHeapSize, getArrayLength, numElems, ndxElems
+.export freeArrayStrings, freeArrayRecords, freeArrayFiles
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
 .import memcopy, popax, pushax, FPINP, COMPLM, pusheax, popeax
@@ -409,7 +410,7 @@ DN: jsr popax
     bne :+
     jmp initArrayFiles
 :   ; Elements are scalar. Initialize them from literals.
-    ldy #6
+    ldy #ARRAYDECL::numLiterals
     lda (ptr2),y                    ; Check if there are literals supplied for this array
     bne :+
     iny
@@ -483,8 +484,13 @@ DN: rts
     iny
     lda (ptr2),y
     sta ptr4+1
+    ; An empty (dynamic) array has no elements to initialize
+    lda numElems
+    ora numElems+1
+    bne L1
+    rts
     ; Loop for each element
-L1: lda numLiterals                 ; If numLiterals is zero,
+L1: lda numLiterals                ; If numLiterals is zero,
     ora numLiterals+1               ; then this element has no literal initializer.
     beq NL                          ; Branch if no literal (create empty string)
     ; Allocate a new string from the literal
@@ -1062,7 +1068,7 @@ L2: jsr saveArrayLocals
     ; Push the heap pointer onto the stack
     lda ptr1
     ldx ptr1+1
-    jsr pushax
+    jsr pusheax
     ; Load the pointer to the array declaration into A/X
     lda ptr2
     sta ptr4
@@ -1077,10 +1083,10 @@ L2: jsr saveArrayLocals
     jsr restoreArrayLocals
     ; Look up the size of the element and put in tmp1/tmp2
     ldy #ARRAYDECL::elemSize
-    lda (ptr3),y
+    lda (ptr2),y
     sta tmp1
     iny
-    lda (ptr3),y
+    lda (ptr2),y
     sta tmp2
     ; Advance ptr1 by the size of the record
     lda ptr1
@@ -1160,6 +1166,10 @@ DN: rts
     sta tmp1
     ; Loop until tmp1/tmp2 are zero
 L0:
+    ; An empty (dynamic) array writes nothing
+    lda tmp1
+    ora tmp2
+    beq L2
     ; Skip over the array header
     lda ptr2
     clc
@@ -1293,28 +1303,18 @@ L4:
     rts
 .endproc
 
-; This routine calculates an array's size based on the declaration block
-; passed in A/X
-.proc getArraySize
-    sta ptr3                        ; Put the declaration block ptr in ptr3
+; This routine calculates the size of an array's heap block from the
+; array's header. The heap block's address is passed in A/X. The header,
+; not the declaration block, has the current length of a dynamic array.
+; The size is returned in A/X. ptr1, ptr3, intOp1 and intOp2 are destroyed.
+.proc getArrayHeapSize
+    sta ptr3                        ; Keep the heap block ptr in ptr3
     stx ptr3+1
-    sta ptr2                        ; Also put it in ptr2 for some math
-    stx ptr2+1
-    ; Move ptr2 to point to the min/max element indexes in the declaration block
-    lda ptr2
-    clc
-    adc #ARRAYDECL::minIndex
-    sta ptr2
-    lda ptr2+1
-    adc #0
-    sta ptr2+1
     ; Get the array length (number of elements)
-    lda ptr2
-    ldx ptr2+1
     jsr getArrayLength
     sta intOp1                      ; Store the array length in intOp1
     stx intOp1+1
-    ldy #ARRAYDECL::elemSize
+    ldy #4                          ; Element size in the header
     lda (ptr3),y
     sta intOp2                      ; Store the element size in intOp2
     iny
