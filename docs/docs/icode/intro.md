@@ -108,6 +108,7 @@ The following instructions take one operand.
 |[PPF](../mne/ppf)    |24       |0010 0100   |Push stack frame for a routine ptr   |
 |[PRE](../mne/pre)    |28       |0010 1000   |Calcuate the predecessor of the value|
 |[PSH](../mne/psh)    |27       |0010 0111   |Push the operand to the runtime stack|
+|[SAL](../mne/sal)    |3b       |0011 1011   |Set the length of a dynamic array    |
 |[SCV](../mne/scv)    |37       |0011 0111   |Converts to a string object          |
 |[SQR](../mne/sqr)    |35       |0011 0101   |Calculate the square of a number     |
 |[SSP](../mne/ssp)    |39       |0011 1001   |Save the stack pointer               |

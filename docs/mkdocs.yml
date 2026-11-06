@@ -45,9 +45,11 @@ nav:
     - EOF: funcref/eof.md
     - Erase: funcref/erase.md
     - GetKey : funcref/getkey.md
+    - High: funcref/high.md
     - Inc: funcref/inc.md
     - IOResult: funcref/ioresult.md
     - Length: funcref/length.md
+    - Low: funcref/low.md
     - LowerCase: funcref/lowercase.md
     - Odd: funcref/odd.md
     - Ord: funcref/ord.md
@@ -61,6 +63,7 @@ nav:
     - Reset: funcref/reset.md
     - Rewrite: funcref/rewrite.md
     - Round: funcref/round.md
+    - SetLength: funcref/setlength.md
     - SetRasterCallback: funcref/setrastercallback.md
     - Sin: funcref/sin.md
     - Sqr: funcref/sqr.md
@@ -197,6 +200,7 @@ nav:
       - PUF: icode/mne/puf.md
       - ROU: icode/mne/rou.md
       - RTS: icode/mne/rts.md
+      - SAL: icode/mne/sal.md
       - SCV: icode/mne/scv.md
       - SET: icode/mne/set.md
       - SFH: icode/mne/sfh.md
