@@ -20,7 +20,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 15
+NUM_TESTS = 20
 
 .export runErrorTests
 .import testFail
@@ -71,6 +71,11 @@ errors: .byte $06, $00, errMissingIdentifier        ; Missing identifier after P
         .byte $09, $00, errMultiDimDynArray         ; Dynamic array of arrays
         .byte $09, $00, errMultiDimDynArray         ; Array of dynamic arrays
         .byte $0b, $00, errDynArrayInRecord         ; Dynamic array record field
+        .byte $08, $00, errMissingBEGIN             ; Stray token before Begin
+        .byte $09, $00, errMissingEND               ; Stray token in statements
+        .byte $0a, $00, errUnexpectedToken          ; Else after a semicolon
+        .byte $0a, $00, errMissingSemicolon         ; Missing ; before If
+        .byte $0b, $00, errMissingUNTIL             ; Repeat ended by End
 
 .code
 

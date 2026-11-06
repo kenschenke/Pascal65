@@ -25,14 +25,28 @@ lastStmtOffset = 0
 firstStmtOffset = 4
 terminatorOffset = 8
 
+.bss
+
+; Non-zero when the token after a statement ends the list. Only the code
+; between setting and testing it uses it, so nested lists don't clash.
+stopList: .res 1
+
+.code
+
 .proc parseStatementList
     jsr pushA               ; terminator
     jsr pushQZero           ; firstStmt
     jsr pushQZero           ; lastStmt
 
+    ; Each pass must consume a token or start a statement. Otherwise a
+    ; token that no statement consumes, such as a stray ")" or the period
+    ; after a nested END, would loop forever. The list ends at any token
+    ; other than these and the caller reports what it expected.
 L1: jsr parseStatement
     jsr pushQ
 
+    lda #0
+    sta stopList
     lda #<tlStatementStart
     ldx #>tlStatementStart
     jsr tokenIn
@@ -46,14 +60,25 @@ L1: jsr parseStatement
     bne :+
     lda #errUnexpectedToken
     jsr parserError
+    jsr getToken                ; Skip it
     bra L2
 :   lda parserToken
     cmp #tcSemicolon
-    bne L2
+    bne :+
     jsr getToken
+    bra L2
+    ; parseStatement handles the $Expect directives
+:   cmp #tcEXPECTWARN
+    beq L2
+    cmp #tcEXPECTERROR
+    beq L2
+    lda #1
+    sta stopList
 
 L2: jsr popQ
     stq ptr1
+    jsr isQZero                 ; An empty statement isn't linked. It would
+    beq L6                      ; become lastStmt and lose the next one.
     ldz #firstStmtOffset
     neg
     neg
@@ -93,6 +118,8 @@ L4: ldz #lastStmtOffset+3
     dex
     bpl :-
 
+L6: lda stopList
+    bne L5
     ldz #terminatorOffset
     nop
     lda (stackPointer),z

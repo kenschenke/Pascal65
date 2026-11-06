@@ -13,12 +13,12 @@ registerExpectErrorHandler = PARSER_BASE + 18
     lda #<list1
     sta ptr1
     lda #>list1
-    stx ptr1+1
+    sta ptr1+1
 
     .ifblank list2
     lda #0
     sta ptr2
-    stx ptr2+1
+    sta ptr2+1
     .endif
     .ifnblank list2
     lda #<list2

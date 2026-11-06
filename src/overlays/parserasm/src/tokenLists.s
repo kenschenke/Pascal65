@@ -52,7 +52,8 @@ tlProcFuncStart: .byte tcPROCEDURE, tcFUNCTION, tcDummy
 tlProgProcIdFollow: .byte tcLParen, tcColon, tcSemicolon, tcDummy
 tlProgramEnd: .byte tcPeriod, tcDummy
 tlRelOps: .byte tcEqual, tcNe, tcLt, tcGt, tcLe, tcGe, tcDummy
-tlStatementStart: .byte tcBEGIN, tcCASE, tcFOR, tcREPEAT, tcWHILE, tcIdentifier, tcDummy
+tlStatementStart: .byte tcBEGIN, tcCASE, tcFOR, tcIF, tcREPEAT, tcWHILE
+    .byte tcIdentifier, tcDummy
 tlStatementFollow: .byte tcSemicolon, tcPeriod, tcEND, tcELSE, tcUNTIL, tcDummy
 tlStatementListNotAllowed: .byte tcELSE, tcDummy
 tlSublistFollow: .byte tcColon, tcDummy
