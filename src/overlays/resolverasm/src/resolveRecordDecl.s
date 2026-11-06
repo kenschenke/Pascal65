@@ -15,7 +15,7 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-.export resolveRecordDecl
+.export resolveRecordDecl, dynArrayError
 
 .import getTypePtr, declResolve, resolverError, currentLineNumber
 

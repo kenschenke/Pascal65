@@ -24,7 +24,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 5
+NUM_TESTS = 7
 
 .export runErrorTests
 .import testFail
@@ -56,6 +56,8 @@ errors: .byte $0c, $00, errMultiDimDynArray     ; Array of a dynamic type
         .byte $0b, $00, errMultiDimDynArray     ; Dynamic array of array type
         .byte $0b, $00, errMultiDimDynArray     ; Nested array of dynamic type
         .byte $0c, $00, errDynArrayInRecord     ; Anonymous record field
+        .byte $0c, $00, errDynArrayInRecord     ; Record in array element
+        .byte $0b, $00, errDynArrayInRecord     ; Record in dynamic array
 
 strFnPrefix: .asciiz "error"
 strFnSuffix: .asciiz ".pas"

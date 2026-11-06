@@ -17,7 +17,7 @@
 
 .export resolveArrayDecl
 
-.import getTypePtr, getTypeSize, resolverError
+.import getTypePtr, getTypeSize, resolverError, dynArrayError
 
 .proc resolveArrayDecl
     ; Get the declaration type
@@ -75,7 +75,10 @@ L1: ldz #type::subtype
     stq ptr1
     bra L1
 
-L2: cmp #TYPE_DECLARED
+L2: cmp #TYPE_RECORD
+    bne :+
+    jmp checkRecordFields
+:   cmp #TYPE_DECLARED
     bne DN
     ldz #type::flags
     nop
@@ -116,6 +119,66 @@ L2: cmp #TYPE_DECLARED
 DN: rts
 .endproc
 
+; The element of an array is a record written out in place. Its fields
+; aren't resolved by resolveRecordDecl, so check here that none is a
+; named dynamic array type. The parser catches a field written out in
+; place as Array Of T. The record type is in ptr2.
+.proc checkRecordFields
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq fieldPtr
+
+L1: ldq fieldPtr
+    jsr isQZero
+    beq DN
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq NX
+    stq ptr3
+    ldz #type::kind
+    nop
+    lda (ptr3),z
+    cmp #TYPE_DECLARED
+    bne NX
+    ldq ptr3
+    jsr getBaseType
+    stq ptr3
+    ldz #type::kind
+    nop
+    lda (ptr3),z
+    cmp #TYPE_ARRAY
+    bne NX
+    ldz #type::flags
+    nop
+    lda (ptr3),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq NX
+    ldq fieldPtr
+    stq ptr1                    ; field decl for dynArrayError
+    jsr dynArrayError
+
+NX: ldq fieldPtr
+    stq ptr1
+    ldz #decl::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq fieldPtr
+    bra L1
+
+DN: rts
+.endproc
+
 .bss
 
 dynFlag: .res 1
+fieldPtr: .res 4

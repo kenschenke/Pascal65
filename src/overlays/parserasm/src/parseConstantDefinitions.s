@@ -24,11 +24,12 @@ lastDeclOffset = 0
 
 .import parserToken, getToken, condGetToken, doResync, parseConstant, parserString
 .import tlDeclarationFollow, tlDeclarationStart, tlStatementStart, appendDecl
-.import saveParserString, lastParserString
+.import saveParserString, lastParserString, currentLineNumber
 
 .bss
 
 type: .res 4
+constLine: .res 2
 
 .code
 
@@ -41,6 +42,11 @@ L1: lda parserToken
     beq :+
     jmp L2
 :   jsr saveParserString
+    ; The declaration is on the line with the constant's name
+    lda currentLineNumber
+    sta constLine
+    lda currentLineNumber+1
+    sta constLine+1
 
     ; =
     jsr getToken
@@ -66,6 +72,14 @@ L1: lda parserToken
     jsr pushQ               ; value
     jsr declCreate
     stq ptr2
+    ldz #decl::lineNumber
+    lda constLine
+    nop
+    sta (ptr2),z
+    inz
+    lda constLine+1
+    nop
+    sta (ptr2),z
     ; Append the new declaration to the chain
     jsr appendDecl
     ; Set lastDecl to ptr2

@@ -20,7 +20,7 @@ CH_LOWERCASE = 14
 
 .segment "ENTRY"
 
-.import initLib, runTests, runErrorTests
+.import initLib, runTests, runErrorTests, runLineTest
 .import logError
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,6 +76,9 @@ main:
 
     ; Run parser error handling tests
     jsr runErrorTests
+
+    ; Check the declarations' line numbers
+    jsr runLineTest
 
     ; Everything the tests allocated must be freed
     jsr testLeakCheck

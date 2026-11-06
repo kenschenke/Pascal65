@@ -31,7 +31,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export runTest, unitList
+.export runTest, unitList, printLine
 .import testFail
 
 .import initTokenizer, initParser, initDumpAst, viewDump, getKey, errorCount

@@ -18,6 +18,13 @@ declOffset = 4
 
 .export declTypeCheckType
 
+.bss
+
+fwdType: .res 4                 ; forward declaration's type
+fwdReturn: .res 4               ; its return type
+
+.code
+
 .import checkArray, checkForwardVsFormalDeclaration, loadStackValue, calcNamePtr
 .import typeCheckError
 
@@ -175,6 +182,7 @@ L5: ldz #typeOffset
     jsr isQZero
     beq L4
     stq ptr2                ; forward declaration's type in ptr2
+    stq fwdType
     ldz #typeOffset
     jsr loadStackValue
     stq ptr1                ; type in ptr1
@@ -192,6 +200,90 @@ L5: ldz #typeOffset
     jsr pushQ
     jsr checkForwardVsFormalDeclaration
 
+    ; A function's return types must match too
+    ldz #typeOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_FUNCTION
+    bne L4
+    jsr checkReturnTypes
+
 L4: jsr popQ
+    rts
+.endproc
+
+; This routine compares the return type of the formal declaration
+; (the type at the top of the runtime stack) with the forward
+; declaration's (fwdType). A return type is always a type
+; name, so the same name gives the same base type.
+.proc checkReturnTypes
+    ldq fwdType
+    stq ptr1
+    jsr getSubtype
+    jsr isQZero
+    beq DN
+    jsr getBaseType
+    stq fwdReturn
+    ldz #typeOffset
+    jsr loadStackValue
+    stq ptr1
+    jsr getSubtype
+    jsr isQZero
+    beq DN
+    jsr getBaseType
+    stq ptr2                ; formal return type in ptr2
+    ldq fwdReturn
+    stq ptr1                ; forward return type in ptr1
+
+    ; The kinds must match
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    nop
+    cmp (ptr2),z
+    bne ER
+
+    ; An enumeration or record must be the same type. The forward
+    ; declaration's type can be a clone, but a clone shares its values
+    ; or fields (paramFields).
+    cmp #TYPE_ENUMERATION
+    beq :+
+    cmp #TYPE_RECORD
+    bne DN
+:   ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq fwdReturn
+    ldz #type::paramFields
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr2
+    ldx #0
+:   lda fwdReturn,x
+    cmp ptr2,x
+    bne ER
+    inx
+    cpx #4
+    bne :-
+DN: rts
+
+ER: lda #errIncompatibleTypes
+    jmp typeCheckError
+.endproc
+
+; This routine returns the subtype of the type in ptr1 in Q.
+.proc getSubtype
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
     rts
 .endproc

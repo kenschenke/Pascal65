@@ -20,7 +20,7 @@
 .export parseEnumerationType
 
 .import parserValue, getToken, doResync, parserString, parserToken
-.import condGetToken, parserError
+.import condGetToken, parserError, currentLineNumber
 .import tlEnumConstStart, tlEnumConstFollow
 
 .bss
@@ -82,6 +82,15 @@ L1: lda parserToken
     jsr pushQ               ; value expression
     jsr declCreate
     stq ptr2
+    ; The enumeration value's identifier is the current token
+    ldz #decl::lineNumber
+    lda currentLineNumber
+    nop
+    sta (ptr2),z
+    inz
+    lda currentLineNumber+1
+    nop
+    sta (ptr2),z
     ldq firstEnum
     jsr isQZero
     bne :+
