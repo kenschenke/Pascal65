@@ -72,6 +72,11 @@ Changing `MEMCHECK` rebuilds every asmlib object. The flags are recorded in `src
 |$13 |freeSymtab|
 |$14 |freeType  |
 |$22 |heapFree  |
+|$23 |verifyHeap|
+
+Code $23 isn't a bad free. With `__DEBUG__` defined, `heapAlloc` and
+`heapFree` call `verifyHeap`, which walks the bank's MAT and executes BRK if
+the heap's caches (see `memheap.s`) don't match it.
 
 `testInit` in `testresult.s` points the KERNAL's BRK vector (`$0316`) at a trap. The trap reports any BRK as a test failure, with its code and routine. `testPass` and `testFail` restore the vector. A program that ends without either must call `testRestoreBrk`.
 

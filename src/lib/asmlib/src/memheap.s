@@ -33,10 +33,48 @@ matTmp: .res 4
 
 NUM_BANKS = 3
 
-; The address of each bank's terminating MAT entry, so trimFreeBlocks does
-; not have to walk the MAT to find it. initMemHeap, clearMemHeap,
-; heapAllocBank and trimFreeBlocks keep it up to date.
+; Each bank has caches that save walking the MAT. They describe the MAT
+; exactly, so blocks land where a full walk would put them. initMemHeap and
+; clearMemHeap reset them and heapAllocBank, heapFree and trimFreeBlocks keep
+; them up to date. After defragHeap (splitMode) the free counts are no longer
+; kept, so heapAllocBank walks the MAT until the heap is reset. The other
+; caches are kept (rebuildCheckpoints and splitCheckpoint). A debug build
+; checks them after every allocation and free (verifyHeap).
+
+; The address of each bank's terminating MAT entry
 matEnd: .res NUM_BANKS * 4
+
+; The low 16 bits of the address just past each bank's last block
+endAddr: .res NUM_BANKS * 2
+
+; The number of free entries in each bank by size. An entry counts in bucket
+; (size AND BUCKETS-1). heapAllocBank skips the MAT walk when the bucket for
+; the request is empty, because no free entry can then be an exact fit.
+BUCKETS = 64
+freeCntLo: .res NUM_BANKS * BUCKETS
+freeCntHi: .res NUM_BANKS * BUCKETS
+
+; Checkpoints so heapFree can start its walk near the block. Checkpoint i is
+; the low 16 bits of the address of MAT entry i * CKPT_SPACING. ckptCount is
+; the number of valid checkpoints in each bank: one for each existing entry
+; at a multiple of CKPT_SPACING, up to CKPT_MAX.
+CKPT_SPACING = 128
+CKPT_MAX = 64
+ckptCount: .res NUM_BANKS
+ckptLo: .res NUM_BANKS * CKPT_MAX
+ckptHi: .res NUM_BANKS * CKPT_MAX
+
+; bankIndex * 64, the offset of the current bank in freeCntLo/Hi and
+; ckptLo/Hi (see setBankOff)
+bankOff: .res 1
+.assert BUCKETS = 64 && CKPT_MAX = 64, error, "setBankOff multiplies by 64"
+.assert CKPT_SPACING = 128, error, "checkpoint math assumes 256-byte spacing"
+
+.ifdef __DEBUG__
+vSave: .res 4
+vEntries: .res 2
+vTally: .res BUCKETS
+.endif
 
 .data
 
@@ -123,6 +161,7 @@ L1: lda bankIndex
     bne :-
     ldq ptr2
     jsr saveMatEnd
+    jsr resetBankCaches
 
     inc bankIndex
     bra L1
@@ -145,6 +184,92 @@ L2: pla
     iny
     cpy #4
     bne :-
+    rts
+.endproc
+
+; Loads the current bank's terminating MAT entry into ptr1.
+.proc loadMatEnd
+    lda bankIndex
+    asl a
+    asl a
+    tax
+    ldy #0
+:   lda matEnd,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
+    rts
+.endproc
+
+; Sets bankOff (and A) to bankIndex * 64.
+.proc setBankOff
+    lda bankIndex
+    asl a
+    asl a
+    asl a
+    asl a
+    asl a
+    asl a
+    sta bankOff
+    rts
+.endproc
+
+; Resets the current bank's caches for an empty MAT, except matEnd. Sets
+; bankOff.
+.proc resetBankCaches
+    jsr setBankOff
+    tax
+    ldy #BUCKETS
+    lda #0
+:   sta freeCntLo,x
+    sta freeCntHi,x
+    inx
+    dey
+    bne :-
+    ldx bankIndex
+    sta ckptCount,x
+    ; endAddr is the heap bottom
+    txa
+    asl a
+    tay
+    txa
+    asl a
+    asl a
+    asl a
+    tax
+    lda memBanks,x
+    sta endAddr,y
+    lda memBanks+1,x
+    sta endAddr+1,y
+    rts
+.endproc
+
+; Adds one to the count of free entries for the size whose low byte is in A.
+; bankOff must be set.
+.proc incFreeCount
+    and #BUCKETS-1
+    clc
+    adc bankOff
+    tax
+    inc freeCntLo,x
+    bne :+
+    inc freeCntHi,x
+:   rts
+.endproc
+
+; Subtracts one from the count of free entries for the size whose low byte is
+; in A. bankOff must be set.
+.proc decFreeCount
+    and #BUCKETS-1
+    clc
+    adc bankOff
+    tax
+    lda freeCntLo,x
+    bne :+
+    dec freeCntHi,x
+:   dec freeCntLo,x
     rts
 .endproc
 
@@ -347,13 +472,69 @@ L2: lda #0
     bne :-
     ldq ptr1
     jsr saveMatEnd
+    jsr resetBankCaches
+    lda bankIndex
+    bne L4
+    jsr keepFirstEntry
 
     ; Next memory bank
-    inc bankIndex
+L4: inc bankIndex
     bne L1
 
 L3: pla
     rts
+.endproc
+
+; Sets the first bank's caches for the one entry clearMemHeap keeps. ptr1 is
+; the entry after it, which clearMemHeap made the terminating entry.
+.proc keepFirstEntry
+    ldz #2
+    nop
+    lda (ptr1),z
+    sta intOp1
+    inz
+    nop
+    lda (ptr1),z
+    sta intOp1+1
+    ora intOp1
+    bne Kept
+
+    ; There is no first entry. The MAT is empty and ends at the heap top,
+    ; two bytes above ptr1.
+    clc
+    lda ptr1
+    adc #2
+    sta ptr1
+    bcc :+
+    inc ptr1+1
+:   ldq ptr1
+    jmp saveMatEnd
+
+    ; The first block ends at the heap bottom plus its size
+Kept:
+    clc
+    lda endAddr
+    adc intOp1
+    sta endAddr
+    lda intOp1+1
+    and #$7f
+    adc endAddr+1
+    sta endAddr+1
+
+    ; Checkpoint 0 is the first entry, at the heap bottom
+    lda memBanks
+    sta ckptLo
+    lda memBanks+1
+    sta ckptHi
+    lda #1
+    sta ckptCount
+
+    ; Count the entry if it is free
+    lda intOp1+1
+    bmi :+
+    lda intOp1
+    jmp incFreeCount
+:   rts
 .endproc
 
 ; Size to allocate in A/X
@@ -418,6 +599,7 @@ L1: lda bankIndex
     bne OOM
     inc triedDefrag
     jsr defragHeap
+    jsr rebuildCheckpoints
     lda #1
     sta splitMode
     lda #0
@@ -447,7 +629,13 @@ L2: plx                     ; Get X back off the stack
     inc bankIndex
     bra L1
 
-L3: rts
+L3:
+.ifdef __DEBUG__
+    stq vSave
+    jsr verifyHeap
+    ldq vSave
+.endif
+    rts
 .endproc
 
 .proc heapAllocBank
@@ -459,10 +647,40 @@ L3: rts
     ;   At the end of the MAT, add a new entry and a new block after the
     ;   last block.
 
-    ;   This walk is most of the compiler's run time, so it is inlined and
+    ;   If there is no free entry of the requested size, the walk would end
+    ;   at the end of the MAT, so go straight there (see freeCntLo).
+    ;
+    ;   This walk was most of the compiler's run time, so it is inlined and
     ;   does 16-bit math on ptr1 and tmp1. The upper two bytes never change
     ;   because a bank's heap and MAT lie inside one 64k bank (see memBanks).
 
+    jsr setBankOff
+    lda splitMode
+    bne Walk                ; The caches are not kept after a defrag
+    lda allocSize
+    and #BUCKETS-1
+    clc
+    adc bankOff
+    tax
+    lda freeCntLo,x
+    ora freeCntHi,x
+    bne Walk                ; A free entry might fit exactly
+
+    ; Add a new entry. ptr1 is the terminating entry and tmp1 the address
+    ; just past the last block.
+    jsr loadMatEnd
+    ldq heapBottom
+    stq tmp1
+    lda bankIndex
+    asl a
+    tax
+    lda endAddr,x
+    sta tmp1
+    lda endAddr+1,x
+    sta tmp2
+    jmp NewEntry
+
+Walk:
     ldq heapTop
     stq ptr1
     ldq heapBottom
@@ -579,6 +797,7 @@ NotExact:
     ora #$80
     nop
     sta (ptr1),z
+    jsr splitCheckpoint
     jmp ZeroStart
 
 
@@ -591,6 +810,8 @@ Reuse:
     ldz #1
     nop
     sta (ptr1),z
+    lda allocSize
+    jsr decFreeCount
 
     ; Callers expect new memory to be zeroed, which is true of fresh heap
     ; but not of a block that has been used before. Clear it.
@@ -670,6 +891,19 @@ NewEntry:
     nop
     sta (ptr1),z
 
+    ; The bank now ends after the new block
+    lda bankIndex
+    asl a
+    tax
+    clc
+    lda tmp1
+    adc allocSize
+    sta endAddr,x
+    lda tmp2
+    adc allocSize+1
+    sta endAddr+1,x
+    jsr addCheckpoint
+
     ; Write the new terminating entry
     jsr incMATPtr
     lda #0
@@ -687,6 +921,233 @@ NewEntry:
     jmp ZeroStart
 .endproc
 
+; Records a checkpoint for a new MAT entry if it is the next one due. ptr1 is
+; the entry and tmp1 is the address of its block. bankOff must be set.
+.proc addCheckpoint
+    ; The entry's offset from the heap top. A checkpoint is due at every
+    ; CKPT_SPACING entries (256 bytes), and its number is the offset / 256.
+    sec
+    lda heapTop
+    sbc ptr1
+    bne DN                  ; Not a multiple of 256 bytes
+    lda heapTop+1
+    sbc ptr1+1
+    cmp #CKPT_MAX
+    bcs DN
+    ldx bankIndex
+    cmp ckptCount,x
+    bne DN                  ; Only the next checkpoint in line is recorded
+    inc ckptCount,x
+    clc
+    adc bankOff
+    tax
+    lda tmp1
+    sta ckptLo,x
+    lda tmp2
+    sta ckptHi,x
+DN: rts
+.endproc
+
+; After a split, the spare entry at ptr2 holds the free remainder and its block
+; starts at tmp1 + allocSize. Updates the entry's checkpoint if it has one.
+; bankOff must be set.
+.proc splitCheckpoint
+    sec
+    lda heapTop
+    sbc ptr2
+    bne DN                  ; Not a multiple of 256 bytes: no checkpoint
+    lda heapTop+1
+    sbc ptr2+1
+    ldx bankIndex
+    cmp ckptCount,x
+    bcs DN                  ; Not a valid checkpoint
+    clc
+    adc bankOff
+    tax
+    clc
+    lda tmp1
+    adc allocSize
+    sta ckptLo,x
+    lda tmp2
+    adc allocSize+1
+    sta ckptHi,x
+DN: rts
+.endproc
+
+; Rebuilds every bank's checkpoints from its MAT. defragHeap changes the
+; addresses of the spare entries it makes.
+.proc rebuildCheckpoints
+    lda #0
+    sta bankIndex
+B1: lda bankIndex
+    cmp #NUM_BANKS
+    bne :+
+    rts
+:   asl a
+    asl a
+    asl a
+    tax
+    ldy #0
+:   lda memBanks,x
+    sta heapBottom,y
+    lda memBanks+4,x
+    sta heapTop,y
+    inx
+    iny
+    cpy #4
+    bne :-
+    jsr setBankOff
+    ldx bankIndex
+    lda #0
+    sta ckptCount,x
+    ldq heapTop
+    stq ptr1
+    ldq heapBottom
+    stq tmp1
+
+W:  ldz #1
+    nop
+    lda (ptr1),z            ; High byte of the entry
+    sta intOp1+1
+    dez
+    nop
+    lda (ptr1),z            ; Low byte of the entry
+    sta intOp1
+    ora intOp1+1
+    beq DN                  ; The terminating entry
+
+    ; Is a checkpoint due at this entry? Its number is the offset / 256.
+    sec
+    lda heapTop
+    sbc ptr1
+    bne R
+    lda heapTop+1
+    sbc ptr1+1
+    cmp #CKPT_MAX
+    bcs R
+    ldx bankIndex
+    inc ckptCount,x
+    clc
+    adc bankOff
+    tax
+    lda tmp1
+    sta ckptLo,x
+    lda tmp2
+    sta ckptHi,x
+
+R:  clc                     ; Add the entry's size to the block address
+    lda intOp1
+    adc tmp1
+    sta tmp1
+    lda intOp1+1
+    and #$7f
+    adc tmp2
+    sta tmp2
+    sec                     ; Move to the next MAT entry
+    lda ptr1
+    sbc #2
+    sta ptr1
+    bcs W
+    dec ptr1+1
+    bra W
+
+DN: inc bankIndex
+    jmp B1
+.endproc
+
+; Finds the MAT entry for the block whose address is in ptr2. bankIndex,
+; bankOff, heapTop and heapBottom must be set for its bank.
+;
+; On exit the carry is clear if it was found. ptr1 is then the entry, A its
+; low byte and X its high byte. The carry is set if it was not found.
+.proc findEntry
+    ldq heapTop
+    stq ptr1
+    ldq heapBottom
+    stq tmp1
+    ; The walk does 16-bit math on ptr1 and tmp1, like heapAllocBank's. Every
+    ; block in the bank has the bank's upper two address bytes, so a pointer
+    ; with different ones is not a block.
+    lda ptr2+2
+    cmp tmp3
+    bne :+
+    lda ptr2+3
+    cmp tmp4
+    beq :++
+:   sec                     ; Not found
+    rts
+
+    ; Start at the last checkpoint at or below the address
+:   ldx bankIndex
+    ldy ckptCount,x
+    beq L1
+C1: dey
+    tya
+    clc
+    adc bankOff
+    tax
+    lda ckptHi,x
+    cmp ptr2+1
+    bcc CF                  ; Checkpoint < address
+    bne CN                  ; Checkpoint > address
+    lda ckptLo,x
+    cmp ptr2
+    bcc CF
+    beq CF
+CN: cpy #0
+    bne C1
+    bra L1                  ; Start at the first entry
+
+    ; Start at checkpoint Y. Its entry is Y * 256 bytes below the heap top.
+CF: lda ckptLo,x
+    sta tmp1
+    lda ckptHi,x
+    sta tmp2
+    sty intOp1
+    sec
+    lda ptr1+1
+    sbc intOp1
+    sta ptr1+1
+
+L1: ldz #1
+    nop
+    lda (ptr1),z            ; High byte of the entry
+    tax
+    dez
+    nop
+    lda (ptr1),z            ; Low byte of the entry
+    bne HF
+    cpx #0
+    beq NF                  ; End of the MAT. Not found.
+    cpx #$80
+    beq Next                ; Spare entry (zero size). Skip it.
+HF: ldy tmp1                ; Compare this block's address to ptr2
+    cpy ptr2
+    bne L2
+    ldy tmp2
+    cpy ptr2+1
+    bne L2
+    clc                     ; Found it
+    rts
+L2: clc                     ; Add the entry's size to the block address
+    adc tmp1
+    sta tmp1
+    txa
+    and #$7f
+    adc tmp2
+    sta tmp2
+Next:
+    sec                     ; Move to the next MAT entry
+    lda ptr1
+    sbc #2
+    sta ptr1
+    bcs L1
+    dec ptr1+1
+    bra L1
+NF: sec
+    rts
+.endproc
+
 ; Reads the MAT entry at ptr1 into intOp1. The size is in the low 15 bits
 ; and the "allocated" flag is bit 7 of intOp1+1. The Z flag is set if the
 ; entry is all zeros (the end of the MAT).
@@ -700,25 +1161,6 @@ NewEntry:
     lda (ptr1),z
     sta intOp1+1
     ora intOp1
-    rts
-.endproc
-
-; Adds the size of the entry in intOp1 to the address in tmp1-tmp4
-.proc addSize
-    clc
-    lda tmp1
-    adc intOp1
-    sta tmp1
-    lda intOp1+1
-    and #$7f
-    adc tmp2
-    sta tmp2
-    lda tmp3
-    adc #0
-    sta tmp3
-    lda tmp4
-    adc #0
-    sta tmp4
     rts
 .endproc
 
@@ -744,13 +1186,11 @@ NewEntry:
 ; Q contains the pointer to the memory block
 .proc heapFree
     ; Algorithm:
-    ;   Walk through the MAT, adding up the sizes of the entries to find the
-    ;   address of each block, looking for the caller's memory block.
-    ;   When found, clear the high bit of the second byte.
+    ;   Find the block's MAT entry (findEntry) and clear the high bit of its
+    ;   second byte. Then trim free entries from the end of the MAT.
     ;
-    ;   ptr1 - the current MAT entry
+    ;   ptr1 - the block's MAT entry
     ;   ptr2 - the memory block to free
-    ;   tmp1 - the address of the block the current entry describes
 
     ; Initialization
     jsr isQZero
@@ -773,60 +1213,25 @@ NewEntry:
     jsr setHeapForAddress
     bcc :+
     rts                 ; Above the last bank. Not a heap address.
-:   ldq heapTop         ; Load the MAT pointer into ptr1
-    stq ptr1
-    ldq heapBottom
-    stq tmp1
-    ; The walk does 16-bit math on ptr1 and tmp1, like heapAllocBank's. Every
-    ; block in the bank has the bank's upper two address bytes, so a pointer
-    ; with different ones is not a block.
-    lda ptr2+2
-    cmp tmp3
-    bne L4
-    lda ptr2+3
-    cmp tmp4
-    bne L4
-L1: ldz #1
-    nop
-    lda (ptr1),z        ; High byte of the entry
-    tax
-    dez
-    nop
-    lda (ptr1),z        ; Low byte of the entry
-    bne HF
-    cpx #0
-    beq L4              ; End of the MAT. Not found.
-    cpx #$80
-    beq Next            ; Spare entry (zero size). Skip it.
-HF: ldy tmp1            ; Compare this block's address to ptr2
-    cpy ptr2
-    bne L2
-    ldy tmp2
-    cpy ptr2+1
-    bne L2
-    ; Found it.
+:   jsr setBankOff
+    jsr findEntry
+    bcs L4              ; Not found
+    pha
     txa
-    and #$7f
+    bpl L3              ; Already free. Only a build without checks gets here.
+    and #$7f            ; Mark it free
     ldz #1
     nop
     sta (ptr1),z
+    pla
+    jsr incFreeCount
     bra L4
-L2: clc                 ; Add the entry's size to the block address
-    adc tmp1
-    sta tmp1
-    txa
-    and #$7f
-    adc tmp2
-    sta tmp2
-Next:
-    sec                 ; Move to the next MAT entry
-    lda ptr1
-    sbc #2
-    sta ptr1
-    bcs L1
-    dec ptr1+1
-    bra L1
-L4: ; Fall through to trimFreeBlocks
+L3: pla
+L4: jsr trimFreeBlocks
+.ifdef __DEBUG__
+    jsr verifyHeap
+.endif
+    rts
 .endproc
 
 ; This routine trims free blocks from the end of the MAT.
@@ -836,21 +1241,10 @@ L4: ; Fall through to trimFreeBlocks
 ;
 ; This is called after each free to help reduce fragmentation.
 ;
-; bankIndex, heapTop and heapBottom must be set for the bank (heapFree's call
-; to setHeapForAddress sets them).
+; bankIndex, bankOff, heapTop and heapBottom must be set for the bank (heapFree
+; sets them).
 .proc trimFreeBlocks
-    ; Load the terminating entry, saved by saveMatEnd
-    lda bankIndex
-    asl a
-    asl a
-    tax
-    ldy #0
-:   lda matEnd,x
-    sta ptr1,y
-    inx
-    iny
-    cpy #4
-    bne :-
+    jsr loadMatEnd          ; ptr1 is the terminating entry
 
     ; ptr1 is the terminating entry. Is it also the first entry?
 T2: lda ptr1
@@ -865,8 +1259,7 @@ T2: lda ptr1
     lda ptr1+3
     cmp heapTop+3
     bne T3
-    ldq ptr1                ; The MAT is empty
-    jmp saveMatEnd
+    jmp TD                  ; The MAT is empty
 
     ; Look at the entry before the terminating one (two bytes higher)
 T3: clc
@@ -886,16 +1279,30 @@ T3: clc
     stq ptr1
     jsr readEntry
     lda intOp1+1
-    bpl TZ
+    bpl TF
     lda intOp1              ; Allocated, unless it is a spare entry
     bne T9
     lda intOp1+1
     cmp #$80
     bne T9
-TZ:
+    bra TZ                  ; A spare entry has no size
 
-    ; Free. Zero it so it becomes the new terminating entry.
-    lda #0
+    ; A free entry. It no longer counts, and the bank ends before its block.
+TF: lda intOp1
+    jsr decFreeCount
+    lda bankIndex
+    asl a
+    tax
+    sec
+    lda endAddr,x
+    sbc intOp1
+    sta endAddr,x
+    lda endAddr+1,x
+    sbc intOp1+1
+    sta endAddr+1,x
+
+    ; Zero it so it becomes the new terminating entry.
+TZ: lda #0
     ldz #0
     nop
     sta (ptr1),z
@@ -906,8 +1313,29 @@ TZ:
 
     ; ptr1 is the last allocated entry. The terminating entry follows it.
 T9: jsr incMATPtr
-    ldq ptr1
-    jmp saveMatEnd
+
+    ; ptr1 is the terminating entry
+TD: ldq ptr1
+    jsr saveMatEnd
+
+    ; Drop the checkpoints of entries that were trimmed. The MAT now has
+    ; (heapTop - ptr1) / 2 entries, so ceil(that / CKPT_SPACING) checkpoints
+    ; can be valid: (heapTop - ptr1 + 255) / 256.
+    sec
+    lda heapTop
+    sbc ptr1
+    tay
+    lda heapTop+1
+    sbc ptr1+1
+    cpy #0
+    beq :+
+    inc a                   ; Round up
+    beq DN                  ; Far more than CKPT_MAX
+:   ldx bankIndex
+    cmp ckptCount,x
+    bcs DN
+    sta ckptCount,x
+DN: rts
 .endproc
 
 ; This routine merges runs of adjacent free blocks. It is called when the heap
@@ -1052,39 +1480,158 @@ DEnd:
     lda #0                  ; Above the last bank: not allocated
     rts
 
-    ; Copy heapTop to ptr1
-:
+:   jsr setBankOff
+    jsr findEntry
+    bcc :+
+    lda #0                  ; Not a block: not allocated
+    rts
+
+    ; Found the block. Is it allocated?
+:   txa
+    and #$80
+    rts
+.endproc
+
+; Checks the current bank's caches against a walk of its MAT, and executes BRK
+; with $23 in Z if they differ. bankIndex, bankOff, heapTop and heapBottom
+; must be set for the bank.
+.proc verifyHeap
+    ldx #BUCKETS-1
+    lda #0
+:   sta vTally,x
+    dex
+    bpl :-
+    sta vEntries
+    sta vEntries+1
     ldq heapTop
     stq ptr1
     ldq heapBottom
     stq tmp1
 
-L1: jsr readEntry
+    ; Is entry vEntries due a checkpoint? If its checkpoint is valid, it must
+    ; hold the entry's address.
+L1: lda vEntries
+    and #CKPT_SPACING-1
+    bne L2
+    lda vEntries+1          ; The checkpoint number is vEntries / 128
+    sta intOp1
+    lda vEntries
+    asl a
+    rol intOp1
+    lda intOp1
+    ldx bankIndex
+    cmp ckptCount,x
+    bcs L2                  ; Not a valid checkpoint
+    clc
+    adc bankOff
+    tax
+    lda ckptLo,x
+    cmp tmp1
     bne :+
-    rts                     ; Return if the end of MAT is reached (Z flag set)
+    lda ckptHi,x
+    cmp tmp2
+    beq L2
+:   jmp Fail
 
-    ; Compare the current block's address to the one the caller is looking for.
-:   lda intOp1
-    bne IH
-    lda intOp1+1
-    cmp #$80
-    beq L3                  ; Spare entry. Skip it.
-IH: ldx #0
-:   lda tmp1,x
-    cmp ptr2,x
-    bne L3
-    inx
-    cpx #4
-    bne :-
+L2: ldz #1
+    nop
+    lda (ptr1),z            ; High byte of the entry
+    tax
+    dez
+    nop
+    lda (ptr1),z            ; Low byte of the entry
+    sta intOp1
+    bne :+
+    cpx #0
+    beq End                 ; The terminating entry
+:   txa
+    bmi :+                  ; Allocated or spare
+    lda intOp1              ; A free entry. Tally its bucket.
+    and #BUCKETS-1
+    tay
+    lda vTally,y
+    inc a
+    sta vTally,y
+:   clc                     ; Add the entry's size to the block address
+    lda intOp1
+    adc tmp1
+    sta tmp1
+    txa
+    and #$7f
+    adc tmp2
+    sta tmp2
+    sec                     ; Move to the next MAT entry
+    lda ptr1
+    sbc #2
+    sta ptr1
+    bcs :+
+    dec ptr1+1
+:   inc vEntries
+    bne L1
+    inc vEntries+1
+    bra L1
 
-    ; Found the block. Is it allocated?
+    ; ptr1 must be matEnd and tmp1 must be endAddr
+End:
+    lda bankIndex
+    asl a
+    asl a
+    tax
+    lda matEnd,x
+    cmp ptr1
+    bne Fail
+    lda matEnd+1,x
+    cmp ptr1+1
+    bne Fail
+    lda bankIndex
+    asl a
+    tax
+    lda endAddr,x
+    cmp tmp1
+    bne Fail
+    lda endAddr+1,x
+    cmp tmp2
+    bne Fail
+
+    ; The free counts must match the tally (the low bytes). They are not kept
+    ; after a defrag.
+    lda splitMode
+    bne CK
+    ldy #BUCKETS-1
+:   tya
+    clc
+    adc bankOff
+    tax
+    lda freeCntLo,x
+    cmp vTally,y
+    bne Fail
+    dey
+    bpl :-
+CK:
+
+    ; There must be a checkpoint for each entry at a multiple of CKPT_SPACING,
+    ; up to CKPT_MAX: min(CKPT_MAX, (vEntries + 127) / 128)
+    clc
+    lda vEntries
+    adc #CKPT_SPACING-1
+    sta intOp1
+    lda vEntries+1
+    adc #0
+    sta intOp1+1
+    lda intOp1
+    asl a
+    rol intOp1+1
     lda intOp1+1
-    and #$80
+    cmp #CKPT_MAX
+    bcc :+
+    lda #CKPT_MAX
+:   ldx bankIndex
+    cmp ckptCount,x
+    bne Fail
     rts
 
-    ; Not a match - go to the next MAT entry
-L3: jsr addSize
-    jsr incMATPtr
-    bra L1
+Fail:
+    ldz #$23
+    brk
 .endproc
 .endif ; end of ifdef __DEBUG__

@@ -89,15 +89,19 @@ strLeakBlocks: .asciiz " blocks, "
 strLeakBytes: .byte " bytes", 13, 0
 
 ; The codes the memory checks put in Z, and the routines they are in
-brkCodes: .byte $11, $12, $13, $14, $22
+brkCodes: .byte $11, $12, $13, $14, $22, $23
 NUM_CODES = * - brkCodes
 brkNames: .addr nameFreeDecl, nameFreeSymbol, nameFreeSymtab, nameFreeType
-    .addr nameHeapFree
+    .addr nameHeapFree, nameVerifyHeap
 nameFreeDecl: .asciiz "freeDecl"
 nameFreeSymbol: .asciiz "freeSymbol"
 nameFreeSymtab: .asciiz "freeSymtab"
 nameFreeType: .asciiz "freeType"
 nameHeapFree: .asciiz "heapFree"
+nameVerifyHeap: .asciiz "verifyHeap"
+; Code $23 is not a bad free but heap caches that differ from the MAT
+BRK_HEAPCACHE = $23
+strHeapCache: .byte ": heap caches differ from the MAT in ", 0
 
 .code
 
@@ -203,9 +207,15 @@ L1: lda brkCodes,x
     jsr printZString
     bra L3
 L2: phx
-    lda #<strDoubleFree
+    lda brkCode
+    cmp #BRK_HEAPCACHE
+    bne :+
+    lda #<strHeapCache
+    ldx #>strHeapCache
+    bra :++
+:   lda #<strDoubleFree
     ldx #>strDoubleFree
-    jsr printZString
+:   jsr printZString
     pla
     asl a
     tax

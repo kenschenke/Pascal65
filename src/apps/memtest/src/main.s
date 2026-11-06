@@ -303,6 +303,9 @@ tests:
     .addr testZeroSize      ; 17
     .addr testTooBig        ; 18
     .addr testFreeAbove     ; 19
+    .addr testClearEmpty    ; 20
+    .addr testManyBig       ; 21
+    .addr testSplitCheckpoint ; 22
     .addr 0
 
 .code
@@ -921,6 +924,137 @@ L2: ldq runAddr
     FREE 1
     FREE 0
     MAT 0
+    rts
+.endproc
+
+;-----------------------------------------------------------------------------
+; Test 20: clearMemHeap on an empty heap. There is no first entry to keep, so
+; the MAT stays empty and blocks come from the bottom of the heap.
+.proc testClearEmpty
+    jsr clearMemHeap
+    MAT 0
+    MAT 1
+    MAT 2
+    ALLOC_AT 0, 10, B0
+    MAT 0, $800a
+    FREE 0
+    MAT 0
+    rts
+.endproc
+
+;-----------------------------------------------------------------------------
+; Test 21: a MAT with more entries than heapFree's checkpoints cover (64
+; checkpoints, 128 entries apart, in memheap.s). Blocks past the last
+; checkpoint, between checkpoints and at the first entry are freed and
+; reused. Then they are all freed from the last, which trims each one.
+MANY_BIG = 8262
+.proc testManyBig
+    SET32 runAddr, B0
+    lda #<MANY_BIG
+    sta loopCnt16
+    lda #>MANY_BIG
+    sta loopCnt16+1
+L1: lda #1
+    ldx #0
+    jsr heapAlloc
+    stq gotVal
+    ldq runAddr
+    stq expVal
+    jsr cmpAddr
+    jsr incRunAddr
+    jsr decLoopCnt16
+    bne L1
+
+    ; Past the last checkpoint
+    FREE_AT B0+8250
+    ALLOC_AT 0, 1, B0+8250
+    ; Between checkpoints
+    FREE_AT B0+1000
+    ALLOC_AT 1, 1, B0+1000
+    ; The first entry, which is a checkpoint
+    FREE_AT B0
+    ENTRY 0, 0, $0001
+    ALLOC_AT 2, 1, B0
+    ENTRY 0, 0, $8001
+
+    ; Free them all from the last
+    SET32 runAddr, B0+MANY_BIG-1
+    lda #<MANY_BIG
+    sta loopCnt16
+    lda #>MANY_BIG
+    sta loopCnt16+1
+L2: ldq runAddr
+    jsr heapFree
+    lda runAddr             ; runAddr stays above B0, so 16 bits will do
+    bne :+
+    dec runAddr+1
+:   dec runAddr
+    jsr decLoopCnt16
+    bne L2
+    MAT 0
+    rts
+.endproc
+
+;-----------------------------------------------------------------------------
+; Test 22: a split whose remainder goes into a spare entry that has a
+; checkpoint (entry 128). The split moves the entry's block, so heapFree's
+; checkpoint for it must move too (verifyHeap checks it).
+.proc testSplitCheckpoint
+    ; Entries 0 to 126 are one-byte blocks
+    SET32 runAddr, B0
+    lda #0
+    sta loopCnt
+L1: lda #1
+    ldx #0
+    jsr heapAlloc
+    stq gotVal
+    ldq runAddr
+    stq expVal
+    jsr cmpAddr
+    jsr incRunAddr
+    inc loopCnt
+    lda loopCnt
+    cmp #127
+    bne L1
+
+    ALLOC_AT 1, 100, B0+127             ; entry 127
+    ALLOC_AT 2, 100, B0+227             ; entry 128, a checkpoint
+    ALLOC_AT 3, 256, B0+327             ; entry 129
+    CLOSE 0
+    CLOSE 1
+    CLOSE 2
+    FREE 1
+    FREE 2
+    ENTRY 0, 127, $0064
+    ENTRY 0, 128, $0064
+
+    ; The heap is full. The defragmenter merges entries 127 and 128, so
+    ; entry 128 becomes a spare entry. The split puts the 50-byte remainder
+    ; in it, which moves its block from B0+327 to B0+277.
+    ALLOC_AT 4, 150, B0+127
+    ENTRY 0, 127, $8096
+    ENTRY 0, 128, $0032
+    ENTRY 0, 129, $8100
+
+    ; The remainder is found and reused from its checkpoint
+    ALLOC_AT 5, 50, B0+277
+    ENTRY 0, 128, $8032
+    FREE 5
+    ENTRY 0, 128, $0032
+    ; and so is the block after it
+    FREE 3
+    ENTRY 0, 129, $0100
+    rts
+.endproc
+
+; Subtracts one from loopCnt16. The Z flag is set if it is then zero.
+.proc decLoopCnt16
+    lda loopCnt16
+    bne :+
+    dec loopCnt16+1
+:   dec loopCnt16
+    lda loopCnt16
+    ora loopCnt16+1
     rts
 .endproc
 
@@ -1906,6 +2040,7 @@ sizeArg: .res 2
 memAddr: .res 4
 runAddr: .res 4
 loopCnt: .res 1
+loopCnt16: .res 2
 entryIdx: .res 1
 entryVal: .res 2
 tmpWord: .res 2
