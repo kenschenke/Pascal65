@@ -29,14 +29,35 @@ splitMode: .res 1
 triedDefrag: .res 1
 runActive: .res 1
 runSize: .res 2
+matTmp: .res 4
+
+NUM_BANKS = 3
+
+; The address of each bank's terminating MAT entry, so trimFreeBlocks does
+; not have to walk the MAT to find it. initMemHeap, clearMemHeap,
+; heapAllocBank and trimFreeBlocks keep it up to date.
+matEnd: .res NUM_BANKS * 4
 
 .data
 
+; Each bank's heap and MAT lie inside one 64k bank. The MAT walks in
+; heapAllocBank and heapFree rely on this: they do 16-bit math on the MAT
+; pointer and the block address and leave the upper two bytes alone.
+BANK1_BOTTOM = $12000
+BANK1_TOP = $1cffa
+BANK4_BOTTOM = $42000
+BANK4_TOP = $4fffa
+BANK5_BOTTOM = $50000
+BANK5_TOP = $5effa
+.assert (BANK1_BOTTOM >> 16) = (BANK1_TOP >> 16), error, "bank 1 spans 64k"
+.assert (BANK4_BOTTOM >> 16) = (BANK4_TOP >> 16), error, "bank 4 spans 64k"
+.assert (BANK5_BOTTOM >> 16) = (BANK5_TOP >> 16), error, "bank 5 spans 64k"
+
 memBanks:
-    .dword $12000, $1cffa   ; bank 1
-    .dword $42000, $4fffa   ; bank 4
-    .dword $50000, $5effa   ; bank 5
-    .dword $0               ; terminator
+    .dword BANK1_BOTTOM, BANK1_TOP  ; bank 1
+    .dword BANK4_BOTTOM, BANK4_TOP  ; bank 4
+    .dword BANK5_BOTTOM, BANK5_TOP  ; bank 5
+    .dword $0                       ; terminator
 
 .code
 
@@ -100,11 +121,30 @@ L1: lda bankIndex
     inz
     cpz #2
     bne :-
+    ldq ptr2
+    jsr saveMatEnd
 
     inc bankIndex
     bra L1
 
 L2: pla
+    rts
+.endproc
+
+; Stores the address in Q as the current bank's terminating MAT entry.
+.proc saveMatEnd
+    stq matTmp
+    lda bankIndex
+    asl a
+    asl a
+    tax
+    ldy #0
+:   lda matTmp,y
+    sta matEnd,x
+    inx
+    iny
+    cpy #4
+    bne :-
     rts
 .endproc
 
@@ -305,6 +345,8 @@ L2: lda #0
     inz
     cpz #2
     bne :-
+    ldq ptr1
+    jsr saveMatEnd
 
     ; Next memory bank
     inc bankIndex
@@ -417,17 +459,28 @@ L3: rts
     ;   At the end of the MAT, add a new entry and a new block after the
     ;   last block.
 
+    ;   This walk is most of the compiler's run time, so it is inlined and
+    ;   does 16-bit math on ptr1 and tmp1. The upper two bytes never change
+    ;   because a bank's heap and MAT lie inside one 64k bank (see memBanks).
+
     ldq heapTop
     stq ptr1
     ldq heapBottom
     stq tmp1
 
-L1: jsr readEntry
+L1: ldz #1
+    nop
+    lda (ptr1),z            ; High byte of the entry
+    bmi Used                ; Branch if allocated (or a spare entry)
+    sta intOp1+1
+    dez
+    nop
+    lda (ptr1),z            ; Low byte of the entry
+    sta intOp1
+    ora intOp1+1
     bne :+
     jmp NewEntry            ; Reached the end of the MAT
-:   lda intOp1+1
-    bmi L2                  ; Branch if allocated
-    lda intOp1
+:   lda intOp1
     cmp allocSize
     bne NotExact
     lda intOp1+1
@@ -435,9 +488,40 @@ L1: jsr readEntry
     bne NotExact
     jmp Reuse
 
-L2: jsr addSize
-    jsr incMATPtr
-    jmp L1
+    ; Add the size of the free entry in intOp1 to the block address
+L2: clc
+    lda tmp1
+    adc intOp1
+    sta tmp1
+    lda tmp2
+    adc intOp1+1
+    sta tmp2
+    bra Next
+
+    ; Add the size of the allocated entry to the block address. A has the
+    ; entry's high byte and Z is 1.
+Used:
+    and #$7f
+    tax
+    dez
+    nop
+    lda (ptr1),z
+    clc
+    adc tmp1
+    sta tmp1
+    txa
+    adc tmp2
+    sta tmp2
+
+    ; Move ptr1 to the next MAT entry
+Next:
+    sec
+    lda ptr1
+    sbc #2
+    sta ptr1
+    bcs L1
+    dec ptr1+1
+    bra L1
 
 ; The free block is not the exact size. After the heap has been defragmented a
 ; larger free block can be split if it is followed by a spare entry (see
@@ -595,6 +679,8 @@ NewEntry:
     inz
     nop
     sta (ptr1),z
+    ldq ptr1
+    jsr saveMatEnd
 
     ; Fresh heap is not necessarily zero. The block may be where freed blocks
     ; were trimmed from the end of the MAT earlier, so clear it.
@@ -691,32 +777,55 @@ NewEntry:
     stq ptr1
     ldq heapBottom
     stq tmp1
-L1: jsr readEntry
-    beq L4              ; End of the MAT. Not found.
-    lda intOp1
-    bne HF
-    lda intOp1+1
-    and #$7f
-    beq L2              ; Spare entry (zero size). Skip it.
-HF:
-    ldx #0              ; Compare this block's address to ptr2
-:   lda tmp1,x
-    cmp ptr2,x
-    bne L2
-    inx
-    cpx #4
-    bne :-
-    ; Found it.
-    ldz #1
+    ; The walk does 16-bit math on ptr1 and tmp1, like heapAllocBank's. Every
+    ; block in the bank has the bank's upper two address bytes, so a pointer
+    ; with different ones is not a block.
+    lda ptr2+2
+    cmp tmp3
+    bne L4
+    lda ptr2+3
+    cmp tmp4
+    bne L4
+L1: ldz #1
     nop
-    lda (ptr1),z
+    lda (ptr1),z        ; High byte of the entry
+    tax
+    dez
+    nop
+    lda (ptr1),z        ; Low byte of the entry
+    bne HF
+    cpx #0
+    beq L4              ; End of the MAT. Not found.
+    cpx #$80
+    beq Next            ; Spare entry (zero size). Skip it.
+HF: ldy tmp1            ; Compare this block's address to ptr2
+    cpy ptr2
+    bne L2
+    ldy tmp2
+    cpy ptr2+1
+    bne L2
+    ; Found it.
+    txa
     and #$7f
+    ldz #1
     nop
     sta (ptr1),z
     bra L4
-L2: jsr addSize
-    jsr incMATPtr       ; Move to the next MAT entry
-    jmp L1
+L2: clc                 ; Add the entry's size to the block address
+    adc tmp1
+    sta tmp1
+    txa
+    and #$7f
+    adc tmp2
+    sta tmp2
+Next:
+    sec                 ; Move to the next MAT entry
+    lda ptr1
+    sbc #2
+    sta ptr1
+    bcs L1
+    dec ptr1+1
+    bra L1
 L4: ; Fall through to trimFreeBlocks
 .endproc
 
@@ -726,14 +835,22 @@ L4: ; Fall through to trimFreeBlocks
 ; or the start of the MAT.
 ;
 ; This is called after each free to help reduce fragmentation.
+;
+; bankIndex, heapTop and heapBottom must be set for the bank (heapFree's call
+; to setHeapForAddress sets them).
 .proc trimFreeBlocks
-    ; Find the terminating entry
-    ldq heapTop
-    stq ptr1
-T1: jsr readEntry
-    beq T2
-    jsr incMATPtr
-    bra T1
+    ; Load the terminating entry, saved by saveMatEnd
+    lda bankIndex
+    asl a
+    asl a
+    tax
+    ldy #0
+:   lda matEnd,x
+    sta ptr1,y
+    inx
+    iny
+    cpy #4
+    bne :-
 
     ; ptr1 is the terminating entry. Is it also the first entry?
 T2: lda ptr1
@@ -748,7 +865,8 @@ T2: lda ptr1
     lda ptr1+3
     cmp heapTop+3
     bne T3
-    rts                     ; The MAT is empty
+    ldq ptr1                ; The MAT is empty
+    jmp saveMatEnd
 
     ; Look at the entry before the terminating one (two bytes higher)
 T3: clc
@@ -785,7 +903,11 @@ TZ:
     nop
     sta (ptr1),z
     jmp T2
-T9: rts
+
+    ; ptr1 is the last allocated entry. The terminating entry follows it.
+T9: jsr incMATPtr
+    ldq ptr1
+    jmp saveMatEnd
 .endproc
 
 ; This routine merges runs of adjacent free blocks. It is called when the heap
