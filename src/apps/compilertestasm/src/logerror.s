@@ -14,11 +14,12 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export logError, errorCount, logWarning
+.export logError, errorCount, logWarning, lastError
 
 .bss
 
 errorCount: .res 1
+lastError: .res 1           ; error number of the last error logged
 strBuf: .res 10
 
 .data
@@ -37,6 +38,7 @@ strLine: .asciiz " -- line "
 .proc logError
     sta intOp1
     stx intOp1+1
+    sty lastError
     inc errorCount
 
     ; Print the error header

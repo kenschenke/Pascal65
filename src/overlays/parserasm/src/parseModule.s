@@ -72,7 +72,7 @@ L2: lda #<tlGlobalDirectives
     jsr getToken
     lda parserToken
     cmp #tcNumber                   ; if (parserToken != tcNumber)
-    bne :+
+    beq :+
     lda #errInvalidNumber
     jsr parserError
     bra L2

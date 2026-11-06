@@ -21,7 +21,7 @@
 
 .import writePrgHeader, processIcodeInstructions, prgCleanup
 .import initStringLiterals, writeStringLiterals, freeStringLiterals
-.import writeRuntimeBss, cleanupLibraries
+.import writeRuntimeBss, cleanupLibraries, checkCodeSize
 .import initDataSegment, writeDataSegment, freeDataSegment
 
 .data
@@ -157,7 +157,18 @@ astRoot: .res 4
     jsr CLOSE
     jsr CLRCHN
 
-    rts
+    ; Report a program too large for memory. It won't be linked, so
+    ; delete its object file.
+    jsr checkCodeSize
+    bcc :+
+    lda #<objFilename
+    ldx #>objFilename
+    ldy #0
+    ldz #0
+    stq ptr1
+    jsr scratchFile
+
+:   rts
 .endproc
 
 .proc setRuntimeStackSize

@@ -238,6 +238,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/dynarrayb.pas dynarrayb.pas,seq \
 	-write $(PETSCIIDIR)/dynarrayc.pas dynarrayc.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
+	-write $(PETSCIIDIR)/toolarge.pas toolarge.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 
 clean:

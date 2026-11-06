@@ -260,7 +260,15 @@ L2: jsr setCodeGenProgramChain
 
     jsr freeUnits
 
-    lda #<strLinking
+    ; Check the error count (code generation reports a program too large)
+    lda errorCount
+    beq :+
+
+    ; Error - so don't link
+    jsr freeLinkerTags
+    jmp DN
+
+:   lda #<strLinking
     ldx #>strLinking
     jsr printLine
     jsr initLinker

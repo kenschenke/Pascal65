@@ -108,6 +108,8 @@ overlays and asmlib don't fill BSS. `heapAlloc` zeros every block it returns.
 
 `compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
+A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never linked or run. The compile step fails unless each one reports exactly that one error. `toolarge.pas` checks `errCodeSegmentOverflow`, which code generation reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000.
+
 ### Adding a test program
 
 Name its failure maker `testfailed`, call `ReportFailure` and make sure the program doesn't use that filename itself.

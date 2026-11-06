@@ -267,7 +267,14 @@ strLinking: .asciiz "Linking"
     jsr heapProfile
 .endif
 
-    lda #<strLinking
+    ; Check the error count (code generation reports a program too large)
+    lda errorCount
+    beq :+
+
+    ; Error - so don't link
+    jmp freeLinkerTags
+
+:   lda #<strLinking
     ldx #>strLinking
     jsr printLine
     jsr initLinker

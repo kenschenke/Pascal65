@@ -15,6 +15,7 @@
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
+.include "error.inc"
 
 STA_ZEROPAGE = 1
 AND_IMMEDIATE = 2
@@ -23,7 +24,12 @@ LDA_ZEROPAGE = 4
 
 CODESEG_CEIL = $c000
 
-.export writePrgHeader
+; The program image, its heap and its runtime stack share $2001 up to
+; CODESEG_CEIL. checkCodeSize fails a program that would leave less than
+; this much heap.
+MIN_HEAP_SIZE = 256
+
+.export writePrgHeader, checkCodeSize
 .export tagBSS_ZPBACKUP, tagBSS_EXITHANDLER, tagBSS_TENSTABLE, tagBSS_INPUTBUF
 .export tagBSS_HEAPBOTTOM, tagBSS_INTBUF
 
@@ -353,5 +359,49 @@ codeBase = $2001
     ldq astRoot
     jsr initLibraries
 
+    rts
+.endproc
+
+; This routine checks that the program fits in memory once all of it has
+; been written. The runtime stack grows down from CODESEG_CEIL and the heap
+; runs from the end of the image up to the heap's MAT, four bytes below the
+; stack (see the header above). If less than MIN_HEAP_SIZE bytes are left
+; for the heap, errCodeSegmentOverflow is reported and the carry is set.
+; Otherwise the carry is clear.
+.proc checkCodeSize
+    ; intOp1 = the highest address the image can end at
+    lda #.LOBYTE(CODESEG_CEIL - 4 - MIN_HEAP_SIZE)
+    sec
+    sbc runtimeStackSize
+    sta intOp1
+    lda #.HIBYTE(CODESEG_CEIL - 4 - MIN_HEAP_SIZE)
+    sbc runtimeStackSize+1
+    sta intOp1+1
+    bcc ER                      ; The stack alone is too large
+
+    ; intOp2 = the address just past the end of the image
+    lda codeOffset
+    clc
+    adc #.LOBYTE(codeBase)
+    sta intOp2
+    lda codeOffset+1
+    adc #.HIBYTE(codeBase)
+    sta intOp2+1
+    bcs ER
+
+    ; The program fits if intOp2 <= intOp1
+    lda intOp1
+    cmp intOp2
+    lda intOp1+1
+    sbc intOp2+1
+    bcc ER
+    clc
+    rts
+
+ER: lda #errCodeSegmentOverflow
+    ldx #0
+    ldy #0
+    jsr compilerError
+    sec
     rts
 .endproc

@@ -11,8 +11,9 @@
 
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
+.include "error.inc"
 
-.export compileTests, nextTestPrg
+.export compileTests, nextTestPrg, expectedError
 
 .import runCompiler
 
@@ -61,6 +62,7 @@ strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
 strDone: .asciiz "done"
+strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -125,17 +127,31 @@ tests:
 .endif
     .byte $00, $00
 
+; Programs the compiler must refuse, each followed by the one error it must
+; report. They are compiled before the tests above, aren't linked and aren't
+; part of the chain.
+errorTests:
+.if TESTSET = 0 || TESTSET = 1
+    .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
+    .byte errCodeSegmentOverflow
+.endif
+    .byte $00, $00
+
 .bss
 
 testNum: .res 1
+expectedError: .res 1       ; error the current test must report, or 0
 sourceFn: .res 16           ; null-terminated source filename for the current test
 nextTestPrg: .res 16        ; null-terminated PRG filename of the next test
 
 .code
 
 .proc compileTests
+    jsr compileErrorTests
+
     lda #0
     sta testNum
+    sta expectedError
 
     ; Loop through the tests
 L1: lda testNum
@@ -209,6 +225,45 @@ DN: lda #13
     jsr CHROUT
 
     rts
+.endproc
+
+; This routine compiles the programs in errorTests. runCompiler fails the
+; tests unless each reports exactly its expected error.
+.proc compileErrorTests
+    lda #0
+    sta testNum
+
+L1: lda testNum                 ; Y = testNum * 3
+    asl a
+    adc testNum
+    tay
+
+    ; Check for terminator
+    lda errorTests,y
+    ora errorTests+1,y
+    beq DN
+
+    lda errorTests,y
+    sta ptr1
+    lda errorTests+1,y
+    sta ptr1+1
+    lda errorTests+2,y
+    sta expectedError
+
+    jsr makeSourceFilename
+
+    ; Not part of the chain
+    lda #0
+    sta nextTestPrg
+
+    lda #<sourceFn
+    ldx #>sourceFn
+    jsr runCompiler
+
+    inc testNum
+    bra L1
+
+DN: rts
 .endproc
 
 ; This routine expects ptr1 to point to the null-terminated test name.

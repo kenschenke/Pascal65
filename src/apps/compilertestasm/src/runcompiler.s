@@ -26,7 +26,11 @@
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
 .import freeUnitBodies
-.import nextTestPrg, failTests
+.import nextTestPrg, failTests, expectedError, lastError
+
+.data
+
+objFilename: .asciiz "zztmp"
 
 .bss
 
@@ -214,7 +218,12 @@ L2: jsr setCodeGenProgramChain
 
     jsr freeUnits
 
-    lda #'L'
+    ; A program the compiler must refuse isn't linked
+    lda expectedError
+    beq L3
+    jmp checkExpectedError
+
+L3: lda #'L'
     jsr CHROUT
     jsr initLinker
     lda sourceFn
@@ -230,7 +239,35 @@ L2: jsr setCodeGenProgramChain
 
     lda #13
     jsr CHROUT
-    
+
     rts
 
+.endproc
+
+; This routine finishes a program the compiler must refuse. It fails the
+; tests unless code generation reported exactly one error, expectedError,
+; and deleted its object file.
+.proc checkExpectedError
+    jsr freeLinkerTags
+
+    lda errorCount
+    cmp #1
+    bne FL
+    lda lastError
+    cmp expectedError
+    bne FL
+
+    ; The object file must be gone
+    lda #<objFilename
+    ldx #>objFilename
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    bne FL
+
+    lda #13
+    jsr CHROUT
+    rts
+
+FL: jmp failTests
 .endproc
