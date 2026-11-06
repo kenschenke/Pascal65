@@ -18,7 +18,7 @@
 .import rtInitCompilerErrors, rtCompilerError, isQZero, rtPushQZero
 .import invertInt16, invertInt32, runtimeError, multInt16, rtCompilerWarning, rtInitCompilerWarnings
 .import initScopeStack, scopeBind, scopeBindSymtab, scopeLevel, scopeLookup, scopeLookupParent
-.import scopeEnter, scopeEnterSymtab, scopeExit, symtabLookup
+.import scopeEnter, scopeEnterSymtab, scopeExit, symtabLookup, scopeLookupCurrent
 .import declCreate, nameCreate, paramListCreate, typeCreate, stmtCreate
 .import exprCreate, unitCreate, nameClone, freeAst
 .import addTreeNode, findInTree, freeTree, symbolCreate
@@ -118,3 +118,4 @@ jmp getMemHeapForBank
 jmp rtInitCompilerWarnings
 jmp rtCompilerWarning
 jmp astFreeBodies
+jmp scopeLookupCurrent

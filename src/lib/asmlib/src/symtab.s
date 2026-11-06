@@ -108,9 +108,9 @@ level: .res 1
 
     ; Tree is empty - add the root node
     plp             ; Discard CPU flags
-    clc             ; Clear the carry flag
     jsr addTreeNode
     ldq ptr4
+    clc             ; The node was added
     rts
 
     ; Tree is non-empty
@@ -121,19 +121,20 @@ L1: ldq ptr2
     jsr findInTree
     jsr isQZero
     beq L2
-    ; Key already exists in tree
-    plp             ; Restore the CPU flags
+    ; Key already exists in tree. Return the caller's carry flag:
+    ; set if it asked to fail on an existing key.
     jsr rtPopQ
+    plp             ; Restore the CPU flags (after rtPopQ)
     rts
 
     ; Key does not exist in tree - so add it
 L2: jsr rtPopQ      ; Pop the tree root back off the stack
     stq ptr1        ; and store it in ptr1.
     jsr rtPushQ     ; Keep the tree root
-    clc             ; Clear the carry flag
-    plp             ; Restore the CPU flags
+    plp             ; Discard the CPU flags
     jsr addTreeNode
     jsr rtPopQ      ; Pop the tree root
+    clc             ; The node was added
     rts
 .endproc
 

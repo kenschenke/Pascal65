@@ -1,7 +1,7 @@
 ;
 ; resolveDeclarationName.s
 ; Ken Schenke (kenschenke@gmail.com)
-; 
+;
 ; Copyright (c) 2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
@@ -11,6 +11,7 @@
 
 .include "ast.inc"
 .include "asmlib.inc"
+.include "error.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
 
@@ -22,26 +23,66 @@ kindOffset = 0
 
 .export resolveDeclarationName
 
-.import getTypeKind, getTypePtr, calcNamePtr
+.import getTypeKind, getTypePtr, calcNamePtr, resolverError
 
 .bss
 
 nodePtr: .res 4
+namePtr: .res 4
 
 .code
 
+; The declaration's name is passed in Q
 .proc resolveDeclarationName
     stq ptr4                ; Store the name in ptr4
+    stq namePtr
     jsr getTypeKind
     cmp #TYPE_PROCEDURE
     beq :+
     cmp #TYPE_FUNCTION
-    bne L1
-:   jsr scopeLookup
-    stq ptr2                ; symtab node in ptr2
+    beq :+
+    jmp L1
+
+    ; A routine. If the name is already in this scope, it must be the
+    ; routine's forward declaration and this must be its body.
+:   jsr scopeLookupCurrent
     jsr isQZero
-    beq L1
-    ; Forward declaration
+    bne :+
+    jmp L1                  ; Not in this scope
+:   stq ptr2                ; symbol in ptr2
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr isQZero
+    beq RD
+    stq ptr3                ; the symbol's type in ptr3
+    ldz #type::kind
+    nop
+    lda (ptr3),z
+    cmp #TYPE_PROCEDURE
+    beq :+
+    cmp #TYPE_FUNCTION
+    bne RD                  ; The name is something else
+:   ldz #type::flags
+    nop
+    lda (ptr3),z
+    and #TYPE_FLAG_ISFORWARD
+    beq RD                  ; The routine wasn't declared forward
+    ldz #symbol::decl
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr3                ; the symbol's decl in ptr3
+    ldz #decl::code
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    jsr isQZero
+    bne RD                  ; The forward routine already has a body
     ldz #declOffset
     neg
     neg
@@ -54,11 +95,11 @@ nodePtr: .res 4
     nop
     lda (ptr1),z
     jsr isQZero
-    bne :+
-    rts
+    beq RD                  ; A second forward declaration
 
+    ; This is the body of a forward declaration.
     ; Copy the declaration pointer to the symtab decl
-:   ldx #0
+    ldx #0
     ldz #symbol::decl
 :   lda ptr1,x
     nop
@@ -79,6 +120,10 @@ nodePtr: .res 4
     cpx #4
     bne :-
     rts
+
+    ; The routine redefines a name in this scope. It gets no symbol.
+RD: lda #errRedefinedIdentifier
+    jmp resolverError
 
     ; Is this a unit?
 L1: jsr getTypeKind
@@ -165,7 +210,8 @@ L3: jsr getTypePtr
     lda (stackPointer),z
     beq :+
     sec
-    jsr scopeBindSymtab
+:   jsr scopeBindSymtab
+    php
     ; Store symtab root back into the symtab pointer
     stq ptr2
     ldz #symtabOffset
@@ -183,6 +229,8 @@ L3: jsr getTypePtr
     inz
     cpx #4
     bne :-
+    plp
+    bcs redefined
     rts
 
     ; No symbol table - add the new symbol to the current scope
@@ -195,5 +243,44 @@ L4: ldq nodePtr
     beq :+
     sec
 :   jsr scopeBind
+    bcs redefined
+    rts
+.endproc
+
+; The name is already in the symbol table, so the new symbol wasn't
+; added. Report the error. The declaration keeps its symbol (decl::node)
+; so the rest of the resolver can use it, but the symbol goes in a
+; symbol table of its own in decl::symtab, which is freed with the
+; declaration.
+.proc redefined
+    lda #errRedefinedIdentifier
+    jsr resolverError
+    lda #0
+    tax
+    tay
+    taz
+    stq ptr1            ; an empty table
+    ldq namePtr
+    stq ptr2            ; key
+    ldq nodePtr
+    stq ptr3            ; data
+    clc
+    jsr scopeBindSymtab
+    stq ptr2            ; the new table's root
+    ldz #declOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #decl::symtab
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
     rts
 .endproc

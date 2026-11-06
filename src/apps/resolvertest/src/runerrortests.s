@@ -24,7 +24,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 7
+NUM_TESTS = 12
 
 .export runErrorTests
 .import testFail
@@ -58,6 +58,11 @@ errors: .byte $0c, $00, errMultiDimDynArray     ; Array of a dynamic type
         .byte $0c, $00, errDynArrayInRecord     ; Anonymous record field
         .byte $0c, $00, errDynArrayInRecord     ; Record in array element
         .byte $0b, $00, errDynArrayInRecord     ; Record in dynamic array
+        .byte $18, $00, errRedefinedIdentifier  ; Variable redefined
+        .byte $0b, $00, errRedefinedIdentifier  ; Constant, then variable
+        .byte $0e, $00, errRedefinedIdentifier  ; Routine defined twice
+        .byte $0a, $00, errRedefinedIdentifier  ; Record field twice
+        .byte $0a, $00, errRedefinedIdentifier  ; Forward declared twice
 
 strFnPrefix: .asciiz "error"
 strFnSuffix: .asciiz ".pas"

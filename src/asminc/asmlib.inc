@@ -105,3 +105,4 @@ getMemHeapForBank = ASMBASE + 252
 initCompilerWarnings = ASMBASE + 255
 compilerWarning = ASMBASE + 258
 astFreeBodies = ASMBASE + 261
+scopeLookupCurrent = ASMBASE + 264
