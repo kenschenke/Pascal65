@@ -36,9 +36,38 @@ exprPtr: .res 4
     lda #0
     jsr pushA               ; readingBytes
 
+    ; ReadStr: the first argument is the string to read from. Convert
+    ; it to a new string object, which SFH copies to the input buffer.
+    ldz #routineCodeOffset
+    nop
+    lda (stackPointer),z
+    cmp #rcReadStr
+    bne :+
+    ldz #argPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr icodeExprRead
+    ldz #argPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    jsr icodeOper1Short
+    lda #IC_SCV
+    jsr icodeWriteInstruction
+    jsr nextArg
+    lda #FH_STRING
+    bra SF
+
     ; Look at the first argument to see if reading from a file
     ; or the keyboard.
-    ldz #argPtrOffset
+:   ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::evalTypeKind
@@ -164,8 +193,11 @@ EL: ldz #routineCodeOffset
     nop
     lda (stackPointer),z
     cmp #rcReadln
-    bne :+
-    lda #IC_CNL
+    beq :+
+    ; ReadStr discards what's left of its string
+    cmp #rcReadStr
+    bne :++
+:   lda #IC_CNL
     jsr icodeWriteInstruction
 
 :   lda #0

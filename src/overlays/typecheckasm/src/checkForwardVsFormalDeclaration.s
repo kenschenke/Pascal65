@@ -20,6 +20,12 @@ fwdParamsOffset = formalParamsOffset + 4
 
 .import loadStackValue, typeCheckError
 
+.bss
+
+limitOffset: .res 1             ; type::min or type::max
+
+.code
+
 ; Parameters on runtime stack, bottom to top:
 ;    parameters of forward declaration
 ;    parameters of formal declaration
@@ -218,29 +224,32 @@ L1: lda #type::min
 ; This routine compares the array limits (min or max).
 ; The offset in the type in passed in A.
 .proc compareArrayLimit
-    sta tmp1
-    ; Compare the kinds for the min and max
+    sta limitOffset
+    ; getArrayLimit looks up the base type, which destroys the
+    ; pointers, so keep the forward declaration's limit on the stack.
+    ; The limits are on the stack above the two parameter lists.
     ldz #fwdParamsOffset
     jsr getArrayLimit
-    stq ptr3
-    ldz #formalParamsOffset
+    jsr pushQ
+    ldz #formalParamsOffset+4
     jsr getArrayLimit
     stq ptr4
+    jsr popQ
+    stq ptr3
+    ; A missing limit can't be compared
+    jsr isQZero
+    beq RT
+    ldq ptr4
+    jsr isQZero
+    beq RT
+    ; Compare the kinds for the min and max
     ldz #expr::kind
     nop
     lda (ptr3),z
     nop
     cmp (ptr4),z
-    beq :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    bne ER
     ; Compare the values for the min and max
-:   ldz #fwdParamsOffset
-    jsr getArrayLimit
-    stq ptr3
-    ldz #formalParamsOffset
-    jsr getArrayLimit
-    stq ptr4
     ldz #expr::value
     ldx #0
 :   nop
@@ -252,25 +261,36 @@ L1: lda #type::min
     inx
     cpx #4
     bne :-
-    rts
+RT: rts
 ER: lda #errIncompatibleTypes
     jsr typeCheckError
     rts
 .endproc
 
-; This routine retrieves the array limit for the offset in Z.
-; and returns the expression in Q.
-; tmp1 is expected to contain the expr offset for min or max.
-; Ptr1 is destroyed
+; This routine retrieves the array limit for the parameter list at
+; the stack offset in Z and returns the expression in Q (0 if none).
+; limitOffset is expected to contain the type offset for min or max.
+; The limits are on the array's index type. A parameter's type can be
+; a type name, so look up the base type first.
+; Ptr1, ptr2 and ptr4 are destroyed.
 .proc getArrayLimit
     jsr getParamType
+    jsr getBaseType
     stq ptr1
-    ldz tmp1
+    ldz #type::indextype
     neg
     neg
     nop
     lda (ptr1),z
-    rts
+    jsr isQZero
+    beq DN
+    stq ptr1
+    ldz limitOffset
+    neg
+    neg
+    nop
+    lda (ptr1),z
+DN: rts
 .endproc
 
 ; This routine gets the type of the parameter offset in Z.

@@ -947,6 +947,8 @@ L3: rts
 L1: ldz #expr::kind
     nop
     lda (ptr1),z
+    ; A name, a record field and a subscript are all looked up
+    ; as an address (isRead 0). exprName doesn't use isDeRef.
     cmp #EXPR_NAME
     beq :+
     ; Look up the array index
@@ -972,39 +974,6 @@ LF: ldq ptr1
     jsr icodeExprRead
     ; Put the address of the array variable into ptr1
 LR: ldz #expr::right
-    jsr getChildExpr
-    jsr icodeExprRead
-    bra L2
-
-:   ldz #isDeRefOffset
-    nop
-    lda (stackPointer),z
-    pha
-    ldz #expr::left
-    jsr getChildExpr
-    jsr pushQ
-    lda #0
-    jsr pushA
-    pla
-    jsr pushA
-    jsr icodeExprPvt
-    ldz #isReadOffset
-    nop
-    lda (stackPointer),z
-    bne :+
-    ldz #expr::left
-    jsr getChildExpr
-    stq ptr1
-    ldz #expr::kind
-    nop
-    lda (ptr1),z
-    cmp #EXPR_POINTER
-    bne :+
-    lda #TYPE_ADDRESS
-    jsr icodeOper1Short
-    lda #IC_MEM
-    jsr icodeWriteInstruction
-:   ldz #expr::right
     jsr getChildExpr
     jsr icodeExprRead
 

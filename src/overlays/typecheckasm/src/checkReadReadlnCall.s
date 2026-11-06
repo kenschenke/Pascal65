@@ -341,8 +341,14 @@ L1: ldz #type::subtype
 
 .proc checkText
     lda first
+    beq ER
+    ; ReadStr reads from its string, not a file
+    ldz #routineCodeOffset
+    nop
+    lda (stackPointer),z
+    cmp #rcReadStr
     bne :+
-    lda #errIncompatibleTypes
+ER: lda #errIncompatibleTypes
     jsr typeCheckError
 :   rts
 .endproc

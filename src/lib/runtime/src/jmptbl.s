@@ -40,7 +40,7 @@
 .import fileErase, fileAssign, fileRename, fileFree, convertType
 .import libStackHeader, libCallRoutine, addIrqHandler, irqCleanup
 .import initDecl, freeDecl, cloneDecl, libStackCleanup, xorBitwise
-.import setArrayLength
+.import setArrayLength, setStringInput
 
 .segment "JMPTBL"
 
@@ -157,3 +157,4 @@ jmp irqCleanup           ; BASE + 327
 jmp libStackCleanup      ; BASE + 330
 jmp xorBitwise           ; BASE + 333
 jmp setArrayLength       ; BASE + 336
+jmp setStringInput       ; BASE + 339

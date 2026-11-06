@@ -45,6 +45,10 @@ lenCount: .res 2
     bne :+
     jsr readReadln
     jmp DN
+:   cmp #rcReadStr
+    bne :+
+    jsr readReadln
+    jmp DN
 :   cmp #rcWrite
     bne :+
     jsr writeWriteln

@@ -34,6 +34,13 @@ PSH VDW 4 1 0
 PSH IWS 2
 INP IBS 19
 SFH IBS 0 IBS 1
+PSH VDR 15 1 3
+SCV IBS 15
+SFH IBS 81 IBS 1
+PSH VDW 4 1 0
+INP IBS 4
+CNL
+SFH IBS 0 IBS 1
 DAT IBU 5 LBL xxxxx
    heap offset: 0
    low bound: 1
@@ -60,4 +67,5 @@ Begin
   Readln(arr);
   Readln(str);
   Read(fh, i);
+  ReadStr(str, i);
 End.

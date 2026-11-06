@@ -179,8 +179,9 @@ routine exits.
 ### Character Arrays
 
 Like static arrays of characters, a dynamic array of **Char** can be used with
-[Read](../../funcref/read) and [Write](../../funcref/write). Arrays of any
-other type can't be read or written as a whole.
+[Read, ReadStr](../../funcref/read) and [Write, WriteStr](../../funcref/write).
+It can also be the string ReadStr reads from. Arrays of any other type can't
+be read or written as a whole.
 
 ## Restrictions
 
@@ -194,6 +195,8 @@ program breaks one of them.
   of another array (static or dynamic), and an array can't be the element of a
   dynamic array.
 * A dynamic array can't be a field of a record.
+* A file can't hold dynamic arrays (`File Of Array Of Integer`). A file of a
+  static array is fine.
 * A static array can't be passed to a parameter declared as a dynamic array,
   and a dynamic array can't be passed to a parameter declared as a static
   array. This applies to parameters passed by value and **Var** parameters.

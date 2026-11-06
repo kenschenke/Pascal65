@@ -21,9 +21,8 @@ Var
     strs : TStrArr;
     chars : Array Of Char;
     lits : TIntArr = (10, 20, 30);
-    // A one-character literal ('a') in a string array initializer comes
-    // out empty, for static arrays too, so these have two or more.
-    slits : TStrArr = ('aa', 'bb', 'ccc');
+    // 'a' is a one-character literal, which is a Char literal
+    slits : TStrArr = ('a', 'bb', 'ccc');
 
 Procedure Error(num : Integer);
 Begin
@@ -45,7 +44,7 @@ Begin
     If lits[4] <> 0 Then Error(87);
 
     If Length(slits) <> 3 Then Error(88);
-    If CompareStr(slits[0], 'aa') <> 0 Then Error(89);
+    If CompareStr(slits[0], 'a') <> 0 Then Error(89);
     If CompareStr(slits[2], 'ccc') <> 0 Then Error(90);
     SetLength(slits, 4);
     If CompareStr(slits[1], 'bb') <> 0 Then Error(91);
@@ -125,8 +124,8 @@ Begin
     If CompareStr(strs[2], 'third') <> 0 Then Error(351);
 End;
 
-// Write and Read of a dynamic array of Char, through a text file.
-// (WriteStr and ReadStr don't support character arrays, static or dynamic.)
+// Write and Read of a dynamic array of Char, through a text file,
+// and WriteStr.
 Procedure TestChars;
 Var
     tf : Text;
@@ -141,6 +140,11 @@ Begin
     Readln(tf, s);
     Close(tf);
     If CompareStr(s, '[]') <> 0 Then Error(400);
+
+    // An empty array converts to an empty string
+    s := 'old';
+    ReadStr(chars, s);
+    If Length(s) <> 0 Then Error(415);
 
     SetLength(chars, 5);
     chars[0] := 'h';
@@ -157,6 +161,21 @@ Begin
     Close(tf);
     If CompareStr(s, 'hello') <> 0 Then Error(401);
 
+    // WriteStr writes the array to the string, not the screen
+    s := 'x' + WriteStr('[', chars, ']');
+    If CompareStr(s, 'x[hello]') <> 0 Then Error(408);
+
+    // ReadStr reads from the array, and into it
+    ReadStr(chars, s);
+    If CompareStr(s, 'hello') <> 0 Then Error(410);
+    ReadStr('abcdefg', chars);
+    If chars[0] <> 'a' Then Error(411);
+    If chars[4] <> 'e' Then Error(412);
+    ReadStr('ab', chars);
+    If chars[1] <> 'b' Then Error(413);
+    If chars[2] <> ' ' Then Error(414);
+    ReadStr('hello', chars);
+
     // A longer array is filled with spaces. Readln uses up the line.
     SetLength(chars, 7);
     Reset(tf);
@@ -167,7 +186,7 @@ Begin
     If chars[6] <> ' ' Then Error(404);
 
     // Read into a shorter array. Read leaves the rest of the line in the
-    // input buffer, even after Close, so this one comes last.
+    // input buffer, and Close discards it.
     SetLength(chars, 3);
     Reset(tf);
     Read(tf, chars);
@@ -175,6 +194,12 @@ Begin
     If Length(chars) <> 3 Then Error(405);
     If chars[0] <> 'h' Then Error(406);
     If chars[2] <> 'l' Then Error(407);
+
+    // The next read starts at the beginning of the file
+    Reset(tf);
+    Readln(tf, s);
+    Close(tf);
+    If CompareStr(s, 'hello') <> 0 Then Error(409);
 End;
 
 Procedure ReportFailure;

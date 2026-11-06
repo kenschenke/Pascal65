@@ -35,7 +35,7 @@ ARRAYDECL_ARRAY = 5
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
 .import memcopy, popax, pushax, FPINP, COMPLM, pusheax, popeax
 .import runtimeError, convertString, heapAlloc, heapFree, fileClose
-.import freeRecordDeclaration, cloneRecordDeclaration
+.import freeRecordDeclaration, cloneRecordDeclaration, writeByte
 
 .struct ARRAYDECL
     heapOffset .word                ; Byte offset into memory heap
@@ -56,6 +56,11 @@ isRealNeg: .res 1
 numElems: .res 2
 ndxElems: .res 2
 numLiterals: .res 2
+
+; Local variables used by writeCharArray. writeByte can allocate
+; heap memory when writing to a string, so they can't be in zero page.
+charPtr: .res 2
+charCount: .res 2
 
 .code
 
@@ -1164,45 +1169,43 @@ DN: rts
     jsr rtLeftPad
     pla                 ; Restore the array length
     sta tmp1
-    ; Loop until tmp1/tmp2 are zero
-L0:
-    ; An empty (dynamic) array writes nothing
-    lda tmp1
-    ora tmp2
-    beq L2
+    ; Loop until charCount is zero
+L0: lda tmp1
+    sta charCount
+    lda tmp2
+    sta charCount + 1
     ; Skip over the array header
     lda ptr2
     clc
     adc #6
-    sta ptr2
+    sta charPtr
     lda ptr2 + 1
     adc #0
+    sta charPtr + 1
+L1:
+    ; An empty (dynamic) array writes nothing
+    lda charCount
+    ora charCount + 1
+    beq L2
+    ; writeByte goes to the current output: the screen, a file or
+    ; a string (WriteStr).
+    lda charPtr
+    sta ptr2
+    lda charPtr + 1
     sta ptr2 + 1
     ldy #0
-L1:
     lda (ptr2),y
-    jsr CHROUT
-    ; Decrement tmp1/tmp2
-    lda tmp1
-    sec
-    sbc #1
-    sta tmp1
-    lda tmp2
-    sbc #0
-    sta tmp2
-    lda tmp1
-    ora tmp2
-    beq L2
-    ; Increment ptr2
-    lda ptr2
-    clc
-    adc #1
-    sta ptr2
-    lda ptr2 + 1
-    adc #0
-    sta ptr2 + 1
-    clc
-    bcc L1
+    jsr writeByte
+    ; Decrement charCount
+    lda charCount
+    bne :+
+    dec charCount + 1
+:   dec charCount
+    ; Increment charPtr
+    inc charPtr
+    bne L1
+    inc charPtr + 1
+    jmp L1
 L2:
     rts
 .endproc
@@ -1238,14 +1241,13 @@ L2:
     sta tmp1
     ; Copy characters from the input buffer until the end of the
     ; buffer is reached or the end of the array is reached.
-    ldx inputPos            ; Current position in the input buffer
     lda #0
     sta tmp3                ; Current array position
 L1:
     lda tmp1
     ora tmp2
     beq L2                  ; Branch if end of the array reached
-    lda tmp3
+    lda inputPos            ; Current position in the input buffer
     cmp inputBufUsed
     bcs L2                  ; Branch if end of the buffer reached
     ldy inputPos

@@ -576,7 +576,7 @@ L1: pha
     ldz #paramTypeKindOffset
     nop
     lda (stackPointer),z
-    sta icodeOper2Short
+    jsr icodeOper2Short
     lda #IC_CVI
     jsr icodeWriteInstruction
 

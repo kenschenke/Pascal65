@@ -71,3 +71,4 @@ Dynamic array in record
 Array assignment
 Function returns array
 Static vs dynamic array
+Dynamic array in file

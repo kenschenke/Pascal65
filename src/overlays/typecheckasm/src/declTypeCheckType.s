@@ -73,8 +73,46 @@ L1: ; if (decl.kind == DECL_TYPE)
     jsr pushQ
     jsr checkArray
 
-    ; A function can't return an array, static or dynamic
+    ; A file can't hold dynamic arrays (File Of Array Of T). Only the
+    ; header would be read or written. A clone is the type of a variable
+    ; of a named file type, which was checked at the type's declaration.
 L3: ldz #typeOffset
+    jsr loadStackValue
+    stq ptr1                ; type in ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_FILE
+    bne L6
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISCLONED
+    bne L6
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L6
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    bne L6
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq L6
+    lda #errDynArrayInFile
+    jsr typeCheckError
+
+    ; A function can't return an array, static or dynamic
+L6: ldz #typeOffset
     jsr loadStackValue
     stq ptr1                ; type in ptr1
     ldz #type::kind
@@ -108,10 +146,10 @@ L5: ldz #typeOffset
     nop
     lda (ptr1),z
     cmp #TYPE_FUNCTION
-    bne L4
+    beq :+
     cmp #TYPE_PROCEDURE
     bne L4
-    ldz #type::flags
+:   ldz #type::flags
     nop
     lda (ptr1),z
     and #TYPE_FLAG_ISFORWARD
@@ -123,19 +161,20 @@ L5: ldz #typeOffset
     jsr calcNamePtr
     stq ptr4
     jsr scopeLookup
+    jsr isQZero
+    beq L4
     stq ptr3                ; symbol in ptr3
-    ldz #symbol::decl
+    ; The resolver points symbol::decl at the formal declaration,
+    ; but symbol::type is a clone of the first (forward) declaration's
+    ; type and shares its parameter list.
+    ldz #symbol::type
     neg
     neg
     nop
     lda (ptr3),z
-    stq ptr2                ; symbol's decl in ptr2
-    ldz #decl::type
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr2                ; symbol's decl's type in ptr2
+    jsr isQZero
+    beq L4
+    stq ptr2                ; forward declaration's type in ptr2
     ldz #typeOffset
     jsr loadStackValue
     stq ptr1                ; type in ptr1

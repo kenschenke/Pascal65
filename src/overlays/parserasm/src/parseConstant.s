@@ -43,9 +43,9 @@ exprKind: .res 1
     ldx #>tlUnaryOps
     jsr tokenIn
     bne :+
+    ; Save the sign token (tcPlus or tcMinus). Only tcMinus
+    ; negates the value.
     lda parserToken
-    cmp #tcMinus
-    lda #tcMinus
     sta sign
     jsr getToken
 

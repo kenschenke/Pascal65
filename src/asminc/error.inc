@@ -100,7 +100,8 @@ errDynArrayInRecord = 69
 errArrayAssignment = 70
 errArrayReturnType = 71
 errStaticDynArrayMismatch = 72
-numParserErrors = 73
+errDynArrayInFile = 73
+numParserErrors = 74
 
 rteNone = 0
 rteStackOverflow = 1

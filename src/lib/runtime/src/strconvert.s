@@ -82,8 +82,9 @@ objPtr: .res 2
     cmp #TYPE_STRING_OBJ
     beq convertStrObj
     cmp #TYPE_STRING_LITERAL
-    beq convertStrLiteral
-    cmp #TYPE_CHARACTER
+    bne :+
+    jmp convertStrLiteral
+:   cmp #TYPE_CHARACTER
     beq convertCharLiteral
     ; Convert array of chars
     lda srcPtr
@@ -104,8 +105,19 @@ objPtr: .res 2
     sta intOp1 + 1
     jsr subInt16            ; Subtract intOp2 from intOp1 (length of array)
     lda intOp1 + 1          ; Look at high byte of array length
-    beq :+                  ; Branch if array <= 255
-    lda #rteStringOverflow
+    cmp #$ff                ; An empty dynamic array is 0..-1
+    bne :+
+    lda intOp1
+    cmp #$ff
+    bne OV
+    lda #0                  ; Empty array, empty string
+    jmp copyString
+:   lda intOp1 + 1
+    bne OV                  ; Branch if array > 256
+    lda intOp1
+    cmp #$ff
+    bne :+                  ; Branch if array <= 255
+OV: lda #rteStringOverflow
     jsr runtimeError
 :   inc intOp1              ; Length is actually upper - lower + 1
     lda ptr3                ; Adjust srcPtr to first array element

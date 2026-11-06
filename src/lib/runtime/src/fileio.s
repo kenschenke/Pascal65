@@ -27,6 +27,7 @@ maxFilename = 16
 .export fileFree
 
 .import runtimeError, addToStringBuffer, popeax, heapFree, popToIntOp1And2
+.import clearInputBuf
 
 .bss
 
@@ -470,7 +471,11 @@ NE: lda #0
     jsr SETNAM
     ; Call OPEN
     jsr OPEN
-    jsr driveErrorCheck
+    ; Start reading the file with an empty input buffer
+    lda tmp3                    ; Load R/W flag
+    beq :+                      ; Branch if writing
+    jsr clearInputBuf
+:   jsr driveErrorCheck
 DN: rts
 .endproc
 
@@ -489,7 +494,7 @@ DN: rts
     pha                         ; Store 0-based file number on stack
     lda files,x                 ; Load file status
     and #fileMaskOpen           ; Mask fileOpen bit
-    beq ER                      ; Branch if file not open
+    beq NO                      ; Branch if file not open
     inx                         ; Increment X (back to 1-based file number)
     txa                         ; Copy it A
     jsr CLOSE                   ; Close the file
@@ -499,6 +504,9 @@ DN: rts
     sta files,x                 ; Clear file flags
     ldy #2
     sta (ptr1),y                ; Clear file number in file handle
+    ; Unread input from the closed file must not be read from the
+    ; next file.
+    jsr clearInputBuf
     ; If no other files are open, close the error channel too
     ldx #0
 :   lda files,x
@@ -511,6 +519,7 @@ DN: rts
     lda #0
     sta errChannelOpen
 :   rts
+NO: pla                         ; Pop the file number pushed above
 ER: lda #103
     jmp setIOResult
 .endproc
@@ -626,6 +635,8 @@ IN: lda tmp1
 .proc setEOF
     tax                     ; Copy file number to X
     beq :+
+    cpx #fhString           ; A string (ReadStr) has no file flags
+    beq :+
     dex                     ; Decrement by 1 (file number is 1-based)
     lda files,x             ; Load flags for file
     ora #fileMaskEOF        ; Mask non-EOF flags
@@ -640,6 +651,8 @@ IN: lda tmp1
 .proc isEOF
     tax                     ; Copy file number to X
     beq NO                  ; Branch if file number is zero
+    cpx #fhString           ; ReadStr's string has only one line,
+    beq NO                  ; so it is always at EOF after it
     dex                     ; Decrement by 1 (file number is 1-based)
     lda files,x             ; Load flags for file
     and #fileMaskEOF        ; Mask non-EOF flags

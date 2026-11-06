@@ -19,6 +19,7 @@ numLiterals: .res 2         ; Number of string literals written
 exprPtr: .res 4             ; Current literal expression in chain
 labelBuf: .res 15
 dummy: .res 1
+charBuf: .res 2
 
 .data
 
@@ -81,7 +82,31 @@ L1: stq exprPtr
     ; Write the string literal to strMemBuf
 L2: ldq strMemBuf
     stq ptr1
+    ; A one-character string literal is a character literal. Its
+    ; value is the character, not a pointer to a string.
+    ldz #expr::kind
+    nop
+    lda (ptr2),z
+    cmp #EXPR_CHARACTER_LITERAL
+    bne L4
     ldz #expr::value
+    nop
+    lda (ptr2),z
+    sta charBuf
+    lda #0
+    sta charBuf+1
+    lda #<charBuf
+    sta ptr2
+    lda #>charBuf
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    lda #2
+    ldx #0
+    jsr writeToMemBuf
+    bra L5
+L4: ldz #expr::value
     neg
     neg
     nop
@@ -100,7 +125,7 @@ L2: ldq strMemBuf
     jsr writeToMemBuf
 
     ; Increment numLiterals
-    lda numLiterals
+L5: lda numLiterals
     clc
     adc #1
     sta numLiterals

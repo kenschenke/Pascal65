@@ -11,6 +11,9 @@ Const
     LongConst = -123456;
     CardinalConst = 12345678;
     RealConst = 123.456;
+    PlusConst = +5;
+    PlusIntConst = +1234;
+    PlusRealConst = +1.5;
 
 Var
 	anyErrors : Boolean;
@@ -58,6 +61,10 @@ Begin
     If LongConst <> -123456 Then Error(8);
     If CardinalConst <> 12345678 Then Error(9);
     If Abs(RealConst-123.456) > 0.01 Then Error(10);
+    // A leading + doesn't make a constant negative
+    If PlusConst <> 5 Then Error(11);
+    If PlusIntConst <> 1234 Then Error(12);
+    If Abs(PlusRealConst-1.5) > 0.01 Then Error(13);
 
     If anyErrors Then ReportFailure;
 End.

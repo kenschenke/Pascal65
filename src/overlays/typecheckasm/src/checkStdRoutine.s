@@ -22,7 +22,7 @@ typePtrOffset = argPtrOffset + 4
 
 .import loadStackValue, checkReadReadlnCall, checkWriteWritelnCall, checkAbsSqrCall
 .import checkPredSuccCall, checkStdParms, checkDecIncCall
-.import checkSetLengthCall, checkArrayFuncCall
+.import checkSetLengthCall, checkArrayFuncCall, checkReadStrCall
 
 .proc checkStdRoutine
     ; Zero out the return type
@@ -52,6 +52,14 @@ typePtrOffset = argPtrOffset + 4
 :   cmp #rcReadln
     bne :+
     jsr readReadln
+    jmp DN
+:   cmp #rcReadStr
+    bne :+
+    ldz #argPtrOffset
+    jsr loadStackValue
+    jsr checkReadStrCall
+    lda #TYPE_VOID
+    jsr setReturnType
     jmp DN
 :   cmp #rcWrite
     bne :+

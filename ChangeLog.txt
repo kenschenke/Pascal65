@@ -1,12 +1,12 @@
 0.36-beta
     NEW: Compiler warning for possible loss of precision
     NEW: Explicit type casting, e.g. Byte(someWord)
-    NEW: Warning when an expression might result in a loss of precision
     NEW: Add pre-compiled headers for libraries
     FIX: Stack corruption bug when setting up local string variables
     FIX: Reduced compiler's memory usage for compiling larger programs
     FIX: Fix color RAM clobbering for cursor movement in editor
     NEW: Dynamic arrays
+    NEW: Implement ReadStr
 
 0.35-beta Sep 30 2026
     NEW: Compiler rewritten in 100% assembly language

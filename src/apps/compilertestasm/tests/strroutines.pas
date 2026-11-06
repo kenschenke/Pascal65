@@ -32,11 +32,54 @@ Begin
     Close(f);
 End;
 
+Procedure TestReadStr;
+Var
+    i, j : Integer;
+    r : Real;
+    c : Char;
+    s, src : String;
+    ca : Array[1..3] Of Char;
+Begin
+    ReadStr('42 -7', i, j);
+    If i <> 42 Then Error(45);
+    If j <> -7 Then Error(46);
+
+    // A string reads the rest of the input. The source is unchanged.
+    src := '12 abc def';
+    ReadStr(src, i, s);
+    If i <> 12 Then Error(47);
+    If CompareStr(s, 'abc def') <> 0 Then Error(48);
+    If CompareStr(src, '12 abc def') <> 0 Then Error(49);
+
+    ReadStr('x', c);
+    If c <> 'x' Then Error(50);
+
+    ReadStr('xyz', ca);
+    If ca[1] <> 'x' Then Error(51);
+    If ca[3] <> 'z' Then Error(52);
+
+    ReadStr('  hi', s);
+    If CompareStr(s, 'hi') <> 0 Then Error(53);
+
+    s := 'old';
+    ReadStr('', s);
+    If Length(s) <> 0 Then Error(54);
+
+    ReadStr('3.5', r);
+    If Abs(r - 3.5) > 0.01 Then Error(55);
+
+    // The source can be any string expression
+    ReadStr(WriteStr(99), i);
+    If i <> 99 Then Error(56);
+End;
+
 Begin
     anyErrors := false;
     errList := '';
 
     Writeln('Running string routine tests');
+
+    TestReadStr;
 
     If CompareStr('', '') <> 0 Then Error(1);
     If CompareStr('test', 'test') <> 0 Then Error(2);

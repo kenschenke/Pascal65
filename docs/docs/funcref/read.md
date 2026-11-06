@@ -12,7 +12,9 @@ These routines read values from the keyboard, a file, or a string.
 
 *Read*, *ReadLn*, and *ReadStr* input values. Read and ReadLn read input from
 a file if the first parameter is a file. Otherwise they read from the keyboard.
-ReadStr reads values from a string object.
+ReadStr reads values from its first parameter, which can be any string
+expression, a character, or a character array. The string isn't changed.
+Only the first 80 characters of the string are read.
 
 The routines can accept multiple parameters.
 
@@ -34,5 +36,18 @@ Var
 
 BEGIN
     readln(str);
+END.
+```
+
+```
+PROGRAM example;
+
+Var
+    i, j : integer;
+    rest : string;
+
+BEGIN
+    ReadStr('12 34 the rest', i, j, rest);
+    // i is 12, j is 34 and rest is 'the rest'
 END.
 ```

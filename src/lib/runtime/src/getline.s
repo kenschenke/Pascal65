@@ -44,6 +44,15 @@ L1:
 .proc getlineNoEnterFile
     lda currentFhIn
     beq NO
+    cmp #fhString
+    bne :+
+    ; ReadStr has one line, the string. After it the input is empty.
+    jsr clearBuf
+    lda #0
+    sta inputBufUsed
+    sta inputPos
+    rts
+:
     jsr isFileOpen
     cmp #0
     beq NO

@@ -238,7 +238,18 @@ L2: genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
 .endproc
 
 .proc sfhOper
+    ; ReadStr: the string object is on the stack. setStringInput
+    ; copies it to the input buffer and sets the input file handle.
     lda operand1+1
+    cmp #FH_STRING
+    bne :+
+    lda operand2+1
+    beq :+                  ; Branch if output (WriteStr)
+    genThree OC_JSR, RT_POPEAX
+    genThree OC_JSR, RT_SETSTRINGINPUT
+    rts
+
+:   lda operand1+1
     cmp #FH_FILENUM
     bne :+
     genThree OC_JSR, RT_POPEAX
