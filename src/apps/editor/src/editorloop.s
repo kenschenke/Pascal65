@@ -16,7 +16,7 @@
 
 .export editorLoop
 
-.import initEditor, initThemes, runCompiler
+.import initEditor, initThemes, runCompiler, errorCount
 
 .ifdef __DEBUG__
 .import editorDebug
@@ -52,8 +52,11 @@ L1: jsr initEditor      ; load the editor overlay from disk
     cmp #EDITOR_LOOP_RUN
     bne L1
 
-    ; Run
+    ; Run, unless the compile failed. Then go back to the editor like
+    ; Compile does (runCompiler has already waited for a key).
     jsr runCompiler
+    lda errorCount
+    bne CP2
     sec
     rts
 
@@ -65,6 +68,7 @@ DB: jsr editorDebug
 
     ; Compile
 CP: jsr runCompiler
+CP2:
     jsr clearMemHeap
     bra L1
 

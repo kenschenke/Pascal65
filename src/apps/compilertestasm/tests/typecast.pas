@@ -55,7 +55,7 @@ Begin
    If snum <> -56 Then Error(400);
    mnum := MediumNum(40000);
    If mnum <> -25536 Then Error(401);
-   lnum := LongInt($ffff0000)
+   lnum := LongInt($ffff0000);
    If lnum <> -65536 Then Error(402);
 End;
 
