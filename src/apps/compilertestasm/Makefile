@@ -16,6 +16,7 @@ MEMINFODIR := ../../overlays/meminfo
 ASMLIBDIR := ../../lib/asmlib
 SYSTEMLIBDIR := ../../lib/system
 DEMOLIBDIR := ../../lib/demolib
+SCREENLIBDIR := ../../lib/screen
 RUNTIMEDIR := ../../lib/runtime
 
 PROGRAM := compilertest
@@ -43,6 +44,7 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
 DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
+SCREENLIB = ../../lib/screen/bin/$(TARGET)/screen
 TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
 ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
@@ -52,10 +54,12 @@ MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
 CODEGEN = ../../overlays/codegenasm/bin/$(TARGET)/codegen
 LINKER = ../../overlays/linkerasm/bin/$(TARGET)/linker
 SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
-RUNTIME = ../../lib/runtime/bin/$(TARGET)/runtime
+# The runtime core and package files (RUNTIME, RTWRITE)
+include $(RUNTIMEDIR)/rtfiles.mk
 PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 SYSTEMPAS = ../../lib/system/system.pas
 DEMOLIBPAS = ../../lib/demolib/demolib.pas
+FIVEDICEPAS = ../../../examples/fivedice.pas
 
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
@@ -65,6 +69,7 @@ BINFILES += $(TYPECHECK)
 BINFILES += $(MEMINFO)
 BINFILES += $(ASMLIB)
 BINFILES += $(DEMOLIB)
+BINFILES += $(SCREENLIB)
 BINFILES += $(PRGFILE)
 BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
@@ -92,7 +97,7 @@ DEPFLAGS = --create-dep $(@:.o=.dep)
 # a OneDrive folder.
 FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
-TXTFILES := errormsgs.petscii system.petscii demolib.petscii
+TXTFILES := errormsgs.petscii system.petscii demolib.petscii fivedice.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
@@ -109,6 +114,10 @@ system.petscii: $(SYSTEMPAS)
 
 demolib.petscii: $(DEMOLIBPAS)
 	dos2unix < $(DEMOLIBPAS) | petcat -w2 -text -o demolib.petscii
+
+# Compiled, but not run, to check the runtime leaves it room
+fivedice.petscii: $(FIVEDICEPAS)
+	dos2unix < $(FIVEDICEPAS) | petcat -w2 -text -o fivedice.petscii
 
 $(BINDIR):
 	mkdir -p $@
@@ -155,6 +164,9 @@ $(ASMLIB): FORCE
 $(DEMOLIB): FORCE
 	cd $(DEMOLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(SCREENLIB): FORCE
+	cd $(SCREENLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(SYSTEMLIB): FORCE
 	cd $(SYSTEMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -190,11 +202,13 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(DEMOLIB) demolib.lib,prg \
+	-write $(SCREENLIB) screen.lib,prg \
 	-write $(SYSTEMLIB) system.lib,prg \
-	-write $(RUNTIME) runtime,prg \
+	$(RTWRITE) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
+	-write fivedice.petscii fivedice.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
 	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
 	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
@@ -237,6 +251,10 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/dynarraya.pas dynarraya.pas,seq \
 	-write $(PETSCIIDIR)/dynarrayb.pas dynarrayb.pas,seq \
 	-write $(PETSCIIDIR)/dynarrayc.pas dynarrayc.pas,seq \
+	-write $(PETSCIIDIR)/rtpkgnone.pas rtpkgnone.pas,seq \
+	-write $(PETSCIIDIR)/rtpkga.pas rtpkga.pas,seq \
+	-write $(PETSCIIDIR)/rtpkgb.pas rtpkgb.pas,seq \
+	-write $(PETSCIIDIR)/rtpkgc.pas rtpkgc.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	-write $(PETSCIIDIR)/toolarge.pas toolarge.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)

@@ -34,13 +34,37 @@
 .import stringSubscriptRead, stringSubscriptCalc
 .import loadParam, storeVarParam, returnVal, strPos, beginswith, endswith
 .import contains, readCharFromInput, andBitwise, orBitwise
-.import lshiftBitwise, rshiftBitwise, invertBitwise, sine, cosine, tangent
-.import stringInit, pushVar, readVar, writeBytes
-.import fileOpen, fileClose, readBytes, isEOF, setIOResult, getIOResult
-.import fileErase, fileAssign, fileRename, fileFree, convertType
+.import lshiftBitwise, rshiftBitwise, invertBitwise
+.import stringInit, pushVar, readVar
+.import isEOF, setIOResult, getIOResult, convertType
 .import libStackHeader, libCallRoutine, addIrqHandler, irqCleanup
 .import initDecl, freeDecl, cloneDecl, libStackCleanup, xorBitwise
-.import setArrayLength, setStringInput
+.import setStringInput
+
+; Entries for the runtime packages (see rtpkg.inc). In the core they point
+; at a stub that raises rtePackageNotLinked, and codegen patches the ones
+; for the packages it links. The full runtime (FULLRT) has every package
+; linked in.
+.ifdef FULLRT
+.import setArrayLength
+.import fileOpen, fileClose, fileErase, fileAssign, fileRename, fileFree
+.import writeBytes, readBytes
+.import sine, cosine, tangent
+.else
+.import noDynArrays, noFiles, noTrig
+setArrayLength = noDynArrays
+fileOpen = noFiles
+fileClose = noFiles
+fileErase = noFiles
+fileAssign = noFiles
+fileRename = noFiles
+fileFree = noFiles
+writeBytes = noFiles
+readBytes = noFiles
+sine = noTrig
+cosine = noTrig
+tangent = noTrig
+.endif
 
 .segment "JMPTBL"
 

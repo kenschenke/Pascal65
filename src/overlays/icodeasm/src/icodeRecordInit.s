@@ -14,6 +14,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 fieldLabelSize = 25
 
@@ -33,6 +34,7 @@ labelOffset = typePtrOffset + 4
 .export icodeRecordInit
 
 .import loadStackValue, heapOffset, icodeArrayInit, icodeSaveData
+.import setRuntimeFeature
 .import icodeOper1Label, icodeWriteInstruction, icodeLabel
 
 .bss
@@ -460,6 +462,9 @@ DN: ldz #declMemBufOffset
 .endproc
 
 .proc fileField
+    ; A file field needs the runtime's files package
+    lda #RTF_FILES
+    jsr setRuntimeFeature
     ; Set memberType to ARRAYDECL_FILE
     ldz #memberTypeOffset
     lda #ARRAYDECL_FILE

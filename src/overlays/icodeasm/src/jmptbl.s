@@ -9,10 +9,11 @@
 ;
 ; intermediate code entry points
 
-.import icodeWriteX, icodeFileEraseX, setIcodeUnitsList
+.import icodeWriteX, icodeFileEraseX, setIcodeUnitsList, getRuntimeFeatures
 
 .segment "JMPTBL"
 
 jmp icodeWriteX
 jmp icodeFileEraseX
 jmp setIcodeUnitsList
+jmp getRuntimeFeatures

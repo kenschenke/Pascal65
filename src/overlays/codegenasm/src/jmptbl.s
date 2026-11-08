@@ -12,6 +12,7 @@
 ; .import icodeWriteX, icodeFileEraseX, setIcodeUnitsList
 
 .import genObjCode, setRuntimeStackSize, setCodeGenUnitList, setChainProg
+.import setRuntimeFeatures
 
 .segment "JMPTBL"
 
@@ -19,3 +20,4 @@ jmp genObjCode
 jmp setRuntimeStackSize
 jmp setCodeGenUnitList
 jmp setChainProg
+jmp setRuntimeFeatures

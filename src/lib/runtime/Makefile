@@ -3,12 +3,19 @@ OBJDIR := obj
 BINDIR := bin
 LIBCOMMONDIR := ../common
 
-PROGRAM := runtime
 CC65TARGET = c64
 
 BINTARGETDIR = $(BINDIR)/$(TARGET)
 OBJTARGETDIR = $(OBJDIR)/$(TARGET)
-PRGFILE := $(BINTARGETDIR)/$(PROGRAM)
+
+# The runtime is split into a core and packages (see src/asminc/rtpkg.inc
+# and mkruntime.py). Every file name ends with the ABI version.
+ABI := $(shell sed -n 's/^RT_ABI_VERSION *= *\([0-9]*\).*//p' ../../asminc/asm.inc)
+COREFILE := $(BINTARGETDIR)/core$(ABI)
+RTFILES := $(COREFILE) $(BINTARGETDIR)/runtime$(ABI)
+RTFILES += $(BINTARGETDIR)/dynarrays$(ABI)a
+RTFILES += $(addprefix $(BINTARGETDIR)/files$(ABI),a b)
+RTFILES += $(addprefix $(BINTARGETDIR)/trig$(ABI),a b c d)
 
 c64_CFLAGS =
 c128_CFLAGS =
@@ -18,7 +25,6 @@ ASFLAGS = -I ../../asminc -D RUNTIME -D __MEGA65__
 else
 ASFLAGS = -I ../../asminc -D RUNTIME
 endif
-LDFLAGS = --mapfile runtime.map
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 
@@ -41,9 +47,14 @@ SOURCES += $(LIBCOMMONDIR)/uint16mult.s
 SOURCES += $(LIBCOMMONDIR)/uint32comp.s
 SOURCES += $(LIBCOMMONDIR)/uint32mult.s
 
-CONFIG := cfg-$(TARGET).cfg
-
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
+
+# The packages, in package order, and the jump table, which is linked
+# separately into the core and the full runtime
+PKGOBJECTS := $(addprefix $(OBJTARGETDIR)/,dynarray.o fileops.o trig.o)
+JMPTBLOBJ := $(OBJTARGETDIR)/jmptbl.o
+JMPTBLFULLOBJ := $(OBJTARGETDIR)/jmptblfull.o
+COREOBJECTS := $(filter-out $(PKGOBJECTS) $(JMPTBLOBJ),$(OBJECTS))
 
 DEPENDS := $(OBJECTS:.o=.d)
 DEPFLAGS = --create-dep $(@:.o=.dep)
@@ -53,7 +64,7 @@ DEPFLAGS = --create-dep $(@:.o=.dep)
 # a OneDrive folder.
 FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
-all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE)
+all: $(BINTARGETDIR) $(OBJTARGETDIR) $(COREFILE)
 
 $(BINDIR):
 	mkdir -p $@
@@ -77,13 +88,19 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
-$(BINTARGETDIR)/$(PROGRAM): $(OBJECTS)
-	ld65 $(LDFLAGS) -o $(BINTARGETDIR)/$(PROGRAM) -C $(CONFIG) $(OBJECTS)
+# The jump table of the full runtime points at the packages' routines
+$(JMPTBLFULLOBJ): $(SRCDIR)/jmptbl.s | $(OBJTARGETDIR)
+	ca65 -t $(CC65TARGET) $(ASFLAGS) -D FULLRT $(subst jmptbl.,jmptblfull.,$(DEPFLAGS)) -o $@ $<
+	$(FIXDEP)
+
+# mkruntime.py writes every runtime file in one run
+$(COREFILE): $(OBJECTS) $(JMPTBLFULLOBJ) mkruntime.py ../../asminc/asm.inc | $(BINTARGETDIR)
+	python3 mkruntime.py --asm-inc ../../asminc/asm.inc 		--objdir $(OBJTARGETDIR) --bindir $(BINTARGETDIR) --map runtime.map 		--jmptbl $(JMPTBLOBJ) --jmptbl-full $(JMPTBLFULLOBJ) 		--pkg $(PKGOBJECTS) $(COREOBJECTS)
 
 clean:
-	$(RM) $(OBJECTS)
+	$(RM) $(OBJECTS) $(JMPTBLFULLOBJ)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
-	$(RM) $(PRGFILE)
+	$(RM) -r $(OBJTARGETDIR)/rtlink
 	$(RM) $(BINTARGETDIR)/*
 
 -include $(DEPENDS)

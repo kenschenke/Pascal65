@@ -32,7 +32,8 @@ MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
 CODEGEN = ../../overlays/codegenasm/bin/$(TARGET)/codegen
 LINKER = ../../overlays/linkerasm/bin/$(TARGET)/linker
 SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
-RUNTIME = ../../lib/runtime/bin/$(TARGET)/runtime
+# The runtime core and package files (RUNTIME, RTWRITE)
+include $(RUNTIMEDIR)/rtfiles.mk
 PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 SYSTEMPAS = ../../lib/system/system.pas
 
@@ -145,7 +146,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(SYSTEMLIB) system.lib,prg \
-	-write $(RUNTIME) runtime,prg \
+	$(RTWRITE) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)

@@ -12,6 +12,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 levelOffset = 0
 paramPtrsOffset = levelOffset + 1
@@ -26,6 +27,48 @@ exprOffset = symPtrOffset + 4
 .import icodeRoutineCall, icodeFormatLabel, icodeWriteInstruction
 .import icodeOper1Label, icodeOper1Short, icodeOper2Short, icodeOper3Short
 .import icodeRoutineParamsCleanup, loadStackValue, lblRoutineEnter, lblRoutineReturn
+.import setRuntimeFeature
+
+.data
+
+; Library routines that need the runtime's trig package (System's Sin, Cos
+; and Tan). The list ends with an empty name.
+; One .asciiz per name: with several strings .asciiz ends only the last.
+trigNames:
+    .asciiz "sin"
+    .asciiz "cos"
+    .asciiz "tan"
+    .byte 0
+
+.code
+
+; This routine records RTF_TRIG if the library routine being called is
+; Sin, Cos or Tan. Its declaration is in intOp32, which is preserved. The
+; names are compared without case.
+.proc checkTrigCall
+    ldx #0                  ; Index into trigNames
+NX: ldz #decl::name
+CL: nop
+    lda (intOp32),z         ; Next character of the routine's name
+    and #$7f                ; Ignore case
+    cmp trigNames,x
+    bne SK                  ; Branch if not this name
+    cmp #0
+    beq FD                  ; Branch if the whole name matched
+    inz
+    inx
+    bra CL
+SK: lda trigNames,x         ; Skip the rest of this name
+    beq :+
+    inx
+    bra SK
+:   inx                     ; Past the null
+    lda trigNames,x
+    bne NX                  ; Branch if there's another name
+    rts
+FD: lda #RTF_TRIG
+    jmp setRuntimeFeature
+.endproc
 
 ; Arguments passed on stack, bottom to top:
 ;   expression ptr
@@ -120,6 +163,7 @@ exprOffset = symPtrOffset + 4
     nop
     lda (ptr1),z
     stq intOp32
+    jsr checkTrigCall
     lda #<lblRoutineEnter
     ldx #>lblRoutineEnter
     jsr icodeFormatLabel

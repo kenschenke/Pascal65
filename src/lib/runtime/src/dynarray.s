@@ -16,6 +16,11 @@
 
 .include "runtime.inc"
 .include "error.inc"
+.include "asm.inc"
+.include "rtpkg.inc"
+
+; This is the dynamic arrays package (see rtpkg.inc). The core calls
+; setArrayLength only through the jump table.
 
 .export setArrayLength
 
@@ -23,7 +28,7 @@
 .import runtimeError, getArrayLength
 .import initArrayDeclaration, initRecordDeclaration
 .import freeArrayStrings, freeArrayRecords, freeArrayFiles
-.import numElems, ndxElems
+.import numElems, ndxElems, dynArrayBss
 
 ARRAYDECL_RECORD = 2
 ARRAYDECL_STRING = 3
@@ -43,19 +48,24 @@ RD_STARTOFLIST = 4
 ; Size of a record field list entry: type, declaration, offset
 RD_ENTRYSIZE = 5
 
-.bss
+; The package's variables are reserved in the core (see pkgbss.s)
+declPtr = dynArrayBss + 0   ; array declaration block
+slotPtr = dynArrayBss + 2   ; the array variable's slot
+newLen = dynArrayBss + 4    ; new number of elements
+oldLen = dynArrayBss + 6    ; old number of elements
+oldHeap = dynArrayBss + 8   ; old heap block
+newHeap = dynArrayBss + 10  ; new heap block
+elemSize = dynArrayBss + 12 ; size of each element
+elemPtr = dynArrayBss + 14  ; current element in the new block
+elemNdx = dynArrayBss + 16  ; index of the current element
+.assert 18 = DYNARRAYS_BSS_SIZE, error, "dynarray.s variables don't fit"
 
-declPtr: .res 2             ; array declaration block
-slotPtr: .res 2             ; the array variable's slot
-newLen: .res 2              ; new number of elements
-oldLen: .res 2              ; old number of elements
-oldHeap: .res 2             ; old heap block
-newHeap: .res 2             ; new heap block
-elemSize: .res 2            ; size of each element
-elemPtr: .res 2             ; current element in the new block
-elemNdx: .res 2             ; index of the current element
+; The package header (see rtpkg.inc)
+pkgHeader "DYNARRAYS", RT_PKG_DYNARRAYS
+pkgEntry RT_SETARRAYLENGTH, setArrayLength
+pkgEnd
 
-.code
+.segment "DYNARRAYS"
 
 ; This routine sets the length of a dynamic array (SetLength).
 ; Inputs:

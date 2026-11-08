@@ -22,7 +22,7 @@ RECDECL_STRING = 3
 RECDECL_FILE = 4
 RECDECL_ARRAY = 5
 
-.import pushax, pusheax, popeax, popax, heapAlloc, heapFree, fileClose
+.import pushax, pusheax, popeax, popax, heapAlloc, heapFree
 .import freeArrayDeclaration, memcopy, cloneArrayDeclaration, convertString
 
 .struct RECDECL
@@ -318,7 +318,7 @@ DN: rts
     tax
     dey
     lda (ptr1),y
-    jsr fileClose
+    jsr rtFileClose
 DN: rts
 .endproc
 

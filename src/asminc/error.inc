@@ -101,7 +101,8 @@ errArrayAssignment = 70
 errArrayReturnType = 71
 errStaticDynArrayMismatch = 72
 errDynArrayInFile = 73
-numParserErrors = 74
+errRuntimeFileInvalid = 74
+numParserErrors = 75
 
 rteNone = 0
 rteStackOverflow = 1
@@ -116,3 +117,4 @@ rteStringOverflow = 9
 rteInvalidFileHandle = 10
 rteFileOpenFailed = 11
 rteFileIOFailed = 12
+rtePackageNotLinked = 13       ; a runtime package (rtpkg.inc) isn't linked

@@ -117,6 +117,25 @@ ZP_INPUTBUFPTRH     = ZP_BASE + 95
 
 RT_BASE = $2028
 
+; The runtime ABI version. Every runtime file name ends with it, such as
+; core1 (see mkruntime.py), so a program is never linked with a runtime
+; built for a different jump table. Raise it whenever the jump table or the
+; zero-page contract changes. mkruntime.py reads it from here.
+RT_ABI_VERSION = 1
+
+; Runtime packages (see rtpkg.inc), in the order they follow the core
+RT_PKG_DYNARRAYS = 1
+RT_PKG_FILES = 2
+RT_PKG_TRIG = 3
+RT_NUM_PKGS = 3
+
+; Runtime features, one bit per package (package number N is bit N-1).
+; Code generation links a package only if the program needs its feature.
+RTF_DYNARRAYS = $01         ; SetLength is called
+RTF_FILES = $02             ; a file variable is declared
+RTF_TRIG = $04              ; Sin, Cos or Tan is called
+RTF_ALL = $07
+
 RT_STACKCLEANUP         = RT_BASE + 0
 RT_STACKINIT            = RT_BASE + 3
 RT_PUSHINTSTACK         = RT_BASE + 6

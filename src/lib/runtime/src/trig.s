@@ -12,12 +12,24 @@
 
 .include "runtime.inc"
 .include "float.inc"
+.include "asm.inc"
+.include "rtpkg.inc"
+
+; This is the trig package (see rtpkg.inc). The core calls these routines
+; only through the jump table.
 
 .export cosine, sine, tangent
 
 .import FPADD, FPMULT, FPDIV, FPSUB, COMPLM, floatGt, swapFPACCandFPOP
 
-.data
+; The package header (see rtpkg.inc)
+pkgHeader "TRIG", RT_PKG_TRIG
+pkgEntry RT_SINE, sine
+pkgEntry RT_COSINE, cosine
+pkgEntry RT_TANGENT, tangent
+pkgEnd
+
+.segment "TRIG"
 
 ; Constants
 pi: .dword $026487ea            ; Pi 3.1415926535
@@ -49,7 +61,7 @@ piHalf: .dword $016487ea        ; Pi / 2
     sta FPBASE + FOPLSW
 .endmacro
 
-.code
+; Code follows the constants in the TRIG segment
 
 ; This routine approximates cosine by adding 1/2 pi to to the input angle
 ; then using the sine wave's polynomials. See the comments for sine.

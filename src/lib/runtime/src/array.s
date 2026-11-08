@@ -34,7 +34,7 @@ ARRAYDECL_ARRAY = 5
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
 .import memcopy, popax, pushax, FPINP, COMPLM, pusheax, popeax
-.import runtimeError, convertString, heapAlloc, heapFree, fileClose
+.import runtimeError, convertString, heapAlloc, heapFree
 .import freeRecordDeclaration, cloneRecordDeclaration, writeByte
 
 .struct ARRAYDECL
@@ -1125,7 +1125,7 @@ L2: ldy #3                          ; Look at bit 0 - if 1 then this is a cloned
     jsr saveArrayLocals
     lda ptr1
     ldx ptr1+1
-    jsr fileClose
+    jsr rtFileClose
     jsr restoreArrayLocals
     ; Move ptr1 to the next file in the array
 :   lda ptr1

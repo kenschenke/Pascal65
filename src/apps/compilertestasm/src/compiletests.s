@@ -61,6 +61,11 @@ strDeclOrdr: .asciiz "declordr"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
+strRtPkgNone: .asciiz "rtpkgnone"
+strRtPkgA: .asciiz "rtpkga"
+strRtPkgB: .asciiz "rtpkgb"
+strRtPkgC: .asciiz "rtpkgc"
+strFiveDice: .asciiz "fivedice"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
@@ -121,6 +126,12 @@ tests:
     .byte .lobyte(strDynArrayA), .hibyte(strDynArrayA)
     .byte .lobyte(strDynArrayB), .hibyte(strDynArrayB)
     .byte .lobyte(strDynArrayC), .hibyte(strDynArrayC)
+    ; Runtime packages (see rtpkg.inc). Together with the tests above they
+    ; use every package variant file.
+    .byte .lobyte(strRtPkgNone), .hibyte(strRtPkgNone)
+    .byte .lobyte(strRtPkgA), .hibyte(strRtPkgA)
+    .byte .lobyte(strRtPkgB), .hibyte(strRtPkgB)
+    .byte .lobyte(strRtPkgC), .hibyte(strRtPkgC)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)
@@ -137,6 +148,15 @@ errorTests:
 .endif
     .byte $00, $00
 
+; Programs that must compile and link without an error or warning. They
+; are compiled after errorTests and aren't run or part of the chain.
+compileOnlyTests:
+.if TESTSET = 0 || TESTSET = 3
+    ; The split runtime must leave fivedice room (see plans/runtime.md)
+    .byte .lobyte(strFiveDice), .hibyte(strFiveDice)
+.endif
+    .byte $00, $00
+
 .bss
 
 testNum: .res 1
@@ -148,6 +168,7 @@ nextTestPrg: .res 16        ; null-terminated PRG filename of the next test
 
 .proc compileTests
     jsr compileErrorTests
+    jsr compileOnly
 
     lda #0
     sta testNum
@@ -249,6 +270,43 @@ L1: lda testNum                 ; Y = testNum * 3
     sta ptr1+1
     lda errorTests+2,y
     sta expectedError
+
+    jsr makeSourceFilename
+
+    ; Not part of the chain
+    lda #0
+    sta nextTestPrg
+
+    lda #<sourceFn
+    ldx #>sourceFn
+    jsr runCompiler
+
+    inc testNum
+    bra L1
+
+DN: rts
+.endproc
+
+; This routine compiles and links the programs in compileOnlyTests.
+; runCompiler fails the tests if any reports an error or a warning.
+.proc compileOnly
+    lda #0
+    sta testNum
+    sta expectedError
+
+L1: lda testNum                 ; Y = testNum * 2
+    asl a
+    tay
+
+    ; Check for terminator
+    lda compileOnlyTests,y
+    ora compileOnlyTests+1,y
+    beq DN
+
+    lda compileOnlyTests,y
+    sta ptr1
+    lda compileOnlyTests+1,y
+    sta ptr1+1
 
     jsr makeSourceFilename
 

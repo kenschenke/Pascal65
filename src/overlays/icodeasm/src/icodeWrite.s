@@ -16,6 +16,7 @@
 .export icodeWriteX, currentLineNumber, loadStackValue
 .export icodeLabel, icodeFormatLabel, lblRoutineEnter, lblRoutineReturn
 .export lblDeclInit, lblParamDeclInit
+.export getRuntimeFeatures, setRuntimeFeature
 
 .import icodeFileOpen, icodeFileClose, icodeWriteInstruction
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
@@ -42,13 +43,33 @@ localVars: .res MAX_LOCAL_VARS
 localDecls: .res MAX_LOCAL_VARS*4
 currentLineNumber: .res 2
 icodeLabel: .res 20
+; The runtime packages the program needs (RTF_* in asm.inc). Code
+; generation links only these (see rtpkg.inc).
+runtimeFeatures: .res 1
 
 .code
+
+; Returns the runtime features (RTF_* in asm.inc) the program uses in A.
+; The compiler apps pass them to code generation.
+.proc getRuntimeFeatures
+    lda runtimeFeatures
+    rts
+.endproc
+
+; Records that the program uses the runtime feature (RTF_*) in A
+.proc setRuntimeFeature
+    ora runtimeFeatures
+    sta runtimeFeatures
+    rts
+.endproc
 
 ; Root of AST passed in Q
 .proc icodeWriteX
     ; Keep a copy of the root
     stq astRoot
+
+    lda #0
+    sta runtimeFeatures
 
     lda #0
     sta icodeSuppress

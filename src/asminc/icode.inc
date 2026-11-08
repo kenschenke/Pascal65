@@ -4,6 +4,7 @@ ICODE_BASE = $4000
 icodeWrite = ICODE_BASE
 icodeFileErase = ICODE_BASE + 3
 setIcodeUnitsList = ICODE_BASE + 6
+getIcodeRuntimeFeatures = ICODE_BASE + 9
 
 LOCALVARS_RECORD = 2
 LOCALVARS_DEL    = 1

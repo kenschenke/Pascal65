@@ -12,6 +12,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 declPtrOffset = 0
 localDeclsOffset = declPtrOffset + 4
@@ -24,6 +25,7 @@ localVarsOffset = localDeclsOffset + 4
 .import icodeOper1Int, icodeOper1Long, icodeOper1String
 .import icodeOper1Label, icodeArrayInit, icodeLabel, icodeRecordInit
 .import loadStackValue, icodeFormatLabel, countArrayLiterals
+.import setRuntimeFeature
 
 .bss
 
@@ -365,6 +367,9 @@ L1: jsr icodeOper1Int
 .endproc
 
 .proc fileValue
+    ; A file variable needs the runtime's files package
+    lda #RTF_FILES
+    jsr setRuntimeFeature
     lda #0
     tax
     tay

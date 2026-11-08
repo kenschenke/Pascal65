@@ -35,7 +35,8 @@ MKHDRDIR := src/apps/mkhdr
 # A library with no header here is parsed from its .pas file at compile time.
 HDRFILES := $(wildcard src/lib/hdr/*.hdr)
 
-RUNTIME = $(RUNTIMEDIR)/bin/$(TARGET)/runtime
+# The runtime core and package files (RUNTIME, RTWRITE)
+include $(RUNTIMEDIR)/rtfiles.mk
 SCREENLIB = $(SCREENLIBDIR)/bin/$(TARGET)/screen
 SPRITESLIB = $(SPRITESDIR)/bin/$(TARGET)/sprites
 SPRITEMOVELIB = $(SPRITEMOVEDIR)/bin/$(TARGET)/spritemove
@@ -214,7 +215,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDAT) $(HDRFILES)
 	-write $(EDITOROVLY) editor,prg \
 	-write $(THEMES) themes,prg \
 	-write $(MKHDR) mkhdr,prg \
-	-write $(RUNTIME) runtime,prg \
+	$(RTWRITE) \
 	-write $(SCREENLIB) screen.lib,prg \
 	-write $(SPRITESLIB) sprites.lib,prg \
 	-write $(SPRITEMOVELIB) spritemove.lib,prg \

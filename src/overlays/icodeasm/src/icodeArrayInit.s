@@ -14,6 +14,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 ; Local variables
 initBufOffset = 0
@@ -31,7 +32,7 @@ labelOffset = typePtrOffset + 4
 
 .import icodeSaveData, heapOffset, loadStackValue, icodeSaveData
 .import addStringArrayLiterals, addScalarArrayLiterals, addEmbeddedArrayOrRecord
-.import icodeSuppress
+.import icodeSuppress, setRuntimeFeature
 
 .export countArrayLiterals
 
@@ -260,12 +261,16 @@ buffer: .res 3
     bra L1
 :   cmp #TYPE_FILE
     bne :+
+    lda #RTF_FILES              ; Needs the runtime's files package
+    jsr setRuntimeFeature
     lda #ARRAYDECL_FILE
     jsr writeArrayElemType
     jsr finishOutArrayBlock
     bra L1
 :   cmp #TYPE_TEXT
     bne :+
+    lda #RTF_FILES              ; Needs the runtime's files package
+    jsr setRuntimeFeature
     lda #ARRAYDECL_FILE
     jsr writeArrayElemType
     jsr finishOutArrayBlock

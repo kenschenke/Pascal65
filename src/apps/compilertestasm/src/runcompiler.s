@@ -39,6 +39,7 @@ tokens: .res 4
 astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
+runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
 
 .code
 
@@ -175,6 +176,8 @@ runtimeStackSize: .res 2
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+    jsr getIcodeRuntimeFeatures
+    sta runtimeFeatures
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
@@ -200,6 +203,8 @@ runtimeStackSize: .res 2
     lda runtimeStackSize
     ldx runtimeStackSize+1
     jsr setCodeGenStackSize
+    lda runtimeFeatures
+    jsr setCodeGenRuntimeFeatures
     lda nextTestPrg
     beq L1
     lda #<nextTestPrg

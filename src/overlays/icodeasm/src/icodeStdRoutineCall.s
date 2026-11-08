@@ -13,6 +13,7 @@
 .include "symtab.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 argPtrOffset = 0
 routineCodeOffset = argPtrOffset + 4
@@ -23,6 +24,7 @@ routineCodeOffset = argPtrOffset + 4
 .import icodeExprRead, icodeOper1Short, icodeWriteInstruction, icodeDecIncCall
 .import icodeExpr, icodeOper2Short, icodeOper3Short, icodeOper1Int
 .import icodeOper1Label, icodeFormatLabel, lblDeclInit, lblParamDeclInit
+.import setRuntimeFeature
 
 .bss
 
@@ -344,6 +346,8 @@ L1: jsr getFirstArg
     jsr icodeOper1Label
     lda #IC_SAL
     jsr icodeWriteInstruction
+    lda #RTF_DYNARRAYS          ; Needs the runtime's dynamic arrays package
+    jsr setRuntimeFeature
     lda #TYPE_VOID
     rts
 .endproc

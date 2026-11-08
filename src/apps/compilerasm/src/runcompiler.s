@@ -41,6 +41,7 @@ tokens: .res 4
 astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
+runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
 
 .data
 
@@ -208,6 +209,8 @@ strLinking: .asciiz "Linking"
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+    jsr getIcodeRuntimeFeatures
+    sta runtimeFeatures
 
 .ifdef __HEAPPROFILE__
     ; Build with PROFILEFLAGS="-D __HEAPPROFILE__" to show a heap profile
@@ -243,6 +246,8 @@ strLinking: .asciiz "Linking"
     lda runtimeStackSize
     ldx runtimeStackSize+1
     jsr setCodeGenStackSize
+    lda runtimeFeatures
+    jsr setCodeGenRuntimeFeatures
     lda #0
     tax
     tay

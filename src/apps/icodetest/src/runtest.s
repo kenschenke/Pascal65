@@ -34,6 +34,7 @@
 .include "typecheck.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 .export runTest, unitList, printLine
 .import testFail
@@ -83,6 +84,16 @@ strPass: .asciiz "Pass"
 strErrorCount: .asciiz "Errors encountered - press a key"
 strErrorNum: .asciiz "Error "
 strErrorLine: .asciiz " on line "
+strFeatures: .asciiz "Wrong runtime features"
+
+; The runtime features (RTF_* in asm.inc) icode must find in each test,
+; starting with test 1. A file variable needs RTF_FILES, but a file
+; parameter doesn't (test 14 has both). SetLength needs RTF_DYNARRAYS.
+expectedFeatures:
+    .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0              ; 1-10
+    .byte 0, 0, 0, RTF_FILES, 0, RTF_FILES          ; 11-16
+    .byte RTF_FILES, 0, 0, 0                        ; 17-20
+    .byte 0, 0, 0, 0, 0, 0, RTF_DYNARRAYS           ; 21-27
 
 .code
 
@@ -311,8 +322,11 @@ strErrorLine: .asciiz " on line "
     ; Show an error message and pause
     jsr errorCountMessage
 
+    ; Check the runtime features the program was found to use
+:   jsr checkFeatures
+
     ; Dump the intermediate code
-:   lda #<strDumping
+    lda #<strDumping
     ldx #>strDumping
     jsr printLine
     jsr initDumpIcode
@@ -364,6 +378,20 @@ strErrorLine: .asciiz " on line "
     jsr CHROUT
 
     rts
+.endproc
+
+; This routine fails the test unless the runtime features icode found
+; (RTF_* in asm.inc) are the ones expectedFeatures lists for it.
+.proc checkFeatures
+    jsr getIcodeRuntimeFeatures
+    ldx testNum
+    cmp expectedFeatures-1,x
+    bne :+
+    rts
+:   lda #<strFeatures
+    ldx #>strFeatures
+    jsr printLine
+    jmp testFail
 .endproc
 
 .proc errorCountMessage

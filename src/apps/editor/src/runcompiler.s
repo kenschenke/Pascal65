@@ -35,6 +35,7 @@ tokens: .res 4
 astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
+runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
 
 .data
 
@@ -217,6 +218,8 @@ strEditorFn: .asciiz "pascal65"
     jsr setIcodeUnitsList
     ldq astRoot
     jsr icodeWrite
+    jsr getIcodeRuntimeFeatures
+    sta runtimeFeatures
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
@@ -241,6 +244,8 @@ strEditorFn: .asciiz "pascal65"
     lda runtimeStackSize
     ldx runtimeStackSize+1
     jsr setCodeGenStackSize
+    lda runtimeFeatures
+    jsr setCodeGenRuntimeFeatures
     lda loopCode
     cmp #3 ; EDITOR_LOOP_RUN
     bne L1
