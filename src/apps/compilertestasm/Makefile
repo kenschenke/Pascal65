@@ -30,6 +30,12 @@ TESTSETS := 1 2 3
 FIRSTTEST1 := add
 FIRSTTEST2 := subtract
 FIRSTTEST3 := dynarraya
+# Programs are built for the dynamic runtime unless they say
+# $StaticRuntime. Set 2 builds every program with the static runtime
+# (FORCESTATIC in runcompiler.s), so static mode is tested as widely.
+STATICSETS := 2
+# Set 3 also tests the dynamic runtime's loader (rtdyntest.sh)
+RTDYNSET := 3
 ifdef TESTSET
 PROGRAM := compilertest$(TESTSET)
 endif
@@ -79,6 +85,9 @@ BINFILES += $(RUNTIME)
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 ifdef TESTSET
 ASFLAGS += -D TESTSET=$(TESTSET)
+ifneq ($(filter $(TESTSET),$(STATICSETS)),)
+ASFLAGS += -D FORCESTATIC
+endif
 endif
 
 HDRSHAREDDIR := ../../shared/hdr
@@ -255,6 +264,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/rtpkga.pas rtpkga.pas,seq \
 	-write $(PETSCIIDIR)/rtpkgb.pas rtpkgb.pas,seq \
 	-write $(PETSCIIDIR)/rtpkgc.pas rtpkgc.pas,seq \
+	-write $(PETSCIIDIR)/rtdyn.pas rtdyn.pas,seq \
+	-write $(PETSCIIDIR)/rtdyna.pas rtdyna.pas,seq \
+	-write $(PETSCIIDIR)/rtdynb.pas rtdynb.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	-write $(PETSCIIDIR)/toolarge.pas toolarge.pas,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
@@ -296,6 +308,7 @@ testset:
 	$(RM) $(D81FILE)
 	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
 	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE)
+	$(if $(filter $(TESTSET),$(RTDYNSET)),sh rtdyntest.sh $(D81FILE) $(RTABI))
 	c1541 $(D81FILE) -read $(FIRSTTEST$(TESTSET)) $(BINTARGETDIR)/$(PROGRAM)-first.prg
 	../testcommon/runtest.sh $(PROGRAM)-run $(BINTARGETDIR)/$(PROGRAM)-first.prg $(D81FILE)
 

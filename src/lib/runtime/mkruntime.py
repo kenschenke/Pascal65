@@ -25,6 +25,14 @@
 # N is RT_ABI_VERSION from asm.inc. A variant's letter is 'a' plus its
 # position: the RTF_* bits of the packages before it.
 #
+# coreN starts with the length of the rest of the file (a word), not a load
+# address, because codegen and the linker copy it rather than load it.
+#
+# runtimeN is loaded by programs at run time (see loader.s in codegenasm).
+# It ends at $BFFF and starts at rtLow, a page boundary as high as it fits.
+# It's linked once to get its size and again at rtLow. It starts with a
+# header (RTH_* in asm.inc), then the jump table, then everything else.
+#
 # Build checks: the core links on its own (so it imports nothing from a
 # package), each package links with only the core (so it imports nothing
 # from another package), the core is identical in every link, each package
@@ -35,6 +43,7 @@
 import argparse
 import os
 import re
+import struct
 import subprocess
 import sys
 
@@ -52,6 +61,10 @@ PACKAGES = [
 
 HDR_AREA_SIZE = 0x100
 
+# The dynamic runtime's header (RTH_* in asm.inc)
+RTH_MAGIC = b'P65R'
+RTH_SIZE = 11
+
 
 def fail(msg):
     sys.stderr.write('mkruntime.py: %s\n' % msg)
@@ -66,21 +79,8 @@ def abi_version(asm_inc):
     return int(m.group(1))
 
 
-def make_config(core_file, pkgs, full, hdr_dir):
-    """pkgs is a list of (index, address, output file) for the packages in
-    this link. With full, the packages follow the core in its area and the
-    headers are thrown away."""
-    sym = ['    __LOADADDR__: type = import;']
-    mem = [
-        '    LOADADDR: file = "%s", start = $%04X, size = 2;'
-        % (core_file, RT_BASE - 2),
-        '    JMPS: file = "%s", start = $%04X, size = $%X;'
-        % (core_file, RT_BASE, JMPTBL_SIZE),
-        '    CORE: file = "%s", start = $%04X, size = $%X;'
-        % (core_file, RT_BASE + JMPTBL_SIZE,
-           CEILING - RT_BASE - JMPTBL_SIZE),
-    ]
-    seg = [
+def core_segments():
+    return [
         '    LOADADDR: load = LOADADDR, type = ro;',
         '    JMPTBL: load = JMPS, type = ro;',
         '    CODE: load = CORE, type = rw;',
@@ -91,25 +91,70 @@ def make_config(core_file, pkgs, full, hdr_dir):
         '    BSS: load = CORE, type = rw, optional = yes, define = yes;',
         '    PKGBSS: load = CORE, type = rw, define = yes;',
     ]
+
+
+def config_text(sym, mem, seg):
+    return ('SYMBOLS {\n%s\n}\nMEMORY {\n%s\n}\nSEGMENTS {\n%s\n}\n'
+            % ('\n'.join(sym), '\n'.join(mem), '\n'.join(seg)))
+
+
+def make_config(core_file, pkgs):
+    """pkgs is a list of (index, address, output file) for the packages in
+    this link."""
+    sym = ['    __LOADADDR__: type = import;']
+    mem = [
+        '    LOADADDR: file = "%s", start = $%04X, size = 2;'
+        % (core_file, RT_BASE - 2),
+        '    JMPS: file = "%s", start = $%04X, size = $%X;'
+        % (core_file, RT_BASE, JMPTBL_SIZE),
+        '    CORE: file = "%s", start = $%04X, size = $%X;'
+        % (core_file, RT_BASE + JMPTBL_SIZE,
+           CEILING - RT_BASE - JMPTBL_SIZE),
+    ]
+    seg = core_segments()
     for index, addr, out in pkgs:
         name, _, maxsize = PACKAGES[index]
         pos = index_position(index, [p[0] for p in pkgs])
-        sym.append('    __%s_POS__: type = export, addrsize = zp, value = %d;' % (name, pos))
-        hdr_file = os.path.join(hdr_dir, name.lower() + '.hdr') if full \
-            else out
+        sym.append('    __%s_POS__: type = export, addrsize = zp, value = %d;'
+                   % (name, pos))
         mem.append('    %sHDR: file = "%s", start = 0, size = $%X;'
-                   % (name, hdr_file, HDR_AREA_SIZE))
-        if full:
-            area = 'CORE'
-        else:
-            area = name
-            mem.append('    %s: file = "%s", start = $%04X, size = $%X;'
-                       % (name, out, addr, maxsize))
+                   % (name, out, HDR_AREA_SIZE))
+        mem.append('    %s: file = "%s", start = $%04X, size = $%X;'
+                   % (name, out, addr, maxsize))
         seg.append('    %sHDR: load = %sHDR, type = ro;' % (name, name))
         seg.append('    %s: load = %s, type = ro, define = yes;'
-                   % (name, area))
-    return ('SYMBOLS {\n%s\n}\nMEMORY {\n%s\n}\nSEGMENTS {\n%s\n}\n'
-            % ('\n'.join(sym), '\n'.join(mem), '\n'.join(seg)))
+                   % (name, name))
+    return config_text(sym, mem, seg)
+
+
+def make_full_config(out, base, hdr_dir):
+    """The full runtime at base: its header, the jump table, then the core
+    with every package after it. The packages' headers are thrown away."""
+    sym = ['    __LOADADDR__: type = import;']
+    jmps = base + RTH_SIZE
+    core = jmps + JMPTBL_SIZE
+    mem = [
+        '    LOADADDR: file = "%s", start = $%04X, size = 2;' % (out, base - 2),
+        '    RTHDR: file = "%s", start = $%04X, size = $%X;'
+        % (out, base, RTH_SIZE),
+        '    JMPS: file = "%s", start = $%04X, size = $%X;'
+        % (out, jmps, JMPTBL_SIZE),
+        '    CORE: file = "%s", start = $%04X, size = $%X;'
+        % (out, core, CEILING - core),
+    ]
+    seg = ['    RTHDR: load = RTHDR, type = ro, define = yes;']
+    seg += core_segments()
+    present = list(range(len(PACKAGES)))
+    for index in present:
+        name = PACKAGES[index][0]
+        sym.append('    __%s_POS__: type = export, addrsize = zp, value = %d;'
+                   % (name, index_position(index, present)))
+        mem.append('    %sHDR: file = "%s", start = 0, size = $%X;'
+                   % (name, os.path.join(hdr_dir, name.lower() + '.hdr'),
+                      HDR_AREA_SIZE))
+        seg.append('    %sHDR: load = %sHDR, type = ro;' % (name, name))
+        seg.append('    %s: load = CORE, type = ro, define = yes;' % name)
+    return config_text(sym, mem, seg)
 
 
 def index_position(index, present):
@@ -149,6 +194,29 @@ def header_info(data):
     return data[0], data[1], data[2] | (data[3] << 8), 5 + count * 3
 
 
+def link_full(path, base, cfg, objects, tmp, mapfile=None):
+    link(make_full_config(path, base, tmp), cfg, objects, mapfile)
+    return read(path)
+
+
+def check_full(data, n, rt_low):
+    """Checks runtimeN's load address and header."""
+    load, = struct.unpack_from('<H', data, 0)
+    hdr = data[2:2 + RTH_SIZE]
+    magic, version, low, bss, bss_len = struct.unpack('<4sBHHH', hdr)
+    if load != rt_low or low != rt_low:
+        fail('runtime%d loads at $%04X, header says $%04X, expected $%04X'
+             % (n, load, low, rt_low))
+    if magic != RTH_MAGIC or version != n:
+        fail('runtime%d has a bad magic number or version' % n)
+    if not rt_low <= bss < bss + bss_len <= CEILING:
+        fail('runtime%d BSS $%04X+$%X is outside the image'
+             % (n, bss, bss_len))
+    end = rt_low + len(data) - 2
+    if end > CEILING:
+        fail('runtime%d ends at $%04X, above $%04X' % (n, end, CEILING))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--asm-inc', required=True)
@@ -157,6 +225,8 @@ def main():
     ap.add_argument('--map', required=True)
     ap.add_argument('--jmptbl', required=True)
     ap.add_argument('--jmptbl-full', required=True)
+    ap.add_argument('--rthdr', required=True,
+                    help='the dynamic runtime header object')
     ap.add_argument('--pkg', nargs=3, required=True,
                     help='objects for dynamic arrays, files and trig')
     ap.add_argument('core', nargs='+', help='core objects')
@@ -185,7 +255,7 @@ def main():
             out = os.path.join(tmp, '%s.%d' % (PACKAGES[i][1], mask))
             pkgs.append((i, addr, out))
             addr += sizes.get(i, 0)
-        link(make_config(core_file, pkgs, False, tmp), cfg,
+        link(make_config(core_file, pkgs), cfg,
              core_objs + [args.pkg[i] for i in present])
 
         data = read(core_file)
@@ -218,25 +288,32 @@ def main():
     if len(variants) != expected:
         fail('expected %d variants, made %d' % (expected, len(variants)))
 
-    write(os.path.join(args.bindir, 'core%d' % n), core)
+    # The core file: the length of the rest, then the jump table and core
+    image = core[2:]
+    write(os.path.join(args.bindir, 'core%d' % n),
+          struct.pack('<H', len(image)) + image)
     for name, v in sorted(variants.items()):
         write(os.path.join(args.bindir, name), v)
 
     # The full runtime, with every package in the core's area and every
-    # jump table entry pointing at its routine
+    # jump table entry pointing at its routine. Link it once to get its
+    # size, then again at the highest page it fits below the ceiling.
     full_file = os.path.join(args.bindir, 'runtime%d' % n)
-    link(make_config(full_file, [(i, 0, None) for i in range(len(PACKAGES))],
-                     True, tmp),
-         cfg, [args.jmptbl_full] + args.core + args.pkg, args.map)
-    full = read(full_file)
-    if RT_BASE - 2 + len(full) > CEILING:
-        fail('runtime%d ends above $%04X' % (n, CEILING))
+    full_objs = [args.rthdr, args.jmptbl_full] + args.core + args.pkg
+    size = len(link_full(full_file, 0x2000, cfg, full_objs, tmp)) - 2
+    rt_low = (CEILING - size) & 0xFF00
+    if rt_low < RT_BASE + JMPTBL_SIZE:
+        fail('runtime%d is too large' % n)
+    full = link_full(full_file, rt_low, cfg, full_objs, tmp, args.map)
+    if len(full) - 2 != size:
+        fail('runtime%d changed size between links' % n)
+    check_full(full, n, rt_low)
 
-    print('runtime: core %d bytes, packages %s, full %d bytes'
-          % (len(core) - 2,
+    print('runtime: core %d bytes, packages %s, full %d bytes at $%04X'
+          % (len(image),
              ', '.join('%s %d' % (PACKAGES[i][1], sizes[i])
                        for i in range(len(PACKAGES))),
-             len(full) - 2))
+             size, rt_low))
 
 
 if __name__ == '__main__':

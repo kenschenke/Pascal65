@@ -168,6 +168,31 @@ The `.pas` and `.s` sources use CRLF in the working tree. In Git Bash, `sed -i` 
 
 The repo's autocrlf setting means `git diff` shows LF, so don't read those as a line-ending problem.
 
+## Runtime modes
+
+A compiled program gets the runtime (`src/lib/runtime`) one of two ways,
+chosen by the `(* $StaticRuntime *)` and `(* $DynamicRuntime *)` directives
+(`RT_MODE_*` in `asm.inc`). Both are allowed only in a program
+(`errDirectiveProgramOnly`) and not together (`errConflictingDirectives`).
+The parser keeps `runtimeMode` and the compiler apps pass it from
+`getParserRuntimeMode` to `setCodeGenRuntimeMode`.
+
+- **Dynamic, the default.** The PRG has an empty jump table at `RT_BASE` and
+  the loader (`loader.s` in codegenasm) after it. The header calls the
+  loader in place of `RT_RUNTIMEERRORINIT`. It loads `runtimeN` at `rtLow`
+  (from the file's header, `RTH_*` in `asm.inc`), copies the jump table,
+  patches the header's stack and heap tops and jumps to
+  `RT_RUNTIMEERRORINIT`. A missing or bad runtime, or a program that doesn't
+  fit below `rtLow`, prints a message and returns to BASIC. Codegen reads
+  `runtimeN`'s header at compile time for `rtLow`, which `checkCodeSize`
+  uses as the ceiling.
+- **Static.** Codegen writes the patched jump table and a `LINKADDR_RUNTIME`
+  tag followed by the list of files to copy (`linker.inc`). The linker
+  copies the rest of the core and the packages straight into the PRG.
+
+`runtimeErrorInit` clears the runtime's BSS in both modes, so a program run
+again from memory finds it zeroed.
+
 ## Runtime packages
 
 The runtime linked into compiled programs (`src/lib/runtime`) is split into a
@@ -182,11 +207,14 @@ table. Its entries for a package point at a stub (`rterror.s`) that raises
 
 |File                |Contents                                       |
 |--------------------|-----------------------------------------------|
-|`coreN`             |Jump table, core and its BSS                   |
+|`coreN`             |Its length, then the jump table, core and BSS  |
 |`dynarraysNa`       |Dynamic arrays, after the core                 |
 |`filesNa`, `filesNb`|Files, after the core or after dynamic arrays  |
 |`trigNa` to `trigNd`|Trig, after the core plus each subset of others|
-|`runtimeN`          |Every package in one image (not used yet)      |
+|`runtimeN`          |Every package, at `rtLow` up to $BFFF (dynamic)|
+
+`runtimeN` is linked twice: once for its size, then at the highest page it
+fits below $C000.
 
 A variant's letter is `a` plus the `RTF_*` bits of the packages before it.
 Each variant starts with a header listing the jump table entries to patch.
@@ -198,15 +226,30 @@ The icode overlay records the features a program uses in `runtimeFeatures`
 (`RTF_*` in `asm.inc`): a file variable, record field or array element
 (not a parameter), a `SetLength` call, or a library call to `Sin`, `Cos` or
 `Tan`. The compiler apps read it with `getIcodeRuntimeFeatures` and pass it
-to `setCodeGenRuntimeFeatures`. `genRuntime.s` copies the core, then the
-variant of each needed package. `make ALLPKGS=1` in `src/overlays/codegenasm`
-links every package into every program, for debugging.
+to `setCodeGenRuntimeFeatures`. In static mode `genRuntime.s` patches the
+jump table for each needed package and the linker copies the core, then the
+variant of each. Dynamic mode ignores the features. `make ALLPKGS=1` in
+`src/overlays/codegenasm` links every package into every program, for
+debugging.
 
 `src/lib/runtime/rtfiles.mk` lists the runtime files. Every disk image the
-compiler runs from must have them (`RTWRITE`).
+compiler runs from must have them (`RTWRITE`), and dynamic programs need
+`runtimeN` on the disk they run from.
 
 A test without a file variable can't write `testfailed`. The `rtpkg*` tests
 end with a runtime error instead (division by zero), which stops the chain.
+
+### Runtime tests
+
+The `rtpkg*` tests and `examples/fivedice.pas` say `$StaticRuntime`. Set 2
+of `compilertestasm` builds every program static (`FORCESTATIC`, from
+`STATICSETS` in its Makefile); sets 1 and 3 are dynamic. `rtdyn` runs with
+the dynamic runtime. After set 3 compiles, `rtdyntest.sh` checks that
+`rtdyna` and `rtdynb` (with and without `$DynamicRuntime`) are the same PRG
+and runs `rtdynb` with a missing, a bad and a too-low `runtimeN`.
+
+Don't write `$Word` in a `(* *)` comment of a Pascal test: the tokenizer
+reads it as a directive.
 
 ## Pre-compiled headers
 

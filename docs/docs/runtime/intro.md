@@ -14,6 +14,14 @@ The runtime library code is placed by the linker at a fixed address. This
 allows users of the runtime library to call into routines at a predictable
 address.
 
+Every call goes through the runtime's jump table at $2028. A program built
+with `$StaticRuntime` has the runtime linked in after the jump table. A
+program built for the dynamic runtime (the default) loads the file
+`runtime1` near the top of memory when it starts and copies its jump table
+to $2028. Either way, a library calls the same addresses. Libraries must
+call the runtime only through the jump table, never at an address inside
+the runtime itself.
+
 ## Runtime Header
 
 Libraries wishing to use the runtime library will need to include the

@@ -96,9 +96,12 @@ rw11: .byte $0
 
 rw12: .byte $0
 
-rw13: .byte $0
+rw13: .byte "staticruntime"
+      .byte $0
 
-rw14: .byte "implementation", $0
+rw14: .byte "implementation"
+      .byte "dynamicruntime"
+      .byte $0
 
 rwTable: .byte $0, $0
          .byte $0, $0

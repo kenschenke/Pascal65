@@ -132,6 +132,11 @@ MAX_LINE_LENGTH = 80
     tcVAR
     tcWHILE
     tcWITH
+
+    ; Compiler directives without a parameter. They're last so adding them
+    ; didn't change the codes of the tokens before them.
+    tcSTATICRUNTIME
+    tcDYNAMICRUNTIME
 .endenum
 
 ; Data Types

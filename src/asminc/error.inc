@@ -102,7 +102,9 @@ errArrayReturnType = 71
 errStaticDynArrayMismatch = 72
 errDynArrayInFile = 73
 errRuntimeFileInvalid = 74
-numParserErrors = 75
+errDirectiveProgramOnly = 75    ; $StaticRuntime/$DynamicRuntime in a unit
+errConflictingDirectives = 76   ; $StaticRuntime and $DynamicRuntime
+numParserErrors = 77
 
 rteNone = 0
 rteStackOverflow = 1

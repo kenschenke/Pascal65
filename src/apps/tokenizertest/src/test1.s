@@ -175,29 +175,31 @@ results: .byte tzLineNum, $03, $00              ; 0
          .byte tzToken, tcSTACKSIZE             ; 532
          .byte tzWord, $00, $04, $04, "1024"    ; 534
          .byte tzToken, tcSemicolon             ; 542
-         .byte tzLineNum, $1c, $00              ; 544
-         .byte tzToken, tcIF                    ; 547
-         .byte tzToken, tcELSE                  ; 549
-         .byte tzLineNum, $1d, $00              ; 551
-         .byte tzIdentifier, $01, "i"           ; 554
-         .byte tzToken, tcColonEqual            ; 557
-         .byte tzCardinal, $40, $e2, $01, $00   ; 559
-         .byte $06, "123456"                    ; 564
-         .byte tzToken, tcSemicolon             ; 571
-         .byte tzToken, tcEXPECTWARN            ; 573
-         .byte tzByte, $7b, $03, "123"          ; 575
-         .byte tzLineNum, $1e, $00              ; 581
-         .byte tzIdentifier, $03, "num"         ; 584
-         .byte tzToken, tcColonEqual            ; 589
-         .byte tzCardinal, $69, $b6, $01, $00   ; 591
-         .byte $06, "112233"                    ; 596
-         .byte tzToken, tcSemicolon             ; 603
-         .byte tzToken, tcEXPECTERROR           ; 605
-         .byte tzByte, $ea, $03, "234"          ; 607
-         .byte tzLineNum, $1f, $00              ; 613
-         .byte tzToken, tcEND                   ; 616
-         .byte tzToken, tcPeriod                ; 618
-         .byte tzToken, tcEndOfFile             ; 620
+         .byte tzToken, tcSTATICRUNTIME         ; 544
+         .byte tzToken, tcDYNAMICRUNTIME        ; 546
+         .byte tzLineNum, $1c, $00              ; 548
+         .byte tzToken, tcIF                    ; 551
+         .byte tzToken, tcELSE                  ; 553
+         .byte tzLineNum, $1d, $00              ; 555
+         .byte tzIdentifier, $01, "i"           ; 558
+         .byte tzToken, tcColonEqual            ; 561
+         .byte tzCardinal, $40, $e2, $01, $00   ; 563
+         .byte $06, "123456"                    ; 568
+         .byte tzToken, tcSemicolon             ; 575
+         .byte tzToken, tcEXPECTWARN            ; 577
+         .byte tzByte, $7b, $03, "123"          ; 579
+         .byte tzLineNum, $1e, $00              ; 585
+         .byte tzIdentifier, $03, "num"         ; 588
+         .byte tzToken, tcColonEqual            ; 593
+         .byte tzCardinal, $69, $b6, $01, $00   ; 595
+         .byte $06, "112233"                    ; 600
+         .byte tzToken, tcSemicolon             ; 607
+         .byte tzToken, tcEXPECTERROR           ; 609
+         .byte tzByte, $ea, $03, "234"          ; 611
+         .byte tzLineNum, $1f, $00              ; 617
+         .byte tzToken, tcEND                   ; 620
+         .byte tzToken, tcPeriod                ; 622
+         .byte tzToken, tcEndOfFile             ; 624
 
 .code
 

@@ -15,15 +15,25 @@
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
+.include "error.inc"
 
 OBJ_FILENUM = 2
 PRG_FILENUM = 3
+RT_FILENUM = 4          ; a runtime file (see copyRuntime)
 
 .export genObjCode
 
 .import sortLinkerTags
 
 .bss
+
+; For copyRuntime
+rtFiles: .res 1         ; files left to copy
+rtNameLen: .res 1
+rtSkip: .res 2          ; bytes to skip at the start of the file
+rtLeft: .res 2          ; bytes left to copy
+rtBlock: .res 1         ; bytes in this block (0 means 256)
+rtBuf: .res 256
 
 toGo: .res 2
 codePos: .res 2
@@ -462,7 +472,13 @@ L4: phx                 ; X contains length of filename (including ",p,w")
 .endproc
 
 .proc updateOffset
-    ldx #OBJ_FILENUM
+    ldx #TAGTOFIX::type
+    lda tagToFix,x
+    cmp #LINKADDR_RUNTIME
+    bne :+
+    jmp copyRuntime
+
+:   ldx #OBJ_FILENUM
     jsr CHKIN
     jsr CHRIN           ; discard the current byte
 
@@ -517,4 +533,164 @@ RN: clc
 
     ; Read the next tag to fix
     jmp readTagToFix
+.endproc
+
+; This routine copies the rest of a static runtime into the PRG, at a
+; LINKADDR_RUNTIME tag. The object file has the list of files to copy there
+; (see linker.inc), which isn't copied. codePos counts the bytes copied, as
+; codegen's codeOffset did. A runtime file that's missing or too short is a
+; compiler error, errRuntimeFileInvalid.
+;
+; The bytes are copied in blocks of up to 256, so the input and output
+; channels change once a block rather than once a byte.
+.proc copyRuntime
+    jsr readByte                ; The number of files
+    sta rtFiles
+
+L1: lda rtFiles
+    bne :+
+    jmp readTagToFix            ; Done
+
+    ; The file's name
+:   jsr readByte
+    sta rtNameLen
+    ldx #0
+:   phx
+    jsr readByte
+    plx
+    sta strbuf,x
+    inx
+    cpx rtNameLen
+    bne :-
+
+    ; The bytes to skip and to copy
+    jsr readByte
+    sta rtSkip
+    jsr readByte
+    sta rtSkip+1
+    jsr readByte
+    sta rtLeft
+    sta intOp1
+    jsr readByte
+    sta rtLeft+1
+    sta intOp1+1
+    lda codePos                 ; Count them now
+    clc
+    adc intOp1
+    sta codePos
+    lda codePos+1
+    adc intOp1+1
+    sta codePos+1
+
+    ; Open the file and skip to the part to copy
+    ldx DEVNUM
+    lda #RT_FILENUM
+    tay
+    jsr SETLFS
+    lda rtNameLen
+    ldx #<strbuf
+    ldy #>strbuf
+    jsr SETNAM
+    jsr OPEN
+    ldx #RT_FILENUM
+    jsr CHKIN
+L2: lda rtSkip
+    ora rtSkip+1
+    beq L3
+    jsr CHRIN
+    lda STATUS
+    bne ER                      ; The file is missing or too short
+    lda rtSkip
+    bne :+
+    dec rtSkip+1
+:   dec rtSkip
+    bra L2
+
+    ; Copy it
+L3: lda rtLeft
+    ora rtLeft+1
+    beq CL                      ; Branch if all of it is copied
+    jsr copyRuntimeBlock
+    bcc L3
+
+ER: jsr CLRCHN
+    lda #errRuntimeFileInvalid
+    ldx #0
+    ldy #0
+    jsr compilerError
+CL: lda #RT_FILENUM
+    jsr CLOSE
+    dec rtFiles
+    jmp L1
+.endproc
+
+; This routine copies the next block of a runtime file, up to 256 bytes of
+; rtLeft, and subtracts it from rtLeft. The carry is set if the file ends
+; early or fails.
+.proc copyRuntimeBlock
+    lda rtLeft+1
+    beq :+
+    lda #0                      ; A whole page
+    bra :++
+:   lda rtLeft
+:   sta rtBlock
+    ldx #RT_FILENUM
+    jsr CHKIN
+    ldx #0
+L1: phx
+    jsr CHRIN
+    plx
+    sta rtBuf,x
+    inx
+    lda STATUS
+    beq L2
+    ; The file ended or failed. Only its last byte may have EOF set.
+    and #$bf
+    bne ER
+    cpx rtBlock
+    bne ER                      ; Not the last byte of the block
+    lda rtBlock                 ; Nor the last block: rtLeft = rtBlock
+    bne :+
+    lda rtLeft                  ; A whole page: rtLeft = $100
+    bne ER
+    lda rtLeft+1
+    cmp #1
+    bne ER
+    bra L2
+:   lda rtLeft+1
+    bne ER
+    lda rtLeft
+    cmp rtBlock
+    bne ER
+L2: cpx rtBlock
+    bne L1
+
+    ldx #PRG_FILENUM
+    jsr CHKOUT
+    ldx #0
+:   lda rtBuf,x
+    jsr CHROUT
+    inx
+    cpx rtBlock
+    bne :-
+
+    ; Subtract the block from rtLeft. A whole page (rtBlock = 0) leaves
+    ; the low byte as it is and takes one from the high byte.
+    lda rtLeft
+    sec
+    sbc rtBlock
+    sta rtLeft
+    lda rtBlock
+    beq :+
+    lda rtLeft+1
+    sbc #0
+    sta rtLeft+1
+    clc
+    rts
+:   dec rtLeft+1
+    clc
+    rts
+
+ER: sec
+    rts
 .endproc

@@ -1,4 +1,5 @@
 Program RtPkgB;
+(* $StaticRuntime *)
 
 // Tests the dynamic arrays and trig runtime packages without files. Trig
 // follows dynamic arrays (dynarrays1a, trig1b). The program declares no

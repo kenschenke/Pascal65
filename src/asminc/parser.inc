@@ -8,6 +8,7 @@ getParserUnitsList = PARSER_BASE + 9
 getParserStackSize = PARSER_BASE + 12
 registerExpectWarnHandler = PARSER_BASE + 15
 registerExpectErrorHandler = PARSER_BASE + 18
+getParserRuntimeMode = PARSER_BASE + 21     ; RT_MODE_* (asm.inc) in A
 
 .macro resync list1, list2, list3
     lda #<list1

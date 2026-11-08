@@ -12,10 +12,12 @@
 .include "4510macros.inc"
 .include "zeropage.inc"
 .include "asmlib.inc"
+.include "asm.inc"
 
 .export handleParse, parserError, setUnitsList, getUnitsList, units
 .export parserIcode, parserToken, currentLineNumber, parserString, parserValue, parserType
 .export parserModuleType, runtimeStackSize, isInUnitInterface, getRuntimeStackSize
+.export runtimeMode, runtimeModeSeen, getRuntimeMode
 .export lastParserString, saveParserString, calcNamePtr, parserInit
 .export registerExpectWarnHandler, registerExpectErrorHandler
 .export expectWarnHandler, expectErrorHandler
@@ -32,6 +34,8 @@ lastParserString: .res 81
 parserValue: .res 4
 parserType: .res 1
 runtimeStackSize: .res 2
+runtimeMode: .res 1         ; RT_MODE_* (asm.inc)
+runtimeModeSeen: .res 1     ; non-zero after $StaticRuntime or $DynamicRuntime
 parserModuleType: .res 1
 isInUnitInterface: .res 1
 units: .res 4
@@ -63,6 +67,12 @@ expectErrorHandler: .res 2
     lda #2
     sta runtimeStackSize+1
 
+    ; The runtime is loaded dynamically by default
+    lda #RT_MODE_DYNAMIC
+    sta runtimeMode
+    lda #0
+    sta runtimeModeSeen
+
     jsr getToken
     jmp parseModule
 .endproc
@@ -86,6 +96,14 @@ expectErrorHandler: .res 2
 .proc getRuntimeStackSize
     lda runtimeStackSize
     ldx runtimeStackSize+1
+    rts
+.endproc
+
+; This routine returns the runtime mode (RT_MODE_* in asm.inc) in A, from
+; the $StaticRuntime or $DynamicRuntime directive of the last module
+; parsed. The compiler reads it after parsing the program.
+.proc getRuntimeMode
+    lda runtimeMode
     rts
 .endproc
 

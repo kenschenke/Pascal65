@@ -65,6 +65,9 @@ strRtPkgNone: .asciiz "rtpkgnone"
 strRtPkgA: .asciiz "rtpkga"
 strRtPkgB: .asciiz "rtpkgb"
 strRtPkgC: .asciiz "rtpkgc"
+strRtDyn: .asciiz "rtdyn"
+strRtDynA: .asciiz "rtdyna"
+strRtDynB: .asciiz "rtdynb"
 strFiveDice: .asciiz "fivedice"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
@@ -132,6 +135,8 @@ tests:
     .byte .lobyte(strRtPkgA), .hibyte(strRtPkgA)
     .byte .lobyte(strRtPkgB), .hibyte(strRtPkgB)
     .byte .lobyte(strRtPkgC), .hibyte(strRtPkgC)
+    ; The dynamic runtime, with every package
+    .byte .lobyte(strRtDyn), .hibyte(strRtDyn)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)
@@ -142,7 +147,9 @@ tests:
 ; report. They are compiled before the tests above, aren't linked and aren't
 ; part of the chain.
 errorTests:
-.if TESTSET = 0 || TESTSET = 1
+; Set 1 runs it with the dynamic runtime and set 2 with the static one
+; (see FORCESTATIC in runcompiler.s).
+.if TESTSET = 0 || TESTSET = 1 || TESTSET = 2
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
     .byte errCodeSegmentOverflow
 .endif
@@ -154,6 +161,10 @@ compileOnlyTests:
 .if TESTSET = 0 || TESTSET = 3
     ; The split runtime must leave fivedice room (see plans/runtime.md)
     .byte .lobyte(strFiveDice), .hibyte(strFiveDice)
+    ; $DynamicRuntime must make the same PRG as no directive. The
+    ; Makefile compares them (see testset).
+    .byte .lobyte(strRtDynA), .hibyte(strRtDynA)
+    .byte .lobyte(strRtDynB), .hibyte(strRtDynB)
 .endif
     .byte $00, $00
 

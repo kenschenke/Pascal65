@@ -42,9 +42,37 @@ runtimeMsgsEnd:
 
 .code
 
-; Initialize the runtime error message table
+; The runtime's BSS: the core's, then the package variables (pkgbss.s)
+.import __BSS_RUN__, __BSS_SIZE__, __PKGBSS_RUN__, __PKGBSS_SIZE__
+RTBSS_SIZE = __BSS_SIZE__ + __PKGBSS_SIZE__
+.assert __PKGBSS_RUN__ = __BSS_RUN__ + __BSS_SIZE__, lderror, "PKGBSS must follow BSS"
+
+; The program header calls this before any other runtime routine. It
+; clears the runtime's BSS. The runtime files carry their BSS as zeros, but
+; a program run again from memory, or a dynamic runtime loaded over one a
+; previous program used, finds it as it was left. Real hardware doesn't
+; zero RAM either.
 .proc runtimeErrorInit
-    rts
+    lda #<__BSS_RUN__
+    sta ptr1
+    lda #>__BSS_RUN__
+    sta ptr1+1
+    lda #0
+    tay
+    ldx #>RTBSS_SIZE            ; Whole pages first
+    beq L2
+L1: sta (ptr1),y
+    iny
+    bne L1
+    inc ptr1+1
+    dex
+    bne L1
+L2: cpy #<RTBSS_SIZE            ; Then the rest
+    beq DN
+    sta (ptr1),y
+    iny
+    bne L2
+DN: rts
 .endproc
 
 ; Prints runtime error message to console and exits

@@ -9,6 +9,21 @@ LINKADDR_LOW = 1
 LINKADDR_HIGH = 2
 LINKADDR_BOTH = 3
 
+; This one marks where the rest of a static runtime goes (see genRuntime.s
+; in codegen). The object file has a list of the runtime files to copy
+; there, which isn't part of the program:
+;
+;    .byte number of files
+;    Then for each file:
+;       .byte length of its name
+;       the name to open it with, such as "trig1c,p,r"
+;       .word bytes to skip at its start
+;       .word bytes to copy after them
+;
+; The linker copies the files straight into the PRG. The offsets of the
+; tags after this one count the bytes copied, but not the list.
+LINKADDR_RUNTIME = 4
+
 ; This structure defines a location that needs to be resolved by the linker.
 ; The label is the location being referenced. The offset is the location
 ; of the reference in the object code.

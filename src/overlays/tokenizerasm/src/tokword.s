@@ -97,9 +97,12 @@ rw11: .byte "expecterror", tcEXPECTERROR
 
 rw12: .byte $0
 
-rw13: .byte $0
+rw13: .byte "staticruntime", tcSTATICRUNTIME
+      .byte $0
 
-rw14: .byte "implementation", tcIMPLEMENTATION, $0
+rw14: .byte "implementation", tcIMPLEMENTATION
+      .byte "dynamicruntime", tcDYNAMICRUNTIME
+      .byte $0
 
 rwTable: .byte $0, $0
          .byte $0, $0

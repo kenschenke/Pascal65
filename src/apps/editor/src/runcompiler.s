@@ -36,6 +36,7 @@ astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
 runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
+runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 
 .data
 
@@ -132,6 +133,8 @@ strEditorFn: .asciiz "pascal65"
     jsr getParserStackSize
     sta runtimeStackSize
     stx runtimeStackSize+1
+    jsr getParserRuntimeMode
+    sta runtimeMode
 
     ; Free the tokens
     ldq tokens
@@ -246,6 +249,8 @@ strEditorFn: .asciiz "pascal65"
     jsr setCodeGenStackSize
     lda runtimeFeatures
     jsr setCodeGenRuntimeFeatures
+    lda runtimeMode
+    jsr setCodeGenRuntimeMode
     lda loopCode
     cmp #3 ; EDITOR_LOOP_RUN
     bne L1

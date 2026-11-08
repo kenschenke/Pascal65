@@ -66,13 +66,19 @@ ch: .res 1
 .code
 
 ; This routine sets the Z flag if the current token is
-; a compiler directive that has a paramter. For now,
-; it just falls straight into isCompilerDirective.
-directiveHasParam:
-
-; This routine sets the Z flag if the current token is
 ; a compiler directive.
 .proc isCompilerDirective
+    lda tokenCode
+    cmp #tcSTATICRUNTIME
+    beq DN
+    cmp #tcDYNAMICRUNTIME
+    bne directiveHasParam
+DN: rts
+.endproc
+
+; This routine sets the Z flag if the current token is
+; a compiler directive that has a parameter.
+.proc directiveHasParam
     lda tokenCode
     cmp #tcSTACKSIZE
     beq DN

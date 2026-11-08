@@ -11,6 +11,7 @@
 
 .import handleParse, setUnitsList, getUnitsList, getRuntimeStackSize
 .import parserInit, registerExpectWarnHandler, registerExpectErrorHandler
+.import getRuntimeMode
 
 .segment "JMPTBL"
 
@@ -21,3 +22,4 @@ jmp getUnitsList
 jmp getRuntimeStackSize
 jmp registerExpectWarnHandler
 jmp registerExpectErrorHandler
+jmp getRuntimeMode

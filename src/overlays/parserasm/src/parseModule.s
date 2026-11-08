@@ -16,11 +16,13 @@
 .include "4510macros.inc"
 .include "ast.inc"
 .include "zeropage.inc"
+.include "asm.inc"
 
 .export parseModule
 
 .import parseModuleHeader, parserToken, currentLineNumber, parserModuleType, getToken
 .import parseBlock, condGetToken, parserValue, tokenIn, runtimeStackSize
+.import runtimeMode, runtimeModeSeen
 .import tlHeaderFollow, tlDeclarationStart, tlStatementStart, tlProgramEnd
 .import tlGlobalDirectives, doResync, isInUnitInterface, parserError
 
@@ -68,8 +70,10 @@ L2: lda #<tlGlobalDirectives
     bne L3
     lda parserToken                 ; if (parserToken == tcSTACKSIZE)
     cmp #tcSTACKSIZE
-    bne L2
-    jsr getToken
+    beq :+
+    jsr parseRuntimeDirective       ; $StaticRuntime or $DynamicRuntime
+    bra L2
+:   jsr getToken
     lda parserToken
     cmp #tcNumber                   ; if (parserToken != tcNumber)
     beq :+
@@ -119,4 +123,32 @@ L3: lda #1
 
     ldq progDecl
     rts
+.endproc
+
+; This routine handles the $StaticRuntime or $DynamicRuntime directive in
+; parserToken and gets the next token. They choose how the program gets
+; its runtime (runtimeMode), so they're allowed only in a program, and not
+; both of them. Repeating one is harmless.
+.proc parseRuntimeDirective
+    ldx #RT_MODE_STATIC
+    lda parserToken
+    cmp #tcSTATICRUNTIME
+    beq :+
+    ldx #RT_MODE_DYNAMIC
+:   lda parserModuleType
+    cmp #TYPE_PROGRAM
+    beq :+
+    lda #errDirectiveProgramOnly    ; In a unit or a library
+    bra ER
+:   lda runtimeModeSeen
+    beq ST
+    cpx runtimeMode
+    beq DN                          ; The same one again
+    lda #errConflictingDirectives
+ER: jsr parserError
+    bra DN
+ST: stx runtimeMode
+    lda #1
+    sta runtimeModeSeen
+DN: jmp getToken
 .endproc

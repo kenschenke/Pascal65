@@ -1,4 +1,5 @@
 Program RtPkgA;
+(* $StaticRuntime *)
 
 // Tests the trig runtime package on its own, right after the core
 // (trig1a). The program calls Sin, Cos and Tan, and declares no file

@@ -17,7 +17,7 @@
 .export skipWhiteSpace
 
 .import getLine, getChar, getCurrentChar, getCharCode, putBackChar
-.import getWordToken, tokenCode, currentLineNumber
+.import getWordToken, tokenCode, currentLineNumber, isCompilerDirective
 
 .bss
 
@@ -86,13 +86,9 @@ L2: jsr getChar                 ; Get the next character
     jsr getChar
     ; Check for a compiler directive
     jsr getWordToken
-    ; If a compiler directive was found, skip processing
-    lda tokenCode
-    cmp #tcSTACKSIZE
-    beq L3
-    cmp #tcEXPECTWARN
-    beq L3
-    cmp #tcEXPECTERROR
+    ; If a compiler directive was found, skip processing. A is left with
+    ; tokenCode, as it was before.
+    jsr isCompilerDirective
     bne L4
 
 L3: rts

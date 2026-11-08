@@ -38,7 +38,8 @@ tlExpressionStart: .byte tcPlus, tcMinus, tcIdentifier, tcNumber, tcString, tcNO
 tlFieldDeclFollow: .byte tcSemicolon, tcIdentifier, tcEND, tcDummy
 tlFormalParmsFollow: .byte tcRParen, tcSemicolon, tcDummy
 tlFuncIdFollow: .byte tcLParen, tcColon, tcSemicolon, tcDummy
-tlGlobalDirectives: .byte tcSTACKSIZE, tcDummy
+tlGlobalDirectives: .byte tcSTACKSIZE, tcSTATICRUNTIME, tcDYNAMICRUNTIME
+                    .byte tcDummy
 tlHeaderFollow: .byte tcSemicolon, tcDummy
 tlIdentifierFollow: .byte tcComma, tcIdentifier, tcColon, tcSemicolon, tcDummy
 tlIdentifierStart: .byte tcIdentifier, tcDummy

@@ -20,7 +20,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 20
+NUM_TESTS = 24
 
 .export runErrorTests
 .import testFail
@@ -76,6 +76,10 @@ errors: .byte $06, $00, errMissingIdentifier        ; Missing identifier after P
         .byte $0a, $00, errUnexpectedToken          ; Else after a semicolon
         .byte $0a, $00, errMissingSemicolon         ; Missing ; before If
         .byte $0b, $00, errMissingUNTIL             ; Repeat ended by End
+        .byte $0a, $00, errDirectiveProgramOnly     ; StaticRuntime in a unit
+        .byte $0a, $00, errDirectiveProgramOnly     ; DynamicRuntime in a library
+        .byte $08, $00, errConflictingDirectives    ; Both runtime directives
+        .byte $0a, $00, errConflictingDirectives    ; Repeated, then the other
 
 .code
 

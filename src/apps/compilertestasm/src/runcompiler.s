@@ -20,6 +20,7 @@
 .include "icode.inc"
 .include "resolver.inc"
 .include "4510macros.inc"
+.include "asm.inc"
 
 .export runCompiler, unitList
 
@@ -40,6 +41,7 @@ astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
 runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
+runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 
 .code
 
@@ -99,6 +101,14 @@ runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
     jsr getParserStackSize
     sta runtimeStackSize
     stx runtimeStackSize+1
+.ifdef FORCESTATIC
+    ; This set runs every test with the static runtime (see the
+    ; Makefile), so static mode keeps the coverage it had
+    lda #RT_MODE_STATIC
+.else
+    jsr getParserRuntimeMode
+.endif
+    sta runtimeMode
 
     ; Check the error count
     lda errorCount
@@ -205,6 +215,8 @@ runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
     jsr setCodeGenStackSize
     lda runtimeFeatures
     jsr setCodeGenRuntimeFeatures
+    lda runtimeMode
+    jsr setCodeGenRuntimeMode
     lda nextTestPrg
     beq L1
     lda #<nextTestPrg

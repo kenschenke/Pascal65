@@ -10,7 +10,7 @@ OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 
 # The runtime is split into a core and packages (see src/asminc/rtpkg.inc
 # and mkruntime.py). Every file name ends with the ABI version.
-ABI := $(shell sed -n 's/^RT_ABI_VERSION *= *\([0-9]*\).*//p' ../../asminc/asm.inc)
+ABI := $(shell sed -n 's/^RT_ABI_VERSION *= *\([0-9]*\).*/\1/p' ../../asminc/asm.inc)
 COREFILE := $(BINTARGETDIR)/core$(ABI)
 RTFILES := $(COREFILE) $(BINTARGETDIR)/runtime$(ABI)
 RTFILES += $(BINTARGETDIR)/dynarrays$(ABI)a
@@ -54,7 +54,9 @@ OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOU
 PKGOBJECTS := $(addprefix $(OBJTARGETDIR)/,dynarray.o fileops.o trig.o)
 JMPTBLOBJ := $(OBJTARGETDIR)/jmptbl.o
 JMPTBLFULLOBJ := $(OBJTARGETDIR)/jmptblfull.o
-COREOBJECTS := $(filter-out $(PKGOBJECTS) $(JMPTBLOBJ),$(OBJECTS))
+# The header of the dynamic runtime, linked only into runtimeN
+RTHDROBJ := $(OBJTARGETDIR)/rthdr.o
+COREOBJECTS := $(filter-out $(PKGOBJECTS) $(JMPTBLOBJ) $(RTHDROBJ),$(OBJECTS))
 
 DEPENDS := $(OBJECTS:.o=.d)
 DEPFLAGS = --create-dep $(@:.o=.dep)
@@ -95,7 +97,10 @@ $(JMPTBLFULLOBJ): $(SRCDIR)/jmptbl.s | $(OBJTARGETDIR)
 
 # mkruntime.py writes every runtime file in one run
 $(COREFILE): $(OBJECTS) $(JMPTBLFULLOBJ) mkruntime.py ../../asminc/asm.inc | $(BINTARGETDIR)
-	python3 mkruntime.py --asm-inc ../../asminc/asm.inc 		--objdir $(OBJTARGETDIR) --bindir $(BINTARGETDIR) --map runtime.map 		--jmptbl $(JMPTBLOBJ) --jmptbl-full $(JMPTBLFULLOBJ) 		--pkg $(PKGOBJECTS) $(COREOBJECTS)
+	python3 mkruntime.py --asm-inc ../../asminc/asm.inc \
+		--objdir $(OBJTARGETDIR) --bindir $(BINTARGETDIR) --map runtime.map \
+		--jmptbl $(JMPTBLOBJ) --jmptbl-full $(JMPTBLFULLOBJ) \
+		--rthdr $(RTHDROBJ) --pkg $(PKGOBJECTS) $(COREOBJECTS)
 
 clean:
 	$(RM) $(OBJECTS) $(JMPTBLFULLOBJ)

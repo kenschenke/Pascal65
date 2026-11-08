@@ -1,4 +1,5 @@
 Program RtPkgNone;
+(* $StaticRuntime *)
 
 // Tests a program that uses none of the runtime packages: no file
 // variable, no SetLength, no Sin, Cos or Tan. Code generation must link

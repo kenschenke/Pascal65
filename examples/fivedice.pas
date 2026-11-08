@@ -10,6 +10,7 @@
 *)
 
 Program FiveDice;
+(* $StaticRuntime *)
 
 Uses Screen;
 

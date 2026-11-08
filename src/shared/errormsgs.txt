@@ -73,3 +73,5 @@ Function returns array
 Static vs dynamic array
 Dynamic array in file
 Missing runtime file
+Program-only directive
+Conflicting directives

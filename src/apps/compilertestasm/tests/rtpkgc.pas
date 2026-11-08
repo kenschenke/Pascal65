@@ -1,4 +1,5 @@
 Program RtPkgC;
+(* $StaticRuntime *)
 
 // Tests all three runtime packages in one program: dynamic arrays, then
 // files, then trig (dynarrays1a, files1b, trig1d). Every package's jump

@@ -6,6 +6,7 @@ setCodeGenStackSize = CODEGEN_BASE + 3
 setCodeGenUnitList = CODEGEN_BASE + 6
 setCodeGenProgramChain = CODEGEN_BASE + 9
 setCodeGenRuntimeFeatures = CODEGEN_BASE + 12
+setCodeGenRuntimeMode = CODEGEN_BASE + 15      ; RT_MODE_* (asm.inc) in A
 
 .macro genOne opcode
     lda #opcode

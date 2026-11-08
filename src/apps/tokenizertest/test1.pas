@@ -24,7 +24,7 @@ Var While With
 1.234e+06 2.345E-07 3.456e+123
 123.456e+123+456 123.45+678
 Begins
-(* $StackSize 1024 *);
+(* $StackSize 1024 *); (* $StaticRuntime *) (* $DynamicRuntime *)
 If (* Then Embedded Comment *) Else
 i := 123456; (* $ExpectWarn 123 *)
 num := 112233; (* $ExpectError 234 *)

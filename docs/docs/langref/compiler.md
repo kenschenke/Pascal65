@@ -51,6 +51,59 @@ End.
     If a program exhibits this kind of behavior, increasing the stack size
     might fix it.
 
+### Runtime Mode
+
+Every compiled program needs the Pascal65 runtime library. A program can get
+it in one of two ways:
+
+* **Dynamic** (the default): the program loads the runtime from a file named
+  `runtime1` when it starts. The program file is much smaller, and compiling
+  is faster.
+* **Static**: the runtime is linked into the program file. The program
+  carries only the parts of the runtime it uses, and needs no other file.
+
+```
+(* $StaticRuntime *)
+(* $DynamicRuntime *)
+```
+
+`$StaticRuntime` links the runtime into the program. `$DynamicRuntime` asks
+for the default explicitly. The directives can only be used in a program,
+not in a unit or a library, and a program can't use both.
+
+#### Example
+
+```
+Program Test;
+
+// Link the runtime into the program
+(* $StaticRuntime *)
+
+Begin
+    Writeln('Hello world');
+End.
+```
+
+!!! warning
+
+    A program compiled with the dynamic runtime (the default) won't run
+    without the `runtime1` file on the disk it was loaded from. If it's
+    missing, the program prints `runtime file runtime1 not found` and
+    returns to BASIC. To give a program to someone else, give them
+    `runtime1` with it, or compile it with `$StaticRuntime`.
+
+!!! note
+
+    The dynamic runtime is the whole runtime library, and it stays in
+    memory below $C000 while the program runs. A dynamic program therefore
+    has less room for its code, heap and stack than a static one. If a
+    program is too large, the compiler reports a code segment overflow
+    and suggests `$StaticRuntime`, which may make it fit.
+
+    The number in the file name is the runtime's version. A program loads
+    the runtime version it was compiled for, so a newer compiler's runtime
+    on the same disk doesn't break older programs.
+
 ### Expect Warning and Expect Error
 
 These directives are used for compiler development and testing. They

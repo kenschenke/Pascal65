@@ -136,6 +136,25 @@ RTF_FILES = $02             ; a file variable is declared
 RTF_TRIG = $04              ; Sin, Cos or Tan is called
 RTF_ALL = $07
 
+; Runtime modes, chosen by the $StaticRuntime and $DynamicRuntime
+; directives
+RT_MODE_DYNAMIC = 0         ; the default: the program loads runtimeN
+RT_MODE_STATIC = 1          ; the split runtime is linked into the program
+
+; The dynamic runtime, runtimeN, loads at rtLow, a page boundary, and ends
+; at or below $BFFF. It starts with this header, then the jump table (which
+; a program copies to RT_BASE), then the rest of the runtime.
+RTH_MAGIC = 0               ; 4 bytes, ASCII "P65R"
+RTH_VERSION = 4             ; RT_ABI_VERSION
+RTH_LOW = 5                 ; rtLow, the load address
+RTH_BSS = 7                 ; the runtime's BSS
+RTH_BSSLEN = 9
+RTH_SIZE = 11
+RTH_MAGIC0 = $50            ; "P65R" in ASCII, not PETSCII
+RTH_MAGIC1 = $36
+RTH_MAGIC2 = $35
+RTH_MAGIC3 = $52
+
 RT_STACKCLEANUP         = RT_BASE + 0
 RT_STACKINIT            = RT_BASE + 3
 RT_PUSHINTSTACK         = RT_BASE + 6

@@ -22,19 +22,25 @@ AND_IMMEDIATE = 2
 ORA_IMMEDIATE = 3
 LDA_ZEROPAGE = 4
 
-CODESEG_CEIL = $c000
-
 ; The program image, its heap and its runtime stack share $2001 up to
-; CODESEG_CEIL. checkCodeSize fails a program that would leave less than
-; this much heap.
+; codeCeiling: $C000 for a static program, rtLow for a dynamic one (see
+; genRuntime.s). checkCodeSize fails a program that would leave less than
+; this much heap. The dynamic runtime's loader (loader.s) checks the same.
 MIN_HEAP_SIZE = 256
 
 .export writePrgHeader, checkCodeSize
 .export tagBSS_ZPBACKUP, tagBSS_EXITHANDLER, tagBSS_TENSTABLE, tagBSS_INPUTBUF
 .export tagBSS_HEAPBOTTOM, tagBSS_INTBUF
 
+; Offsets in the header that the loader reads and patches
+.exportzp PRG_HEADER_CODE_OFFSET_1, PRG_HEADER_CODE_OFFSET_2
+.exportzp PRG_HEADER_CODE_OFFSET_3, PRG_HEADER_STACKSIZE1_L
+.exportzp PRG_HEADER_STACKSIZE1_H, PRG_HEADER_STACKSIZE2_L
+.exportzp PRG_HEADER_STACKSIZE2_H, PRG_HEADER_STACKTOP_H
+
 .import genThreeAddr
 .import loadLibraries, genRuntime, runtimeStackSize, initLibraries, incCodeOffset
+.import runtimeMode, codeCeiling, LOADER_ADDR
 
 .bss
 
@@ -53,6 +59,7 @@ tagBSS_INPUTBUF: .asciiz "inputbuf"
 tagBSS_EXITHANDLER: .asciiz "exithandler"
 strTooLarge1: .asciiz "Program is "
 strTooLarge2: .asciiz " bytes too large"
+strTryStatic: .asciiz "$StaticRuntime may make it fit"
 
 prgHeader:
 
@@ -72,6 +79,9 @@ prgHeader:
     PRG_HEADER_STACKSIZE1_H = 49
     PRG_HEADER_STACKSIZE2_L = 54
     PRG_HEADER_STACKSIZE2_H = 58
+    PRG_HEADER_RTINIT_L = 24
+    PRG_HEADER_RTINIT_H = 25
+    PRG_HEADER_STACKTOP_H = 41
 
     ; Disable BASIC ROM
     .byte OC_LDA_ZEROPAGE, 1
@@ -91,7 +101,10 @@ prgHeader:
     .byte OC_TSX
     .byte OC_STX_ZEROPAGE, ZP_SAVEDSTACK
 
-    .byte OC_JSR, .LOBYTE(RT_RUNTIMEERRORINIT), .HIBYTE(RT_RUNTIMEERRORINIT)
+    ; The runtime's first call. A dynamic program calls the loader instead,
+    ; which loads the runtime and then jumps to RT_RUNTIMEERRORINIT.
+    .assert * - prgHeader + 1 = PRG_HEADER_RTINIT_L, error, "header offset"
+    .byte OC_JSR, 0, 0          ; PRG_HEADER_RTINIT_L/H
 
     ; Set the exit handler
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_CODE_EXIT_HANDLER_L
@@ -103,19 +116,25 @@ prgHeader:
     .byte OC_LDA_IMMEDIATE, 0
     .byte OC_STA_ZEROPAGE, ZP_SPL
     .byte OC_STA_ZEROPAGE, ZP_STACKFRAMEL
-    .byte OC_LDA_IMMEDIATE, $c0             ; Runtime stack top at $c000
-    .byte OC_STA_ZEROPAGE, ZP_SPH           ; (grows downward)
+    ; Runtime stack top at codeCeiling, a page boundary (grows downward)
+    .assert * - prgHeader + 1 = PRG_HEADER_STACKTOP_H, error, "header offset"
+    .byte OC_LDA_IMMEDIATE, 0               ; PRG_HEADER_STACKTOP_H
+    .byte OC_STA_ZEROPAGE, ZP_SPH
     .byte OC_STA_ZEROPAGE, ZP_STACKFRAMEH
 
     ; Set the runtime stack size and initialize the stack
+    .assert * - prgHeader + 1 = PRG_HEADER_STACKSIZE1_L, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE1_L
     .byte OC_LDX_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE1_H
     .byte OC_JSR, .LOBYTE(RT_STACKINIT), .HIBYTE(RT_STACKINIT)
 
+    ; The heap's top, below the stack, and its bottom, after the program
+    .assert * - prgHeader + 1 = PRG_HEADER_STACKSIZE2_L, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE2_L
     .byte OC_STA_ZEROPAGE, ZP_PTR1L
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE2_H
     .byte OC_STA_ZEROPAGE, ZP_PTR1H
+    .assert * - prgHeader + 1 = PRG_HEADER_CODE_OFFSET_2, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_CODE_OFFSET_2
     .byte OC_LDX_IMMEDIATE, 0   ; PRG_HEADER_CODE_OFFSET_3
     .byte OC_JSR, .LOBYTE(RT_HEAPINIT), .HIBYTE(RT_HEAPINIT)
@@ -327,9 +346,25 @@ codeBase = $2001
     ldx #PRG_HEADER_STACKSIZE1_H
     sta prgHeader,x
 
-    lda #.LOBYTE(CODESEG_CEIL)
+    ; The runtime's first call: the loader in a dynamic program
+    lda runtimeMode
+    cmp #RT_MODE_STATIC
+    beq :+
+    lda #.LOBYTE(LOADER_ADDR)
+    ldx #.HIBYTE(LOADER_ADDR)
+    bra :++
+:   lda #.LOBYTE(RT_RUNTIMEERRORINIT)
+    ldx #.HIBYTE(RT_RUNTIMEERRORINIT)
+:   sta prgHeader + PRG_HEADER_RTINIT_L
+    stx prgHeader + PRG_HEADER_RTINIT_H
+
+    ; The stack top and the heap top, from codeCeiling. The loader of a
+    ; dynamic program sets them again for the runtime it loads.
+    lda codeCeiling+1
+    sta prgHeader + PRG_HEADER_STACKTOP_H
+    lda codeCeiling
     sta intOp1
-    lda #.HIBYTE(CODESEG_CEIL)
+    lda codeCeiling+1
     sta intOp1+1
     lda runtimeStackSize
     sta intOp2
@@ -366,7 +401,7 @@ codeBase = $2001
 .endproc
 
 ; This routine checks that the program fits in memory once all of it has
-; been written. The runtime stack grows down from CODESEG_CEIL and the heap
+; been written. The runtime stack grows down from codeCeiling and the heap
 ; runs from the end of the image up to the heap's MAT, four bytes below the
 ; stack (see the header above). If less than MIN_HEAP_SIZE bytes are left
 ; for the heap, errCodeSegmentOverflow is reported, followed by a line
@@ -401,10 +436,10 @@ codeBase = $2001
     adcq intOp32
     stq intOp1
 
-    ; intOp1/intOp2 = bytes over CODESEG_CEIL
-    lda #.LOBYTE(CODESEG_CEIL)
+    ; intOp1/intOp2 = bytes over codeCeiling
+    lda codeCeiling
     sta intOp32
-    lda #.HIBYTE(CODESEG_CEIL)
+    lda codeCeiling+1
     sta intOp32+1
     ldq intOp1
     sec
@@ -453,6 +488,19 @@ ER: ldq intOp1
     bne :-
 :   lda #13
     jsr CHROUT
-    sec
+
+    ; A dynamic program has less room than a static one
+    lda runtimeMode
+    cmp #RT_MODE_STATIC
+    beq :+++
+    ldx #0
+:   lda strTryStatic,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda #13
+    jsr CHROUT
+:   sec
     rts
 .endproc
