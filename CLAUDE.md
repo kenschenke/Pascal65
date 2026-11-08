@@ -110,6 +110,8 @@ overlays and asmlib don't fill BSS. `heapAlloc` zeros every block it returns.
 
 A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never linked or run. The compile step fails unless each one reports exactly that one error. `toolarge.pas` checks `errCodeSegmentOverflow`, which code generation reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000.
 
+A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
+
 ### Adding a test program
 
 Name its failure maker `testfailed`, call `ReportFailure` and make sure the program doesn't use that filename itself.
@@ -165,6 +167,46 @@ The `.pas` and `.s` sources use CRLF in the working tree. In Git Bash, `sed -i` 
 ### Git
 
 The repo's autocrlf setting means `git diff` shows LF, so don't read those as a line-ending problem.
+
+## Runtime packages
+
+The runtime linked into compiled programs (`src/lib/runtime`) is split into a
+core and three packages: dynamic arrays (`dynarray.s`), files (`fileops.s`,
+the file-only half of file I/O) and trig (`trig.s`). `src/asminc/rtpkg.inc`
+describes the layout. The core never calls a package except through the jump
+table. Its entries for a package point at a stub (`rterror.s`) that raises
+`rtePackageNotLinked` and prints the package number.
+
+`mkruntime.py` links every package combination and writes these files to
+`bin/mega65`. N is `RT_ABI_VERSION` in `asm.inc`:
+
+|File                |Contents                                       |
+|--------------------|-----------------------------------------------|
+|`coreN`             |Jump table, core and its BSS                   |
+|`dynarraysNa`       |Dynamic arrays, after the core                 |
+|`filesNa`, `filesNb`|Files, after the core or after dynamic arrays  |
+|`trigNa` to `trigNd`|Trig, after the core plus each subset of others|
+|`runtimeN`          |Every package in one image (not used yet)      |
+
+A variant's letter is `a` plus the `RTF_*` bits of the packages before it.
+Each variant starts with a header listing the jump table entries to patch.
+The link fails if the core imports from a package, a package imports from
+another package, or the core differs between links. A package's variables
+are reserved in the core (`pkgbss.s`), so they don't move.
+
+The icode overlay records the features a program uses in `runtimeFeatures`
+(`RTF_*` in `asm.inc`): a file variable, record field or array element
+(not a parameter), a `SetLength` call, or a library call to `Sin`, `Cos` or
+`Tan`. The compiler apps read it with `getIcodeRuntimeFeatures` and pass it
+to `setCodeGenRuntimeFeatures`. `genRuntime.s` copies the core, then the
+variant of each needed package. `make ALLPKGS=1` in `src/overlays/codegenasm`
+links every package into every program, for debugging.
+
+`src/lib/runtime/rtfiles.mk` lists the runtime files. Every disk image the
+compiler runs from must have them (`RTWRITE`).
+
+A test without a file variable can't write `testfailed`. The `rtpkg*` tests
+end with a runtime error instead (division by zero), which stops the chain.
 
 ## Pre-compiled headers
 
