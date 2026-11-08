@@ -38,7 +38,8 @@ MIN_HEAP_SIZE = 256
 
 .bss
 
-intBuf: .res 10
+intBuf: .res 12
+bytesOver: .res 4
 astRoot: .res 4
 
 .data
@@ -50,6 +51,8 @@ tagBSS_INTBUF: .asciiz "intbuf"
 tagBSS_TENSTABLE: .asciiz "tenstable"
 tagBSS_INPUTBUF: .asciiz "inputbuf"
 tagBSS_EXITHANDLER: .asciiz "exithandler"
+strTooLarge1: .asciiz "Program is "
+strTooLarge2: .asciiz " bytes too large"
 
 prgHeader:
 
@@ -366,42 +369,90 @@ codeBase = $2001
 ; been written. The runtime stack grows down from CODESEG_CEIL and the heap
 ; runs from the end of the image up to the heap's MAT, four bytes below the
 ; stack (see the header above). If less than MIN_HEAP_SIZE bytes are left
-; for the heap, errCodeSegmentOverflow is reported and the carry is set.
+; for the heap, errCodeSegmentOverflow is reported, followed by a line
+; saying how many bytes too large the program is, and the carry is set.
 ; Otherwise the carry is clear.
 .proc checkCodeSize
-    ; intOp1 = the highest address the image can end at
-    lda #.LOBYTE(CODESEG_CEIL - 4 - MIN_HEAP_SIZE)
-    sec
-    sbc runtimeStackSize
+    ; intOp1/intOp2 (32 bits) = codeBase + stack + 4 + MIN_HEAP_SIZE
+    lda runtimeStackSize
+    clc
+    adc #.LOBYTE(codeBase + 4 + MIN_HEAP_SIZE)
     sta intOp1
-    lda #.HIBYTE(CODESEG_CEIL - 4 - MIN_HEAP_SIZE)
-    sbc runtimeStackSize+1
+    lda runtimeStackSize+1
+    adc #.HIBYTE(codeBase + 4 + MIN_HEAP_SIZE)
     sta intOp1+1
-    bcc ER                      ; The stack alone is too large
-
-    ; intOp2 = the address just past the end of the image
-    lda codeOffset
-    clc
-    adc #.LOBYTE(codeBase)
+    lda #0
+    adc #0
     sta intOp2
-    lda codeOffset+1
-    adc #.HIBYTE(codeBase)
+    lda #0
     sta intOp2+1
-    bcs ER
 
-    ; The program fits if intOp2 <= intOp1
-    lda intOp1
-    cmp intOp2
-    lda intOp1+1
-    sbc intOp2+1
-    bcc ER
+    ; Add the image size. intOp1/intOp2 is then the address just past the
+    ; minimum heap, the stack and the image.
+    lda codeOffset
+    sta intOp32
+    lda codeOffset+1
+    sta intOp32+1
+    lda #0
+    sta intOp32+2
+    sta intOp32+3
+    ldq intOp1
     clc
+    adcq intOp32
+    stq intOp1
+
+    ; intOp1/intOp2 = bytes over CODESEG_CEIL
+    lda #.LOBYTE(CODESEG_CEIL)
+    sta intOp32
+    lda #.HIBYTE(CODESEG_CEIL)
+    sta intOp32+1
+    ldq intOp1
+    sec
+    sbcq intOp32
+    stq intOp1
+    bcc OK                      ; Below the ceiling
+    lda intOp1
+    ora intOp1+1
+    ora intOp2
+    ora intOp2+1
+    bne ER                      ; Above the ceiling
+OK: clc                         ; It fits
     rts
 
-ER: lda #errCodeSegmentOverflow
+    ; The error logger uses intOp1, so save the count
+ER: ldq intOp1
+    stq bytesOver
+    lda #errCodeSegmentOverflow
     ldx #0
     ldy #0
     jsr compilerError
+
+    ; Report how many bytes too large the program is
+    ldq bytesOver
+    stq intOp1
+    ldx #0
+:   lda strTooLarge1,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt32
+    ldx #0
+:   lda intBuf,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   ldx #0
+:   lda strTooLarge2,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda #13
+    jsr CHROUT
     sec
     rts
 .endproc
