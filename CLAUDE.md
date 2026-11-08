@@ -137,7 +137,22 @@ Source lines are limited to 80 characters. This limitation includes comments.
 ### WSL
 
 The build and test environment is run entirely inside WSL. All the tools needed for building and
-testing are in the WSL path. The ca65 in WSL is the Windows build.
+testing are in the WSL path.
+
+`c1541`, `petcat`, `ca65`, `ld65` and `xmega65.exe` are Windows executables that WSL runs through
+interop. They get the current directory, but they can't open a `/mnt/c/...` path. Give them
+relative paths (`cd` first), as the Makefiles and `runtest.sh` do. `make`, `sed`, `dos2unix` and
+`python3` are Linux programs.
+
+Run WSL commands through a login shell: `wsl bash -lc "make TARGET=mega65"`. Without `-l`, `ca65`
+isn't on the PATH and make fails with "ca65: No such file or directory".
+
+From Git Bash, a `/mnt/c/...` argument to `wsl` is rewritten into a Windows path, and `$` inside
+`wsl bash -lc "..."` is expanded by Git Bash before WSL sees it. Set `MSYS_NO_PATHCONV=1`, or put
+the commands in a script file and run that.
+
+`c1541` stops at the first command that fails, such as a `-write` of a file it can't open, and
+skips the rest without saying so. List the disk's directory afterwards to check.
 
 ### Python
 
