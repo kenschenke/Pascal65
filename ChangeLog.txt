@@ -7,6 +7,14 @@
     FIX: Fix color RAM clobbering for cursor movement in editor
     NEW: Dynamic arrays
     NEW: Implement ReadStr
+    NEW: Programs load the runtime (runtime1) when they run, by default.
+         Program files are smaller and compiles are faster. A program
+         now needs runtime1 on its disk to run. Existing programs change
+         to this without any edit: add (* $StaticRuntime *) to link the
+         runtime into the program as before, for programs given to others
+         or that need the most memory.
+    NEW: $StaticRuntime and $DynamicRuntime compiler directives
+    NEW: A static program links only the parts of the runtime it uses
 
 0.35-beta Sep 30 2026
     NEW: Compiler rewritten in 100% assembly language
