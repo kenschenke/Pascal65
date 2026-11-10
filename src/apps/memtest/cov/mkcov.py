@@ -39,7 +39,9 @@ import sys
 RENAMED = ['initMemHeap', 'heapAlloc', 'heapFree', 'getMemHeapForBank',
            'clearMemHeap', 'isHeapAllocated']
 BRANCHES = {'bcc', 'bcs', 'beq', 'bne', 'bmi', 'bpl', 'bvc', 'bvs', 'bra'}
-ENDERS = {'jmp', 'jsr', 'rts', 'rti', 'brk'}
+# Long branches are already long. They end a block too.
+LONG_BRANCHES = {'l' + b for b in BRANCHES}
+ENDERS = {'jmp', 'jsr', 'rts', 'rti', 'brk'} | LONG_BRANCHES
 
 RENAME_RE = re.compile(r'\b(' + '|'.join(RENAMED) + r')\b')
 SEGMENT_RE = re.compile(r'^\s*\.(code|data|bss|rodata|segment)\b(.*)$',

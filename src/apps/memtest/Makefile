@@ -32,6 +32,8 @@ COVD81 := $(BINTARGETDIR)/memtestcov.d81
 COVBIN := $(BINTARGETDIR)/memtest.cov
 COVOBJECTS := $(COVDIR)/main.o $(filter-out $(OBJTARGETDIR)/main.o,$(OBJECTS))
 COVOBJECTS += $(COVDIR)/memheap_cov.o $(COVDIR)/covshim.o $(COVDIR)/covpatch.o
+# memFill is not in asmlib's jump table, so the copy links its own
+COVOBJECTS += $(COVDIR)/memfill.o
 DEPENDS := $(sort $(OBJECTS:.o=.d) $(COVOBJECTS:.o=.d))
 DEPFLAGS = --create-dep $(@:.o=.dep)
 # ca65 is the Windows build, which names cc65's own headers by Windows
@@ -86,6 +88,10 @@ $(COVDIR)/main.o: $(SRCDIR)/main.s $(FLAGSFILE) | $(COVDIR)
 	$(FIXDEP)
 
 $(COVDIR)/covshim.o: cov/covshim.s | $(COVDIR)
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
+
+$(COVDIR)/memfill.o: ../../lib/asmlib/src/memfill.s | $(COVDIR)
 	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 

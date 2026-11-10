@@ -1,7 +1,7 @@
 ;
 ; memheap.s
 ; Ken Schenke (kenschenke@gmail.com)
-; 
+;
 ; Copyright (c) 2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
@@ -18,18 +18,19 @@
 .export isHeapAllocated
 .endif
 
-.import ltUint32, geUint32, runtimeError, rtPushQ, rtPopQ, isQZero
+.import ltUint32, runtimeError, isQZero, memFill
+.ifdef __DEBUG__
+.import rtPushQ, rtPopQ
+.endif
 
 .bss
 
-lastBlock: .res 4
 bankIndex: .res 1
 allocSize: .res 2
 splitMode: .res 1
 triedDefrag: .res 1
 runActive: .res 1
 runSize: .res 2
-matTmp: .res 4
 
 NUM_BANKS = 3
 
@@ -41,8 +42,9 @@ NUM_BANKS = 3
 ; caches are kept (rebuildCheckpoints and splitCheckpoint). A debug build
 ; checks them after every allocation and free (verifyHeap).
 
-; The address of each bank's terminating MAT entry
-matEnd: .res NUM_BANKS * 4
+; The low 16 bits of the address of each bank's terminating MAT entry. The
+; upper bytes are the bank's (see memBanks).
+matEnd: .res NUM_BANKS * 2
 
 ; The low 16 bits of the address just past each bank's last block
 endAddr: .res NUM_BANKS * 2
@@ -68,6 +70,7 @@ ckptHi: .res NUM_BANKS * CKPT_MAX
 ; ckptLo/Hi (see setBankOff)
 bankOff: .res 1
 .assert BUCKETS = 64 && CKPT_MAX = 64, error, "setBankOff multiplies by 64"
+.assert NUM_BANKS <= 4, error, "setBankOff handles bank indexes 0 to 3"
 .assert CKPT_SPACING = 128, error, "checkpoint math assumes 256-byte spacing"
 
 .ifdef __DEBUG__
@@ -91,11 +94,14 @@ BANK5_TOP = $5effa
 .assert (BANK4_BOTTOM >> 16) = (BANK4_TOP >> 16), error, "bank 4 spans 64k"
 .assert (BANK5_BOTTOM >> 16) = (BANK5_TOP >> 16), error, "bank 5 spans 64k"
 
+; The bottom and top of each bank, in the order of heapBottom and heapTop
+; (see loadBank). There are NUM_BANKS of them.
 memBanks:
     .dword BANK1_BOTTOM, BANK1_TOP  ; bank 1
     .dword BANK4_BOTTOM, BANK4_TOP  ; bank 4
     .dword BANK5_BOTTOM, BANK5_TOP  ; bank 5
-    .dword $0                       ; terminator
+.assert * - memBanks = NUM_BANKS * 8, error, "memBanks needs NUM_BANKS banks"
+.assert heapTop = heapBottom + 4, error, "loadBank copies heapBottom/heapTop"
 
 .code
 
@@ -116,108 +122,135 @@ memBanks:
 ; A free block larger than the request is not used. That would be a
 ; best fit, but doing so crashes the compiler (icodetest test 16).
 
-; This routine initializes the memory banks.
+; This routine initializes the memory banks. It empties bank 0's first entry,
+; so clearMemHeap, which it falls into, has no entry to keep.
 .proc initMemHeap
+    ldq memBanks+4          ; Bank 0's heap top: its first MAT entry
+    stq ptr1
+    lda #0
+    sta bankIndex           ; endMatHere records the entry for a bank
+    jsr endMatHere
+    ; Fall through to clearMemHeap
+.endproc
+
+; This routine clears the memory heap, leaving only the first entry.
+; The first entry is the error messages.
+.proc clearMemHeap
     lda #0
     sta splitMode
-    ; Initialize the MAT for each of the memory banks
-    lda #<memBanks
-    sta ptr1
-    lda #>memBanks
-    sta ptr1+1
-    lda #0
-    sta ptr1+2
-    sta ptr1+3
-
-    lda #0
     sta bankIndex
-L1: lda bankIndex
-    asl a
-    asl a
-    asl a
-    taz
-    clc
-    adc #4
-    pha
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr isQZero
-    beq L2
 
-    plz
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr2
-    lda #0
-    taz
-:   nop
-    sta (ptr2),z
-    inz
-    cpz #2
-    bne :-
-    ldq ptr2
-    jsr saveMatEnd
+L1: jsr loadBank
+    bcs DN                  ; No more banks
+    ldq heapTop
+    stq ptr1
+
+    ; The first bank keeps its first entry
+    lda bankIndex
+    bne L2
+    dew ptr1
+    dew ptr1
+
+    ; Make the entry at ptr1 the terminating entry
+L2: jsr endMatHere
     jsr resetBankCaches
+    lda bankIndex
+    bne L3
+    jsr keepFirstEntry
 
-    inc bankIndex
+    ; Next memory bank
+L3: inc bankIndex
     bra L1
 
-L2: pla
+DN: rts
+.endproc
+
+; Sets heapBottom and heapTop for the bank in bankIndex. The carry is set if
+; bankIndex is past the last bank, and they are not changed.
+.proc loadBank
+    lda bankIndex
+    cmp #NUM_BANKS
+    bcs DN
+    asl a
+    asl a
+    asl a
+    tax
+    ldy #0
+:   lda memBanks,x
+    sta heapBottom,y
+    inx
+    iny
+    cpy #8
+    bne :-
+    clc
+DN: rts
+.endproc
+
+; Starts a walk of the MAT: ptr1 is the first entry (the heap top) and tmp1
+; the address of its block (the heap bottom).
+.proc startWalk
+    ldq heapBottom
+    stq tmp1
+    ldq heapTop
+    stq ptr1
     rts
 .endproc
 
-; Stores the address in Q as the current bank's terminating MAT entry.
+; Writes a terminating entry (two $00 bytes) at ptr1 and falls into
+; saveMatEnd.
+.proc endMatHere
+    lda #0
+    taz
+    nop
+    sta (ptr1),z
+    inz
+    nop
+    sta (ptr1),z
+    ; Fall through to saveMatEnd
+.endproc
+
+; Stores ptr1 as the current bank's terminating MAT entry.
 .proc saveMatEnd
-    stq matTmp
     lda bankIndex
     asl a
-    asl a
     tax
-    ldy #0
-:   lda matTmp,y
+    lda ptr1
     sta matEnd,x
-    inx
-    iny
-    cpy #4
-    bne :-
+    lda ptr1+1
+    sta matEnd+1,x
     rts
 .endproc
 
-; Loads the current bank's terminating MAT entry into ptr1.
+; Loads the current bank's end. ptr1 is its terminating MAT entry and tmp1 the
+; address just past its last block. heapBottom and heapTop must be set.
 .proc loadMatEnd
+    jsr startWalk           ; For the upper bytes, which are the bank's
     lda bankIndex
     asl a
-    asl a
     tax
-    ldy #0
-:   lda matEnd,x
-    sta ptr1,y
-    inx
-    iny
-    cpy #4
-    bne :-
+    lda matEnd,x
+    sta ptr1
+    lda matEnd+1,x
+    sta ptr1+1
+    lda endAddr,x
+    sta tmp1
+    lda endAddr+1,x
+    sta tmp2
     rts
 .endproc
 
-; Sets bankOff (and A) to bankIndex * 64.
+; Sets bankOff (and A) to bankIndex * 64. bankIndex must be 3 or less.
 .proc setBankOff
     lda bankIndex
-    asl a
-    asl a
-    asl a
-    asl a
-    asl a
-    asl a
+    lsr a                   ; Rotate bits 1 and 0 into bits 7 and 6
+    ror a
+    ror a
     sta bankOff
     rts
 .endproc
 
 ; Resets the current bank's caches for an empty MAT, except matEnd. Sets
-; bankOff.
+; bankOff. heapBottom must be set.
 .proc resetBankCaches
     jsr setBankOff
     tax
@@ -233,16 +266,11 @@ L2: pla
     ; endAddr is the heap bottom
     txa
     asl a
-    tay
-    txa
-    asl a
-    asl a
-    asl a
     tax
-    lda memBanks,x
-    sta endAddr,y
-    lda memBanks+1,x
-    sta endAddr+1,y
+    lda heapBottom
+    sta endAddr,x
+    lda heapBottom+1
+    sta endAddr+1,x
     rts
 .endproc
 
@@ -275,72 +303,27 @@ L2: pla
 
 ; This routine returns the top of the memory heap MAT for a given bank.
 ; The bank number is passed in A and the address of the MAT is returned in Q.
+; It also sets heapBottom and heapTop for the bank so a caller walking the
+; MAT can work out the address of each block.
 ;
 ; Bank numbers start at 0.
 ;
 ; If a bank number is out of range, NULL is returned.
 .proc getMemHeapForBank
-    sta tmp1                ; caller's bank number in tmp1
-
-    ; Start at bank index 0
-    lda #0
     sta bankIndex
+    jsr loadBank
+    bcs retNull
+    ldq heapTop
+    rts
+.endproc
 
-    ; Loop through the banks
-L1: lda bankIndex
-    asl a
-    asl a
-    asl a
-    tax
-
-    ; Copy the heap bottom into ptr1
-    ldy #0
-:   lda memBanks,x
-    sta ptr1,y
-    inx
-    iny
-    cpy #4
-    bne :-
-
-    ; Is this the last entry?
-    phx                     ; Save the X register
-    ldq ptr1
-    jsr isQZero
-    bne L2
-    pla                     ; Discard the X register
+; Returns NULL in Q
+.proc retNull
     lda #0
     tax
     tay
     taz
-    rts                     ; Return null
-
-    ; Is this the bank the caller wants?
-L2: plx                     ; Restore the X register
-    lda tmp1
-    cmp bankIndex
-    bne L3                  ; Branch if not
-
-    ; This is the bank the caller wants. ptr1 still holds the heap bottom.
-    ; Set heapBottom and heapTop so a caller walking the MAT can work out the
-    ; address of each block, then return the heap top.
-    phx
-    ldq ptr1
-    stq heapBottom
-    plx
-    ldy #0
-:   lda memBanks,x
-    sta ptr1,y
-    inx
-    iny
-    cpy #4
-    bne :-
-    ldq ptr1
-    stq heapTop
     rts
-
-    ; Move to the next bank
-L3: inc bankIndex
-    bra L1
 .endproc
 
 ; This routine sets heapBottom and heapTop for the address
@@ -356,133 +339,18 @@ L3: inc bankIndex
     sta bankIndex
 
     ; Loop through the banks
-L1: lda bankIndex
-    asl a
-    asl a
-    asl a                   ; Multiply by 8
-    tax
-
-    ; Is this the terminator? It has no heap top to compare against.
-    lda memBanks,x
-    ora memBanks+1,x
-    ora memBanks+2,x
-    ora memBanks+3,x
-    bne :+
-    sec                     ; Past the last bank
-    rts
-
-:   inx                     ; Move to the heap top
-    inx
-    inx
-    inx
-    ldy #0
-:   lda memBanks,x
-    sta intOp32,y
-    inx
-    iny
-    cpy #4
-    bne :-
+L1: jsr loadBank
+    bcs DN                  ; Past the last bank
+    ldq heapTop
+    stq intOp32
     jsr ltUint32            ; Is address < heapTop?
     bne L2                  ; Branch if so
 
     inc bankIndex
     bra L1
 
-L2: ldq intOp32
-    stq heapTop
-
-    lda bankIndex
-    asl a
-    asl a
-    asl a
-    tax
-    ldy #0
-:   lda memBanks,x
-    sta heapBottom,y
-    inx
-    iny
-    cpy #4
-    bne :-
-
-    clc
-    rts
-.endproc
-
-; This routine clears the memory heap, leaving only the first entry.
-; The first entry is the error messages.
-.proc clearMemHeap
-    lda #0
-    sta splitMode
-    ; Start at the first bank
-    lda #0
-    sta bankIndex
-
-L1: lda bankIndex
-    asl a
-    asl a
-    asl a                   ; multiply by 8
-    tax
-
-    ; Copy heap bottom for the current bank to ptr1
-    ldy #0
-    phx
-:   lda memBanks,x
-    sta ptr1,y
-    inx
-    iny
-    cpy #4
-    bne :-
-
-    ; Is this the last bank?
-    ldq ptr1
-    jsr isQZero
-    beq L3
-
-    ; Copy heap top for the current bank to ptr1
-    plx
-    ldy #0
-:   lda memBanks+4,x
-    sta ptr1,y
-    inx
-    iny
-    cpy #4
-    bne :-
-
-    ; Is this the first bank?
-    lda bankIndex
-    bne L2              ; Branch if not first bank
-    ; First bank - skip first entry
-    lda #2
-    ldx #0
-    ldy #0
-    ldz #0
-    stq intOp32
-    ldq ptr1
-    sec
-    sbcq intOp32
-    stq ptr1
-
-    ; Clear the entry at ptr1
-L2: lda #0
-    taz
-:   nop
-    sta (ptr1),z
-    inz
-    cpz #2
-    bne :-
-    ldq ptr1
-    jsr saveMatEnd
-    jsr resetBankCaches
-    lda bankIndex
-    bne L4
-    jsr keepFirstEntry
-
-    ; Next memory bank
-L4: inc bankIndex
-    bne L1
-
-L3: pla
-    rts
+L2: clc
+DN: rts
 .endproc
 
 ; Sets the first bank's caches for the one entry clearMemHeap keeps. ptr1 is
@@ -501,13 +369,8 @@ L3: pla
 
     ; There is no first entry. The MAT is empty and ends at the heap top,
     ; two bytes above ptr1.
-    clc
-    lda ptr1
-    adc #2
-    sta ptr1
-    bcc :+
-    inc ptr1+1
-:   ldq ptr1
+    inw ptr1
+    inw ptr1
     jmp saveMatEnd
 
     ; The first block ends at the heap bottom plus its size
@@ -522,9 +385,9 @@ Kept:
     sta endAddr+1
 
     ; Checkpoint 0 is the first entry, at the heap bottom
-    lda memBanks
+    lda heapBottom
     sta ckptLo
-    lda memBanks+1
+    lda heapBottom+1
     sta ckptHi
     lda #1
     sta ckptCount
@@ -541,12 +404,6 @@ Kept:
 ; If allocation fails, a runtime error is triggered. A size of $8000 or
 ; more always fails. A size of zero allocates one byte.
 ; Pointer to memory returned in Q
-;   ptr1 - current location in MAT
-;   ptr2 - location in MAT of smallest availble block
-;          that satisfies requested buffer size.
-;   ptr3 - location in MAT of last allocated block.
-;          This is used when a new block is to be added
-;          at the end of the heap.
 .proc heapAlloc
     sta allocSize
     stx allocSize+1
@@ -554,14 +411,12 @@ Kept:
     ; A MAT entry holds a size of up to $7fff. The high bit is the
     ; "allocated" flag, so a larger request can never be satisfied.
     txa
-    bpl :+
-    lda #rteOutOfMemory
-    jmp runtimeError
+    bmi OOM
 
     ; A size of zero would make an entry of $00 $80, which is a spare
     ; entry. Allocate one byte instead so the block has an address of
     ; its own.
-:   ora allocSize
+    ora allocSize
     bne :+
     inc allocSize
 
@@ -569,32 +424,12 @@ Kept:
     sta triedDefrag
 
     ; Start at the first bank
-    lda #0
     sta bankIndex
 
-L1: lda bankIndex
-    asl a
-    asl a
-    asl a                   ; multiply by 8
-    tax
-
-    ; Populate heapBottom
-    ldy #0
-:   lda memBanks,x
-    sta heapBottom,y
-    inx
-    iny
-    cpy #4
-    bne :-
-
-    ; Is heapBottom null?
-    phx                     ; Save X
-    ldq heapBottom
-    jsr isQZero
-    bne L2
+L1: jsr loadBank
+    bcc L2
 
     ; Out of memory. Try once to merge free blocks so they can be split.
-    pla                     ; Discard the X register
     lda triedDefrag
     bne OOM
     inc triedDefrag
@@ -604,23 +439,12 @@ L1: lda bankIndex
     sta splitMode
     lda #0
     sta bankIndex
-    jmp L1
+    bra L1
 OOM:
     lda #rteOutOfMemory
-    jsr runtimeError
-    rts
+    jmp runtimeError
 
-    ; Populate heapTop
-L2: plx                     ; Get X back off the stack
-    ldy #0
-:   lda memBanks,x
-    sta heapTop,y
-    inx
-    iny
-    cpy #4
-    bne :-
-
-    jsr heapAllocBank
+L2: jsr heapAllocBank
     jsr isQZero
     bne L3
 
@@ -669,22 +493,10 @@ L3:
     ; Add a new entry. ptr1 is the terminating entry and tmp1 the address
     ; just past the last block.
     jsr loadMatEnd
-    ldq heapBottom
-    stq tmp1
-    lda bankIndex
-    asl a
-    tax
-    lda endAddr,x
-    sta tmp1
-    lda endAddr+1,x
-    sta tmp2
-    jmp NewEntry
+    lbra NewEntry
 
 Walk:
-    ldq heapTop
-    stq ptr1
-    ldq heapBottom
-    stq tmp1
+    jsr startWalk
 
 L1: ldz #1
     nop
@@ -696,9 +508,8 @@ L1: ldz #1
     lda (ptr1),z            ; Low byte of the entry
     sta intOp1
     ora intOp1+1
-    bne :+
-    jmp NewEntry            ; Reached the end of the MAT
-:   lda intOp1
+    lbeq NewEntry           ; Reached the end of the MAT
+    lda intOp1
     cmp allocSize
     bne NotExact
     lda intOp1+1
@@ -756,19 +567,10 @@ NotExact:
     sta intOp2+1
     bcc L2                  ; Smaller than the request
     ; ptr2 = the next MAT entry
-    sec
-    lda ptr1
-    sbc #2
-    sta ptr2
-    lda ptr1+1
-    sbc #0
-    sta ptr2+1
-    lda ptr1+2
-    sbc #0
-    sta ptr2+2
-    lda ptr1+3
-    sbc #0
-    sta ptr2+3
+    ldq ptr1
+    stq ptr2
+    dew ptr2
+    dew ptr2
     ldz #0
     nop
     lda (ptr2),z
@@ -798,7 +600,7 @@ NotExact:
     nop
     sta (ptr1),z
     jsr splitCheckpoint
-    jmp ZeroStart
+    bra ZeroStart
 
 
 Reuse:
@@ -814,74 +616,49 @@ Reuse:
     jsr decFreeCount
 
     ; Callers expect new memory to be zeroed, which is true of fresh heap
-    ; but not of a block that has been used before. Clear it.
+    ; but not of a block that has been used before. Clear it. The block lies
+    ; inside the bank, so memFill's 16-bit pointer is enough.
 ZeroStart:
     ldq tmp1
-    stq ptr4
-    lda allocSize
-    sta intOp1
-    lda allocSize+1
-    sta intOp1+1
-ZeroLoop:
-    lda intOp1
-    ora intOp1+1
-    beq ZeroDone
+    stq ptr1
     lda #0
-    ldz #0
-    nop
-    sta (ptr4),z
-    inc ptr4
-    bne :+
-    inc ptr4+1
-    bne :+
-    inc ptr4+2
-    bne :+
-    inc ptr4+3
-:   lda intOp1
-    bne :+
-    dec intOp1+1
-:   dec intOp1
-    bra ZeroLoop
-ZeroDone:
+    ldx allocSize
+    ldy allocSize+1
+    jsr memFill
     ldq tmp1
     rts
 
 NewEntry:
     ; ptr1 is the terminating entry and tmp1 is the end of the last block.
-    ; The new block ends at tmp1 + allocSize.
-    lda allocSize
-    sta intOp32
-    lda allocSize+1
-    sta intOp32+1
-    lda #0
-    sta intOp32+2
-    sta intOp32+3
+    ; The new block ends at tmp1 + allocSize. If that carries out of 16
+    ; bits it is past the bank, and so past the MAT.
     clc
-    ldq tmp1
-    adcq intOp32
-    stq intOp32
-
-    ; The new block must end before the new terminating entry at ptr1 - 2.
-    lda #2
+    lda tmp1
+    adc allocSize
     sta intOp1
-    lda #0
+    lda tmp2
+    adc allocSize+1
     sta intOp1+1
-    sta intOp2
-    sta intOp2+1
-    sec
-    ldq ptr1
-    sbcq intOp1
-    stq intOp1
-    jsr geUint32            ; Is the limit >= the end of the new block?
-    bne :+
-    ; Not enough space. Return null.
-    lda #0
-    tax
-    tay
-    taz
-    rts
+    bcs Full
 
-:   ldz #0
+    ; The new block must end at or below the new terminating entry at
+    ; ptr1 - 2: ptr1 - end >= 2.
+    sec
+    lda ptr1
+    sbc intOp1
+    tax
+    lda ptr1+1
+    sbc intOp1+1
+    bcc Full
+    bne Fits
+    cpx #2
+    bcs Fits
+Full:
+    ; Not enough space. Return null.
+    jmp retNull
+
+Fits:
+    ldz #0
     lda allocSize
     nop
     sta (ptr1),z            ; Store the size in the new entry
@@ -895,34 +672,23 @@ NewEntry:
     lda bankIndex
     asl a
     tax
-    clc
-    lda tmp1
-    adc allocSize
+    lda intOp1
     sta endAddr,x
-    lda tmp2
-    adc allocSize+1
+    lda intOp1+1
     sta endAddr+1,x
     jsr addCheckpoint
 
     ; Write the new terminating entry
     jsr incMATPtr
-    lda #0
-    ldz #0
-    nop
-    sta (ptr1),z
-    inz
-    nop
-    sta (ptr1),z
-    ldq ptr1
-    jsr saveMatEnd
+    jsr endMatHere
 
     ; Fresh heap is not necessarily zero. The block may be where freed blocks
     ; were trimmed from the end of the MAT earlier, so clear it.
-    jmp ZeroStart
+    bra ZeroStart
 .endproc
 
-; Records a checkpoint for a new MAT entry if it is the next one due. ptr1 is
-; the entry and tmp1 is the address of its block. bankOff must be set.
+; Records a checkpoint for a MAT entry if it is the next one due. ptr1 is the
+; entry and tmp1 is the address of its block. bankOff must be set.
 .proc addCheckpoint
     ; The entry's offset from the heap top. A checkpoint is due at every
     ; CKPT_SPACING entries (256 bytes), and its number is the offset / 256.
@@ -979,63 +745,22 @@ DN: rts
 .proc rebuildCheckpoints
     lda #0
     sta bankIndex
-B1: lda bankIndex
-    cmp #NUM_BANKS
-    bne :+
+B1: jsr loadBank
+    bcc :+
     rts
-:   asl a
-    asl a
-    asl a
-    tax
-    ldy #0
-:   lda memBanks,x
-    sta heapBottom,y
-    lda memBanks+4,x
-    sta heapTop,y
-    inx
-    iny
-    cpy #4
-    bne :-
-    jsr setBankOff
+:   jsr setBankOff
     ldx bankIndex
     lda #0
     sta ckptCount,x
-    ldq heapTop
-    stq ptr1
-    ldq heapBottom
-    stq tmp1
+    jsr startWalk
 
-W:  ldz #1
-    nop
-    lda (ptr1),z            ; High byte of the entry
-    sta intOp1+1
-    dez
-    nop
-    lda (ptr1),z            ; Low byte of the entry
-    sta intOp1
-    ora intOp1+1
+    ; The entries are visited in order, so each checkpoint that is due is the
+    ; next one in line (see addCheckpoint).
+W:  jsr readEntry
     beq DN                  ; The terminating entry
+    jsr addCheckpoint
 
-    ; Is a checkpoint due at this entry? Its number is the offset / 256.
-    sec
-    lda heapTop
-    sbc ptr1
-    bne R
-    lda heapTop+1
-    sbc ptr1+1
-    cmp #CKPT_MAX
-    bcs R
-    ldx bankIndex
-    inc ckptCount,x
-    clc
-    adc bankOff
-    tax
-    lda tmp1
-    sta ckptLo,x
-    lda tmp2
-    sta ckptHi,x
-
-R:  clc                     ; Add the entry's size to the block address
+    clc                     ; Add the entry's size to the block address
     lda intOp1
     adc tmp1
     sta tmp1
@@ -1043,16 +768,11 @@ R:  clc                     ; Add the entry's size to the block address
     and #$7f
     adc tmp2
     sta tmp2
-    sec                     ; Move to the next MAT entry
-    lda ptr1
-    sbc #2
-    sta ptr1
-    bcs W
-    dec ptr1+1
+    jsr incMATPtr
     bra W
 
 DN: inc bankIndex
-    jmp B1
+    bra B1
 .endproc
 
 ; Finds the MAT entry for the block whose address is in ptr2. bankIndex,
@@ -1061,24 +781,19 @@ DN: inc bankIndex
 ; On exit the carry is clear if it was found. ptr1 is then the entry, A its
 ; low byte and X its high byte. The carry is set if it was not found.
 .proc findEntry
-    ldq heapTop
-    stq ptr1
-    ldq heapBottom
-    stq tmp1
+    jsr startWalk
     ; The walk does 16-bit math on ptr1 and tmp1, like heapAllocBank's. Every
     ; block in the bank has the bank's upper two address bytes, so a pointer
     ; with different ones is not a block.
     lda ptr2+2
     cmp tmp3
-    bne :+
+    bne NF                  ; Not found
     lda ptr2+3
     cmp tmp4
-    beq :++
-:   sec                     ; Not found
-    rts
+    bne NF
 
     ; Start at the last checkpoint at or below the address
-:   ldx bankIndex
+    ldx bankIndex
     ldy ckptCount,x
     beq L1
 C1: dey
@@ -1164,21 +879,11 @@ NF: sec
     rts
 .endproc
 
-; Moves ptr1 to the next MAT entry
+; Moves ptr1 to the next MAT entry. The MAT lies inside one 64k bank, so only
+; the low 16 bits change.
 .proc incMATPtr
-    sec
-    lda ptr1
-    sbc #2
-    sta ptr1
-    lda ptr1+1
-    sbc #0
-    sta ptr1+1
-    lda ptr1+2
-    sbc #0
-    sta ptr1+2
-    lda ptr1+3
-    sbc #0
-    sta ptr1+3
+    dew ptr1
+    dew ptr1
     rts
 .endproc
 
@@ -1198,7 +903,6 @@ NF: sec
     rts
 :   stq ptr2            ; Save the memory block ptr in ptr2
 .ifdef __DEBUG__
-    ldq ptr2
     jsr rtPushQ
     ldq ptr2
     jsr isHeapAllocated
@@ -1209,24 +913,21 @@ NF: sec
 :   jsr rtPopQ
     stq ptr2
 .endif ; end of ifdef __DEBUG__
-    ldq ptr2
-    jsr setHeapForAddress
+    jsr setHeapForAddress   ; Q is still the block
     bcc :+
     rts                 ; Above the last bank. Not a heap address.
 :   jsr setBankOff
     jsr findEntry
     bcs L4              ; Not found
-    pha
+    tay                 ; The entry's low byte
     txa
-    bpl L3              ; Already free. Only a build without checks gets here.
+    bpl L4              ; Already free. Only a build without checks gets here.
     and #$7f            ; Mark it free
     ldz #1
     nop
     sta (ptr1),z
-    pla
+    tya
     jsr incFreeCount
-    bra L4
-L3: pla
 L4: jsr trimFreeBlocks
 .ifdef __DEBUG__
     jsr verifyHeap
@@ -1246,44 +947,23 @@ L4: jsr trimFreeBlocks
 .proc trimFreeBlocks
     jsr loadMatEnd          ; ptr1 is the terminating entry
 
-    ; ptr1 is the terminating entry. Is it also the first entry?
+    ; ptr1 is the terminating entry. Is it also the first entry? The upper
+    ; bytes are the same (see memBanks).
 T2: lda ptr1
     cmp heapTop
     bne T3
     lda ptr1+1
     cmp heapTop+1
-    bne T3
-    lda ptr1+2
-    cmp heapTop+2
-    bne T3
-    lda ptr1+3
-    cmp heapTop+3
-    bne T3
-    jmp TD                  ; The MAT is empty
+    beq TD                  ; The MAT is empty
 
     ; Look at the entry before the terminating one (two bytes higher)
-T3: clc
-    lda ptr1
-    adc #2
-    sta tmp1
-    lda ptr1+1
-    adc #0
-    sta tmp2
-    lda ptr1+2
-    adc #0
-    sta tmp3
-    lda ptr1+3
-    adc #0
-    sta tmp4
-    ldq tmp1
-    stq ptr1
+T3: inw ptr1
+    inw ptr1
     jsr readEntry
     lda intOp1+1
     bpl TF
-    lda intOp1              ; Allocated, unless it is a spare entry
-    bne T9
-    lda intOp1+1
-    cmp #$80
+    eor #$80                ; Allocated, unless it is a spare entry ($00 $80)
+    ora intOp1
     bne T9
     bra TZ                  ; A spare entry has no size
 
@@ -1302,21 +982,14 @@ TF: lda intOp1
     sta endAddr+1,x
 
     ; Zero it so it becomes the new terminating entry.
-TZ: lda #0
-    ldz #0
-    nop
-    sta (ptr1),z
-    inz
-    nop
-    sta (ptr1),z
-    jmp T2
+TZ: jsr endMatHere
+    bra T2
 
     ; ptr1 is the last allocated entry. The terminating entry follows it.
 T9: jsr incMATPtr
 
     ; ptr1 is the terminating entry
-TD: ldq ptr1
-    jsr saveMatEnd
+TD: jsr saveMatEnd
 
     ; Drop the checkpoints of entries that were trimmed. The MAT now has
     ; (heapTop - ptr1) / 2 entries, so ceil(that / CKPT_SPACING) checkpoints
@@ -1348,37 +1021,11 @@ DN: rts
     lda #0
     sta bankIndex
 
-D1: lda bankIndex
-    asl a
-    asl a
-    asl a
-    tax
-    ldy #0
-:   lda memBanks,x
-    sta heapBottom,y
-    inx
-    iny
-    cpy #4
-    bne :-
-    ldq heapBottom
-    jsr isQZero
-    bne :+
+D1: jsr loadBank
+    bcc :+
     rts                     ; No more banks
 
-    ; The terminating entry has no heap top, so only read it for a real bank
-:   lda bankIndex
-    asl a
-    asl a
-    asl a
-    tax
-    ldy #0
-:   lda memBanks+4,x
-    sta heapTop,y
-    inx
-    iny
-    cpy #4
-    bne :-
-    ldq heapTop
+:   ldq heapTop
     stq ptr1
     lda #0
     sta runActive
@@ -1425,13 +1072,12 @@ Over:
     jsr closeRun
     bra StartRun
 
-    ; Allocated entries end a run. Spare entries do not.
-D5: lda intOp1
-    bne :+
-    lda intOp1+1
-    cmp #$80
+    ; Allocated entries end a run. Spare entries ($00 $80) do not. A is the
+    ; entry's high byte.
+D5: eor #$80
+    ora intOp1
     beq Next
-:   jsr closeRun
+    jsr closeRun
 
 Next:
     jsr incMATPtr
@@ -1440,7 +1086,7 @@ Next:
 DEnd:
     jsr closeRun
     inc bankIndex
-    jmp D1
+    bra D1
 .endproc
 
 ; Writes the size of the run being merged into its first entry (at ptr2).
@@ -1469,26 +1115,23 @@ DEnd:
 ; On exit: The Z flag is set if the block is not allocated.
 .proc isHeapAllocated
     jsr isQZero
-    bne :+
-    lda #0
-    rts
+    beq NA
 
     ; Pointer to block in ptr2
-:   stq ptr2
+    stq ptr2
     jsr setHeapForAddress
-    bcc :+
-    lda #0                  ; Above the last bank: not allocated
-    rts
+    bcs NA                  ; Above the last bank: not allocated
 
-:   jsr setBankOff
+    jsr setBankOff
     jsr findEntry
-    bcc :+
-    lda #0                  ; Not a block: not allocated
-    rts
+    bcs NA                  ; Not a block: not allocated
 
     ; Found the block. Is it allocated?
-:   txa
+    txa
     and #$80
+    rts
+
+NA: lda #0
     rts
 .endproc
 
@@ -1503,10 +1146,7 @@ DEnd:
     bpl :-
     sta vEntries
     sta vEntries+1
-    ldq heapTop
-    stq ptr1
-    ldq heapBottom
-    stq tmp1
+    jsr startWalk
 
     ; Is entry vEntries due a checkpoint? If its checkpoint is valid, it must
     ; hold the entry's address.
@@ -1560,13 +1200,8 @@ L2: ldz #1
     and #$7f
     adc tmp2
     sta tmp2
-    sec                     ; Move to the next MAT entry
-    lda ptr1
-    sbc #2
-    sta ptr1
-    bcs :+
-    dec ptr1+1
-:   inc vEntries
+    jsr incMATPtr
+    inc vEntries
     bne L1
     inc vEntries+1
     bra L1
@@ -1575,7 +1210,6 @@ L2: ldz #1
 End:
     lda bankIndex
     asl a
-    asl a
     tax
     lda matEnd,x
     cmp ptr1
@@ -1583,9 +1217,6 @@ End:
     lda matEnd+1,x
     cmp ptr1+1
     bne Fail
-    lda bankIndex
-    asl a
-    tax
     lda endAddr,x
     cmp tmp1
     bne Fail

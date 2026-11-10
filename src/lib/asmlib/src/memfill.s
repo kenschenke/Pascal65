@@ -18,31 +18,31 @@
 ; Byte to fill in A
 ; LB of count in X
 ; HB of count in Y
+;
+; Only the low 16 bits of ptr1 advance, so the memory must not cross a 64k
+; boundary. ptr1+1 is changed and Z is clobbered. A count of zero fills
+; nothing.
 .proc memFill
-    sta tmp1
-L1: ; See if the high byte of the count is zero
+    ldz #0
     cpy #0
-    bne L2
-    txa
-    taz
-    dez
-    bra L3
-L2: ldz #$ff
-L3: lda tmp1
-L4: nop
-    sta (ptr1),z
-    dez
-    bne L4
-    nop
-    sta (ptr1),z
+    beq L2
 
-    ; If the high byte of the count is zero, done!
-    cpy #0
-    beq DN
-
-    ; increment ptr1
+    ; Whole pages
+L1: nop
+    sta (ptr1),z
+    inz
+    bne L1
     inc ptr1+1
     dey
-    bra L1
+    bne L1
+
+    ; The rest
+L2: cpx #0
+    beq DN
+L3: nop
+    sta (ptr1),z
+    inz
+    dex
+    bne L3
 DN: rts
 .endproc
