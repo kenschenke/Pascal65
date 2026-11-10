@@ -61,8 +61,8 @@ Begin
 
     // Calculate the X and Y coordinates of the point at the angle
     // on a cicle of radius 25, centered at xStart, yStart
-    xEnd := xStart + Round(25 * Cos(r));
-    yEnd := yStart + Round(25 * Sin(r));
+    xEnd := Word(xStart + Round(25 * Cos(r)));
+    yEnd := Byte(yStart + Round(25 * Sin(r)));
 End;
 
 Function GetReflectionAngle(x : Word; y : Byte; oldAngle : Word) : Word;
@@ -82,13 +82,13 @@ End;
 Function RandomX : Word;
 Begin
     // Generate a random number between 60 and 280
-    RandomX := Round(((Peek($d7ef)+Peek($d7ef))/512) * 220) + 60;
+    RandomX := Word(Round(((Peek($d7ef)+Peek($d7ef))/512) * 220) + 60);
 End;
 
 Function RandomY : Byte;
 Begin
     // Generate a random number between 80 and 200
-    RandomY := Round((Peek($d7ef) / 256) * 120) + 80;
+    RandomY := Byte(Round((Peek($d7ef) / 256) * 120) + 80);
 End;
 
 Procedure NormalizePos(Var x : Word; Var y : Byte);
@@ -120,7 +120,7 @@ Begin
         yStart := RandomY;
         bouncing[i] := false;
         // Generate a random angle between 0 and 360
-        d := Round(((Peek($d7ef)+Peek($d7ef))/512) * 360);
+        d := Word(Round(((Peek($d7ef)+Peek($d7ef))/512) * 360));
         angles[i] := d;
         CoordinateAtAngle(xStart, xEnd, yStart, yEnd, d);
         SpriteMove(i, xStart, yStart, xEnd, yEnd, 1, false);
