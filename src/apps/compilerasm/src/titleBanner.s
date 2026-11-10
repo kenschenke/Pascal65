@@ -15,7 +15,7 @@
 
 .data
 
-strTitle1: .asciiz "Pascal65 v0.35-beta"
+strTitle1: .asciiz "Pascal65 v0.36-beta"
 strTitle2: .asciiz "Copyright 2024-2026 by Ken Schenke"
 strTitle3: .asciiz "See license.txt for license information"
 
