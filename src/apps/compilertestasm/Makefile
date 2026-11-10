@@ -285,9 +285,33 @@ endif
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)
 
-load: $(D81FILE)
-	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'
-	etherload -m compilertest.d81 -r $(BINTARGETDIR)/compilertest
+# Builds the disk images of all the test sets, as the test target does, and
+# copies them to a MEGA65 to run the tests on real hardware. On each disk,
+# RUN "COMPILER" compiles the set, then RUN the set's first program
+# (FIRSTTESTn) to start the chain. The loader checks in rtdyntest.sh only
+# run in the emulator.
+load: hwimages
+	mega65_ftp -e $(foreach s,$(TESTSETS), \
+		-c 'put $(BINTARGETDIR)/compilertest$(s).d81') -c 'exit'
+	@$(foreach s,$(TESTSETS),echo "compilertest$(s).d81: \
+		RUN \"COMPILER\", then RUN \"$(FIRSTTEST$(s))\"";)
+
+# Builds a fresh debug disk image for each set with asmlib's memory checks,
+# then rebuilds asmlib without them, whether or not the images were built.
+hwimages:
+	$(MAKE) -C $(ASMLIBDIR) TARGET=$(TARGET) MEMCHECK=1
+	@status=0; for s in $(TESTSETS); do \
+		$(MAKE) TARGET=$(TARGET) TESTSET=$$s hwimage || \
+			{ status=1; break; }; \
+	done; \
+	$(MAKE) -C $(ASMLIBDIR) TARGET=$(TARGET) MEMCHECK=0; \
+	exit $$status
+
+# Builds one set's (TESTSET) disk image. It is rebuilt so it doesn't hold
+# programs or a testfailed file from an earlier run.
+hwimage:
+	$(RM) $(D81FILE)
+	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
 
 # Compiles the first set of tests, runs the chain of programs it produced, then
 # does the same for the second set. A warning or error from any compile fails
@@ -312,6 +336,6 @@ testset:
 	c1541 $(D81FILE) -read $(FIRSTTEST$(TESTSET)) $(BINTARGETDIR)/$(PROGRAM)-first.prg
 	../testcommon/runtest.sh $(PROGRAM)-run $(BINTARGETDIR)/$(PROGRAM)-first.prg $(D81FILE)
 
-.PHONY: test testset
+.PHONY: test testset load hwimages hwimage
 
 -include $(DEPENDS)
