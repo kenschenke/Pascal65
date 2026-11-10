@@ -16,10 +16,18 @@
 .include "error.inc"
 
 .export rtInitCompilerErrors, rtCompilerError, rtCompilerWarning, rtInitCompilerWarnings
+.export rtSetCompilerFilename, rtSetCompilerUnitFilename, rtGetCompilerFilename
 
 .import heapAlloc, exit, rtPushQ
 
+; CBM filenames are at most 16 characters
+MAX_FILENAME_LENGTH = 16
+
 .bss
+
+; Null-terminated name of the source file being compiled. Errors and
+; warnings are in this file.
+sourceFilename: .res MAX_FILENAME_LENGTH+1
 
 ; This is a pointer to a buffer that holds all error messages, index by error number.
 ; Each error message is at most 23 characters long and each is null terminated within
@@ -31,6 +39,7 @@ logCompilerWarning: .res 2
 
 .data
 
+strPas: .asciiz ".pas"
 parserErrorsFn: .asciiz "errormsgs.txt,s,r"
 parserErrorsFn2:
 errMsgTooLong: .asciiz "Error message too long"
@@ -52,7 +61,65 @@ tooManyErrMsgs: .asciiz "Too many error messages in file"
 .proc rtInitCompilerErrors
     sta logCompilerError
     stx logCompilerError+1
+    lda #0
+    sta sourceFilename
     jmp loadParserErrors
+.endproc
+
+; Set the name of the source file errors and warnings are reported in
+; Inputs:
+;    A/X - pointer to the null-terminated filename
+; Names longer than 16 characters are cut off. Destroys ptr1.
+.proc rtSetCompilerFilename
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    sta sourceFilename,y
+    beq :+
+    iny
+    cpy #MAX_FILENAME_LENGTH
+    bne :-
+    lda #0
+    sta sourceFilename,y
+:   rts
+.endproc
+
+; Set the source file errors and warnings are reported in to a unit's file:
+; the unit's name followed by ".pas".
+; Inputs:
+;    Q - pointer to the unit (unit::name is first)
+; Destroys ptr1
+.proc rtSetCompilerUnitFilename
+    stq ptr1
+    ldy #0
+    ldz #0
+:   nop
+    lda (ptr1),z
+    beq :+
+    sta sourceFilename,y
+    iny
+    inz
+    cpy #MAX_FILENAME_LENGTH-4  ; leave room for ".pas"
+    bne :-
+:   ldx #0
+:   lda strPas,x
+    sta sourceFilename,y
+    beq :+
+    iny
+    inx
+    bne :-
+:   rts
+.endproc
+
+; Get the name of the source file errors and warnings are reported in
+; Outputs:
+;    A/X - pointer to the null-terminated filename. It is empty if no
+;          name has been set since initCompilerErrors.
+.proc rtGetCompilerFilename
+    lda #<sourceFilename
+    ldx #>sourceFilename
+    rts
 .endproc
 
 .proc rtInitCompilerWarnings
@@ -67,42 +134,31 @@ tooManyErrMsgs: .asciiz "Too many error messages in file"
 ;    X - low byte of current line number
 ;    Y - high byte of current line number
 .proc rtCompilerError
-    phx
-    phy
-    pha
-    lda #MAX_ERROR_LENGTH+1
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq parserErrors
-    stq ptr1
-    pla
-    sta count
-    pha
-L1: ldq ptr1
-    clc
-    adcq intOp32
-    stq ptr1
-    dec count
-    bne L1
-
-    ldq ptr1
-    jsr rtPushQ
-
-    ply
-    plx
-    pla
+    jsr pushMessage
     jmp (logCompilerError)
 .endproc
 
-; Log a compile-time error
+; Log a compile-time warning
 ; Inputs:
-;    A - error number from errors.inc -- errXXX
+;    A - warning number from errors.inc
 ;    X - low byte of current line number
 ;    Y - high byte of current line number
 .proc rtCompilerWarning
+    jsr pushMessage
+    jmp (logCompilerWarning)
+.endproc
+
+; Push a pointer to the message for an error or warning onto the runtime
+; stack and set up the handler's inputs.
+; Inputs:
+;    A - error or warning number
+;    X - low byte of current line number
+;    Y - high byte of current line number
+; Outputs:
+;    A - low byte of the line number
+;    X - high byte of the line number
+;    Y - error or warning number
+.proc pushMessage
     phx
     phy
     pha
@@ -130,7 +186,7 @@ L1: ldq ptr1
     ply
     plx
     pla
-    jmp (logCompilerWarning)
+    rts
 .endproc
 
 ; This routine calculates the size of the buffer necessary to load all error messages.

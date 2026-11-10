@@ -25,7 +25,9 @@ strBuf: .res 10
 
 strError: .asciiz "*** ERROR: "
 strWarning: .asciiz "*** WARNING: "
-strLine: .asciiz " -- line "
+strSep: .asciiz " -- "
+strComma: .asciiz ", "
+strLine: .asciiz "line "
 
 .code
 
@@ -83,16 +85,27 @@ DN: ; Fall through to logMessage
     inz
     bne :-
 
-    ; Print the line message
-:   ldx #0
-:   lda strLine,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
+    ; Print " -- filename, line "
+:   lda #<strSep
+    ldx #>strSep
+    jsr printStr
+    jsr getCompilerFilename
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+    lda (ptr1),y
+    beq :+                      ; no filename
+    lda ptr1
+    jsr printStr
+    lda #<strComma
+    ldx #>strComma
+    jsr printStr
+:   lda #<strLine
+    ldx #>strLine
+    jsr printStr
 
     ; Print the line number
-:   lda #<strBuf
+    lda #<strBuf
     ldx #>strBuf
     jsr writeInt16
     ldx #0
@@ -106,4 +119,17 @@ DN: ; Fall through to logMessage
     jsr CHROUT
 
     rts
+.endproc
+
+; Print the null-terminated string in A/X. Destroys ptr1.
+.proc printStr
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    beq :+
+    jsr CHROUT
+    iny
+    bne :-
+:   rts
 .endproc

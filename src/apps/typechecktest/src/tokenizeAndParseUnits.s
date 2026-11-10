@@ -18,7 +18,7 @@
 
 .export tokenizeAndParseUnits
 
-.import unitList, initTokenizer, initParser
+.import unitList, initTokenizer, initParser, registerExpectHandlers
 
 .data
 
@@ -68,6 +68,7 @@ L2: ldq currentUnit
 
     jsr initParser
     jsr parserInit
+    jsr registerExpectHandlers  ; parserInit cleared them
     ldq unitList
     jsr setParserUnitsList
     ldq tokenHeap

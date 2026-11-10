@@ -106,3 +106,6 @@ initCompilerWarnings = ASMBASE + 255
 compilerWarning = ASMBASE + 258
 astFreeBodies = ASMBASE + 261
 scopeLookupCurrent = ASMBASE + 264
+setCompilerFilename = ASMBASE + 267
+setCompilerUnitFilename = ASMBASE + 270
+getCompilerFilename = ASMBASE + 273

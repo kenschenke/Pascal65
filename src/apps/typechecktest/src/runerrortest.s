@@ -21,8 +21,12 @@
 
 .import testFail
 .export runErrorTest, logExpectedWarning, logExpectedError
+.export registerExpectHandlers
 
 MAX_EXPECTED_ERRORS = 64
+MAX_FILES = 4                   ; source files in one test
+FILE_SLOT = 17                  ; a CBM filename and a null
+SEEN = $80                      ; flag bit in an expected block
 
 .import initTokenizer, initParser, getKey
 .import initResolver, initTypeCheck, printLine
@@ -44,14 +48,23 @@ expectedNumber: .res 1
 lineNumber: .res 2
 pauseForErrors: .res 1
 numExpected: .res 1
+numFiles: .res 1                ; filenames in fileTable
+fileTable: .res MAX_FILES * FILE_SLOT
+fileNum: .res 1
+fileOffset: .res 1
 
 ; expectedErrors and expectedWarnings are an array of blocks, four bytes each.
 ;   expected error code (1 byte)
 ;   expected error line (2 bytes)
-;   flag: was this error seen? (1 byte)
+;   flags (1 byte): bit 7 (SEEN) is set once the error is seen. Bits 0-6
+;     are the index in fileTable of the file the expectation is in. An
+;     error only matches if it is reported in that file.
 
 .data
 
+; Non-zero while an error test parses (see registerExpectHandlers). It's
+; data rather than BSS so it starts out zero for the other tests.
+inErrorTest: .byte 0
 strFnPrefix: .asciiz "error"
 strFnSuffix: .asciiz ".pas"
 strTitle: .asciiz "Running test "
@@ -60,11 +73,13 @@ strParsing: .asciiz "Parsing, "
 strResolving: .asciiz "Resolving, "
 strTypeChecking: .asciiz "Type Checking, "
 strMaxExpected: .asciiz "Maximum expected errors/warnings exceeded"
+strMaxFiles: .asciiz "Too many source files"
 strErrorCount: .asciiz "Errors encountered - press a key"
 strUnexpected: .asciiz "Unexpected error or warning encountered "
 strAlreadyEnountered: .asciiz "Already encountered error or warning "
 strExpected: .asciiz "Did not encounter expected error or warning "
 strLineNumber: .asciiz ", Line "
+strFile: .asciiz ", File "
 strPause: .asciiz "Press a key..."
 strPass: .asciiz "Pass"
 
@@ -123,12 +138,10 @@ strPass: .asciiz "Pass"
     lda #0
     sta numExpectedErrors
     sta numExpectedWarnings
-    lda #<expectedWarnHandler
-    ldx #>expectedWarnHandler
-    jsr registerExpectWarnHandler
-    lda #<expectedErrorHandler
-    ldx #>expectedErrorHandler
-    jsr registerExpectErrorHandler
+    sta numFiles
+    lda #1
+    sta inErrorTest
+    jsr registerExpectHandlers
 
     ldq unitList
     jsr setParserUnitsList
@@ -143,6 +156,8 @@ strPass: .asciiz "Pass"
     jsr freeMemBuf
 
     jsr tokenizeAndParseUnits
+    lda #0
+    sta inErrorTest
 
     lda #<strResolving
     ldx #>strResolving
@@ -155,6 +170,12 @@ strPass: .asciiz "Pass"
     jsr injectSystemUnit
     ; Resolve the System unit so tests can call its routines (Length)
     jsr resolveUnits
+
+    ; resolveUnits reports errors in each unit's file, as the compiler
+    ; does. The rest are in the program's.
+    lda #<sourceFn
+    ldx #>sourceFn
+    jsr setCompilerFilename
 
     ldq astRoot
     jsr pushQ
@@ -183,6 +204,8 @@ strPass: .asciiz "Pass"
     jsr initTypeCheck
     ldq astRoot
     jsr declTypeCheck
+    ldq unitList
+    jsr typeCheckUnits
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
@@ -208,6 +231,21 @@ strPass: .asciiz "Pass"
     jsr CHROUT
 
     rts
+.endproc
+
+; This routine gives the parser the $ExpectWarn and $ExpectError handlers
+; while an error test is parsing. tokenizeAndParseUnits calls it after
+; parserInit, which clears them, so a unit's directives are recorded too.
+.proc registerExpectHandlers
+    lda inErrorTest
+    beq :+
+    lda #<expectedWarnHandler
+    ldx #>expectedWarnHandler
+    jsr registerExpectWarnHandler
+    lda #<expectedErrorHandler
+    ldx #>expectedErrorHandler
+    jsr registerExpectErrorHandler
+:   rts
 .endproc
 
 ; This routine formats the source filename using the test number.
@@ -263,6 +301,7 @@ strPass: .asciiz "Pass"
     sta expectedNumber
     stx lineNumber
     sty lineNumber+1
+    jsr currentFileIndex
 
     lda numExpectedWarnings
     cmp #MAX_EXPECTED_ERRORS
@@ -288,7 +327,7 @@ strPass: .asciiz "Pass"
     lda lineNumber+1
     sta expectedWarnings,x
     inx
-    lda #0
+    lda fileNum                 ; not seen yet, in this file
     sta expectedWarnings,x
     inc numExpectedWarnings
 
@@ -307,6 +346,7 @@ strPass: .asciiz "Pass"
     sta expectedNumber
     stx lineNumber
     sty lineNumber+1
+    jsr currentFileIndex
 
     lda numExpectedErrors
     cmp #MAX_EXPECTED_ERRORS
@@ -332,7 +372,7 @@ strPass: .asciiz "Pass"
     lda lineNumber+1
     sta expectedErrors,x
     inx
-    lda #0
+    lda fileNum                 ; not seen yet, in this file
     sta expectedErrors,x
     inc numExpectedErrors
 
@@ -349,6 +389,7 @@ strPass: .asciiz "Pass"
     sty expectedNumber
     sta lineNumber
     stx lineNumber+1
+    jsr currentFileIndex
 
     lda #<expectedWarnings
     sta ptr1
@@ -378,6 +419,7 @@ strPass: .asciiz "Pass"
     sty expectedNumber
     sta lineNumber
     stx lineNumber+1
+    jsr currentFileIndex
 
     lda #<expectedErrors
     sta ptr1
@@ -394,7 +436,8 @@ L1: jsr popQ
 .endproc
 
 ; This routine records an error or warning.
-; On input, ptr1 points to the list of expected errors or warnings.
+; On input, ptr1 points to the list of expected errors or warnings and
+; fileNum is the file it was reported in.
 .proc recordExpected
     ; Look through the array of expected warnings or errors
     lda #0
@@ -414,12 +457,17 @@ L1: lda expectedIndex
     lda (ptr1),y
     cmp lineNumber+1
     bne L2
-    ; Have we already encountered this one?
+    ; Is it in the same file?
     iny
     lda (ptr1),y
-    bne L3
+    and #<~SEEN
+    cmp fileNum
+    bne L2
+    ; Have we already encountered this one?
+    lda (ptr1),y
+    bmi L3
     ; Mark the warning as seen
-    lda #1
+    ora #SEEN
     sta (ptr1),y
     rts
 
@@ -489,8 +537,90 @@ L3: lda #13
     lda #<intBuf
     ldx #>intBuf
     jsr printLine
+
+    ; Print the file it's in: fileTable + fileNum * FILE_SLOT
+    lda #<strFile
+    ldx #>strFile
+    jsr printLine
+    lda #0
+    ldx fileNum
+    beq :++
+:   clc
+    adc #FILE_SLOT
+    dex
+    bne :-
+:   clc
+    adc #<fileTable
+    pha
+    lda #>fileTable
+    adc #0
+    tax
+    pla
+    jsr printLine
     lda #13
     jsr CHROUT
+    rts
+.endproc
+
+; This routine looks up the file errors are reported in (from
+; getCompilerFilename) in fileTable, adding it if it's not there.
+; Its index is returned in A and fileNum. ptr1 is preserved.
+.proc currentFileIndex
+    lda ptr1
+    pha
+    lda ptr1+1
+    pha
+    jsr getCompilerFilename
+    sta ptr1
+    stx ptr1+1
+
+    lda #0
+    sta fileNum
+    sta fileOffset
+L1: lda fileNum
+    cmp numFiles
+    beq L4                      ; not in the table
+    ldx fileOffset
+    ldy #0
+L2: lda (ptr1),y
+    cmp fileTable,x
+    bne L3
+    cmp #0
+    beq L6                      ; found it
+    inx
+    iny
+    bne L2
+L3: inc fileNum
+    lda fileOffset
+    clc
+    adc #FILE_SLOT
+    sta fileOffset
+    bra L1
+
+    ; Add it to the table
+L4: cmp #MAX_FILES
+    bne :+
+    lda #<strMaxFiles
+    ldx #>strMaxFiles
+    jsr printLine
+    lda #13
+    jsr CHROUT
+    jmp testFail
+:   ldx fileOffset
+    ldy #0
+L5: lda (ptr1),y
+    sta fileTable,x
+    beq :+
+    inx
+    iny
+    bne L5
+:   inc numFiles
+
+L6: pla
+    sta ptr1+1
+    pla
+    sta ptr1
+    lda fileNum
     rts
 .endproc
 
@@ -509,9 +639,10 @@ L1: lda expectedIndex
     asl a
     tax
     lda expectedErrors+3,x
-    bne L2
+    bmi L2
 
     ; We did not see this error
+    sta fileNum                 ; SEEN is clear
     lda expectedErrors,x
     sta expectedNumber
     lda expectedErrors+1,x
@@ -548,9 +679,10 @@ L1: lda expectedIndex
     asl a
     tax
     lda expectedWarnings+3,x
-    bne L2
+    bmi L2
 
     ; We did not see this warning
+    sta fileNum                 ; SEEN is clear
     lda expectedWarnings,x
     sta expectedNumber
     lda expectedWarnings+1,x

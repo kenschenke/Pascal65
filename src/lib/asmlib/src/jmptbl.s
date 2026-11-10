@@ -27,6 +27,8 @@
 .import linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
 .import getLinkerTagsToFind, findLinkerTag, getMemHeapForBank, clearMemHeap
 .import astFreeBodies
+.import rtSetCompilerFilename, rtSetCompilerUnitFilename
+.import rtGetCompilerFilename
 
 .segment "JMPTBL"
 
@@ -119,3 +121,6 @@ jmp rtInitCompilerWarnings
 jmp rtCompilerWarning
 jmp astFreeBodies
 jmp scopeLookupCurrent
+jmp rtSetCompilerFilename
+jmp rtSetCompilerUnitFilename
+jmp rtGetCompilerFilename

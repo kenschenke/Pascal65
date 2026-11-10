@@ -149,6 +149,12 @@ strLinking: .asciiz "Linking"
     jsr injectSystemUnit
     jsr resolveUnits
 
+    ; resolveUnits reports errors in each unit's file. The rest are in
+    ; the program's.
+    lda sourceFn
+    ldx sourceFn+1
+    jsr setCompilerFilename
+
     ldq astRoot
 
     jsr pushQ
@@ -196,6 +202,9 @@ strLinking: .asciiz "Linking"
     jsr declTypeCheck
     ldq unitList
     jsr typeCheckUnits
+    lda sourceFn
+    ldx sourceFn+1
+    jsr setCompilerFilename
 
 .ifdef __HEAPPROFILE__
     ; Profile after type checking (shows as "Type checking")

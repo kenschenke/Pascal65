@@ -90,6 +90,12 @@ DN: rts
 
 ; Source filename pointer in A/X
 .proc handleTokenize
+    ; Errors and warnings from here through parsing are in this file
+    pha
+    phx
+    jsr setCompilerFilename
+    plx
+    pla
     jsr openSourceFile
     bcc :+
     lda #0

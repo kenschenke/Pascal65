@@ -169,6 +169,12 @@ strEditorFn: .asciiz "pascal65"
     jsr injectSystemUnit
     jsr resolveUnits
 
+    ; resolveUnits reports errors in each unit's file. The rest are in
+    ; the program's.
+    lda #<sourceFn
+    ldx #>sourceFn
+    jsr setCompilerFilename
+
     ldq astRoot
 
     jsr pushQ
@@ -211,6 +217,9 @@ strEditorFn: .asciiz "pascal65"
     jsr declTypeCheck
     ldq unitList
     jsr typeCheckUnits
+    lda #<sourceFn
+    ldx #>sourceFn
+    jsr setCompilerFilename
 
     ; Generate the intermediate code
     lda #<strIcode

@@ -32,6 +32,10 @@ L1: ldq currentUnit
     jsr isQZero
     beq L9
 
+    ; Errors and warnings are in the unit's source file
+    jsr setCompilerUnitFilename
+
+    ldq currentUnit
     stq ptr1
     ldz #unit::astRoot
     neg
