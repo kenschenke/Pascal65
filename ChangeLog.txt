@@ -15,6 +15,7 @@
          or that need the most memory.
     NEW: $StaticRuntime and $DynamicRuntime compiler directives
     NEW: A static program links only the parts of the runtime it uses
+    NEW: Big speed improvement in compiler
 
 0.35-beta Sep 30 2026
     NEW: Compiler rewritten in 100% assembly language
