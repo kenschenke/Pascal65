@@ -28,7 +28,7 @@ strPas: .asciiz ".pas"
 
 any: .res 1
 currentUnit: .res 4
-filename: .res 13
+filename: .res 17               ; unit name, ".pas" and a null
 tokenHeap: .res 4
 
 .code
@@ -115,6 +115,8 @@ L5: rts
     ldz #0
 L1: nop
     lda (ptr2),z
+    beq L2
+    cpy #12                     ; CBM names are 16 chars: room for .pas
     beq L2
     sta filename,y
     iny

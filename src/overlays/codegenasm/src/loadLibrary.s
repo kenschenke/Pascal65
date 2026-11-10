@@ -39,7 +39,7 @@ libName: .res 4
 libRoot: .res 4
 libBase: .res 2
 libBuf: .res 4
-filename: .res 16
+filename: .res 20       ; up to 12 chars of the name, ".lib" and ",p,r"
 label: .res 16
 page: .res 1
 pages: .res 1
@@ -112,6 +112,8 @@ currentDecl: .res 4
     ldz #0
 :   nop
     lda (ptr1),z
+    beq :+
+    cpx #12         ; CBM names are 16 chars: room for ".lib"
     beq :+
     sta filename,x
     inx

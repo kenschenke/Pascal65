@@ -13,6 +13,8 @@ Var
     i : Integer;
     lit : Array Of Integer = (1, 2, 3, 4, 5, 6, 7);
     litd : TDyn = (10, 20);
+    // Literals that fit the element type don't warn
+    litb : Array[1..4] Of Byte = (0, 127, 128, 255);
 
 Procedure TakeDyn(p : TDyn); Begin End;
 Procedure TakeDynVar(Var p : TDyn); Begin End;

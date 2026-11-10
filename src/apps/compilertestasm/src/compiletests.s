@@ -69,6 +69,7 @@ strRtDyn: .asciiz "rtdyn"
 strRtDynA: .asciiz "rtdyna"
 strRtDynB: .asciiz "rtdynb"
 strFiveDice: .asciiz "fivedice"
+strBubbles: .asciiz "bubbles"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
@@ -161,6 +162,8 @@ compileOnlyTests:
 .if TESTSET = 0 || TESTSET = 3
     ; The split runtime must leave fivedice room (see plans/runtime.md)
     .byte .lobyte(strFiveDice), .hibyte(strFiveDice)
+    ; Uses the Sprites and SpriteMove libraries
+    .byte .lobyte(strBubbles), .hibyte(strBubbles)
     ; $DynamicRuntime must make the same PRG as no directive. The
     ; Makefile compares them (see testset).
     .byte .lobyte(strRtDynA), .hibyte(strRtDynA)

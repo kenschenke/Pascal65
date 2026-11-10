@@ -85,6 +85,11 @@ L2: ldz #exprOffset
     inx
     cpx #4
     bne :-
+    ; Mark it constant, so the precision check tests its value
+    ldz #expr::evalTypeFlags
+    lda #TYPE_FLAG_ISCONST
+    nop
+    sta (ptr1),z
 
     ; Move to the next literal
 L3: ldz #exprOffset

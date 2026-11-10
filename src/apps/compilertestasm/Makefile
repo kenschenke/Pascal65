@@ -17,6 +17,8 @@ ASMLIBDIR := ../../lib/asmlib
 SYSTEMLIBDIR := ../../lib/system
 DEMOLIBDIR := ../../lib/demolib
 SCREENLIBDIR := ../../lib/screen
+SPRITESLIBDIR := ../../lib/sprites
+SPRITEMOVELIBDIR := ../../lib/spritemove
 RUNTIMEDIR := ../../lib/runtime
 
 PROGRAM := compilertest
@@ -51,6 +53,8 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
 DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
 SCREENLIB = ../../lib/screen/bin/$(TARGET)/screen
+SPRITESLIB = ../../lib/sprites/bin/$(TARGET)/sprites
+SPRITEMOVELIB = ../../lib/spritemove/bin/$(TARGET)/spritemove
 TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
 ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
@@ -66,6 +70,7 @@ PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 SYSTEMPAS = ../../lib/system/system.pas
 DEMOLIBPAS = ../../lib/demolib/demolib.pas
 FIVEDICEPAS = ../../../examples/fivedice.pas
+BUBBLESPAS = ../../../examples/bubbles.pas
 
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
@@ -76,6 +81,8 @@ BINFILES += $(MEMINFO)
 BINFILES += $(ASMLIB)
 BINFILES += $(DEMOLIB)
 BINFILES += $(SCREENLIB)
+BINFILES += $(SPRITESLIB)
+BINFILES += $(SPRITEMOVELIB)
 BINFILES += $(PRGFILE)
 BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
@@ -107,6 +114,7 @@ DEPFLAGS = --create-dep $(@:.o=.dep)
 FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 TXTFILES := errormsgs.petscii system.petscii demolib.petscii fivedice.petscii
+TXTFILES += bubbles.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
@@ -127,6 +135,10 @@ demolib.petscii: $(DEMOLIBPAS)
 # Compiled, but not run, to check the runtime leaves it room
 fivedice.petscii: $(FIVEDICEPAS)
 	dos2unix < $(FIVEDICEPAS) | petcat -w2 -text -o fivedice.petscii
+
+# Compiled, but not run, to check the Sprites and SpriteMove libraries
+bubbles.petscii: $(BUBBLESPAS)
+	dos2unix < $(BUBBLESPAS) | petcat -w2 -text -o bubbles.petscii
 
 $(BINDIR):
 	mkdir -p $@
@@ -176,6 +188,12 @@ $(DEMOLIB): FORCE
 $(SCREENLIB): FORCE
 	cd $(SCREENLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(SPRITESLIB): FORCE
+	cd $(SPRITESLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(SPRITEMOVELIB): FORCE
+	cd $(SPRITEMOVELIBDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(SYSTEMLIB): FORCE
 	cd $(SYSTEMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -212,12 +230,15 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(DEMOLIB) demolib.lib,prg \
 	-write $(SCREENLIB) screen.lib,prg \
+	-write $(SPRITESLIB) sprites.lib,prg \
+	-write $(SPRITEMOVELIB) spritemove.lib,prg \
 	-write $(SYSTEMLIB) system.lib,prg \
 	$(RTWRITE) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
 	-write fivedice.petscii fivedice.pas,seq \
+	-write bubbles.petscii bubbles.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
 	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
 	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
