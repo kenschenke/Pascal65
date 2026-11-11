@@ -21,7 +21,7 @@
 .export editorSetAllRowsDirty, incCurX, decCurX, initFile
 .export colorPtrs, editorAllocLine, editorFreeLine, editorSetStatusMsg
 .export editorNewFile, firstFile, addCurrentFile, editorHandleFileSave
-.export editorHandleFileSaveAs, themeColors
+.export editorHandleFileSaveAs, themeColors, checkCursorEOL
 
 .import readTitleFile, editorRefreshScreen, openHelpFile, clearKeyBuf
 .import renderCursor, currentEditorRow, editBufKey, initEditBuf, closeEditBuf
@@ -33,6 +33,10 @@
 
 .ifdef __DEBUG__
 .import editorCloseAllFiles
+.endif
+
+.ifdef __EDITORTEST__
+.import editorTestSP, editorTestPascal
 .endif
 
 .data
@@ -65,6 +69,7 @@ rowPtrs: .res 200           ; 50 rows * 4 bytes -- pointers to screen memory for
 colorPtrs: .res 200         ; 50 rows * 4 bytes -- pointers to color RAM
 
 prevRow: .res 4
+freeLinePtr: .res 4         ; The line editorFreeLine is freeing
 
 .code
 
@@ -227,6 +232,11 @@ L2: ldz #EDITFILE::nextFile
 :   cmp #CH_50_ROWS
     bne :+
     jmp editorHandle50Rows
+    ; The rest of the keys work on the current file, except a few. With no
+    ; file open (all of them closed) only those few do anything.
+:   jsr isFileOpen
+    bcs :+
+    jmp editorNoFileKey
 :   cmp #CH_CURS_DOWN
     bne :+
     jmp editorCursorDown
@@ -273,7 +283,7 @@ L2: ldz #EDITFILE::nextFile
 .endif
 :   cmp #CH_HELP
     bne :+
-    jmp openHelpFile
+    jmp editorHandleHelp
 :   cmp #CTRL_B
     bne :+
     jmp editorHandleCtrlB
@@ -311,6 +321,8 @@ L2: ldz #EDITFILE::nextFile
     ; Check if the file is read-only and ignore the keystroke if so.
     jsr isReadOnly
     bcs DN                  ; Branch if file is read-only
+    jsr isEditKey
+    bcc DN                  ; Branch if the key does nothing to the text
     jsr isDirty
     bcs :+
     pha                     ; Save the keystroke on the stack
@@ -454,10 +466,7 @@ DN: jsr editorCalcSelection
     nop
     lda (currentFile),z
     sta tmp1
-    jsr currentEditorRow
-    ldz #EDITLINE::length
-    nop
-    lda (ptr2),z
+    jsr currentRowLength
     cmp tmp1
     beq DW
     clc
@@ -524,29 +533,31 @@ DN: jsr editorCalcSelection
 DN: rts
 .endproc
 
-; This routine frees memory for the line in Q
+; This routine frees memory for the line in Q: its text, its syntax
+; highlighting and the line. heapFree ignores a null pointer and changes
+; ptr1, so the line is kept in freeLinePtr.
 .proc editorFreeLine
-    pha
-    phx
-    phy
-    phz
-    neg
-    neg
-    sta ptr1
+    jsr isQZero
+    bne :+
+    rts
+:   stq freeLinePtr
+    stq ptr1
     ldz #EDITLINE::buffer
     neg
     neg
     nop
     lda (ptr1),z
-    jsr isQZero
-    beq :+
     jsr heapFree
-:   plz
-    ply
-    plx
-    pla
+    ldq freeLinePtr
+    stq ptr1
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr1),z
     jsr heapFree
-    rts
+    ldq freeLinePtr
+    jmp heapFree
 .endproc
 
 ; This routine checks if the cursor position is past the end of the line.
@@ -559,10 +570,7 @@ DN: rts
     lda (currentFile),z
     sta tmp1
     ; Look up the length of the new line
-    jsr currentEditorRow
-    ldz #EDITLINE::length
-    nop
-    lda (ptr2),z
+    jsr currentRowLength
     cmp tmp1
     bcs DN
     ; Move to the cursor to the end of the new line
@@ -572,8 +580,30 @@ DN: rts
 DN: rts
 .endproc
 
+; Returns the length of the current line in A. The cursor can be on the
+; line after a file's last line (see readFile), which doesn't exist yet. Its
+; length is 0.
+.proc currentRowLength
+    jsr currentEditorRow
+    ldq ptr2
+    jsr isQZero
+    bne :+
+    lda #0
+    rts
+:   ldz #EDITLINE::length
+    nop
+    lda (ptr2),z
+    rts
+.endproc
+
 .proc editorNewFile
     jsr initFile
+.ifdef __EDITORTEST__
+    lda editorTestPascal    ; A test can make new files Pascal files
+    ldz #EDITFILE::isPascal
+    nop
+    sta (currentFile),z
+.endif
     jsr addCurrentFile
     jsr updateStatusBarFilename
     jsr editorSetDefaultStatusMessage
@@ -587,6 +617,10 @@ DN: rts
 ; EDITOR_LOOP value is returned in A.
 ; A/X contains pointer to the theme colors block to copy from
 .proc editorRun
+.ifdef __EDITORTEST__
+    tsx                     ; editorTestNextKey returns from here
+    stx editorTestSP
+.endif
     ; Call copyThemeColors to load the theme colors into the buffer
     ; since the source pointer is in A/X.
     jsr copyThemeColors
@@ -630,6 +664,7 @@ L2: lda loopCode
 .proc editorHandleCtrlB
     clc
     jsr renderCursor
+    jsr closeEditBuf
     lda #0
     ldz #EDITFILE::rowOff
     nop
@@ -655,6 +690,7 @@ L2: lda loopCode
 .proc editorHandleCtrlE
     clc
     jsr renderCursor
+    jsr closeEditBuf
     ; Calculate numLines-screenrows
     ldz #EDITFILE::numLines
     nop
@@ -722,10 +758,7 @@ L2: lda loopCode
     jsr closeEditBuf
     clc
     jsr renderCursor
-    jsr currentEditorRow
-    ldz #EDITLINE::length
-    nop
-    lda (ptr2),z
+    jsr currentRowLength
     ldz #EDITFILE::cx
     nop
     sta (currentFile),z
@@ -771,15 +804,23 @@ L2: lda loopCode
     lda #0
     sta intOp2+1
     jsr subInt16
+    lda intOp1              ; numLines-screenrows in intOp2
+    sta intOp2
+    lda intOp1+1
+    sta intOp2+1
+    pla                     ; The new rowOff back in intOp1
+    sta intOp1+1
     pla
     sta intOp1
-    pla
-    sta intOp1+1
     jsr geInt16
     beq :+
     lda intOp2
     sta intOp1
     lda intOp2+1
+    sta intOp1+1
+    bpl :+                  ; A file shorter than the screen: row 0
+    lda #0
+    sta intOp1
     sta intOp1+1
 :   ldz #EDITFILE::rowOff   ; Store difference back in rowOff
     lda intOp1
@@ -894,6 +935,66 @@ L2: lda loopCode
     jmp editorSetAllRowsDirty
 .endproc
 
+; This routine sets the carry if the key in A changes the text: a character
+; to insert, or one of the keys editBufKey and editorEnterKey handle. Other
+; keys, such as control codes and the function keys the editor doesn't use
+; ($f1 to $fe), are ignored. A is kept.
+.proc isEditKey
+    cmp #CH_ENTER
+    beq YS
+    cmp #CH_BACKSPACE
+    beq YS
+    cmp #CH_TAB
+    beq YS
+    cmp #CH_INS
+    beq YS
+    cmp #CH_DELETE_SOL
+    beq YS
+    cmp #CH_DELETE_EOL
+    beq YS
+    cmp #$20
+    bcc NO                  ; A control code
+    cmp #$80
+    bcc YS
+    cmp #$a0
+    bcc NO                  ; A control code
+    cmp #CH_F1
+    bcc YS
+    cmp #$ff
+    beq YS
+NO: clc
+    rts
+YS: sec
+    rts
+.endproc
+
+; This routine handles a key when no file is open (see
+; editorProcessKeypress). The key is in A.
+.proc editorNoFileKey
+    cmp #CTRL_X
+    bne :+
+    jmp editorHandleCtrlX
+:   cmp #CH_BACKARROW
+    bne :+
+    jmp showFileScreen
+:   cmp #CH_F1
+    bne :+
+    jmp showDirScreen
+:   cmp #CH_F4
+    bne :+
+    jmp editorHandleTheme
+:   cmp #CH_HELP
+    bne :+
+    jmp editorHandleHelp
+:   rts
+.endproc
+
+; This routine handles the user pressing Help, which opens the help file
+.proc editorHandleHelp
+    jsr closeEditBuf        ; The help file becomes the current file
+    jmp openHelpFile
+.endproc
+
 ; This routine handles the user pressing CTRL+U
 ; which pastes from the clipboard.
 .proc editorHandleCtrlU
@@ -918,6 +1019,7 @@ L2: lda loopCode
     rts
 :   clc
     jsr renderCursor
+    jsr closeEditBuf
     ldz #EDITFILE::rowOff
     nop
     lda (currentFile),z
@@ -969,8 +1071,29 @@ L2: lda loopCode
 ; This handles the user pressing CTRL+W or Esc+W
 ; which scrolls the display down one line.
 .proc editorHandleCtrlW
-    clc
+    ; Don't scroll past the end of the file
+    ldz #EDITFILE::rowOff
+    nop
+    lda (currentFile),z
+    sta intOp1
+    inz
+    nop
+    lda (currentFile),z
+    sta intOp1+1
+    ldz #EDITFILE::numLines
+    nop
+    lda (currentFile),z
+    sta intOp2
+    inz
+    nop
+    lda (currentFile),z
+    sta intOp2+1
+    jsr geInt16
+    beq :+
+    rts
+:   clc
     jsr renderCursor
+    jsr closeEditBuf
     ldz #EDITFILE::rowOff
     nop
     lda (currentFile),z
@@ -1122,8 +1245,7 @@ L2: jsr closeEditBuf
     pla
     rts
 
-L3: jsr editorSaveState
-    pla
+L3: pla
     cmp #CH_F5 ; run
     bne L4
     lda #EDITOR_LOOP_RUN

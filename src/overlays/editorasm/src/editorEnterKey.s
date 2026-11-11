@@ -45,8 +45,19 @@
     bne :+                  ; Branch if length is not zero
     jmp MD                  ; Nothing else to do
 
+    ; Is the cursor at the end of the line?
+:   sta tmp1                ; Length of the current line
+    ldz #EDITFILE::cx
+    nop
+    lda (currentFile),z
+    cmp tmp1
+    bne SV                  ; Branch if not
+    ; Nothing moves to the new line. It gets no buffers, like an empty
+    ; line read from a file (fileFree frees none when capacity is zero).
+    jmp MD
+
     ; Save ptr1 on the runtime stack
-:   ldq ptr1
+SV: ldq ptr1
     jsr pushQ
 
     ; Truncate the current line and copy characters to new line
@@ -70,11 +81,6 @@
     ; Pop ptr1 back off the runtime stack
     jsr popQ
     stq ptr1
-    ldz #EDITLINE::continuedComment
-    nop
-    lda (ptr2),z
-    nop
-    sta (ptr1),z
     ; Save the newly allocated line buffer into the new line
     ldz #EDITLINE::buffer+3
     ldx #3
@@ -110,7 +116,7 @@
     clc
     adcq intOp32
     stq ptr3
-    ; Copy the characters from ptr3 to ptr4
+    ; Copy the characters from ptr3 to ptr4 (tmp1 isn't zero)
     ldz #0
 :   nop
     lda (ptr3),z
@@ -126,6 +132,7 @@
     ldz #EDITLINE::length
     nop
     sta (ptr2),z
+    jsr setNewLineComment
     ; Allocate a buffer for the syntax highlighting
     ldz #EDITFILE::isPascal
     nop
@@ -153,12 +160,13 @@
     jsr updateSyntaxHighlight
     jsr popQ
     stq ptr2
-    bra MD
+    bra MR
 
 NP: pla
+MD: jsr setNewLineComment
     ; Mark all rows dirty, starting at the current row and continuing
     ; through the visible rows
-MD: ldz #EDITFILE::cy
+MR: ldz #EDITFILE::cy
     nop
     lda (currentFile),z
     sta intOp1
@@ -232,6 +240,66 @@ DN: clc
     nop
     sta (currentFile),z
 :   rts
+.endproc
+
+; This routine sets the continuedComment of the new line in ptr1: whether a
+; multi-line comment is still open at the end of the current line in ptr2.
+; It highlights the current line to find out. Only Pascal files have
+; highlighting. ptr1 and ptr2 are kept.
+.proc setNewLineComment
+    ldz #EDITFILE::isPascal
+    nop
+    lda (currentFile),z
+    bne :+
+    rts
+:   ldq ptr1
+    jsr pushQ
+    ldq ptr2
+    jsr pushQ
+    ; An empty line is all comment or none of it
+    ldz #EDITLINE::continuedComment
+    nop
+    lda (ptr2),z
+    pha
+    ldz #EDITLINE::length
+    nop
+    lda (ptr2),z
+    sta tmp1
+    beq ST
+    ldz #EDITLINE::syntaxHL
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr isQZero
+    beq ST
+    stq ptr3
+    ldz #EDITLINE::buffer
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    stq ptr1
+    ldq ptr3
+    stq ptr2
+    pla                     ; The line's own continuedComment
+    clc
+    beq :+
+    sec
+:   lda tmp1
+    jsr syntaxHighlight
+    lda #0
+    rol a                   ; The carry: the comment is still open
+    pha
+ST: jsr popQ
+    stq ptr2
+    jsr popQ
+    stq ptr1
+    pla
+    ldz #EDITLINE::continuedComment
+    nop
+    sta (ptr1),z
+    rts
 .endproc
 
 ; This routine updates the syntax highlighting for the row in ptr2

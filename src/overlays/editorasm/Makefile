@@ -10,6 +10,19 @@ LIBFILE := $(BINTARGETDIR)/editor
 
 # Add -D __DEBUG__ to enable F8 debug key in editor
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
+LDFLAGS =
+
+# make EDITORTEST=1 builds the overlay for the editor tests
+# (src/apps/editortest) as editor-test. It has the hooks in editortest.s and
+# two more jump table entries. Its objects are kept apart so the normal
+# editor never picks them up.
+EDITORTEST ?= 0
+ifeq ($(EDITORTEST),1)
+ASFLAGS += -D __EDITORTEST__
+LDFLAGS += -D __JMPTBLSIZE__=12
+OBJTARGETDIR = $(OBJDIR)/$(TARGET)-test
+LIBFILE := $(BINTARGETDIR)/editor-test
+endif
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
@@ -41,7 +54,7 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	$(FIXDEP)
 
 $(LIBFILE): $(OBJECTS) $(CONFIG)
-	ld65 -o $(LIBFILE) -C $(CONFIG) $(OBJECTS)
+	ld65 $(LDFLAGS) -o $(LIBFILE) -C $(CONFIG) $(OBJECTS)
 
 clean:
 	$(RM) $(LIBFILE) $(OBJECTS)

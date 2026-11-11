@@ -16,7 +16,7 @@
 
 .export editorInsertLine
 
-.import editorAllocLine, currentEditorRow, closeEditBuf
+.import editorAllocLine, currentEditorRow
 
 ; This routine inserts a new line after the current line
 ; On exit:
@@ -24,20 +24,42 @@
 ;    ptr2 - current line
 .proc editorInsertLine
     jsr editorAllocLine     ; Allocate a new line in ptr1
-    
-    ; Special case: cursor is in first column of first row.
-    ldz #EDITFILE::cx
+
+    ; If the file has no lines, the new line is its first line
+    ldz #EDITFILE::firstLine
+    neg
+    neg
     nop
     lda (currentFile),z
+    jsr isQZero
     bne L0
+    ldz #EDITFILE::firstLine+3
+    ldx #3
+:   lda ptr1,x
+    nop
+    sta (currentFile),z
+    dez
+    dex
+    bpl :-
+    ; The new line is the current line too. closeEditBuf saves the edit
+    ; buffer into it, wherever the cursor is.
+    ldq ptr1
+    stq ptr2
+    rts
+
+    ; Special case: cursor is in first column of first row.
+L0: ldz #EDITFILE::cx
+    nop
+    lda (currentFile),z
+    bne L1
     ldz #EDITFILE::cy
     nop
     lda (currentFile),z
-    bne L0
+    bne L1
     inz
     nop
     lda (currentFile),z
-    bne L0
+    bne L1
     ; Insert the new row as the first row
     ldz #EDITFILE::firstLine
     neg
@@ -61,27 +83,6 @@
     dez
     dex
     bpl :-
-    rts
-
-L0: ldz #EDITFILE::firstLine
-    neg
-    neg
-    nop
-    lda (currentFile),z
-    jsr isQZero
-    bne L1
-
-    ; This is the first row
-    ldz #EDITFILE::firstLine+3
-    ldx #3
-:   lda ptr1,x
-    nop
-    sta (currentFile),z
-    dez
-    dex
-    bpl :-
-    ; The editing buffer needs to be saved
-    jsr closeEditBuf
     rts
 
 L1: jsr currentEditorRow    ; Current line in ptr2

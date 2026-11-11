@@ -83,11 +83,12 @@ multilineCommentCarry: .res 1
     ; Ask the user if they want to overwrite it.
     jsr askOverwrite
     bcc DN                  ; User is not overwriting - exit
-    ; Delete the existing file
+    ; Delete the existing file (scratchFile takes the name in ptr1)
     lda #<fnBuf
     ldx #>fnBuf
     ldy #0
     ldz #0
+    stq ptr1
     jsr scratchFile
 
     ; Call SETLFS
@@ -253,7 +254,9 @@ L4: sta multilineCommentCarry
 L1: ldz #EDITLINE::capacity
     nop
     lda (ptr3),z
-    ldx #0
+    bne :+
+    rts                     ; An empty line has no buffers (see fileFree)
+:   ldx #0
     jsr heapAlloc
     stq ptr1
     ldq currentLine

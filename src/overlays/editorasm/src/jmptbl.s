@@ -16,3 +16,11 @@
 .import editorRun
 
 jmp editorRun
+
+; The editor tests' hooks (editortest.s), in the test build only
+.ifdef __EDITORTEST__
+.import editorTestSetup, editorTestCleanup, editorTestState
+jmp editorTestSetup
+jmp editorTestCleanup
+jmp editorTestState
+.endif

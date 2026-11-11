@@ -104,9 +104,16 @@ EL: cmp #CH_DELETE_EOL
     sec
     rts
 
-    ; All other characters
+    ; All other characters. A full line takes no more.
 NO: jsr setupEditBuf
-    jsr insertChar
+    pha
+    jsr calcEditLength
+    cmp #MAX_LINE_LENGTH
+    pla
+    bcc :+
+    sec
+    rts
+:   jsr insertChar
     clc
     jsr renderCursor
     jsr incCurX
@@ -538,10 +545,13 @@ L1: ldz #EDITFILE::cx
 
 .proc handleInsertKey
     jsr setupEditBuf
+    jsr calcEditLength
+    cmp #MAX_LINE_LENGTH
+    bcs DN                  ; The line is full
     lda #' '
     jsr insertChar
     jsr renderBuffer
-    rts
+DN: rts
 .endproc
 
 .proc handleTabStop
@@ -557,10 +567,14 @@ L1: ldz #EDITFILE::cx
     ora #3                      ; Calculate next tab stop
     sta intOp2
     inc intOp2                  ; intOp2 now contains next tab stop (4 spaces)
-    ; Loop, inserting spaces until we reach the tab stop column
+    ; Loop, inserting spaces until we reach the tab stop column or the
+    ; line is full
 :   lda intOp1
     cmp intOp2
     beq :+
+    jsr calcEditLength
+    cmp #MAX_LINE_LENGTH
+    bcs :+
     lda #' '
     jsr insertChar
     jsr incCurX
@@ -579,12 +593,14 @@ L1: ldz #EDITFILE::cx
     nop
     lda (currentFile),z
     sta tmp1
-    ; Start at the end of the edit buffer, moving characters to the right.
-    ldx #MAX_LINE_LENGTH-2
-L1: lda editBuf,x
-    sta editBuf+1,x
-    cpx tmp1
+    ; Start at the end of the edit buffer, moving characters to the right
+    ; until the cursor's position is free. The line isn't full (see
+    ; editBufKey), so the cursor is before the last position.
+    ldx #MAX_LINE_LENGTH-1
+L1: cpx tmp1
     beq L2
+    lda editBuf-1,x
+    sta editBuf,x
     dex
     bra L1
 

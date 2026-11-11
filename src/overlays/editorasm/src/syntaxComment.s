@@ -20,6 +20,13 @@
 ; On exit, syntaxIndex is the last character checked.
 ; On exit, the carry flag is set if the comment remains open.
 .proc huntForCommentClose
+    ; An empty line leaves the comment open
+    lda syntaxIndex
+    cmp syntaxCount
+    bne L1
+    sec
+    rts
+
 L1: ldz syntaxIndex
     nop
     lda (ptr1),z

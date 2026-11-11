@@ -130,6 +130,7 @@ L2: lda tmp1
     ldx #>tempPRG
     ldy #0
     ldz #0
+    stq ptr1                ; scratchFile takes the name in ptr1
     jmp scratchFile
 .endproc
 

@@ -14,6 +14,11 @@
 
 .export clearKeyBuf, editorReadKey
 
+.ifdef __EDITORTEST__
+.import editorTestNextKey
+.export fixAlphaCase        ; For the test's getline (editortest.s)
+.endif
+
 KEYBUF = $d610
 
 .proc clearKeyBuf
@@ -45,10 +50,15 @@ L2: rts
 .proc editorReadKey
     lda #0                  ; Use tmp1 as an "Escape-pressed" flag
     sta tmp1
-L1: ldx KEYBUF
+L1:
+.ifdef __EDITORTEST__
+    jsr editorTestNextKey   ; The test's key script (editortest.s)
+.else
+    ldx KEYBUF
     beq L1
     lda #0
     sta KEYBUF
+.endif
     txa
     ; brk
     ldx tmp1                ; Was the last key esc?
@@ -102,7 +112,13 @@ L1: ldx KEYBUF
     bne :+
     lda #CTRL_W
     rts
-:
+    ; Not an Esc command, so it's the key as it would be without the Esc.
+    ; fixAlphaCase has already converted it.
+:   cmp #$af            ; "^" (up arrow)
+    bne :+
+    lda #$5e
+:   rts
+
 NE: cmp #CH_ESC
     bne :+
     lda #1

@@ -23,6 +23,7 @@ FILES_PER_PAGE = 9
 .import petsciiToScreenCode, firstFile, editorSetAllRowsDirty, setScreenColorToForeground
 .import updateStatusBarFilename, anyDirtyRows, fileClose, editorHandleFileSave
 .import editorHandleFileSaveAs, calcScreenPtr, screenrows, clearRowColor
+.import closeEditBuf
 
 .bss
 
@@ -49,6 +50,7 @@ modifiedStr: .asciiz " (modified)"
 .code
 
 .proc showFileScreen
+    jsr closeEditBuf        ; The current file may change
     lda #<fileScreenPrompt
     ldx #>fileScreenPrompt
     jsr editorSetStatusMsg
@@ -197,6 +199,18 @@ L2: jsr editorReadKey
     bcc :+
     cmp #'9'+1
     bcs :+
+    ; Ignore the number if the page has no file with it
+    pha
+    sec
+    sbc #'1'
+    clc
+    adc fileRangeLow        ; The file's number
+    cmp fileRangeHigh
+    beq NK
+    bcc NK
+    pla
+    bra L2
+NK: pla
     jsr handleFileNumberKey
     rts
 :   cmp #CH_BACKARROW
@@ -332,7 +346,11 @@ L2: nop
 :   ; Show low and high file numbers
     phz                         ; Save the Y index on the stack
     lda fileRangeLow
-    ldx #0
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    lda #<intBuf
+    ldx #>intBuf
     jsr writeInt16
     lda screenrows
     sec
@@ -357,8 +375,12 @@ L2: nop
     inz
     bne :-
 :   lda fileRangeHigh
-    ldx #0
+    sta intOp1
+    lda #0
+    sta intOp1+1
     phz
+    lda #<intBuf
+    ldx #>intBuf
     jsr writeInt16
     lda screenrows
     sec
@@ -444,6 +466,7 @@ L3: ldz tmp3
     lda (ptr1),z
     beq L4
     jsr petsciiToScreenCode
+    ldz tmp4
     nop
     sta (ptr2),z
     inc tmp3
@@ -453,11 +476,12 @@ L4: ldz #EDITFILE::dirty
     nop
     lda (ptr1),z
     beq L5
-    ldz tmp3
+    ldz tmp4
     ldx #0
 :   lda modifiedStr,x
     beq L5
     jsr petsciiToScreenCode
+    nop
     sta (ptr2),z
     inz
     inx

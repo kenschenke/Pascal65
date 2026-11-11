@@ -23,7 +23,7 @@
 .import editorSetDefaultStatusMessage, clipboard
 .import editorFreeLine, renderCursor, editBuf
 .import editorAllocLine
-.import updateStatusBarFilename, syntaxHighlight
+.import updateStatusBarFilename, syntaxHighlight, checkCursorEOL
 
 .data
 
@@ -275,10 +275,27 @@ L1: ; Are we past the first row of the selection?
     sta currentHighlight+1
     bra L1
 
+    ; The cursor goes to the selection's first line, or the last line if
+    ; the selection went to the end of the file
 DN: ldz #EDITFILE::startHY
     jsr loadY
+    sta intOp1
+    stx intOp1+1
+    ldz #EDITFILE::numLines
+    jsr loadY
+    sta intOp2
+    stx intOp2+1
+    jsr gtInt16
+    beq :+
+    lda intOp2
+    sta intOp1
+    lda intOp2+1
+    sta intOp1+1
+:   lda intOp1
+    ldx intOp1+1
     ldz #EDITFILE::cy
     jsr storeY
+    jsr checkCursorEOL
 
     ; Mark the file dirty
     ldz #EDITFILE::dirty
@@ -329,6 +346,8 @@ notFirst:
     lda currentHighlight
     ldx currentHighlight+1
     jsr editorRowAt
+    ldq ptr2
+    stq linePtr             ; The row to delete
     ldz #EDITLINE::next
     neg
     neg
@@ -353,9 +372,11 @@ notFirst:
     dex
     bpl :-
     ; Free the current row
-    ldq ptr3
+    ldq linePtr
     jsr editorFreeLine
 
+    ; Count one line less. numLines is the number of the last line, so a
+    ; file with one line or none has 0.
 finishUp:
     ldz #EDITFILE::numLines
     nop
@@ -365,7 +386,10 @@ finishUp:
     nop
     lda (currentFile),z
     sta intOp1+1
-    dew intOp1
+    ora intOp1
+    bne :+
+    rts
+:   dew intOp1
     lda intOp1+1
     nop
     sta (currentFile),z
@@ -382,7 +406,6 @@ finishUp:
     ldq clipboard
     jsr isQZero
     beq DN
-    rts
     jsr freeMemBuf
     lda #0
     tax
@@ -494,8 +517,13 @@ DN: jsr editorSetAllRowsDirty
     nop
     sta (ptr1),z
 
-    ; Allocate a buffer for the characters
+    ; Allocate a buffer for the characters. An empty line gets none, like
+    ; an empty line read from a file (fileFree frees none when capacity is
+    ; zero).
+    ldq linePtr
+    stq ptr3
     lda lineIndex
+    beq L1
     ldx #0
     jsr heapAlloc
     stq ptr2
@@ -515,8 +543,6 @@ DN: jsr editorSetAllRowsDirty
     ; Copy characters
     ldx #0
     ldz #0
-    lda lineIndex
-    beq L1
 :   lda editBuf,x
     nop
     sta (ptr2),z
@@ -549,14 +575,20 @@ L1: ; Allocate a buffer for the syntax highlighting
     cpx #4
     bne :-
 
-NP: ldz #EDITFILE::firstLine
+    ; With the cursor on the first line (or a file with no lines), the new
+    ; line is the new first line
+NP: ldz #EDITFILE::cy
+    nop
+    lda (currentFile),z
+    inz
+    nop
+    ora (currentFile),z
+    bne L2
+    ldz #EDITFILE::firstLine
     neg
     neg
     nop
     lda (currentFile),z
-    jsr isQZero
-    bne L2
-    ; The new line is the new first line
     stq ptr4
     ldz #EDITLINE::next+3
     ldx #3
@@ -611,7 +643,13 @@ L2: ldz #EDITFILE::cy
     dez
     dex
     bpl :-
-    ; Is the next line inside a continued multi-line comment?
+    ; Is the next line inside a continued multi-line comment? There is no
+    ; next line when pasting after the last line.
+    lda #0
+    sta prevLineContinuedComment
+    ldq ptr4
+    jsr isQZero
+    beq DN
     ldz #EDITLINE::continuedComment
     nop
     lda (ptr4),z

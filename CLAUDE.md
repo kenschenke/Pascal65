@@ -41,7 +41,7 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has seven test suites, located in `src/apps`:
+The project has eight test suites, located in `src/apps`:
 
   - tokenizertest
   - parsertest
@@ -50,6 +50,7 @@ The project has seven test suites, located in `src/apps`:
   - icodetest
   - memtest (memory heap allocator in asmlib)
   - compilertestasm
+  - editortest (editor buffer management)
 
 Each suite's `make test` goes through `src/apps/testcommon/runtest.sh`, which looks for a `RESULT: PASS` or `RESULT: FAIL` line in an emulator screen dump. New suites should reuse it and `testresult.s`.
 
@@ -99,6 +100,42 @@ emulator as it would on hardware. In other builds it's empty.
 one, and `testInit` then fails the test if BSS wasn't filled. New programs must
 call `poisonBss` and include `debug.mk`. The compiler and editor programs,
 overlays and asmlib don't fill BSS. `heapAlloc` zeros every block it returns.
+
+### Editor Tests
+
+`editortest` runs a test build of the editor overlay: `make EDITORTEST=1` in
+`src/overlays/editorasm` defines `__EDITORTEST__` and builds `editor-test`
+from `obj/mega65-test`. The normal `editor` has none of the hooks. They are
+in `editortest.s`, with `.ifdef`s in `editorReadKey`, `editorRun`,
+`editorNewFile` and `keybuf.s`, and three more jump table entries
+(`editorTestSetup`, `editorTestCleanup`, `editorTestState` in
+`editoroverlay.inc`).
+
+A test is a key script and what the editor must leave: the current file's
+cursor, `numLines` and lines, then other checks (`CHK_*` in `tests.inc`):
+EDITFILE fields, highlighting, the screen, files on the disk and what
+`editorRun` returned. `editorReadKey` takes keys from the script. When it
+runs out, the edit buffer is closed and `editorRun` returns, wherever the
+editor was waiting. `getline` takes them too: `editorTestSetup` points its
+jump table entry at the hook. Scripts are ASCII, as the keyboard sends them,
+and the expected text is PETSCII. The `KEYS` and `TEXT` macros switch the
+character map. `NEWFILE` opens a new file, a Pascal file if the test says
+so, and `OPENFILE` opens a file by its row in the directory screen.
+`editorTestCleanup` frees everything without prompts before the leak check.
+A script that ends in the directory screen leaks its list, so it leaves it.
+
+The tests don't fit in one program. Program N (`TESTPROGS`) runs
+`src/testsN.s` from its own disk, made fresh for each run because the tests
+change it. Each disk has the files in `files/`, in the order `FIXNAMES` in
+the Makefile gives, which is their order in the directory screen. Saving a
+file that is on the disk moves it to the end of the directory.
+
+`make TARGET=mega65 coverage` in `src/apps/editortest` runs every program
+against copies of the overlay with probes in them (`cov/mkcov.py`) and lists
+the lines that never ran in `bin/mega65/coverage.txt`. The probes don't all
+fit in the overlay at once, so the files are instrumented in sets
+(`COVFILESn`). A set that no longer fits fails to link and must be split.
+Like `test`, it needs asmlib built with `MEMCHECK=1`.
 
 ### Heap Tests
 

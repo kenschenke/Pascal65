@@ -67,6 +67,11 @@ newBuffer: .res 4
     clc
     adc prevLength          ; Add length of previous row
     sta combinedLength      ; Combined length in tmp2
+    cmp #MAX_LINE_LENGTH+1
+    bcc :+
+    pla                     ; Too long for one line: leave them alone
+    rts
+:
     pla                     ; Pop the previous line's capacity from the stack
     cmp combinedLength      ; Is previous row capacity > combined length?
     bcc :+                  ; Branch if combined length > previous row capacity

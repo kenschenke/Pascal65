@@ -23,6 +23,7 @@
 .import editorDrawMessageBar, statusmsg, statusmsg_dirty
 .import inputBufUsed, screenrows, calcScreenPtr, setScreenColorToForeground
 .import editorSetAllRowsDirty, editorSetDefaultStatusMessage, anyDirtyRows
+.import closeEditBuf
 
 PROMPT_ROW = 22
 
@@ -909,6 +910,7 @@ DN: rts
 .endproc
 
 .proc showDirScreen
+    jsr closeEditBuf        ; Opening a file changes the current file
     clc
     jsr renderCursor        ; Clear the cursor
     jsr clearScreen

@@ -201,7 +201,12 @@ L2: phx
     ldy STATUS
     cpy #$40
     bne L3              ; Branch if not EOF
-    jmp saveLine
+    ; The last byte of the file. It's part of the last line unless it's
+    ; the CR that ends it.
+    cmp #13
+    beq :+
+    jsr addChar
+:   jmp saveLine
 L3: cpy #0
     beq L4
     rts
@@ -210,9 +215,18 @@ L4: cmp #13             ; Is that a CR?
     ; Carriage return
     jsr saveLine
     jmp L1
-:   sta lineBuf,x
-    inx
+:   jsr addChar
     jmp L2
+.endproc
+
+; Adds the character in A to lineBuf at X. A line can't be longer than
+; MAX_LINE_LENGTH, so the rest of a longer line is dropped.
+.proc addChar
+    cpx #MAX_LINE_LENGTH
+    beq :+
+    sta lineBuf,x
+    inx
+:   rts
 .endproc
 
 .proc readTitleFile
