@@ -41,7 +41,7 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has eight test suites, located in `src/apps`:
+The project has nine test suites, located in `src/apps`:
 
   - tokenizertest
   - parsertest
@@ -51,6 +51,7 @@ The project has eight test suites, located in `src/apps`:
   - memtest (memory heap allocator in asmlib)
   - compilertestasm
   - editortest (editor buffer management)
+  - themestest (themes overlay: theme files, palette, theme screen)
 
 Each suite's `make test` goes through `src/apps/testcommon/runtest.sh`, which looks for a `RESULT: PASS` or `RESULT: FAIL` line in an emulator screen dump. New suites should reuse it and `testresult.s`.
 

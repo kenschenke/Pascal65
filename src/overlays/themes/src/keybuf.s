@@ -22,7 +22,14 @@ L1: ldx KEYBUF
 L2: rts
 .endproc
 
+.ifdef __THEMESTEST__
+.import themesTestNextKey
+.endif
+
 .proc getKey
+.ifdef __THEMESTEST__
+    jmp themesTestNextKey   ; The test's key script (themestest.s)
+.endif
 L1: ldx KEYBUF
     beq L1
     lda #0

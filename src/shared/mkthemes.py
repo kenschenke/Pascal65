@@ -30,7 +30,8 @@ Format 1:
 
 Format 0 ignores the error and warning colors if a theme has them.
 
---version and --truncate make deliberately bad files for the tests.
+--version, --selected and --truncate make deliberately bad files for the
+tests.
 
 Errors name the file and line and exit with status 1. Warnings go to stderr
 and don't stop the build.
@@ -260,9 +261,11 @@ def palette_warnings(theme, colors):
     return warnings
 
 
-def build(text, fmt, version=None):
+def build(text, fmt, version=None, force_selected=None):
     """Return (bytes, warnings) for the theme text."""
     selected, themes = parse(text)
+    if force_selected is not None:
+        selected = force_selected
     colors = COLORS_V0 if fmt == 0 else COLORS_V1
     out = bytearray()
     if fmt == 0:
@@ -289,6 +292,8 @@ def main(argv=None):
                     help="0: unmarked 9-color file (default), 1: version 1")
     ap.add_argument("--version", type=lambda s: int(s, 0), default=None,
                     help="write this version byte (format 1, for tests)")
+    ap.add_argument("--selected", type=lambda s: int(s, 0), default=None,
+                    help="write this selected number, unchecked (for tests)")
     ap.add_argument("--truncate", type=int, default=0, metavar="N",
                     help="drop the last N bytes (for tests)")
     args = ap.parse_args(argv)
@@ -298,13 +303,16 @@ def main(argv=None):
             ap.error("--version needs --format 1")
         if not 0 <= args.version <= 255:
             ap.error("--version must be 0-255")
+    if args.selected is not None and not 0 <= args.selected <= 254:
+        ap.error("--selected must be 0-254")
     if args.truncate < 0:
         ap.error("--truncate must not be negative")
 
     with open(args.input, encoding="ascii", errors="replace") as f:
         text = f.read()
     try:
-        data, warnings = build(text, args.format, args.version)
+        data, warnings = build(text, args.format, args.version,
+                               args.selected)
     except ThemeError as e:
         print("%s:%d: error: %s" % (args.input, e.line, e.msg),
               file=sys.stderr)

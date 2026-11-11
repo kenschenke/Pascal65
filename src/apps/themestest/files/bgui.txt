@@ -1,0 +1,44 @@
+# three.txt after B and five Ups: Beta's background goes from 6 to 1,
+# the UI color's index. The UI color moves to 0, the first index Beta
+# doesn't use. Slot 1 was left white by the red background (2), and on
+# white the UI color turns black.
+selected 1
+
+theme Alpha
+number       5  0 15  0
+keyword      4 15  9 12
+string       3  0 15 15
+comment     12 10 10 10
+operator     1 13 13 13
+identifier  10 15 10  7
+cursor      19 14 14  0
+ui           1 13 13 13
+background  21  2  3  5
+error       ui
+warning     ui
+
+theme Beta
+number       7
+keyword      2
+string      18
+comment     11
+operator    14
+identifier  13
+cursor       8
+ui           0  0  0  0
+background   1 15 15 15
+error       ui
+warning     ui
+
+theme Gamma
+number       9
+keyword     25  1  2  3
+string       3
+comment     15
+operator    12
+identifier  13
+cursor       7
+ui           0
+background   1 15 15 15
+error       ui
+warning     ui

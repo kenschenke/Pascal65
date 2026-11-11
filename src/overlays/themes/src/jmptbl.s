@@ -15,3 +15,21 @@
 
 jmp showThemesScreen
 jmp loadDefaultTheme
+
+; Only in the test build (make THEMESTEST=1). See themestest.s and
+; themes.inc.
+.ifdef __THEMESTEST__
+.import themesTestSetup, themesTestRun, themesTestState, initThemeList
+.import readThemeFile, writeThemeFile, resetToDefaults, freeThemeList
+.import isColorUsedInTheme, resetSystemPalette
+jmp themesTestSetup
+jmp themesTestRun
+jmp themesTestState
+jmp initThemeList
+jmp readThemeFile
+jmp writeThemeFile
+jmp resetToDefaults
+jmp freeThemeList
+jmp isColorUsedInTheme
+jmp resetSystemPalette
+.endif

@@ -41,6 +41,7 @@ KEY_ENTER = $0d
 .export initThemeList, getTheme, themeList, selectedThemeNum, freeThemeList
 .export numThemes, inThemeList, copyColorToTheme, getColorFromTheme
 .export currentTheme, copyColorsFromTheme, setCurrentTheme
+.export resetSystemPalette
 
 .import petsciiToScreenCode, getScreenRowPtr, getColorRowPtr
 .import getKey, refreshScreen, readThemeFile, toVIC
@@ -116,28 +117,30 @@ systemPalette:
     rts
 .endproc
 
+; Frees every theme and empties the list
 .proc freeThemeList
     ldq themeList
-    stq themePtr
 
-    ; Loop through the themes
-L1: jsr isQZero
+    ; Loop through the themes. Each theme's next pointer is read before
+    ; it is freed.
+L1: stq ptr1
+    jsr isQZero
     beq L2
-
-    jsr heapFree
-
-    ldq themePtr
-    stq ptr1
-
     ldz #THEME::next
     neg
     neg
     nop
     lda (ptr1),z
     stq themePtr
+    ldq ptr1
+    jsr heapFree
+    ldq themePtr
     bra L1
 
-L2: rts
+L2: stq themeList           ; Q is zero
+    stq currentTheme
+    sta numThemes
+    rts
 .endproc
 
 .proc clearList
@@ -662,12 +665,15 @@ L1: lda systemPalette,x
     sta $d300,y
     inx
     iny
-    cpy #31
+    cpy #32
     bne L1
 
     rts
 .endproc
 
+; Points currentTheme at the selected theme. A selected number past the end
+; of the list is set back to 0, the first theme. The list must not be
+; empty (readThemeFile always gives it a theme).
 .proc setCurrentTheme
     ; Walk through the list of themes to find the selected one.
     lda #0
@@ -678,6 +684,10 @@ L1: lda systemPalette,x
 L1: ldq ptr1
     jsr isQZero
     bne :+
+    lda #0                  ; Past the end of the list
+    sta selectedThemeNum
+    ldq themeList
+    stq currentTheme
     rts
 :   lda selectedThemeNum
     cmp tmp1

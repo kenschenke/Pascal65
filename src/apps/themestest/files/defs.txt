@@ -1,0 +1,28 @@
+# The themes.def most tests use. Its selected theme is Def Two.
+selected 1
+
+theme Def One
+number       5
+keyword      4
+string       3
+comment     12
+operator     1
+identifier  10
+cursor      19
+ui           1
+background  21
+error       ui
+warning     ui
+
+theme Def Two
+number       2  1  2  3
+keyword      4
+string       3
+comment     12
+operator     1
+identifier  10
+cursor      19
+ui           1
+background  30  3  4  5
+error       ui
+warning     ui

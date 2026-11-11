@@ -4,7 +4,7 @@
 - themes.txt in format 0 must match the old src/shared/themes.dat blob,
   which was removed once it matched byte for byte (its SHA-256 is below).
 - mkthemes-tests/good.txt must make the bytes written out here, in both
-  formats, with --version and --truncate, and warn about its palette clash.
+  formats, with --version, --selected and --truncate, and warn about its palette clash.
 - Every other mkthemes-tests/*.txt is a bad input. Its first line is
   "# expect <line>: <text>": the generator must fail, naming that line, with
   that text in the message.
@@ -121,6 +121,9 @@ def test_good():
         (("--format", "1", "--version", "2"),
          bytes([0xFF, 2]) + GOOD_V1[2:]),
         (("--format", "1", "--truncate", "10"), GOOD_V1[:-10]),
+        (("--format", "0", "--selected", "9"), bytes([9]) + GOOD_V0[1:]),
+        (("--format", "1", "--selected", "7"),
+         bytes([0xFF, 1, 7]) + GOOD_V1[3:]),
         (("--format", "0", "--truncate", "1000"), b""),
     ]
     for args, want in checks:

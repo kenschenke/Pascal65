@@ -36,6 +36,9 @@ HELPTEXT_COL = 9
 
 .export drawColorPalette, getPaletteColor, initPalette, inPaletteMode
 .export drawPaletteHelpText
+.ifdef __THEMESTEST__
+.export isColorUsedInTheme      ; For the tests (themestest.s)
+.endif
 
 .import getScreenRowPtr, getColorRowPtr, getKey, refreshScreen
 .import petsciiToScreenCode, toVIC, fixAlphaCase, drawColorEditor, copyColorToTheme
@@ -536,7 +539,7 @@ L1: nop
     inz
     inz
     inx
-    cpx #10
+    cpx #9              ; The colors in a theme
     bne L1
     lda #1              ; Turn off the Z flag
 L2: rts

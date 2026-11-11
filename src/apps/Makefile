@@ -15,3 +15,4 @@ clean:
 	cd icodetest && $(MAKE) TARGET=$(TARGET) clean
 	cd memtest && $(MAKE) TARGET=$(TARGET) clean
 	cd compilertestasm && $(MAKE) TARGET=$(TARGET) clean
+	cd themestest && $(MAKE) TARGET=$(TARGET) clean
