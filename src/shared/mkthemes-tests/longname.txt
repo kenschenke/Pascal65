@@ -1,0 +1,13 @@
+# expect 4: is 17 characters
+selected 0
+
+theme Seventeen chars!!
+number       5  0 15  0
+keyword      4 15  9 12
+string       3  0 15 15
+comment     12 10 10 10
+operator     1 13 13 13
+identifier  10 15 10  7
+cursor      19 14 14  0
+ui           1 13 13 13
+background  21  2  3  5

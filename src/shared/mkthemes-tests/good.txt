@@ -1,0 +1,28 @@
+# Not a bad input: test_mkthemes.py checks the bytes this makes.
+selected 1
+
+theme First
+number       5  0 15  0
+keyword      4 15  9 12
+string       3  0 15 15
+comment     12 10 10 10
+operator     1 13 13 13
+identifier  10 15 10  7
+cursor      19 14 14  0
+ui           1 13 13 13
+background  21  2  3  5
+error       ui
+warning      7
+
+theme second 2
+background  21  2  3  5     # any order
+ui           1
+cursor      19
+identifier  10
+operator     1  0  0  0     # clashes with ui on slot 1
+comment     12
+string       3
+keyword      4
+number       5
+error        2  1  2  3
+warning     error
