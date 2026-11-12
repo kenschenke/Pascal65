@@ -138,6 +138,32 @@ fit in the overlay at once, so the files are instrumented in sets
 (`COVFILESn`). A set that no longer fits fails to link and must be split.
 Like `test`, it needs asmlib built with `MEMCHECK=1`.
 
+### Themes Tests
+
+`themestest` runs a test build of the themes overlay: `make THEMESTEST=1`
+in `src/overlays/themes` defines `__THEMESTEST__` and builds `themes-test`
+from `obj/mega65-test`. The normal `themes` has none of the hooks. They
+are in `themestest.s`, with an `.ifdef` in `getKey` (`keybuf.s`), and ten
+more jump table entries after the two real ones (`themes.inc`).
+
+A test names a fixture to copy to `themes.dat` and one to `themes.def`
+(or `NOFILE`), then runs steps: calls into the overlay (`OP_*`) and checks
+(`CHK_*`), listed in `tests.inc`. Before a test the program scratches both
+files, copies the fixtures with the DOS `C:` command and resets the
+palette; after it, it frees the list and runs the leak check.
+`OP_SCREEN` runs the theme screen with a key script (ASCII, as the
+keyboard sends it). The screen opens in the theme list and only returns
+on F1, so a script starts with Return and ends with F1. A script that
+runs out fails the test, except under `OP_SCREENOUT`, which expects it
+to, so a check can look at the screen while it waits.
+
+The fixtures are made by `mkthemes.py` from `files/*.txt`, with the
+options in `<name>_ARGS` in the Makefile (bad versions, truncated files,
+version 0). `CHK_FILE` compares `themes.dat` with a fixture, so the bytes
+expected after a save are `.txt` files too. Keep them ASCII and out of the
+`petcat` rule. A CBM disk can't hold an empty file, so the one-byte
+`onlysel` fixture stands in for one. A new fixture goes in `FIXTURES`.
+
 ### Heap Tests
 
 `memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.
@@ -288,6 +314,63 @@ and runs `rtdynb` with a missing, a bad and a too-low `runtimeN`.
 
 Don't write `$Word` in a `(* *)` comment of a Pascal test: the tokenizer
 reads it as a directive.
+
+## Themes
+
+The editor's syntax highlighting colors come from the themes overlay
+(`src/overlays/themes`). A theme (`THEME` in `editor.inc`) is a 16-byte
+PETSCII name, space-filled, and `THEME_COLORS` (11) colors of 4 bytes:
+palette index 0-31, then R, G, B 0-15, in `SYNTAXHL_*` order (number,
+keyword, string, comment, operator, identifier, cursor, UI, background,
+error, warning). `loadDefaultTheme` fills a `THEME_BUFSIZE` buffer
+indexed by `SYNTAXHL_*` (byte 0 unused) with VIC color numbers. A new
+color is appended to `SYNTAXHL_*`, so no index moves.
+
+### Theme file
+
+`themes.dat` is the user's file and `themes.def` the defaults (F8 in the
+theme screen). Version 1:
+
+|Offset|Contents                                         |
+|------|-------------------------------------------------|
+|0     |`THEME_MARKER` ($FF)                             |
+|1     |`THEME_VERSION` (1)                              |
+|2     |The selected theme number                        |
+|3     |`THEME_SIZE` (60) bytes per theme, until EOF     |
+
+Version 0 has no marker or version: the selected number, then 52-byte
+themes with the first nine colors. The reader converts it, filling in
+error and warning with a copy of the theme's UI color, and the next save
+(F1) writes version 1. Any other version, a file with no whole theme or a
+missing file is unreadable: `themes.dat` falls back to `themes.def`, and
+that to the built-in theme (`builtinTheme` in `themefile.s`). A partial
+last theme is dropped, and a selected number past the end becomes 0.
+
+Every color carries the RGB of its palette slot, so two colors on one
+slot with different RGB clash (the last written wins). The theme screen
+keeps a slot's colors in step when it edits one (`copyColorToTheme`) and
+moves error and warning off the background's slot when the background
+changes (`adjustHighlightColors`).
+
+### Theme generator
+
+`src/shared/mkthemes.py` writes a theme file from `src/shared/themes.txt`
+(the 12 shipped themes, by name and color). The root `Makefile` builds
+`bin/$(TARGET)/themes.def` from it and writes it to the D81 as both
+`themes.dat` and `themes.def`. A color line is a name and an index with
+R G B, an index alone (the MEGA65 default RGB) or another color's name
+(a copy, as `error ui`). It warns about palette slot clashes and stops on
+range, name and missing or duplicate color errors, naming the line.
+`--format 0` writes version 0; `--version`, `--selected` and `--truncate`
+make bad files for the tests. Theme names are ASCII; extend the PETSCII
+conversion if a name needs characters it lacks.
+
+`make mkthemes-test` (run first by `make test`) runs
+`src/shared/test_mkthemes.py`: `themes.txt` against the SHA-256 of the
+old blob in format 0 and the blob plus the copied colors in format 1,
+the bytes of `mkthemes-tests/good.txt`, and the bad inputs in
+`mkthemes-tests`, each of which names its expected line and message on
+its first line.
 
 ## Pre-compiled headers
 
