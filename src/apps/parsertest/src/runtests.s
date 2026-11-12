@@ -28,13 +28,14 @@
 ;   17: Declaration sections out of order
 ;   18: Routine parameters, return types and forward declarations
 ;   19: Constants, subranges, expressions and case labels
+;   20: Unary minus
 
 .export runTests
 
 .import runTest
 .import heapWalk
 
-NUM_TESTS = 19
+NUM_TESTS = 20
 
 .bss
 

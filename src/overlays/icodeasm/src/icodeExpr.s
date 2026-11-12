@@ -33,6 +33,7 @@ exprOffset = isReadOffset + 1
 
 rightType: .res .sizeof(type)
 castTargetKind: .res 1
+negateKind: .res 1         ; The type kind of a negation (exprNegate)
 symPtr: .res 4
 isByRef: .res 1
 
@@ -186,6 +187,10 @@ isByRef: .res 1
 :   cmp #EXPR_CAST
     bne :+
     jsr exprCast
+    jmp DN
+:   cmp #EXPR_NEGATE
+    bne :+
+    jsr exprNegate
     jmp DN
 :   cmp #EXPR_BOOLEAN_LITERAL
     bne :+
@@ -811,6 +816,34 @@ IV: jsr pushA               ; operation
     jsr icodeWriteInstruction
 
 DN: lda rightType
+    rts
+.endproc
+
+; This routine negates the expression's operand. The typecheck gave the
+; expression a signed type, which can be wider than the operand's
+; (an unsigned operand). The operand is converted to it, then negated.
+; The result's type kind is returned in A.
+.proc exprNegate
+    ldz #expr::left
+    jsr getChildExpr
+    jsr icodeExprRead       ; A = the operand's type kind
+    pha
+    ; Read only now: the operand could be another negation
+    jsr getEvalTypeKind
+    sta negateKind
+    pla
+    cmp negateKind
+    beq :+
+    jsr icodeOper1Short     ; from the operand's type
+    lda negateKind
+    jsr icodeOper2Short     ; to the result's
+    lda #IC_CVI
+    jsr icodeWriteInstruction
+:   lda negateKind
+    jsr icodeOper1Short
+    lda #IC_NEG
+    jsr icodeWriteInstruction
+    lda negateKind
     rts
 .endproc
 

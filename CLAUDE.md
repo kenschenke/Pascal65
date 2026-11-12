@@ -228,6 +228,16 @@ Name its failure maker `testfailed`, call `ReportFailure` and make sure the prog
 
 Use `//` comments in Pascal tests. The compiler does not support `{ }` comments. If used, the compiler will hang.
 
+### Unary minus
+
+A minus before a number literal sets the literal's `expr::neg`, which the
+typecheck uses to type and range check it. A minus before anything else
+makes an `EXPR_NEGATE` with the operand in `left` (`parseFactor`). The
+typecheck keeps a signed integer's or real's type and makes Byte Integer,
+and Word and Cardinal LongInt (`evalNegate`). icode converts the operand to
+that type (`IC_CVI`) and negates it (`IC_NEG`), and codegen calls
+`RT_NEGATE`.
+
 ### Source line length
 
 Source lines are limited to 80 characters. This limitation includes comments.

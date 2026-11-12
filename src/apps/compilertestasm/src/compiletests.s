@@ -58,6 +58,7 @@ strExprClone: .asciiz "exprclone"
 strNamedIdx: .asciiz "namedidx"
 strForOrd: .asciiz "forord"
 strDeclOrdr: .asciiz "declordr"
+strNegate: .asciiz "negate"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
@@ -105,6 +106,7 @@ tests:
     .byte .lobyte(strMultiply), .hibyte(strMultiply)
     .byte .lobyte(strForOrd), .hibyte(strForOrd)
     .byte .lobyte(strDeclOrdr), .hibyte(strDeclOrdr)
+    .byte .lobyte(strNegate), .hibyte(strNegate)
 .endif
 .if TESTSET = 0 || TESTSET = 2
     .byte .lobyte(strSubtract), .hibyte(strSubtract)

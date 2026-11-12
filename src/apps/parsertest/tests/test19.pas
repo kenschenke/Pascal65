@@ -61,7 +61,8 @@ D:DECL-TYPE test19
     S:STMT-EXPR
       E:EXPR-ASSIGN
         Left:EXPR-NAME i
-        Right:EXPR-NAME i
+        Right:EXPR-NEGATE
+          Left:EXPR-NAME i
     S:STMT-EXPR
       E:EXPR-ASSIGN
         Left:EXPR-NAME i

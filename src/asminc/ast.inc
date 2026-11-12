@@ -237,6 +237,8 @@ NAMELEN = 24
     EXPR_ADDRESS_OF
     EXPR_POINTER
     EXPR_CAST
+    EXPR_NEGATE                 ; Unary minus of left. A numeric literal
+                                ; is negated with its neg flag instead.
 .endenum
 
 .struct expr

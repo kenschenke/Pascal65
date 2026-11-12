@@ -105,6 +105,15 @@ label: .res 16
     genThree OC_JSR, RT_BITWISEINVERT
     rts
 
+    ; Unary minus. RT_NEGATE negates A/X/sreg with the type in Y.
+:   cmp #IC_NEG
+    bne :+
+    genThree OC_JSR, RT_POPEAX
+    genTwoAbsolute OC_LDY_IMMEDIATE, operand1+1
+    genThree OC_JSR, RT_NEGATE
+    genThree OC_JSR, RT_PUSHEAX
+    rts
+
 :   cmp #IC_ABS
     bne :+
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1

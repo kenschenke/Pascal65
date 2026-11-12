@@ -380,6 +380,10 @@ RC: jsr pushA
     bne :+
     ; Nothing to do
     jmp DN
+:   cmp #EXPR_NEGATE
+    bne :+
+    jsr evalNegate
+    jmp DN
 :   lda #errInvalidType
     jsr typeCheckError
     ldz #typePtrOffset
@@ -1059,6 +1063,76 @@ L5: jsr loadBinaryExpressionArgs
     rts
 
 L1: lda #errInvalidType
+    jsr typeCheckError
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::kind
+    lda #TYPE_VOID
+    nop
+    sta (ptr1),z
+    rts
+.endproc
+
+; This routine sets the type of a unary minus (EXPR_NEGATE). A signed
+; integer or a real keeps its type. An unsigned integer becomes the signed
+; type that holds its negated values: Byte is Integer and Word is LongInt.
+; Cardinal is LongInt too, which holds the negated values up to 2^31.
+; Anything else is an error.
+.proc evalNegate
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    ldx #1
+    cmp #TYPE_SHORTINT
+    beq ST
+    ldx #2
+    cmp #TYPE_INTEGER
+    beq ST
+    cmp #TYPE_BYTE
+    bne :+
+    lda #TYPE_INTEGER
+    bra ST
+:   ldx #4
+    cmp #TYPE_LONGINT
+    beq ST
+    cmp #TYPE_REAL
+    beq ST
+    cmp #TYPE_WORD
+    beq LI
+    cmp #TYPE_CARDINAL
+    bne ER
+LI: lda #TYPE_LONGINT
+
+ST: pha
+    phx
+    ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::size
+    pla
+    nop
+    sta (ptr1),z
+    inz
+    lda #0
+    nop
+    sta (ptr1),z
+    ldz #type::kind
+    pla
+    nop
+    sta (ptr1),z
+    rts
+
+ER: lda #errIncompatibleTypes
     jsr typeCheckError
     ldz #typePtrOffset
     jsr loadStackValue

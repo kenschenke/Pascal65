@@ -1,5 +1,7 @@
 0.37-beta
     FIX: Fix the parser when recovering from an error
+    FIX: Unary minus of a variable, expression or function call was ignored
+    FIX: A negative real number, such as -2.5, was positive
 
 0.36-beta Nov 10 2026
     NEW: Compiler warning for possible loss of precision

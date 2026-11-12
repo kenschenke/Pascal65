@@ -37,12 +37,13 @@
 ;   25. Arrays indexed by a declared type
 ;   26. For loop with a subrange control variable
 ;   27. Dynamic arrays: SetLength, Length, Low and High
+;   28. Unary minus
 
 .export runTests
 
 .import runTest
 
-NUM_TESTS = 27
+NUM_TESTS = 28
 
 ; This test calls System unit routines (Length), so the System unit is
 ; resolved for it.

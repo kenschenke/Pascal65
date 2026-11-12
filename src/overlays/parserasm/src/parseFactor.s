@@ -51,43 +51,37 @@ LByte:
     cmp #tcBYTE
     bne LShortInt
     lda #TYPE_BYTE
-    jsr handleTypeCast
-    rts
+    jmp LCast
 
 LShortInt:
     cmp #tcSHORTINT
     bne LWord
     lda #TYPE_SHORTINT
-    jsr handleTypeCast
-    rts
+    jmp LCast
 
 LWord:
     cmp #tcWORD
     bne LInteger
     lda #TYPE_WORD
-    jsr handleTypeCast
-    rts
+    jmp LCast
 
 LInteger:
     cmp #tcINTEGER
     bne LCardinal
     lda #TYPE_INTEGER
-    jsr handleTypeCast
-    rts
+    jmp LCast
 
 LCardinal:
     cmp #tcCARDINAL
     bne LLongInt
     lda #TYPE_CARDINAL
-    jsr handleTypeCast
-    rts
+    jmp LCast
 
 LLongInt:
     cmp #tcLONGINT
     bne LIdentifier
     lda #TYPE_LONGINT
-    jsr handleTypeCast
-    rts
+    jmp LCast
 
 LIdentifier:
     cmp #tcIdentifier
@@ -108,11 +102,8 @@ LIdentifier:
     jmp DoNeg
 :   jsr popQ
     jsr parseVariable
-    stq ptr1
-    jsr popA
-    jsr popA
-    ldq ptr1
-    rts
+    jsr pushQ
+    jmp DoNeg
 
 LNumber:
     cmp #tcNumber
@@ -232,12 +223,7 @@ LRParen:
     cmp #tcRParen
     bne :+
     jsr getToken
-    jsr popQ
-    stq ptr1
-    jsr popA
-    jsr popA
-    ldq ptr1
-    rts
+    jmp DoNeg
 :   lda #errMissingRightParen  ; The expression is kept on the stack
     jsr parserError
     jmp DoNeg
@@ -247,22 +233,55 @@ LNone:
     jsr parserError
     jsr pushQZero
     jsr getToken
+    jmp DoNeg
 
+LCast:
+    jsr handleTypeCast
+    jsr pushQ
+    ; Fall through to DoNeg
+
+    ; The factor is on the runtime stack, above unaryNeg. A minus before
+    ; a numeric literal flips the literal's neg flag, so the typecheck can
+    ; give it a signed type and range check it. Anything else is put under
+    ; an EXPR_NEGATE, which negates it at runtime.
 DoNeg:
     jsr popQ
     stq ptr1
     ldz #offsetUnaryNeg
     nop
     lda (stackPointer),z
-    beq :+
+    beq DN
     ldq ptr1
     jsr isQZero
-    beq :+                  ; No expression after the minus (an error)
-    ldz #expr::neg
-    lda #1
+    beq DN                  ; No expression after the minus (an error)
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_BYTE_LITERAL
+    beq NL
+    cmp #EXPR_WORD_LITERAL
+    beq NL
+    cmp #EXPR_DWORD_LITERAL
+    beq NL
+    cmp #EXPR_REAL_LITERAL
+    bne NG
+NL: ldz #expr::neg
+    nop
+    lda (ptr1),z
+    eor #1                  ; -(-5) is 5
     nop
     sta (ptr1),z
-:   jsr popA
+    bra DN
+NG: lda #EXPR_NEGATE
+    jsr pushA               ; kind
+    ldq ptr1
+    jsr pushQ               ; left
+    jsr pushQZero           ; right
+    jsr pushQZero           ; name
+    jsr pushQZero           ; value
+    jsr exprCreate
+    stq ptr1
+DN: jsr popA
     jsr popA
     ldq ptr1
     rts
@@ -365,8 +384,8 @@ L3: lda #0
 ; This routine is called when the parser encounters a data type
 ; token (e.g., tcByte, tcWord, etc.). The routine verifies that
 ; the type token is followed by a LParen. It then creates an
-; AST expression node of EXPR_CAST. It also cleans up the
-; runtime stack so parseFactor can return directly from the call.
+; AST expression node of EXPR_CAST and returns it in Q (NULL after an
+; error).
 ;
 ; Inputs:
 ;    A - TYPE_* kind of the data type to cast to
@@ -382,8 +401,6 @@ L3: lda #0
     lda #errInvalidExpression
     jsr parserError
     pla                 ; discard the evalTypeKind
-    jsr popA
-    jsr popA
     lda #0
     tax
     tay
@@ -420,11 +437,5 @@ L3: lda #0
     jsr parserError
 
 :   jsr getToken        ; Consume the RParen
-    
-    jsr popQ
-    stq ptr1
-    jsr popA
-    jsr popA
-    ldq ptr1
-    rts
+    jmp popQ
 .endproc

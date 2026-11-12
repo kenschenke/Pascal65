@@ -103,19 +103,34 @@ L2: lda #IC_PSH
     rts
 .endproc
 
+; A real literal is pushed as its text, so a negative one (its neg flag
+; set) is negated after it is pushed.
 .proc icodeRealValue
     stq ptr1
     jsr isQZero
-    beq :+
+    bne :+
+    lda #0                  ; No literal: not negated
+    pha
+    bra L1
+:   ldz #expr::neg
+    nop
+    lda (ptr1),z
+    pha                     ; Q (A/X/Y/Z) is loaded next
     ldz #expr::value
     neg
     neg
     nop
     lda (ptr1),z
-:   jsr icodeOper1Real
+L1: jsr icodeOper1Real
     lda #IC_PSH
     jsr icodeWriteInstruction
-    rts
+    pla
+    beq :+
+    lda #TYPE_REAL
+    jsr icodeOper1Short
+    lda #IC_NEG
+    jsr icodeWriteInstruction
+:   rts
 .endproc
 
 .proc icodeShortValue
