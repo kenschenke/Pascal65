@@ -14,9 +14,8 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-declOffset = 8
-symtabOffset = 4
-membufOffset = 0
+declOffset = 4
+symtabOffset = 0
 
 .export declResolve
 
@@ -35,23 +34,16 @@ membufOffset = 0
 ;    declPointer - Pointer to initial declaration (updated in loop)
 ;    symtabPointer - Pointer to symbol table pointer
 .proc declResolve
-    jsr pushQZero           ; membuf
-
 L1: ldz #declOffset
     neg
     neg
     nop
     lda (stackPointer),z
     jsr isQZero
-    bne :+
-    jmp L9
+    beq L9
 
     ; Put the parameters for resolveDeclaration on the stack
-:   stq ptr1
-    ldq stackPointer
-    clc
-    adcq #membufOffset
-    stq ptr2
+    stq ptr1
     ldz #symtabOffset
     neg
     neg
@@ -60,13 +52,12 @@ L1: ldz #declOffset
     stq ptr3
 
     ldq ptr1
-    jsr pushQ
-    ldq ptr2
-    jsr pushQ
+    jsr pushQ               ; declaration
+    jsr pushQZero           ; not used
     ldq ptr3
-    jsr pushQ
+    jsr pushQ               ; symbol table pointer
     lda #1
-    jsr pushA
+    jsr pushA               ; fail if the name exists
     jsr resolveDeclaration
 
     ldz #declOffset
@@ -92,71 +83,7 @@ L1: ldz #declOffset
     bne :-
     bra L1
 
-    ; If any of the declarations could not be resolved, they are stored in
-    ; a temporary buffer. Go through those again and make another attempt.
-    ldz #membufOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    jsr isQZero
-    beq L9
-
-    stq ptr1
-    lda #0
-    tax
-    jsr setMemBufPos
-
-    ; Loop through the membuf and make another run at resolving the declaration.
-L2: ldz #membufOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    jsr isMemBufAtEnd
-    beq L3
-
-    ; Read the declaration pointer from the membuf
-    ldq stackPointer
-    clc
-    adcq #declOffset
-    stq ptr2
-    lda #4
-    ldx #0
-    jsr readFromMemBuf
-
-    ; Prepare the arguments for resolveDeclaration for the stack
-    ldz #declOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr1
-    ldz #symtabOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr2
-    ldq ptr1
-    jsr pushQ
-    jsr pushQZero
-    ldq ptr2
-    jsr pushQ
-    lda #0
-    jsr pushA
-    jsr resolveDeclaration
-    bra L2
-
-L3: ldz #membufOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    jsr freeMemBuf
-
-L9: jsr popQ            ; membuf
-    jsr popQ            ; symtab pointer
+L9: jsr popQ            ; symtab pointer
     jsr popQ            ; declaration pointer
     rts
 .endproc

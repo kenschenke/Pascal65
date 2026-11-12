@@ -60,6 +60,7 @@ TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
 TXTFILES += $(patsubst $(TESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(TESTS))
 TXTFILES += $(patsubst $(ERRORTESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(ERRORTESTS))
+comma := ,
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
@@ -125,55 +126,114 @@ $(PRGFILE): $(OBJECTS)
 
 FORCE:
 
-$(D81FILE): $(BINFILES) $(TXTFILES)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(PRGFILE) resolvertest,prg \
+# Makes a disk: $(1) is the D81, $(2) the test program and $(3) the
+# resolver
+define MKDISK
+c1541 -format $(PROGRAM),8a d81 $(1) \
+	-write $(2) resolvertest,prg \
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(PARSER) parser,prg \
-	-write $(RESOLVER) resolver,prg \
+	-write $(3) resolver,prg \
 	-write $(DUMPSYMTAB) dumpsymtab,prg \
 	-write $(DUMPAST) dumpast,prg \
 	-write $(SHOWTREE) showtree,prg \
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
-	-write $(PETSCIIDIR)/test0.pas test0.pas,seq \
-	-write $(PETSCIIDIR)/test1.pas test1.pas,seq \
-	-write $(PETSCIIDIR)/test2.pas test2.pas,seq \
-	-write $(PETSCIIDIR)/test3.pas test3.pas,seq \
-	-write $(PETSCIIDIR)/test4.pas test4.pas,seq \
-	-write $(PETSCIIDIR)/test5.pas test5.pas,seq \
-	-write $(PETSCIIDIR)/test6.pas test6.pas,seq \
-	-write $(PETSCIIDIR)/test7.pas test7.pas,seq \
-	-write $(PETSCIIDIR)/test8.pas test8.pas,seq \
-	-write $(PETSCIIDIR)/test8unit.pas test8unit.pas,seq \
-	-write $(PETSCIIDIR)/test9.pas test9.pas,seq \
-	-write $(PETSCIIDIR)/error1.pas error1.pas,seq \
-	-write $(PETSCIIDIR)/error2.pas error2.pas,seq \
-	-write $(PETSCIIDIR)/error3.pas error3.pas,seq \
-	-write $(PETSCIIDIR)/error4.pas error4.pas,seq \
-	-write $(PETSCIIDIR)/error5.pas error5.pas,seq \
-	-write $(PETSCIIDIR)/error6.pas error6.pas,seq \
-	-write $(PETSCIIDIR)/error7.pas error7.pas,seq \
-	-write $(PETSCIIDIR)/error8.pas error8.pas,seq \
-	-write $(PETSCIIDIR)/error9.pas error9.pas,seq \
-	-write $(PETSCIIDIR)/error10.pas error10.pas,seq \
-	-write $(PETSCIIDIR)/error11.pas error11.pas,seq \
-	-write $(PETSCIIDIR)/error12.pas error12.pas,seq \
-	-write $(PETSCIIDIR)/error13.pas error13.pas,seq \
-	-write $(PETSCIIDIR)/error14.pas error14.pas,seq \
-	-write $(PETSCIIDIR)/error15.pas error15.pas,seq \
-	-write $(PETSCIIDIR)/error16.pas error16.pas,seq \
-	-write $(PETSCIIDIR)/error17.pas error17.pas,seq \
-	-write $(PETSCIIDIR)/error18.pas error18.pas,seq \
-	-write $(PETSCIIDIR)/error19.pas error19.pas,seq \
+	$(foreach f,$(notdir $(TESTS) $(ERRORTESTS)), \
+	-write $(PETSCIIDIR)/$(f) $(f)$(comma)seq) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq
+endef
+
+$(D81FILE): $(BINFILES) $(TXTFILES)
+	$(call MKDISK,$(D81FILE),$(PRGFILE),$(RESOLVER))
+
+# The coverage build. make coverage runs the tests against instrumented
+# copies of the resolver overlay (see ../editortest/cov/mkcov.py) and lists
+# the lines that never ran in bin/$(TARGET)/coverage.txt. Like test, it
+# needs asmlib built with MEMCHECK=1.
+#
+# The probes make the overlay much bigger, and they may not all fit at
+# once. Each set instruments some of the files and the tests run once for
+# each set. A set's map is COVSIZE bytes at COVMAP, above the test program.
+# A set that no longer fits fails to link and must be split.
+COVTOOLS := ../editortest/cov
+COVMAP := 14336
+COVSIZE := 2048
+COVSETS := 1
+COVSET ?= 1
+RESOLVERSRCDIR := $(RESOLVERDIR)/src
+RESOLVERSOURCES := $(wildcard $(RESOLVERSRCDIR)/*.s)
+COVFILES1 := $(filter-out jmptbl.s loadaddr.s,$(notdir $(RESOLVERSOURCES)))
+
+COVASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__ \
+	-D COVMAP=$(COVMAP)
+COVDIR := $(OBJTARGETDIR)/cov$(COVSET)
+COVRESOLVEROBJS := $(addprefix $(COVDIR)/,$(notdir $(RESOLVERSOURCES:.s=.o)))
+COVRESOLVER := $(COVDIR)/resolver
+COVPRGDIR := $(OBJTARGETDIR)/cov
+COVPRG := $(COVPRGDIR)/$(PROGRAM)
+COVPRGOBJS := $(COVPRGDIR)/main.o $(COVPRGDIR)/covsave.o
+COVPRGOBJS += $(filter-out $(OBJTARGETDIR)/main.o,$(OBJECTS))
+COVD81 := $(BINTARGETDIR)/resolvertestcov.d81
+COVLIST := $(BINTARGETDIR)/coverage.txt
+# The map and the coverage file of each set
+COVARGS = $(foreach s,$(COVSETS),-m $(OBJTARGETDIR)/cov$(s)/resolver.map \
+	$(BINTARGETDIR)/resolver$(s).cov)
+
+# Every file of the overlay is copied, then the set's files are replaced by
+# instrumented copies.
+$(COVDIR)/stamp: $(RESOLVERSOURCES) $(COVTOOLS)/mkcov.py
+	mkdir -p $(COVDIR)
+	cp $(RESOLVERSOURCES) $(COVDIR)
+	python3 $(COVTOOLS)/mkcov.py -D __MEGA65__ -m $(COVSIZE) \
+	$(COVDIR) $(COVDIR)/resolver.map \
+	$(addprefix $(RESOLVERSRCDIR)/,$(COVFILES$(COVSET)))
+	touch $@
+
+$(COVDIR)/%.o: $(COVDIR)/stamp
+	ca65 $(COVASFLAGS) -o $@ $(@:.o=.s)
+
+$(COVRESOLVER): $(COVRESOLVEROBJS)
+	ld65 -o $@ -C cov/resolvercov.cfg $(COVRESOLVEROBJS)
+
+$(COVPRGDIR)/main.o: $(SRCDIR)/main.s $(FLAGSFILE)
+	mkdir -p $(COVPRGDIR)
+	ca65 $(ASFLAGS) -D COVERAGE -o $@ $<
+
+$(COVPRGDIR)/covsave.o: cov/covsave.s
+	mkdir -p $(COVPRGDIR)
+	ca65 $(ASFLAGS) -D COVMAP=$(COVMAP) -D COVSIZE=$(COVSIZE) -o $@ $<
+
+$(COVPRG): $(COVPRGOBJS)
+	ld65 -o $@ -C resolvertest.cfg $(COVPRGOBJS)
+
+# Runs the tests against one set. The test saves the map to the disk.
+covrun: $(COVRESOLVER) $(COVPRG) $(BINFILES) $(TXTFILES) | $(BINTARGETDIR)
+	$(RM) $(COVD81)
+	$(call MKDISK,$(COVD81),$(COVPRG),$(COVRESOLVER))
+	../testcommon/runtest.sh resolvertestcov$(COVSET) $(COVPRG) $(COVD81)
+	c1541 -attach $(COVD81) \
+	-read resolver.cov $(BINTARGETDIR)/resolver$(COVSET).cov
+
+# The copies are made fresh each time: they don't track the includes.
+coverage:
+	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
+	$(RM) $(BINTARGETDIR)/resolver*.cov
+	for s in $(COVSETS); do \
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 COVSET=$$s covrun || exit 1; \
+	done
+	python3 $(COVTOOLS)/covreport.py $(COVLIST) $(COVARGS)
+
+.PHONY: covrun coverage
 
 clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(D81FILE)
+	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
+	$(RM) $(COVD81) $(COVLIST) $(BINTARGETDIR)/resolver*.cov
 
 test:
 	$(MAKE) TARGET=$(TARGET) DEBUG=1 all

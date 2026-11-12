@@ -20,6 +20,10 @@
 ;    7: Pointers
 ;    8: Units
 ;    9: Subranges
+;   10: Statements and expressions
+;   11: Array index types
+;
+; Tests 0 and 8 to 11 are run by main.
 
 .export runTests
 

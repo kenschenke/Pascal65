@@ -73,9 +73,12 @@ L1: jsr loadDecl
     cmp #TYPE_FUNCTION
     bne L3
 
+    ; A routine declared forward. Its body replaced its symbol's
+    ; declaration (resolveDeclarationName). If the symbol still has the
+    ; forward declaration, the body is missing.
 L2: jsr scopeLookup
     jsr isQZero
-    bne L3
+    beq L3                  ; no symbol
     stq ptr2
     jsr loadDecl
     ldz #symbol::decl

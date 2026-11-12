@@ -16,7 +16,6 @@
 .include "4510macros.inc"
 
 declOffset = 10
-membufOffset = 6
 symtabOffset = 2
 failIfExistsOffset = 1
 kindOffset = 0

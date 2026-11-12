@@ -10,6 +10,19 @@
     FIX: Negative and character values of a subrange variable were wrong
     FIX: A variable of an enumeration subrange type, such as Red..Green,
          corrupted the variables declared after it
+    FIX: A routine declared Forward that never got a body wasn't reported
+    FIX: A record field of a type that isn't declared wasn't reported,
+         and could corrupt the compiler's memory
+    FIX: An array index type that isn't declared wasn't reported
+    FIX: An array index of a type such as Char, Boolean or Byte, or an
+         enumeration written in place, gave the array one element. It's
+         now an error. Use a subrange, such as Array['a'..'z'], or a
+         declared enumeration or subrange.
+    FIX: An array element type that isn't declared wasn't reported
+    FIX: A field that isn't declared, or of a record that isn't, was
+         reported two or three times
+    FIX: An enumeration value with the name of another identifier, such
+         as a value of another enumeration, wasn't reported
 
 0.36-beta Nov 10 2026
     NEW: Compiler warning for possible loss of precision

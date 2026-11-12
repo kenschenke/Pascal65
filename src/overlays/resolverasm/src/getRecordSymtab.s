@@ -18,10 +18,9 @@
 exprOffset = 4
 symtabOffset = 0
 
-.export getRecordSymtab
+.export getRecordSymtab, typeRecordSymtab
 
 .import getEmbeddedRecordSymtab, getEmbeddedArraySymtab
-.import resolverError
 
 .bss
 
@@ -100,6 +99,9 @@ L1: cmp #EXPR_SUBSCRIPT
     ldq ptr1
     rts
 
+    ; A pointer: look at what it points to. That can be another pointer,
+    ; a field or an array element (p^^.f, r.p^.f, a[i]^.f), so start over
+    ; with it.
 L2: cmp #EXPR_POINTER
     bne L3
     ldz #expr::left
@@ -117,6 +119,7 @@ L2: cmp #EXPR_POINTER
     inx
     cpx #4
     bne :-
+    jmp getRecordSymtab
 
 L3: ldz #expr::name
     neg
@@ -143,23 +146,12 @@ L4: stq ptr4                ; name in ptr4
     beq L5
     stq ptr1                ; symtab root in ptr1
     jsr symtabLookup
-    jsr isQZero
-    bne L6
-    lda #errUndefinedIdentifier
-    jsr resolverError
-    jsr popQ
-    jsr popQ
-    lda #0
-    tax
-    tay
-    taz
-    rts
+    bra :+
 
 L5: jsr scopeLookup
-    jsr isQZero
+:   jsr isQZero
     bne L6
-    lda #errUndefinedIdentifier
-    jsr resolverError
+    ; Not declared. exprResolve reports it when it resolves the name.
     jsr popQ
     jsr popQ
     lda #0
@@ -174,23 +166,30 @@ L6: stq ptr1
     neg
     nop
     lda (ptr1),z
+    jsr typeRecordSymtab
+    stq ptr1
+    jsr popQ
+    jsr popQ
+    ldq ptr1
+    rts
+.endproc
+
+; This routine returns the symbol table of the record that the type in Q
+; is, names, or holds: through declared types, array elements and
+; pointers. It returns NULL for a type that isn't a record.
+.proc typeRecordSymtab
     stq symType
     jsr resolveRecordSymtab
     ldq symType
     jsr isQZero
-    bne :+
-    jsr popQ
-    jsr popQ
-    rts
-:   stq ptr1
-    jsr popQ
-    jsr popQ
+    beq L1
+    stq ptr1
     ldz #type::symtab
     neg
     neg
     nop
     lda (ptr1),z
-    rts
+L1: rts
 .endproc
 
 ; This routine loops, looking the symbol type and
@@ -227,13 +226,7 @@ L2: ldz #type::subtype
     jsr scopeLookup
     jsr isQZero
     bne :+
-    lda #errUndefinedIdentifier
-    jsr resolverError
-    lda #0
-    tax
-    tay
-    taz
-    stq symType
+    stq symType             ; Not declared: no record (exprResolve)
     rts
 :   stq ptr1
     ldz #symbol::type

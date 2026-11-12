@@ -8,8 +8,10 @@
 ; https://opensource.org/licenses/MIT
 ;
 ; Routines to test the resolver error handling. Each test, errorN.pas,
-; is parsed and resolved. It must report exactly one error, the one in
-; the errors table below, on the line in the table.
+; is parsed and resolved. Its first error must be the one in the errors
+; table below, on the line in the table, and it must report the number
+; of errors the table gives. That is one, except where the parser reports
+; an error too or a second statement uses what was reported.
 ;
 ; The $ExpectError directive can't be used here. The parser only sees
 ; it where a statement can go, and these errors are in declarations.
@@ -24,7 +26,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 19
+NUM_TESTS = 44
 
 .export runErrorTests
 .import testFail
@@ -47,29 +49,55 @@ pErrors: .res 2         ; Pointer to current test in "errors"
 .data
 
 ; Expected error for each test, starting with test 1.
-;   Each element is three bytes:
+;   Each element is four bytes:
 ;      1) Line number (low byte)
 ;      2) Line number (high byte)
 ;      3) Error code
-errors: .byte $0c, $00, errMultiDimDynArray     ; Array of a dynamic type
-        .byte $0b, $00, errDynArrayInRecord     ; Dynamic type record field
-        .byte $0b, $00, errMultiDimDynArray     ; Dynamic array of array type
-        .byte $0b, $00, errMultiDimDynArray     ; Nested array of dynamic type
-        .byte $0c, $00, errDynArrayInRecord     ; Anonymous record field
-        .byte $0c, $00, errDynArrayInRecord     ; Record in array element
-        .byte $0b, $00, errDynArrayInRecord     ; Record in dynamic array
-        .byte $18, $00, errRedefinedIdentifier  ; Variable redefined
-        .byte $0b, $00, errRedefinedIdentifier  ; Constant, then variable
-        .byte $0e, $00, errRedefinedIdentifier  ; Routine defined twice
-        .byte $0a, $00, errRedefinedIdentifier  ; Record field twice
-        .byte $0a, $00, errRedefinedIdentifier  ; Forward declared twice
-        .byte $07, $00, errIncompatibleTypes    ; Integer..char subrange
-        .byte $0a, $00, errIncompatibleTypes    ; Char..enum subrange
-        .byte $09, $00, errIncompatibleTypes    ; Two enumerations
-        .byte $0a, $00, errIncompatibleTypes    ; Integer constant..char
-        .byte $08, $00, errNotAConstantIdentifier ; Variable limit
-        .byte $07, $00, errUndefinedIdentifier  ; Undefined limit
-        .byte $07, $00, errIncompatibleTypes    ; Integer..char index
+;      4) Number of errors
+errors: .byte $0c, $00, errMultiDimDynArray, 1  ; Array of a dynamic type
+        .byte $0b, $00, errDynArrayInRecord, 1  ; Dynamic type record field
+        .byte $0b, $00, errMultiDimDynArray, 1  ; Dynamic array of array type
+        .byte $0b, $00, errMultiDimDynArray, 1  ; Nested array of dynamic type
+        .byte $0c, $00, errDynArrayInRecord, 1  ; Anonymous record field
+        .byte $0c, $00, errDynArrayInRecord, 1  ; Record in array element
+        .byte $0b, $00, errDynArrayInRecord, 1  ; Record in dynamic array
+        .byte $18, $00, errRedefinedIdentifier, 1 ; Variable redefined
+        .byte $0b, $00, errRedefinedIdentifier, 1 ; Constant, then variable
+        .byte $0e, $00, errRedefinedIdentifier, 1 ; Routine defined twice
+        .byte $0a, $00, errRedefinedIdentifier, 1 ; Record field twice
+        .byte $0a, $00, errRedefinedIdentifier, 1 ; Forward declared twice
+        .byte $07, $00, errIncompatibleTypes, 1 ; Integer..char subrange
+        .byte $0a, $00, errIncompatibleTypes, 1 ; Char..enum subrange
+        .byte $09, $00, errIncompatibleTypes, 1 ; Two enumerations
+        .byte $0a, $00, errIncompatibleTypes, 1 ; Integer constant..char
+        .byte $08, $00, errNotAConstantIdentifier, 1 ; Variable limit
+        .byte $07, $00, errUndefinedIdentifier, 1 ; Undefined limit
+        .byte $07, $00, errIncompatibleTypes, 1 ; Integer..char index
+        .byte $0b, $00, errUndefinedIdentifier, 1 ; Undefined variable
+        .byte $0c, $00, errUndefinedIdentifier, 1 ; Undefined field
+        .byte $0d, $00, errUndefinedIdentifier, 1 ; Undefined record
+        .byte $0f, $00, errUndefinedIdentifier, 1 ; Undefined field's field
+        .byte $0f, $00, errUndefinedIdentifier, 1 ; Undefined array
+        .byte $09, $00, errUnresolvedFwd, 1     ; Forward procedure
+        .byte $0a, $00, errUnresolvedFwd, 1     ; Forward function
+        .byte $07, $00, errInvalidIndexType, 1  ; Index type too big
+        .byte $08, $00, errInvalidType, 1       ; Undefined variable type
+        .byte $09, $00, errInvalidType, 1       ; Undefined field type
+        .byte $08, $00, errRedefinedIdentifier, 1 ; Enumeration value twice
+        .byte $0b, $00, errUndefinedIdentifier, 1 ; Pointer to undefined
+        .byte $08, $00, errInvalidType, 2       ; Element undefined, used
+        .byte $08, $00, errMissingConstant, 2   ; No high limit
+        .byte $08, $00, errInvalidSubrangeType, 2 ; Real limit
+        .byte $08, $00, errInvalidType, 2       ; No type
+        .byte $07, $00, errInvalidIndexType, 1  ; Undefined index type
+        .byte $0a, $00, errUndefinedIdentifier, 1 ; Field of a non-record
+        .byte $08, $00, errInvalidIndexType, 1  ; Char index, two variables
+        .byte $07, $00, errInvalidIndexType, 1  ; Second index Boolean
+        .byte $07, $00, errInvalidIndexType, 1  ; Byte index
+        .byte $0b, $00, errInvalidIndexType, 1  ; Renamed enumeration index
+        .byte $07, $00, errInvalidType, 1       ; Undefined element type
+        .byte $0a, $00, errInvalidType, 1       ; Undefined field in element
+        .byte $07, $00, errInvalidIndexType, 1  ; Enumeration index in place
 
 strFnPrefix: .asciiz "error"
 strFnSuffix: .asciiz ".pas"
@@ -78,7 +106,7 @@ strTitle: .asciiz "Running error test "
 strTokenizing: .asciiz " : Tokenizing, "
 strParsing: .asciiz "Parsing, "
 strResolving: .asciiz "Resolving, "
-strErrorCount: .asciiz "Expected one error, got "
+strErrorCount: .asciiz "Number of errors "
 strErrorLine: .asciiz "Error reported in line "
 strErrorNum: .asciiz "Error number "
 strExpected: .asciiz ", expected "
@@ -120,7 +148,7 @@ L1: jsr runErrorTest
 
 L2: lda pErrors
     clc
-    adc #3
+    adc #4
     sta pErrors
     lda pErrors+1
     adc #0
@@ -202,6 +230,7 @@ L3: lda #<logError
     ldq unitList
     jsr setResolverUnitsList
     jsr initScopeStack
+    jsr initStandardRoutines
     jsr injectSystemUnit
 
     ldq astRoot
@@ -211,7 +240,7 @@ L3: lda #<logError
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
-    jsr heapFree
+    jsr freeSymtab
 
     ldq astRoot
     jsr pushQ
@@ -243,8 +272,9 @@ L3: lda #<logError
     lda pErrors+1
     sta ptr2+1
 
-    lda errorCount
-    cmp #1
+    ldy #3
+    lda (ptr2),y
+    cmp errorCount
     beq L1
     lda #<strErrorCount
     ldx #>strErrorCount
@@ -254,7 +284,30 @@ L3: lda #<logError
     lda #0
     sta intOp1+1
     jsr printInt
-    jmp Fail
+    lda errorCount
+    beq :+
+    ; Name the first error
+    lda #13
+    jsr CHROUT
+    lda #<strErrorNum
+    ldx #>strErrorNum
+    jsr printLine
+    lda errorNum
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    jsr printInt
+    lda #13
+    jsr CHROUT
+    lda #<strErrorLine
+    ldx #>strErrorLine
+    jsr printLine
+    lda errorLine
+    sta intOp1
+    lda errorLine+1
+    sta intOp1+1
+    jsr printInt
+:   jmp Fail
 
 L1: ldy #0
     lda (ptr2),y

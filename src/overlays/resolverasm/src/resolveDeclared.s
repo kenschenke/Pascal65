@@ -15,11 +15,8 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
+; This routine runs in resolveDeclaration's stack frame
 declOffset = 10
-symtabOffset = 6
-membufOffset = 2
-failIfExistsOffset = 1
-kindOffset = 0
 
 .export resolveDeclared
 
@@ -37,55 +34,9 @@ kindOffset = 0
     jsr isQZero
     bne L2
 
-    ; Name not found in symbol table
-    ldz #membufOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr1
-    jsr isQZero
-    bne :+
-    ; No membuf supplied
+    ; The type's name isn't declared
     lda #errInvalidType
     jmp resolverError
-
-:   ldz #0
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    jsr isQZero
-    bne L1
-    ; No membuf is allocated yet
-    jsr allocMemBuf
-    stq ptr1
-    ; Copy the new membuf to the membuf pointer
-    ldz #membufOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr2
-    ldz #0
-    ldx #0
-:   lda ptr1,x
-    nop
-    sta (ptr2),z
-    inz
-    inx
-    cpx #4
-    bne :-
-
-    ; Save the decl pointer to the membuf
-L1: ldq stackPointer
-    clc
-    adcq #declOffset
-    stq ptr2
-    lda #4
-    ldx #0
-    jmp writeToMemBuf
 
     ; The symbol is found
 L2: stq ptr2            ; save symbol ptr

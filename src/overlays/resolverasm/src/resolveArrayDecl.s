@@ -18,44 +18,146 @@
 .export resolveArrayDecl
 
 .import getTypePtr, getTypeSize, resolverError, dynArrayError
+.import currentLineNumber
 
+; This routine checks an array declaration: the index type of each array
+; written out in place (Array[A, B] is an array of arrays), the element
+; type, and the dynamic arrays in it. A cloned type is skipped. It's a
+; copy of a named type, or another variable in the same declaration,
+; which was already checked.
 .proc resolveArrayDecl
-    ; Get the declaration type
-    jsr getTypePtr              ; type in ptr1
-    ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr getTypeSize
-    sta intOp1
-    stx intOp1+1
-    lda #2
-    sta intOp2
-    lda #0
-    sta intOp2+1
-    jsr gtInt16
-    beq :+
-    lda #errInvalidIndexType
-    jsr resolverError
-:   jmp checkDynamicElement
-.endproc
-
-; Only one-dimensional dynamic arrays are supported. The parser catches
-; arrays written out in place, as in Array[1..3] Of Array Of Integer.
-; This routine catches a named array type as the element type: a named
-; dynamic array as the element of any array, or a named array as the
-; element of a dynamic array.
-;
-; A cloned type is skipped. It's a copy of a named type, or another
-; variable in the same declaration, which was already checked.
-.proc checkDynamicElement
     jsr getTypePtr              ; type in ptr1
     ldz #type::flags
     nop
     lda (ptr1),z
     and #TYPE_FLAG_ISCLONED
     bne DN
+    ldq ptr1
+    stq arrPtr
+
+L1: ldq arrPtr
+    stq ptr1
+    ldz #type::indextype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr checkIndexType
+    ldq arrPtr
+    stq ptr1
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq L2
+    stq arrPtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ARRAY
+    beq L1
+
+    ; The element type. A pointer can name a type declared later.
+    cmp #TYPE_DECLARED
+    bne L2
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr4
+    jsr scopeLookup
+    jsr isQZero
+    bne L2
+    lda #errInvalidType
+    jsr resolverError
+
+L2: jmp checkDynamicElement
+DN: rts
+.endproc
+
+; This routine checks the index type in Q. It is one or two bytes: a
+; subrange, or the name of a subrange, an enumeration or a Byte or Word
+; constant (Array[N] has N elements). These are what getArraySize can
+; size. A type such as Char or Boolean, or an enumeration written in
+; place, can't be an index. A size of zero is a name that isn't declared.
+.proc checkIndexType
+    stq idxPtr
+    jsr getTypeSize
+    cpx #0
+    bne BD
+    cmp #0
+    beq BD
+    cmp #3
+    bcs BD
+
+    ldq idxPtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_SUBRANGE
+    beq OK
+    cmp #TYPE_DECLARED
+    bne BD
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr4
+    jsr scopeLookup
+    jsr isQZero
+    beq BD
+    stq ptr1                    ; symbol in ptr1
+    ldz #symbol::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2                    ; the name's type in ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_ENUMERATION
+    beq OK
+    cmp #TYPE_SUBRANGE
+    beq OK
+    cmp #TYPE_BYTE
+    beq CN
+    cmp #TYPE_WORD
+    bne BD
+CN: ldz #symbol::decl           ; A constant has a value
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq BD
+    stq ptr3
+    ldz #decl::value
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    jsr isQZero
+    bne OK
+
+BD: lda #errInvalidIndexType
+    jmp resolverError
+OK: rts
+.endproc
+
+; Only one-dimensional dynamic arrays are supported. The parser catches
+; arrays written out in place, as in Array[1..3] Of Array Of Integer.
+; This routine catches a named array type as the element type: a named
+; dynamic array as the element of any array, or a named array as the
+; element of a dynamic array. The type isn't cloned (resolveArrayDecl).
+.proc checkDynamicElement
+    jsr getTypePtr              ; type in ptr1
 
     ; Find the innermost array type of an array written out in place
 L1: ldz #type::subtype
@@ -133,8 +235,9 @@ DN: rts
 
 L1: ldq fieldPtr
     jsr isQZero
-    beq DN
-    stq ptr1
+    bne :+
+    rts
+:   stq ptr1
     ldz #decl::type
     neg
     neg
@@ -148,7 +251,24 @@ L1: ldq fieldPtr
     lda (ptr3),z
     cmp #TYPE_DECLARED
     bne NX
-    ldq ptr3
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr4
+    jsr scopeLookup
+    jsr isQZero
+    bne :+
+    jsr fieldTypeError          ; The field's type isn't declared
+    bra NX
+:   ldq fieldPtr
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
     jsr getBaseType
     stq ptr3
     ldz #type::kind
@@ -173,12 +293,29 @@ NX: ldq fieldPtr
     nop
     lda (ptr1),z
     stq fieldPtr
-    bra L1
+    jmp L1
+.endproc
 
-DN: rts
+; This routine reports that the type of the field in fieldPtr isn't
+; declared, on the field's line.
+.proc fieldTypeError
+    ldq fieldPtr
+    stq ptr1
+    ldz #decl::lineNumber
+    nop
+    lda (ptr1),z
+    sta currentLineNumber
+    inz
+    nop
+    lda (ptr1),z
+    sta currentLineNumber+1
+    lda #errInvalidType
+    jmp resolverError
 .endproc
 
 .bss
 
 dynFlag: .res 1
 fieldPtr: .res 4
+arrPtr: .res 4                  ; The array being checked
+idxPtr: .res 4                  ; The index type being checked

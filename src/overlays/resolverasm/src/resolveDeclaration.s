@@ -15,7 +15,7 @@
 .include "4510macros.inc"
 
 declOffset = 10
-membufOffset = 6
+; Offset 6 is a pointer the routine doesn't use (declResolve passes NULL)
 symtabOffset = 2
 failIfExistsOffset = 1
 kindOffset = 0

@@ -20,7 +20,7 @@ symtabOffset = 0
 
 .export getEmbeddedArraySymtab
 
-.import getRecordSymtab, resolverError
+.import getRecordSymtab
 
 .bss
 
@@ -64,15 +64,7 @@ typePtr: .res 4
 :   jsr scopeLookup
 L1: jsr isQZero
     bne :+
-    lda #errUndefinedIdentifier
-    jsr resolverError
-    jsr popQ
-    jsr popQ
-    lda #0
-    tax
-    tay
-    taz
-    rts
+    jmp L7                      ; The array isn't declared
 :   stq ptr1
     ldz #symbol::type
     neg
@@ -82,12 +74,15 @@ L1: jsr isQZero
 
     stq typePtr
     stq ptr1
+    ; Follow array elements and what pointers point to (a[i]^.f)
 L2: ldz #type::kind
     nop
     lda (ptr1),z
     cmp #TYPE_ARRAY
+    beq :+
+    cmp #TYPE_POINTER
     bne L3
-    ldz #type::subtype
+:   ldz #type::subtype
     neg
     neg
     nop
@@ -175,9 +170,9 @@ L6: ldz #type::symtab
     ldq ptr1
     rts
 
-L7: lda #errUndefinedIdentifier
-    jsr resolverError
-    jsr popQ
+    ; A name isn't declared: there's no record. exprResolve reports the
+    ; array or the field.
+L7: jsr popQ
     jsr popQ
     lda #0
     tax

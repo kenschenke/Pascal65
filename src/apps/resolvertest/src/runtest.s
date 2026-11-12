@@ -48,6 +48,7 @@
 .import testFail
 
 .import initTokenizer, initParser, initDumpSymtab, viewDump, getKey, errorCount
+.import errorNum, errorLine
 .import tokenizeAndParseUnits, initResolver, initShowTree, freeUnits, resetTicks, getTicks
 .import initDumpAst, printMilliseconds, totalTicks
 
@@ -85,7 +86,9 @@ strParsing: .asciiz "Parsing, "
 strResolving: .asciiz "Resolving, "
 strDumping: .asciiz "Dumping AST, "
 strPass: .asciiz "Pass"
-strErrorCount: .asciiz "Errors encountered - press a key"
+strErrorCount: .byte "Errors encountered", $0d, $0
+strErrorNum: .asciiz "First error number "
+strErrorLine: .asciiz " on line "
 
 .code
 
@@ -196,6 +199,7 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     ldq unitList
     jsr setResolverUnitsList
     jsr initScopeStack
+    jsr initStandardRoutines
     jsr injectSystemUnit
     lda #0
     sta isResolvingUnits
@@ -220,7 +224,7 @@ strErrorCount: .asciiz "Errors encountered - press a key"
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
-    jsr heapFree
+    jsr freeSymtab
 
     ldq astRoot
     jsr pushQ
@@ -332,7 +336,37 @@ strErrorCount: .asciiz "Errors encountered - press a key"
     lda #<strErrorCount
     ldx #>strErrorCount
     jsr printLine
+
+    ; Name the first error and its line
+    lda #<strErrorNum
+    ldx #>strErrorNum
+    jsr printLine
+    lda errorNum
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    jsr printInt
+    lda #<strErrorLine
+    ldx #>strErrorLine
+    jsr printLine
+    lda errorLine
+    sta intOp1
+    lda errorLine+1
+    sta intOp1+1
+    jsr printInt
+    lda #13
+    jsr CHROUT
     jmp testFail
+.endproc
+
+; This routine prints the 16-bit value in intOp1.
+.proc printInt
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt16
+    lda #<intBuf
+    ldx #>intBuf
+    jmp printLine
 .endproc
 
 .proc compareLines

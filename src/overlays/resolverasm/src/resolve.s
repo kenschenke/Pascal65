@@ -14,16 +14,20 @@
 .include "4510macros.inc"
 
 .export currentLineNumber, resolverError, setUnitsList, getUnitsList, units
-.export calcNamePtr
+.export calcNamePtr, resolverErrors
 
 .bss
 
 currentLineNumber: .res 2
 units: .res 4
+; The number of errors resolverError reported, modulo 256. exprResolve
+; compares it before and after it resolves an expression.
+resolverErrors: .res 1
 
 .code
 
 .proc resolverError
+    inc resolverErrors
     ldx currentLineNumber
     ldy currentLineNumber+1
     jmp compilerError

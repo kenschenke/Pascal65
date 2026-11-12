@@ -75,5 +75,9 @@ L1: ldz #type::paramFields
     lda (ptr1),z
     stq ptr2
     jsr addEnumsToSymtab
+    bcs :+
     rts
+    ; A value's name is already declared
+:   lda #errRedefinedIdentifier
+    jmp resolverError
 .endproc

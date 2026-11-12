@@ -22,7 +22,7 @@ exprOffset = symtabOffset + 4
 
 .export exprResolve
 
-.import resolverError, getRecordSymtab
+.import resolverError, getRecordSymtab, resolverErrors
 
 ; Runtime stack entry, bottom to top:
 ;    expr ptr
@@ -195,9 +195,45 @@ L7: ldz #exprOffset
     jsr pushQ               ; symtab
     lda tmp1
     jsr pushA               ; isRtnCall
+    lda resolverErrors
+    pha                     ; The errors before the left expression
     jsr exprResolve
-    ; Resolve right expression
+    pla
+    sta tmp2
+
+    ; The right of a field is the field's name, looked up in the record's
+    ; symbol table. With no table the left isn't a record, or names
+    ; something that isn't declared. The field has no symbol. If resolving
+    ; the left reported an error, that's the only one. Otherwise the field
+    ; is reported. It isn't looked up in the scope.
+    ldz #exprOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_FIELD
+    bne RR
     ldz #leftSymtabOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    jsr isQZero
+    bne RR
+    lda resolverErrors
+    cmp tmp2
+    beq :+
+    jmp L9
+:   lda #errUndefinedIdentifier
+    jsr resolverError
+    jmp L9
+
+    ; Resolve right expression
+RR: ldz #leftSymtabOffset
     neg
     neg
     nop

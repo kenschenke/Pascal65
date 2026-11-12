@@ -61,6 +61,8 @@ COND_RE = re.compile(r'^\s*\.(ifdef|ifndef|if\w*|else|elseif|endif)\b\s*(\S*)',
 # A label: "name:" or an anonymous ":"
 LABEL_RE = re.compile(r'^\s*([A-Za-z_@][A-Za-z0-9_]*:(?!=)|:(?=\s|$))(.*)$')
 MNEMONIC_RE = re.compile(r'^(\s*)([A-Za-z]+)')
+# A symbol assignment, such as "offset = 4", isn't an instruction
+ASSIGN_RE = re.compile(r'^\s*[A-Za-z_@][A-Za-z0-9_]*\s*:?=')
 
 
 def strip_comment(line):
@@ -146,8 +148,8 @@ class Instrumenter:
                 if not had_label:
                     out_lines.append(line)
                 continue
-            if rest.lstrip().startswith('.'):
-                # A directive
+            if rest.lstrip().startswith('.') or ASSIGN_RE.match(rest):
+                # A directive or a symbol assignment
                 out_lines.append(rest)
                 continue
 

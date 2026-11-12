@@ -198,6 +198,33 @@ so the files are instrumented in sets (`COVFILESn`). A new parser file must
 go in a set, and a set that no longer fits fails to link and must be
 split. Like `test`, it needs asmlib built with `MEMCHECK=1`.
 
+### Resolver Tests
+
+`resolvertest` runs two kinds of test. `tests/testN.pas` holds a program
+and, in its header comment, the symbol table dump the resolver must make
+for it. `runTests` runs 1 to `NUM_TESTS` (`runtests.s`) and `main` runs
+0 and 8 to 11. `errortests/errorN.pas` is a program with an error. The
+table in `runerrortests.s` gives the line of its first error, the error
+and the number of errors (`NUM_TESTS` there too). The parser's errors
+count. A failed program test names its first error and line.
+
+A name in an expression is reported by `exprResolve` alone, once.
+`getRecordSymtab` and the routines it calls return NULL for a name that
+isn't declared. A field with no record table isn't looked up: if
+resolving its left reported an error (`resolverErrors`), that's the
+only one, and otherwise the field is reported.
+
+The harness resolves as the compiler does: `initStandardRoutines` before
+`injectSystemUnit`, and the program's scope is freed with `freeSymtab`.
+
+`make TARGET=mega65 coverage` in `src/apps/resolvertest` runs the tests
+against a copy of the resolver with probes in it (editortest's
+`cov/mkcov.py`) and lists the lines that never ran in
+`bin/mega65/coverage.txt`. Every file is in one set (`COVFILES1`); split
+it as parsertest does if it stops fitting. Like `test`, it needs asmlib
+built with `MEMCHECK=1`. The lines left are ones no source can reach,
+such as a lookup in a record's table that `exprResolve` never asks for.
+
 ### Heap Tests
 
 `memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.

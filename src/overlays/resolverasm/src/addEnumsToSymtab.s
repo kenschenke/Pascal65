@@ -25,23 +25,31 @@ enumType: .res 4
 name: .res 4
 newType: .res 4
 newSymbol: .res 4
+clash: .res 1                       ; Non-zero if a name was already bound
 
 .code
 
 ; On entry:
 ;    ptr1 contains type to assign to each symbol
 ;    ptr2 contains first param_list structure
+; On exit:
+;    carry is set if a value's name was already in the scope. That
+;    value gets no symbol.
 .proc addEnumsToSymtab
-    ; Store 
+    ; Store
     ldq ptr1
     stq enumType
     ldq ptr2
     stq currentEnum
-    
+    lda #0
+    sta clash
+
     ; Loop through the list of enum declarations
 L1: ldq currentEnum
     jsr isQZero
     bne :+
+    lda clash
+    cmp #1                          ; carry set if there was a clash
     rts
 
     ; Create a type for the enum
@@ -90,6 +98,8 @@ L1: ldq currentEnum
     jsr scopeBind
     bcc L2
     ; scopeBind failed - free the things we allocated
+    lda #1
+    sta clash
     ldq newSymbol
     jsr freeSymbol
 

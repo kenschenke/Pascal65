@@ -27,11 +27,20 @@ CH_LOWERCASE = 14
 .import logError, printMilliseconds, printLine
 
 .import testInit, testPass, testFail, testMemCheck, testLeakCheck
+.ifdef COVERAGE
+; With COVERAGE defined it runs an instrumented resolver overlay and saves
+; the coverage map to the disk once every test passes (make coverage, see
+; the Makefile).
+.import covInit, covSave
+.endif
 
 main:
     poisonBss                   ; Must run before anything writes BSS
 
     jsr testInit
+.ifdef COVERAGE
+    jsr covInit
+.endif
 
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
@@ -97,6 +106,18 @@ main:
     clc
     jsr runTest
 
+    ; Run the statement and expression test
+    lda #10
+    ldx #0
+    clc
+    jsr runTest
+
+    ; Run the array index type test
+    lda #11
+    ldx #0
+    clc
+    jsr runTest
+
     ; Run resolver error tests
     jsr runErrorTests
 
@@ -116,6 +137,9 @@ main:
     lda #13
     jsr CHROUT
 
+.ifdef COVERAGE
+    jsr covSave
+.endif
     jsr testPass
     rts
 

@@ -4,6 +4,9 @@ Unit Test8Unit;
 
 Interface
 
+Type
+  Suit = (Clubs, Diamonds, Hearts, Spades);
+
 Var
   PublicVar : String;
 

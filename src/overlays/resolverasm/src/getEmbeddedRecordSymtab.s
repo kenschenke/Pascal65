@@ -21,7 +21,7 @@ recExprOffset = fieldExprOffset + 4
 
 .export getEmbeddedRecordSymtab
 
-.import getRecordSymtab, resolverError
+.import getRecordSymtab, typeRecordSymtab
 
 ; On entry, runtime stack bottom to top
 ;    record expression ptr
@@ -61,8 +61,7 @@ recExprOffset = fieldExprOffset + 4
     jsr symtabLookup
     jsr isQZero
     bne :+
-    lda #errUndefinedIdentifier
-    jsr resolverError
+    ; Not a field of the record. exprResolve reports it.
     jsr popQ
     jsr popQ
     jsr popQ
@@ -71,63 +70,18 @@ recExprOffset = fieldExprOffset + 4
     tay
     taz
     rts
+    ; The field's record: its type, an element of it or what it points to
 :   stq ptr1
     ldz #symbol::type
     neg
     neg
     nop
     lda (ptr1),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
-    cmp #TYPE_ARRAY
-    bne :+
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
-:   cmp #TYPE_DECLARED
-    bne L9
-
-    ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr4
-    jsr scopeLookup
-    jsr isQZero
-    bne :+
-    lda #errUndefinedIdentifier
-    jsr resolverError
+    jsr typeRecordSymtab
+    stq ptr1
     jsr popQ
     jsr popQ
     jsr popQ
-    lda #0
-    tax
-    tay
-    taz
-    rts
-:   stq ptr1
-    ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr2
-L9: jsr popQ
-    jsr popQ
-    jsr popQ
-    ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    ldq ptr1
     rts
 .endproc
