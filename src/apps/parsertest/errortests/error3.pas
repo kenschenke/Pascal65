@@ -1,5 +1,5 @@
 (*
-    Error Test 3
+    Error Test 3 - expect errUnexpectedToken on line 9
     Unexpected token in array literal
 *)
 

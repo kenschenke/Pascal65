@@ -1,5 +1,5 @@
 (*
-    Error Test 19
+    Error Test 19 - expect errMissingSemicolon on line 10
     Missing semicolon before If
 *)
 

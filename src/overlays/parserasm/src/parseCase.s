@@ -25,7 +25,7 @@ lastCaseOffset = 0
 
 .import getToken, parseExpression, doResync, condGetToken, tokenIn
 .import currentLineNumber, parserToken, parseCaseBranch
-.import tlOF, tlCaseLabelStart, tlStatementStart, tlEND
+.import tlOF, tlCaseLabelStart, tlStatementStart, tlEND, parserError
 
 .proc parseCASE
     ; CASE
@@ -105,13 +105,17 @@ L3: ; Set last case to the new case branch
     
     lda parserToken
     cmp #tcSemicolon
-    beq L4
-    lda #<tlCaseLabelStart
+    bne :+
+    jsr getToken
+    jmp L1
+    ; A branch without a semicolon before it
+:   lda #<tlCaseLabelStart
     ldx #>tlCaseLabelStart
     jsr tokenIn
     bne L5
-L4: jsr getToken
-    bra L1
+    lda #errMissingSemicolon
+    jsr parserError
+    jmp L1
 
 L5: ; END
     resync tlEND, tlStatementStart

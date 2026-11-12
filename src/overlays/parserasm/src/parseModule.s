@@ -46,12 +46,12 @@ progDecl: .res 4
 :   lda #<tlDeclarationStart
     ldx #>tlDeclarationStart
     jsr tokenIn                     ; if (tokenIn(tlDeclarationStart))
-    bne L1
+    beq :+
     lda #<tlStatementStart
     ldx #>tlStatementStart
     jsr tokenIn                     ; if (tokenIn(tlStatementStart))
     bne L1
-    lda #errMissingSemicolon
+:   lda #errMissingSemicolon
     jsr parserError
 
 L1: lda parserModuleType

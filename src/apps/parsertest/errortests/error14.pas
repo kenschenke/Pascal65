@@ -1,5 +1,5 @@
 (*
-    Error Test 14
+    Error Test 14 - expect errMultiDimDynArray on line 9
     Dynamic array as the element of an array
 *)
 

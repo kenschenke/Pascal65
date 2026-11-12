@@ -23,13 +23,15 @@
 
 .bss
 
-signFlag: .res 1
+signFlag: .res 1            ; Non-zero after a + or -
+negFlag: .res 1             ; Non-zero after a -
 
 .code
 
 .proc parseCaseLabel
     lda #0
     sta signFlag
+    sta negFlag
 
     ; Unary + or -
     lda #<tlUnaryOps
@@ -38,7 +40,11 @@ signFlag: .res 1
     bne L1
     lda #1
     sta signFlag
-    jsr getToken
+    lda parserToken
+    cmp #tcMinus
+    bne :+
+    sta negFlag
+:   jsr getToken
 
 L1: lda parserToken
     cmp #tcIdentifier
@@ -51,13 +57,17 @@ L1: lda parserToken
 L2: lda #0
     jsr parseExpression
     stq ptr1
+    jsr isQZero
+    bne :+
+    jmp L9                  ; No label (an error)
+:
 
     ldz #expr::kind
     nop
     lda (ptr1),z
     cmp #EXPR_BYTE_LITERAL
     bne L3
-    lda signFlag
+    lda negFlag
     beq L9
     ldz #expr::value
     nop
@@ -71,7 +81,7 @@ L2: lda #0
 
 L3: cmp #EXPR_WORD_LITERAL
     bne L4
-    lda signFlag
+    lda negFlag
     beq L9
     ldz #expr::value
     nop
@@ -79,7 +89,7 @@ L3: cmp #EXPR_WORD_LITERAL
     sta intOp1
     inz
     nop
-    lda (intOp1),z
+    lda (ptr1),z
     sta intOp1+1
     jsr invertInt16
     ldz #expr::value
@@ -92,15 +102,15 @@ L3: cmp #EXPR_WORD_LITERAL
     sta (ptr1),z
     bra L9
 
-L4: cmp #EXPR_WORD_LITERAL
+L4: cmp #EXPR_DWORD_LITERAL
     bne L9
-    lda signFlag
+    lda negFlag
     beq L9
     ldz #expr::value
     ldx #0
 :   nop
     lda (ptr1),z
-    sta intOp32,x
+    sta intOp1,x            ; intOp1 and intOp2 are the 32-bit value
     inz
     inx
     cpx #4
@@ -108,7 +118,7 @@ L4: cmp #EXPR_WORD_LITERAL
     jsr invertInt32
     ldz #expr::value
     ldx #0
-:   lda intOp32,x
+:   lda intOp1,x
     nop
     sta (ptr1),z
     inz

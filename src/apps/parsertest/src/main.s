@@ -18,9 +18,13 @@ CH_LOWERCASE = 14
 
 .include "poisonbss.inc"
 
+.bss
+
+errorTestsFailed: .res 1    ; Non-zero if an error test failed
+
 .segment "ENTRY"
 
-.import initLib, runTests, runErrorTests, runLineTest
+.import initLib, runTests, runErrorTests, runLineTest, runDirTest
 .import logError
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,11 +32,20 @@ CH_LOWERCASE = 14
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .import testInit, testPass, testFail, testMemCheck, testLeakCheck
+.ifdef COVERAGE
+; With COVERAGE defined it runs an instrumented parser overlay and saves the
+; coverage map to the disk once every test passes (make coverage, see
+; the Makefile).
+.import covInit, covSave
+.endif
 
 main:
     poisonBss                   ; Must run before anything writes BSS
 
     jsr testInit
+.ifdef COVERAGE
+    jsr covInit
+.endif
 
     ; Set alphabet to upper and lower case
     lda #CH_LOWERCASE
@@ -75,17 +88,30 @@ main:
     jsr runTests
 
     ; Run parser error handling tests
+    ; A failed error test doesn't stop the other tests or the leak check
     jsr runErrorTests
+    lda #0
+    rol a
+    sta errorTestsFailed
 
     ; Check the declarations' line numbers
     jsr runLineTest
+
+    ; Check the directives the parser keeps for the compiler
+    jsr runDirTest
 
     ; Everything the tests allocated must be freed
     jsr testLeakCheck
     bcc :+
     jmp testFail
+:   lda errorTestsFailed
+    beq :+
+    jmp testFail
 :
 
+.ifdef COVERAGE
+    jsr covSave
+.endif
     jsr testPass
     rts
 

@@ -1,5 +1,5 @@
 (*
-    Error Test 16
+    Error Test 16 - expect errUnexpectedToken on line 8
     Stray token before Begin (used to hang the parser)
 *)
 

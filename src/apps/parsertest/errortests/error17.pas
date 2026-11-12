@@ -1,5 +1,5 @@
 (*
-    Error Test 17
+    Error Test 17 - expect errMissingEND on line 9
     Stray token in a statement list (used to hang the parser)
 *)
 

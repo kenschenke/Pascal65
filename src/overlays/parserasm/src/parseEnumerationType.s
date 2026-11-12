@@ -136,12 +136,9 @@ L3: ; Saw comma. Skip extra commas and look for an identifier.
     bra L3
 L4: cmp #tcIdentifier
     beq L6
+    ; Something else, such as the ")" in "(a, b, )". It ends the list.
+    ; Skipping it could run past the end of the file.
     lda #errMissingIdentifier
-    jsr parserError
-    jmp L3
-L5: cmp #tcIdentifier
-    bne L6
-    lda #errMissingComma
     jsr parserError
 L6: jmp L1
 

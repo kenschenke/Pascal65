@@ -1,5 +1,5 @@
 (*
-    Error Test 10
+    Error Test 10 - expect errMissingComma on line 9
     Missing comma parsing enumeration
 *)
 

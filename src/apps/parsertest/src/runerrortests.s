@@ -1,7 +1,7 @@
 ;
 ; runerrortests.s
 ; Ken Schenke (kenschenke@gmail.com)
-; 
+;
 ; Copyright (c) 2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
@@ -9,6 +9,13 @@
 ;
 ; Routines to test the parser error handling. This is done by running
 ; the parser and capturing errors.
+;
+; Each test, errorN.pas, names the first error the parser must report and
+; its line. A test that gets a different error, or none, doesn't stop the
+; others. Its number is listed once all of them have run, and
+; runErrorTests returns with the carry set. A test that makes the parser
+; hang never finishes: the emulator is stopped before it can save the
+; screen, so run the tests in parts to find it (see the Makefile).
 
 .include "c64.inc"
 .include "error.inc"
@@ -20,14 +27,13 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 24
-
 .export runErrorTests
-.import testFail
 
-.import initTokenizer, initParser, getKey
+.import initTokenizer, initParser
 .import errorCount, errorLine, errorNum
-.import heapWalk, freeUnits, unitList
+.import freeUnits, unitList
+
+MAX_FAILURES = 20           ; The most failed tests listed at the end
 
 .bss
 
@@ -37,6 +43,9 @@ intBuf: .res 10
 tokens: .res 4
 astRoot: .res 4
 pErrors: .res 2         ; Pointer to current test in "errors"
+failCount: .res 1       ; Number of tests that failed
+failList: .res MAX_FAILURES * 2
+
 .data
 
 strFnPrefix: .asciiz "error"
@@ -45,67 +54,53 @@ strTitle: .asciiz "Running error test "
 strTokenizing: .asciiz " : Tokenizing, "
 strParsing: .asciiz "Parsing, "
 strPass: .asciiz "Pass"
-strErrorCount: .asciiz "Expected one error - press a key"
-strErrorLine1: .asciiz "Error reported in line "
-strErrorLine2: .asciiz ", expected line "
-strErrorNum1: .asciiz "Error number "
-strErrorNum2: .asciiz ", expected num "
+strNoError: .asciiz "  FAIL: no error reported"
+strGot: .asciiz "  FAIL: error "
+strExpected: .asciiz ", expected error "
+strLine: .asciiz " line "
+strFailed: .asciiz "Error tests failed:"
 
-; Array of parser errors by test number (zero-based)
-;   Each element is three bytes:
+; The expected errors, by test number (errortests.inc, made by
+; mkerrortests.py from the tests' header comments). Each element is
+; three bytes:
 ;      1) Line number (low byte)
 ;      2) Line number (high byte)
 ;      3) Error code
-errors: .byte $06, $00, errMissingIdentifier        ; Missing identifier after Program
-        .byte $09, $00, errMissingRightParen        ; Missing right paren on routine call
-        .byte $09, $00, errUnexpectedToken          ; Unexpected token in array literal
-        .byte $0c, $00, errMissingIMPLEMENTATION    ; Missing Implementation in unit
-        .byte $08, $00, errMissingBEGIN             ; Missing Begin
-        .byte $0b, $00, errMissingConstant          ; Missing contant parsing case branch
-        .byte $0b, $00, errInvalidConstant          ; Invalid constant parsing case branch
-        .byte $09, $00, errInvalidConstant          ; Invalid constant parsing constant declarations
-        .byte $09, $00, errInvalidConstant          ; Invalid constant parsing string constant
-        .byte $09, $00, errMissingComma             ; Missing comma parsing enumeration
-        .byte $09, $00, errMissingIdentifier        ; Missing identifier parsing enumeration
-        .byte $09, $00, errInvalidExpression        ; Invalid expression
-        .byte $09, $00, errMultiDimDynArray         ; Dynamic array of arrays
-        .byte $09, $00, errMultiDimDynArray         ; Array of dynamic arrays
-        .byte $0b, $00, errDynArrayInRecord         ; Dynamic array record field
-        .byte $08, $00, errMissingBEGIN             ; Stray token before Begin
-        .byte $09, $00, errMissingEND               ; Stray token in statements
-        .byte $0a, $00, errUnexpectedToken          ; Else after a semicolon
-        .byte $0a, $00, errMissingSemicolon         ; Missing ; before If
-        .byte $0b, $00, errMissingUNTIL             ; Repeat ended by End
-        .byte $0a, $00, errDirectiveProgramOnly     ; StaticRuntime in a unit
-        .byte $0a, $00, errDirectiveProgramOnly     ; DynamicRuntime in a library
-        .byte $08, $00, errConflictingDirectives    ; Both runtime directives
-        .byte $0a, $00, errConflictingDirectives    ; Repeated, then the other
+.include "errortests.inc"
+
+; Only some of the tests can be run, to find one that hangs:
+; make test ERRTESTS="-D FIRST_ERROR_TEST=n -D LAST_ERROR_TEST=m"
+.ifndef FIRST_ERROR_TEST
+FIRST_ERROR_TEST = 1
+.endif
+.ifndef LAST_ERROR_TEST
+LAST_ERROR_TEST = NUM_ERROR_TESTS
+.endif
 
 .code
 
 .proc runErrorTests
-    ; jsr heapWalk
-    
-    ; Start with test 1
-    lda #1
-    sta testNum
     lda #0
+    sta failCount
+
+    lda #.LOBYTE(FIRST_ERROR_TEST)
+    sta testNum
+    lda #.HIBYTE(FIRST_ERROR_TEST)
     sta testNum+1
 
     ; Initialize pErrors
-    lda #<errors
+    lda #.LOBYTE(errors + (FIRST_ERROR_TEST - 1) * 3)
     sta pErrors
-    lda #>errors
+    lda #.HIBYTE(errors + (FIRST_ERROR_TEST - 1) * 3)
     sta pErrors+1
 
 L1: jsr runErrorTest
-    ; jsr heapWalk
 
     lda testNum
-    cmp #.LOBYTE(NUM_TESTS)
+    cmp #.LOBYTE(LAST_ERROR_TEST)
     bne L2
     lda testNum+1
-    cmp #.HIBYTE(NUM_TESTS)
+    cmp #.HIBYTE(LAST_ERROR_TEST)
     beq L3
 
 L2: lda pErrors
@@ -115,16 +110,22 @@ L2: lda pErrors
     lda pErrors+1
     adc #0
     sta pErrors+1
-    
+
     inc testNum
     bne L1
     inc testNum+1
     bra L1
 
-L3: rts
+L3: lda failCount
+    bne :+
+    clc
+    rts
+:   jsr listFailures
+    sec
+    rts
 .endproc
 
-; This routine runs a parser test. The test number is in A/X.
+; This routine runs the parser test numbered testNum.
 .proc runErrorTest
     lda testNum
     sta intOp1
@@ -137,7 +138,7 @@ L3: rts
     sta errorLine
     sta errorLine+1
     sta errorNum
-    
+
     ; Print the "running" title
     lda #<strTitle
     ldx #>strTitle
@@ -198,41 +199,147 @@ L3: rts
     lda pErrors+1
     sta ptr2+1
     lda errorCount
-    cmp #1
-    beq :+
-    jsr unexpectedErrorCount
-    bra DN
-
-    ; Check error line
-:   ldy #0
+    beq FL
+    ldy #0
     lda (ptr2),y
     cmp errorLine
-    beq :+
-    jsr unexpectedErrorLine
-    bra DN
-:   iny
+    bne FL
+    iny
     lda (ptr2),y
     cmp errorLine+1
-    beq :+
-    jsr unexpectedErrorLine
-    bra DN
-
-    ; Check error number
-:   iny
+    bne FL
+    iny
     lda (ptr2),y
     cmp errorNum
-    beq :+
-    jsr unexpectedErrorNum
-    bra DN
+    bne FL
 
-:   lda #<strPass
+    lda #<strPass
     ldx #>strPass
     jsr printLine
+    lda #13
+    jmp CHROUT
 
-DN: lda #13
+FL: jmp failed
+.endproc
+
+; This routine reports the error the test got and the one it expected,
+; and adds the test to the failure list.
+.proc failed
+    lda #13
     jsr CHROUT
 
+    lda errorCount
+    bne :+
+    lda #<strNoError
+    ldx #>strNoError
+    jsr printLine
+    bra L1
+
+:   lda #<strGot
+    ldx #>strGot
+    jsr printLine
+    lda errorNum
+    ldx errorLine
+    ldy errorLine+1
+    jsr printErrorAndLine
+
+L1: lda #<strExpected
+    ldx #>strExpected
+    jsr printLine
+    lda pErrors
+    sta ptr2
+    lda pErrors+1
+    sta ptr2+1
+    ldy #2
+    lda (ptr2),y
+    pha
+    dey
+    lda (ptr2),y
+    tax                     ; Line high byte
+    dey
+    lda (ptr2),y
+    sta tmp1                ; Line low byte
+    txa
+    tay
+    ldx tmp1
+    pla
+    jsr printErrorAndLine
+    lda #13
+    jsr CHROUT
+
+    ; Add the test to the list
+    lda failCount
+    cmp #MAX_FAILURES
+    bcs :+
+    asl a
+    tax
+    lda testNum
+    sta failList,x
+    lda testNum+1
+    sta failList+1,x
+:   inc failCount
     rts
+.endproc
+
+; This routine prints an error number and line number.
+; Inputs:
+;    A - error number
+;    X - line number low byte
+;    Y - line number high byte
+.proc printErrorAndLine
+    phy
+    phx
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    jsr printInt
+    lda #<strLine
+    ldx #>strLine
+    jsr printLine
+    pla
+    sta intOp1
+    pla
+    sta intOp1+1
+    jmp printInt
+.endproc
+
+; This routine prints the number in intOp1.
+.proc printInt
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt16
+    lda #<intBuf
+    ldx #>intBuf
+    jmp printLine
+.endproc
+
+; This routine lists the tests that failed.
+.proc listFailures
+    lda #<strFailed
+    ldx #>strFailed
+    jsr printLine
+    ldx #0
+L1: cpx failCount
+    beq L2
+    cpx #MAX_FAILURES
+    beq L2
+    phx
+    lda #' '
+    jsr CHROUT
+    pla
+    pha
+    asl a
+    tax
+    lda failList,x
+    sta intOp1
+    lda failList+1,x
+    sta intOp1+1
+    jsr printInt
+    plx
+    inx
+    bra L1
+L2: lda #13
+    jmp CHROUT
 .endproc
 
 ; This routine prints a null-terminated string. The address
@@ -290,98 +397,4 @@ L2: rts
     lda #0
     sta sourceFn,x
     rts
-.endproc
-
-.proc unexpectedErrorCount
-    lda #<strErrorCount
-    ldx #>strErrorCount
-    jsr printLine
-    lda #13
-    jsr CHROUT
-    jmp testFail
-.endproc
-
-.proc unexpectedErrorLine
-    lda #13
-    jsr CHROUT
-    jsr CHROUT
-
-    lda #<strErrorLine1
-    ldx #>strErrorLine1
-    jsr printLine
-    lda errorLine
-    sta intOp1
-    lda errorLine+1
-    sta intOp1+1
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
-    jsr printLine
-
-    lda pErrors
-    sta ptr2
-    lda pErrors+1
-    sta ptr2+1
-    lda #<strErrorLine2
-    ldx #>strErrorLine2
-    jsr printLine
-    ldy #0
-    lda (ptr2),y
-    sta intOp1
-    iny
-    lda (ptr2),y
-    sta intOp1+1
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
-    jsr printLine
-    lda #13
-    jsr CHROUT
-    jmp testFail
-.endproc
-
-.proc unexpectedErrorNum
-    lda #13
-    jsr CHROUT
-    jsr CHROUT
-
-    lda #<strErrorNum1
-    ldx #>strErrorNum1
-    jsr printLine
-    lda errorNum
-    sta intOp1
-    lda #0
-    sta intOp1+1
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
-    jsr printLine
-
-    lda pErrors
-    sta ptr2
-    lda pErrors+1
-    sta ptr2+1
-    lda #<strErrorNum2
-    ldx #>strErrorNum2
-    jsr printLine
-    ldy #2
-    lda (ptr2),y
-    sta intOp1
-    lda #0
-    sta intOp1+1
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt16
-    lda #<intBuf
-    ldx #>intBuf
-    jsr printLine
-    lda #13
-    jsr CHROUT
-    jmp testFail
 .endproc

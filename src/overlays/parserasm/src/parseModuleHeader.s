@@ -48,6 +48,8 @@ lastArg: .res 4
     bra L1
 :   lda #errMissingPROGRAM
     jsr parserError
+    lda #TYPE_PROGRAM           ; Carry on as if it were a program
+    sta parserModuleType
 
 L1: ; Zero out lastArg and paramList
     lda #0

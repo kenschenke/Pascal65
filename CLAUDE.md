@@ -164,6 +164,40 @@ expected after a save are `.txt` files too. Keep them ASCII and out of the
 `petcat` rule. A CBM disk can't hold an empty file, so the one-byte
 `onlysel` fixture stands in for one. A new fixture goes in `FIXTURES`.
 
+### Parser Tests
+
+`parsertest` runs four kinds of test. `tests/testN.pas` (N to `NUM_TESTS`
+in `runtests.s`) holds a program and, in its header comment, the AST dump
+the parser must make for it. `errortests/errorN.pas` is a program with an
+error. A line of its header comment names the first error the parser must
+report and its line: `Error Test 12 - expect errInvalidExpression on line
+9`. `mkerrortests.py` makes the table of them, so the tests must be
+numbered 1 to N with none missing. `lines.pas` (`runlinetest.s`) checks
+declaration line numbers, and `dirs.pas` (`rundirtest.s`) the stack size,
+runtime mode and `$Expect` handlers the compiler gets. Every `.pas` file in
+`tests` and `errortests` goes on the disk.
+
+A failed error test doesn't stop the others: the failures are listed at
+the end and the suite fails after the leak check. A test that hangs the
+parser times out before the emulator saves the screen, so nothing says
+which one. Run some of them to find it:
+`make TARGET=mega65 test ERRTESTS="-D FIRST_ERROR_TEST=50 -D LAST_ERROR_TEST=60"`.
+
+Every error the parser reports has an error test, and so do the ways a
+file can end too soon. A parser loop that stops at a bad token must take
+a token or end at the end of the file, or it hangs. `doResync`
+(`resync.s`) returns at once when the token is in one of its lists.
+Otherwise it reports errUnexpectedToken and skips to a token in a list, a
+period or the end of the file. It never skips a period.
+
+`make TARGET=mega65 coverage` in `src/apps/parsertest` runs the tests
+against copies of the parser with probes in them (editortest's
+`cov/mkcov.py`) and lists the lines that never ran in
+`bin/mega65/coverage.txt`. The probes don't all fit in the overlay at once,
+so the files are instrumented in sets (`COVFILESn`). A new parser file must
+go in a set, and a set that no longer fits fails to link and must be
+split. Like `test`, it needs asmlib built with `MEMCHECK=1`.
+
 ### Heap Tests
 
 `memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.

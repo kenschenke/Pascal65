@@ -1,5 +1,5 @@
 (*
-    Error Test 15
+    Error Test 15 - expect errDynArrayInRecord on line 11
     Dynamic array as a record field
 *)
 

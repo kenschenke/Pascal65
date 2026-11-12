@@ -18,69 +18,75 @@
 
 .import getToken, parserToken, currentLineNumber, parserError
 
-; This routine checks up to three token lists for a token to resync
-; the parser. The three token lists are stored in ptr1, ptr2, and ptr3.
-; NULL in one of those is skipped.
+.bss
+
+; Copies of the three token lists. parserError and getToken use ptr1
+; through ptr3.
+lists: .res 6
+
+.code
+
+; This routine resynchronizes the parser after a syntax error. Up to three
+; token lists are in ptr1, ptr2 and ptr3. NULL in one of those is skipped.
+;
+; If the current token is in one of the lists, it returns at once.
+; Otherwise it reports the token as unexpected and skips tokens until it
+; finds one in a list, a period or the end of the file. A period is never
+; skipped, because it ends the program. Reaching the end of the file is
+; reported as well.
 .proc doResync
-    lda ptr1
-    ldx ptr1+1
-    jsr tokenIn
-    bne L4
+    ldx #1
+:   lda ptr1,x
+    sta lists,x
+    lda ptr2,x
+    sta lists+2,x
+    lda ptr3,x
+    sta lists+4,x
+    dex
+    bpl :-
 
-    lda ptr2
-    ldx ptr2+1
-    jsr tokenIn
-    bne L4
+    jsr inLists
+    beq DN
 
-    lda ptr3
-    ldx ptr3+1
-    jsr tokenIn
-    bne L4
-
-    ; The token was in none of the lists.
     lda parserToken
     cmp #tcEndOfFile
     bne :+
     lda #errUnexpectedEndOfFile
-    sta tmp1
-    bra L1
+    jmp parserError
+
 :   lda #errUnexpectedToken
-    sta tmp1
-L1: jsr parserError
-
-    ; Skip tokens until the token is found in one of the lists
-    ; or the tcPeriod or tcEndOfFile token is encountered.
-L2: lda ptr1
-    ldx ptr1+1
-    jsr tokenIn
-    bne L3
-    lda ptr2
-    ldx ptr2+1
-    jsr tokenIn
-    bne L3
-    lda ptr3
-    ldx ptr3+1
-    jsr tokenIn
-    bne L3
-    lda parserToken
-    cmp #tcPeriod
-    beq L3
-    cmp #tcEndOfFile
-    beq L3
-    jsr getToken
-    bra L2
-
-L3: ; Flag an expected end of file
-    lda parserToken
-    cmp #tcEndOfFile
-    bne L4
-    lda tmp1
-    cmp #errUnexpectedEndOfFile
-    bne L4
-    lda #errUnexpectedEndOfFile
     jsr parserError
 
-L4: rts
+L1: lda parserToken
+    cmp #tcPeriod
+    beq DN
+    jsr getToken
+    jsr inLists
+    beq DN
+    lda parserToken
+    cmp #tcEndOfFile
+    bne L1
+    lda #errUnexpectedEndOfFile
+    jmp parserError
+
+DN: rts
+.endproc
+
+; This routine sets the Z flag if parserToken is in one of the lists
+; saved by doResync.
+.proc inLists
+    lda lists
+    ldx lists+1
+    jsr tokenIn
+    beq DN
+    lda lists+2
+    ldx lists+3
+    jsr tokenIn
+    beq DN
+    lda lists+4
+    ldx lists+5
+    jmp tokenIn
+DN: rts
 .endproc
 
 ; The token list pointer is passed in A/X

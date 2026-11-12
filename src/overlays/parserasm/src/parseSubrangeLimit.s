@@ -92,6 +92,8 @@ L2: lda parserToken
     bra L3
 :   lda #errMissingConstant
     jsr parserError
+    lda #TYPE_VOID              ; Not left over from the last limit
+    sta limitType
 
 L3: jsr getToken
 
@@ -188,9 +190,9 @@ L5: cmp #tyLongInt
     cmp #tcMinus
     bne :+
     ldq value
-    stq intOp32
+    stq intOp1                  ; intOp1 and intOp2 are the 32-bit value
     jsr invertInt32
-    ldq intOp32
+    ldq intOp1
     stq value
 :   lda #EXPR_DWORD_LITERAL
     sta exprKind

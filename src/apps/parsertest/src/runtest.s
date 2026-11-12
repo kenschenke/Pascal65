@@ -35,6 +35,7 @@
 .import testFail
 
 .import initTokenizer, initParser, initDumpAst, viewDump, getKey, errorCount
+.import errorNum, errorLine
 .import initShowTree, freeUnits
 
 .bss
@@ -69,7 +70,8 @@ strTokenizing: .asciiz " : Tokenizing, "
 strParsing: .asciiz "Parsing, "
 strDumping: .asciiz "Dumping AST, "
 strPass: .asciiz "Pass"
-strErrorCount: .asciiz "Parsing errors encountered - press a key"
+strErrorCount: .asciiz "Parsing error "
+strErrorAt: .asciiz " on line "
 
 .code
 
@@ -194,7 +196,32 @@ strErrorCount: .asciiz "Parsing errors encountered - press a key"
     lda #<strErrorCount
     ldx #>strErrorCount
     jsr printLine
+    lda errorNum
+    sta intOp1
+    lda #0
+    sta intOp1+1
+    jsr printInt
+    lda #<strErrorAt
+    ldx #>strErrorAt
+    jsr printLine
+    lda errorLine
+    sta intOp1
+    lda errorLine+1
+    sta intOp1+1
+    jsr printInt
+    lda #13
+    jsr CHROUT
     jmp testFail
+.endproc
+
+; This routine prints the number in intOp1.
+.proc printInt
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt16
+    lda #<intBuf
+    ldx #>intBuf
+    jmp printLine
 .endproc
 
 .proc compareLines

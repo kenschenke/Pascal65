@@ -59,6 +59,11 @@ L1: lda #0
 :   lda #1
     sta isByRef
     jsr getToken
+    lda parserToken
+    cmp #tcIdentifier
+    beq L2
+    lda #errMissingIdentifier   ; Var with no name after it
+    jsr parserError
 
     ; Loop to parse the comma-separated sublist of parameter ids
 L2: jsr parseParamSubList
@@ -81,9 +86,17 @@ L2: jsr parseParamSubList
     lda #1
     sta firstType
 
+    ; A Var with no names after it has no list to give the type to
+    ldq firstId
+    jsr isQZero
+    bne :+
+    ldq paramType
+    jsr freeType
+    jmp L7A
+
     ; Loop to assign the offset and type to each
     ; param in the list.
-    ldq firstId
+:   ldq firstId
     stq ptr1
 L5: ldq ptr1
     jsr pushQ
@@ -134,6 +147,7 @@ L7: ldq lastId
     stq lastParam
 
     ; Semicolon or )
+L7A:
     resync tlFormalParmsFollow, tlDeclarationFollow
     lda parserToken
     cmp #tcIdentifier

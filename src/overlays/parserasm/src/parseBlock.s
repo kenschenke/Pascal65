@@ -25,7 +25,7 @@ isLibraryOffset = isProgramOrUnitBlockOffset + 1
 .export parseBlock
 
 .import isInUnitInterface, parserToken, getToken, parserError
-.import parserString, parseCompound, doResync, tlStatementStart
+.import parserString, parseCompound, doResync, tlStatementStart, tlEND
 .import parserModuleType, parseDeclarations, parserError, currentLineNumber
 
 .data
@@ -129,7 +129,8 @@ L2: lda #0
     taz
     stq ptr1                    ; body = null
     bra L3
-:   resync tlStatementStart
+    ; An End with no Begin is reported as a missing Begin
+:   resync tlStatementStart, tlEND
     lda parserToken
     cmp #tcBEGIN                ; if (parserToken != tcBEGIN)
     beq :+

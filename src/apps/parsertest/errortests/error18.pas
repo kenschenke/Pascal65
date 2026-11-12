@@ -1,5 +1,5 @@
 (*
-    Error Test 18
+    Error Test 18 - expect errUnexpectedToken on line 10
     Else after a semicolon
 *)
 

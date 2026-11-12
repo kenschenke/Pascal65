@@ -24,6 +24,7 @@ arrayExprOffset = 0
 
 .import parseExpression, tlExpressionStart, doResync
 .import getToken, parserToken, parserError, tlStatementFollow
+.import tlExpressionFollow, tokenIn
 
 .proc parseArrayLiteral
     jsr pushQZero           ; lastExpr
@@ -126,12 +127,31 @@ L6: lda parserToken
     jsr getToken
     jmp L1
 :   cmp #tcRParen
+    beq DN
+    ; An element without a comma before it is parsed as the next one
+    lda #<tlExpressionStart
+    ldx #>tlExpressionStart
+    jsr tokenIn
     bne :+
-    jmp L1
-:   lda #errUnexpectedToken
+    lda #errUnexpectedToken
     jsr parserError
-    resync tlExpressionStart, tlStatementFollow
+    jmp L1
+
+    ; Anything else is skipped, up to a token that can go on with the
+    ; literal. Any other token ends it, and the caller reports the
+    ; missing ")". Going on past one could run off the end of the file.
+:   resync tlExpressionFollow, tlExpressionStart, tlStatementFollow
+    lda parserToken
+    cmp #tcComma
+    bne :+
     jsr getToken
+    jmp L1
+:   cmp #tcRParen
+    beq DN
+    lda #<tlExpressionStart
+    ldx #>tlExpressionStart
+    jsr tokenIn
+    bne DN
     jmp L1
 
 DN: jsr popQ

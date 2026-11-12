@@ -1,5 +1,5 @@
 (*
-    Error Test 6
+    Error Test 6 - expect errMissingConstant on line 11
     Missing constant parsing case branch
 *)
 

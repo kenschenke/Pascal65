@@ -21,6 +21,7 @@
 .import tokenIn, parseSubroutine, appendDecl, isInUnitInterface, parserToken
 .import doResync, getToken
 .import tlProcFuncStart, tlDeclarationFollow, tlStatementStart, parserError
+.import tlDeclarationStart
 
 .proc parseSubroutineDeclarations
 L1: lda #<tlProcFuncStart
@@ -32,30 +33,21 @@ L1: lda #<tlProcFuncStart
     stq ptr2
     jsr appendDecl
 
+    ; In a unit's interface the header's semicolon is already read. Any
+    ; token but another routine ends the list, and parseBlock reports a
+    ; missing Implementation.
     lda isInUnitInterface
     beq L2
-    lda parserToken
-    cmp #tcIMPLEMENTATION
-    beq L9
-    
+    jmp L1
+
     ; Semicolon
-L2: resync tlDeclarationFollow, tlProcFuncStart, tlStatementStart
+L2: resync tlDeclarationFollow, tlDeclarationStart, tlStatementStart
     lda parserToken
     cmp #tcSemicolon
     bne :+
     jsr getToken
     bra L1
-:   lda isInUnitInterface
-    bne L1
-    lda #<tlProcFuncStart
-    ldx #>tlProcFuncStart
-    jsr tokenIn
-    bne L3
-    lda #<tlStatementStart
-    ldx #>tlStatementStart
-    jsr tokenIn
-    beq L1
-L3: lda #errMissingSemicolon
+:   lda #errMissingSemicolon
     jsr parserError
     bra L1
 

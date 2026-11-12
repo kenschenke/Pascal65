@@ -1,5 +1,5 @@
 (*
-    Error Test 8
+    Error Test 8 - expect errInvalidConstant on line 9
     Invalid constant
 *)
 

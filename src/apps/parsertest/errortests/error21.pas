@@ -1,5 +1,5 @@
 (*
-    Error Test 21
+    Error Test 21 - expect errDirectiveProgramOnly on line 10
     StaticRuntime directive in a unit
 *)
 

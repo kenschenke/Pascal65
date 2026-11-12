@@ -206,7 +206,7 @@ L5: ; Append the declaration
     jsr condGetToken
     bra L7
 L6: ; isVarDecl is zero
-    resync tlFieldDeclFollow
+    resync tlFieldDeclFollow, tlDeclarationStart, tlStatementStart
     lda parserToken
     cmp #tcEND
     beq L7
@@ -219,7 +219,14 @@ L7: ; skip extra semicolons
     bne :+
     jsr getToken
     bra :-
-:   resync tlDeclarationFollow, tlDeclarationStart, tlStatementStart
+:   pla
+    pha                     ; Peek at isVarDecl
+    beq :+
+    resync tlDeclarationFollow, tlDeclarationStart, tlStatementStart
+    jmp L1
+    ; The End of a record can follow a field. The next declaration or
+    ; the statements end a record that has no End.
+:   resync tlFieldDeclFollow, tlDeclarationStart, tlStatementStart
     jmp L1
 
 L9: pla                     ; Discard isVarDecl

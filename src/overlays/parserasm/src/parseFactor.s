@@ -238,10 +238,8 @@ LRParen:
     jsr popA
     ldq ptr1
     rts
-:   jsr popQ
-    lda #errMissingRightParen
+:   lda #errMissingRightParen  ; The expression is kept on the stack
     jsr parserError
-    jsr pushQZero
     jmp DoNeg
 
 LNone:
@@ -257,7 +255,11 @@ DoNeg:
     nop
     lda (stackPointer),z
     beq :+
+    ldq ptr1
+    jsr isQZero
+    beq :+                  ; No expression after the minus (an error)
     ldz #expr::neg
+    lda #1
     nop
     sta (ptr1),z
 :   jsr popA

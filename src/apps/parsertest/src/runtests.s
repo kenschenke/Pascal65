@@ -26,13 +26,15 @@
 ;   15: Array literals
 ;   16: Type casts
 ;   17: Declaration sections out of order
+;   18: Routine parameters, return types and forward declarations
+;   19: Constants, subranges, expressions and case labels
 
 .export runTests
 
 .import runTest
 .import heapWalk
 
-NUM_TESTS = 17
+NUM_TESTS = 19
 
 .bss
 

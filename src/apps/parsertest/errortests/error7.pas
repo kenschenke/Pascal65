@@ -1,5 +1,5 @@
 (*
-    Error Test 7
+    Error Test 7 - expect errInvalidConstant on line 11
     Invalid constant parsing case branch
 *)
 
