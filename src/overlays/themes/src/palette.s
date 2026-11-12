@@ -282,6 +282,10 @@ RT: cmp #KEY_RIGHTARROW
     jsr getScreenRowPtr
     jsr clearHelpTextRow
 
+    lda #HELPTEXT_ROW+6     ; The last row of the main help (screen.s)
+    jsr getScreenRowPtr
+    jsr clearHelpTextRow
+
     rts
 .endproc
 
@@ -302,7 +306,7 @@ L1: sta (ptr1),y
     jsr clearHelpText
 
     lda #<helpText1
-    ldx #>helpText2
+    ldx #>helpText1
     ldy #HELPTEXT_ROW
     jsr drawHelpTextRow
 
@@ -459,6 +463,7 @@ GO: sta cursorRow
 ; the background color is closer to black or white.
 .proc calcContrastColor
     jsr adjustForegroundColorIfNecessary
+    jsr adjustHighlightColors
     lda #SYNTAXHL_BACKGROUND
     jsr getColorFromTheme
     sta $d020
@@ -518,6 +523,35 @@ L1: lda tmp1
 L2: lda tmp1
     ldx #SYNTAXHL_FOREGROUND
     jsr copyColorToTheme
+DN: rts
+.endproc
+
+; The editor highlights a line with reversed characters in the error or
+; warning color, so one on the background's palette slot can't be seen.
+; This routine moves such a color to the UI color's slot, where the
+; shipped themes keep them (themes.txt). calcContrastColor then sets that
+; slot's RGB, which copyColorToTheme gives every color on the slot.
+.proc adjustHighlightColors
+    ldx #SYNTAXHL_ERROR
+    jsr adjustOne
+    ldx #SYNTAXHL_WARNING
+    ; Moves the color in X if it is on the background's slot
+adjustOne:
+    phx
+    lda #SYNTAXHL_BACKGROUND
+    jsr getColorFromTheme
+    sta tmp1
+    pla
+    pha
+    jsr getColorFromTheme
+    plx
+    cmp tmp1
+    bne DN                  ; Branch if the colors are different
+    phx
+    lda #SYNTAXHL_FOREGROUND
+    jsr getColorFromTheme
+    plx
+    jmp copyColorToTheme
 DN: rts
 .endproc
 

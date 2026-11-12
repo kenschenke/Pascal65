@@ -38,99 +38,25 @@ L1: jsr getKey
     bra L1
 :   jsr fixAlphaCase
     and #$7f                    ; Convert to lowercase
-    cmp #'k'
-    bne :+
-    jsr handleKeywords
+    ldx #THEME_COLORS
+L2: cmp colorKeys-1,x
+    beq L3
+    dex
+    bne L2
+    bra L1                      ; Not a color's key
+L3: jsr handlePaletteSelection  ; X is the key's SYNTAXHL_* color
     bra L1
-:   cmp #'c'
-    bne :+
-    jsr handleComments
-    bra L1
-:   cmp #'n'
-    bne :+
-    jsr handleNumbers
-    bra L1
-:   cmp #'s'
-    bne :+
-    jsr handleStrings
-    bra L1
-:   cmp #'r'
-    bne :+
-    jsr handleCursor
-    bra L1
-:   cmp #'o'
-    bne :+
-    jsr handleOperators
-    bra L1
-:   cmp #'i'
-    bne :+
-    jsr handleIdentifiers
-    bra L1
-:   cmp #'b'
-    bne :+
-    jsr handleBackground
-    bra L1
-:   cmp #'f'
-    bne :+
-    jsr handleForeground
-    bra L1
-
-:   bra L1
 .endproc
 
-.proc handleBackground
-    ldx #SYNTAXHL_BACKGROUND
-    jsr handlePaletteSelection
-    rts
-.endproc
+.data
 
-.proc handleComments
-    ldx #SYNTAXHL_COMMENT
-    jsr handlePaletteSelection
-    rts
-.endproc
+; The key for each color, in SYNTAXHL_* order (editor.inc): Numbers,
+; Keywords, Strings, Comments, Operators, Identifiers, cursor (R),
+; Foreground, Background, Error and Warning
+colorKeys: .byte "nkscoirfbew"
+.assert * - colorKeys = THEME_COLORS, error, "colorKeys needs a key per color"
 
-.proc handleCursor
-    ldx #SYNTAXHL_CURSOR
-    jsr handlePaletteSelection
-    rts
-.endproc
-
-.proc handleKeywords
-    ldx #SYNTAXHL_KEYWORD
-    jsr handlePaletteSelection
-    rts
-.endproc
-
-.proc handleNumbers
-    ldx #SYNTAXHL_NUMBER
-    jsr handlePaletteSelection
-    rts
-.endproc
-
-.proc handleOperators
-    ldx #SYNTAXHL_OPERATOR
-    jsr handlePaletteSelection
-    rts
-.endproc
-
-.proc handleIdentifiers
-    ldx #SYNTAXHL_IDENTIFIER
-    jsr handlePaletteSelection
-    rts
-.endproc
-
-.proc handleStrings
-    ldx #SYNTAXHL_STRING
-    jsr handlePaletteSelection
-    rts
-.endproc
-
-.proc handleForeground
-    ldx #SYNTAXHL_FOREGROUND
-    jsr handlePaletteSelection
-    rts
-.endproc
+.code
 
 ; This is a helper routine than handles calling the palette selector
 ; for a given syntax highlight category such as SYNTAXHL_KEYWORD.

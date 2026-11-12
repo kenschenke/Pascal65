@@ -29,7 +29,7 @@ D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 FIXDIR := $(OBJTARGETDIR)/files
 FIXTURES := three three0 three2 sel9 partial onlysel defs builtin \
 	numchg rgbchg bgchg bgui old oldpart version2 marker markerver \
-	hdronly newcolors
+	hdronly newcolors errchg warnchg errrgb bgerr
 # The fixtures are version 1 files unless they say --format 0. A version 1
 # three.txt is 3 + 3 * 60 bytes; version 0 is 1 + 3 * 52.
 three_ARGS := files/three.txt
@@ -61,6 +61,10 @@ numchg_ARGS := files/numchg.txt
 rgbchg_ARGS := files/rgbchg.txt
 bgchg_ARGS := files/bgchg.txt
 bgui_ARGS := files/bgui.txt
+errchg_ARGS := files/errchg.txt
+warnchg_ARGS := files/warnchg.txt
+errrgb_ARGS := files/errrgb.txt
+bgerr_ARGS := files/bgerr.txt
 FIXFILES := $(addprefix $(FIXDIR)/,$(FIXTURES))
 
 DISKWRITES := -write $(ASMLIB) asm.lib,prg -write $(THEMES) themes,prg \

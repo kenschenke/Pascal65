@@ -1,0 +1,19 @@
+# newcolors.txt after B and five Downs: the background goes from 21 to
+# 26, the error color's index. The error color moves to the UI color's
+# slot, 1. On the dark background (1 2 3) the UI color stays white, and
+# the operator and error colors on slot 1 take its RGB. The warning color
+# isn't on the background's slot, so it stays.
+selected 0
+
+theme New Colors
+number       5
+keyword      4
+string       3
+comment     12
+operator     1
+identifier  10
+cursor      19
+ui           1
+background  26  1  2  3
+error       ui
+warning     27  4  5  6

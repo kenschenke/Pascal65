@@ -36,6 +36,7 @@
 .import tests
 
 FILEBUF_SIZE = 1024         ; The largest fixture CHK_FILE can compare
+SCREEN_RAM = $0800          ; The 80-column screen (CHK_CELL)
 
 .bss
 
@@ -105,13 +106,16 @@ msgFixture: .asciiz "fixture missing or too long"
 msgFileByte: .asciiz "themes.dat byte"
 msgFileLen: .asciiz "themes.dat length"
 msgNotEmpty: .asciiz "the list isn't empty"
+msgCellChar: .asciiz "screen code"
+msgCellColor: .asciiz "color ram"
+msgNoRunOut: .asciiz "the theme screen returned"
 
 ; The steps (OP_* and CHK_* in tests.inc)
 stepProcs:
     .addr opInit, opRead, opWrite, opReset, opFree, opLoad, opScreen
     .addr opResetPal, opSetPal, opIsUsed
     .addr chkCount, chkSel, chkName, chkColor, chkPal, chkBg, chkBuf
-    .addr chkFile, chkEmpty
+    .addr chkFile, chkEmpty, chkCell, opScreenOut
 
 .segment "ENTRY"
 
@@ -487,6 +491,24 @@ L1: jsr getByte
     jmp failZero
 .endproc
 
+; Runs the theme screen until the key script runs out. The theme list is
+; left allocated; runTest frees it after the steps.
+.proc opScreenOut
+    jsr getByte
+    pha
+    jsr getByte
+    tax
+    pla
+    jsr themesTestSetup
+    jsr themesTestRun
+    bcc :+
+    clc
+    rts
+:   lda #<msgNoRunOut
+    ldx #>msgNoRunOut
+    jmp failZero
+.endproc
+
 .proc opResetPal
     jsr themesResetPalette
     clc
@@ -672,6 +694,58 @@ NE: inz                     ; Skip the rest of the name
     bra NE
 :   lda #<msgName
     ldx #>msgName
+    jmp failValue
+.endproc
+
+; CHK_CELL: the screen code and color RAM at a row and column of the
+; 80-column screen
+.proc chkCell
+    jsr getByte             ; Row
+    tax
+    jsr getByte             ; Column
+    sta ptr1                ; ptr1 is row * 80 + column
+    lda #0
+    sta ptr1+1
+    cpx #0
+    beq L2
+L1: clc
+    lda ptr1
+    adc #80
+    sta ptr1
+    bcc :+
+    inc ptr1+1
+:   dex
+    bne L1
+L2: lda ptr1+1
+    pha
+    clc
+    adc #>SCREEN_RAM
+    sta ptr1+1
+    ldy #0
+    lda (ptr1),y
+    jsr cmpNext
+    bne NS
+    pla                     ; Color RAM, $FF80000
+    sta ptr1+1
+    lda #$f8
+    sta ptr1+2
+    lda #$0f
+    sta ptr1+3
+    ldz #0
+    nop
+    lda (ptr1),z
+    jsr cmpNext
+    bne NC
+    clc
+    rts
+
+NS: pla
+    jsr getByte             ; Skip the color
+    lda #<msgCellChar
+    ldx #>msgCellChar
+    jmp failValue
+NC: lda #<msgCellColor
+    ldx #>msgCellColor
     jmp failValue
 .endproc
 

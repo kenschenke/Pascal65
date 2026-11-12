@@ -59,7 +59,12 @@ CHK_BUF = 17                ; THEME_COLORS bytes: loadDefaultTheme's
                             ; buffer, from SYNTAXHL_NUMBER on
 CHK_FILE = 18               ; .asciiz fixture: themes.dat has its bytes
 CHK_EMPTY = 19              ; The list is empty and currentTheme null
-OP_LAST = 19
+CHK_CELL = 20               ; .byte row, column, screen code, color RAM:
+                            ; the screen the theme screen left
+OP_SCREENOUT = 21           ; .addr key script: the theme screen, which
+                            ; must run out of keys (to check its screen
+                            ; while it waits, as in the palette)
+OP_LAST = 21
 
 ; Keys
 CR = $0d
@@ -75,6 +80,7 @@ K_E = $65
 K_G = $67
 K_N = $6e
 K_R = $72
+K_W = $77
 
 .macro TEST name, dat, def
     .local nm
@@ -167,4 +173,13 @@ nm: .asciiz name
 
 .macro CHKEMPTY
     .byte CHK_EMPTY
+.endmacro
+
+.macro DO_SCREENOUT keys
+    .byte OP_SCREENOUT
+    .addr keys
+.endmacro
+
+.macro CHKCELL row, col, char, color
+    .byte CHK_CELL, row, col, char, color
 .endmacro

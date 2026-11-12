@@ -31,6 +31,8 @@ tests:
     .addr readOld, oldPartial, oldLoad, oldWrite, oldScreen, oldReload
     .addr version2, markerOnly, markerVersion, headerOnly, newColors
     .addr newColorsLoad
+    .addr changeError, changeWarning, editErrorRgb, bgOnError, sampleScreen
+    .addr paletteHelp
     .addr 0
 
 ; The fixtures
@@ -72,6 +74,19 @@ keysBgUi:
     .byte CR, K_B, UP, UP, UP, UP, UP, CR, F1, 0
 keysReset:
     .byte CR, F8, F1, 0
+; Error, down to the next index; warning, up to the one before
+keysErr:
+    .byte CR, K_E, DOWN, CR, F1, 0
+keysWarn:
+    .byte CR, K_W, UP, CR, F1, 0
+; Error, edit: red down one
+keysErrRgb:
+    .byte CR, K_E, K_E, K_R, LEFT, CR, CR, F1, 0
+keysBgErr:
+    .byte CR, K_B, DOWN, DOWN, DOWN, DOWN, DOWN, CR, F1, 0
+; Into the palette, where the script runs out
+keysPalette:
+    .byte CR, K_E, 0
 
 ; Reading
 
@@ -481,4 +496,89 @@ newColorsLoad:
     CHKBUF 5, 4, 3, 12, 1, 10, $43, 1, $45, $4a, $4b
     CHKPAL 27, 4, 5, 6
     CHKEMPTY
+    ENDTEST
+
+; Editing the error and warning colors on the theme screen. The sample's
+; error line is screen row 8 and its warning line row 13 (codesample.s);
+; column 10 is the reversed n or i.
+
+changeError:
+    TEST "change error", three, defs
+    DO_SCREEN keysErr
+    CHKFILE "errchg"
+    CHKPAL 2, 15, 0, 0
+    CHKCELL 8, 10, $8e, 2
+    CHKCELL 13, 10, $89, 1
+    DO_LOAD
+    CHKBUF 7, 2, $42, 11, 14, 13, 8, 1, 6, 2, 1
+    ENDTEST
+
+changeWarning:
+    TEST "change warning", three, defs
+    DO_SCREEN keysWarn
+    CHKFILE "warnchg"
+    CHKPAL 0, 0, 0, 0
+    CHKCELL 13, 10, $89, 0
+    CHKCELL 8, 10, $8e, 1
+    DO_LOAD
+    CHKBUF 7, 2, $42, 11, 14, 13, 8, 1, 6, 1, 0
+    ENDTEST
+
+; The UI and warning colors share the error color's slot
+editErrorRgb:
+    TEST "edit error rgb", three, defs
+    DO_SCREEN keysErrRgb
+    CHKFILE "errrgb"
+    CHKPAL 1, 14, 15, 15
+    ENDTEST
+
+; The background lands on the error color's slot, so the error color
+; moves to the UI color's
+bgOnError:
+    TEST "background on error", newcolors, NOFILE
+    DO_SCREEN keysBgErr
+    CHKFILE "bgerr"
+    CHKBG 26
+    CHKPAL 1, 15, 15, 15
+    CHKPAL 26, 1, 2, 3
+    CHKPAL 27, 4, 5, 6
+    CHKCELL 8, 10, $8e, 1
+    CHKCELL 13, 10, $89, $4b
+    ENDTEST
+
+; The code sample's error and warning lines, reversed in their colors from
+; border to border, and the help text's E and W row
+sampleScreen:
+    TEST "sample screen", newcolors, NOFILE
+    DO_SCREEN keysSave
+    CHKCELL 8, 4, $5d, 1        ; The left border, in the UI color
+    CHKCELL 8, 5, $a0, $4a      ; Index 26
+    CHKCELL 8, 10, $8e, $4a
+    CHKCELL 8, 38, $a0, $4a
+    CHKCELL 8, 39, $5d, 1
+    CHKCELL 13, 5, $a0, $4b     ; Index 27
+    CHKCELL 13, 10, $89, $4b
+    CHKCELL 13, 38, $a0, $4b
+    CHKCELL 7, 10, $09, 10      ; i, an identifier, not reversed
+    CHKCELL 7, 14, $42, 4       ; Byte, a keyword
+    CHKCELL 17, 4, $43, 1       ; C:Comments
+    CHKCELL 20, 4, $45, 1       ; E:Error
+    CHKCELL 20, 19, $57, 1      ; W:Warning
+    CHKCELL 22, 3, $46, 1       ; F1:Save+Exit
+    CHKCELL 23, 3, $4f, 1       ; On exit
+    ENDTEST
+
+; The palette's help text replaces the main help (rows 17 to 23)
+paletteHelp:
+    TEST "palette help", three, defs
+    DO_SCREENOUT keysPalette
+    CHKCELL 17, 9, $2a, 1       ; * = Currently selected color
+    CHKCELL 17, 13, $43, 1
+    CHKCELL 18, 9, $55, 1       ; Use arrows
+    CHKCELL 20, 9, $52, 1       ; Return to use
+    CHKCELL 21, 9, $50, 1       ; Press E
+    CHKCELL 17, 4, $20, 1       ; The main help is gone
+    CHKCELL 20, 4, $20, 1
+    CHKCELL 22, 3, $20, 1
+    CHKCELL 23, 3, $20, 1
     ENDTEST

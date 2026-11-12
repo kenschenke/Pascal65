@@ -108,17 +108,27 @@ def test_blob():
     if hashlib.sha256(data).hexdigest() != BLOB_SHA256:
         fail("themes.txt format 0 doesn't match the old themes.dat")
     # The default format, for the Makefile, is 1: the blob's themes, each
-    # with copies of its UI color as the error and warning colors.
-    want = bytearray([0xFF, 1, data[0]])
-    for pos in range(1, len(data), 52):
-        record = data[pos:pos + 52]
-        ui = record[44:48]              # SYNTAXHL_FOREGROUND
-        want += record + ui + ui
+    # with its error and warning colors after the nine colors. Those two
+    # are whatever themes.txt gives (the UI color, "ui", until a theme gets
+    # its own), so only each record's first 52 bytes are compared.
     status, err, default = run(src)
-    if status != 0 or default != bytes(want):
-        fail("themes.txt default format isn't format 1 with the UI color "
-             "as error and warning")
-    elif err:
+    if status != 0 or default is None:
+        fail("themes.txt format 1: status %d: %s" % (status, err.strip()))
+        return
+    count = (len(data) - 1) // 52
+    if default[:3] != bytes([0xFF, 1, data[0]]):
+        fail("themes.txt format 1 header is %s" % default[:3].hex())
+    elif len(default) != 3 + count * 60:
+        fail("themes.txt format 1 is %d bytes, not %d"
+             % (len(default), 3 + count * 60))
+    else:
+        for n in range(count):
+            old = data[1 + n * 52:1 + (n + 1) * 52]
+            new = default[3 + n * 60:3 + n * 60 + 52]
+            if new != old:
+                fail("themes.txt format 1 theme %d isn't the old themes.dat's"
+                     % n)
+    if err:
         fail("themes.txt format 1 printed: %s" % err.strip())
 
 

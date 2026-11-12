@@ -187,7 +187,7 @@ L2: sta (ptr1),y
 
     inc currentScreenRow
     lda currentScreenRow
-    cmp #HELPTEXT_ROW+6
+    cmp #HELPTEXT_ROW+7     ; Rows 17 to 23, the main help's (screen.s)
     bne L1
 
     rts

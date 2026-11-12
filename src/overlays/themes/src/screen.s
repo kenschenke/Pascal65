@@ -28,12 +28,18 @@ CH_RIGHTSPLIT = $73
 ; Help Text
 HELPTEXT_ROW = 17
 HELPTEXT_COL = 3
+HELPTEXT_ROWS = 7           ; Rows 17 to 23
+HELPTEXT_WIDTH = 52         ; Columns 0 to 51 (the longest row ends at 50)
 
 .export initScreen, getScreenRowPtr, getColorRowPtr, refreshScreen
 .export petsciiToScreenCode
 
 .import drawCodeSample, drawColorPalette, inPaletteMode, inThemeList
 .import getColorFromTheme, toVIC
+
+.bss
+
+helpRow: .res 1             ; The row clearHelpText is on
 
 .data
 
@@ -43,6 +49,8 @@ helpText2:
     .asciiz " B:Background   R:Cursor     O:Operators"
 helpText3:
     .asciiz " S:Strings      N:Numbers    F:Foreground"
+helpTextErr:
+    .asciiz " E:Error        W:Warning"
 helpText4:
     .asciiz "F1:Save+Exit   F5:Themes    F8:Reset to Defaults"
 helpText5:
@@ -60,35 +68,24 @@ helpText5:
     rts
 .endproc
 
+; Clears the rows of the help text, left of the palette and the theme
+; list. The palette's help text is drawn there too.
 .proc clearHelpText
     lda #HELPTEXT_ROW
+    sta helpRow
+L1: lda helpRow
     jsr getScreenRowPtr
-    jsr clearHelpTextRow
-
-    lda #HELPTEXT_ROW+1
-    jsr getScreenRowPtr
-    jsr clearHelpTextRow
-
-    lda #HELPTEXT_ROW+2
-    jsr getScreenRowPtr
-    jsr clearHelpTextRow
-
-    lda #HELPTEXT_ROW+3
-    jsr getScreenRowPtr
-    jsr clearHelpTextRow
-
-    rts
-.endproc
-
-; Screen RAM in A/X
-.proc clearHelpTextRow
     sta ptr1
     stx ptr1+1
     lda #' '
     ldy #0
-L1: sta (ptr1),y
+L2: sta (ptr1),y
     iny
-    cpy #45
+    cpy #HELPTEXT_WIDTH
+    bne L2
+    inc helpRow
+    lda helpRow
+    cmp #HELPTEXT_ROW+HELPTEXT_ROWS
     bne L1
     rts
 .endproc
@@ -111,14 +108,19 @@ L1: sta (ptr1),y
     ldy #HELPTEXT_ROW+2
     jsr drawHelpTextRow
 
+    lda #<helpTextErr
+    ldx #>helpTextErr
+    ldy #HELPTEXT_ROW+3
+    jsr drawHelpTextRow
+
     lda #<helpText4
     ldx #>helpText4
-    ldy #HELPTEXT_ROW+4
+    ldy #HELPTEXT_ROW+5
     jsr drawHelpTextRow
 
     lda #<helpText5
     ldx #>helpText5
-    ldy #HELPTEXT_ROW+5
+    ldy #HELPTEXT_ROW+6
     jsr drawHelpTextRow
 
     rts
