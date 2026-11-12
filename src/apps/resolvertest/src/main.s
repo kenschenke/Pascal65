@@ -91,6 +91,12 @@ main:
     sec
     jsr runTest
 
+    ; Run the subrange test
+    lda #9
+    ldx #0
+    clc
+    jsr runTest
+
     ; Run resolver error tests
     jsr runErrorTests
 

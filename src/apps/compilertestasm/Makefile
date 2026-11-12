@@ -259,6 +259,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/forord.pas forord.pas,seq \
 	-write $(PETSCIIDIR)/declordr.pas declordr.pas,seq \
 	-write $(PETSCIIDIR)/negate.pas negate.pas,seq \
+	-write $(PETSCIIDIR)/subrange.pas subrange.pas,seq \
 	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq \
 	-write $(PETSCIIDIR)/divint.pas divint.pas,seq \
 	-write $(PETSCIIDIR)/trig.pas trig.pas,seq \

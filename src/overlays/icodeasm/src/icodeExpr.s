@@ -674,7 +674,25 @@ L2: lda rightType
     pla
     sta rightType+type::flags
 
-L3: lda rightType+type::flags
+    ; A variable of a subrange type is read and written as its subrange's
+    ; integer, character or enumeration type
+L3: lda rightType
+    cmp #TYPE_SUBRANGE
+    bne LS
+    ldq rightType+type::subtype
+    jsr isQZero
+    beq LS
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_ENUMERATION_VALUE ; An enumeration subrange (see getBaseType)
+    bne :+
+    lda #TYPE_ENUMERATION
+:   sta rightType
+
+LS: lda rightType+type::flags
     and #TYPE_FLAG_ISRETVAL
     beq :+
     lda #IC_PSH

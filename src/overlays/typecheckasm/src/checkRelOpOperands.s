@@ -96,16 +96,29 @@ L2: lda #leftTypeOffset
     ; If both are not signed or both are not unsigned, issue a warning.
     jsr checkIntegerOperands
 
-    ldz #leftTypePtrOffset
-    jsr loadStackValue
+    ; Check the base types, so that an operand of a subrange type is its
+    ; subrange's integer or character type
+    lda #leftTypeOffset
+    jsr calcTypePtr
     stq ptr1
     ldz #type::kind
     nop
     lda (ptr1),z
-    jsr isTypeNumeric
+    cmp #TYPE_CHARACTER
+    bne :+
+    lda #rightTypeOffset
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_CHARACTER
+    beq DN
+    bra L3
+:   jsr isTypeNumeric
     bne L3
-    ldz #rightTypePtrOffset
-    jsr loadStackValue
+    lda #rightTypeOffset
+    jsr calcTypePtr
     stq ptr1
     ldz #type::kind
     nop

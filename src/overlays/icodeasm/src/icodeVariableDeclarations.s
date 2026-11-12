@@ -120,6 +120,11 @@ L2: ldz #decl::type
     bne :+
     jsr wordValue
     jmp L3
+    ; The base type of an enumeration subrange (see getBaseType)
+:   cmp #TYPE_ENUMERATION_VALUE
+    bne :+
+    jsr wordValue
+    jmp L3
 :   cmp #TYPE_CHARACTER
     bne :+
     jsr charValue

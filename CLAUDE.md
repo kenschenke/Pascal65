@@ -238,6 +238,17 @@ and Word and Cardinal LongInt (`evalNegate`). icode converts the operand to
 that type (`IC_CVI`) and negates it (`IC_NEG`), and codegen calls
 `RT_NEGATE`.
 
+### Subranges
+
+A subrange's limits must both be integers, both characters or both values
+of one enumeration. A limit can be a constant, so the resolver checks them
+(`resolveSubranges`), not the parser. It gives an integer subrange the
+narrowest of Byte, Word or Cardinal (low limit not negative) or ShortInt,
+Integer or LongInt that holds both limits, and a character one Char. An
+enumeration subrange keeps the parser's subtype, a declared type named
+after its low limit (see `getBaseType`). It runs before the declaration's
+symbol copies the type.
+
 ### Source line length
 
 Source lines are limited to 80 characters. This limitation includes comments.

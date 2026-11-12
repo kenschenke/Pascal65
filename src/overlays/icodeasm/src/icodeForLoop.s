@@ -235,9 +235,8 @@ L3: jsr pushA               ; operation
 .endproc
 
 ; Control type kind left in A. This is the kind of the control variable's
-; base type, from the type checker. The kind icodeExprRead returns is the
-; kind of the variable's own type, which for a subrange such as 'a'..'e'
-; is TYPE_SUBRANGE. The comparisons, Succ and Pred need the base kind.
+; base type, from the type checker, which the comparisons, Succ and Pred
+; need. For a subrange such as 'a'..'e' it is the subrange's base type.
 .proc evaluateControlExpression
     jsr getControlExpression
     jsr icodeExprRead

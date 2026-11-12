@@ -19,6 +19,7 @@
 ;    6: Functions and procedures
 ;    7: Pointers
 ;    8: Units
+;    9: Subranges
 
 .export runTests
 

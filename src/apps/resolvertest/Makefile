@@ -146,6 +146,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/test7.pas test7.pas,seq \
 	-write $(PETSCIIDIR)/test8.pas test8.pas,seq \
 	-write $(PETSCIIDIR)/test8unit.pas test8unit.pas,seq \
+	-write $(PETSCIIDIR)/test9.pas test9.pas,seq \
 	-write $(PETSCIIDIR)/error1.pas error1.pas,seq \
 	-write $(PETSCIIDIR)/error2.pas error2.pas,seq \
 	-write $(PETSCIIDIR)/error3.pas error3.pas,seq \
@@ -158,6 +159,13 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/error10.pas error10.pas,seq \
 	-write $(PETSCIIDIR)/error11.pas error11.pas,seq \
 	-write $(PETSCIIDIR)/error12.pas error12.pas,seq \
+	-write $(PETSCIIDIR)/error13.pas error13.pas,seq \
+	-write $(PETSCIIDIR)/error14.pas error14.pas,seq \
+	-write $(PETSCIIDIR)/error15.pas error15.pas,seq \
+	-write $(PETSCIIDIR)/error16.pas error16.pas,seq \
+	-write $(PETSCIIDIR)/error17.pas error17.pas,seq \
+	-write $(PETSCIIDIR)/error18.pas error18.pas,seq \
+	-write $(PETSCIIDIR)/error19.pas error19.pas,seq \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq
 

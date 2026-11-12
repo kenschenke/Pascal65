@@ -59,6 +59,7 @@ strNamedIdx: .asciiz "namedidx"
 strForOrd: .asciiz "forord"
 strDeclOrdr: .asciiz "declordr"
 strNegate: .asciiz "negate"
+strSubrange: .asciiz "subrange"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
@@ -107,6 +108,7 @@ tests:
     .byte .lobyte(strForOrd), .hibyte(strForOrd)
     .byte .lobyte(strDeclOrdr), .hibyte(strDeclOrdr)
     .byte .lobyte(strNegate), .hibyte(strNegate)
+    .byte .lobyte(strSubrange), .hibyte(strSubrange)
 .endif
 .if TESTSET = 0 || TESTSET = 2
     .byte .lobyte(strSubtract), .hibyte(strSubtract)

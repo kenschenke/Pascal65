@@ -25,6 +25,7 @@ kindOffset = 0
 .import currentLineNumber, resolveDeclarationName, injectUnit
 .import exprResolve, getTypeSize, resolveArrayDecl, resolveDeclared
 .import resolveEnumDecl, resolveRecordDecl, resolveDeclCode, calcNamePtr
+.import resolveSubranges
 
 .proc resolveDeclaration
     jsr determineScopeKind
@@ -45,7 +46,20 @@ kindOffset = 0
     lda (ptr1),z
     sta currentLineNumber+1
 
+    ; Check the limits of the subranges in the type and give them their
+    ; subtypes. This comes first: resolveDeclarationName copies the type
+    ; into the declaration's symbol.
+    jsr getTypePtr
+    ldq ptr1
+    jsr resolveSubranges
+
     ; Does the declaration have a name?
+    ldz #declOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
     ldz #decl::name
     nop
     lda (ptr1),z

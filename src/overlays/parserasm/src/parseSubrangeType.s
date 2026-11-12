@@ -19,7 +19,7 @@
 
 .export parseSubrangeType
 
-.import parseSubrangeLimit, condGetToken, doResync, parserToken, parserError
+.import parseSubrangeLimit, condGetToken, doResync, parserToken
 .import tlSubrangeLimitFollow, tlDeclarationStart
 
 allowShorthandOffset = 0
@@ -30,7 +30,6 @@ nameOffset = allowShorthandOffset + 1
 subrangeType: .res 4
 declaredType: .res 4
 minType: .res 1
-maxType: .res 1
 subrangeMin: .res 4
 subrangeMax: .res 4
 
@@ -48,7 +47,6 @@ subrangeMax: .res 4
     taz
     stq subrangeType
     sta minType
-    sta maxType
     stq subrangeMin
     stq subrangeMax
 
@@ -79,8 +77,6 @@ subrangeMax: .res 4
     cmp #tcDotDot
     beq L1
     ; Only one value so minValue = 0 and maxValue = value
-    lda minType
-    sta maxType
     ldq subrangeMin
     stq ptr1
     ldz #expr::value
@@ -140,15 +136,12 @@ L1: lda #tcDotDot
     ldx #>subrangeMax
     jsr pushAX
     jsr parseSubrangeLimit
-    sta maxType
 
-L2: lda minType
-    cmp maxType
-    beq :+
-    lda #errIncompatibleTypes
-    jsr parserError
-
-:   lda #TYPE_SUBRANGE
+    ; The resolver checks that the limits are of the same general type
+    ; (both integers, characters or values of one enumeration) and sets
+    ; the subtype of an integer or character subrange. A limit can be a
+    ; constant, which the parser can't see.
+L2: lda #TYPE_SUBRANGE
     jsr pushA
     lda #0
     jsr pushA

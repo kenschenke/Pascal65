@@ -2,6 +2,14 @@
     FIX: Fix the parser when recovering from an error
     FIX: Unary minus of a variable, expression or function call was ignored
     FIX: A negative real number, such as -2.5, was positive
+    FIX: Subrange limits of different integer types, such as 1..1000 or
+         a constant and a number, were refused
+    FIX: A subrange's variables are the integer type that holds both
+         limits, such as Integer for -1000..1000
+    FIX: Comparing a variable of a subrange type was refused
+    FIX: Negative and character values of a subrange variable were wrong
+    FIX: A variable of an enumeration subrange type, such as Red..Green,
+         corrupted the variables declared after it
 
 0.36-beta Nov 10 2026
     NEW: Compiler warning for possible loss of precision

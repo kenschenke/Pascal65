@@ -1,12 +1,12 @@
 (*
-    Error Test 54 - expect errIncompatibleTypes on line 9
-    Subrange limits of different types
+    Error Test 54 - expect errInvalidType on line 9
+    Subrange without a low limit
 *)
 
 Program Test;
 
 Var
-    x : 1..'z';
+    x : ..5;
 
 Begin
 End.
