@@ -24,7 +24,7 @@
 
 .bss
 
-themeColors: .res 10
+themeColors: .res THEME_BUFSIZE
 
 .code
 

@@ -1,0 +1,16 @@
+# One theme whose error and warning colors have their own palette slots,
+# so the palette and loadDefaultTheme's buffer show them.
+selected 0
+
+theme New Colors
+number       5
+keyword      4
+string       3
+comment     12
+operator     1
+identifier  10
+cursor      19
+ui           1
+background  21
+error       26  1  2  3
+warning     27  4  5  6

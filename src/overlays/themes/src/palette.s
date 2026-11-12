@@ -539,7 +539,7 @@ L1: nop
     inz
     inz
     inx
-    cpx #9              ; The colors in a theme
+    cpx #THEME_COLORS
     bne L1
     lda #1              ; Turn off the Z flag
 L2: rts

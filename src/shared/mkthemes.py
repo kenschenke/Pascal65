@@ -15,18 +15,18 @@ Input (see themes.txt):
 Every theme names each color once, in any order. The colors are written in
 SYNTAXHL_* order (src/asminc/editor.inc).
 
-Output, format 0 (no version marker):
+Output, format 0 (the old file, no version marker):
 
     byte 0      selected theme number
-    records     THEME_SIZE (52) bytes: a 16-byte PETSCII name, then
+    records     52 bytes: a 16-byte PETSCII name, then
                 9 colors of 4 bytes (index, R, G, B)
 
-Format 1:
+Format 1 (the default):
 
     byte 0      $FF marker
     byte 1      $01 format version
     byte 2      selected theme number
-    records     60 bytes: the name, then 11 colors
+    records     THEME_SIZE (60) bytes: the name, then 11 colors
 
 Format 0 ignores the error and warning colors if a theme has them.
 
@@ -288,8 +288,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Write a theme file.")
     ap.add_argument("input", help="theme text file (themes.txt)")
     ap.add_argument("-o", "--output", required=True, help="file to write")
-    ap.add_argument("--format", type=int, choices=(0, 1), default=0,
-                    help="0: unmarked 9-color file (default), 1: version 1")
+    ap.add_argument("--format", type=int, choices=(0, 1), default=1,
+                    help="0: the old unmarked 9-color file, 1: version 1 "
+                    "(default)")
     ap.add_argument("--version", type=lambda s: int(s, 0), default=None,
                     help="write this version byte (format 1, for tests)")
     ap.add_argument("--selected", type=lambda s: int(s, 0), default=None,

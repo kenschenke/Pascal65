@@ -26,8 +26,11 @@ tests:
     .addr writeSame, writeFallback, writeBuiltin
     .addr resetDefs, resetBuiltin, resetPalette, colorUsed
     .addr saveSame, pickDown, pickUp, pickPastEnd, saveReload
-    .addr changeNumber, editRgb, changeBg, bgOnUi
+    .addr changeNumber, editRgb, changeBg, changeBgReload, bgOnUi
     .addr screenReset, screenResetBuiltin
+    .addr readOld, oldPartial, oldLoad, oldWrite, oldScreen, oldReload
+    .addr version2, markerOnly, markerVersion, headerOnly, newColors
+    .addr newColorsLoad
     .addr 0
 
 ; The fixtures
@@ -38,6 +41,13 @@ sel9: .asciiz "sel9"
 partialFx: .asciiz "partial"
 onlysel: .asciiz "onlysel"
 defs: .asciiz "defs"
+old: .asciiz "old"
+oldpart: .asciiz "oldpart"
+version2Fx: .asciiz "version2"
+marker: .asciiz "marker"
+markerver: .asciiz "markerver"
+hdronly: .asciiz "hdronly"
+newcolors: .asciiz "newcolors"
 
 ; The key scripts. The theme screen starts in the theme list, which takes
 ; arrows and Return; F5 goes back to it.
@@ -115,7 +125,7 @@ readTwice:
 loadBuffer:
     TEST "load buffer", three, defs
     DO_LOAD
-    CHKBUF 7, 2, $42, 11, 14, 13, 8, 1, 6
+    CHKBUF 7, 2, $42, 11, 14, 13, 8, 1, 6, 1, 1
     CHKPAL 18, 15, 11, 0
     CHKBG 6
     CHKEMPTY
@@ -124,7 +134,7 @@ loadBuffer:
 loadAlpha:
     TEST "load alpha", three0, defs
     DO_LOAD
-    CHKBUF 5, 4, 3, 12, 1, 10, $43, 1, $45
+    CHKBUF 5, 4, 3, 12, 1, 10, $43, 1, $45, 1, 1
     CHKPAL 21, 2, 3, 5
     CHKBG 21
     CHKEMPTY
@@ -251,13 +261,16 @@ resetPalette:
     CHKPAL 31, 15, 3, 6
     ENDTEST
 
-; fakeTheme (main.s) uses 2 to 10. Its next pointer's low byte is 30.
+; fakeTheme (main.s) uses 2 to 12; 11 and 12 are the error and warning
+; colors. Its next pointer's low byte is 30.
 colorUsed:
     TEST "color used", NOFILE, NOFILE
     DO_ISUSED 2, 1
     DO_ISUSED 10, 1
+    DO_ISUSED 11, 1
+    DO_ISUSED 12, 1
     DO_ISUSED 0, 0
-    DO_ISUSED 11, 0
+    DO_ISUSED 13, 0
     DO_ISUSED 30, 0
     ENDTEST
 
@@ -318,6 +331,19 @@ changeBg:
     CHKBG 7
     ENDTEST
 
+; The error and warning colors share the UI color's slot. They take its new
+; RGB, so loading the theme again (they are written to the palette after
+; it) leaves the UI color black.
+changeBgReload:
+    TEST "change background reload", three, defs
+    DO_SCREEN keysBg
+    DO_INIT
+    CHKCOLOR 1, SYNTAXHL_ERROR, 1, 0, 0, 0
+    CHKCOLOR 1, SYNTAXHL_WARNING, 1, 0, 0, 0
+    CHKPAL 1, 0, 0, 0
+    CHKBG 7
+    ENDTEST
+
 bgOnUi:
     TEST "background on ui", three, defs
     DO_SCREEN keysBgUi
@@ -335,4 +361,124 @@ screenResetBuiltin:
     TEST "screen reset built-in", three, NOFILE
     DO_SCREEN keysReset
     CHKFILE "builtin"
+    ENDTEST
+
+; Version 0 files. Each theme gets copies of its UI color as its error and
+; warning colors: Alpha's is 1 13 13 13, Beta's 1 (white) and Gamma's 0.
+
+readOld:
+    TEST "read version 0", old, defs
+    DO_INIT
+    CHKCOUNT 3
+    CHKSEL 1
+    CHKNAME 2, "Gamma"
+    CHKCOLOR 0, SYNTAXHL_BACKGROUND, 21, 2, 3, 5
+    CHKCOLOR 0, SYNTAXHL_ERROR, 1, 13, 13, 13
+    CHKCOLOR 0, SYNTAXHL_WARNING, 1, 13, 13, 13
+    CHKCOLOR 1, SYNTAXHL_ERROR, 1, 15, 15, 15
+    CHKCOLOR 1, SYNTAXHL_WARNING, 1, 15, 15, 15
+    CHKCOLOR 2, SYNTAXHL_BACKGROUND, 1, 15, 15, 15
+    CHKCOLOR 2, SYNTAXHL_ERROR, 0, 0, 0, 0
+    CHKCOLOR 2, SYNTAXHL_WARNING, 0, 0, 0, 0
+    CHKBG 6
+    ENDTEST
+
+; The partial third theme is dropped
+oldPartial:
+    TEST "version 0 partial", oldpart, defs
+    DO_INIT
+    CHKCOUNT 2
+    CHKSEL 1
+    CHKNAME 1, "Beta"
+    CHKCOLOR 1, SYNTAXHL_WARNING, 1, 15, 15, 15
+    ENDTEST
+
+oldLoad:
+    TEST "version 0 load", old, defs
+    DO_LOAD
+    CHKBUF 7, 2, $42, 11, 14, 13, 8, 1, 6, 1, 1
+    CHKEMPTY
+    ENDTEST
+
+; Writing a version 0 list writes version 1
+oldWrite:
+    TEST "version 0 write", old, defs
+    DO_INIT
+    DO_WRITE
+    CHKFILE "three"
+    ENDTEST
+
+oldScreen:
+    TEST "version 0 screen save", old, defs
+    DO_SCREEN keysSave
+    CHKFILE "three"
+    ENDTEST
+
+oldReload:
+    TEST "version 0 save and reload", old, defs
+    DO_SCREEN keysSave
+    DO_INIT
+    CHKCOUNT 3
+    CHKSEL 1
+    CHKCOLOR 2, SYNTAXHL_ERROR, 0, 0, 0, 0
+    CHKCOLOR 0, SYNTAXHL_WARNING, 1, 13, 13, 13
+    CHKBG 6
+    ENDTEST
+
+; Unreadable version 1 files fall back to themes.def
+
+version2:
+    TEST "version 2", version2Fx, defs
+    DO_INIT
+    CHKCOUNT 2
+    CHKSEL 1
+    CHKNAME 0, "Def One"
+    CHKBG 30
+    ENDTEST
+
+markerOnly:
+    TEST "marker only", marker, defs
+    DO_INIT
+    CHKCOUNT 2
+    CHKSEL 1
+    CHKNAME 0, "Def One"
+    ENDTEST
+
+markerVersion:
+    TEST "marker and version", markerver, defs
+    DO_INIT
+    CHKCOUNT 2
+    CHKSEL 1
+    CHKNAME 0, "Def One"
+    ENDTEST
+
+headerOnly:
+    TEST "header only", hdronly, defs
+    DO_INIT
+    CHKCOUNT 2
+    CHKSEL 1
+    CHKNAME 0, "Def One"
+    ENDTEST
+
+; The error and warning colors in their own palette slots
+
+newColors:
+    TEST "new colors", newcolors, NOFILE
+    DO_INIT
+    CHKCOUNT 1
+    CHKSEL 0
+    CHKCOLOR 0, SYNTAXHL_ERROR, 26, 1, 2, 3
+    CHKCOLOR 0, SYNTAXHL_WARNING, 27, 4, 5, 6
+    CHKPAL 26, 1, 2, 3
+    CHKPAL 27, 4, 5, 6
+    DO_WRITE
+    CHKFILE "newcolors"
+    ENDTEST
+
+newColorsLoad:
+    TEST "new colors load", newcolors, NOFILE
+    DO_LOAD
+    CHKBUF 5, 4, 3, 12, 1, 10, $43, 1, $45, $4a, $4b
+    CHKPAL 27, 4, 5, 6
+    CHKEMPTY
     ENDTEST

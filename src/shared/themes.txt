@@ -7,7 +7,9 @@
 #   <color> <other color>         a copy of the theme's other color
 # The colors are number, keyword, string, comment, operator, identifier,
 # cursor, ui, background, error and warning. Every theme names each once,
-# in any order. Format 0 (today's file) ignores error and warning.
+# in any order. Format 0 (the old file) ignores error and warning. The
+# error and warning colors are placeholders for now: copies of the UI
+# color, which can't clash with the theme's palette.
 #
 # A color's RGB is written into its palette slot, so two colors on the
 # same index should have the same RGB; the generator warns if they don't.
@@ -25,6 +27,8 @@ identifier  10 15 10  7
 cursor      19 14 14  0
 ui           1 13 13 13
 background  21  2  3  5
+error       ui
+warning     ui
 
 theme Mint
 number       5 15  6  0
@@ -36,6 +40,8 @@ identifier   4 15  0 15
 cursor      19  0  9  0
 ui           1  8  3  0
 background  21  0 15  9
+error       ui
+warning     ui
 
 theme Green CRT
 number       5  0 11  0
@@ -47,6 +53,8 @@ identifier   4  0 10  0
 cursor      19  0 11  0
 ui           1  2 14  2
 background  21  2  2  2
+error       ui
+warning     ui
 
 theme Amber CRT
 number       5 13 10  0
@@ -58,6 +66,8 @@ identifier   4 14  9  0
 cursor      19 15 11  0
 ui           1 15 11  0
 background  21  2  2  2
+error       ui
+warning     ui
 
 theme Bumblebee
 number       5  0  9  0
@@ -69,6 +79,8 @@ identifier   4 10  4  0
 cursor      19 12  0 15
 ui           1  0  0  0
 background  21 14 14  0
+error       ui
+warning     ui
 
 theme Cosmic Brownie
 number       5  0 15  0
@@ -80,6 +92,8 @@ identifier   4 15  0 15
 cursor      19 14 14  0
 ui           1 15 11  9
 background  21  3  1  0
+error       ui
+warning     ui
 
 theme Happy Holidays
 number      22  0 14  3
@@ -91,6 +105,8 @@ identifier   4  8 12 15
 cursor      19 14 14  0
 ui           5  0 12  0
 background  16  9  0  0
+error       ui
+warning     ui
 
 theme Halloween
 number       5  0 15  0
@@ -102,6 +118,8 @@ identifier   4 15  0 15
 cursor      19 14 14  0
 ui           1 15  6  0
 background  21  0  3  0
+error       ui
+warning     ui
 
 theme Classic MEGA65
 number       5  0 15  0
@@ -113,6 +131,8 @@ identifier   4  9  9 15
 cursor      19 14 14  0
 ui           1 15 15 15
 background  21  0  0 15
+error       ui
+warning     ui
 
 theme Commodore 64
 number       5  0 15  0
@@ -124,6 +144,8 @@ identifier   4 15  0 15
 cursor      19 10 10 15
 ui           1 10 10 15
 background  21  1  1 15
+error       ui
+warning     ui
 
 theme Commodore 128
 number       5  0 15  0
@@ -135,6 +157,8 @@ identifier   4 15  0 15
 cursor      19 14 14  0
 ui           1  0 13 13
 background  21  0  0  0
+error       ui
+warning     ui
 
 theme Bubblegum
 number      16 14  0  0
@@ -146,3 +170,5 @@ identifier   4  7  0 15
 cursor       2 15  0  0
 ui          30 15  0 11
 background  21 15 11 14
+error       ui
+warning     ui

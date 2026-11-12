@@ -48,7 +48,7 @@ failExp: .res 1
 failAct: .res 1
 cmdBuf: .res 40             ; A DOS command or a filename
 cmdLen: .res 1
-colorBuf: .res 10           ; loadDefaultTheme's buffer
+colorBuf: .res THEME_BUFSIZE ; loadDefaultTheme's buffer
 fileLen: .res 2
 filePos: .res 2
 fileBuf: .res FILEBUF_SIZE
@@ -68,6 +68,8 @@ fakeTheme:
     .byte  8, 0, 0, 0
     .byte  9, 0, 0, 0
     .byte 10, 0, 0, 0
+    .byte 11, 0, 0, 0       ; SYNTAXHL_ERROR
+    .byte 12, 0, 0, 0       ; SYNTAXHL_WARNING
     .byte 30, 0, 0, 0       ; THEME::next
 .assert * - fakeTheme = .sizeof(THEME), error, "fakeTheme is the wrong size"
 
@@ -458,7 +460,7 @@ L1: jsr getByte
 
 ; Fills the buffer so the bytes loadDefaultTheme doesn't write show
 .proc opLoad
-    ldx #9
+    ldx #THEME_BUFSIZE-1
     lda #$ee
 :   sta colorBuf,x
     dex
@@ -755,13 +757,13 @@ L1: ldx tmp3
     bne NE
     inc tmp3
     lda tmp3
-    cmp #10
+    cmp #THEME_BUFSIZE
     bne L1
     clc
     rts
 NE: inc tmp3                ; Skip the rest of the buffer
     lda tmp3
-    cmp #10
+    cmp #THEME_BUFSIZE
     beq :+
     jsr getByte
     bra NE

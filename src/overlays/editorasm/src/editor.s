@@ -63,7 +63,7 @@ statusmsg_dirty: .res 1
 anyDirtyRows: .res 1
 loopCode: .res 1
 compileFn: .res 17
-themeColors: .res 10
+themeColors: .res THEME_BUFSIZE
 
 rowPtrs: .res 200           ; 50 rows * 4 bytes -- pointers to screen memory for each row
 colorPtrs: .res 200         ; 50 rows * 4 bytes -- pointers to color RAM
@@ -120,7 +120,7 @@ freeLinePtr: .res 4         ; The line editorFreeLine is freeing
     rts
 .endproc
 
-; Source in A/X
+; Source in A/X: a buffer of THEME_BUFSIZE bytes (see loadDefaultTheme)
 .proc copyThemeColors
     sta ptr1
     stx ptr1+1
@@ -131,7 +131,7 @@ L1: lda (ptr1),y
     sta themeColors,x
     iny
     inx
-    cpy #10
+    cpy #THEME_BUFSIZE
     bne L1
 
     rts

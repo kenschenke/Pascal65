@@ -3,6 +3,7 @@
 
 - themes.txt in format 0 must match the old src/shared/themes.dat blob,
   which was removed once it matched byte for byte (its SHA-256 is below).
+  In format 1, the default, each theme also has copies of its UI color.
 - mkthemes-tests/good.txt must make the bytes written out here, in both
   formats, with --version, --selected and --truncate, and warn about its palette clash.
 - Every other mkthemes-tests/*.txt is a bad input. Its first line is
@@ -106,16 +107,25 @@ def test_blob():
              % (len(data), BLOB_SIZE))
     if hashlib.sha256(data).hexdigest() != BLOB_SHA256:
         fail("themes.txt format 0 doesn't match the old themes.dat")
-    # The default format, for the Makefile, is 0 until the editor reads 1.
+    # The default format, for the Makefile, is 1: the blob's themes, each
+    # with copies of its UI color as the error and warning colors.
+    want = bytearray([0xFF, 1, data[0]])
+    for pos in range(1, len(data), 52):
+        record = data[pos:pos + 52]
+        ui = record[44:48]              # SYNTAXHL_FOREGROUND
+        want += record + ui + ui
     status, err, default = run(src)
-    if status != 0 or default != data:
-        fail("themes.txt default format isn't format 0")
+    if status != 0 or default != bytes(want):
+        fail("themes.txt default format isn't format 1 with the UI color "
+             "as error and warning")
+    elif err:
+        fail("themes.txt format 1 printed: %s" % err.strip())
 
 
 def test_good():
     src = os.path.join(TESTDIR, "good.txt")
     checks = [
-        ((), GOOD_V0),
+        ((), GOOD_V1),
         (("--format", "0"), GOOD_V0),
         (("--format", "1"), GOOD_V1),
         (("--format", "1", "--version", "2"),

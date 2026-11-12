@@ -23,12 +23,17 @@
 
 ; Theme files are little more than just dumps of the THEME structure.
 ;
-; The first byte of the theme file is the zero-based theme number
-; that is currently selected for the editor.
+; Version 1 (THEME_VERSION) starts with THEME_MARKER ($FF), the version
+; and the zero-based number of the theme selected for the editor. Then
+; come THEME_SIZE-byte themes until the end of the file.
 ;
-; Following the theme number, the file consists of THEME structures.
+; Version 0, the old file, has no marker. It starts with the selected
+; theme number, which is never $FF, and its themes are THEME_SIZE_V0 bytes:
+; no error or warning color. Each gets copies of its UI color as those
+; (see addRecord). writeThemeFile always writes version 1.
 ;
-; A file that is missing, or has no complete theme, is unreadable. Then
+; A file that is missing, has another version, or has no complete theme,
+; is unreadable. Then
 ; themes.dat falls back to themes.def, and themes.def to the built-in
 ; theme, so the list always has at least one theme. A partial theme at the
 ; end of a file is dropped. setCurrentTheme puts a selected number past
@@ -39,6 +44,7 @@
 lastTheme: .res 4
 filenamePtr: .res 2
 recordPos: .res 1           ; The bytes of the record read so far
+recordLen: .res 1           ; THEME_SIZE, or THEME_SIZE_V0 in version 0
 
 .data
 
@@ -57,6 +63,8 @@ builtinTheme:
     .byte 19, 14, 14,  0    ; SYNTAXHL_CURSOR
     .byte  1, 13, 13, 13    ; SYNTAXHL_FOREGROUND
     .byte 21,  2,  3,  5    ; SYNTAXHL_BACKGROUND
+    .byte  1, 13, 13, 13    ; SYNTAXHL_ERROR, the UI color for now
+    .byte  1, 13, 13, 13    ; SYNTAXHL_WARNING, the UI color for now
 .assert * - builtinTheme = THEME_SIZE, error, "builtinTheme is the wrong size"
 
 .code
@@ -148,7 +156,7 @@ L1: ldq lastTheme
 .endproc
 
 ; Reads the file filenamePtr names into themeList. The list is empty if
-; the file doesn't exist or has no complete theme.
+; the file doesn't exist, has another version or has no complete theme.
 .proc readThemeFileX
     ; Initialize the theme list
     lda #0
@@ -182,11 +190,22 @@ L1: ldq lastTheme
     ldx #1
     jsr CHKIN
 
-    ; Read the selected theme number
-    jsr CHRIN
-    sta selectedThemeNum
-    lda STATUS
-    bne CL              ; Nothing follows it
+    ; The header. Themes must follow it.
+    jsr readByte
+    bne CL
+    cmp #THEME_MARKER
+    beq V1
+    ldx #THEME_SIZE_V0  ; Version 0: A is the selected number
+    bra SL
+V1: jsr readByte
+    bne CL
+    cmp #THEME_VERSION
+    bne CL              ; Another version: unreadable
+    jsr readByte
+    bne CL
+    ldx #THEME_SIZE
+SL: sta selectedThemeNum
+    stx recordLen
 
     ; Read a theme
 L1: jsr allocTheme
@@ -200,18 +219,18 @@ L2: jsr CHRIN
     lda STATUS
     bne EF              ; The end of the file, or an error
     lda recordPos
-    cmp #THEME_SIZE
+    cmp recordLen
     bne L2
-    jsr addTheme
+    jsr addRecord
     bra L1
 
     ; The last byte of the file is good. It must end a theme.
 EF: and #$40
     beq PT              ; A read error
     lda recordPos
-    cmp #THEME_SIZE
+    cmp recordLen
     bne PT
-    jsr addTheme
+    jsr addRecord
     bra CL
 
     ; Drop a partial theme
@@ -221,6 +240,47 @@ PT: ldq ptr1
 CL: lda #1
     jsr CLOSE
     jmp CLRCHN
+.endproc
+
+; Reads a byte of the file into A. The Z flag is clear if it was the last
+; byte or the read failed (STATUS isn't zero). X is lost.
+.proc readByte
+    jsr CHRIN
+    ldx STATUS
+    rts
+.endproc
+
+; The offset of the UI color in a THEME
+UI_COLOR = THEME::colors + (SYNTAXHL_FOREGROUND - 1) * THEME_COLOR_SIZE
+
+; addRecord fills in the colors past the end of a version 0 theme, and
+; finds each byte's source by its offset in the color.
+.assert SYNTAXHL_ERROR = THEME_COLORS_V0 + 1, error, "error isn't first new"
+.assert SYNTAXHL_WARNING = THEME_COLORS, error, "warning isn't last"
+.assert THEME_COLOR_SIZE = 4, error, "addRecord assumes 4-byte colors"
+.assert (UI_COLOR & 3) = 0, error, "addRecord assumes UI_COLOR is aligned"
+
+; Adds the theme just read, in ptr1, to the list. A version 0 theme first
+; gets copies of its UI color as its error and warning colors.
+.proc addRecord
+    ldx recordLen
+    cpx #THEME_SIZE
+    beq DN
+    ; X is THEME_SIZE_V0, the first byte of the error color
+L1: txa
+    and #THEME_COLOR_SIZE-1
+    ora #UI_COLOR
+    taz
+    nop
+    lda (ptr1),z        ; The same byte of the UI color
+    phx
+    plz
+    nop
+    sta (ptr1),z
+    inx
+    cpx #THEME_SIZE
+    bne L1
+DN: jmp addTheme
 .endproc
 
 .proc writeThemeFile
@@ -249,7 +309,11 @@ CL: lda #1
     ldx #1
     jsr CHKOUT
 
-    ; Write the selected theme number
+    ; The version 1 header and the selected theme number
+    lda #THEME_MARKER
+    jsr CHROUT
+    lda #THEME_VERSION
+    jsr CHROUT
     lda selectedThemeNum
     jsr CHROUT
 

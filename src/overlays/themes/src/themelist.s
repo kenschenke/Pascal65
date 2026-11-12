@@ -599,7 +599,7 @@ L2: nop
     inz
     inc tmp1
     lda tmp1
-    cmp #10
+    cmp #THEME_BUFSIZE      ; Past the last SYNTAXHL_* color
     bne L2
 
     rts
@@ -626,24 +626,35 @@ L2: nop
     nop
     sta (ptr1),z        ; color number
 
-    ; Red component of color
+    ; Every color on that palette slot takes the slot's RGB, so a color
+    ; that shares it (such as the error and warning colors, copies of the
+    ; UI color) doesn't keep an old RGB that would win when the theme is
+    ; loaded again.
     ldx tmp1
-    lda $d100,x
+    ldz #THEME::colors
+L1: nop
+    lda (ptr1),z        ; color number
     inz
+    cmp tmp1
+    bne L2
+    lda $d100,x         ; Red
     nop
     sta (ptr1),z
-
-    ; Green component of color
-    lda $d200,x
     inz
+    lda $d200,x         ; Green
     nop
     sta (ptr1),z
-
-    ; Blue component of color
-    lda $d300,x
     inz
+    lda $d300,x         ; Blue
     nop
     sta (ptr1),z
+    inz
+    bra L3
+L2: inz                 ; Skip the RGB
+    inz
+    inz
+L3: cpz #THEME::colors + THEME_COLORS * THEME_COLOR_SIZE
+    bne L1
 
     rts
 .endproc

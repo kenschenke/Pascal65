@@ -90,8 +90,25 @@ SYNTAXHL_IDENTIFIER = 6
 SYNTAXHL_CURSOR = 7
 SYNTAXHL_FOREGROUND = 8
 SYNTAXHL_BACKGROUND = 9
+SYNTAXHL_ERROR = 10         ; error highlight
+SYNTAXHL_WARNING = 11       ; warning highlight
 
-THEME_SIZE = 52         ; 16 byte name + 36 bytes in colors
+THEME_COLORS = 11           ; colors in a theme
+THEME_COLOR_SIZE = 4        ; palette index, red, green, blue
+THEME_NAME_SIZE = 16
+THEME_SIZE = THEME_NAME_SIZE + THEME_COLORS * THEME_COLOR_SIZE  ; on disk
+; A buffer of a theme's VIC colors (loadDefaultTheme, copyThemeColors),
+; indexed by SYNTAXHL_*. Byte 0 is unused.
+THEME_BUFSIZE = THEME_COLORS + 1
+
+; The theme file (themefile.s). Version 1 starts with the marker, the
+; version and the selected theme number. Version 0, the old file, starts
+; with the selected theme number, which is never the marker, and its
+; themes have only the colors up to SYNTAXHL_BACKGROUND.
+THEME_MARKER = $FF
+THEME_VERSION = 1
+THEME_COLORS_V0 = 9
+THEME_SIZE_V0 = THEME_NAME_SIZE + THEME_COLORS_V0 * THEME_COLOR_SIZE
 
 ; Syntax highlighting character codes
 .enum
@@ -142,12 +159,12 @@ THEME_SIZE = 52         ; 16 byte name + 36 bytes in colors
 .endstruct
 
 .struct THEME
-    name .res 16            ; space-filled, not null-terminated theme name
-    ; Each theme consists of nine colors.
+    name .res ::THEME_NAME_SIZE ; space-filled, not null-terminated
+    ; Each theme consists of THEME_COLORS colors.
     ; Each color needs four bytes: color index, red, green, and blue.
     ;    The red, green, and blue values are 0-15
     ;    The index is 0-31.
-    ; The nine colors are stored in this order:
+    ; The colors are stored in SYNTAXHL_* order:
     ;    SYNTAXHL_NUMBER
     ;    SYNTAXHL_KEYWORD
     ;    SYNTAXHL_STRING
@@ -155,8 +172,10 @@ THEME_SIZE = 52         ; 16 byte name + 36 bytes in colors
     ;    SYNTAXHL_OPERATOR
     ;    SYNTAXHL_IDENTIFIER
     ;    SYNTAXHL_CURSOR
-    ;    SYNTAXHL_UI
+    ;    SYNTAXHL_FOREGROUND (the UI color)
     ;    SYNTAXHL_BACKGROUND
-    colors .res 36
+    ;    SYNTAXHL_ERROR
+    ;    SYNTAXHL_WARNING
+    colors .res ::THEME_COLORS * ::THEME_COLOR_SIZE
     next .dword            ; For a linked list
 .endstruct

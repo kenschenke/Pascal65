@@ -55,7 +55,8 @@ CHK_NAME = 13               ; .byte theme, 16 bytes of name
 CHK_COLOR = 14              ; .byte theme, SYNTAXHL_*, index, r, g, b
 CHK_PAL = 15                ; .byte slot, r, g, b: the VIC palette
 CHK_BG = 16                 ; .byte the border and background colors
-CHK_BUF = 17                ; 9 bytes: loadDefaultTheme's buffer, 1-9
+CHK_BUF = 17                ; THEME_COLORS bytes: loadDefaultTheme's
+                            ; buffer, from SYNTAXHL_NUMBER on
 CHK_FILE = 18               ; .asciiz fixture: themes.dat has its bytes
 CHK_EMPTY = 19              ; The list is empty and currentTheme null
 OP_LAST = 19
@@ -155,8 +156,8 @@ nm: .asciiz name
     .byte CHK_BG, color
 .endmacro
 
-.macro CHKBUF c1, c2, c3, c4, c5, c6, c7, c8, c9
-    .byte CHK_BUF, c1, c2, c3, c4, c5, c6, c7, c8, c9
+.macro CHKBUF c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11
+    .byte CHK_BUF, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11
 .endmacro
 
 .macro CHKFILE fixture

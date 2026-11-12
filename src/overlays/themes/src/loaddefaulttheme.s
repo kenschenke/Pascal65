@@ -20,7 +20,7 @@
 ; This routine reads the theme list and loads the colors
 ; from the default them into the VIC color registers.
 ;
-; The caller passes in a pointer to a buffer of at least 10 bytes.
+; The caller passes in a pointer to a buffer of THEME_BUFSIZE bytes.
 ; The color numbers are stored in the buffer passed by the caller.
 ; The first byte is ignored, the rest of the bytes contain the color numbers.
 ; The buffer is indexed by the SYNTAXHL_* constants.
@@ -70,7 +70,7 @@ L1: nop
     inz
 
     lda tmp1
-    cmp #10
+    cmp #THEME_BUFSIZE
     bne L1
 
     rts

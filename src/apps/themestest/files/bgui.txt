@@ -1,7 +1,8 @@
 # three.txt after B and five Ups: Beta's background goes from 6 to 1,
 # the UI color's index. The UI color moves to 0, the first index Beta
 # doesn't use. Slot 1 was left white by the red background (2), and on
-# white the UI color turns black.
+# white the UI color turns black. The error and warning colors, copies of
+# the UI color, stay on slot 1 with the background, and take its RGB.
 selected 1
 
 theme Alpha
@@ -27,8 +28,8 @@ identifier  13
 cursor       8
 ui           0  0  0  0
 background   1 15 15 15
-error       ui
-warning     ui
+error        1 15 15 15
+warning      1 15 15 15
 
 theme Gamma
 number       9

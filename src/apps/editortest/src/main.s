@@ -81,8 +81,10 @@ fnTmp: .res 24              ; A filename for the KERNAL
 
 .data
 
-; The theme colors editorRun copies (see copyThemeColors)
-theme: .byte 0, 0, 1, 7, 3, 5, 13, 14, 15, 10
+; The theme colors editorRun copies (see copyThemeColors), indexed by
+; SYNTAXHL_*
+theme: .byte 0, 0, 1, 7, 3, 5, 13, 14, 15, 10, 2, 8
+.assert * - theme = THEME_BUFSIZE, error, "theme is the wrong size"
 
 strTest: .asciiz "test "
 strColon: .asciiz ": "
