@@ -1,3 +1,6 @@
+0.37-beta
+    FIX: Fix the parser when recovering from an error
+
 0.36-beta Nov 10 2026
     NEW: Compiler warning for possible loss of precision
     NEW: Explicit type casting, e.g. Byte(someWord)
