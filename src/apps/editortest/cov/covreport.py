@@ -18,6 +18,9 @@
 # probe that runs changes its byte. A line is covered if the probe for its
 # basic block ran.
 #
+# Two sets can each instrument part of a file (mkcov.py's <first>-<last>).
+# Their lines are added up, and a block is its set and probe number.
+#
 # A summary for each file goes to the standard output. The listing file gets
 # the summary and every line that never ran.
 
@@ -43,7 +46,7 @@ def main():
 
     # file -> [total, covered, blocks, blocks hit, missed lines]
     files = {}
-    for map_file, cov_files in sets:
+    for set_num, (map_file, cov_files) in enumerate(sets):
         # A probe ran if it ran in any of the runs
         hits = None
         for cov_file in cov_files:
@@ -65,10 +68,10 @@ def main():
             ran = probe < len(hits) and hits[probe] != 0x80
             st = files.setdefault(name, [0, 0, set(), set(), []])
             st[0] += 1
-            st[2].add(probe)
+            st[2].add((set_num, probe))
             if ran:
                 st[1] += 1
-                st[3].add(probe)
+                st[3].add((set_num, probe))
             else:
                 st[4].append((int(line), text))
 

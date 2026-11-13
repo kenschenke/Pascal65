@@ -52,6 +52,7 @@ numFiles: .res 1                ; filenames in fileTable
 fileTable: .res MAX_FILES * FILE_SLOT
 fileNum: .res 1
 fileOffset: .res 1
+alreadySeen: .res 1             ; recordExpected matched a seen expectation
 
 ; expectedErrors and expectedWarnings are an array of blocks, four bytes each.
 ;   expected error code (1 byte)
@@ -437,11 +438,16 @@ L1: jsr popQ
 
 ; This routine records an error or warning.
 ; On input, ptr1 points to the list of expected errors or warnings and
-; fileNum is the file it was reported in.
+; fileNum is the file it was reported in. An error expected twice on a line
+; (two $ExpectError directives) can be reported twice: each report takes
+; the first expectation not yet seen.
 .proc recordExpected
     ; Look through the array of expected warnings or errors
     lda #0
     sta expectedIndex
+    sta alreadySeen
+    lda numExpected
+    beq NF                      ; nothing is expected
 L1: lda expectedIndex
     asl a
     asl a
@@ -463,11 +469,13 @@ L1: lda expectedIndex
     and #<~SEEN
     cmp fileNum
     bne L2
-    ; Have we already encountered this one?
+    ; Have we already encountered this one? Look for another.
     lda (ptr1),y
-    bmi L3
+    bpl :+
+    sta alreadySeen
+    bra L2
     ; Mark the warning as seen
-    ora #SEEN
+:   ora #SEEN
     sta (ptr1),y
     rts
 
@@ -477,9 +485,11 @@ L2: inc expectedIndex
     cmp numExpected
     bne L1
 
+    ; Every match was already seen
+NF: lda alreadySeen
+    bne L3
+
     ; Reached the end of the list and did not expect this warning
-    lda #13
-    jsr CHROUT
     lda #<strUnexpected
     ldx #>strUnexpected
     jsr showWarningMessage
@@ -488,9 +498,7 @@ L2: inc expectedIndex
     rts
 
     ; Already saw this warning
-L3: lda #13
-    jsr CHROUT
-    lda #<strAlreadyEnountered
+L3: lda #<strAlreadyEnountered
     ldx #>strAlreadyEnountered
     jsr showWarningMessage
     lda #1
@@ -499,13 +507,18 @@ L3: lda #13
 .endproc
 
 ; This routine prints a message to the console then prints the warning number
-; and line number.
+; and line number. Each message is on a line of its own, so as many as can
+; be fit on the screen.
 .proc showWarningMessage
     pha
     phx
+    sec
+    jsr PLOT                    ; the cursor's column in Y
+    cpy #0
+    beq :+
     lda #13
     jsr CHROUT
-    plx
+:   plx
     pla
     jsr printLine
     lda expectedNumber

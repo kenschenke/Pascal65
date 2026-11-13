@@ -29,8 +29,17 @@ typeConversions:
 
 ; This routine returns the resulting type conversion between two expression types.
 ; The first expression kind is passed in A and the second in X.
-; The resulting expression kind is returned in A.
+; The resulting expression kind is returned in A. It is TYPE_VOID unless
+; both kinds are numeric (TYPE_BYTE to TYPE_REAL), which the table covers.
 .proc getTypeConversion
+    cmp #TYPE_BYTE
+    bcc VD
+    cmp #TYPE_REAL+1
+    bcs VD
+    cpx #TYPE_BYTE
+    bcc VD
+    cpx #TYPE_REAL+1
+    bcs VD
     dex
     phx
     sta tmp1
@@ -48,5 +57,7 @@ typeConversions:
     adc tmp1
     tax
     lda typeConversions,x
+    rts
+VD: lda #TYPE_VOID
     rts
 .endproc

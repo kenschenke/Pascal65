@@ -16,7 +16,7 @@
 rtnTypePtrOffset = 0
 exprOffset = 4
 
-.export checkTypeCast
+.export checkTypeCast, isTypeCastable
 
 .import loadStackValue, typeCheckError, isTypeOrdinal
 

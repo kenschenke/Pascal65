@@ -23,6 +23,8 @@ fwdParamsOffset = formalParamsOffset + 4
 .bss
 
 limitOffset: .res 1             ; type::min or type::max
+elemKind: .res 1                ; a kind kept across getBaseType
+indexSub: .res 4                ; an index type's subtype, likewise
 
 .code
 
@@ -140,64 +142,59 @@ RT: jsr popQ
     rts
 .endproc
 
+; This routine checks array parameters: the base types of the elements and
+; of the indexes must be the same kind, an enumeration index must be the
+; same enumeration, and the limits must be the same. A parameter's type
+; can be a type name, so the base types are looked up. getBaseType changes
+; the pointers, so a kind and subtype are kept in elemKind and indexSub.
 .proc checkArrayParams
     ; Check the array element types
     ldz #fwdParamsOffset
-    jsr getParamType
+    jsr getElemType
     stq ptr3
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
-    jsr getBaseType
-    stq ptr3
-    ldz #formalParamsOffset
-    jsr getParamType
-    stq ptr4
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
-    jsr getBaseType
-    stq ptr4
     ldz #type::kind
     nop
     lda (ptr3),z
+    sta elemKind
+    ldz #formalParamsOffset
+    jsr getElemType
+    stq ptr4
+    lda elemKind
+    ldz #type::kind
     nop
     cmp (ptr4),z
     beq :+
     lda #errIncompatibleTypes
     jsr typeCheckError
 
-    ; Check the array index types
+    ; Check the array index types. A dynamic array has none.
 :   ldz #fwdParamsOffset
-    jsr getParamType
+    jsr getIndexType
+    jsr isQZero
+    beq L1
     stq ptr3
-    ldz #type::indextype
-    neg
-    neg
+    ldz #type::kind
     nop
     lda (ptr3),z
-    jsr getBaseType
-    stq ptr3
+    sta elemKind
     ldz #type::subtype
     neg
     neg
     nop
     lda (ptr3),z
-    stq ptr3
+    stq indexSub
     ldz #formalParamsOffset
-    jsr getParamType
+    jsr getIndexType
+    jsr isQZero
+    beq L1
     stq ptr4
-    ldz #type::indextype
-    neg
-    neg
+    lda elemKind
+    ldz #type::kind
     nop
-    lda (ptr4),z
-    jsr getBaseType
-    stq ptr4
+    cmp (ptr4),z
+    bne ER
+    cmp #TYPE_ENUMERATION
+    bne L1
     ldz #type::subtype
     neg
     neg
@@ -205,20 +202,51 @@ RT: jsr popQ
     lda (ptr4),z
     stq ptr4
     ldx #0
-:   lda ptr3,x
+:   lda indexSub,x
     cmp ptr4,x
-    bne :+
+    bne ER
     inx
     cpx #4
     bne :-
     bra L1
-:   lda #errIncompatibleTypes
+ER: lda #errIncompatibleTypes
     jsr typeCheckError
 L1: lda #type::min
     jsr compareArrayLimit
     lda #type::max
     jsr compareArrayLimit
     rts
+.endproc
+
+; This routine returns the base type of the elements of the array
+; parameter at the stack offset in Z.
+.proc getElemType
+    jsr getParamType
+    jsr getBaseType
+    stq ptr1
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jmp getBaseType
+.endproc
+
+; This routine returns the base type of the index of the array parameter
+; at the stack offset in Z, or zero if it has none.
+.proc getIndexType
+    jsr getParamType
+    jsr getBaseType
+    stq ptr1
+    ldz #type::indextype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq :+
+    jmp getBaseType
+:   rts
 .endproc
 
 ; This routine compares the array limits (min or max).

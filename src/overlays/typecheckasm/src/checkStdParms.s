@@ -32,6 +32,12 @@ exprType: .res .sizeof(type)
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
+    jsr isQZero
+    bne :+
+    lda #errWrongNumberOfParams ; no parameters
+    jsr typeCheckError
+    jmp DN
+:
     ; There should be one parameter
     ldz #expr::right
     neg
@@ -42,6 +48,9 @@ exprType: .res .sizeof(type)
     beq :+
     lda #errWrongNumberOfParams
     jsr typeCheckError
+    ldz #exprOffset             ; typeCheckError changes ptr1
+    jsr loadStackValue
+    stq ptr1
 
     ; Call exprTypeCheck
 :   ldz #expr::left

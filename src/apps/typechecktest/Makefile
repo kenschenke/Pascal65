@@ -60,6 +60,7 @@ TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
 TXTFILES += $(patsubst $(TESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(TESTS))
 TXTFILES += $(patsubst $(ERRORTESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(ERRORTESTS))
+comma := ,
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
@@ -120,62 +121,159 @@ vpath %.pas $(ERRORTESTSDIR)
 $(PETSCIIDIR)/%.pas: %.pas | $(PETSCIIDIR)
 	dos2unix < $< | petcat -w2 -text -o $@
 
+# TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m" runs only those program tests,
+# and -D FIRST_ERROR_TEST and -D LAST_ERROR_TEST only those error tests.
+# A first test after the last runs none. The setting is kept in a file so
+# a change rebuilds the objects.
+TESTSEL ?=
+TESTSFILE := $(OBJTARGETDIR)/testsel
+
+$(TESTSFILE): FORCE | $(OBJTARGETDIR)
+	@echo "$(TESTSEL)" | cmp -s - $@ || echo "$(TESTSEL)" > $@
+
+$(OBJTARGETDIR)/runtests.o $(OBJTARGETDIR)/runerrortests.o: ASFLAGS += $(TESTSEL)
+$(OBJTARGETDIR)/runtests.o $(OBJTARGETDIR)/runerrortests.o: $(TESTSFILE)
+
 $(PRGFILE): $(OBJECTS)
 	ld65 -o $(PRGFILE) -C typechecktest.cfg $(OBJECTS)
 
 FORCE:
 
-$(D81FILE): $(BINFILES) $(TXTFILES)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(PRGFILE) typechecktest,prg \
+# Makes a disk: $(1) is the D81, $(2) the test program and $(3) the
+# typecheck overlay. Every .pas file in tests goes on it.
+define MKDISK
+c1541 -format $(PROGRAM),8a d81 $(1) \
+	-write $(2) typechecktest,prg \
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(PARSER) parser,prg \
 	-write $(RESOLVER) resolver,prg \
-	-write $(TYPECHECK) typecheck,prg \
+	-write $(3) typecheck,prg \
 	-write $(DUMPAST) dumpast,prg \
 	-write $(SHOWTREE) showtree,prg \
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
-	-write $(PETSCIIDIR)/test1.pas test1.pas,seq \
-	-write $(PETSCIIDIR)/test2.pas test2.pas,seq \
-	-write $(PETSCIIDIR)/test3.pas test3.pas,seq \
-	-write $(PETSCIIDIR)/test4.pas test4.pas,seq \
-	-write $(PETSCIIDIR)/test5.pas test5.pas,seq \
-	-write $(PETSCIIDIR)/test6.pas test6.pas,seq \
-	-write $(PETSCIIDIR)/test7.pas test7.pas,seq \
-	-write $(PETSCIIDIR)/test8.pas test8.pas,seq \
-	-write $(PETSCIIDIR)/test9.pas test9.pas,seq \
-	-write $(PETSCIIDIR)/test10.pas test10.pas,seq \
-	-write $(PETSCIIDIR)/test11.pas test11.pas,seq \
-	-write $(PETSCIIDIR)/test12.pas test12.pas,seq \
-	-write $(PETSCIIDIR)/test13.pas test13.pas,seq \
-	-write $(PETSCIIDIR)/test14.pas test14.pas,seq \
-	-write $(PETSCIIDIR)/test15.pas test15.pas,seq \
-	-write $(PETSCIIDIR)/test16.pas test16.pas,seq \
-	-write $(PETSCIIDIR)/test17.pas test17.pas,seq \
-	-write $(PETSCIIDIR)/test18.pas test18.pas,seq \
-	-write $(PETSCIIDIR)/error1.pas error1.pas,seq \
-	-write $(PETSCIIDIR)/error2.pas error2.pas,seq \
-	-write $(PETSCIIDIR)/error3.pas error3.pas,seq \
-	-write $(PETSCIIDIR)/error4.pas error4.pas,seq \
-	-write $(PETSCIIDIR)/error5.pas error5.pas,seq \
-	-write $(PETSCIIDIR)/error6.pas error6.pas,seq \
-	-write $(PETSCIIDIR)/error7.pas error7.pas,seq \
-	-write $(PETSCIIDIR)/error8.pas error8.pas,seq \
-	-write $(PETSCIIDIR)/error9.pas error9.pas,seq \
-	-write $(PETSCIIDIR)/error10.pas error10.pas,seq \
-	-write $(PETSCIIDIR)/error11.pas error11.pas,seq \
-	-write $(PETSCIIDIR)/error12.pas error12.pas,seq \
-	-write $(PETSCIIDIR)/error13.pas error13.pas,seq \
-	-write $(PETSCIIDIR)/errunit.pas errunit.pas,seq \
+	$(foreach f,$(notdir $(TESTS) $(ERRORTESTS)), \
+	-write $(PETSCIIDIR)/$(f) $(f)$(comma)seq) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq
+endef
+
+$(D81FILE): $(BINFILES) $(TXTFILES)
+	$(call MKDISK,$(D81FILE),$(PRGFILE),$(TYPECHECK))
+
+# The coverage build. make coverage runs the tests against instrumented
+# copies of the typecheck overlay (see ../editortest/cov/mkcov.py) and lists
+# the lines that never ran in bin/$(TARGET)/coverage.txt. Like test, it
+# needs asmlib built with MEMCHECK=1.
+#
+# The probes make the overlay much bigger, and they don't all fit at once.
+# Each set instruments some of the files and the tests run once for each
+# set. A set's map is COVSIZE bytes at COVMAP, above the test program. A set
+# that no longer fits fails to link and must be split. exprTypeCheck.s is
+# too big for one set, so two sets each instrument part of it, split at
+# a proc (mkcov.py's <in.s>:<first>-<last>).
+COVTOOLS := ../editortest/cov
+COVMAP := 14848
+COVSIZE := 1536
+COVSETS := 1 2 3 4 5 6 7 8
+COVSET ?= 1
+# Expressions and declarations
+COVFILES1 := exprTypeCheck.s:-evalNegate declTypeCheck.s typecheck.s \
+	typeCheckUnits.s
+COVFILES2 := exprTypeCheck.s:evalNegate- declTypeCheckType.s \
+	isExprAFuncCall.s isExprARoutineCall.s isExprATypeDeclaration.s \
+	isAssignableToString.s getTypeSize.s getTypeConversion.s hoistFuncCall.s
+# Routine calls
+COVFILES3 := checkFuncProcCall.s checkStdParms.s checkArray.s \
+	checkIntegerBaseType.s realOperands.s integerOperands.s
+# Standard routines
+COVFILES4 := checkWriteWritelnCall.s checkReadReadlnCall.s \
+	checkReadStrCall.s checkStdRoutine.s
+# Operators and assignments
+COVFILES5 := checkRelOpOperands.s getBinaryExpressionType.s \
+	checkAssignment.s
+# Statements, compatibility and forwards
+COVFILES6 := stmtTypeCheck.s isAssignmentCompatible.s \
+	checkForwardVsFormalDeclaration.s checkArrayRoutineCall.s
+# Literals, arrays and the other standard routines
+COVFILES7 := exprLiteral.s checkArrayLiteral.s getArrayType.s \
+	checkDecIncCall.s checkPredSuccCall.s checkArraysSameType.s \
+	declTypeCheckValue.s evalArrayLiteral.s checkAbsSqrCall.s
+# Case, casts and the small helpers
+COVFILES8 := caseTypeCheck.s checkTypeCast.s checkBoolOperand.s \
+	isTypeNumeric.s isTypeOrdinal.s isTypeInteger.s
+
+TYPECHECKSRCDIR := $(TYPECHECKDIR)/src
+TYPECHECKSOURCES := $(wildcard $(TYPECHECKSRCDIR)/*.s)
+COVASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__ \
+	-D COVMAP=$(COVMAP)
+COVDIR := $(OBJTARGETDIR)/cov$(COVSET)
+COVTYPECHECKOBJS := $(addprefix $(COVDIR)/, \
+	$(notdir $(TYPECHECKSOURCES:.s=.o)))
+COVTYPECHECK := $(COVDIR)/typecheck
+COVPRGDIR := $(OBJTARGETDIR)/cov
+COVPRG := $(COVPRGDIR)/$(PROGRAM)
+COVPRGOBJS := $(COVPRGDIR)/main.o $(COVPRGDIR)/covsave.o
+COVPRGOBJS += $(filter-out $(OBJTARGETDIR)/main.o,$(OBJECTS))
+COVD81 := $(BINTARGETDIR)/typechecktestcov.d81
+COVLIST := $(BINTARGETDIR)/coverage.txt
+# The map and the coverage file of each set
+COVARGS = $(foreach s,$(COVSETS),-m $(OBJTARGETDIR)/cov$(s)/typecheck.map \
+	$(BINTARGETDIR)/typecheck$(s).cov)
+
+# Every file of the overlay is copied, then the set's files are replaced by
+# instrumented copies.
+$(COVDIR)/stamp: $(TYPECHECKSOURCES) $(COVTOOLS)/mkcov.py
+	mkdir -p $(COVDIR)
+	cp $(TYPECHECKSOURCES) $(COVDIR)
+	python3 $(COVTOOLS)/mkcov.py -D __MEGA65__ -m $(COVSIZE) \
+	$(COVDIR) $(COVDIR)/typecheck.map \
+	$(addprefix $(TYPECHECKSRCDIR)/,$(COVFILES$(COVSET)))
+	touch $@
+
+$(COVDIR)/%.o: $(COVDIR)/stamp
+	ca65 $(COVASFLAGS) -o $@ $(@:.o=.s)
+
+$(COVTYPECHECK): $(COVTYPECHECKOBJS)
+	ld65 -o $@ -C cov/typecheckcov.cfg $(COVTYPECHECKOBJS)
+
+$(COVPRGDIR)/main.o: $(SRCDIR)/main.s $(FLAGSFILE)
+	mkdir -p $(COVPRGDIR)
+	ca65 $(ASFLAGS) -D COVERAGE -o $@ $<
+
+$(COVPRGDIR)/covsave.o: cov/covsave.s
+	mkdir -p $(COVPRGDIR)
+	ca65 $(ASFLAGS) -D COVMAP=$(COVMAP) -D COVSIZE=$(COVSIZE) -o $@ $<
+
+$(COVPRG): $(COVPRGOBJS)
+	ld65 -o $@ -C typechecktest.cfg $(COVPRGOBJS)
+
+# Runs the tests against one set. The test saves the map to the disk.
+covrun: $(COVTYPECHECK) $(COVPRG) $(BINFILES) $(TXTFILES) | $(BINTARGETDIR)
+	$(RM) $(COVD81)
+	$(call MKDISK,$(COVD81),$(COVPRG),$(COVTYPECHECK))
+	../testcommon/runtest.sh typechecktestcov$(COVSET) $(COVPRG) $(COVD81)
+	c1541 -attach $(COVD81) \
+	-read typecheck.cov $(BINTARGETDIR)/typecheck$(COVSET).cov
+
+# The copies are made fresh each time: they don't track the includes.
+coverage:
+	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
+	$(RM) $(BINTARGETDIR)/typecheck*.cov
+	for s in $(COVSETS); do \
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 COVSET=$$s covrun || exit 1; \
+	done
+	python3 $(COVTOOLS)/covreport.py $(COVLIST) $(COVARGS)
+
+.PHONY: covrun coverage
 
 clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(D81FILE)
+	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
+	$(RM) $(COVD81) $(COVLIST) $(BINTARGETDIR)/typecheck*.cov
 
 test:
 	$(MAKE) TARGET=$(TARGET) DEBUG=1 all

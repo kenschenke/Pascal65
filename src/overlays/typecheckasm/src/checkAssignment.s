@@ -27,6 +27,8 @@ exprRightOffset = 0
 .bss
 
 isSubscript: .res 1
+ptrKind: .res 1         ; kind of what the left pointer points to
+ptrSymtab: .res 4       ; its symbol table, if it's a record
 
 .code
 
@@ -115,8 +117,20 @@ SV: ldz #leftTypeOffset
     jsr setResultSize
     jmp DN
 
+    ; A pointer assigned a pointer must point to the same type
+IC: ldz #leftTypeOffset
+    jsr typeKind
+    cmp #TYPE_POINTER
+    bne IA
+    ldz #rightTypeOffset
+    jsr typeKind
+    cmp #TYPE_POINTER
+    bne IA
+    jsr checkPointerToPointer
+    jmp DN
+
     ; Check if the assignment is compatible
-IC: ldz #rightTypeOffset
+IA: ldz #rightTypeOffset
     jsr loadStackValue
     stq ptr2
     ldz #exprRightOffset
@@ -379,15 +393,112 @@ L2: ldz #type::kind
     bne :+
     ; Assignment okay
     jmp DN
-:   sta tmp1
+    ; The kinds of the base types must match, and a record must be the
+    ; same record. getBaseType changes ptr1, so keep the pointer's target
+    ; kind and table in ptrKind and ptrSymtab.
+:   ldz #type::kind
+    nop
+    lda (ptr1),z
+    sta ptrKind
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptrSymtab
+    ldq ptr3
+    jsr getBaseType
+    stq ptr3
+    lda ptrKind
     ldz #type::kind
     nop
+    cmp (ptr3),z
+    bne ER
+    cmp #TYPE_RECORD
+    bne DN
+    ldz #type::symtab
+    neg
+    neg
+    nop
     lda (ptr3),z
-    cmp tmp1
-    beq DN
+    stq ptr3
+    ldx #0
+:   lda ptrSymtab,x
+    cmp ptr3,x
+    bne ER
+    inx
+    cpx #4
+    bne :-
+    bra DN
+ER:
     lda #errIncompatibleAssignment
     jsr typeCheckError
 DN: rts
+.endproc
+
+; This routine checks the assignment of a pointer to a pointer. The base
+; types they point to must be the same kind, and a record the same record
+; (the same symbol table). getBaseType changes the pointers, so the left
+; one's kind and table are kept in ptrKind and ptrSymtab.
+.proc checkPointerToPointer
+    ldz #leftTypeOffset
+    jsr loadPointerTarget
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    sta ptrKind
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptrSymtab
+    ldz #rightTypeOffset
+    jsr loadPointerTarget
+    stq ptr1
+    lda ptrKind
+    ldz #type::kind
+    nop
+    cmp (ptr1),z
+    bne ER
+    cmp #TYPE_RECORD
+    bne OK
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldx #0
+:   lda ptrSymtab,x
+    cmp ptr1,x
+    bne ER
+    inx
+    cpx #4
+    bne :-
+OK: lda #TYPE_POINTER
+    jsr setResultKind
+    lda #TYPE_POINTER
+    jsr getTypeSize
+    jmp setResultSize
+ER: lda #errIncompatibleAssignment
+    jsr typeCheckError
+    lda #TYPE_VOID
+    jmp setResultKind
+.endproc
+
+; This routine returns the base type that the pointer type at the stack
+; offset in Z points to.
+.proc loadPointerTarget
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jmp getBaseType
 .endproc
 
 .proc checkRoutinePointerAssignment

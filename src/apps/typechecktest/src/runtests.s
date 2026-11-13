@@ -38,6 +38,15 @@
 
 NUM_TESTS = 18
 
+; Only some of the tests can be run:
+; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"
+.ifndef FIRST_TEST
+FIRST_TEST = 1
+.endif
+.ifndef LAST_TEST
+LAST_TEST = NUM_TESTS
+.endif
+
 .bss
 
 testNum: .res 2
@@ -59,12 +68,6 @@ strRunning: .asciiz "Running type checking tests"
     ldx #>logError
     jsr initCompilerWarnings
 
-    ; Start with test 1
-    lda #1
-    sta testNum
-    lda #0
-    sta testNum+1
-
     lda #13
     jsr CHROUT
     lda #<strRunning
@@ -74,22 +77,29 @@ strRunning: .asciiz "Running type checking tests"
     jsr CHROUT
     jsr CHROUT
 
+.if ::FIRST_TEST <= ::LAST_TEST
+    lda #.LOBYTE(FIRST_TEST)
+    sta testNum
+    lda #.HIBYTE(FIRST_TEST)
+    sta testNum+1
+
 L1: lda testNum
     ldx testNum+1
     clc
     jsr runTest
 
     lda testNum
-    cmp #.LOBYTE(NUM_TESTS)
+    cmp #.LOBYTE(LAST_TEST)
     bne L2
     lda testNum+1
-    cmp #.HIBYTE(NUM_TESTS)
+    cmp #.HIBYTE(LAST_TEST)
     beq L3
 
 L2: inc testNum
     bne L1
     inc testNum+1
     bra L1
+.endif
 
 L3: lda #13
     jsr CHROUT

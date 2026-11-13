@@ -24,6 +24,8 @@ stmtOffset = typeOffset + .sizeof(type)
 .bss
 
 forKind: .res 1             ; kind of a For loop's control variable
+caseKind: .res 1            ; kind of a Case selector's base type
+caseFields: .res 4          ; its enumeration's values, or zero
 
 .code
 
@@ -282,43 +284,52 @@ L1: ora #0                  ; set the flags from A for the caller
     rts
 .endproc
 
+; The selector of a Case statement is an integer, a Char or an enumeration,
+; including subranges of them. caseTypeCheck gets the kind of its base type
+; and, for an enumeration, the enumeration's values (the paramFields of the
+; base type's subtype), which every label must be one of.
 .proc checkCase
     ldz #stmt::expr
     jsr callExprTypeCheck
-    ldz #type::kind
-    nop
-    lda (stackPointer),z
-    jsr isTypeInteger
-    beq :+
+    lda #0
+    ldx #3
+:   sta caseFields,x
+    dex
+    bpl :-
     ldq stackPointer
     jsr getBaseType
     stq ptr4
     ldz #type::kind
     nop
     lda (ptr4),z
+    sta caseKind
+    jsr isTypeInteger
+    beq L2
+    lda caseKind
     cmp #TYPE_CHARACTER
-    beq :+
+    beq L2
     cmp #TYPE_ENUMERATION
-    beq :+
+    beq L1
+    cmp #TYPE_ENUMERATION_VALUE
+    beq L1
     lda #errIncompatibleTypes
     jsr typeCheckError
-:   lda #type::kind
-    nop
-    lda (ptr4),z
-    sta tmp1
+    bra L2
+L1: lda #TYPE_ENUMERATION
+    sta caseKind
     ldz #type::subtype
     neg
     neg
     nop
-    lda (ptr1),z
+    lda (ptr4),z
     stq ptr1
     ldz #type::paramFields
     neg
     neg
     nop
     lda (ptr1),z
-    stq ptr1
-    ldz #stmtOffset
+    stq caseFields
+L2: ldz #stmtOffset
     jsr loadStackValue
     stq ptr2
     ldz #stmt::body
@@ -327,9 +338,9 @@ L1: ora #0                  ; set the flags from A for the caller
     nop
     lda (ptr2),z
     stq ptr2
-    lda tmp1
+    lda caseKind
     jsr pushA
-    ldq ptr1
+    ldq caseFields
     jsr pushQ
     ldq ptr2
     jsr pushQ

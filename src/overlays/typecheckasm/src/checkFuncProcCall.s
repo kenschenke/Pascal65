@@ -20,7 +20,7 @@ symTypeOffset = paramPtrOffset + 4
 rtnTypePtrOffset = symTypeOffset + 4
 exprOffset = rtnTypePtrOffset + 4
 
-.export checkFuncProcCall
+.export checkFuncProcCall, getRecordSymtab
 
 .import typeCheckError, loadStackValue, checkStdRoutine, exprTypeCheck
 .import getTypeConversion, checkArraysSameType, isTypeInteger
@@ -39,6 +39,8 @@ namePtr: .res 4
 isLibLength: .res 1
 ; Set by checkParams when isLibLength and the argument is an array.
 isArrayLength: .res 1
+; A parameter type's symbol table or subtype's kind, kept across getBaseType
+paramSub: .res 4
 
 .data
 
@@ -178,7 +180,7 @@ L1: ldz #type::kind
     beq :+
     cmp #TYPE_PROCEDURE
     beq :+
-    ; It's not a function or procedure
+    ; It's not a function or procedure, so it has no parameters to check
     lda #errInvalidExpression
     jsr typeCheckError
     ldz #rtnTypePtrOffset
@@ -188,9 +190,7 @@ L1: ldz #type::kind
     lda #TYPE_VOID
     nop
     sta (ptr1),z
-    ldz #symTypeOffset
-    jsr loadStackValue
-    stq ptr1
+    jmp DN
 
     ; Is this a standard routine?
 :   ldz #type::flags
@@ -405,6 +405,19 @@ L1: ldz #paramPtrOffset
     lda (ptr2),z
     sta argKind
 
+    ; getBaseType changed ptr1. The checks below expect the parameter's
+    ; base type in it.
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr getBaseType
+    stq ptr1
+
     ; if (paramType.kind == TYPE_ENUMERATION)
     lda paramKind
     cmp #TYPE_ENUMERATION
@@ -457,12 +470,28 @@ AR: ldz #paramPtrOffset
     jmp NX
 
     ; if (isTypeInteger(paramType.kind))
+    ; A Var parameter's argument must be a variable of the same kind, which
+    ; checkParamByRef checks.
 :   lda paramKind
     jsr isTypeInteger
     bne :+
     lda argKind
     jsr isTypeInteger
     bne :+
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISBYREF
+    lbne BR
     jsr checkIntegerParam
     jmp NX
 
@@ -480,15 +509,19 @@ AR: ldz #paramPtrOffset
     jsr checkFileParam
     jmp NX
 
-    ; if (paramType.kind == TYPE_POINTER && argType.kind == TYPE_ADDRESS)
+    ; if (paramType.kind == TYPE_POINTER &&
+    ;     (argType.kind == TYPE_ADDRESS || argType.kind == TYPE_POINTER))
+    ; checkParamByRef checks a Var parameter's argument after.
 :   lda paramKind
     cmp #TYPE_POINTER
-    bne :+
+    bne :++
     lda argKind
     cmp #TYPE_ADDRESS
-    bne :+
-    jsr checkPointerParam
-    jmp NX
+    beq :+
+    cmp #TYPE_POINTER
+    bne :++
+:   jsr checkPointerParam
+    jmp BR
 
     ; if (paramType.kind == TYPE_ROUTINE_POINTER && argType.kind == TYPE_ROUTINE_ADDRESS)
 :   lda paramKind
@@ -507,7 +540,8 @@ AR: ldz #paramPtrOffset
     lda #errInvalidType
     jsr typeCheckError
 
-:   ldz #paramPtrOffset
+:
+BR: ldz #paramPtrOffset
     neg
     neg
     nop
@@ -668,25 +702,21 @@ OK: clc
     rts
 .endproc
 
+; A record's fields are in its symbol table, so two record types are the
+; same if they have the same table. ptr1 is the parameter's base type.
 .proc checkRecordParam
-    ; Compare paramType.paramFields with argType.paramFields
-    ldz #type::paramFields
+    ; Compare paramType.symtab with argType's
+    ldz #type::symtab
     neg
     neg
     nop
     lda (ptr1),z
-    stq ptr3
+    stq paramSub
     ldq stackPointer
-    jsr getBaseType
-    stq ptr4
-    ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr getRecordSymtab
     stq ptr4
     ldx #0
-:   lda ptr3,x
+:   lda paramSub,x
     cmp ptr4,x
     bne :+
     inx
@@ -695,6 +725,45 @@ OK: clc
     rts
 :   lda #errInvalidType
     jsr typeCheckError
+    rts
+.endproc
+
+; This routine returns the symbol table of the record type in Q, or zero
+; for a type that has none. An expression's type (see evalName) has no
+; table of its own, but its subtype is the record type that has one.
+.proc getRecordSymtab
+    stq ptr4
+    jsr pushQ                   ; pushQ doesn't keep Q
+    ldq ptr4
+    jsr getBaseType
+    stq ptr4
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    jsr isQZero
+    bne DN
+    ldz #0
+    jsr loadStackValue          ; the type again
+    stq ptr4
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    jsr isQZero
+    beq DN
+    jsr getBaseType
+    stq ptr4
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr4),z
+DN: stq ptr4
+    jsr popQ
+    ldq ptr4
     rts
 .endproc
 
@@ -714,7 +783,17 @@ OK: clc
     rts
 .endproc
 
+; The Var flag is on the parameter's own type, not its base type.
 .proc checkStringVarParam
+    ldz #paramPtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #param_list::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
     ldz #type::flags
     nop
     lda (ptr1),z
@@ -743,6 +822,8 @@ OK: clc
 DN: rts
 .endproc
 
+; A file parameter is a Var parameter. A typed file's argument must be a
+; file of the same kind of type. ptr1 is the parameter's base type.
 .proc checkFileParam
     lda argKind
     cmp #TYPE_TEXT
@@ -755,23 +836,31 @@ DN: rts
     nop
     lda (ptr1),z
     jsr isQZero
-    beq L2
-    stq ptr3
-    ; if (argType.subtype != paramType.subtype)
+    beq L2                      ; an untyped file takes any file
+    jsr getBaseType
+    stq ptr4
+    ldz #type::kind
+    nop
+    lda (ptr4),z
+    sta paramSub
+    ; if (argType.subtype.kind != paramType.subtype.kind)
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr4
     ldz #type::subtype
     neg
     neg
     nop
-    lda (stackPointer),z
+    lda (ptr4),z
+    jsr isQZero
+    beq L1                      ; an untyped file
+    jsr getBaseType
     stq ptr4
-    ldx #0
-:   lda ptr3,x
-    cmp ptr4,x
-    bne L1
-    inx
-    cpx #4
-    bne :-
-    bra L2
+    lda paramSub
+    ldz #type::kind
+    nop
+    cmp (ptr4),z
+    beq L2
 L1: lda #errInvalidType
     jsr typeCheckError
     ; if (!(paramType.flags & TYPE_FLAG_ISBYREF))
@@ -794,28 +883,70 @@ L2: ldz #paramPtrOffset
 L3: rts
 .endproc
 
+; The base types of what the parameter and the argument (a pointer or an
+; address) point to must be the same kind, and a record the same record
+; (the same symbol table). ptr1 is the parameter's base type. The
+; argument's type can be a type name, so its base type is looked up
+; first. getBaseType changes ptr1, so the parameter's kind is kept on the
+; stack and its table in paramSub.
 .proc checkPointerParam
     ldz #type::subtype
     neg
     neg
     nop
     lda (ptr1),z
+    jsr getBaseType
     stq ptr3
+    ldz #type::symtab
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq paramSub
+    ldz #type::kind
+    nop
+    lda (ptr3),z
+    pha
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr4
     ldz #type::subtype
     neg
     neg
     nop
-    lda (stackPointer),z
+    lda (ptr4),z
+    jsr getBaseType
     stq ptr4
+    pla
     ldz #type::kind
     nop
-    lda (ptr3),z
-    nop
     cmp (ptr4),z
-    beq :+
-    lda #errIncompatibleTypes
+    bne ER
+    cmp #TYPE_RECORD
+    bne DN
+    ; What an address points to can be an expression's type, which has
+    ; no table of its own (see getRecordSymtab)
+    ldq stackPointer
+    jsr getBaseType
+    stq ptr4
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr4),z
+    jsr getRecordSymtab
+    stq ptr4
+    ldx #0
+:   lda paramSub,x
+    cmp ptr4,x
+    bne ER
+    inx
+    cpx #4
+    bne :-
+DN: rts
+ER: lda #errIncompatibleTypes
     jsr typeCheckError
-:   rts
+    rts
 .endproc
 
 .proc checkRoutinePointerParam

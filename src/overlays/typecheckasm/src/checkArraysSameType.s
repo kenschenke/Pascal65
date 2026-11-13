@@ -21,9 +21,12 @@ type1Offset = type2Offset + 4
 .import typeCheckError, loadStackValue
 
 .proc checkArraysSameType
-    ; Check the element kinds are the same
+    ; Check the element kinds are the same. Either type can be a type name
+    ; (a Var parameter's is), so look up the base types first. getBaseType
+    ; changes ptr1, so the first kind is kept on the stack.
     ldz #type1Offset
     jsr loadStackValue
+    jsr getBaseType
     stq ptr1
     ldz #type::subtype
     neg
@@ -32,9 +35,14 @@ type1Offset = type2Offset + 4
     lda (ptr1),z
     jsr getBaseType
     stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    pha
 
     ldz #type2Offset
     jsr loadStackValue
+    jsr getBaseType
     stq ptr2
     ldz #type::subtype
     neg
@@ -44,9 +52,8 @@ type1Offset = type2Offset + 4
     jsr getBaseType
     stq ptr2
 
+    pla
     ldz #type::kind
-    nop
-    lda (ptr1),z
     nop
     cmp (ptr2),z
     beq :+

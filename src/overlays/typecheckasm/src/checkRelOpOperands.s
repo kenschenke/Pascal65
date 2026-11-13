@@ -208,40 +208,98 @@ L4: sec
     rts
 .endproc
 
-; This checks if the left or right is a pointer and the right is an address.
-; If so, it checks they are the same base type.
-; The carry flag is set if left or right are pointers.
+; This checks the operands of a comparison if either one is a pointer or
+; an address. The other one must be a pointer or an address too, or nil
+; (an integer constant). Two pointers or addresses must point to the same
+; kind of base type.
+; The carry flag is set if left or right is a pointer or an address.
+; The copies of the types on the stack are replaced by the types they
+; point to.
 .proc checkPointerOperands
     lda #leftTypeOffset
+    jsr isPointerOperand
+    beq L1
+    lda #rightTypeOffset
+    jsr isPointerOperand
+    beq L1
+    clc
+    rts
+
+    ; If one isn't a pointer, it must be nil
+L1: lda #leftTypeOffset
+    jsr isPointerOperand
+    beq :+
+    lda #leftTypeOffset
+    bra L2
+:   lda #rightTypeOffset
+    jsr isPointerOperand
+    beq L3
+    lda #rightTypeOffset
+L2: jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isTypeInteger
+    bne ER
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISCONST
+    bne DN
+ER: lda #errIncompatibleTypes
+    jsr typeCheckError
+    bra DN
+
+    ; Both are pointers. Replace each with the type it points to.
+L3: lda #leftTypeOffset
+    jsr copySubtype
+    lda #rightTypeOffset
+    jsr copySubtype
+
+    ; Compare the kinds of the base types. getBaseType changes ptr1 and
+    ; ptr2, so keep the left one's kind on the stack.
+    lda #leftTypeOffset
+    jsr calcTypePtr
+    jsr getBaseType
+    stq ptr3
+    ldz #type::kind
+    nop
+    lda (ptr3),z
+    pha
+    lda #rightTypeOffset
+    jsr calcTypePtr
+    jsr getBaseType
+    stq ptr3
+    pla
+    ldz #type::kind
+    nop
+    cmp (ptr3),z
+    bne ER
+DN: sec
+    rts
+.endproc
+
+; This routine sets the Z flag if the type at the stack offset in A is a
+; pointer or an address.
+.proc isPointerOperand
     jsr calcTypePtr
     stq ptr1
     ldz #type::kind
     nop
     lda (ptr1),z
     cmp #TYPE_POINTER
-    beq L1
-
-    lda #rightTypeOffset
-    jsr calcTypePtr
-    stq ptr2
-    ldz #type::kind
-    nop
-    lda (ptr2),z
-    cmp #TYPE_POINTER
-    beq L1
-
-    clc
-    rts
-
-L1: ldz #type::kind
-    nop
-    lda (ptr1),z
-    cmp #TYPE_POINTER
-    beq L2
+    beq :+
     cmp #TYPE_ADDRESS
-    bne L3
-    ; Retrieve the subtype and copy it into leftType.
-L2: ldz #type::subtype
+:   rts
+.endproc
+
+; This routine replaces the pointer or address type at the stack offset in
+; A with a copy of the type it points to.
+.proc copySubtype
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::subtype
     neg
     neg
     nop
@@ -255,38 +313,7 @@ L2: ldz #type::subtype
     inz
     cpz #.sizeof(type)
     bne :-
-
-L3: ldz #type::kind
-    nop
-    lda (ptr2),z
-    cmp #TYPE_POINTER
-    beq L4
-    cmp #TYPE_ADDRESS
-    bne L5
-    ; Retrieve the subtype and copy it into rightType.
-L4: ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr4
-    ldz #0
-:   nop
-    lda (ptr4),z
-    nop
-    sta (ptr2),z
-    inz
-    cpz #.sizeof(type)
-    bne :-
-L5: ldz #type::kind
-    nop
-    lda (ptr1),z
-    nop
-    cmp (ptr2),z
-    beq L6
-    lda #errIncompatibleTypes
-    jsr typeCheckError
-L6: rts
+    rts
 .endproc
 
 ; If both operands are an integer type, check if the signs match.

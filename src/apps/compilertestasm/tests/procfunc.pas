@@ -77,5 +77,13 @@ Begin
     If EnumSucc(May) <> Jun Then Error(8);
     If EnumSucc(m) <> May Then Error(9);
 
+    // Pred and Succ of integer literals of each size. The result has the
+    // literal's type.
+    If Succ(5) <> 6 Then Error(10);
+    If Pred(5) <> 4 Then Error(11);
+    If Succ(200) <> 201 Then Error(12);
+    If Succ(1000) <> 1001 Then Error(13);
+    If Pred(100000) <> 99999 Then Error(14);
+
     If anyErrors Then ReportFailure;
 End.

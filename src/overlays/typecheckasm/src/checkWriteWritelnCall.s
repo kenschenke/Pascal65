@@ -253,7 +253,13 @@ L1: ldz #type::kind
     rts
 .endproc
 
+; A record can only be written to a file of its record type. Without a
+; file, only the kind of fileTypeSub is set.
 .proc checkRecord
+    ldz #fileTypeSubOffset
+    nop
+    lda (stackPointer),z
+    beq ER
     ldz #exprTypeOffset
     jsr loadStackValue
     stq ptr1
@@ -293,6 +299,7 @@ L1: ldz #type::kind
     cpx #4
     bne :-
     rts
+ER:
 :   lda #errIncompatibleTypes
     jsr typeCheckError
     rts

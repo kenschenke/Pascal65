@@ -55,9 +55,17 @@ argOffset = retnTypeOffset + 4
     ldz #expr::kind
     nop
     lda (ptr1),z
+    ; An integer literal has the type exprTypeCheck gave it, which is the
+    ; type icode does Pred or Succ in, as for a variable.
+    cmp #EXPR_BYTE_LITERAL
+    beq :+
     cmp #EXPR_WORD_LITERAL
-    bne :+
-    lda #TYPE_INTEGER
+    beq :+
+    cmp #EXPR_DWORD_LITERAL
+    bne :++
+:   ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
     jmp DN
 :   cmp #EXPR_CHARACTER_LITERAL
     bne :+

@@ -27,12 +27,14 @@ exprOffset = recordSymtabOffset + 4
 .import checkBoolOperand, getTypeConversion, getTypeSize, isExprATypeDeclaration
 .import isExprAFuncCall, checkAssignment, checkFuncProcCall, getArrayType, hoistFuncCall
 .import checkTypeCast, isExprARoutineCall, getBinaryExpressionType
+.import isTypeCastable, getRecordSymtab
 
 .bss
 
 arrayType: .res .sizeof(type)
 elemType: .res 4
 indexType: .res 4
+addrSymtab: .res 4         ; a record's table for evalAddressOf
 
 .code
 
@@ -378,7 +380,7 @@ RC: jsr pushA
     jmp DN
 :   cmp #EXPR_CAST
     bne :+
-    ; Nothing to do
+    jsr evalCast
     jmp DN
 :   cmp #EXPR_NEGATE
     bne :+
@@ -1202,9 +1204,9 @@ L2: lda #errIncompatibleTypes
     rts
 .endproc
 
+; The left of an assignment can't be a type or a function call.
 .proc evalAssign
-    ldz #exprOffset
-    jsr loadStackValue
+    jsr loadAssignLeft
     jsr isExprATypeDeclaration
     bne L1
     lda #errInvalidIdentifierUsage
@@ -1218,9 +1220,7 @@ L2: lda #errIncompatibleTypes
     sta (ptr1),z
     rts
 
-L1: ldz #exprOffset
-    jsr loadStackValue
-    stq ptr1
+L1: jsr loadAssignLeft
     jsr isExprAFuncCall
     bne L2
     lda #errInvalidIdentifierUsage
@@ -1321,6 +1321,37 @@ L5: lda #leftTypeOffset
     rts
 .endproc
 
+; This routine checks a cast by a type keyword, such as Integer(x). The
+; parser sets its evalTypeKind. What is cast must be castable, as for a
+; cast by a type name (checkTypeCast).
+.proc evalCast
+    lda #leftTypeOffset
+    jsr calcTypeBlockAddr
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isTypeCastable
+    beq :+
+    lda #errInvalidTypeCast
+    jsr typeCheckError
+:   rts
+.endproc
+
+; This routine loads the left of the assignment expression into Q
+.proc loadAssignLeft
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    rts
+.endproc
+
 .proc freeTypeName
     stq ptr1
     jsr pushQ
@@ -1414,6 +1445,10 @@ L3: lda #leftTypeOffset
 L4: rts
 .endproc
 
+; This routine sets the type of an address (@x). Its subtype is a new
+; type for what it points to: the kind of the base type, and a record's
+; symbol table (getRecordSymtab), which isn't the new type's own
+; (TYPE_FLAG_ISCLONED keeps freeType from freeing it).
 .proc evalAddressOf
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1436,9 +1471,17 @@ L2: ldz #type::kind
     nop
     sta (ptr1),z
 
+    lda #leftTypeOffset
+    jsr calcTypeBlockAddr
+    jsr getRecordSymtab
+    stq addrSymtab
+    lda #leftTypeOffset
+    jsr calcTypeBlockAddr
+    jsr getBaseType
+    stq ptr3
     ldz #type::kind
     nop
-    lda (ptr2),z
+    lda (ptr3),z
     jsr pushA
     lda #0
     jsr pushA
@@ -1449,9 +1492,18 @@ L2: ldz #type::kind
     ldz #type::flags
     nop
     lda (ptr2),z
-    ora #TYPE_FLAG_ISTEMP
+    ora #TYPE_FLAG_ISTEMP | TYPE_FLAG_ISCLONED
     nop
     sta (ptr2),z
+    ldz #type::symtab
+    ldx #0
+:   lda addrSymtab,x
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #4
+    bne :-
 
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1930,6 +1982,18 @@ L5: ldz #typePtrOffset
     lda (ptr1),z
     jsr isExprARoutineCall
     beq L1
+
+    ; Only a type can be cast to. checkFuncProcCall reports anything else.
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::left
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isExprATypeDeclaration
+    bne L1
 
     ldz #typePtrOffset
     jsr loadStackValue

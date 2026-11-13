@@ -46,7 +46,7 @@ The project has nine test suites, located in `src/apps`:
   - tokenizertest
   - parsertest
   - resolvertest
-  - typechecktest
+  - typechecktest (see "Typecheck Tests")
   - icodetest
   - memtest (memory heap allocator in asmlib)
   - compilertestasm
@@ -224,6 +224,45 @@ against a copy of the resolver with probes in it (editortest's
 it as parsertest does if it stops fitting. Like `test`, it needs asmlib
 built with `MEMCHECK=1`. The lines left are ones no source can reach,
 such as a lookup in a record's table that `exprResolve` never asks for.
+
+### Typecheck Tests
+
+`typechecktest` runs two kinds of test. `tests/testN.pas` (N to
+`NUM_TESTS` in `runtests.s`) holds a program and, in its header comment,
+the AST dump the type checker must make for it. `tests/errorN.pas` (N to
+`NUM_TESTS` in `runerrortests.s`) marks each error and warning it must
+report with a `$ExpectError` or `$ExpectWarn` directive on that line. An
+error reported twice on a line is expected twice. A test with no
+directives must check without an error. The harness type checks after
+resolver errors, which the compiler doesn't, so the resolver's errors
+count too.
+
+The parser only takes a directive in a statement. One between two case
+branches or in a declaration is an error, so a case branch with one is a
+compound statement, and a declaration with an error is in a one-line
+routine whose statements hold the directive. Errors in a routine's
+heading are reported on its `Procedure` line.
+
+`make TARGET=mega65 test TESTSEL="-D FIRST_TEST=1 -D LAST_TEST=0 -D
+FIRST_ERROR_TEST=14 -D LAST_ERROR_TEST=14"` runs only those tests (a first
+test after the last runs none). The screen dump only shows the last
+screen, so a failing test is easier to read alone.
+
+`make TARGET=mega65 coverage` in `src/apps/typechecktest` runs the tests
+against copies of the type checker with probes in them (editortest's
+`cov/mkcov.py`) and lists the lines that never ran in
+`bin/mega65/coverage.txt`. The probes don't all fit in the overlay at
+once, so the files are instrumented in sets (`COVFILESn`). A new file
+must go in a set, and a set that no longer fits fails to link and must be
+split. `exprTypeCheck.s` is too big for one set, so two sets each take
+part of it, split at a proc (`exprTypeCheck.s:-evalNegate`). Like `test`,
+it needs asmlib built with `MEMCHECK=1`. The lines left are ones no
+program can reach, such as checks for undefined names that the resolver
+reports first, and `integerOperands.s` and `realOperands.s`, which
+nothing calls.
+
+`getBaseType` changes ptr1, ptr2 and ptr4, and `pushQ` doesn't keep Q.
+Several bugs were a pointer used after one of them.
 
 ### Heap Tests
 

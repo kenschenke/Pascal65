@@ -12,6 +12,18 @@
 #
 # usage: mkcov.py [-D sym]... [-m max] <out dir> <out.map> <in.s>...
 #
+# An input can be given as <in.s>:<first>-<last> to instrument only those
+# lines, for a file too big to instrument whole. <first> must be 1 or a
+# .proc line, so the first instruction starts a block. The other lines get
+# no probes and aren't in the map, but their branches are still made long.
+# Two sets can each instrument part of a file (see covreport.py).
+#
+# <first> and <last> can be the names of procs instead of line numbers, so
+# the split doesn't move when the file changes. <first> is then the proc's
+# .proc line and <last> the line before it. An empty <first> is the start
+# of the file and an empty <last> its end: exprTypeCheck.s:-evalNegate and
+# exprTypeCheck.s:evalNegate- are the two halves of the file.
+#
 # This is memtest's cov/mkcov.py, made for a whole overlay. A probe goes at
 # the start of every basic block: at the start of each .proc, after each
 # label, and after each branch, jump, jsr, rts, or brk. A probe is
@@ -86,8 +98,14 @@ class Instrumenter:
         self.probes = 0
         self.map_lines = []
 
-    def instrument(self, name, src):
-        """Returns the instrumented lines of one file."""
+    def instrument(self, name, src, first=1, last=None):
+        """Returns the instrumented lines of one file. Only lines first to
+        last get probes."""
+        if last is None:
+            last = len(src)
+        if first != 1 and (first > len(src) or
+                           not PROC_RE.match(strip_comment(src[first - 1]))):
+            sys.exit(f'mkcov: {name} line {first} is not a .proc')
         out_lines = []
         pending = False
         in_code = True
@@ -153,6 +171,15 @@ class Instrumenter:
                 out_lines.append(rest)
                 continue
 
+            if not first <= line_no <= last:
+                # Outside the range: no probe, but the branch is made long
+                # because probes may come between it and its target
+                m = MNEMONIC_RE.match(rest)
+                if m and m.group(2).lower() in BRANCHES:
+                    rest = MNEMONIC_RE.sub(r'\1l\2', rest, count=1)
+                out_lines.append(rest)
+                continue
+
             if pending:
                 n = self.probes
                 self.probes += 1
@@ -181,6 +208,21 @@ class Instrumenter:
         return out_lines
 
 
+def line_of(name, src, limit, default, offset):
+    """Returns the line a range limit names: a line number, or the line of
+    the proc's .proc line plus offset. An empty limit is the default."""
+    if limit == '':
+        return default
+    if limit.isdigit():
+        return int(limit)
+    proc_re = re.compile(r'^\s*\.proc\s+' + re.escape(limit) + r'\b',
+                         re.IGNORECASE)
+    for line_no, line in enumerate(src, start=1):
+        if proc_re.match(line):
+            return line_no + offset
+    sys.exit(f'mkcov: {name} has no .proc {limit}')
+
+
 def main():
     args = sys.argv[1:]
     defines = []
@@ -197,11 +239,17 @@ def main():
     out_dir, map_file = args[:2]
 
     inst = Instrumenter(defines)
-    for in_file in args[2:]:
+    for arg in args[2:]:
+        m = re.match(r'^(.*\.s):(\w*)-(\w*)$', arg)
+        in_file = m.group(1) if m else arg
         name = os.path.basename(in_file)
         with open(in_file, encoding='latin-1') as f:
             src = [line.rstrip('\r\n') for line in f]
-        out_lines = inst.instrument(name, src)
+        first, last = 1, None
+        if m:
+            first = line_of(name, src, m.group(2), 1, 0)
+            last = line_of(name, src, m.group(3), None, -1)
+        out_lines = inst.instrument(name, src, first, last)
         with open(os.path.join(out_dir, name), 'w', encoding='latin-1',
                   newline='\n') as f:
             f.write('\n'.join(out_lines) + '\n')

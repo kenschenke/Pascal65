@@ -105,6 +105,8 @@ L1: ldz #argOffset
     lda (ptr1),z
     stq ptr1
     stq exprLeft
+    lda #1
+    sta subscript
     ldz #expr::kind
     nop
     lda (ptr1),z
@@ -126,37 +128,22 @@ L1: ldz #argOffset
     lda #errUndefinedIdentifier
     jsr typeCheckError
     jmp NX
+    ; An array element or what a pointer points to has the type that
+    ; exprTypeCheck gave it. A variable has its symbol's type: an
+    ; expression's type has a subtype even for an untyped file.
+:   lda subscript
+    beq :+
+    ldq exprType
+    bra L3
 :   ldz #symbol::type
     neg
     neg
     nop
     lda (ptr2),z
-    stq exprType
-    stq ptr1
-    lda subscript
-    beq :+
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq exprType
-:   ldq exprType
     jsr getBaseType
     stq exprType
-    stq ptr1
-    lda subscript
-    beq :+
-    ldq exprType
-    stq ptr1
-    ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq exprType
-    stq ptr1
-:   ldz #expr::kind
+L3: stq ptr1
+    ldz #type::kind
     nop
     lda (ptr1),z
     cmp #TYPE_ARRAY
@@ -213,7 +200,10 @@ L1: ldz #argOffset
     jmp NX
 :   cmp #TYPE_RECORD
     bne :+
-    ; do nothing
+    ; A record can only be read from a file
+    ldx #type::kind
+    lda fileTypeSub,x
+    beq :+
     jmp NX
 :   lda #errIncompatibleTypes
     jsr typeCheckError
