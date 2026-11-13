@@ -531,11 +531,15 @@ L1: pha
     lda (stackPointer),z
     beq DN
 
+    ; A library routine reads its arguments from the runtime stack as the
+    ; parameter's type, so an integer is converted to it here. A smaller
+    ; integer is zero-extended on the stack, which is wrong for a negative
+    ; one.
     ldz #paramTypeKindOffset
     nop
     lda (stackPointer),z
     jsr isTypeInteger
-    beq DN
+    bne DN              ; Branch if not an integer
 
     ; Compare the arg type to the param type
     ldz #argPtrOffset
@@ -651,15 +655,11 @@ DN: rts
 L1: rts
 .endproc
 
-; Type kind passed in A.
+; Integer type kind passed in A.
 ; Size returned in A/X.
 .proc getTypeSize
     ldx #0
-    cmp #TYPE_REAL
-    bne :+
-    lda #4
-    rts
-:   cmp #TYPE_SHORTINT
+    cmp #TYPE_SHORTINT
     bne :+
     lda #1
     rts

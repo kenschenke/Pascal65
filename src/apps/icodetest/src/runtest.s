@@ -85,6 +85,10 @@ strErrorCount: .asciiz "Errors encountered - press a key"
 strErrorNum: .asciiz "Error "
 strErrorLine: .asciiz " on line "
 strFeatures: .asciiz "Wrong runtime features"
+.ifdef SAVEDUMP
+strDumpPrefix: .asciiz "dump"
+strWriteSuffix: .asciiz ",s,w"
+.endif
 
 ; The runtime features (RTF_* in asm.inc) icode must find in each test,
 ; starting with test 1. A file variable needs RTF_FILES, but a file
@@ -94,6 +98,9 @@ expectedFeatures:
     .byte 0, 0, 0, RTF_FILES, 0, RTF_FILES          ; 11-16
     .byte RTF_FILES, 0, 0, 0                        ; 17-20
     .byte 0, 0, 0, 0, 0, 0, RTF_DYNARRAYS, 0        ; 21-28
+    .byte 0, RTF_FILES, RTF_FILES                   ; 29-31
+    .byte RTF_FILES, RTF_FILES, RTF_TRIG, 0, 0, 0   ; 32-37
+    .byte 0                                         ; 38
 
 .code
 
@@ -272,6 +279,13 @@ expectedFeatures:
     ldq astRoot
     jsr declTypeCheck
 
+    ; Type check the units, as the compiler does, if they were resolved
+    lda isResolvingUnits
+    beq :+
+    ldq unitList
+    jsr typeCheckUnits
+:
+
     ; Show the AST tree
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; jsr initShowTree
@@ -342,8 +356,6 @@ expectedFeatures:
 
     jsr freeUnits
 
-    jsr openSourceFile
-
     ; Rewind the membuf
     ldq icodeBuf
     stq ptr1
@@ -351,9 +363,17 @@ expectedFeatures:
     tax
     jsr setMemBufPos
 
+.ifdef SAVEDUMP
+    lda #0
+    sta foundDiff
+    jsr saveDump
+.else
+    jsr openSourceFile
+
     lda #0
     sta foundDiff
     jsr compareLines
+.endif
 
     lda foundDiff
     beq :+
@@ -380,9 +400,72 @@ expectedFeatures:
     rts
 .endproc
 
+.ifdef SAVEDUMP
+; With SAVEDUMP defined, a test writes its dump to the file dumpN (N is the
+; test number) in place of comparing it (make savedump, see the Makefile).
+.proc saveDump
+    ; Format the filename: "dump", the test number and ",s,w"
+    ldx #0
+:   lda strDumpPrefix,x
+    beq :+
+    sta sourceFn,x
+    inx
+    bne :-
+:   phx
+    lda testNum
+    sta intOp1
+    lda testNum+1
+    sta intOp1+1
+    lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt16
+    plx
+    ldy #0
+:   lda intBuf,y
+    beq :+
+    sta sourceFn,x
+    inx
+    iny
+    bne :-
+:   ldy #0
+:   lda strWriteSuffix,y
+    sta sourceFn,x
+    beq :+
+    inx
+    iny
+    bne :-
+:   txa
+    ldx #<sourceFn
+    ldy #>sourceFn
+    jsr SETNAM
+    lda #1
+    ldx DEVNUM
+    ldy #2
+    jsr SETLFS
+    jsr OPEN
+    ldx #1
+    jsr CHKOUT
+
+L1: ldq icodeBuf
+    jsr isMemBufAtEnd
+    beq L2
+    jsr readByte
+    lda ch
+    jsr CHROUT
+    bra L1
+
+L2: jsr CLRCHN
+    lda #1
+    jmp CLOSE
+.endproc
+.endif
+
 ; This routine fails the test unless the runtime features icode found
 ; (RTF_* in asm.inc) are the ones expectedFeatures lists for it.
 .proc checkFeatures
+.ifdef SAVEDUMP
+    rts                         ; New tests may not be in the table yet
+.endif
     jsr getIcodeRuntimeFeatures
     ldx testNum
     cmp expectedFeatures-1,x

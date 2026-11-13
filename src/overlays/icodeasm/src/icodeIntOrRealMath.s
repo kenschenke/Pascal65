@@ -126,17 +126,22 @@ L1: ldz #instructionOffset
     jsr icodeOper1Int
     lda #IC_PSH
     jsr icodeWriteInstruction
+    ; The offset in bytes is an Integer. In the type of the number added it
+    ; would overflow: p + 100 is 200 bytes for a pointer to an Integer.
     ldz #rightTypeOffset
     nop
     lda (stackPointer),z
-    pha
     jsr icodeOper1Short
-    pla
-    jsr icodeOper3Short
     lda #TYPE_INTEGER
     jsr icodeOper2Short
+    lda #TYPE_INTEGER
+    jsr icodeOper3Short
     lda #IC_MUL
     jsr icodeWriteInstruction
+    lda #TYPE_INTEGER
+    ldz #rightTypeOffset
+    nop
+    sta (stackPointer),z
 
 L2: ldz #leftTypeOffset
     nop

@@ -15,8 +15,7 @@
 .include "cbm_kernal.inc"
 
 symPtrOffset = 0
-isDeRefOffset = symPtrOffset + 4
-isReadOffset = isDeRefOffset + 1
+isReadOffset = symPtrOffset + 4
 exprOffset = isReadOffset + 1
 
 .export icodeExpr, icodeExprRead
@@ -43,8 +42,6 @@ isByRef: .res 1
 ;    expression ptr
 ;    isRead
 .proc icodeExpr
-    lda #1
-    jsr pushA
     jmp icodeExprPvt
 .endproc
 
@@ -53,15 +50,13 @@ isByRef: .res 1
     jsr pushQ
     lda #1
     jsr pushA
-    lda #1
-    jsr pushA
     ; Fall through to icodeExprPvt
 .endproc
 
 ; Parameters on stack, bottom to top:
 ;    expression ptr
-;    isRead
-;    isDeRef
+;    isRead: 1 for the expression's value, 0 for the address of the
+;            variable it names (to write to or pass by reference)
 .proc icodeExprPvt
     jsr pushQZero               ; symPtr
 
@@ -246,10 +241,9 @@ isByRef: .res 1
     lda #TYPE_STRING_LITERAL
 
 DN: pha
-    jsr popQ
-    jsr popA
-    jsr popA
-    jsr popQ
+    jsr popQ                    ; symPtr
+    jsr popA                    ; isRead
+    jsr popQ                    ; expression
     pla
     rts
 .endproc
@@ -308,8 +302,6 @@ L2: pha
     jsr getChildExpr
     jsr pushQ
     pla
-    jsr pushA
-    lda #0
     jsr pushA
     jsr icodeExprPvt
 
@@ -384,8 +376,6 @@ DN: lda castTargetKind
     ldz #expr::left
     jsr getChildExpr
     jsr pushQ
-    lda #0
-    jsr pushA
     lda #0
     jsr pushA
     jsr icodeExprPvt
@@ -513,6 +503,10 @@ DN: lda castTargetKind
     cpx #4
     bne :-
 
+    ; The record's address: the value of a name (a record variable holds
+    ; its heap address) or of the pointer to the record (p^.x). A
+    ; subscript or field is the address of the record in the array or
+    ; record holding it.
     ldz #expr::left
     jsr getChildExpr
     stq ptr1
@@ -526,11 +520,8 @@ DN: lda castTargetKind
     neg
     nop
     lda (ptr1),z
-    stq ptr1
-:   ldz #expr::kind
-    nop
-    lda (ptr1),z
-    cmp #EXPR_NAME
+    bra RD                      ; The pointer's value
+:   cmp #EXPR_NAME
     beq :+
     ldq ptr1
     jsr pushQ
@@ -539,7 +530,7 @@ DN: lda castTargetKind
     jsr icodeExpr
     bra L1
 :   ldq ptr1
-    jsr icodeExprRead
+RD: jsr icodeExprRead
 
 L1: ldz #symPtrOffset
     jsr loadStackValue
@@ -570,6 +561,8 @@ L1: ldz #symPtrOffset
     beq :+
     pla
     pha
+    cmp #TYPE_RECORD
+    beq :+                      ; An embedded record is at its address
     jsr icodeOper1Short
     lda #IC_MEM
     jsr icodeWriteInstruction
@@ -889,15 +882,15 @@ DN: lda rightType
     rts
 .endproc
 
+; The pointer's value is the address of the variable it points to. That is
+; the address of p^ (isRead 0: p^ := x, p^ passed to a Var parameter), and
+; reading p^ reads (MEM) the variable there. A pointer to a record holds
+; the record's address (@ of a record is its heap address), so reading it
+; reads nothing. The pointed-to type kind is returned in A.
 .proc exprPointer
     ldz #expr::left
     jsr getChildExpr
-    jsr pushQ
-    lda #1
-    jsr pushA
-    lda #0
-    jsr pushA
-    jsr icodeExprPvt
+    jsr icodeExprRead           ; The pointer's value
 
     ldz #expr::left
     jsr getChildExpr
@@ -910,42 +903,25 @@ DN: lda rightType
     lda (ptr1),z
     jsr getBaseType
     stq ptr1
-    ldz #isReadOffset
-    nop
-    lda (stackPointer),z
-    beq L2
-
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    cmp #TYPE_ARRAY
-    beq L1
-    cmp #TYPE_RECORD
-    beq L1
-    cmp #TYPE_STRING_OBJ
-    beq L1
-    cmp #TYPE_STRING_VAR
-    bne L2
-
-L1: jsr icodeOper1Short
-    lda #IC_MEM
-    jsr icodeWriteInstruction
-    rts
-
-L2: ldz #isDeRefOffset
-    nop
-    lda (stackPointer),z
-    beq L3
     ldz #type::kind
     nop
     lda (ptr1),z
     pha
+    ldz #isReadOffset
+    nop
+    lda (stackPointer),z
+    beq L1                      ; Branch if the address is wanted
+
+    pla
+    pha
+    cmp #TYPE_RECORD
+    beq L1
     jsr icodeOper1Short
     lda #IC_MEM
     jsr icodeWriteInstruction
-    pla
 
-L3: rts
+L1: pla
+    rts
 .endproc
 
 .proc exprSubMul
@@ -999,7 +975,7 @@ L1: ldz #expr::kind
     nop
     lda (ptr1),z
     ; A name, a record field and a subscript are all looked up
-    ; as an address (isRead 0). exprName doesn't use isDeRef.
+    ; as an address (isRead 0).
     cmp #EXPR_NAME
     beq :+
     ; Look up the array index
@@ -1078,12 +1054,14 @@ L2: ldz #expr::right
 :   ldz #type::kind
     nop
     lda (ptr1),z
+    cmp #TYPE_RECORD
+    beq :+                      ; A record element is at its address
     pha
     jsr icodeOper1Short
     lda #IC_MEM
     jsr icodeWriteInstruction
     pla
-    rts
+:   rts
 .endproc
 
 ; This little helper routine gets either the left or right

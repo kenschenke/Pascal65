@@ -9,6 +9,7 @@ Var
     i : Integer;
     str : String;
     rec : DemoRecord;
+    sh : ShortInt;
 
 Procedure Error(num : Integer);
 Begin
@@ -53,6 +54,10 @@ Begin
     errList := '';
 
     If DemoArea(5, 6) <> 30 Then Error(1);
+
+    // A ShortInt passed to an Integer parameter is sign-extended
+    sh := -5;
+    If DemoArea(sh, 6) <> -30 Then Error(36);
 
     i := 1234;
     DoubleParam(i);

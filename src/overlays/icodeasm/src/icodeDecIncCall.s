@@ -115,7 +115,8 @@ L1: ldz #argPtrOffset
     cmp #TYPE_POINTER
     bne L2
     ; The increment amount needs to be multiplied by the
-    ; size of the pointer's data type.
+    ; size of the pointer's data type. The product is an Integer: in the
+    ; amount's type it would overflow (100 Integers is 200 bytes).
     ldz #type::subtype
     neg
     neg
@@ -136,10 +137,12 @@ L1: ldz #argPtrOffset
     jsr icodeOper1Short
     lda #TYPE_INTEGER
     jsr icodeOper2Short
-    lda amountType
+    lda #TYPE_INTEGER
     jsr icodeOper3Short
     lda #IC_MUL
     jsr icodeWriteInstruction
+    lda #TYPE_INTEGER
+    sta amountType
 
 L2: ldz #argPtrOffset
     jsr loadStackValue

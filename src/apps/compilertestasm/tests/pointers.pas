@@ -16,6 +16,14 @@ Var
 	rec : RecType;
 	rPtr : ^RecType;
 	aPtr : ^ArrType;
+	big : Array[1..160] Of Integer;
+	b : Byte;
+	rec2 : RecType;
+	recs : Array[1..3] Of RecType;
+	outer : Record
+		n : Integer;
+		inner : RecType;
+	End;
 
 Procedure Error(num : Integer);
 Begin
@@ -32,6 +40,11 @@ End;
 Procedure TestValueByRef(Var p : ^Integer);
 Begin
 	p^ := 21321;
+End;
+
+Procedure TestVarInt(Var n : Integer);
+Begin
+	n := 777;
 End;
 
 Function ReturnValue(num : Integer) : Integer;
@@ -166,6 +179,51 @@ Begin
 	If iPtr = nil Then Error(25);
 	iPtr := nil;
 	If iPtr <> nil Then Error(26);
+
+	// Pointer math whose offset in bytes doesn't fit the type of the
+	// number added: 100, 90 and b are one byte, but 200 bytes is too big
+	For i := 1 To 160 Do big[i] := i;
+	iPtr := @big[1];
+	iPtr := iPtr + 100;
+	If iPtr^ <> 101 Then Error(27);
+	iPtr := @big[120];
+	iPtr := iPtr - 90;
+	If iPtr^ <> 30 Then Error(28);
+	b := 150;
+	iPtr := @big[1];
+	iPtr := iPtr + b;
+	If iPtr^ <> 151 Then Error(29);
+	iPtr := @big[1];
+	Inc(iPtr, 100);
+	If iPtr^ <> 101 Then Error(30);
+	Dec(iPtr, 90);
+	If iPtr^ <> 11 Then Error(31);
+
+	// A dereferenced pointer passed to a Var parameter and to Inc
+	i := 5;
+	iPtr := @i;
+	TestVarInt(iPtr^);
+	If i <> 777 Then Error(32);
+	Inc(iPtr^);
+	If i <> 778 Then Error(33);
+
+	// A whole record read through a pointer and from an array
+	rec.a := 111;
+	rec.b := 222;
+	rPtr := @rec;
+	rec2 := rPtr^;
+	If (rec2.a <> 111) Or (rec2.b <> 222) Then Error(34);
+	recs[2].a := 333;
+	recs[2].b := 444;
+	rec2 := recs[2];
+	If (rec2.a <> 333) Or (rec2.b <> 444) Then Error(35);
+	outer.inner.a := 555;
+	outer.inner.b := 666;
+	rec2 := outer.inner;
+	If (rec2.a <> 555) Or (rec2.b <> 666) Then Error(36);
+	rPtr := @recs[3];
+	rPtr^.a := 777;
+	If recs[3].a <> 777 Then Error(37);
 
     If anyErrors Then ReportFailure;
 End.

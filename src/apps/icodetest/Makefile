@@ -63,6 +63,7 @@ TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
 TXTFILES += $(patsubst $(TESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(TESTS))
 TXTFILES += $(patsubst $(ERRORTESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(ERRORTESTS))
+comma := ,
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILE) $(D81FILE)
 
@@ -129,16 +130,34 @@ vpath %.pas $(ERRORTESTSDIR)
 $(PETSCIIDIR)/%.pas: %.pas | $(PETSCIIDIR)
 	dos2unix < $< | petcat -w2 -text -o $@
 
+# TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m" runs only those tests. A first
+# test after the last runs none. SAVEDUMP=1 writes each test's dump to the
+# disk in place of comparing it (see savedump). The settings are kept in a
+# file so a change rebuilds the objects.
+TESTSEL ?=
+SAVEDUMP ?=
+TESTSFILE := $(OBJTARGETDIR)/testsel
+
+$(TESTSFILE): FORCE | $(OBJTARGETDIR)
+	@echo "$(TESTSEL) $(SAVEDUMP)" | cmp -s - $@ || \
+	echo "$(TESTSEL) $(SAVEDUMP)" > $@
+
+$(OBJTARGETDIR)/runtests.o: ASFLAGS += $(TESTSEL)
+$(OBJTARGETDIR)/runtest.o: ASFLAGS += $(if $(SAVEDUMP),-D SAVEDUMP)
+$(OBJTARGETDIR)/runtests.o $(OBJTARGETDIR)/runtest.o: $(TESTSFILE)
+
 $(PRGFILE): $(OBJECTS)
 	ld65 -o $(PRGFILE) -C icodetest.cfg $(OBJECTS)
 
 FORCE:
 
-$(D81FILE): $(BINFILES) $(TXTFILES)
-	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
-	-write $(PRGFILE) icodetest,prg \
+# Makes a disk: $(1) is the D81, $(2) the test program and $(3) the icode
+# overlay. Every .pas file in tests goes on it.
+define MKDISK
+c1541 -format $(PROGRAM),8a d81 $(1) \
+	-write $(2) icodetest,prg \
 	-write $(TOKENIZER) tokenizer,prg \
-	-write $(ICODE) icode,prg \
+	-write $(3) icode,prg \
 	-write $(PARSER) parser,prg \
 	-write $(RESOLVER) resolver,prg \
 	-write $(TYPECHECK) typecheck,prg \
@@ -146,48 +165,139 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(SHOWTREE) showtree,prg \
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
-	-write $(PETSCIIDIR)/test1.pas test1.pas,seq \
-	-write $(PETSCIIDIR)/test2.pas test2.pas,seq \
-	-write $(PETSCIIDIR)/test3.pas test3.pas,seq \
-	-write $(PETSCIIDIR)/test4.pas test4.pas,seq \
-	-write $(PETSCIIDIR)/test5.pas test5.pas,seq \
-	-write $(PETSCIIDIR)/test6.pas test6.pas,seq \
-	-write $(PETSCIIDIR)/test7.pas test7.pas,seq \
-	-write $(PETSCIIDIR)/test8.pas test8.pas,seq \
-	-write $(PETSCIIDIR)/test9.pas test9.pas,seq \
-	-write $(PETSCIIDIR)/test10.pas test10.pas,seq \
-	-write $(PETSCIIDIR)/test11.pas test11.pas,seq \
-	-write $(PETSCIIDIR)/test12.pas test12.pas,seq \
-	-write $(PETSCIIDIR)/test13.pas test13.pas,seq \
-	-write $(PETSCIIDIR)/test14.pas test14.pas,seq \
-	-write $(PETSCIIDIR)/test15.pas test15.pas,seq \
-	-write $(PETSCIIDIR)/test16.pas test16.pas,seq \
-	-write $(PETSCIIDIR)/test17.pas test17.pas,seq \
-	-write $(PETSCIIDIR)/test18.pas test18.pas,seq \
-	-write $(PETSCIIDIR)/test19.pas test19.pas,seq \
-	-write $(PETSCIIDIR)/test20.pas test20.pas,seq \
-	-write $(PETSCIIDIR)/test21.pas test21.pas,seq \
-	-write $(PETSCIIDIR)/test22.pas test22.pas,seq \
-	-write $(PETSCIIDIR)/test23.pas test23.pas,seq \
-	-write $(PETSCIIDIR)/test24.pas test24.pas,seq \
-	-write $(PETSCIIDIR)/test25.pas test25.pas,seq \
-	-write $(PETSCIIDIR)/test26.pas test26.pas,seq \
-	-write $(PETSCIIDIR)/test27.pas test27.pas,seq \
-	-write $(PETSCIIDIR)/test28.pas test28.pas,seq \
+	$(foreach f,$(notdir $(TESTS) $(ERRORTESTS)), \
+	-write $(PETSCIIDIR)/$(f) $(f)$(comma)seq) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq
+endef
+
+$(D81FILE): $(BINFILES) $(TXTFILES)
+	$(call MKDISK,$(D81FILE),$(PRGFILE),$(ICODE))
+
+# The coverage build. make coverage runs the tests against instrumented
+# copies of the icode overlay (see ../editortest/cov/mkcov.py) and lists
+# the lines that never ran in bin/$(TARGET)/coverage.txt. Like test, it
+# needs asmlib built with MEMCHECK=1.
+#
+# The probes make the overlay much bigger, and they don't all fit at once.
+# So the files are instrumented in sets (COVFILESn), and the tests run once a
+# set. A set's map is COVSIZE bytes at COVMAP, above the test program. A set
+# that no longer fits fails to link and must be split.
+COVTOOLS := ../editortest/cov
+COVMAP := 14848
+COVSIZE := 512
+COVSETS := 1 2 3 4 5 6
+COVSET ?= 1
+# Expressions
+COVFILES1 := icodeExpr.s getExprType.s getExprTypeKind.s \
+	setIcodeUnitsList.s icodeVar.s
+# Array initializers, routine calls and loops
+COVFILES2 := icodeArrayInit.s icodeRoutineCall.s icodeOper.s \
+	icodeRepeatStmt.s icodeWhileStmt.s
+# Standard routines, variable declarations and if statements
+COVFILES3 := icodeStdRoutineCall.s icodeVariableDeclarations.s \
+	icodeIfStmt.s icodeCompExpr.s
+# Records, files, case statements, Write and units
+COVFILES4 := icodeRecordInit.s icodeFile.s icodeCaseStmt.s \
+	icodeWriteWritelnCall.s icodeUnitDeclarations.s icodeUnitRoutines.s
+# Literals, values, data, Read and routine declarations
+COVFILES5 := addEmbeddedArrayOrRecord.s icodeValue.s \
+	addScalarArrayLiterals.s addStringArrayLiterals.s icodeData.s \
+	icodeReadReadlnCall.s icodeRoutineDeclaration.s
+# Subroutine calls, for loops, math and statements
+COVFILES6 := icodeDecIncCall.s icodeDeclaredSubroutineCall.s \
+	icodeForLoop.s icodeIntOrRealMath.s icodeLibrarySubroutineCall.s \
+	icodeRoutineCleanup.s icodeRoutineDeclarations.s \
+	icodeRoutineParamsCleanup.s icodeStmts.s icodeSubroutineCall.s \
+	icodeWrite.s
+
+ICODESRCDIR := $(ICODEDIR)/src
+ICODESOURCES := $(wildcard $(ICODESRCDIR)/*.s)
+COVASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__ \
+	-D COVMAP=$(COVMAP)
+COVDIR := $(OBJTARGETDIR)/cov$(COVSET)
+COVICODEOBJS := $(addprefix $(COVDIR)/, $(notdir $(ICODESOURCES:.s=.o)))
+COVICODE := $(COVDIR)/icode
+COVPRGDIR := $(OBJTARGETDIR)/cov
+COVPRG := $(COVPRGDIR)/$(PROGRAM)
+COVPRGOBJS := $(COVPRGDIR)/main.o $(COVPRGDIR)/covsave.o
+COVPRGOBJS += $(filter-out $(OBJTARGETDIR)/main.o,$(OBJECTS))
+COVD81 := $(BINTARGETDIR)/icodetestcov.d81
+COVLIST := $(BINTARGETDIR)/coverage.txt
+# The map and the coverage file of each set
+COVARGS = $(foreach s,$(COVSETS),-m $(OBJTARGETDIR)/cov$(s)/icode.map \
+	$(BINTARGETDIR)/icode$(s).cov)
+
+# Every file of the overlay is copied, then the set's files are replaced by
+# instrumented copies.
+$(COVDIR)/stamp: $(ICODESOURCES) $(COVTOOLS)/mkcov.py
+	mkdir -p $(COVDIR)
+	cp $(ICODESOURCES) $(COVDIR)
+	python3 $(COVTOOLS)/mkcov.py -D __MEGA65__ -m $(COVSIZE) \
+	$(COVDIR) $(COVDIR)/icode.map \
+	$(addprefix $(ICODESRCDIR)/,$(COVFILES$(COVSET)))
+	touch $@
+
+$(COVDIR)/%.o: $(COVDIR)/stamp
+	ca65 $(COVASFLAGS) -o $@ $(@:.o=.s)
+
+$(COVICODE): $(COVICODEOBJS)
+	ld65 -o $@ -C cov/icodecov.cfg $(COVICODEOBJS)
+
+$(COVPRGDIR)/main.o: $(SRCDIR)/main.s $(FLAGSFILE)
+	mkdir -p $(COVPRGDIR)
+	ca65 $(ASFLAGS) -D COVERAGE -o $@ $<
+
+$(COVPRGDIR)/covsave.o: cov/covsave.s
+	mkdir -p $(COVPRGDIR)
+	ca65 $(ASFLAGS) -D COVMAP=$(COVMAP) -D COVSIZE=$(COVSIZE) -o $@ $<
+
+$(COVPRG): $(COVPRGOBJS)
+	ld65 -o $@ -C icodetest.cfg $(COVPRGOBJS)
+
+# Runs the tests against one set. The test saves the map to the disk.
+covrun: $(COVICODE) $(COVPRG) $(BINFILES) $(TXTFILES) | $(BINTARGETDIR)
+	$(RM) $(COVD81)
+	$(call MKDISK,$(COVD81),$(COVPRG),$(COVICODE))
+	../testcommon/runtest.sh icodetestcov$(COVSET) $(COVPRG) $(COVD81)
+	c1541 -attach $(COVD81) 	-read icode.cov $(BINTARGETDIR)/icode$(COVSET).cov
+
+# The copies are made fresh each time: they don't track the includes.
+coverage:
+	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
+	$(RM) $(BINTARGETDIR)/icode*.cov
+	for s in $(COVSETS); do \
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 COVSET=$$s covrun || exit 1; \
+	done
+	python3 $(COVTOOLS)/covreport.py $(COVLIST) $(COVARGS)
+
+.PHONY: covrun coverage
 
 clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(D81FILE)
+	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
+	$(RM) $(COVD81) $(COVLIST) $(BINTARGETDIR)/icode*.cov
 
 test:
 	$(MAKE) TARGET=$(TARGET) DEBUG=1 all
 	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
 
-.PHONY: test
+# Writes the dump of each test TESTSEL selects to bin/$(TARGET)/dumpN.txt,
+# in ASCII, for writing a new test's header. Check it before using it. The
+# objects are rebuilt without SAVEDUMP by the next make test.
+savedump:
+	$(RM) $(D81FILE)
+	$(MAKE) TARGET=$(TARGET) DEBUG=1 SAVEDUMP=1 all
+	../testcommon/runtest.sh $(PROGRAM) $(PRGFILE) $(D81FILE)
+	cd $(BINTARGETDIR) && for f in $$(c1541 -attach $(PROGRAM).d81 -list | \
+	sed -n 's/.*"\(dump[0-9]*\)".*/\1/p'); do \
+	c1541 -attach $(PROGRAM).d81 -read $$f$(comma)s $$f.seq && \
+	petcat -text -o $$f.txt -- $$f.seq && rm -f $$f.seq; done
+
+.PHONY: test savedump
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)

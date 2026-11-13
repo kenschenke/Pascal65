@@ -296,14 +296,14 @@ L1: lda (ptr1),y
 
     ldq ptr2
     jsr isQZero
-    bne :+
+    bne CS
     ; String pointer is NULL
     lda #0
     jsr CHROUT
     rts
 
     ; Count the string length
-    ldz #0
+CS: ldz #0
 :   nop
     lda (ptr2),z
     beq :+

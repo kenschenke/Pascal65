@@ -264,6 +264,40 @@ nothing calls.
 `getBaseType` changes ptr1, ptr2 and ptr4, and `pushQ` doesn't keep Q.
 Several bugs were a pointer used after one of them.
 
+### Icode Tests
+
+`icodetest` runs `tests/testN.pas` (N to `NUM_TESTS` in `runtests.s`).
+Each holds a program and, in its header comment, the intermediate code
+dump it must make. `expectedFeatures` in `runtest.s` lists the runtime
+features (`RTF_*`) each test must find. The tests in `unitTests`
+(`runtests.s`) resolve and type check their units as the compiler does:
+the ones that call System routines or use `iclib.pas` (a library) or
+`icunit.pas`. Every `.pas` file in `tests` goes on the disk.
+
+`make TARGET=mega65 savedump TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"`
+writes the dump of each selected test to `bin/mega65/dumpN.txt` in place
+of comparing it, for a new test's header. Check every line of it before
+using it: the header is the specification. `TESTSEL` works with `test`
+too.
+
+`make TARGET=mega65 coverage` in `src/apps/icodetest` runs the tests
+against copies of the icode overlay with probes in them (editortest's
+`cov/mkcov.py`) and lists the lines that never ran in
+`bin/mega65/coverage.txt`. The probes don't all fit in the overlay at
+once, so the files are instrumented in sets (`COVFILESn`). A new file
+must go in a set, and a set that no longer fits fails to link and must be
+split. Like `test`, it needs asmlib built with `MEMCHECK=1`. The lines
+left are ones no program can reach, such as defaults for kinds no caller
+passes and cases the type checker rejects. An array literal of more than
+255 elements can't be tested: the type checker hangs on one of more than
+90.
+
+In icode, `isRead` 0 asks an expression for the address of what it
+names, to write to or pass by reference, and 1 for its value. The
+address of `p^` is p's value. A record variable holds its heap address,
+`@rec` is that address, and a record in an array or record is inline, so
+reading a whole record never reads memory (`MEM`).
+
 ### Heap Tests
 
 `memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.
