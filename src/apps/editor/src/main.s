@@ -19,7 +19,7 @@ CH_UPPERCASE = 142
 .segment "ENTRY"
 
 .import initLib, backupZeroPage, restoreZeroPage, editorLoop, logError, logWarning
-.import runCompiledPrg, deleteZzprg
+.import runCompiledPrg, deleteZzprg, initBuildResult
 
 main:
     ; Save the stack pointer
@@ -60,6 +60,9 @@ main:
     lda #<logWarning
     ldx #>logWarning
     jsr initCompilerWarnings
+
+    ; No build yet (the program's BSS isn't cleared when it loads)
+    jsr initBuildResult
 
     ; Initialize the runtime stack
     jsr stackInit

@@ -24,7 +24,8 @@
 
 .export runCompiler, unitList
 
-.import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
+.import initTokenizer, initParser, initResolver, initTypeCheck
+.import initBuildResult, finishBuildResult, buildHasErrors
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
 
 .bss
@@ -48,7 +49,6 @@ strTypeChecking: .asciiz "Type Checking"
 strIcode: .asciiz "Intermediate Code"
 strCodeGen: .asciiz "Generating Object Code"
 strLinking: .asciiz "Linking"
-strPressKey: .asciiz "Press a key to continue"
 strRunFn: .asciiz "zzprg"
 strEditorFn: .asciiz "pascal65"
 
@@ -92,9 +92,9 @@ strEditorFn: .asciiz "pascal65"
 :   lda #13
     jsr CHROUT
 
-    ; Reset the error count
-    lda #0
-    sta errorCount
+    ; Forget the last build. logError and logWarning record this one's
+    ; errors and warnings.
+    jsr initBuildResult
 
     ; Tokenize the source file
     lda #<strTokenizing
@@ -141,7 +141,7 @@ strEditorFn: .asciiz "pascal65"
     jsr freeMemBuf
 
     ; Check the error count
-    lda errorCount
+    jsr buildHasErrors
     beq :+
 
     ; Error - so don't continue
@@ -152,7 +152,7 @@ strEditorFn: .asciiz "pascal65"
 :   jsr tokenizeAndParseUnits
 
     ; Check the error count
-    lda errorCount
+    jsr buildHasErrors
     beq :+
     ldq astRoot
     jsr astFree
@@ -198,7 +198,7 @@ strEditorFn: .asciiz "pascal65"
     stq unitList
 
     ; Check the error count
-    lda errorCount
+    jsr buildHasErrors
     beq :+
 
     ; Error - so don't continue
@@ -238,7 +238,7 @@ strEditorFn: .asciiz "pascal65"
     jsr freeSymtab
 
     ; Check the error count
-    lda errorCount
+    jsr buildHasErrors
     beq :+
 
     ; Error - so don't continue
@@ -280,7 +280,7 @@ L2: jsr setCodeGenProgramChain
     jsr freeUnits
 
     ; Check the error count (code generation reports a program too large)
-    lda errorCount
+    jsr buildHasErrors
     beq :+
 
     ; Error - so don't link
@@ -307,18 +307,9 @@ L4: lda #<sourceFn
 
 L5: jsr freeLinkerTags
 
-DN: lda #13
-    jsr CHROUT
-    jsr CHROUT
-    ldx #0
-:   lda strPressKey,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   jsr CHRIN
-    beq :-
-    rts
+    ; The errors and warnings are in the build result. The editor shows
+    ; them, so go straight back to it.
+DN: jmp finishBuildResult
 .endproc
 
 .proc printLine

@@ -144,6 +144,11 @@ change it. Each disk has the files in `files/`, in the order `FIXNAMES` in
 the Makefile gives, which is their order in the directory screen. Saving a
 file that is on the disk moves it to the end of the directory.
 
+`buildtest` (`src/buildtest.s`), run first, doesn't use the overlay. It
+links the editor app's `builderrors.s`, which keeps the IDE's build
+result (`buildresult.inc`), calls `logError` and `logWarning` as the
+compiler would and checks the bytes of `buildResult`.
+
 `make TARGET=mega65 coverage` in `src/apps/editortest` runs every program
 against copies of the overlay with probes in them (`cov/mkcov.py`) and lists
 the lines that never ran in `bin/mega65/coverage.txt`. The probes don't all

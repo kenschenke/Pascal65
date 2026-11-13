@@ -47,11 +47,21 @@ DISKWRITES := -write $(ASMLIB) asm.lib,prg \
 MKDISK = c1541 -format $(PROGRAM),8a d81 $(1) -write $(2) $(PROGRAM),prg \
 	-write $(3) editor,prg $(DISKWRITES)
 
-COMMONSRC := $(filter-out $(SRCDIR)/tests%.s,$(wildcard $(SRCDIR)/*.s))
+COMMONSRC := $(filter-out $(SRCDIR)/tests%.s $(SRCDIR)/buildtest.s,\
+	$(wildcard $(SRCDIR)/*.s))
 COMMONOBJS := $(addprefix $(OBJTARGETDIR)/,$(notdir $(COMMONSRC:.s=.o)))
 COMMONOBJS += $(OBJTARGETDIR)/testresult.o
 TESTOBJS := $(foreach n,$(TESTPROGS),$(OBJTARGETDIR)/tests$(n).o)
-DEPENDS := $(COMMONOBJS:.o=.d) $(TESTOBJS:.o=.d)
+
+# buildtest tests the IDE's build result (builderrors.s in the editor app)
+# on its own, without the editor overlay. Its disk has only asmlib.
+BUILDTEST := buildtest
+BUILDPRG := $(BINTARGETDIR)/$(BUILDTEST).prg
+BUILDD81 := $(BINTARGETDIR)/$(BUILDTEST).d81
+BUILDOBJS := $(addprefix $(OBJTARGETDIR)/,buildtest.o builderrors.o \
+	loadaddr.o m65hdr.o initlib.o loadfile.o testresult.o)
+
+DEPENDS := $(COMMONOBJS:.o=.d) $(TESTOBJS:.o=.d) $(BUILDOBJS:.o=.d)
 DEPFLAGS = --create-dep $(@:.o=.dep)
 # ca65 is the Windows build, which names cc65's own headers by Windows
 # paths. Their colons break make, and they never change, so drop them.
@@ -100,7 +110,8 @@ COVLIST := $(BINTARGETDIR)/coverage.txt
 COVARGS = $(foreach s,$(COVSETS),-m $(OBJTARGETDIR)/cov$(s)/editor.map \
 	$(foreach n,$(TESTPROGS),$(BINTARGETDIR)/editor$(s)-$(n).cov))
 
-all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILES) $(D81FILES)
+all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILES) $(D81FILES) \
+	$(BUILDPRG) $(BUILDD81)
 
 $(OBJDIR):
 	mkdir -p $@
@@ -146,6 +157,19 @@ $(OBJTARGETDIR)/%.o: %.s $(FLAGSFILE) | $(OBJTARGETDIR)
 $(BINTARGETDIR)/$(PROGRAM)%.prg: $(COMMONOBJS) $(OBJTARGETDIR)/tests%.o \
 	| $(BINTARGETDIR)
 	ld65 -o $@ -C $(PROGRAM).cfg $(COMMONOBJS) $(OBJTARGETDIR)/tests$*.o
+
+$(OBJTARGETDIR)/builderrors.o: ../editor/src/builderrors.s $(FLAGSFILE) \
+	| $(OBJTARGETDIR)
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
+
+$(BUILDPRG): $(BUILDOBJS) | $(BINTARGETDIR)
+	ld65 -o $@ -C $(PROGRAM).cfg $(BUILDOBJS)
+
+$(BUILDD81): $(BUILDPRG) $(ASMLIB)
+	$(RM) $@
+	c1541 -format $(BUILDTEST),8a d81 $@ -write $< $(BUILDTEST),prg \
+	-write $(ASMLIB) asm.lib,prg
 
 $(BINTARGETDIR)/$(PROGRAM)%.d81: $(BINTARGETDIR)/$(PROGRAM)%.prg \
 	$(EDITOR) $(DISKFILES)
@@ -202,6 +226,7 @@ coverage:
 
 clean:
 	$(RM) $(PRGFILES) $(D81FILES) $(COMMONOBJS) $(TESTOBJS)
+	$(RM) $(BUILDPRG) $(BUILDD81) $(BUILDOBJS)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) -r $(FILEDIR)
 	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
@@ -211,6 +236,7 @@ clean:
 test:
 	$(RM) $(D81FILES)
 	$(MAKE) TARGET=$(TARGET) DEBUG=1 all
+	../testcommon/runtest.sh $(BUILDTEST) $(BUILDPRG) $(BUILDD81)
 	for n in $(TESTPROGS); do \
 	../testcommon/runtest.sh $(PROGRAM)$$n $(BINTARGETDIR)/$(PROGRAM)$$n.prg \
 	$(BINTARGETDIR)/$(PROGRAM)$$n.d81 || exit 1; \

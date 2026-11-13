@@ -16,7 +16,7 @@
 
 .export editorLoop
 
-.import initEditor, initThemes, runCompiler, errorCount
+.import initEditor, initThemes, runCompiler, buildHasErrors
 
 .ifdef __DEBUG__
 .import editorDebug
@@ -53,9 +53,9 @@ L1: jsr initEditor      ; load the editor overlay from disk
     bne L1
 
     ; Run, unless the compile failed. Then go back to the editor like
-    ; Compile does (runCompiler has already waited for a key).
+    ; Compile does.
     jsr runCompiler
-    lda errorCount
+    jsr buildHasErrors
     bne CP2
     sec
     rts
