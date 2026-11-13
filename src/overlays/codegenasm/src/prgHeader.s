@@ -59,7 +59,6 @@ tagBSS_INPUTBUF: .asciiz "inputbuf"
 tagBSS_EXITHANDLER: .asciiz "exithandler"
 strTooLarge1: .asciiz "Program is "
 strTooLarge2: .asciiz " bytes too large"
-strTryStatic: .asciiz "$StaticRuntime may make it fit"
 
 prgHeader:
 
@@ -404,8 +403,9 @@ codeBase = $2001
 ; been written. The runtime stack grows down from codeCeiling and the heap
 ; runs from the end of the image up to the heap's MAT, four bytes below the
 ; stack (see the header above). If less than MIN_HEAP_SIZE bytes are left
-; for the heap, errCodeSegmentOverflow is reported, followed by a line
-; saying how many bytes too large the program is, and the carry is set.
+; for the heap, errCodeSegmentOverflow (static) or errCodeSegmentOverflowDyn
+; (dynamic) is reported, followed by a line saying how many bytes too large
+; the program is, and the carry is set.
 ; Otherwise the carry is clear.
 .proc checkCodeSize
     ; intOp1/intOp2 (32 bits) = codeBase + stack + 4 + MIN_HEAP_SIZE
@@ -457,8 +457,15 @@ OK: clc                         ; It fits
     ; The error logger uses intOp1, so save the count
 ER: ldq intOp1
     stq bytesOver
+    lda runtimeMode
+    cmp #RT_MODE_STATIC
+    bne :+
     lda #errCodeSegmentOverflow
-    ldx #0
+    bra :++
+    ; A dynamic program has less room than a static one, so the error
+    ; suggests $StaticRuntime
+:   lda #errCodeSegmentOverflowDyn
+:   ldx #0
     ldy #0
     jsr compilerError
 
@@ -488,19 +495,6 @@ ER: ldq intOp1
     bne :-
 :   lda #13
     jsr CHROUT
-
-    ; A dynamic program has less room than a static one
-    lda runtimeMode
-    cmp #RT_MODE_STATIC
-    beq :+++
-    ldx #0
-:   lda strTryStatic,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   lda #13
-    jsr CHROUT
-:   sec
+    sec
     rts
 .endproc

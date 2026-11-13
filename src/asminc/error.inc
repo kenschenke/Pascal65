@@ -104,7 +104,8 @@ errDynArrayInFile = 73
 errRuntimeFileInvalid = 74
 errDirectiveProgramOnly = 75    ; $StaticRuntime/$DynamicRuntime in a unit
 errConflictingDirectives = 76   ; $StaticRuntime and $DynamicRuntime
-numParserErrors = 77
+errCodeSegmentOverflowDyn = 77  ; errCodeSegmentOverflow, dynamic runtime
+numParserErrors = 78
 
 rteNone = 0
 rteStackOverflow = 1

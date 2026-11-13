@@ -153,8 +153,13 @@ tests:
 ; part of the chain.
 errorTests:
 ; Set 1 runs it with the dynamic runtime and set 2 with the static one
-; (see FORCESTATIC in runcompiler.s).
-.if TESTSET = 0 || TESTSET = 1 || TESTSET = 2
+; (see FORCESTATIC in runcompiler.s). A dynamic program gets the error
+; that suggests $StaticRuntime.
+.if TESTSET = 0 || TESTSET = 1
+    .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
+    .byte errCodeSegmentOverflowDyn
+.endif
+.if TESTSET = 2
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
     .byte errCodeSegmentOverflow
 .endif

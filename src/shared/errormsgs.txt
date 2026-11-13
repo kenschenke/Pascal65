@@ -75,3 +75,4 @@ Dynamic array in file
 Missing runtime file
 Program-only directive
 Conflicting directives
+Too big; try static
