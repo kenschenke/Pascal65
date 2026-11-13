@@ -30,7 +30,7 @@ exprOffset = symtabOffset + 4
 ;    isRtnCall
 .proc exprResolve
     jsr pushQZero           ; leftSymtab
-    ldz #exprOffset
+TP: ldz #exprOffset
     neg
     neg
     nop
@@ -232,34 +232,9 @@ L7: ldz #exprOffset
     jsr resolverError
     jmp L9
 
-    ; Resolve right expression
-RR: ldz #leftSymtabOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr2
-    ldz #exprOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
-    stq ptr1
-    ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr pushQ               ; right expr pointer
-    ldq ptr2
-    jsr pushQ               ; symtab
-    lda #0
-    jsr pushA               ; isRtnCall
-    jsr exprResolve
-
     ; An argument to Write, Writeln, or WriteStr can have field width and
     ; precision expressions. Resolve them in the current scope.
-    ldz #exprOffset
+RR: ldz #exprOffset
     neg
     neg
     nop
@@ -269,8 +244,9 @@ RR: ldz #leftSymtabOffset
     nop
     lda (ptr1),z
     cmp #EXPR_ARG
-    bne L9
-    ldz #expr::width
+    beq :+
+    jmp NX
+:   ldz #expr::width
     neg
     neg
     nop
@@ -296,6 +272,61 @@ RR: ldz #leftSymtabOffset
     lda #0
     jsr pushA               ; isRtnCall
     jsr exprResolve
+
+    ; Resolve the right expression in this frame, with the left's record
+    ; symbol table (null but for a field) and isRtnCall 0. It isn't a
+    ; recursive call: array literal elements and routine arguments are
+    ; chained through the right, and a long chain would overflow the CPU
+    ; stack.
+NX: ldz #exprOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr1
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1                ; the right expression
+    ldz #leftSymtabOffset
+    neg
+    neg
+    nop
+    lda (stackPointer),z
+    stq ptr2                ; its symtab
+    ldz #exprOffset
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    ldz #symtabOffset
+    ldx #0
+:   lda ptr2,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    lda #0
+    ldz #isRtnCallOffset
+    nop
+    sta (stackPointer),z
+    ldz #leftSymtabOffset
+    ldx #0
+:   nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    jmp TP
 
 L9: jsr popQ
     jsr popA

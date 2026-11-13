@@ -5,6 +5,8 @@ Type
 	RecType = Record
 		a, b : Integer;
 	End;
+	PInt = ^Integer;
+	PRec = ^RecType;
 
 Var
     anyErrors : Boolean;
@@ -24,6 +26,11 @@ Var
 		n : Integer;
 		inner : RecType;
 	End;
+	p1 : PInt;
+	ipp : ^PInt;
+	r1 : PRec;
+	rpp : ^PRec;
+	rptrs : Array[1..3] Of PRec;
 
 Procedure Error(num : Integer);
 Begin
@@ -224,6 +231,26 @@ Begin
 	rPtr := @recs[3];
 	rPtr^.a := 777;
 	If recs[3].a <> 777 Then Error(37);
+
+	// Pointers to pointers, and fields through them and through an
+	// array of pointers
+	i := 41;
+	p1 := @i;
+	ipp := @p1;
+	If ipp^^ <> 41 Then Error(38);
+	ipp^^ := 42;
+	If i <> 42 Then Error(39);
+	rec.a := 51;
+	r1 := @rec;
+	rpp := @r1;
+	If rpp^^.a <> 51 Then Error(40);
+	rpp^^.b := 52;
+	If rec.b <> 52 Then Error(41);
+	recs[1].a := 61;
+	rptrs[2] := @recs[1];
+	If rptrs[2]^.a <> 61 Then Error(42);
+	rptrs[2]^.b := 62;
+	If recs[1].b <> 62 Then Error(43);
 
     If anyErrors Then ReportFailure;
 End.

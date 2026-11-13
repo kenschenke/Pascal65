@@ -175,23 +175,18 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 COVTOOLS := ../editortest/cov
 COVMAP := 14848
 COVSIZE := 1536
-COVSETS := 1 2 3 4 5 6 7 8
+COVSETS := 1 2 3 4 5 6 7 8 9
 COVSET ?= 1
-# Expressions and declarations
-COVFILES1 := exprTypeCheck.s:-evalNegate declTypeCheck.s typecheck.s \
-	typeCheckUnits.s
-COVFILES2 := exprTypeCheck.s:evalNegate- declTypeCheckType.s \
-	isExprAFuncCall.s isExprARoutineCall.s isExprATypeDeclaration.s \
-	isAssignableToString.s getTypeSize.s getTypeConversion.s hoistFuncCall.s
+# Expressions
+COVFILES1 := exprTypeCheck.s:-evalNegate typecheck.s typeCheckUnits.s
+COVFILES2 := exprTypeCheck.s:evalNegate- hoistFuncCall.s
 # Routine calls
-COVFILES3 := checkFuncProcCall.s checkStdParms.s checkArray.s \
-	checkIntegerBaseType.s realOperands.s integerOperands.s
+COVFILES3 := checkFuncProcCall.s checkStdParms.s
 # Standard routines
 COVFILES4 := checkWriteWritelnCall.s checkReadReadlnCall.s \
-	checkReadStrCall.s checkStdRoutine.s
-# Operators and assignments
-COVFILES5 := checkRelOpOperands.s getBinaryExpressionType.s \
-	checkAssignment.s
+	checkStdRoutine.s
+# Operators
+COVFILES5 := checkRelOpOperands.s getBinaryExpressionType.s
 # Statements, compatibility and forwards
 COVFILES6 := stmtTypeCheck.s isAssignmentCompatible.s \
 	checkForwardVsFormalDeclaration.s checkArrayRoutineCall.s
@@ -201,7 +196,12 @@ COVFILES7 := exprLiteral.s checkArrayLiteral.s getArrayType.s \
 	declTypeCheckValue.s evalArrayLiteral.s checkAbsSqrCall.s
 # Case, casts and the small helpers
 COVFILES8 := caseTypeCheck.s checkTypeCast.s checkBoolOperand.s \
-	isTypeNumeric.s isTypeOrdinal.s isTypeInteger.s
+	isTypeNumeric.s isTypeOrdinal.s isTypeInteger.s checkArray.s \
+	checkIntegerBaseType.s realOperands.s integerOperands.s
+# Declarations, assignments, ReadStr and the expression helpers
+COVFILES9 := declTypeCheck.s declTypeCheckType.s isExprAFuncCall.s \
+	isExprARoutineCall.s isExprATypeDeclaration.s isAssignableToString.s \
+	getTypeSize.s getTypeConversion.s checkAssignment.s checkReadStrCall.s
 
 TYPECHECKSRCDIR := $(TYPECHECKDIR)/src
 TYPECHECKSOURCES := $(wildcard $(TYPECHECKSRCDIR)/*.s)

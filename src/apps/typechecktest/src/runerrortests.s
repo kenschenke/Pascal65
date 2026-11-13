@@ -29,6 +29,8 @@
 ;   17: Routine calls and parameters
 ;   18: Read, Readln, Write, Writeln and WriteStr
 ;   19: Declarations, initial values, casts and forwards
+;   20: Pointers to pointers and fields through pointers
+;   21: Long chains of literals and arguments
 
 .include "asmlib.inc"
 .include "cbm_kernal.inc"
@@ -37,7 +39,7 @@
 
 .import runErrorTest, logExpectedWarning, logExpectedError, printLine
 
-NUM_TESTS = 19
+NUM_TESTS = 21
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_ERROR_TEST=n -D LAST_ERROR_TEST=m"

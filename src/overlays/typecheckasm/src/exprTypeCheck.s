@@ -35,6 +35,10 @@ arrayType: .res .sizeof(type)
 elemType: .res 4
 indexType: .res 4
 addrSymtab: .res 4         ; a record's table for evalAddressOf
+ptrPointee: .res 4         ; what a pointer points to, for evalPointer
+ptrBase: .res 4            ; and its base type
+rebaseOff: .res 1          ; a type block's offset, for rebaseType
+rebaseName: .res 4         ; and its name before
 
 .code
 
@@ -148,8 +152,45 @@ LP: jsr pushA
     cpz #.sizeof(type)
     bne :-
 
-    ; Evaluate the next argument in the chain
-    ldz #exprOffset
+    ; An argument checked on its own (parentIsFuncCall 2) doesn't check the
+    ; ones after it
+    ldz #parentIsFuncCallOffset
+    nop
+    lda (stackPointer),z
+    cmp #2
+    bne :+
+    jmp DN
+
+    ; Check the arguments after it in a loop, not a recursive call: a long
+    ; chain would overflow the CPU stack. Each is checked on its own into
+    ; this frame's leftType, which only needs zeroing after: its type is
+    ; the caller's now, and each argument's frame frees its own.
+:   ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #expr::right
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ                   ; the next argument
+NA: ldz #0
+    jsr loadStackValue
+    jsr isQZero
+    beq ND
+    stq ptr1
+    lda #leftTypeOffset+4
+    jsr calcTypeBlockAddr
+    stq ptr2
+    ldq ptr1
+    jsr pushQ
+    jsr pushQZero
+    ldq ptr2
+    jsr pushQ
+    lda #2
+    jsr pushA
+    jsr exprTypeCheck
+    ldz #0
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
@@ -158,18 +199,19 @@ LP: jsr pushA
     nop
     lda (ptr1),z
     stq ptr1
-    lda #leftTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr2
-    ldq ptr1
-    jsr pushQ
-    jsr pushQZero
-    ldq ptr2
-    jsr pushQ
-    lda #0
-    jsr pushA
-    jsr exprTypeCheck
-
+    ldz #0
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    bra NA
+ND: jsr popQ
+    ldz #leftTypeOffset
+    jsr zeroTypeBlock
     jmp DN
 
     ; Evaluate the right expression
@@ -1260,16 +1302,9 @@ L3: lda #errIncompatibleAssignment
     rts
 
 L4: lda #leftTypeOffset
-    jsr calcTypeBlockAddr
-    jsr getBaseType
-    ldz #leftTypeOffset
-    jsr copyToType
+    jsr rebaseType
     lda #rightTypeOffset
-    jsr calcTypeBlockAddr
-    jsr freeTypeName
-    jsr getBaseType
-    ldz #rightTypeOffset
-    jsr copyToType
+    jsr rebaseType
 
     ; An array can't be assigned as a whole, only its elements
     lda #leftTypeOffset
@@ -1324,6 +1359,32 @@ L5: lda #leftTypeOffset
 ; This routine checks a cast by a type keyword, such as Integer(x). The
 ; parser sets its evalTypeKind. What is cast must be castable, as for a
 ; cast by a type name (checkTypeCast).
+; This routine replaces the type in the block at the offset in A with its
+; base type. The block's name is a copy (freeTempType frees it), and
+; copyToType puts a copy of the base type's in its place, so the old one
+; is freed after: the base type can be the block itself.
+.proc rebaseType
+    sta rebaseOff
+    jsr calcTypeBlockAddr
+    stq ptr1
+    ldz #type::name
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq rebaseName
+    lda rebaseOff
+    jsr calcTypeBlockAddr
+    jsr getBaseType
+    ldz rebaseOff
+    jsr copyToType
+    ldq rebaseName
+    jsr isQZero
+    beq :+
+    jsr heapFree
+:   rts
+.endproc
+
 .proc evalCast
     lda #leftTypeOffset
     jsr calcTypeBlockAddr
@@ -1352,52 +1413,44 @@ L5: lda #leftTypeOffset
     rts
 .endproc
 
-.proc freeTypeName
-    stq ptr1
-    jsr pushQ
-    ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr isQZero
-    beq :+
-    jsr heapFree
-:   jsr popQ
-    rts
-.endproc
-
+; This routine sets the type of p^ to what p points to: the subtype of the
+; base type of p's type. Like a name's type (see evalName), it has the
+; kind, size, param fields and index type of that type's base type (a
+; declared type is resolved), and a subtype: the base type's subtype (what
+; a pointer points to), or the base type itself. So p^^ looks at what p^
+; points to, icode finds what p^ points to in its subtype, and a field of
+; p^ finds the record's symbol table (getRecordSymtab). The name is a copy
+; of the pointed-to type's name.
 .proc evalPointer
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr isQZero
-    beq L1
-    ldz #leftTypeOffset
-    jsr copyToType
-    bra L2
-
-L1: ldz #expr::left
+    ldz #expr::left
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr1
-    ldz #expr::evalType
+    ; Only a pointer or an address can be dereferenced. A left with no
+    ; type reported its own error.
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_POINTER
+    beq :+
+    cmp #TYPE_ADDRESS
+    beq :+
+    cmp #TYPE_VOID
+    lbeq VD
+    jmp ER
+:   ldz #expr::evalType
     neg
     neg
     nop
     lda (ptr1),z
-    ldz #leftTypeOffset
-    jsr copyToType
-
-L2: lda #leftTypeOffset
-    jsr calcTypeBlockAddr
+    jsr isQZero
+    lbeq VD                     ; The left has no type
+    jsr getBaseType
     stq ptr1
     ldz #type::subtype
     neg
@@ -1405,29 +1458,63 @@ L2: lda #leftTypeOffset
     nop
     lda (ptr1),z
     jsr isQZero
-    beq L3
-    ldz #leftTypeOffset
-    jsr copyToType
+    lbeq ER                     ; It doesn't point to anything (nil)
+    stq ptrPointee
+    jsr getBaseType
+    stq ptrBase
 
-L3: lda #leftTypeOffset
-    jsr calcTypeBlockAddr
-    stq ptr2
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
+    ldq ptrBase
+    stq ptr3
     ldz #type::kind
     nop
-    lda (ptr2),z
+    lda (ptr3),z
     nop
     sta (ptr1),z
+    ldz #type::size
+    nop
+    lda (ptr3),z
+    nop
+    sta (ptr1),z
+    inz
+    nop
+    lda (ptr3),z
+    nop
+    sta (ptr1),z
+    ldz #type::paramFields
+    jsr copyField
+    ldz #type::indextype
+    jsr copyField
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    jsr isQZero
+    bne :+
+    ldq ptr3
+:   stq ptr4
+    ldz #type::subtype
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
+    ldq ptrPointee
+    stq ptr3
     ldz #type::name
     neg
     neg
     nop
-    lda (ptr2),z
+    lda (ptr3),z
     jsr isQZero
-    beq L4
-
+    beq DN
     jsr nameClone
     stq ptr2
     ldz #typePtrOffset
@@ -1442,7 +1529,37 @@ L3: lda #leftTypeOffset
     inx
     cpx #4
     bne :-
-L4: rts
+DN: rts
+
+ER: lda #errInvalidType
+    jsr typeCheckError
+VD: ldz #typePtrOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #type::kind
+    lda #TYPE_VOID
+    nop
+    sta (ptr1),z
+    rts
+
+; Copies the pointer at offset Z in the type in ptr3 to the type in ptr1
+copyField:
+    phz
+    neg
+    neg
+    nop
+    lda (ptr3),z
+    stq ptr4
+    plz
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    rts
 .endproc
 
 ; This routine sets the type of an address (@x). Its subtype is a new
@@ -1602,7 +1719,28 @@ L5: ldz #expr::node
     neg
     nop
     lda (ptr1),z
+    jsr isQZero
+    bne :+
+    ; Not a name, such as pp^^ or ptrs[2]^. The record's table comes from
+    ; the left's type, already checked.
+    lda #leftTypeOffset
+    jsr calcTypeBlockAddr
+    jsr getRecordSymtab
     stq ptr2
+    lda #rightTypeOffset
+    jsr calcTypeBlockAddr
+    stq ptr1
+    ldz #type::symtab
+    ldx #0
+LS: lda ptr2,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne LS
+    bra CK
+:   stq ptr2
     ldz #symbol::type
     neg
     neg
@@ -1611,7 +1749,7 @@ L5: ldz #expr::node
     ldz #rightTypeOffset
     jsr copyToType
     ; Call exprTypeCheck
-    ldz #exprOffset
+CK: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right

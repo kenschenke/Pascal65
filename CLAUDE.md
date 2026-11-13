@@ -88,6 +88,19 @@ Each suite except memtest calls `testLeakCheck` after its tests. It walks the he
 
 A test that expects a BRK (memtest's bad-free tests do) sets `brkCatch` to its own handler. The trap jumps there, with the code in `brkCode`, instead of failing.
 
+### The CPU stack
+
+The 6502 stack is one page, and the KERNAL keeps data in it below about
+$0140. A routine that calls itself once for each item in a list overflows
+it on a long list and the program hangs or crashes, often in a later
+stage. Array literal elements and routine arguments are chained through
+`expr::right`, so a walk over an expression must follow the right in a
+loop, not a recursive call (`exprResolve`, `freeExpr`, and the argument
+chain in `exprTypeCheck`, which checks each argument on its own with
+`parentIsFuncCall` 2). A hang leaves no
+screen dump. To find one, fill the stack page below SP with a pattern
+before a stage and look for the lowest byte it changed after.
+
 ### Uninitialized memory
 
 The emulator zeros RAM at startup, but real hardware doesn't. The test
@@ -288,9 +301,7 @@ once, so the files are instrumented in sets (`COVFILESn`). A new file
 must go in a set, and a set that no longer fits fails to link and must be
 split. Like `test`, it needs asmlib built with `MEMCHECK=1`. The lines
 left are ones no program can reach, such as defaults for kinds no caller
-passes and cases the type checker rejects. An array literal of more than
-255 elements can't be tested: the type checker hangs on one of more than
-90.
+passes and cases the type checker rejects.
 
 In icode, `isRead` 0 asks an expression for the address of what it
 names, to write to or pass by reference, and 1 for its value. The

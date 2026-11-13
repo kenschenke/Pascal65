@@ -71,13 +71,6 @@ L1: jsr peekQ
     jsr loadPtr
     jsr freeExpr
 
-    ; Right
-    jsr peekQ
-    stq ptr1
-    ldz #expr::right
-    jsr loadPtr
-    jsr freeExpr
-
     ; EvalType
     jsr peekQ
     stq ptr1
@@ -85,7 +78,21 @@ L1: jsr peekQ
     jsr loadPtr
     jsr freeType
 
+    ; Keep the right, free this expression, then free the right. That
+    ; isn't a recursive call: array literal elements and routine arguments
+    ; are chained through the right, and a long chain would overflow the
+    ; CPU stack. heapFree doesn't call freeExpr, so rightPtr survives it.
+    jsr peekQ
+    stq ptr1
+    ldz #expr::right
+    jsr loadPtr
+    stq rightPtr
     jsr rtPopQ
     jsr heapFree
-    rts
+    ldq rightPtr
+    jmp freeExpr
 .endproc
+
+.bss
+
+rightPtr: .res 4
