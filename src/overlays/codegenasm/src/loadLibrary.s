@@ -8,6 +8,13 @@
 ; https://opensource.org/licenses/MIT
 ;
 ; loadLibrary routine
+;
+; A library file is in one of two formats (docs/docs/libraries/objfile.md).
+; v1 starts with its load address, a page boundary. Any byte in the pages
+; the library spans is taken as the high byte of an address. v2 starts with
+; load address 0, then the page it was linked at, the code and BSS lengths
+; and a table of the offsets of the addresses in the code (mkreloc.py).
+; readLibBuf relocates each address in v2 code as it is read.
 
 .include "asm.inc"
 .include "ast.inc"
@@ -45,6 +52,16 @@ page: .res 1
 pages: .res 1
 numRead: .res 2
 currentDecl: .res 4
+isV2: .res 1            ; non-zero for a v2 library
+bssLen: .res 2          ; v2: zero bytes to write after the code
+relocsLeft: .res 2      ; v2: offsets not yet read from relocBuf
+relocBuf: .res 4        ; v2: membuf of the offsets of addresses
+nextReloc: .res 2       ; v2: offset of the next address, $FFFF if none
+pos: .res 2             ; v2: offset in the code of the next byte read
+relocHi: .res 1         ; v2: non-zero if the next byte is a high byte
+relocCarry: .res 1      ; v2: carry from relocating the low byte
+rdIdx: .res 1           ; readLibBuf: index in buf
+rdCount: .res 1         ; readLibBuf: bytes left to relocate
 ; pos: .res 2
 
 .code
@@ -77,11 +94,15 @@ currentDecl: .res 4
     jsr CLOSE
     rts
 
-:   jsr CHRIN
+:   lda #0
+    sta isV2
+    jsr CHRIN
     sta page
+    bne :+              ; Branch if v1 (load address isn't 0)
+    jsr readV2Header
 
     ; Read the entire library into a memory buffer
-    jsr readLibrary
+:   jsr readLibrary
     lda #2
     jsr CLOSE
 
@@ -92,17 +113,193 @@ currentDecl: .res 4
     beq :+
     inc pages
 
-    ldx #1
+:   ldx #1
     jsr CHKOUT
 
-:   jsr processJumpTable
+    jsr processJumpTable
 
     jsr processLibraryObjCode
 
     ldq libBuf
     jsr freeMemBuf
 
+    lda isV2
+    beq :+
+    jsr writeBss
+    ldq relocBuf
+    jsr freeMemBuf
+
+:   rts
+.endproc
+
+; Reads the rest of a v2 header (after load address 0) and the offsets of
+; the addresses into relocBuf, then reads the first offset.
+.proc readV2Header
+    inc isV2
+    jsr CHRIN
+    sta page
+    jsr CHRIN           ; The code length isn't needed
+    jsr CHRIN
+    jsr CHRIN
+    sta bssLen
+    jsr CHRIN
+    sta bssLen+1
+    jsr CHRIN
+    sta relocsLeft
+    jsr CHRIN
+    sta relocsLeft+1
+
+    jsr allocMemBuf
+    stq relocBuf
+
+    ; Each offset is two bytes
+    lda relocsLeft
+    sta numRead
+    lda relocsLeft+1
+    sta numRead+1
+    asl numRead
+    rol numRead+1
+
+L1: lda numRead
+    ora numRead+1
+    beq L2
+    jsr CHRIN
+    sta buf
+    ldq relocBuf
+    jsr appendBuf
+    lda numRead
+    bne :+
+    dec numRead+1
+:   dec numRead
+    bra L1
+
+L2: ldq relocBuf
+    stq ptr1
+    lda #0
+    tax
+    jsr setMemBufPos
+
+    lda #0
+    sta pos
+    sta pos+1
+    sta relocHi
+    jmp fetchReloc
+.endproc
+
+; Reads the next offset from relocBuf into nextReloc, or sets it to $FFFF
+; when there are no more.
+.proc fetchReloc
+    lda relocsLeft
+    ora relocsLeft+1
+    bne :+
+    lda #$ff
+    sta nextReloc
+    sta nextReloc+1
     rts
+
+:   lda relocsLeft
+    bne :+
+    dec relocsLeft+1
+:   dec relocsLeft
+
+    ldq relocBuf
+    stq ptr1
+    lda #<nextReloc
+    sta ptr2
+    lda #>nextReloc
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    lda #2
+    ldx #0
+    jmp readFromMemBuf
+.endproc
+
+; Relocates the v2 code byte in A, at offset pos, and returns it in A.
+; The low byte of an address gets libBase's low byte added. The high byte
+; gets libBase's high byte and the carry added, and the page subtracted.
+.proc relocByte
+    ldx relocHi
+    bne HI
+
+    ; Is this the low byte of an address?
+    ldx pos
+    cpx nextReloc
+    bne NX
+    ldx pos+1
+    cpx nextReloc+1
+    bne NX
+
+    clc
+    adc libBase
+    pha
+    lda #0
+    rol a
+    sta relocCarry
+    lda #1
+    sta relocHi
+    pla
+    bra NX
+
+HI: clc
+    adc relocCarry
+    clc
+    adc libBase+1
+    sec
+    sbc page
+    pha
+    lda #0
+    sta relocHi
+    jsr fetchReloc
+    pla
+
+NX: inc pos
+    bne :+
+    inc pos+1
+:   rts
+.endproc
+
+; Writes the zero bytes of a v2 library's BSS after its code
+.proc writeBss
+L1: lda bssLen
+    ora bssLen+1
+    beq DN
+    lda #0
+    jsr CHROUT
+    lda #1
+    jsr incCodeOffset
+    lda bssLen
+    bne :+
+    dec bssLen+1
+:   dec bssLen
+    bra L1
+
+DN: rts
+.endproc
+
+; Writes the byte in buf to the end of the membuf in Q
+.proc appendBuf
+    stq ptr1
+    lda #<buf
+    sta ptr2
+    lda #>buf
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    lda #1
+    ldx #0
+    jmp writeToMemBuf
+.endproc
+
+; Relocates the JMP operand in buf+1 and buf+2 of a v1 library.
+; readLibBuf has already relocated a v2 library's.
+.proc relocJmp
+    lda isV2
+    bne :+
+    jmp relocAddr
+:   rts
 .endproc
 
 .proc openLibrary
@@ -176,16 +373,7 @@ L1: lda STATUS
 
     ; Write the byte to the memory buffer
     ldq libBuf
-    stq ptr1
-    lda #<buf
-    sta ptr2
-    lda #>buf
-    sta ptr2+1
-    ldx #0
-    stx ptr2+2
-    stx ptr2+3
-    lda #1
-    jsr writeToMemBuf
+    jsr appendBuf
 
     lda numRead
     clc
@@ -206,7 +394,7 @@ L1: lda STATUS
     lda buf
     cmp #OC_JMP
     bne :+
-    jsr relocAddr
+    jsr relocJmp
 :   ldq libRoot
     stq intOp32
     lda #<strInit
@@ -221,7 +409,7 @@ L1: lda STATUS
     lda buf
     cmp #OC_JMP
     bne :+
-    jsr relocAddr
+    jsr relocJmp
 :   ldq libRoot
     stq intOp32
     lda #<strCleanup
@@ -296,7 +484,7 @@ NX: ldq currentDecl
     beq :+
     rts
 
-:   jsr relocAddr
+:   jsr relocJmp
     ldq currentDecl
     stq intOp32
     lda #<strRtnEnter
@@ -354,8 +542,25 @@ NX: ldq currentDecl
     ;        Else
     ;            Write the first byte then keep the second byte for the next loop
 
+    ; readLibBuf relocates a v2 library's code, so it is only copied
+    lda isV2
+    beq V1
+V2: ldq libBuf
+    jsr isMemBufAtEnd
+    bne :+
+    rts
+:   lda #<buf
+    ldx #>buf
+    ldy #1
+    jsr readLibBuf
+    lda buf
+    jsr CHROUT
+    lda #1
+    jsr incCodeOffset
+    bra V2
+
     ; Read one byte to prime the pump
-    lda #<buf
+V1: lda #<buf
     ldx #>buf
     ldy #1
     jsr readLibBuf
@@ -564,8 +769,9 @@ DN: rts
     rts
 .endproc
 
-; Buffer in A/X
+; Buffer in A/X, which must be in buf
 ; Number of bytes to read in Y
+; The bytes of a v2 library are relocated (relocByte).
 .proc readLibBuf
     ; Set up the buffer
     sta ptr2
@@ -574,7 +780,12 @@ DN: rts
     sta ptr2+2
     sta ptr2+3
 
-    ; Save the number of bytes to read
+    ; Save the buffer's index in buf and the number of bytes to read
+    lda ptr2
+    sec
+    sbc #<buf
+    sta rdIdx
+    sty rdCount
     phy
 
     ; Set up the membuf header
@@ -585,5 +796,18 @@ DN: rts
     pla
     ldx #0
 
-    jmp readFromMemBuf
+    jsr readFromMemBuf
+
+    lda isV2
+    beq DN
+L1: ldx rdIdx
+    lda buf,x
+    jsr relocByte
+    ldx rdIdx
+    sta buf,x
+    inc rdIdx
+    dec rdCount
+    bne L1
+
+DN: rts
 .endproc

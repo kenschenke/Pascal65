@@ -52,6 +52,7 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
 DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
+DEMOLIB2 = ../../lib/demolib/bin/$(TARGET)/demolib2
 SCREENLIB = ../../lib/screen/bin/$(TARGET)/screen
 SPRITESLIB = ../../lib/sprites/bin/$(TARGET)/sprites
 SPRITEMOVELIB = ../../lib/spritemove/bin/$(TARGET)/spritemove
@@ -69,6 +70,7 @@ include $(RUNTIMEDIR)/rtfiles.mk
 PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 SYSTEMPAS = ../../lib/system/system.pas
 DEMOLIBPAS = ../../lib/demolib/demolib.pas
+DEMOLIB2PAS = ../../lib/demolib/demolib2.pas
 FIVEDICEPAS = ../../../examples/fivedice.pas
 BUBBLESPAS = ../../../examples/bubbles.pas
 
@@ -80,6 +82,7 @@ BINFILES += $(TYPECHECK)
 BINFILES += $(MEMINFO)
 BINFILES += $(ASMLIB)
 BINFILES += $(DEMOLIB)
+BINFILES += $(DEMOLIB2)
 BINFILES += $(SCREENLIB)
 BINFILES += $(SPRITESLIB)
 BINFILES += $(SPRITEMOVELIB)
@@ -114,6 +117,7 @@ DEPFLAGS = --create-dep $(@:.o=.dep)
 FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 
 TXTFILES := errormsgs.petscii system.petscii demolib.petscii fivedice.petscii
+TXTFILES += demolib2.petscii
 TXTFILES += bubbles.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
@@ -131,6 +135,9 @@ system.petscii: $(SYSTEMPAS)
 
 demolib.petscii: $(DEMOLIBPAS)
 	dos2unix < $(DEMOLIBPAS) | petcat -w2 -text -o demolib.petscii
+
+demolib2.petscii: $(DEMOLIB2PAS)
+	dos2unix < $(DEMOLIB2PAS) | petcat -w2 -text -o demolib2.petscii
 
 # Compiled, but not run, to check the runtime leaves it room
 fivedice.petscii: $(FIVEDICEPAS)
@@ -185,6 +192,9 @@ $(ASMLIB): FORCE
 $(DEMOLIB): FORCE
 	cd $(DEMOLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+# Built with DEMOLIB
+$(DEMOLIB2): $(DEMOLIB)
+
 $(SCREENLIB): FORCE
 	cd $(SCREENLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -229,6 +239,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(MEMINFO) meminfo,prg \
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(DEMOLIB) demolib.lib,prg \
+	-write $(DEMOLIB2) demolib2.lib,prg \
 	-write $(SCREENLIB) screen.lib,prg \
 	-write $(SPRITESLIB) sprites.lib,prg \
 	-write $(SPRITEMOVELIB) spritemove.lib,prg \
@@ -237,6 +248,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
+	-write demolib2.petscii demolib2.pas,seq \
 	-write fivedice.petscii fivedice.pas,seq \
 	-write bubbles.petscii bubbles.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
@@ -270,6 +282,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
 	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
 	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
+	-write $(PETSCIIDIR)/libtest2.pas libtest2.pas,seq \
 	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
 	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
 	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq \

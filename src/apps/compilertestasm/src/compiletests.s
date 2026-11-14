@@ -47,6 +47,7 @@ strFileTestB: .asciiz "filetestb"
 strPointers: .asciiz "pointers"
 strUnit: .asciiz "unit"
 strLibTest: .asciiz "libtest"
+strLibTest2: .asciiz "libtest2"
 strRtnArray: .asciiz "rtnarray"
 strRtnRecord: .asciiz "rtnrecord"
 strRtnPtrs: .asciiz "rtnptrs"
@@ -142,6 +143,8 @@ tests:
     .byte .lobyte(strRtPkgC), .hibyte(strRtPkgC)
     ; The dynamic runtime, with every package
     .byte .lobyte(strRtDyn), .hibyte(strRtDyn)
+    ; A library in the v2 format (relocation table)
+    .byte .lobyte(strLibTest2), .hibyte(strLibTest2)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)

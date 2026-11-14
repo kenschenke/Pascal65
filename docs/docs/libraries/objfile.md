@@ -5,6 +5,19 @@ the object code into the program file.  The file needs to be organized in a way
 that its code is relocatable.  This is mainly accomplished by using a jump table
 at the beginning of the code and the code being assembled to a page boundary.
 
+There are two formats. Both start with the [jump table](#jump-table).
+
+  * **Version 1** is the PRG file the assembler's linker writes. The compiler
+    finds the addresses to relocate by looking for bytes in the library's own
+    pages. It's described below.
+  * **Version 2** carries a table of the addresses to relocate, so the code
+    can hold any byte. The `mkreloc.py` script writes it. See
+    [Version 2](#version-2) below. A large library should use it.
+
+The compiler reads either one. The first two bytes tell them apart.
+
+## Version 1
+
 The strategy to relocate object code is heavily inspired by the way C64OS
 handles loadable drivers.  A huge thanks goes out to Greg Nacu.  Please take
 the time to read his blog post on drivers and relocatable code before continuing.
@@ -20,6 +33,62 @@ is not a valid 6502 opcode, not a commonly used PETSCII code, and tends not to b
 used in code.  A Python program, scanner.py, is available in the Pascal 65 GitHub
 repo.  It will scan an object file and give you possible candidates for unused
 pages.
+
+The larger the library, the more pages it needs and the fewer byte values
+it leaves unused. A library of a few kilobytes may have no run of unused
+values long enough. Use version 2 for it.
+
+## Version 2
+
+A version 2 file lists the offset of every address in the code, so the
+compiler relocates those and nothing else. The code can hold any byte, and
+it doesn't matter which page it's linked at.
+
+### Building one
+
+`src/lib/mkreloc.py` links the library twice with `ld65`: once at the start
+address given and once $2081 bytes higher. Every address in the code
+differs between the two links by exactly that much. The script records
+where each one is and writes the first link with the table.
+
+```sh
+python3 ../mkreloc.py -C mylib.cfg -S 0x3000 -o bin/mega65/mylib obj/*.o
+```
+
+`-C` is the linker configuration, the same one a version 1 library uses,
+and `-S` the start address, a page boundary. ld65 is the Windows build, so
+give it paths relative to the current directory. The demo library's
+Makefile builds `demolib2` this way.
+
+The code must not use `#<label` or `#>label`: half an address can't be
+relocated. If a byte differs between the two links but isn't part of a
+whole address, the script stops with its offset. Find a routine's own
+address at run time with the `jsr`/`pla` trick instead.
+
+### BSS
+
+The library's `BSS` segment isn't in the file. The compiler writes that many
+zero bytes after the code in the program, so the library's variables start
+at zero. `BSS` must be the last segment in the configuration. The script
+takes its length from the first link's map file.
+
+### Layout
+
+|Offset   |Size     |Contents                                            |
+|---------|---------|----------------------------------------------------|
+|0        |2        |Load address $0000, which marks version 2           |
+|2        |1        |The page the code was linked at                     |
+|3        |2        |Code length                                         |
+|5        |2        |BSS length                                          |
+|7        |2        |Number of addresses, N                              |
+|9        |2N       |Offset in the code of each address's low byte       |
+|9 + 2N   |code len |The code, starting with the jump table              |
+
+Words are low byte first. The offsets are in ascending order. A version 1
+library can't be linked at page 0, so its first two bytes are never $0000.
+
+The compiler adds the library's address in the program, less the page
+times 256, to each listed address.
 
 ## Jump Table
 

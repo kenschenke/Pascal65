@@ -12,3 +12,12 @@ includes the following examples.
   * Arrays, records, and strings declared in the library's interface.
   * Calling Pascal routines from a library (callback)
   
+## DemoLib2
+
+The same directory builds a twin, DemoLib2 (`demolib2.pas`), in the
+[version 2 object file format](objfile.md#version-2). It has its own jump
+table (`src2/demolib2.s`) and every DemoLib routine, plus two that test
+the format: `PageBytes` reads a table of bytes in the library's own page
+range, which a version 1 library couldn't hold, and `BssCounter` uses
+variables in the `BSS` segment, which the compiler zeroes. The Makefile
+links it with `mkreloc.py`.
