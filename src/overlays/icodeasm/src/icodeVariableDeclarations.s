@@ -189,6 +189,13 @@ L3: ldz #declPtrOffset
     nop
     lda (ptr1),z
     beq L4
+    ; Only a variable has a slot in the library's jump table
+    ; (processJumpTable in codegen). A constant has none.
+    ldz #decl::kind
+    nop
+    lda (ptr1),z
+    cmp #DECL_VARIABLE
+    bne L4
     ; Write the address of this library declaration
     ; to the library's jump table.
     jsr libraryDecl

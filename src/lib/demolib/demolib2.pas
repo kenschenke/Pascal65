@@ -26,6 +26,15 @@ Type
     DemoProc = Procedure(num : Integer);
     DemoFunc = Function : Integer;
 
+// Constants have no jump table slot. They come before the variables so
+// that a slot given to one would move the variables' slots.
+Const
+    DemoConstInt = 1234;
+    DemoConstNeg = -500;
+    DemoConstBig = 100000;
+    DemoConstChar = 'Q';
+    DemoConstStr = 'Sound';
+
 Var
     PublicInt : Integer;
     PublicArray : DemoArray;

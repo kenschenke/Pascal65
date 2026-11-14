@@ -16,12 +16,17 @@
 
 ; This table is a two-dimensional array indexed by type kind-1.
 ;    result = typeConversions[leftType-1][rightType-1]
-typeConversions: 
+; It is symmetric. A signed and an unsigned kind under 32 bits give a
+; signed kind, so a negative operand (an Integer constant of -500) isn't
+; made unsigned. Cardinal and LongInt give Cardinal: there's no wider
+; kind, and a positive literal such as $13571357 is typed LongInt, so
+; hex masks such as $d5aad5aa ! $13571357 stay Cardinal.
+typeConversions:
     .byte TYPE_WORD,     TYPE_INTEGER,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL
     .byte TYPE_INTEGER,  TYPE_INTEGER,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL
-    .byte TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL
+    .byte TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL
     .byte TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_REAL
-    .byte TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_CARDINAL, TYPE_REAL
+    .byte TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_CARDINAL, TYPE_CARDINAL, TYPE_REAL
     .byte TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_LONGINT,  TYPE_CARDINAL, TYPE_LONGINT,  TYPE_REAL
     .byte TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL,     TYPE_REAL
 

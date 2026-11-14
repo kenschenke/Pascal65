@@ -116,5 +116,18 @@ Begin
 
     If BssCounter <> 3 Then Error(18);
 
+    // Constants declared in the library's interface
+    If DemoConstInt <> 1234 Then Error(19);
+    If DemoConstNeg <> -500 Then Error(20);
+    If DemoConstBig <> 100000 Then Error(21);
+    If DemoConstChar <> 'Q' Then Error(22);
+    If CompareStr(DemoConstStr, 'Sound') <> 0 Then Error(23);
+    // In expressions with variables
+    i := -500;
+    If DemoConstInt + i <> 734 Then Error(24);
+    i := 1234;
+    If i + DemoConstNeg <> 734 Then Error(25);
+    If DemoConstInt + DemoConstNeg <> 734 Then Error(26);
+
     If anyErrors Then ReportFailure;
 End.

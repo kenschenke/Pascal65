@@ -36,7 +36,7 @@
 
 .import runTest, logError, printLine
 
-NUM_TESTS = 18
+NUM_TESTS = 19
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"

@@ -14,6 +14,11 @@ Const
     PlusConst = +5;
     PlusIntConst = +1234;
     PlusRealConst = +1.5;
+    // Operands for arithmetic between two constants
+    WordK = 1234;
+    IntK = -500;
+    BigK = 100000;
+    NegBigK = -100000;
 
 Var
 	anyErrors : Boolean;
@@ -65,6 +70,16 @@ Begin
     If PlusConst <> 5 Then Error(11);
     If PlusIntConst <> 1234 Then Error(12);
     If Abs(PlusRealConst-1.5) > 0.01 Then Error(13);
+
+    // Two constants, one signed and one unsigned, in either order
+    If WordK + IntK <> 734 Then Error(14);
+    If IntK + WordK <> 734 Then Error(15);
+    If WordK * IntK <> -617000 Then Error(16);
+    If IntK * WordK <> -617000 Then Error(17);
+    If BigK + IntK <> 99500 Then Error(18);
+    If IntK + BigK <> 99500 Then Error(19);
+    If WordK + NegBigK <> -98766 Then Error(20);
+    If NegBigK + WordK <> -98766 Then Error(21);
 
     If anyErrors Then ReportFailure;
 End.
