@@ -19,8 +19,10 @@
 .export petsciiToScreenCode, currentEditorRow, clearScreen
 .export editorDrawMessageBar, calcScreenPtr, initScreen, setupScreen
 .export resetScreenSettings, calcColorPtr, clearRowColor, setScreenColorToForeground
+.export drawRow
 
-.import anyDirtyRows, titleScreen, rowPtrs
+.import anyDirtyRows, titleScreen, rowPtrs, pagerows
+.import editorDrawBuildLine, buildDirty
 .import screenrows, screencols, statusmsg, statusmsg_dirty, statusbar
 .import editorSetAllRowsDirty, colorPtrs, editorHighlightSelection
 .import isEditBufActive, getEditBufSyntaxColor, themeColors
@@ -41,10 +43,18 @@ intBuf: .res 7
 .endproc
 
 ; Number of columns in X, number of rows in Y
+;
+; The editor's text takes screenrows rows. Below it are the status bar
+; (row screenrows), the build line (screenrows+1, see buildline.s) and the
+; message bar (screenrows+2). The directory and file screens lay out the
+; whole screen by pagerows, which is two less than the number of rows.
 .proc setupScreen
     stx screencols
     sty screenrows
     dec screenrows
+    dec screenrows
+    lda screenrows
+    sta pagerows
     dec screenrows
 
     jsr setupScreenCols
@@ -59,7 +69,7 @@ intBuf: .res 7
 .endproc
 
 .proc calcColorPtrs
-    ldy screenrows
+    ldy pagerows
     iny
     iny
     sty tmp1        ; tmp1 contains screen rows
@@ -158,7 +168,7 @@ L1: lda screencols
     sta intOp32+1
     sta intOp32+2
     sta intOp32+3
-    ldy screenrows
+    ldy pagerows
     iny
     iny
     sty tmp1        ; tmp1 contains screen rows
@@ -240,10 +250,14 @@ L2: dec tmp1
 DN: rts
 .endproc
 
+; Clears the screen. The build line is drawn again by the next
+; editorRefreshScreen.
 .proc clearScreen
+    lda #1
+    sta buildDirty
     lda #CH_CLRSCR
     jsr CHROUT
-    
+
     rts
 .endproc
 
@@ -252,8 +266,8 @@ DN: rts
     lda #0
     sta tmp1
 
-    lda screenrows
-    ; Add two rows for the status bar and message row
+    lda pagerows
+    ; Every row: pagerows is two less
     clc
     adc #2
     sta tmp2
@@ -362,6 +376,7 @@ L1: nop
     jsr renderCursor
 
 :   jsr editorDrawMessageBar
+    jsr editorDrawBuildLine
     jsr editorDrawStatusBar
     rts
 .endproc
@@ -549,7 +564,8 @@ L1: ; Set ptr2 to null
     beq :+
     inx
     bne :-
-:   ldy screenrows          ; Draw the status bar at the bottom of the screen
+:   ldy screenrows          ; Draw the message bar at the bottom of the screen
+    iny
     iny
     lda #<statusmsg
     sta ptr1
@@ -568,6 +584,7 @@ L1: ; Set ptr2 to null
 
     plx                     ; Pop length to X
     ldy screenrows
+    iny
     iny
     jsr clearRow            ; Clear the row from the last of the status msg
 

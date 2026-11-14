@@ -59,7 +59,6 @@ PHASE_EDIT = 0              ; Running the editor
 PHASE_CHECK = 1             ; Checking the file
 PHASE_CLEANUP = 2           ; Freeing the files (editorTestCleanup)
 
-SCREEN25 = $0800             ; Screen RAM with 25 rows (see calcRowPtrs)
 SCREEN_COLS = 80
 
 .bss
@@ -943,21 +942,33 @@ OK: clc
     lda ptr4+1
     adc #0
     sta ptr4+1
+    ; Add the screen's address, which the VIC has ($0800 with 25 rows and
+    ; $40800 with 50, see calcRowPtrs)
     clc
     lda ptr4
-    adc #<SCREEN25
+    adc $d060
     sta ptr4
     lda ptr4+1
-    adc #>SCREEN25
+    adc $d061
     sta ptr4+1
+    lda $d062
+    adc #0
+    sta ptr4+2
+    lda $d063
+    and #$0f
+    adc #0
+    sta ptr4+3
     ; Copy as many characters as the expected text has, as PETSCII
     ldy #0
+    ldz #0
 :   lda (ptr2),y
     beq :+
-    lda (ptr4),y
+    nop
+    lda (ptr4),z
     jsr screenToPetscii
     sta actualBuf,y
     iny
+    inz
     bne :-
 :   sty actualLen
     jsr cmpLine
@@ -1305,7 +1316,12 @@ LT: cmp #FAIL_LINE
 
 ; Clears the editor's screen and leaves the cursor on row 4. testPass and
 ; testFail print the result on row 0, and BASIC's READY and cursor follow.
+; Back to 25 rows, as a test may leave 50, and clears the screen
 .proc clearScreen
+    lda #CH_ESC
+    jsr CHROUT
+    lda #'8'
+    jsr CHROUT
     lda #CH_CLRSCR
     jsr CHROUT
     lda #13

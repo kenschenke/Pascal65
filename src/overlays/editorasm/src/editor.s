@@ -15,7 +15,7 @@
 .include "4510macros.inc"
 .include "asmlib.inc"
 
-.export initEditor, titleScreen, screencols, screenrows, clipboard
+.export initEditor, titleScreen, screencols, screenrows, pagerows, clipboard
 .export statusmsg, statusmsg_dirty, anyDirtyRows, rowPtrs, editorRun, statusbar
 .export editorSetDefaultStatusMessage, updateStatusBarFilename
 .export editorSetAllRowsDirty, incCurX, decCurX, initFile
@@ -55,7 +55,8 @@ fivediceFilename: .asciiz "fivedice.pas"
 firstFile: .res 4           ; Pointer to first file open in the editor
 titleScreen: .res 4         ; Pointer to title screen contents
 clipboard: .res 4           ; Pointer to clipboard contents (linked list of CLIPLINE)
-screenrows: .res 1          ; # of rows on display
+screenrows: .res 1          ; # of text rows (see setupScreen)
+pagerows: .res 1            ; # of rows on display less two
 screencols: .res 1          ; # of columns
 statusmsg: .res DEFAULT_COLS
 statusbar: .res DEFAULT_COLS

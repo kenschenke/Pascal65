@@ -64,7 +64,7 @@ keysPageUp:
 ; Paging down stops at the end of the file
 keysPageDownEnd:
     OPENFILE 3
-    .repeat 9
+    .repeat 10
         .byte CTRL_N
     .endrep
     .byte 0
@@ -79,7 +79,7 @@ keysScrollW:
 keysScrollV:
     OPENFILE 3
     .byte CTRL_N
-    .repeat 22
+    .repeat 21
         .byte DOWN
     .endrep
     .byte CTRL_V, 0
@@ -112,7 +112,7 @@ keysRightAfterLast:
     OPENFILE 2
     .byte CTRL_E, RIGHT, "x", 0
 
-; Esc 5 shows 50 rows, so a page is 48 lines. Esc 8 goes back to 25.
+; Esc 5 shows 50 rows, so a page is 47 lines. Esc 8 goes back to 25.
 keysRows50:
     OPENFILE 3
     .byte ESC, "5", CTRL_N, ESC, "8", 0
@@ -179,7 +179,7 @@ openPascal:
 
 ctrlE:
     TEST "ctrl+e", keysCtrlE, F_SKIPLINES, 0, 200, 200, 0
-    CHKWORD EDITFILE::rowOff, 178
+    CHKWORD EDITFILE::rowOff, 179
     CHKLINE 199, "200"
     ENDTEST
 
@@ -189,19 +189,19 @@ ctrlB:
     ENDTEST
 
 pageDown:
-    TEST "page down", keysPageDown, F_SKIPLINES, 0, 46, 200, 0
-    CHKWORD EDITFILE::rowOff, 46
-    CHKLINE 46, "47"
+    TEST "page down", keysPageDown, F_SKIPLINES, 0, 44, 200, 0
+    CHKWORD EDITFILE::rowOff, 44
+    CHKLINE 44, "45"
     ENDTEST
 
 pageUp:
-    TEST "page up", keysPageUp, F_SKIPLINES, 0, 23, 200, 0
-    CHKWORD EDITFILE::rowOff, 23
+    TEST "page up", keysPageUp, F_SKIPLINES, 0, 22, 200, 0
+    CHKWORD EDITFILE::rowOff, 22
     ENDTEST
 
 pageDownEnd:
     TEST "page down to the end", keysPageDownEnd, F_SKIPLINES, 0, 200, 200, 0
-    CHKWORD EDITFILE::rowOff, 178
+    CHKWORD EDITFILE::rowOff, 179
     ENDTEST
 
 scrollW:
@@ -210,8 +210,8 @@ scrollW:
     ENDTEST
 
 scrollV:
-    TEST "scroll up a line", keysScrollV, F_SKIPLINES, 0, 44, 200, 0
-    CHKWORD EDITFILE::rowOff, 22
+    TEST "scroll up a line", keysScrollV, F_SKIPLINES, 0, 42, 200, 0
+    CHKWORD EDITFILE::rowOff, 21
     ENDTEST
 
 ctrlWPastEnd:
@@ -254,8 +254,8 @@ rightAfterLast:
     ENDTEST
 
 rows50:
-    TEST "50 rows", keysRows50, F_SKIPLINES, 0, 48, 200, 0
-    CHKWORD EDITFILE::rowOff, 48
+    TEST "50 rows", keysRows50, F_SKIPLINES, 0, 47, 200, 0
+    CHKWORD EDITFILE::rowOff, 47
     ENDTEST
 
 commentEmpty:

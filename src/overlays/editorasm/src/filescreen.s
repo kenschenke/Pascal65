@@ -22,7 +22,7 @@ FILES_PER_PAGE = 9
 .import showDirScreen, editorNewFile, drawHorizLine, rowPtrs, clearScreen, renderCursor
 .import petsciiToScreenCode, firstFile, editorSetAllRowsDirty, setScreenColorToForeground
 .import updateStatusBarFilename, anyDirtyRows, fileClose, editorHandleFileSave
-.import editorHandleFileSaveAs, calcScreenPtr, screenrows, clearRowColor
+.import editorHandleFileSaveAs, calcScreenPtr, pagerows, clearRowColor
 .import closeEditBuf
 
 .bss
@@ -110,7 +110,7 @@ L1: jsr editorReadKey
     bcc :+
     lda fileCount
     sta fileRangeHigh
-:   lda screenrows
+:   lda pagerows
     sec
     sbc #9
     tay
@@ -170,7 +170,7 @@ L0: ldz #32                     ; Write count to screen
 :   lda fileCount
     cmp #FILES_PER_PAGE+1
     bcc L1
-    lda screenrows
+    lda pagerows
     sec
     sbc #4
     tay
@@ -328,7 +328,7 @@ L2: nop
     cmp #FILES_PER_PAGE+1
     bcs :+                      ; Branch if count <= FILES_PER_PAGE
     jmp L0
-:   lda screenrows
+:   lda pagerows
     sec
     sbc #5
     tay
@@ -352,7 +352,7 @@ L2: nop
     lda #<intBuf
     ldx #>intBuf
     jsr writeInt16
-    lda screenrows
+    lda pagerows
     sec
     sbc #5
     tay
@@ -382,7 +382,7 @@ L2: nop
     lda #<intBuf
     ldx #>intBuf
     jsr writeInt16
-    lda screenrows
+    lda pagerows
     sec
     sbc #5
     tay
@@ -611,7 +611,7 @@ L2: lda tmp1
     sta (ptr1),z
 
     ; Draw rows with side borders
-    lda screenrows
+    lda pagerows
     sec
     sbc #13
     sta tmp1                ; Use tmp1 as a counter
@@ -641,7 +641,7 @@ L2: lda tmp1
     bne :-
 
     ; Draw another divider row
-    lda screenrows
+    lda pagerows
     sec
     sbc #10
     tay
@@ -660,7 +660,7 @@ L2: lda tmp1
     sta (ptr1),z
 
     ; Draw a blank line
-    lda screenrows
+    lda pagerows
     sec
     sbc #9
     tay
@@ -676,7 +676,7 @@ L2: lda tmp1
     sta (ptr1),z
 
     ; Draw the bottom border
-    lda screenrows
+    lda pagerows
     sec
     sbc #8
     tay
@@ -695,7 +695,7 @@ L2: lda tmp1
     sta (ptr1),z
 
     ; Draw the footer prompts
-    lda screenrows
+    lda pagerows
     sec
     sbc #6
     tay
@@ -712,7 +712,7 @@ L2: lda tmp1
     inz
     inx
     bne :-
-:   lda screenrows
+:   lda pagerows
     sec
     sbc #2
     tay

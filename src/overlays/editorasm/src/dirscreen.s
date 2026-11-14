@@ -21,7 +21,7 @@
 .import editorReadKey, readDiskDir
 .import freeDirEnts, fnBuf, openFile
 .import editorDrawMessageBar, statusmsg, statusmsg_dirty
-.import inputBufUsed, screenrows, calcScreenPtr, setScreenColorToForeground
+.import inputBufUsed, pagerows, calcScreenPtr, setScreenColorToForeground
 .import editorSetAllRowsDirty, editorSetDefaultStatusMessage, anyDirtyRows
 .import closeEditBuf
 
@@ -124,7 +124,7 @@ DN: rts
 .endproc
 
 .proc clearPromptArea
-    ldy screenrows
+    ldy pagerows
     dey
     jsr calcScreenPtr
     lda #3
@@ -300,20 +300,20 @@ L1: lda #' '
 .proc drawPromptArea
     jsr clearPromptArea
 
-    ldy screenrows
+    ldy pagerows
     dey
     jsr calcScreenPtr
     lda #<prompt1
     ldx #>prompt1
     jsr drawPromptRow
 
-    ldy screenrows
+    ldy pagerows
     jsr calcScreenPtr
     lda #<prompt2
     ldx #>prompt2
     jsr drawPromptRow
 
-    ldy screenrows
+    ldy pagerows
     iny
     jsr calcScreenPtr
     sta ptr1+1
@@ -725,7 +725,7 @@ L6: lda selectedFile
     jsr editorDrawMessageBar
     ; Move the cursor because getline uses CHROUT
     ldy #renamePromptLength-renamePrompt-1
-    ldx screenrows
+    ldx pagerows
     inx
     clc
     jsr PLOT
@@ -917,7 +917,7 @@ DN: rts
     jsr setScreenColorToForeground
 
     ; Calculate the number of directory rows to show on the screen
-    lda screenrows
+    lda pagerows
     sec
     sbc #6
     sta dirRows

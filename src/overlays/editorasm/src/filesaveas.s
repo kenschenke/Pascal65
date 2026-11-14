@@ -50,7 +50,8 @@ multilineCommentCarry: .res 1
     jsr editorDrawMessageBar
     ; Move the cursor because getline uses CHROUT
     ldy #saveAsPromptLength-saveAsPrompt-1
-    ldx screenrows
+    ldx screenrows          ; The message bar
+    inx
     inx
     clc
     jsr PLOT
