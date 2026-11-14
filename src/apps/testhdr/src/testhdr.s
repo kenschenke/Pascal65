@@ -56,12 +56,14 @@ failCount: .res 1
 
 unitNames:
     .word nameSystem, nameScreen, nameSprites, nameSpriteMove, nameTime
+    .word nameSound
     .word 0
 nameSystem: .asciiz "system"
 nameScreen: .asciiz "screen"
 nameSprites: .asciiz "sprites"
 nameSpriteMove: .asciiz "spritemove"
 nameTime: .asciiz "time"
+nameSound: .asciiz "sound"
 
 dummyUnit: .asciiz "testhdr"
 strPas: .asciiz ".pas"

@@ -27,7 +27,7 @@ MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
 PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 
 # Library units under test. Each needs a .pas file and a .hdr file on the disk.
-LIBUNITS := system screen sprites spritemove time
+LIBUNITS := system screen sprites spritemove time sound
 LIBPETSCII := $(addsuffix .petscii,$(LIBUNITS))
 HDRFILES := $(addprefix $(HDRDIR)/,$(addsuffix .hdr,$(LIBUNITS)))
 
@@ -74,6 +74,9 @@ spritemove.petscii: ../../lib/spritemove/spritemove.pas
 	dos2unix < $< | petcat -w2 -text -o $@
 
 time.petscii: ../../lib/time/time.pas
+	dos2unix < $< | petcat -w2 -text -o $@
+
+sound.petscii: ../../lib/sound/sound.pas
 	dos2unix < $< | petcat -w2 -text -o $@
 
 $(BINDIR):

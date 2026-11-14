@@ -19,6 +19,7 @@ DEMOLIBDIR := ../../lib/demolib
 SCREENLIBDIR := ../../lib/screen
 SPRITESLIBDIR := ../../lib/sprites
 SPRITEMOVELIBDIR := ../../lib/spritemove
+SOUNDLIBDIR := ../../lib/sound
 RUNTIMEDIR := ../../lib/runtime
 
 PROGRAM := compilertest
@@ -56,6 +57,7 @@ DEMOLIB2 = ../../lib/demolib/bin/$(TARGET)/demolib2
 SCREENLIB = ../../lib/screen/bin/$(TARGET)/screen
 SPRITESLIB = ../../lib/sprites/bin/$(TARGET)/sprites
 SPRITEMOVELIB = ../../lib/spritemove/bin/$(TARGET)/spritemove
+SOUNDLIB = ../../lib/sound/bin/$(TARGET)/sound
 TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
 ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
@@ -71,6 +73,7 @@ PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 SYSTEMPAS = ../../lib/system/system.pas
 DEMOLIBPAS = ../../lib/demolib/demolib.pas
 DEMOLIB2PAS = ../../lib/demolib/demolib2.pas
+SOUNDPAS = ../../lib/sound/sound.pas
 FIVEDICEPAS = ../../../examples/fivedice.pas
 BUBBLESPAS = ../../../examples/bubbles.pas
 
@@ -86,6 +89,7 @@ BINFILES += $(DEMOLIB2)
 BINFILES += $(SCREENLIB)
 BINFILES += $(SPRITESLIB)
 BINFILES += $(SPRITEMOVELIB)
+BINFILES += $(SOUNDLIB)
 BINFILES += $(PRGFILE)
 BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
@@ -119,6 +123,7 @@ FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 TXTFILES := errormsgs.petscii system.petscii demolib.petscii fivedice.petscii
 TXTFILES += demolib2.petscii
 TXTFILES += bubbles.petscii
+TXTFILES += sound.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
 ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
@@ -138,6 +143,9 @@ demolib.petscii: $(DEMOLIBPAS)
 
 demolib2.petscii: $(DEMOLIB2PAS)
 	dos2unix < $(DEMOLIB2PAS) | petcat -w2 -text -o demolib2.petscii
+
+sound.petscii: $(SOUNDPAS)
+	dos2unix < $(SOUNDPAS) | petcat -w2 -text -o sound.petscii
 
 # Compiled, but not run, to check the runtime leaves it room
 fivedice.petscii: $(FIVEDICEPAS)
@@ -204,6 +212,9 @@ $(SPRITESLIB): FORCE
 $(SPRITEMOVELIB): FORCE
 	cd $(SPRITEMOVELIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(SOUNDLIB): FORCE
+	cd $(SOUNDLIBDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(SYSTEMLIB): FORCE
 	cd $(SYSTEMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -243,12 +254,14 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(SCREENLIB) screen.lib,prg \
 	-write $(SPRITESLIB) sprites.lib,prg \
 	-write $(SPRITEMOVELIB) spritemove.lib,prg \
+	-write $(SOUNDLIB) sound.lib,prg \
 	-write $(SYSTEMLIB) system.lib,prg \
 	$(RTWRITE) \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
 	-write demolib.petscii demolib.pas,seq \
 	-write demolib2.petscii demolib2.pas,seq \
+	-write sound.petscii sound.pas,seq \
 	-write fivedice.petscii fivedice.pas,seq \
 	-write bubbles.petscii bubbles.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
@@ -283,6 +296,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
 	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
 	-write $(PETSCIIDIR)/libtest2.pas libtest2.pas,seq \
+	-write $(PETSCIIDIR)/soundtest.pas soundtest.pas,seq \
+	-write $(PETSCIIDIR)/soundcalls.pas soundcalls.pas,seq \
 	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
 	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
 	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq \

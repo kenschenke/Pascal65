@@ -16,6 +16,22 @@ To regenerate after changing a library's `.pas` file:
    (for example `c1541 mkhdr.d81 -read system.hdr system.hdr`).
 4. Rebuild the compiler disk.
 
+mkhdr can also run without the prompt. Like the compiler, it reads the
+source file name from a SEQ file named `autosrc` if the disk has one. To
+make `sound.hdr` headless, from WSL in `src/apps/mkhdr`:
+
+    make TARGET=mega65
+    cp bin/mega65/mkhdr.d81 gen.d81
+    echo sound.pas | petcat -w2 -text -o autosrc.petscii
+    c1541 gen.d81 -write autosrc.petscii autosrc,seq
+    xmega65.exe -besure -headless -sleepless -testing -prg bin/mega65/mkhdr \
+        -prgexit -8 gen.d81 -dumpscreen gen.screen
+    c1541 gen.d81 -read sound.hdr ../../lib/hdr/sound.hdr
+
+`gen.screen` shows what mkhdr printed. If the unit has errors, fix them by
+parsing it in the compiler first: mkhdr doesn't return when its error
+messages scroll the screen, and the emulator never exits.
+
 A header must match its `.lib`: both follow the order of the declarations in
 the `.pas` file, so rebuild the header whenever the `.pas` changes. If a
 unit has no header here, the compiler parses its `.pas` file instead.

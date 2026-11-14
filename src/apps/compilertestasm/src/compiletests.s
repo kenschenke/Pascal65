@@ -48,6 +48,8 @@ strPointers: .asciiz "pointers"
 strUnit: .asciiz "unit"
 strLibTest: .asciiz "libtest"
 strLibTest2: .asciiz "libtest2"
+strSoundTest: .asciiz "soundtest"
+strSoundCalls: .asciiz "soundcalls"
 strRtnArray: .asciiz "rtnarray"
 strRtnRecord: .asciiz "rtnrecord"
 strRtnPtrs: .asciiz "rtnptrs"
@@ -145,6 +147,8 @@ tests:
     .byte .lobyte(strRtDyn), .hibyte(strRtDyn)
     ; A library in the v2 format (relocation table)
     .byte .lobyte(strLibTest2), .hibyte(strLibTest2)
+    ; The Sound library
+    .byte .lobyte(strSoundTest), .hibyte(strSoundTest)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)
@@ -180,6 +184,8 @@ compileOnlyTests:
     ; Makefile compares them (see testset).
     .byte .lobyte(strRtDynA), .hibyte(strRtDynA)
     .byte .lobyte(strRtDynB), .hibyte(strRtDynB)
+    ; Calls every routine in the Sound library
+    .byte .lobyte(strSoundCalls), .hibyte(strSoundCalls)
 .endif
     .byte $00, $00
 

@@ -17,6 +17,7 @@ SPRITEMOVEDIR := src/lib/spritemove
 SYSTEMLIBDIR := src/lib/system
 ASMLIBDIR := src/lib/asmlib
 TIMELIBDIR := src/lib/time
+SOUNDLIBDIR := src/lib/sound
 TOKENIZERDIR := src/overlays/tokenizerasm
 PARSERDIR := src/overlays/parserasm
 RESOLVERDIR := src/overlays/resolverasm
@@ -44,6 +45,7 @@ SPRITEMOVELIB = $(SPRITEMOVEDIR)/bin/$(TARGET)/spritemove
 SYSTEMLIB = $(SYSTEMLIBDIR)/bin/$(TARGET)/system
 ASMLIB = $(ASMLIBDIR)/bin/$(TARGET)/asmlib
 TIMELIB = $(TIMELIBDIR)/bin/$(TARGET)/time
+SOUNDLIB = $(SOUNDLIBDIR)/bin/$(TARGET)/sound
 LOADPROG = src/lib/loadprog/bin/$(TARGET)/loadprog
 TOKENIZER = $(TOKENIZERDIR)/bin/$(TARGET)/tokenizer
 PARSER = $(PARSERDIR)/bin/$(TARGET)/parser
@@ -72,6 +74,7 @@ BINFILES += $(SYSTEMLIB)
 BINFILES += $(LOADPROG)
 BINFILES += $(ASMLIB)
 BINFILES += $(TIMELIB)
+BINFILES += $(SOUNDLIB)
 BINFILES += $(RESOLVER)
 BINFILES += $(TYPECHECK)
 BINFILES += $(ICODE)
@@ -82,9 +85,9 @@ BINFILES += $(MEMINFO)
 BINFILES += $(THEMES)
 BINFILES += $(MKHDR)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii sound.petscii
 
-all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SOUNDLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -109,6 +112,9 @@ sprites.petscii: $(SPRITESDIR)/sprites.pas
 
 spritemove.petscii: $(SPRITEMOVEDIR)/spritemove.pas
 	dos2unix < $(SPRITEMOVEDIR)/spritemove.pas | petcat -w2 -text -o spritemove.petscii
+
+sound.petscii: $(SOUNDLIBDIR)/sound.pas
+	dos2unix < $(SOUNDLIBDIR)/sound.pas | petcat -w2 -text -o sound.petscii
 
 system.petscii: $(SYSTEMLIBDIR)/system.pas
 	dos2unix < $(SYSTEMLIBDIR)/system.pas | petcat -w2 -text -o system.petscii
@@ -163,6 +169,9 @@ $(SYSTEMLIB):
 
 $(TIMELIB):
 	cd $(TIMELIBDIR) && $(MAKE) TARGET=$(TARGET)
+
+$(SOUNDLIB): FORCE
+	cd $(SOUNDLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(ASMLIB):
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
@@ -234,6 +243,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDEF) $(HDRFILES)
 	-write $(SYSTEMLIB) system.lib,prg \
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(TIMELIB) time.lib,prg \
+	-write $(SOUNDLIB) sound.lib,prg \
 	$(DRVWRITE) \
 	-write abortmsgs.petscii abortmsgs,seq \
 	-write errormsgs.petscii errormsgs.txt,seq \
@@ -246,6 +256,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDEF) $(HDRFILES)
 	-write bubbles.petscii bubbles.pas,seq \
 	-write sprites.petscii sprites.pas,seq \
 	-write spritemove.petscii spritemove.pas,seq \
+	-write sound.petscii sound.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
 	-write license.petscii license.txt,seq \

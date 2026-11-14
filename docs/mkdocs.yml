@@ -91,6 +91,8 @@ nav:
     - SetScreenSize: screen/setscreensize.md
     - SetTextColor: screen/settextcolor.md
     - SetUpperCase: screen/setuppercase.md
+  - Sound Library:
+    - Introduction: sound/intro.md
   - Sprites Library:
     - Introduction: sprites/intro.md
     - GetSpritePos: sprites/getspritepos.md

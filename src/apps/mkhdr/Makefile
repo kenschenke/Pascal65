@@ -26,8 +26,10 @@ LIBPAS = ../../lib/system/system.pas \
 	../../lib/screen/screen.pas \
 	../../lib/sprites/sprites.pas \
 	../../lib/spritemove/spritemove.pas \
-	../../lib/time/time.pas
-LIBPETSCII = system.petscii screen.petscii sprites.petscii spritemove.petscii time.petscii
+	../../lib/time/time.pas \
+	../../lib/sound/sound.pas
+LIBPETSCII = system.petscii screen.petscii sprites.petscii spritemove.petscii time.petscii \
+	sound.petscii
 
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
@@ -70,6 +72,9 @@ spritemove.petscii: ../../lib/spritemove/spritemove.pas
 	dos2unix < $< | petcat -w2 -text -o $@
 
 time.petscii: ../../lib/time/time.pas
+	dos2unix < $< | petcat -w2 -text -o $@
+
+sound.petscii: ../../lib/sound/sound.pas
 	dos2unix < $< | petcat -w2 -text -o $@
 
 $(BINDIR):
@@ -119,7 +124,8 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write screen.petscii screen.pas,seq \
 	-write sprites.petscii sprites.pas,seq \
 	-write spritemove.petscii spritemove.pas,seq \
-	-write time.petscii time.pas,seq
+	-write time.petscii time.pas,seq \
+	-write sound.petscii sound.pas,seq
 
 clean:
 	$(RM) $(TXTFILES)
