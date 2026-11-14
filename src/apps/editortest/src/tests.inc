@@ -25,6 +25,7 @@
 ;    .word  cursor Y
 ;    .word  numLines
 ;    .byte  number of lines
+;    .addr  build result (BUILD), or 0 for none
 ;    the text of each line, zero-terminated
 ;    the other checks (CHK_*), then CHK_END (ENDTEST)
 ;
@@ -32,7 +33,14 @@
 ; aren't checked (the number of lines is zero). With F_SKIPLINES the lines
 ; aren't checked (the number is zero), but CHK_LINE can check some.
 ;
-; Include editor.inc first.
+; editorRun gets the test's build result (EDITORCTX::buildResult). A test
+; with none gets an empty one: BUILD_NONE, no entries and the summary.
+; BUILD starts one and ENDBUILD ends it. Between them, BFILE adds a file
+; and BENTRY an entry, in the order they are kept (fileIdx counts BFILEs
+; from 0). numFiles and numEntries are the counts of each. The message is
+; a pointer to text in the test program.
+;
+; Include editor.inc and buildresult.inc first.
 
 REC_NAME = 0
 REC_KEYS = 2
@@ -41,7 +49,8 @@ REC_CX = 5
 REC_CY = 6
 REC_NUMLINES = 8
 REC_COUNT = 10
-REC_LINES = 11
+REC_BUILD = 11
+REC_LINES = 13
 
 F_PASCAL = 1                ; New files are Pascal files
 F_NOFILE = 2                ; No file is open at the end
@@ -60,7 +69,13 @@ CHK_NOTONDISK = 8           ; .asciiz filename
 CHK_LOOP = 9                ; .byte the code editorRun returned
 CHK_COMPILEFN = 10          ; .asciiz the filename editorRun returned
 CHK_LINE = 11               ; .byte line, .asciiz text
-CHK_LAST = 11
+CHK_BUILD = 12              ; .word offset in BUILDRESULT, .byte value
+CHK_LAST = 12
+
+; The items of a build result after its header (see BUILD)
+BLD_END = 0
+BLD_FILE = 1                ; .asciiz name
+BLD_ENTRY = 2               ; .byte kind, fileIdx, .word line, .addr msg
 
 ; Keys
 CR = CH_ENTER
@@ -105,12 +120,17 @@ HELP = CH_HELP
 .endmacro
 
 ; Starts a test record. The name goes in RODATA.
-.macro TEST name, keys, flags, cx, cy, numLines, count
+.macro TEST name, keys, flags, cx, cy, numLines, count, build
     .local nm
     .addr nm, keys
     .byte flags, cx
     .word cy, numLines
     .byte count
+    .ifblank build
+        .addr 0
+    .else
+        .addr build
+    .endif
     .pushseg
     .rodata
 nm: .asciiz name
@@ -183,4 +203,33 @@ nm: .asciiz name
 .macro CHKFN name
     .byte CHK_COMPILEFN
     .asciiz name
+.endmacro
+
+; A byte of the build result the overlay was given
+.macro CHKBUILD offset, value
+    .byte CHK_BUILD
+    .word offset
+    .byte value
+.endmacro
+
+; Starts a build result: the header, then BFILE and BENTRY items
+.macro BUILD state, numErrors, numWarns, current
+    .byte state
+    .word numErrors, numWarns
+    .byte current
+.endmacro
+
+.macro BFILE name
+    .byte BLD_FILE
+    .asciiz name
+.endmacro
+
+.macro BENTRY kind, fileIdx, line, msg
+    .byte BLD_ENTRY, kind, fileIdx
+    .word line
+    .addr msg
+.endmacro
+
+.macro ENDBUILD
+    .byte BLD_END
 .endmacro

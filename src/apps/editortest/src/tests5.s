@@ -8,9 +8,11 @@
 ; https://opensource.org/licenses/MIT
 ;
 ; Editor tests: selecting, cutting, copying and pasting, the longest line
-; and keys with no file open (see tests.inc)
+; and keys with no file open, and the build result editorRun is given (see
+; tests.inc)
 
 .include "editor.inc"
+.include "buildresult.inc"
 .include "tests.inc"
 
 .export tests
@@ -22,7 +24,7 @@ tests:
     .addr selectUp, selectBs, selectCancel, pastePascal, typeLong
     .addr tabLong, insLong, joinLong, atCaret, escKeys, noFileQuit
     .addr noFileHelp, helpWithFile, ignoredKeys, ignoredClean, escOther
-    .addr titleScreen, noFileTheme
+    .addr buildNone, buildKept, titleScreen, noFileTheme
     .addr 0
 
 ; The key scripts
@@ -149,6 +151,12 @@ keysEscOther:
     .byte ESC, "x", ESC, "X", 0
 
 ; The title screen shows while no file is open. Typing does nothing.
+; Typing with a build result. The editor doesn't use it yet; it must only
+; keep the pointer, and not change the result.
+keysBuild:
+    NEWFILE
+    .byte "hi", 0
+
 keysTitleScreen:
     .byte "x", BACK, "n", 0
 
@@ -315,6 +323,53 @@ escOther:
     TEST "esc and another key", keysEscOther, 0, 2, 0, 0, 1
     .asciiz "xX"
     ENDTEST
+
+; With no build result the test gives editorRun an empty one
+buildNone:
+    TEST "no build result", keysBuild, 0, 2, 0, 0, 1
+    .asciiz "hi"
+    CHKBUILD BUILDRESULT::state, BUILD_NONE
+    CHKBUILD BUILDRESULT::numEntries, 0
+    CHKBUILD BUILDRESULT::current, BUILD_SUMMARY
+    ENDTEST
+
+; Two files and three entries, more errors than are kept
+buildKept:
+    TEST "build result", keysBuild, 0, 2, 0, 0, 1, buildFailed
+    .asciiz "hi"
+    CHKBUILD BUILDRESULT::state, BUILD_FAILED
+    CHKBUILD BUILDRESULT::numErrors, 40
+    CHKBUILD BUILDRESULT::numErrors+1, 0
+    CHKBUILD BUILDRESULT::numWarns, 1
+    CHKBUILD BUILDRESULT::numEntries, 3
+    CHKBUILD BUILDRESULT::numFiles, 2
+    CHKBUILD BUILDRESULT::current, 1
+    CHKBUILD BUILDRESULT::files+BUILD_FILENAME_SIZE+4, '2'
+    CHKBUILD BUILDRESULT::files+BUILD_FILENAME_SIZE+9, 0
+    CHKBUILD BUILDRESULT::entries+BUILDENTRY::line, 16
+    CHKBUILD BUILDRESULT::entries+BUILDENTRY::msg, <msgError
+    CHKBUILD BUILDRESULT::entries+BUILDENTRY::msg+1, >msgError
+    CHKBUILD BUILDRESULT::entries+BUILDENTRY::msg+2, 0
+    CHKBUILD BUILDRESULT::entries+8+BUILDENTRY::kind, BUILD_WARNING
+    CHKBUILD BUILDRESULT::entries+8+BUILDENTRY::fileIdx, 1
+    CHKBUILD BUILDRESULT::entries+8+BUILDENTRY::line+1, 1
+    CHKBUILD BUILDRESULT::entries+16+BUILDENTRY::kind, BUILD_ERROR
+    CHKBUILD BUILDRESULT::entries+16+BUILDENTRY::line, 0
+    CHKBUILD BUILDRESULT::entries+16+BUILDENTRY::msg+1, >msgWarning
+    CHKBUILD BUILDRESULT::entries+24+BUILDENTRY::msg, 0
+    ENDTEST
+
+buildFailed:
+    BUILD BUILD_FAILED, 40, 1, 1
+    BFILE "file1.pas"
+    BENTRY BUILD_ERROR, 0, 16, msgError
+    BFILE "unit2.pas"
+    BENTRY BUILD_WARNING, 1, 300, msgWarning
+    BENTRY BUILD_ERROR, 1, 0, msgWarning
+    ENDBUILD
+
+msgError: .asciiz "an error"
+msgWarning: .asciiz "a warning"
 
 titleScreen:
     TEST "typing on the title screen", keysTitleScreen, 0, 0, 0, 0, 0

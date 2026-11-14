@@ -34,7 +34,7 @@
 .export editorTestSP, editorTestPascal, editorTestState
 
 .import closeEditBuf, fileFree, firstFile, titleScreen, clipboard
-.import fixAlphaCase, screenrows
+.import fixAlphaCase, screenrows, buildResultPtr
 
 INPUTBUFLEN = 20            ; As getline has it
 
@@ -51,6 +51,7 @@ stateTable:
     .addr firstFile         ; .dword: the first open file
     .addr clipboard         ; .dword: the clipboard's memory buffer
     .addr screenrows        ; .byte: the number of text rows
+    .addr buildResultPtr    ; .word: the build result editorRun was given
 
 .code
 

@@ -135,6 +135,10 @@ jump table entry at the hook. Scripts are ASCII, as the keyboard sends them,
 and the expected text is PETSCII. The `KEYS` and `TEXT` macros switch the
 character map. `NEWFILE` opens a new file, a Pascal file if the test says
 so, and `OPENFILE` opens a file by its row in the directory screen.
+`editorRun` gets an `EDITORCTX` (`editor.inc`): the theme colors and a
+pointer to a build result. A test gives it one with `TEST`'s eighth
+argument (`BUILD` in `tests.inc`), or gets an empty one, and checks it
+with `CHKBUILD`.
 `editorTestCleanup` frees everything without prompts before the leak check.
 A script that ends in the directory screen leaks its list, so it leaves it.
 

@@ -16,7 +16,7 @@
 
 .export editorLoop
 
-.import initEditor, initThemes, runCompiler, buildHasErrors
+.import initEditor, initThemes, runCompiler, buildHasErrors, buildResult
 
 .ifdef __DEBUG__
 .import editorDebug
@@ -24,20 +24,26 @@
 
 .bss
 
-themeColors: .res THEME_BUFSIZE
+; The theme colors and the build result, for editorRun
+ctx: .tag EDITORCTX
 
 .code
 
 .proc editorLoop
+    lda #<buildResult
+    sta ctx+EDITORCTX::buildResult
+    lda #>buildResult
+    sta ctx+EDITORCTX::buildResult+1
+
     ; Load the default theme's colors into the buffer
     jsr initThemes
-    lda #<themeColors
-    ldx #>themeColors
+    lda #<(ctx+EDITORCTX::themeColors)
+    ldx #>(ctx+EDITORCTX::themeColors)
     jsr loadDefaultTheme
 
 L1: jsr initEditor      ; load the editor overlay from disk
-    lda #<themeColors
-    ldx #>themeColors
+    lda #<ctx
+    ldx #>ctx
     jsr editorRun
     cmp #EDITOR_LOOP_QUIT
     beq QT
@@ -75,8 +81,8 @@ CP2:
     ; Themes
 TH: jsr initThemes
     jsr showThemesScreen
-    lda #<themeColors
-    ldx #>themeColors
+    lda #<(ctx+EDITORCTX::themeColors)
+    ldx #>(ctx+EDITORCTX::themeColors)
     jsr loadDefaultTheme
     bra L1
 

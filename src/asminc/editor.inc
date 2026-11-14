@@ -101,6 +101,14 @@ THEME_SIZE = THEME_NAME_SIZE + THEME_COLORS * THEME_COLOR_SIZE  ; on disk
 ; indexed by SYNTAXHL_*. Byte 0 is unused.
 THEME_BUFSIZE = THEME_COLORS + 1
 
+; What the editor app passes to editorRun in A/X. The overlay copies the
+; theme colors and keeps the pointer to the build result (BUILDRESULT in
+; buildresult.inc), which lives in the app and outlasts the overlay.
+.struct EDITORCTX
+    themeColors .res ::THEME_BUFSIZE    ; indexed by SYNTAXHL_*
+    buildResult .word               ; pointer to BUILDRESULT
+.endstruct
+
 ; The theme file (themefile.s). Version 1 starts with the marker, the
 ; version and the selected theme number. Version 0, the old file, starts
 ; with the selected theme number, which is never the marker, and its

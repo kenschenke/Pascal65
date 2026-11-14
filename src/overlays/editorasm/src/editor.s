@@ -21,7 +21,7 @@
 .export editorSetAllRowsDirty, incCurX, decCurX, initFile
 .export colorPtrs, editorAllocLine, editorFreeLine, editorSetStatusMsg
 .export editorNewFile, firstFile, addCurrentFile, editorHandleFileSave
-.export editorHandleFileSaveAs, themeColors, checkCursorEOL
+.export editorHandleFileSaveAs, themeColors, checkCursorEOL, buildResultPtr
 
 .import readTitleFile, editorRefreshScreen, openHelpFile, clearKeyBuf
 .import renderCursor, currentEditorRow, editBufKey, initEditBuf, closeEditBuf
@@ -64,6 +64,7 @@ anyDirtyRows: .res 1
 loopCode: .res 1
 compileFn: .res 17
 themeColors: .res THEME_BUFSIZE
+buildResultPtr: .res 2      ; The app's BUILDRESULT (see EDITORCTX)
 
 rowPtrs: .res 200           ; 50 rows * 4 bytes -- pointers to screen memory for each row
 colorPtrs: .res 200         ; 50 rows * 4 bytes -- pointers to color RAM
@@ -120,19 +121,25 @@ freeLinePtr: .res 4         ; The line editorFreeLine is freeing
     rts
 .endproc
 
-; Source in A/X: a buffer of THEME_BUFSIZE bytes (see loadDefaultTheme)
+; A/X: the EDITORCTX editorRun was given. Copies its theme colors (see
+; loadDefaultTheme) and keeps its build result pointer.
 .proc copyThemeColors
     sta ptr1
     stx ptr1+1
 
-    ldy #1
-    ldx #1
+    ldy #EDITORCTX::themeColors+1
 L1: lda (ptr1),y
-    sta themeColors,x
+    sta themeColors-EDITORCTX::themeColors,y
     iny
-    inx
-    cpy #THEME_BUFSIZE
+    cpy #EDITORCTX::themeColors+THEME_BUFSIZE
     bne L1
+
+    ldy #EDITORCTX::buildResult
+    lda (ptr1),y
+    sta buildResultPtr
+    iny
+    lda (ptr1),y
+    sta buildResultPtr+1
 
     rts
 .endproc
@@ -618,11 +625,13 @@ DN: rts
 ; A/X contains pointer to the theme colors block to copy from
 .proc editorRun
 .ifdef __EDITORTEST__
+    phx                     ; X is the high byte of the EDITORCTX
     tsx                     ; editorTestNextKey returns from here
+    inx                     ; The stack pointer before the PHX
     stx editorTestSP
+    plx
 .endif
-    ; Call copyThemeColors to load the theme colors into the buffer
-    ; since the source pointer is in A/X.
+    ; A/X is the EDITORCTX: the theme colors and the build result
     jsr copyThemeColors
     jsr initEditor
 L1: lda loopCode

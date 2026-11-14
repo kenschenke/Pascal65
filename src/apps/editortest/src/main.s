@@ -15,6 +15,8 @@
 ; editor. When the script runs out, or the editor quits, runs or compiles,
 ; editorRun returns. The test then checks the current file: the cursor,
 ; numLines and the text of every line, then any other checks the test has.
+; editorRun is given the test's build result (see BUILD in tests.inc), and
+; the overlay must keep the pointer to it.
 ; It frees everything with editorTestCleanup and checks for leaked heap
 ; blocks.
 ;
@@ -35,6 +37,7 @@
 .include "asmlib.inc"
 .include "editor.inc"
 .include "editoroverlay.inc"
+.include "buildresult.inc"
 .include "4510macros.inc"
 .include "poisonbss.inc"
 .include "tests.inc"
@@ -78,13 +81,19 @@ failText: .res 2            ; The expected text
 phase: .res 1
 chkNum: .res 1              ; The number of the check being made
 fnTmp: .res 24              ; A filename for the KERNAL
+testBuild: .tag BUILDRESULT ; The build result editorRun is given
+
+BUILD_SIZE = .sizeof(BUILDRESULT)
+.assert BUILD_SIZE > 256 && BUILD_SIZE <= 512, error, "see setupBuild"
 
 .data
 
-; The theme colors editorRun copies (see copyThemeColors), indexed by
-; SYNTAXHL_*
-theme: .byte 0, 0, 1, 7, 3, 5, 13, 14, 15, 10, 2, 8
-.assert * - theme = THEME_BUFSIZE, error, "theme is the wrong size"
+; What editorRun is given (EDITORCTX): the theme colors it copies (see
+; copyThemeColors), indexed by SYNTAXHL_*, and the build result
+ctx: .byte 0, 0, 1, 7, 3, 5, 13, 14, 15, 10, 2, 8
+.assert * - ctx = EDITORCTX::buildResult, error, "theme is the wrong size"
+    .addr testBuild
+.assert * - ctx = .sizeof(EDITORCTX), error, "ctx is the wrong size"
 
 strTest: .asciiz "test "
 strColon: .asciiz ": "
@@ -117,6 +126,8 @@ msgDisk: .asciiz "file on disk"
 msgOnDisk: .asciiz "file exists"
 msgLoop: .asciiz "editorrun returned"
 msgCompileFn: .asciiz "compile filename"
+msgBuildPtr: .asciiz "build result pointer"
+msgBuild: .asciiz "build result byte"
 msgBadCheck: .asciiz "unknown check"
 strRead: .asciiz ",s,r"
 
@@ -124,7 +135,7 @@ strRead: .asciiz ",s,r"
 checkProcs:
     .addr checkByte, checkWord, checkHL, checkName, checkFiles
     .addr checkScreen, checkDisk, checkNotOnDisk, checkLoop
-    .addr checkCompileFn, checkLine
+    .addr checkCompileFn, checkLine, checkBuild
 
 .segment "ENTRY"
 
@@ -202,6 +213,7 @@ L2:
     lda #PHASE_EDIT
     sta phase
 
+    jsr setupBuild
     jsr loadRec
     ldy #REC_KEYS+1
     lda (ptr3),y
@@ -216,8 +228,8 @@ L2:
     pla
     jsr editorTestSetup
 
-    lda #<theme
-    ldx #>theme
+    lda #<ctx
+    ldx #>ctx
     jsr editorRun
     sta loopCode
     stx compileFn
@@ -225,8 +237,12 @@ L2:
 
     lda #PHASE_CHECK
     sta phase
-    jsr checkFile           ; The carry is set if a check failed
-    php
+    lda #0
+    sta chkNum
+    jsr checkBuildPtr       ; The carry is set if a check failed
+    bcs :+
+    jsr checkFile
+:   php
     lda #PHASE_CLEANUP
     sta phase
     lda loopCode
@@ -246,6 +262,168 @@ L2:
     jsr printTestName
     jmp testFail
 :   rts
+.endproc
+
+; Fills testBuild from the test's build result (see BUILD in tests.inc), or
+; empties it if the test has none
+.proc setupBuild
+    lda #0
+    tax
+:   sta testBuild,x
+    sta testBuild+BUILD_SIZE-256,x
+    inx
+    bne :-
+    lda #BUILD_SUMMARY
+    sta testBuild+BUILDRESULT::current
+
+    jsr loadRec
+    ldy #REC_BUILD
+    lda (ptr3),y
+    sta ptr2
+    iny
+    lda (ptr3),y
+    sta ptr2+1
+    ora ptr2
+    lbeq DN
+
+    ; The header: state, numErrors, numWarns, current
+    ldy #0
+:   lda (ptr2),y
+    sta testBuild+BUILDRESULT::state,y
+    iny
+    cpy #BUILDRESULT::numWarns+2
+    bne :-
+    lda (ptr2),y
+    sta testBuild+BUILDRESULT::current
+    iny
+    tya
+    clc
+    adc ptr2
+    sta ptr2
+    bcc L1
+    inc ptr2+1
+
+L1: jsr getChk
+    beq DN
+    cmp #BLD_FILE
+    beq FL
+
+    ; An entry
+    lda testBuild+BUILDRESULT::numEntries
+    asl a
+    asl a
+    asl a
+    tax
+    .assert .sizeof(BUILDENTRY) = 8, error, "see setupBuild"
+    jsr getChk
+    sta testBuild+BUILDRESULT::entries+BUILDENTRY::kind,x
+    jsr getChk
+    sta testBuild+BUILDRESULT::entries+BUILDENTRY::fileIdx,x
+    jsr getChk
+    sta testBuild+BUILDRESULT::entries+BUILDENTRY::line,x
+    jsr getChk
+    sta testBuild+BUILDRESULT::entries+BUILDENTRY::line+1,x
+    jsr getChk
+    sta testBuild+BUILDRESULT::entries+BUILDENTRY::msg,x
+    jsr getChk
+    sta testBuild+BUILDRESULT::entries+BUILDENTRY::msg+1,x
+    inc testBuild+BUILDRESULT::numEntries
+    bra L1
+
+    ; A file: its name goes in slot numFiles
+FL: lda #<(testBuild+BUILDRESULT::files)
+    sta ptr4
+    lda #>(testBuild+BUILDRESULT::files)
+    sta ptr4+1
+    ldx testBuild+BUILDRESULT::numFiles
+    beq F2
+F1: clc
+    lda ptr4
+    adc #BUILD_FILENAME_SIZE
+    sta ptr4
+    bcc :+
+    inc ptr4+1
+:   dex
+    bne F1
+F2: ldy #0
+:   lda (ptr2),y
+    sta (ptr4),y
+    beq :+
+    iny
+    bra :-
+:   jsr skipText
+    inc testBuild+BUILDRESULT::numFiles
+    bra L1
+
+DN: rts
+.endproc
+
+; Points ptr4 at the build result pointer the overlay keeps (the fourth
+; address in its state table) and loads the pointer into failAct
+.proc getBuildPtr
+    jsr editorTestState
+    sta ptr4
+    stx ptr4+1
+    ldy #6
+    lda (ptr4),y
+    tax
+    iny
+    lda (ptr4),y
+    stx ptr4
+    sta ptr4+1
+    ldy #0
+    lda (ptr4),y
+    sta failAct
+    iny
+    lda (ptr4),y
+    sta failAct+1
+    rts
+.endproc
+
+; The overlay must keep the pointer to the build result editorRun was
+; given. The carry is clear if it did.
+.proc checkBuildPtr
+    jsr getBuildPtr
+    lda #<testBuild
+    sta failExp
+    lda #>testBuild
+    sta failExp+1
+    jsr cmpFail
+    bne :+
+    clc
+    rts
+:   lda #<msgBuildPtr
+    ldx #>msgBuildPtr
+    jmp failValue
+.endproc
+
+; CHK_BUILD: a byte of the build result the overlay was given
+.proc checkBuild
+    jsr getBuildPtr
+    jsr getChk              ; The offset (getChk sets the carry)
+    pha
+    jsr getChk
+    tax
+    pla
+    clc
+    adc failAct
+    sta ptr4
+    txa
+    adc failAct+1
+    sta ptr4+1
+    jsr zeroFail
+    ldy #0
+    lda (ptr4),y
+    sta failAct
+    jsr getChk
+    sta failExp
+    jsr cmpFail
+    beq :+
+    lda #<msgBuild
+    ldx #>msgBuild
+    jmp failValue
+:   clc
+    rts
 .endproc
 
 ; Fails a value check: A/X is the message. failExp and failAct must be set.
