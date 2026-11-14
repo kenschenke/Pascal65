@@ -10,7 +10,7 @@ OBJTARGETDIR := $(OBJDIR)/$(TARGET)
 
 # The tests don't fit in one program. Program N runs the tests in
 # src/testsN.s, from its own disk: bin/$(TARGET)/editortestN.prg and .d81.
-TESTPROGS := 1 2 3 4 5 6
+TESTPROGS := 1 2 3 4 5 6 7
 
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
@@ -80,11 +80,11 @@ FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 # program.
 COVMAP := 15360
 COVSIZE := 1024
-COVSETS := 1 2 3 4 5 6 7 8 9
+COVSETS := 1 2 3 4 5 6 7 8 9 10
 COVSET ?= 1
 # editor.s is too big for one set, so it is split at a proc (see mkcov.py)
 COVFILES1 := editor.s:-editorHandleCtrlN
-COVFILES2 := editbuf.s clipboard.s
+COVFILES2 := editbuf.s
 COVFILES3 := screen.s buildline.s
 COVFILES4 := dirscreen.s
 COVFILES5 := syntaxhl.s syntaxBinary.s syntaxCharCode.s syntaxComment.s \
@@ -92,9 +92,10 @@ COVFILES5 := syntaxhl.s syntaxBinary.s syntaxCharCode.s syntaxComment.s \
 COVFILES6 := keybuf.s editorInsertLine.s editorEnterKey.s \
 	editorCombineLines.s filefree.s fileclose.s
 COVFILES7 := fileread.s editorstate.s filesaveas.s filewrite.s \
-	filesavetoexisting.s diskdir.s
+	filesavetoexisting.s
 COVFILES8 := editor.s:editorHandleCtrlN-
-COVFILES9 := filescreen.s
+COVFILES9 := filescreen.s buildnav.s
+COVFILES10 := clipboard.s diskdir.s
 
 EDSRCDIR := $(EDITORDIR)/src
 EDSOURCES := $(wildcard $(EDSRCDIR)/*.s)

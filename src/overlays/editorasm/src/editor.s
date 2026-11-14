@@ -30,6 +30,7 @@
 .import startTextSelection, editorCalcSelection, editorClearSelection, editorCopySelection
 .import editorDeleteSelection, editorPasteClipboard, initScreen, setupScreen
 .import editorSaveState, editorRestoreState, editorHasState, fnBuf
+.import editorBuildNext, editorBuildPrev
 
 .ifdef __DEBUG__
 .import editorCloseAllFiles
@@ -41,7 +42,9 @@
 
 .data
 
-defaultStatusMsg: .byte "F1: open  F3: save  F5: run  F7: compile  ", $5f, ": files  Ctrl-X: quit", $0
+defaultStatusMsg: .byte "F1: open  F3: save  F5: run  F7: compile  ", $5f, ": files  "
+    .byte "F9/11: errors  Ctrl-X: quit", $0
+.assert * - defaultStatusMsg <= DEFAULT_COLS, error, "statusmsg holds 79"
 promptUnsavedFiles: .asciiz "Unsaved files. Exit anyway? Y/N"
 welcomeMsg: .asciiz "Welcome"
 nofilename: .asciiz "[No Name]"
@@ -240,6 +243,13 @@ L2: ldz #EDITFILE::nextFile
 :   cmp #CH_50_ROWS
     bne :+
     jmp editorHandle50Rows
+    ; Stepping through the build's errors works with no file open too
+:   cmp #CH_F11
+    bne :+
+    jmp editorBuildNext
+:   cmp #CH_F9
+    bne :+
+    jmp editorBuildPrev
     ; The rest of the keys work on the current file, except a few. With no
     ; file open (all of them closed) only those few do anything.
 :   jsr isFileOpen

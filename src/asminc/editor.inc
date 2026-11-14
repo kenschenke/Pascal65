@@ -64,10 +64,17 @@ CH_F4 = 244
 CH_F5 = 245
 CH_F7 = 247
 CH_F8 = 248
-CH_DELETE_SOL = 250
-CH_DELETE_EOL = 251
-CH_25_ROWS = 252
-CH_50_ROWS = 253
+CH_F9 = 249                 ; Previous build entry
+CH_F11 = 251                ; Next build entry
+; editorReadKey turns these Esc commands into codes of their own, which
+; the keyboard ($D610) doesn't send: it sends F10 to F14 as $FA to $FE.
+; A key from the keyboard in this range is dropped.
+CH_ESC_FIRST = $80
+CH_DELETE_SOL = $80
+CH_DELETE_EOL = $82
+CH_25_ROWS = $83
+CH_50_ROWS = $84
+CH_ESC_LAST = $84
 
 ; These are screen codes, not PETSCII
 CH_UL_CORNER = 112

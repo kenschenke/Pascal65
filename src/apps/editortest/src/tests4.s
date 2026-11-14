@@ -162,7 +162,7 @@ dirRename:
     ENDTEST
 
 help:
-    TEST "help file", keysHelp, F_SKIPLINES, 0, 0, 33, 0
+    TEST "help file", keysHelp, F_SKIPLINES, 0, 0, 35, 0
     CHKNAME "Help File"
     CHKBYTE EDITFILE::readOnly, 1
     CHKBYTE EDITFILE::dirty, 0

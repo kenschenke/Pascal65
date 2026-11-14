@@ -124,6 +124,10 @@ NE: cmp #CH_ESC
     lda #1
     sta tmp1
     bra L1
+:   cmp #CH_ESC_FIRST   ; Only an Esc command makes these codes
+    bcc :+
+    cmp #CH_ESC_LAST+1
+    bcc L1              ; Drop it
 :   cmp #$40            ; "@"
     bne :+
     rts
