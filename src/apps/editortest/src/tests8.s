@@ -10,8 +10,8 @@
 ; Editor tests: the line of the entry the build line shows is highlighted
 ; (calcBuildHighlight in buildnav.s, editorDrawRows in screen.s). Every
 ; column of its row is reversed, in the theme's error or warning color
-; (COLOR_* in tests.inc). The cursor on it is the character not reversed,
-; in the cursor color.
+; (COLOR_* in tests.inc). The cursor on it is reversed in the cursor color,
+; as it is elsewhere.
 ;
 ; The disk's files are in the order OPENFILE gives: hello.txt (2 lines) is
 ; row 2 and lines200.txt (lines "1" to "200") row 3. Neither is a Pascal
@@ -31,7 +31,7 @@ F11 = CH_F11
 
 tests:
     .addr errorLine, warningLine, cursorLeaves, scrolledOff, scrolledBack
-    .addr typing, noFile, otherFile, rows50
+    .addr typing, noFile, otherFile, rows50, cursorRight, cursorBack
     .addr 0
 
 ; The key scripts
@@ -93,6 +93,15 @@ keysOther:
 keysRows50:
     .byte ESC, "5", F11, 0
 
+; Along the line and back
+keysRight:
+    OPENFILE 3
+    .byte F11, RIGHT, 0
+
+keysRightBack:
+    OPENFILE 3
+    .byte F11, RIGHT, LEFT, 0
+
 ; The tests
 
 TEXT
@@ -101,7 +110,7 @@ errorLine:
     TEST "error line", keysFirst, F_SKIPLINES, 0, 9, 200, 0, buildLines
     CHKWORD EDITFILE::rowOff, 0
     CHKSCREEN 9, 0, "10 "
-    CHKATTR 9, 0, 1, 0, COLOR_CURSOR
+    CHKATTR 9, 0, 1, 1, COLOR_CURSOR
     CHKATTR 9, 1, 79, 1, COLOR_ERROR
     CHKATTR 8, 0, 80, 0, COLOR_UI
     CHKATTR 10, 0, 80, 0, COLOR_UI
@@ -112,7 +121,7 @@ warningLine:
     TEST "warning line", keysSecond, F_SKIPLINES, 0, 11, 200, 0, buildLines
     CHKWORD EDITFILE::rowOff, 0
     CHKSCREEN 11, 0, "12 "
-    CHKATTR 11, 0, 1, 0, COLOR_CURSOR
+    CHKATTR 11, 0, 1, 1, COLOR_CURSOR
     CHKATTR 11, 1, 79, 1, COLOR_WARNING
     CHKATTR 9, 0, 80, 0, COLOR_UI
     ENDTEST
@@ -139,7 +148,7 @@ scrolledBack:
     TEST "line scrolled back", keysBack, F_SKIPLINES, 0, 9, 200, 0, buildLines
     CHKWORD EDITFILE::rowOff, 9
     CHKSCREEN 0, 0, "10 "
-    CHKATTR 0, 0, 1, 0, COLOR_CURSOR
+    CHKATTR 0, 0, 1, 1, COLOR_CURSOR
     CHKATTR 0, 1, 79, 1, COLOR_ERROR
     CHKATTR 1, 0, 80, 0, COLOR_UI
     ENDTEST
@@ -149,7 +158,7 @@ typing:
     CHKLINE 9, "x10"
     CHKSCREEN 9, 0, "x10 "
     CHKATTR 9, 0, 1, 1, COLOR_ERROR
-    CHKATTR 9, 1, 1, 0, COLOR_CURSOR
+    CHKATTR 9, 1, 1, 1, COLOR_CURSOR
     CHKATTR 9, 2, 78, 1, COLOR_ERROR
     ENDTEST
 
@@ -179,10 +188,25 @@ rows50:
     TEST "50 rows", keysRows50, F_SKIPLINES, 0, 99, 200, 0, buildLines100
     CHKWORD EDITFILE::rowOff, 76
     CHKSCREEN 23, 0, "100 "
-    CHKATTR 23, 0, 1, 0, COLOR_CURSOR
+    CHKATTR 23, 0, 1, 1, COLOR_CURSOR
     CHKATTR 23, 1, 79, 1, COLOR_ERROR
     CHKATTR 22, 0, 80, 0, COLOR_UI
     CHKATTR 24, 0, 80, 0, COLOR_UI
+    ENDTEST
+
+; The cursor keeps its color as it moves along the line, and the cell it
+; leaves goes back to the error color
+cursorRight:
+    TEST "cursor right", keysRight, F_SKIPLINES, 1, 9, 200, 0, buildLines
+    CHKATTR 9, 0, 1, 1, COLOR_ERROR
+    CHKATTR 9, 1, 1, 1, COLOR_CURSOR
+    CHKATTR 9, 2, 78, 1, COLOR_ERROR
+    ENDTEST
+
+cursorBack:
+    TEST "cursor back", keysRightBack, F_SKIPLINES, 0, 9, 200, 0, buildLines
+    CHKATTR 9, 0, 1, 1, COLOR_CURSOR
+    CHKATTR 9, 1, 79, 1, COLOR_ERROR
     ENDTEST
 
 ; The build results

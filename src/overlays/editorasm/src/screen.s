@@ -975,9 +975,8 @@ DN: rts
 ; This routine renders the cursor at the current position
 ; Carry is set if the cursor is to be drawn, cleared otherwise
 ;
-; The cursor is a reversed character in the cursor color. On the build's
-; highlighted line, which is reversed, it is the character not reversed,
-; in the cursor color, and erasing it reverses the character again in
+; The cursor is a reversed character in the cursor color, on the build's
+; highlighted line too. There, erasing it leaves the character reversed in
 ; hlColor.
 .proc renderCursor
     lda #0
@@ -1031,12 +1030,8 @@ DN: rts
     tax
     pla
     bra ST
-DR: ldx cursorHL
-    beq :+
-    and #$7f            ; Draw on the highlighted line
-    bra :++
-:   ora #$80
-:   pha
+DR: ora #$80
+    pha
     ldx #SYNTAXHL_CURSOR
     lda themeColors,x
     tax
