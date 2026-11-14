@@ -19,10 +19,11 @@
 .export petsciiToScreenCode, currentEditorRow, clearScreen
 .export editorDrawMessageBar, calcScreenPtr, initScreen, setupScreen
 .export resetScreenSettings, calcColorPtr, clearRowColor, setScreenColorToForeground
-.export drawRow
+.export drawRow, highlightRow, isCursorOnHL
 
 .import anyDirtyRows, titleScreen, rowPtrs, pagerows
 .import editorDrawBuildLine, buildDirty
+.import calcBuildHighlight, hlLine, hlColor
 .import screenrows, screencols, statusmsg, statusmsg_dirty, statusbar
 .import editorSetAllRowsDirty, colorPtrs, editorHighlightSelection
 .import isEditBufActive, getEditBufSyntaxColor, themeColors
@@ -32,6 +33,9 @@
 screenX: .res 1
 screenY: .res 1
 intBuf: .res 7
+drawLine: .res 2            ; The file's line editorDrawRows is drawing
+rowHL: .res 1               ; Non-zero if it is the highlighted line
+cursorHL: .res 1            ; Non-zero if the cursor is on it
 
 .code
 
@@ -357,6 +361,7 @@ L1: nop
 .endproc
 
 .proc editorRefreshScreen
+    jsr calcBuildHighlight
     ldq currentFile
     jsr isQZero
     beq :+
@@ -605,9 +610,12 @@ L1: ; Set ptr2 to null
     dez
     nop
     lda (currentFile),z
+    sta drawLine
+    stx drawLine+1
     jsr editorRowAt     ; Find the row at the row offset (top visible row)
 
     lda #0
+    sta rowHL
     sta screenY         ; Current screen row
     ; Clear ptr3 (next line)
     tax
@@ -654,7 +662,14 @@ L2: ldz #EDITLINE::next
     bne :+              ; Branch if not
     jmp MV
 
-    ; Row is dirty and needs to be rendered
+    ; Row is dirty and needs to be rendered. Is it the highlighted line?
+:   lda drawLine
+    cmp hlLine
+    bne :+
+    lda drawLine+1
+    cmp hlLine+1
+    bne :+
+    inc rowHL
 :   ldz #EDITLINE::buffer
     neg
     neg
@@ -729,13 +744,70 @@ L3: ldz #EDITLINE::dirty
 NX: ldx screenX
     ldy screenY
     jsr clearRow        ; Clear the row from the last column
+    lda rowHL
+    beq MV
+    ldy screenY
+    jsr highlightRow
     ; Move to the next line
 MV: ldq ptr3
     stq ptr2
     inc screenY
+    inc drawLine
+    bne :+
+    inc drawLine+1
+:   lda #0
+    sta rowHL
     jmp L1
 
 DN: rts
+.endproc
+
+; Draws screen row Y reversed in hlColor (the build's highlighted line),
+; every column. The text drawn in it shows in the screen's background
+; color.
+; Note: ptr1 and ptr4 are destroyed
+.proc highlightRow
+    phy
+    jsr calcScreenPtr
+    ldz #0
+:   nop
+    lda (ptr4),z
+    ora #$80
+    nop
+    sta (ptr4),z
+    inz
+    cpz screencols
+    bne :-
+    ply
+    jsr calcColorPtr
+    lda hlColor
+    ldz #0
+:   nop
+    sta (ptr1),z
+    inz
+    cpz screencols
+    bne :-
+    rts
+.endproc
+
+; Sets cursorHL, and A, to 1 if the cursor is on the highlighted line,
+; or 0 if not
+.proc isCursorOnHL
+    ldx #0
+    ldz #EDITFILE::cy
+    nop
+    lda (currentFile),z
+    cmp hlLine
+    bne :+
+    inz
+    nop
+    lda (currentFile),z
+    cmp hlLine+1
+    bne :+
+    inx
+:   stx cursorHL
+    txa
+    rts
 .endproc
 
 .proc editorDrawTitleScreen
@@ -902,11 +974,17 @@ DN: rts
 
 ; This routine renders the cursor at the current position
 ; Carry is set if the cursor is to be drawn, cleared otherwise
+;
+; The cursor is a reversed character in the cursor color. On the build's
+; highlighted line, which is reversed, it is the character not reversed,
+; in the cursor color, and erasing it reverses the character again in
+; hlColor.
 .proc renderCursor
     lda #0
     bcc :+
     lda #1
 :   sta tmp1
+    jsr isCursorOnHL
     ; Calculate the screen row
     ldz #EDITFILE::cy
     nop
@@ -940,7 +1018,12 @@ DN: rts
     lda (ptr4),z
     ldx tmp1
     bne DR              ; draw the cursor
-    and #$7f
+    ldx cursorHL
+    beq :+
+    ora #$80            ; Erase on the highlighted line
+    ldx hlColor
+    bra ST
+:   and #$7f
     pha
     phz                 ; getColorAtPos clobbers Z (the screen column)
     jsr getColorAtPos
@@ -948,8 +1031,12 @@ DN: rts
     tax
     pla
     bra ST
-DR: ora #$80
-    pha
+DR: ldx cursorHL
+    beq :+
+    and #$7f            ; Draw on the highlighted line
+    bra :++
+:   ora #$80
+:   pha
     ldx #SYNTAXHL_CURSOR
     lda themeColors,x
     tax

@@ -80,6 +80,7 @@ failText: .res 2            ; The expected text
 phase: .res 1
 chkNum: .res 1              ; The number of the check being made
 fnTmp: .res 24              ; A filename for the KERNAL
+attrCol: .res 1             ; The column screenAddr read
 testBuild: .tag BUILDRESULT ; The build result editorRun is given
 
 BUILD_SIZE = .sizeof(BUILDRESULT)
@@ -121,6 +122,7 @@ msgNoLine: .asciiz "no such line"
 msgName: .asciiz "filename"
 msgFiles: .asciiz "open files"
 msgScreen: .asciiz "screen"
+msgAttr: .asciiz "screen attribute"
 msgDisk: .asciiz "file on disk"
 msgOnDisk: .asciiz "file exists"
 msgLoop: .asciiz "editorrun returned"
@@ -134,7 +136,7 @@ strRead: .asciiz ",s,r"
 checkProcs:
     .addr checkByte, checkWord, checkHL, checkName, checkFiles
     .addr checkScreen, checkDisk, checkNotOnDisk, checkLoop
-    .addr checkCompileFn, checkLine, checkBuild
+    .addr checkCompileFn, checkLine, checkBuild, checkAttr
 
 .segment "ENTRY"
 
@@ -907,6 +909,84 @@ OK: clc
 
 ; CHK_SCREEN: text on the screen at a row and column
 .proc checkScreen
+    jsr screenAddr
+    ; Copy as many characters as the expected text has, as PETSCII
+    ldy #0
+    ldz #0
+:   lda (ptr2),y
+    beq :+
+    nop
+    lda (ptr4),z
+    jsr screenToPetscii
+    sta actualBuf,y
+    iny
+    inz
+    bne :-
+:   sty actualLen
+    jsr cmpLine
+    lbcc skipTextOK
+    lda #<msgScreen
+    ldx #>msgScreen
+    jmp failStr
+.endproc
+
+; CHK_ATTR: cells on the screen, from a row and column, are reversed or
+; not, in a color. A failure gives the column (+$80 if reversed) in the
+; high byte and the color in the low byte.
+.proc checkAttr
+    jsr screenAddr
+    ; ptr1 = the cells' color RAM: $FF80000 + row * 80 + column
+    lda tmp3
+    sta ptr1
+    lda tmp4
+    sta ptr1+1
+    lda #$f8
+    sta ptr1+2
+    lda #$0f
+    sta ptr1+3
+    jsr getChk
+    sta tmp1                ; The number of cells
+    jsr getChk
+    beq :+
+    lda #$80
+:   sta tmp2                ; $80 if they are reversed
+    jsr getChk
+    sta failExp             ; The color
+    ldz #0
+L1: tza
+    clc
+    adc attrCol
+    ora tmp2
+    sta failExp+1
+    tza
+    clc
+    adc attrCol
+    sta failAct+1
+    nop
+    lda (ptr4),z
+    and #$80
+    ora failAct+1
+    sta failAct+1
+    nop
+    lda (ptr1),z
+    sta failAct
+    jsr cmpFail
+    bne FL
+    inz
+    dec tmp1
+    bne L1
+    clc
+    rts
+FL: lda #<msgAttr
+    ldx #>msgAttr
+    jmp failValue
+.endproc
+
+; Reads a row and column from the checks. Points ptr4 at that place on the
+; screen, which the VIC has at $0800 with 25 rows and $40800 with 50 (see
+; calcRowPtrs), and leaves row * 80 + column in tmp3/tmp4 and the column
+; in attrCol.
+.proc screenAddr
     ; ptr4 = row * 80 (64 + 16) + column
     jsr getChk
     sta ptr4
@@ -936,14 +1016,16 @@ OK: clc
     adc tmp2
     sta ptr4+1
     jsr getChk
+    sta attrCol
     clc
     adc ptr4
     sta ptr4
+    sta tmp3
     lda ptr4+1
     adc #0
     sta ptr4+1
-    ; Add the screen's address, which the VIC has ($0800 with 25 rows and
-    ; $40800 with 50, see calcRowPtrs)
+    sta tmp4
+    ; Add the screen's address
     clc
     lda ptr4
     adc $d060
@@ -958,24 +1040,7 @@ OK: clc
     and #$0f
     adc #0
     sta ptr4+3
-    ; Copy as many characters as the expected text has, as PETSCII
-    ldy #0
-    ldz #0
-:   lda (ptr2),y
-    beq :+
-    nop
-    lda (ptr4),z
-    jsr screenToPetscii
-    sta actualBuf,y
-    iny
-    inz
-    bne :-
-:   sty actualLen
-    jsr cmpLine
-    lbcc skipTextOK
-    lda #<msgScreen
-    ldx #>msgScreen
-    jmp failStr
+    rts
 .endproc
 
 ; Converts the screen code in A to PETSCII. Reversed characters are shown

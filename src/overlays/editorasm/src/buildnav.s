@@ -20,6 +20,10 @@
 ; if the file is shorter now, and the line is put in the middle of the
 ; text rows if the file is long enough. An entry with line 0 only switches
 ; to the file.
+;
+; The entry's line is highlighted in its file: calcBuildHighlight finds it
+; and editorDrawRows draws it reversed in the theme's error or warning
+; color.
 
 .include "editor.inc"
 .include "buildresult.inc"
@@ -27,12 +31,13 @@
 .include "4510macros.inc"
 .include "asmlib.inc"
 
-.export editorBuildNext, editorBuildPrev
+.export editorBuildNext, editorBuildPrev, calcBuildHighlight
+.export hlLine, hlColor
 
 .import buildResultPtr, buildDirty, firstFile, fnBuf, openFile, screenrows
 .import closeEditBuf, renderCursor, editorClearSelection
 .import editorSetAllRowsDirty, updateStatusBarFilename
-.import editorSetDefaultStatusMessage
+.import editorSetDefaultStatusMessage, themeColors
 
 .bss
 
@@ -40,6 +45,8 @@ entryLine: .res 2           ; The entry's line
 newY: .res 2                ; The cursor's new line
 numLines: .res 2            ; The file's numLines
 target: .res 4              ; The entry's file if it is open, or 0
+hlLine: .res 2              ; The highlighted line, from 0, or $FFFF
+hlColor: .res 1             ; Its color
 
 .code
 
@@ -91,32 +98,11 @@ DN: rts
     sta (ptr3),y
     ldx #1
     stx buildDirty
+    jsr entryPtr
 
-    ; ptr4 = the entry: ptr3 + entries + A * 8
-    .assert .sizeof(BUILDENTRY) = 8, error, "see gotoEntry"
-    sta ptr4
-    lda #0
-    sta ptr4+1
-    asl ptr4
-    rol ptr4+1
-    asl ptr4
-    rol ptr4+1
-    asl ptr4
-    rol ptr4+1
-    clc
-    lda ptr4
-    adc #<BUILDRESULT::entries
-    sta ptr4
-    lda ptr4+1
-    adc #>BUILDRESULT::entries
-    sta ptr4+1
-    clc
-    lda ptr4
-    adc ptr3
-    sta ptr4
-    lda ptr4+1
-    adc ptr3+1
-    sta ptr4+1
+    ; The old highlight is erased, even if the editor doesn't move
+    jsr editorSetAllRowsDirty
+
     ldy #BUILDENTRY::line
     lda (ptr4),y
     sta entryLine
@@ -124,20 +110,8 @@ DN: rts
     lda (ptr4),y
     sta entryLine+1
 
-    ; Copy its filename to fnBuf: files + fileIdx * BUILD_FILENAME_SIZE
-    .assert BUILD_FILENAME_SIZE = 17, error, "see gotoEntry"
-    .assert BUILDRESULT::files + BUILD_FILES_SIZE <= 256, error, "see gotoEntry"
-    ldy #BUILDENTRY::fileIdx
-    lda (ptr4),y
-    sta tmp1
-    asl a
-    asl a
-    asl a
-    asl a
-    clc
-    adc tmp1
-    adc #BUILDRESULT::files
-    tay
+    ; Copy its filename to fnBuf
+    jsr entryFileOffset
     ldx #0
 :   lda (ptr3),y
     sta fnBuf,x
@@ -293,4 +267,129 @@ DN: rts
     nop
     sta (currentFile),z
     rts
+.endproc
+
+; Points ptr4 at entry A of the build result (ptr3)
+.proc entryPtr
+    ; ptr4 = ptr3 + entries + A * 8
+    .assert .sizeof(BUILDENTRY) = 8, error, "see entryPtr"
+    sta ptr4
+    lda #0
+    sta ptr4+1
+    asl ptr4
+    rol ptr4+1
+    asl ptr4
+    rol ptr4+1
+    asl ptr4
+    rol ptr4+1
+    clc
+    lda ptr4
+    adc #<BUILDRESULT::entries
+    sta ptr4
+    lda ptr4+1
+    adc #>BUILDRESULT::entries
+    sta ptr4+1
+    clc
+    lda ptr4
+    adc ptr3
+    sta ptr4
+    lda ptr4+1
+    adc ptr3+1
+    sta ptr4+1
+    rts
+.endproc
+
+; Returns in Y the offset in the build result (ptr3) of the filename of the
+; entry at ptr4: files + fileIdx * BUILD_FILENAME_SIZE
+.proc entryFileOffset
+    .assert BUILD_FILENAME_SIZE = 17, error, "see entryFileOffset"
+    .assert BUILDRESULT::files + BUILD_FILES_SIZE <= 256, error, "files"
+    ldy #BUILDENTRY::fileIdx
+    lda (ptr4),y
+    sta tmp1
+    asl a
+    asl a
+    asl a
+    asl a
+    clc
+    adc tmp1
+    adc #BUILDRESULT::files
+    tay
+    rts
+.endproc
+
+; Finds the line to highlight in the current file: the line of the entry
+; the build line shows, if it is in this file. Sets hlLine to it (from 0)
+; and hlColor to the theme's error or warning color. hlLine is $FFFF if
+; there is none: no file is open, the build line shows the summary, the
+; entry has line 0 or no filename, or its line is in another file or past
+; the end of this one. editorRefreshScreen calls it first.
+.proc calcBuildHighlight
+    lda #$ff
+    sta hlLine
+    sta hlLine+1
+    ldq currentFile
+    jsr isQZero
+    beq DN
+    jsr loadResult
+    cmp tmp1
+    bcs DN                  ; The summary
+    jsr entryPtr
+
+    ; intOp1 = line - 1, but not for line 0
+    ldy #BUILDENTRY::line
+    lda (ptr4),y
+    sta intOp1
+    iny
+    lda (ptr4),y
+    sta intOp1+1
+    ora intOp1
+    beq DN
+    lda intOp1
+    bne :+
+    dec intOp1+1
+:   dec intOp1
+
+    ; Is it the current file's?
+    jsr entryFileOffset
+    lda (ptr3),y
+    beq DN                  ; No filename
+    ldz #EDITFILE::filename
+L1: nop
+    lda (currentFile),z
+    cmp (ptr3),y
+    bne DN                  ; Another file
+    iny
+    inz
+    cmp #0
+    bne L1
+
+    ; Is the line in the file?
+    ldz #EDITFILE::numLines
+    nop
+    lda (currentFile),z
+    sta intOp2
+    inz
+    nop
+    lda (currentFile),z
+    sta intOp2+1
+    lda intOp1
+    cmp intOp2
+    lda intOp1+1
+    sbc intOp2+1
+    bcs DN                  ; Branch if line - 1 >= numLines
+
+    lda intOp1
+    sta hlLine
+    lda intOp1+1
+    sta hlLine+1
+    ldy #BUILDENTRY::kind
+    lda (ptr4),y
+    ldx #SYNTAXHL_ERROR
+    cmp #BUILD_ERROR
+    beq :+
+    ldx #SYNTAXHL_WARNING
+:   lda themeColors,x
+    sta hlColor
+DN: rts
 .endproc

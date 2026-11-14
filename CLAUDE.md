@@ -127,7 +127,8 @@ in `editortest.s`, with `.ifdef`s in `editorReadKey`, `editorRun`,
 
 A test is a key script and what the editor must leave: the current file's
 cursor, `numLines` and lines, then other checks (`CHK_*` in `tests.inc`):
-EDITFILE fields, highlighting, the screen, files on the disk and what
+EDITFILE fields, highlighting, the screen's text and its reverse bits and
+colors (`CHKATTR`), files on the disk and what
 `editorRun` returned. `editorReadKey` takes keys from the script. When it
 runs out, the edit buffer is closed and `editorRun` returns, wherever the
 editor was waiting. `getline` takes them too: `editorTestSetup` points its

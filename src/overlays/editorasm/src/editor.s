@@ -30,7 +30,7 @@
 .import startTextSelection, editorCalcSelection, editorClearSelection, editorCopySelection
 .import editorDeleteSelection, editorPasteClipboard, initScreen, setupScreen
 .import editorSaveState, editorRestoreState, editorHasState, fnBuf
-.import editorBuildNext, editorBuildPrev
+.import editorBuildNext, editorBuildPrev, hlLine
 
 .ifdef __DEBUG__
 .import editorCloseAllFiles
@@ -144,6 +144,11 @@ L1: lda (ptr1),y
     iny
     lda (ptr1),y
     sta buildResultPtr+1
+
+    ; No line is highlighted until editorRefreshScreen finds one
+    lda #$ff
+    sta hlLine
+    sta hlLine+1
 
     rts
 .endproc

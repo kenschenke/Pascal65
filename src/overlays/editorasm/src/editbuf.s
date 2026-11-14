@@ -20,6 +20,7 @@
 .import incCurX, renderCursor, currentEditorRow, rowPtrs
 .import editorInsertLine, syntaxHighlight, calcColorPtr
 .import themeColors, petsciiToScreenCode, screencols
+.import isCursorOnHL, highlightRow
 .import decCurX, editorCombineLines, editorRowAt, anyDirtyRows
 
 .bss
@@ -726,7 +727,12 @@ L2: cpy screencols
     iny
     bne L2
 
-L3: rts
+    ; The build's highlighted line stays highlighted (intOp1 is the row)
+L3: jsr isCursorOnHL
+    beq :+
+    ldy intOp1
+    jmp highlightRow
+:   rts
 ;     ldx #SYNTAXHL_FOREGROUND
 ;     lda themeColors,x
 ;     ldz tmp1

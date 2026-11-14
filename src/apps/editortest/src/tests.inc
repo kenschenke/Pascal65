@@ -70,7 +70,14 @@ CHK_LOOP = 9                ; .byte the code editorRun returned
 CHK_COMPILEFN = 10          ; .asciiz the filename editorRun returned
 CHK_LINE = 11               ; .byte line, .asciiz text
 CHK_BUILD = 12              ; .word offset in BUILDRESULT, .byte value
-CHK_LAST = 12
+CHK_ATTR = 13               ; .byte row, column, count, reversed, color
+CHK_LAST = 13
+
+; The colors of the theme the tests give the editor (ctx in main.s)
+COLOR_CURSOR = 14           ; SYNTAXHL_CURSOR
+COLOR_UI = 15               ; SYNTAXHL_FOREGROUND
+COLOR_ERROR = 2             ; SYNTAXHL_ERROR
+COLOR_WARNING = 8           ; SYNTAXHL_WARNING
 
 ; The items of a build result after its header (see BUILD)
 BLD_END = 0
@@ -203,6 +210,12 @@ nm: .asciiz name
 .macro CHKFN name
     .byte CHK_COMPILEFN
     .asciiz name
+.endmacro
+
+; count cells on the screen, from row and col: reversed (1) or not (0),
+; and the color in color RAM
+.macro CHKATTR row, col, count, reversed, color
+    .byte CHK_ATTR, row, col, count, reversed, color
 .endmacro
 
 ; A byte of the build result the overlay was given
