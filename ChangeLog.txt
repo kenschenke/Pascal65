@@ -1,4 +1,12 @@
 0.37-beta
+    NEW: The IDE keeps a build's errors and warnings instead of printing
+         them, and goes straight back to the editor after a build. A
+         line above the key help shows the result of the last build
+    NEW: F11 and F9 step through the errors and warnings, opening the
+         file and highlighting the line in the theme's error or warning
+         color
+    FIX: F11 deleted to the end of the line, and F12 and F13 changed the
+         screen size
     FIX: Fix the parser when recovering from an error
     FIX: Unary minus of a variable, expression or function call was ignored
     FIX: A negative real number, such as -2.5, was positive
