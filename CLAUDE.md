@@ -495,12 +495,28 @@ end with a runtime error instead (division by zero), which stops the chain.
 
 ### Runtime tests
 
-The `rtpkg*` tests and `examples/fivedice.pas` say `$StaticRuntime`. Set 2
+The `rtpkg*` tests, `soundfx` and `examples/fivedice.pas` say
+`$StaticRuntime`. Set 2
 of `compilertestasm` builds every program static (`FORCESTATIC`, from
 `STATICSETS` in its Makefile); sets 1 and 3 are dynamic. `rtdyn` runs with
 the dynamic runtime. After set 3 compiles, `rtdyntest.sh` checks that
 `rtdyna` and `rtdynb` (with and without `$DynamicRuntime`) are the same PRG
 and runs `rtdynb` with a missing, a bad and a too-low `runtimeN`.
+
+The header switches the BASIC ROM out of $A000-$BFFF. A large program's
+cleanup is under it, so the cleanup switches it back in from a stub it
+writes at $1600 (`prgCleanup.s`). `soundfx` is static and large enough
+that its cleanup and chain code are under the ROM.
+
+### Library callbacks
+
+A library that runs a Pascal routine from the raster interrupt (the Sound
+library's done callback, `callDoneCb` in `engine.s`) must save the
+runtime's zero page and set `stackP` and `currentNestingLevel` to the
+program's frame and level 1 before `rtLibStackHeader`: the interrupted
+code may be between setting one and the other. After `rtLibCallRoutine`
+it pops the parameters and calls `rtLibStackCleanup`, which pulls the
+byte `rtLibCallRoutine` leaves on the CPU stack.
 
 Don't write `$Word` in a `(* *)` comment of a Pascal test: the tokenizer
 reads it as a directive.

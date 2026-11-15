@@ -94,6 +94,18 @@ they return at once and the raster interrupt moves them on each frame.
 [Effects](effects.md) describes them and walks through the sounds in
 `sfxdemo.pas`.
 
+## Sequences
+
+*PlaySequence* plays a list of notes, rests and commands on a voice, so a
+tune plays under the program without its help. *SetSoundDoneCallback*
+sets a procedure the library calls when a voice's timed note or sequence
+ends.
+
+    PlaySequence(1, @tune[1]);
+
+[Sequences](sequences.md) describes the bytes of a sequence and the done
+callback, and walks through `tunedemo.pas`.
+
 ## Constants
 
 The library declares these constants:
@@ -119,6 +131,13 @@ The library declares these constants:
 |NoteA         |9    |Note numbers              |
 |NoteASharp    |10   |Note numbers              |
 |NoteB         |11   |Note numbers              |
+|SeqRest       |96   |Sequences                 |
+|SeqWave       |97   |Sequences                 |
+|SeqEnvelope   |98   |Sequences                 |
+|SeqTempo      |99   |Sequences                 |
+|SeqPulse      |100  |Sequences                 |
+|SeqLoop       |101  |Sequences                 |
+|SeqEnd        |102  |Sequences                 |
 
 Add filter modes together to combine them. *FilterLow + FilterHigh* is a
 notch filter. *SetWaveform* and *SetFilter* take the waveform and mode as
@@ -131,6 +150,11 @@ SIDs and sets each one's volume to 15. That also stops anything left
 playing by BASIC 65. When the program ends, even with a runtime error, the
 library stops every note, closes every gate and sets every volume to 0, so no tone is left
 sounding.
+
+The library adds about 3.7K to a program. If a program that uses it is
+too big for the dynamic runtime ("Too big; try static"), the
+`(* $StaticRuntime *)` directive links only the parts of the runtime the
+program needs.
 
 ## Routines
 
@@ -152,7 +176,7 @@ sounding.
 |NoteFreq     |Returns the SID frequency of a note number       |
 |PlayNote     |Plays a note for a number of frames              |
 |PlayFreq     |Plays a SID frequency for a number of frames     |
-|IsPlaying    |Returns True while a voice plays a note          |
+|IsPlaying    |Returns True while a voice plays a note or sequence|
 |StopVoice    |Stops a voice's note and starts its release      |
 |StopAll      |Stops every voice's note                         |
 |FrameRate    |Returns the frames a second, 50 or 60            |
@@ -163,6 +187,9 @@ sounding.
 |GetFrequency |Returns the frequency a voice is playing         |
 |GetPulseWidth|Returns a voice's pulse width                    |
 |GetCutoff    |Returns a SID's filter cutoff                    |
+|PlaySequence |Plays a sequence of notes and commands on a voice|
+|SetSoundDoneCallback|Sets a procedure called when a voice finishes|
+|ClearSoundDoneCallback|Stops calling it                          |
 
 ## Example
 

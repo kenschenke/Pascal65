@@ -13,10 +13,10 @@
 .include "sound.inc"
 
 .export noteFreq, playNote, playFreq, isPlaying, stopVoice
-.export frameRate, calcNoteFreq, freq, returnAX
+.export frameRate, calcNoteFreq, returnAX, playVoice
 
 .import loadVoice, loadByteParam
-.import ctrlShadow, voiceIdx, voiceReg, arg
+.import ctrlShadow, voiceIdx, voiceReg, arg, freq, octave
 .import installIrq, stopVoiceX, setVoiceFreq
 .import voiceFlags, voiceFrames, irqWork
 
@@ -31,11 +31,6 @@ palNotes:
 ntscNotes:
     .word $430f, $470c, $4b46, $4fbf, $547d, $5984
     .word $5ed6, $647a, $6a73, $70c8, $777d, $7e97
-
-.bss
-
-freq: .res 2                ; Set by calcNoteFreq
-octave: .res 1
 
 .code
 
@@ -143,13 +138,20 @@ DN: rts
 .endproc
 
 ; Plays freq on voice voiceIdx for the frames in parameter 2 (0 until
-; it's stopped). The gate closes and opens again, so the attack starts
-; over if the voice was playing. It ends a frequency sweep on the voice
-; and starts its vibrato over (setVoiceFreq).
+; it's stopped)
 .proc startNote
     lda #2
     jsr loadByteParam
     jsr installIrq
+    ; Fall through to playVoice
+.endproc
+
+; Plays freq on voice voiceIdx (with voiceReg) for arg frames (0 until
+; it's stopped). The gate closes and opens again, so the attack starts
+; over if the voice was playing. It ends a frequency sweep on the voice
+; and starts its vibrato over (setVoiceFreq), and ends its sequence.
+; The sequencer calls it from the IRQ.
+.proc playVoice
     jsr setVoiceFreq
     php
     sei
@@ -175,8 +177,7 @@ DN: rts
     sta voiceFrames,x
     beq :+                  ; Branch if untimed
     sta irqWork
-:   lda voiceFlags,x
-    ora #VF_PLAYING
+:   lda #VF_PLAYING         ; Ends a sequence (VF_SEQ)
     sta voiceFlags,x
     plp
     rts

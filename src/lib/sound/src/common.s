@@ -16,6 +16,10 @@
 .export loadVoice, loadSid, loadByteParam
 .export ctrlShadow, resShadow, modeShadow
 .export voiceIdx, voiceReg, sidIdx, sidReg, arg, voiceRegs
+.export freq, octave, mask, cutoff
+.export prod, rem, mulBy, divBy, mBase, newStep, sFrom, sTo, sFrames
+.export sDown, sweepIdx, vDepth, seqData
+.export saveScratch, restoreScratch
 
 .import initEngine, stopAllVoices
 
@@ -40,13 +44,47 @@ ctrlShadow: .res NUM_VOICES ; Control register ($04) of each voice
 resShadow: .res NUM_SIDS    ; Resonance and filter routing ($17)
 modeShadow: .res NUM_SIDS   ; Filter mode and volume ($18)
 
+endbss:
+
+; Every variable a routine uses for a moment is here, in one block. The
+; IRQ handler uses them too (the sequencer starts notes and the done
+; callback can call any routine), so it saves the block first and puts it
+; back after (saveScratch, restoreScratch). Variables used only between
+; sei and plp, or only by the IRQ, needn't be here.
+scratch:
 ; Set by loadVoice and loadSid
 voiceIdx: .res 1            ; Voice number less 1 (0-11)
 voiceReg: .res 1            ; Offset of the voice's registers
 sidIdx: .res 1              ; SID number less 1 (0-3)
 sidReg: .res 1              ; Offset of the SID's registers
 arg: .res 1                 ; Set by loadByteParam
-endbss:
+; notes.s
+freq: .res 2                ; Set by calcNoteFreq
+octave: .res 1
+; registers.s
+mask: .res 1
+cutoff: .res 2
+; effects.s
+prod: .res 3                ; Product, dividend and quotient
+rem: .res 1
+mulBy: .res 1
+divBy: .res 1
+mBase: .res 2
+newStep: .res 3
+sFrom: .res 2
+sTo: .res 2
+sFrames: .res 1
+sDown: .res 1
+sweepIdx: .res 1
+vDepth: .res 1
+; sequence.s
+seqData: .res 2
+endScratch:
+
+SCRATCH_SIZE = endScratch - scratch
+.assert SCRATCH_SIZE <= 128, error, "scratch is over 128 bytes"
+
+scratchSave: .res SCRATCH_SIZE
 
 .code
 
@@ -98,6 +136,26 @@ DN: rts
     lsr a
     sta sidIdx
     clc
+    rts
+.endproc
+
+; Copies the scratch variables to scratchSave. Only the IRQ handler calls
+; it, and restoreScratch after.
+.proc saveScratch
+    ldx #SCRATCH_SIZE-1
+:   lda scratch,x
+    sta scratchSave,x
+    dex
+    bpl :-
+    rts
+.endproc
+
+.proc restoreScratch
+    ldx #SCRATCH_SIZE-1
+:   lda scratchSave,x
+    sta scratch,x
+    dex
+    bpl :-
     rts
 .endproc
 

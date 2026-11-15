@@ -1,4 +1,5 @@
 Program SoundFx;
+(* $StaticRuntime *)
 
 // Tests the Sound library's effects (Sweep, Vibrato, PulseSweep and
 // FilterSweep). The SID registers can't be read back, so this checks the
@@ -10,6 +11,10 @@ Program SoundFx;
 // go back to 0, so after n frames the interrupt has run n - 1 or n times.
 // Right after WaitFrames the raster is near line 0, so an effect started
 // then sees exactly n interrupts in the next n frames.
+//
+// With the dynamic runtime (every package, at rtLow) the program doesn't
+// fit, so it links a static one, without the trig and dynamic array
+// packages.
 
 Uses Sound;
 

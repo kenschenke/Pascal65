@@ -18,7 +18,7 @@
 
 .import loadVoice, loadSid, loadByteParam
 .import ctrlShadow, resShadow, modeShadow
-.import voiceIdx, voiceReg, sidIdx, sidReg, arg
+.import voiceIdx, voiceReg, sidIdx, sidReg, arg, mask, cutoff
 .import freq, setVoiceFreq, writeCutoffX
 .import pwLo, pwHi, valFrac, valLo, valHi, sweepLeft
 
@@ -33,11 +33,6 @@ voiceBits:
     .byte $01, $02, $04
     .byte $01, $02, $04
     .byte $01, $02, $04
-
-.bss
-
-mask: .res 1
-cutoff: .res 2
 
 .code
 

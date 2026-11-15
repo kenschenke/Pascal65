@@ -38,6 +38,21 @@ Const
     NoteA = 9;
     NoteASharp = 10;
     NoteB = 11;
+    // Sequence commands for PlaySequence. A note (0-95) or SeqRest is
+    // followed by its length in ticks.
+    SeqRest = 96;       // Length
+    SeqWave = 97;       // Waveform
+    SeqEnvelope = 98;   // Attack * 16 + decay, sustain * 16 + release
+    SeqTempo = 99;      // Frames a tick
+    SeqPulse = 100;     // Pulse width low byte, high byte
+    SeqLoop = 101;      // Back to the start
+    SeqEnd = 102;
+
+Type
+    // Called from the raster interrupt when a voice's timed note or
+    // sequence ends. Keep it short, and declare it at the program's
+    // outer level.
+    SoundDoneCb = Procedure(voice : Byte);
 
 Procedure SetSidMode(sid : Byte; is8580 : Boolean);
 Procedure SetVolume(sid, volume : Byte);
@@ -72,6 +87,12 @@ Procedure FilterSweep(sid : Byte; toCutoff : Word; frames : Byte);
 Function GetFrequency(voice : Byte) : Word;
 Function GetPulseWidth(voice : Byte) : Word;
 Function GetCutoff(sid : Byte) : Word;
+
+// Sequences, run by the raster interrupt. The data must stay in memory
+// until the sequence ends or is stopped.
+Procedure PlaySequence(voice : Byte; data : ^Byte);
+Procedure SetSoundDoneCallback(callback : SoundDoneCb);
+Procedure ClearSoundDoneCallback;
 
 Implementation Library
 

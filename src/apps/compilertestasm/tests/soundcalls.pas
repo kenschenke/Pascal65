@@ -11,6 +11,12 @@ Var
     b, i, octave : Byte;
     w : Word;
     playing : Boolean;
+    seq : Array[1..16] Of Byte;
+
+Procedure SoundDone(voice : Byte);
+Begin
+    b := voice;
+End;
 
 Begin
     SetSidMode(1, False);
@@ -55,6 +61,25 @@ Begin
     w := GetFrequency(1);
     w := GetPulseWidth(1);
     w := GetCutoff(1);
+    seq[1] := SeqTempo;
+    seq[2] := 2;
+    seq[3] := SeqWave;
+    seq[4] := WavePulse;
+    seq[5] := SeqEnvelope;
+    seq[6] := 9;
+    seq[7] := 0;
+    seq[8] := SeqPulse;
+    seq[9] := 0;
+    seq[10] := 8;
+    seq[11] := 4 * 12 + NoteA;
+    seq[12] := 4;
+    seq[13] := SeqRest;
+    seq[14] := 4;
+    seq[15] := SeqLoop;
+    seq[16] := SeqEnd;
+    PlaySequence(1, @seq[1]);
+    SetSoundDoneCallback(@SoundDone);
+    ClearSoundDoneCallback;
     // The example in docs/docs/sound/intro.md
     For i := 1 To 8 Do Begin
         PlayNote(1, octave * 12 + scale[i], 10);

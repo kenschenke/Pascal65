@@ -16,6 +16,7 @@
 .import frameRate
 .import sweep, vibrato, pulseSweep, filterSweep
 .import getFrequency, getPulseWidth, getCutoff
+.import playSequence, setSoundDoneCallback, clearSoundDoneCallback
 .import initSoundLibrary, cleanupSoundLibrary
 .import setSidMode, setVolume, setWaveform, setEnvelope, setFrequency
 .import setPulseWidth, setGate, setRingMod, setSync, setFilter
@@ -52,3 +53,6 @@ jmp filterSweep
 jmp getFrequency
 jmp getPulseWidth
 jmp getCutoff
+jmp playSequence
+jmp setSoundDoneCallback
+jmp clearSoundDoneCallback

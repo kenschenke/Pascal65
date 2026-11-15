@@ -50,6 +50,7 @@ strLibTest: .asciiz "libtest"
 strLibTest2: .asciiz "libtest2"
 strSoundTest: .asciiz "soundtest"
 strSoundFx: .asciiz "soundfx"
+strSoundSeq: .asciiz "soundseq"
 strSoundCalls: .asciiz "soundcalls"
 strRtnArray: .asciiz "rtnarray"
 strRtnRecord: .asciiz "rtnrecord"
@@ -77,6 +78,7 @@ strRtDynB: .asciiz "rtdynb"
 strFiveDice: .asciiz "fivedice"
 strBubbles: .asciiz "bubbles"
 strSfxDemo: .asciiz "sfxdemo"
+strTuneDemo: .asciiz "tunedemo"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
@@ -153,6 +155,8 @@ tests:
     .byte .lobyte(strSoundTest), .hibyte(strSoundTest)
     ; The Sound library's effects
     .byte .lobyte(strSoundFx), .hibyte(strSoundFx)
+    ; The Sound library's sequencer and done callback
+    .byte .lobyte(strSoundSeq), .hibyte(strSoundSeq)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)
@@ -192,6 +196,8 @@ compileOnlyTests:
     .byte .lobyte(strSoundCalls), .hibyte(strSoundCalls)
     ; The Sound library's effects demo
     .byte .lobyte(strSfxDemo), .hibyte(strSfxDemo)
+    ; The Sound library's sequencer demo
+    .byte .lobyte(strTuneDemo), .hibyte(strTuneDemo)
 .endif
     .byte $00, $00
 

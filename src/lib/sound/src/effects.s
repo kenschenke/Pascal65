@@ -45,6 +45,8 @@
 .import voiceIdx, sidIdx, arg
 .import installIrq, irqWork
 .import freq, returnAX
+.import prod, rem, mulBy, divBy, mBase, newStep, sFrom, sTo, sFrames
+.import sDown, sweepIdx, vDepth
 
 .bss
 
@@ -88,20 +90,6 @@ BSS_HALF = (endbss-startbss+1)/2
 
 ; Only used between sei and plp, or by the IRQ
 wtmp: .res 2
-
-; Only used by the main program, outside the IRQ
-prod: .res 3                ; Product, dividend and quotient
-rem: .res 1
-mulBy: .res 1
-divBy: .res 1
-mBase: .res 2
-newStep: .res 3
-sFrom: .res 2
-sTo: .res 2
-sFrames: .res 1
-sDown: .res 1
-sweepIdx: .res 1
-vDepth: .res 1
 
 .code
 
