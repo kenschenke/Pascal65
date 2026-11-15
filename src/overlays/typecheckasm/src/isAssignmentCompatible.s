@@ -20,6 +20,7 @@ leftKindOffset = rightTypeOffset + 4
 .export isAssignmentCompatible, checkIntegerPrecisionWarning, isSigned
 
 .import isTypeInteger, loadStackValue, typeCheckWarning
+.import evalConstInt, constIntFits
 
 .bss
 
@@ -106,6 +107,27 @@ DN: pha
 .proc checkIntegerPrecisionWarning
     sta leftKind
     stx rightKind
+
+    ; An expression of literals and constants warns only if its value
+    ; doesn't fit. 4 * 12 is an Integer, which a Word can't hold every
+    ; value of, but 48 fits.
+    ldq ptr1
+    jsr pushQ               ; pushQ doesn't keep Q
+    ldq ptr1
+    jsr evalConstInt
+    php
+    jsr popQ
+    stq ptr1
+    plp
+    bcs NotFolded           ; Branch if it has no constant value
+    lda leftKind
+    jsr constIntFits
+    beq :+                  ; Branch if it fits
+    lda #warnLossOfPrecision
+    jsr typeCheckWarning
+:   rts
+
+NotFolded:
     lda leftKind
     jsr getIntegerSize
     sta leftSize

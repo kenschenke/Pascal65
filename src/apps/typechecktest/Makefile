@@ -175,33 +175,45 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 COVTOOLS := ../editortest/cov
 COVMAP := 14848
 COVSIZE := 1536
-COVSETS := 1 2 3 4 5 6 7 8 9
+# A set fits about 240 probes (mkcov prints the count), fewer if its
+# files' long branches need more room.
+COVSETS := 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 COVSET ?= 1
 # Expressions
-COVFILES1 := exprTypeCheck.s:-evalNegate typecheck.s typeCheckUnits.s
-COVFILES2 := exprTypeCheck.s:evalNegate- hoistFuncCall.s
-# Routine calls
-COVFILES3 := checkFuncProcCall.s checkStdParms.s
+COVFILES1 := exprTypeCheck.s:-saveEvalType
+COVFILES2 := exprTypeCheck.s:evalNegate-evalField checkArrayRoutineCall.s
+# Routine calls and their parameters
+COVFILES3 := checkFuncProcCall.s:-checkDynamicParam
+COVFILES14 := checkFuncProcCall.s:checkDynamicParam- \
+	checkForwardVsFormalDeclaration.s
 # Standard routines
-COVFILES4 := checkWriteWritelnCall.s checkReadReadlnCall.s \
-	checkStdRoutine.s
+COVFILES4 := checkWriteWritelnCall.s checkStdRoutine.s
 # Operators
-COVFILES5 := checkRelOpOperands.s getBinaryExpressionType.s
-# Statements, compatibility and forwards
-COVFILES6 := stmtTypeCheck.s isAssignmentCompatible.s \
-	checkForwardVsFormalDeclaration.s checkArrayRoutineCall.s
+COVFILES5 := checkRelOpOperands.s evalConstInt.s
+# Statements and compatibility
+COVFILES6 := stmtTypeCheck.s isAssignmentCompatible.s
 # Literals, arrays and the other standard routines
 COVFILES7 := exprLiteral.s checkArrayLiteral.s getArrayType.s \
-	checkDecIncCall.s checkPredSuccCall.s checkArraysSameType.s \
-	declTypeCheckValue.s evalArrayLiteral.s checkAbsSqrCall.s
+	checkDecIncCall.s checkPredSuccCall.s
 # Case, casts and the small helpers
 COVFILES8 := caseTypeCheck.s checkTypeCast.s checkBoolOperand.s \
 	isTypeNumeric.s isTypeOrdinal.s isTypeInteger.s checkArray.s \
-	checkIntegerBaseType.s realOperands.s integerOperands.s
-# Declarations, assignments, ReadStr and the expression helpers
+	checkIntegerBaseType.s realOperands.s integerOperands.s \
+	checkArraysSameType.s
+# Declarations, ReadStr and the expression helpers
 COVFILES9 := declTypeCheck.s declTypeCheckType.s isExprAFuncCall.s \
 	isExprARoutineCall.s isExprATypeDeclaration.s isAssignableToString.s \
-	getTypeSize.s getTypeConversion.s checkAssignment.s checkReadStrCall.s
+	getTypeSize.s getTypeConversion.s checkReadStrCall.s checkStdParms.s
+# More expressions, the overlay's entry points and units
+COVFILES10 := exprTypeCheck.s:saveEvalType-evalNegate typecheck.s \
+	typeCheckUnits.s
+# Fields, subscripts, calls and names
+COVFILES11 := exprTypeCheck.s:evalField- hoistFuncCall.s
+# Assignments and initial values
+COVFILES12 := checkAssignment.s declTypeCheckValue.s evalArrayLiteral.s \
+	checkAbsSqrCall.s
+# Binary expression types and Read
+COVFILES13 := getBinaryExpressionType.s checkReadReadlnCall.s
 
 TYPECHECKSRCDIR := $(TYPECHECKDIR)/src
 TYPECHECKSOURCES := $(wildcard $(TYPECHECKSRCDIR)/*.s)

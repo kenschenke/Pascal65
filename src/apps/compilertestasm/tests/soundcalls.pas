@@ -35,6 +35,10 @@ Begin
     PlayNote(2, octave * 12 + NoteCSharp, 0);
     PlayNote(3, NoteD + NoteDSharp + NoteE + NoteF + NoteFSharp, 1);
     PlayNote(4, NoteG + NoteGSharp + NoteASharp + NoteB, 1);
+    // Constant expressions with literals don't warn
+    w := NoteFreq(4 * 12 + NoteA);
+    PlayNote(6, 48 + NoteB, 1);
+    PlayNote(7, NoteC + 7 * 12, 1);
     PlayFreq(5, w, 255);
     playing := IsPlaying(1);
     StopVoice(1);

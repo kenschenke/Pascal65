@@ -51,6 +51,18 @@ OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 endif
 D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 
+# The sources only set 3 compiles. Sets 1 and 2 leave them off their disks,
+# which need the room for the programs they compile and the files their
+# tests write (set 2's file tests hang on a full disk).
+comma := ,
+SET3PAS = libtest2 soundtest soundcalls dynarraya dynarrayb dynarrayc \
+	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb
+ifeq ($(filter $(TESTSET),1 2),)
+SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
+	-write bubbles.petscii bubbles.pas$(comma)seq \
+	$(foreach t,$(SET3PAS),-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
+endif
+
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
 DEMOLIB = ../../lib/demolib/bin/$(TARGET)/demolib
 DEMOLIB2 = ../../lib/demolib/bin/$(TARGET)/demolib2
@@ -262,8 +274,6 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write demolib.petscii demolib.pas,seq \
 	-write demolib2.petscii demolib2.pas,seq \
 	-write sound.petscii sound.pas,seq \
-	-write fivedice.petscii fivedice.pas,seq \
-	-write bubbles.petscii bubbles.pas,seq \
 	-write $(PETSCIIDIR)/add.pas add.pas,seq \
 	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
 	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
@@ -295,9 +305,6 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
 	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
 	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
-	-write $(PETSCIIDIR)/libtest2.pas libtest2.pas,seq \
-	-write $(PETSCIIDIR)/soundtest.pas soundtest.pas,seq \
-	-write $(PETSCIIDIR)/soundcalls.pas soundcalls.pas,seq \
 	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
 	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
 	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq \
@@ -308,18 +315,9 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/chararray.pas chararray.pas,seq \
 	-write $(PETSCIIDIR)/exprclone.pas exprclone.pas,seq \
 	-write $(PETSCIIDIR)/namedidx.pas namedidx.pas,seq \
-	-write $(PETSCIIDIR)/dynarraya.pas dynarraya.pas,seq \
-	-write $(PETSCIIDIR)/dynarrayb.pas dynarrayb.pas,seq \
-	-write $(PETSCIIDIR)/dynarrayc.pas dynarrayc.pas,seq \
-	-write $(PETSCIIDIR)/rtpkgnone.pas rtpkgnone.pas,seq \
-	-write $(PETSCIIDIR)/rtpkga.pas rtpkga.pas,seq \
-	-write $(PETSCIIDIR)/rtpkgb.pas rtpkgb.pas,seq \
-	-write $(PETSCIIDIR)/rtpkgc.pas rtpkgc.pas,seq \
-	-write $(PETSCIIDIR)/rtdyn.pas rtdyn.pas,seq \
-	-write $(PETSCIIDIR)/rtdyna.pas rtdyna.pas,seq \
-	-write $(PETSCIIDIR)/rtdynb.pas rtdynb.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	-write $(PETSCIIDIR)/toolarge.pas toolarge.pas,seq \
+	$(SET3WRITE) \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 
 clean:

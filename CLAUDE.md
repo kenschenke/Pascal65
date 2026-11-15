@@ -277,8 +277,11 @@ against copies of the type checker with probes in them (editortest's
 `bin/mega65/coverage.txt`. The probes don't all fit in the overlay at
 once, so the files are instrumented in sets (`COVFILESn`). A new file
 must go in a set, and a set that no longer fits fails to link and must be
-split. `exprTypeCheck.s` is too big for one set, so two sets each take
-part of it, split at a proc (`exprTypeCheck.s:-evalNegate`). Like `test`,
+split. `exprTypeCheck.s` and `checkFuncProcCall.s` are too big for one
+set, so they're split at procs across sets (`exprTypeCheck.s:-saveEvalType`).
+A set fits only about 240 probes, since the overlay itself is near 19k.
+`mkcov` prints each set's count. Changing the sets needs a fresh
+`obj/mega65/cov*`, because a set's stamp doesn't depend on the Makefile. Like `test`,
 it needs asmlib built with `MEMCHECK=1`. The lines left are ones no
 program can reach, such as checks for undefined names that the resolver
 reports first, and `integerOperands.s` and `realOperands.s`, which
@@ -325,7 +328,7 @@ reading a whole record never reads memory (`MEM`).
 
 ### Compiler Tests
 
-`compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
+`compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from all three. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
 A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never linked or run. The compile step fails unless each one reports exactly that one error. `toolarge.pas` checks `errCodeSegmentOverflow`, which code generation reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by codegen, saying how many bytes too large the program is.
 
@@ -358,6 +361,17 @@ typecheck keeps a signed integer's or real's type and makes Byte Integer,
 and Word and Cardinal LongInt (`evalNegate`). icode converts the operand to
 that type (`IC_CVI`) and negates it (`IC_NEG`), and codegen calls
 `RT_NEGATE`.
+
+### Constant expressions
+
+A positive literal under 128 is a ShortInt, so `4 * 12` is typed Integer.
+The precision warnings (`checkIntegerPrecisionWarning`) and the mixed-sign
+comparison warning (`checkConstOperand`) first ask `evalConstInt` for the
+value of an expression of integer literals, constants, unary minus, `+`,
+`-` and `*`, and warn only if the value doesn't fit. Anything else (Div,
+a variable, a step past 32 bits) is checked by its type as before. The
+value is only for warnings: the expression isn't folded or marked
+`TYPE_FLAG_ISCONST`.
 
 ### Subranges
 

@@ -23,7 +23,7 @@ leftTypePtrOffset = rightTypePtrOffset + 4
 .export checkRelOpOperands
 
 .import typeCheckError, loadStackValue, isTypeNumeric, isTypeInteger, isSigned
-.import typeCheckWarning
+.import typeCheckWarning, evalConstInt, constSign
 
 .bss
 
@@ -330,8 +330,14 @@ DN: sec
     jsr isTypeInteger
     beq :+
     jmp DN
+:   jsr checkConstOperand
+    bcs :+
+    jmp DN                  ; Branch if a side has a constant value
+:   lda #leftTypeOffset
+    jsr calcTypePtr
+    stq ptr1
     ; Check if the left operand is a constant
-:   ldz #type::flags
+    ldz #type::flags
     nop
     lda (ptr1),z
     and #TYPE_FLAG_ISCONST
@@ -412,6 +418,39 @@ CompareSigned:
     lda #warnMixedSignComparison
     jsr typeCheckWarning
 
+DN: rts
+.endproc
+
+; If a side is an expression of literals and constants (evalConstInt),
+; this warns if it's negative and the other side is unsigned, and returns
+; with the carry clear. Otherwise it returns with the carry set. 4 * 12 is
+; an Integer, but comparing a Word with it isn't a mixed-sign comparison.
+.proc checkConstOperand
+    ldz #leftExprOffset
+    jsr loadStackValue
+    jsr evalConstInt
+    bcs :+                  ; Branch if the left isn't a constant
+    lda #rightTypeOffset
+    bra CK
+:   ldz #rightExprOffset
+    jsr loadStackValue
+    jsr evalConstInt
+    bcs DN                  ; Branch if neither is a constant
+    lda #leftTypeOffset
+CK: jsr calcTypePtr         ; The other side
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    jsr isTypeInteger
+    bne OK                  ; Branch if not an integer
+    ldx constSign
+    beq OK                  ; Branch if not negative
+    jsr isSigned
+    beq OK                  ; Branch if the other side is signed
+    lda #warnMixedSignComparison
+    jsr typeCheckWarning
+OK: clc
 DN: rts
 .endproc
 

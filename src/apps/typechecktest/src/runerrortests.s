@@ -31,6 +31,7 @@
 ;   19: Declarations, initial values, casts and forwards
 ;   20: Pointers to pointers and fields through pointers
 ;   21: Long chains of literals and arguments
+;   22: Constant expressions
 
 .include "asmlib.inc"
 .include "cbm_kernal.inc"
@@ -39,7 +40,7 @@
 
 .import runErrorTest, logExpectedWarning, logExpectedError, printLine
 
-NUM_TESTS = 21
+NUM_TESTS = 22
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_ERROR_TEST=n -D LAST_ERROR_TEST=m"

@@ -53,7 +53,7 @@ library closes the gate after the given number of frames, so the release
 plays while the program goes on with its work. *PlayNote* takes a note
 number and *PlayFreq* a SID frequency value.
 
-    PlayNote(1, 57, 25);    // A4 for half a second on PAL
+    PlayNote(1, 4 * 12 + NoteA, 25);    // A4 for half a second on PAL
 
 Times are in frames, counted by the raster interrupt: 50 a second on a
 PAL MEGA65 and 60 on an NTSC one. *FrameRate* returns which. A note can be
@@ -80,11 +80,6 @@ octave times 12 plus its constant:
 *NoteFreq* returns a note's SID frequency value for the MEGA65's video
 mode, with A4 tuned to 440 Hz. A note number over 95 is ignored, and
 *NoteFreq* returns 0 for it. [Notes](notes.md) lists them all.
-
-!!! note
-    Arithmetic on two numbers, such as *4 \* 12 + NoteA*, gives a signed
-    result, and passing it to *PlayNote* warns about a loss of precision.
-    Use a variable for the octave, as above, or write the number (57).
 
 ## Constants
 
