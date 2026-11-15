@@ -12,6 +12,8 @@
 ; The first two entries are init and cleanup, then one per routine in the
 ; order of sound.pas. A change here changes __JMPTBLSIZE__ in sound.cfg.
 
+.import noteFreq, playNote, playFreq, isPlaying, stopVoice, stopAllVoices
+.import frameRate
 .import initSoundLibrary, cleanupSoundLibrary
 .import setSidMode, setVolume, setWaveform, setEnvelope, setFrequency
 .import setPulseWidth, setGate, setRingMod, setSync, setFilter
@@ -34,3 +36,10 @@ jmp setFilter
 jmp filterVoice
 jmp getOsc3
 jmp getEnv3
+jmp noteFreq
+jmp playNote
+jmp playFreq
+jmp isPlaying
+jmp stopVoice
+jmp stopAllVoices
+jmp frameRate

@@ -25,6 +25,19 @@ Const
     FilterLow = 16;
     FilterBand = 32;
     FilterHigh = 64;
+    // Notes of an octave. Note number = octave * 12 + note (0-95).
+    NoteC = 0;
+    NoteCSharp = 1;
+    NoteD = 2;
+    NoteDSharp = 3;
+    NoteE = 4;
+    NoteF = 5;
+    NoteFSharp = 6;
+    NoteG = 7;
+    NoteGSharp = 8;
+    NoteA = 9;
+    NoteASharp = 10;
+    NoteB = 11;
 
 Procedure SetSidMode(sid : Byte; is8580 : Boolean);
 Procedure SetVolume(sid, volume : Byte);
@@ -39,6 +52,15 @@ Procedure SetFilter(sid : Byte; cutoff : Word; resonance : Byte; mode : Word);
 Procedure FilterVoice(voice : Byte; on : Boolean);
 Function GetOsc3(sid : Byte) : Byte;
 Function GetEnv3(sid : Byte) : Byte;
+
+// Timed notes. Times are in frames: 50 a second on PAL, 60 on NTSC.
+Function NoteFreq(note : Word) : Word;
+Procedure PlayNote(voice : Byte; note : Word; frames : Byte);
+Procedure PlayFreq(voice : Byte; freq : Word; frames : Byte);
+Function IsPlaying(voice : Byte) : Boolean;
+Procedure StopVoice(voice : Byte);
+Procedure StopAll;
+Function FrameRate : Byte;
 
 Implementation Library
 

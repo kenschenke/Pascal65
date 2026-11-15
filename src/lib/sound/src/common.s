@@ -15,7 +15,9 @@
 .export initSoundLibrary, cleanupSoundLibrary
 .export loadVoice, loadSid, loadByteParam
 .export ctrlShadow, resShadow, modeShadow
-.export voiceIdx, voiceReg, sidIdx, sidReg, arg
+.export voiceIdx, voiceReg, sidIdx, sidReg, arg, voiceRegs
+
+.import initEngine, stopAllVoices
 
 .rodata
 
@@ -112,6 +114,7 @@ DN: rts
 :   sta startbss,x
     dex
     bpl :-
+    jsr initEngine
 
     ldx #NUM_SIDS-1
     lda #15
@@ -136,17 +139,10 @@ NX: inx
     rts
 .endproc
 
-; Closes every voice's gate and sets every SID's volume to 0, so a
-; program that ends during a note doesn't leave it sounding.
+; Stops every voice and sets every SID's volume to 0, so a program that
+; ends during a note doesn't leave it sounding.
 .proc cleanupSoundLibrary
-    ldx #NUM_VOICES-1
-L1: lda ctrlShadow,x
-    and #$fe
-    sta ctrlShadow,x
-    ldy voiceRegs,x
-    sta SID_BASE+SID_CTRL,y
-    dex
-    bpl L1
+    jsr stopAllVoices
 
     ldx #NUM_SIDS-1
 L2: lda #0

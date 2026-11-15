@@ -46,6 +46,46 @@ voice a waveform, an envelope and a frequency:
 *SetGate* with True starts the attack. The sound holds at the sustain
 level until *SetGate* with False starts the release.
 
+## Timed notes
+
+*PlayNote* and *PlayFreq* open a voice's gate and return at once. The
+library closes the gate after the given number of frames, so the release
+plays while the program goes on with its work. *PlayNote* takes a note
+number and *PlayFreq* a SID frequency value.
+
+    PlayNote(1, 57, 25);    // A4 for half a second on PAL
+
+Times are in frames, counted by the raster interrupt: 50 a second on a
+PAL MEGA65 and 60 on an NTSC one. *FrameRate* returns which. A note can be
+up to 255 frames long. A note of 0 frames plays until *StopVoice* or
+*StopAll* stops it.
+
+*IsPlaying* is True from the time a note starts until its gate closes. It
+goes False when the release starts, not when the sound fades out. Playing a
+note on a voice that is already playing one starts the attack and the time
+over.
+
+The waveform and envelope stay as they were set, so set them before
+playing a note. *SetGate* doesn't change what *IsPlaying* returns.
+
+### Note numbers
+
+Notes are numbered 0 (C0) to 95 (B7), 12 to an octave. The library
+declares a constant for each note of an octave, so a note's number is its
+octave times 12 plus its constant:
+
+    octave := 4;
+    PlayNote(1, octave * 12 + NoteA, 25);   // A4, 440 Hz
+
+*NoteFreq* returns a note's SID frequency value for the MEGA65's video
+mode, with A4 tuned to 440 Hz. A note number over 95 is ignored, and
+*NoteFreq* returns 0 for it. [Notes](notes.md) lists them all.
+
+!!! note
+    Arithmetic on two numbers, such as *4 \* 12 + NoteA*, gives a signed
+    result, and passing it to *PlayNote* warns about a loss of precision.
+    Use a variable for the octave, as above, or write the number (57).
+
 ## Constants
 
 The library declares these constants:
@@ -59,6 +99,18 @@ The library declares these constants:
 |FilterLow     |16   |SetFilter (low pass)      |
 |FilterBand    |32   |SetFilter (band pass)     |
 |FilterHigh    |64   |SetFilter (high pass)     |
+|NoteC         |0    |Note numbers              |
+|NoteCSharp    |1    |Note numbers              |
+|NoteD         |2    |Note numbers              |
+|NoteDSharp    |3    |Note numbers              |
+|NoteE         |4    |Note numbers              |
+|NoteF         |5    |Note numbers              |
+|NoteFSharp    |6    |Note numbers              |
+|NoteG         |7    |Note numbers              |
+|NoteGSharp    |8    |Note numbers              |
+|NoteA         |9    |Note numbers              |
+|NoteASharp    |10   |Note numbers              |
+|NoteB         |11   |Note numbers              |
 
 Add filter modes together to combine them. *FilterLow + FilterHigh* is a
 notch filter. *SetWaveform* and *SetFilter* take the waveform and mode as
@@ -69,7 +121,7 @@ a Word, so a sum of constants can be passed without a warning.
 When a program that uses the library starts, the library clears all four
 SIDs and sets each one's volume to 15. That also stops anything left
 playing by BASIC 65. When the program ends, even with a runtime error, the
-library closes every gate and sets every volume to 0, so no tone is left
+library stops every note, closes every gate and sets every volume to 0, so no tone is left
 sounding.
 
 ## Routines
@@ -89,6 +141,13 @@ sounding.
 |FilterVoice  |Sends a voice through its SID's filter, or not   |
 |GetOsc3      |Reads the output of voice 3 of a SID             |
 |GetEnv3      |Reads the envelope of voice 3 of a SID           |
+|NoteFreq     |Returns the SID frequency of a note number       |
+|PlayNote     |Plays a note for a number of frames              |
+|PlayFreq     |Plays a SID frequency for a number of frames     |
+|IsPlaying    |Returns True while a voice plays a note          |
+|StopVoice    |Stops a voice's note and starts its release      |
+|StopAll      |Stops every voice's note                         |
+|FrameRate    |Returns the frames a second, 50 or 60            |
 
 ## Example
 
@@ -112,5 +171,29 @@ Begin
     Writeln('Press a key');
     ch := GetKey;
     SetGate(1, False);
+End.
+```
+
+This one plays a rising scale of C major on voice 1 and prints a dot each
+frame while it waits, to show the program keeps running during a note.
+
+```
+Program Scale;
+
+Uses Sound;
+
+Var
+    scale : Array[1..8] Of Byte = (0, 2, 4, 5, 7, 9, 11, 12);
+    i, octave : Byte;
+
+Begin
+    SetWaveform(1, WaveTriangle);
+    SetEnvelope(1, 0, 6, 8, 6);
+    octave := 4;
+    For i := 1 To 8 Do Begin
+        PlayNote(1, octave * 12 + scale[i], 10);
+        While IsPlaying(1) Do Write('.');
+        Writeln;
+    End;
 End.
 ```

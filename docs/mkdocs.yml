@@ -93,6 +93,7 @@ nav:
     - SetUpperCase: screen/setuppercase.md
   - Sound Library:
     - Introduction: sound/intro.md
+    - Notes: sound/notes.md
   - Sprites Library:
     - Introduction: sprites/intro.md
     - GetSpritePos: sprites/getspritepos.md

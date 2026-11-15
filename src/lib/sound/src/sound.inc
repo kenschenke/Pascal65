@@ -39,6 +39,19 @@ CTRL_GATE = $01
 CTRL_SYNC = $02
 CTRL_RING = $04
 
+; Bits of voiceFlags (engine.s)
+VF_PLAYING = $01            ; Playing a note (IsPlaying)
+
+NUM_NOTES = 96              ; C0 to B7
+
+; startNote keeps the gate closed for this many loops before opening it
+; again, so the envelope sees it closed (see startNote)
+GATE_DELAY = 64
+
+; Bit 7 is 1 on an NTSC MEGA65, 0 on PAL. The SIDs' clock and the frame
+; rate follow it.
+VIC_PAL = $d06f
+
 ; Bits 0-3 pick 6581 (0) or 8580 (1) for each SID, in the order
 ; 3, 1, 4, 2 (see sidModeBits)
 SID_MODE_REG = $d63c

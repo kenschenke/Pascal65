@@ -40,12 +40,15 @@ cutoff: .res 2
 .code
 
 ; Stores A in the shadow of the control register of voice voiceIdx and
-; in the register
+; in the register. The IRQ handler changes the control register too (it
+; closes the gate when a note ends), so a caller reads the shadow, changes
+; it and calls this between sei and here: writeCtrl ends with plp.
 .proc writeCtrl
     ldx voiceIdx
     sta ctrlShadow,x
     ldy voiceReg
     sta SID_BASE+SID_CTRL,y
+    plp
     rts
 .endproc
 
@@ -107,6 +110,8 @@ DN: rts
     jsr loadByteParam
     and #$f0
     sta arg
+    php
+    sei
     ldx voiceIdx
     lda ctrlShadow,x
     and #$0f
@@ -202,6 +207,8 @@ DN: rts
     bcs DN
     lda #1
     jsr loadByteParam
+    php
+    sei
     ldx voiceIdx
     lda ctrlShadow,x
     ora mask

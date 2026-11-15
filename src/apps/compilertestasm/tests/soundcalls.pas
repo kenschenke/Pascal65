@@ -7,7 +7,10 @@ Program SoundCalls;
 Uses Sound;
 
 Var
-    b : Byte;
+    scale : Array[1..8] Of Byte = (0, 2, 4, 5, 7, 9, 11, 12);
+    b, i, octave : Byte;
+    w : Word;
+    playing : Boolean;
 
 Begin
     SetSidMode(1, False);
@@ -26,4 +29,21 @@ Begin
     FilterVoice(1, True);
     b := GetOsc3(1);
     b := GetEnv3(1);
+    octave := 4;
+    w := NoteFreq(octave * 12 + NoteA);
+    PlayNote(1, octave * 12 + NoteC, 10);
+    PlayNote(2, octave * 12 + NoteCSharp, 0);
+    PlayNote(3, NoteD + NoteDSharp + NoteE + NoteF + NoteFSharp, 1);
+    PlayNote(4, NoteG + NoteGSharp + NoteASharp + NoteB, 1);
+    PlayFreq(5, w, 255);
+    playing := IsPlaying(1);
+    StopVoice(1);
+    StopAll;
+    b := FrameRate;
+    // The example in docs/docs/sound/intro.md
+    For i := 1 To 8 Do Begin
+        PlayNote(1, octave * 12 + scale[i], 10);
+        While IsPlaying(1) Do Write('.');
+        Writeln;
+    End;
 End.
