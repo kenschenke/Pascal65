@@ -13,11 +13,11 @@
 .include "sound.inc"
 
 .export noteFreq, playNote, playFreq, isPlaying, stopVoice
-.export frameRate, calcNoteFreq, freq
+.export frameRate, calcNoteFreq, freq, returnAX
 
 .import loadVoice, loadByteParam
 .import ctrlShadow, voiceIdx, voiceReg, arg
-.import installIrq, stopVoiceX
+.import installIrq, stopVoiceX, setVoiceFreq
 .import voiceFlags, voiceFrames, irqWork
 
 .rodata
@@ -144,11 +144,13 @@ DN: rts
 
 ; Plays freq on voice voiceIdx for the frames in parameter 2 (0 until
 ; it's stopped). The gate closes and opens again, so the attack starts
-; over if the voice was playing.
+; over if the voice was playing. It ends a frequency sweep on the voice
+; and starts its vibrato over (setVoiceFreq).
 .proc startNote
     lda #2
     jsr loadByteParam
     jsr installIrq
+    jsr setVoiceFreq
     php
     sei
     ldx voiceIdx
@@ -156,10 +158,6 @@ DN: rts
     lda ctrlShadow,x
     and #<~CTRL_GATE
     sta SID_BASE+SID_CTRL,y
-    lda freq
-    sta SID_BASE+SID_FREQLO,y
-    lda freq+1
-    sta SID_BASE+SID_FREQHI,y
 
     ; The envelope sees the gate once a SID clock (about 1 MHz), so keep
     ; it closed for a few microseconds at 40 MHz or the attack won't start

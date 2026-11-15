@@ -81,6 +81,19 @@ octave times 12 plus its constant:
 mode, with A4 tuned to 440 Hz. A note number over 95 is ignored, and
 *NoteFreq* returns 0 for it. [Notes](notes.md) lists them all.
 
+## Effects
+
+*Sweep*, *Vibrato*, *PulseSweep* and *FilterSweep* change a sound while
+it plays: they slide a voice's frequency, swing it up and down, move its
+pulse width back and forth, or slide a SID's filter cutoff. Like notes,
+they return at once and the raster interrupt moves them on each frame.
+
+    PlayFreq(1, 40000, 8);          // A laser: a high note...
+    Sweep(1, 40000, 3000, 14);      // ...that falls fast
+
+[Effects](effects.md) describes them and walks through the sounds in
+`sfxdemo.pas`.
+
 ## Constants
 
 The library declares these constants:
@@ -143,6 +156,13 @@ sounding.
 |StopVoice    |Stops a voice's note and starts its release      |
 |StopAll      |Stops every voice's note                         |
 |FrameRate    |Returns the frames a second, 50 or 60            |
+|Sweep        |Slides a voice's frequency to another            |
+|Vibrato      |Swings a voice's frequency up and down           |
+|PulseSweep   |Moves a voice's pulse width back and forth       |
+|FilterSweep  |Slides a SID's filter cutoff to another          |
+|GetFrequency |Returns the frequency a voice is playing         |
+|GetPulseWidth|Returns a voice's pulse width                    |
+|GetCutoff    |Returns a SID's filter cutoff                    |
 
 ## Example
 

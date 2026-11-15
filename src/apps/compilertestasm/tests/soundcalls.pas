@@ -44,6 +44,17 @@ Begin
     StopVoice(1);
     StopAll;
     b := FrameRate;
+    Sweep(1, 30000, 1000, 20);
+    Sweep(2, w, NoteFreq(60), 0);
+    Vibrato(3, 10, 8);
+    Vibrato(3, 0, 0);
+    PulseSweep(4, 40);
+    PulseSweep(4, -40);
+    PulseSweep(4, 0);
+    FilterSweep(1, 2047, 50);
+    w := GetFrequency(1);
+    w := GetPulseWidth(1);
+    w := GetCutoff(1);
     // The example in docs/docs/sound/intro.md
     For i := 1 To 8 Do Begin
         PlayNote(1, octave * 12 + scale[i], 10);

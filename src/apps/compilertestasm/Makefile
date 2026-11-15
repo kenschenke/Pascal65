@@ -55,11 +55,11 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 # which need the room for the programs they compile and the files their
 # tests write (set 2's file tests hang on a full disk).
 comma := ,
-SET3PAS = libtest2 soundtest soundcalls dynarraya dynarrayb dynarrayc \
+SET3PAS = libtest2 soundtest soundfx soundcalls dynarraya dynarrayb dynarrayc \
 	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb
 ifeq ($(filter $(TESTSET),1 2),)
 SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
-	-write bubbles.petscii bubbles.pas$(comma)seq \
+	-write bubbles.petscii bubbles.pas$(comma)seq 	-write sfxdemo.petscii sfxdemo.pas$(comma)seq \
 	$(foreach t,$(SET3PAS),-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
 endif
 
@@ -88,6 +88,7 @@ DEMOLIB2PAS = ../../lib/demolib/demolib2.pas
 SOUNDPAS = ../../lib/sound/sound.pas
 FIVEDICEPAS = ../../../examples/fivedice.pas
 BUBBLESPAS = ../../../examples/bubbles.pas
+SFXDEMOPAS = ../../../examples/sfxdemo.pas
 
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
@@ -135,6 +136,7 @@ FIXDEP = sed -e 's/ [A-Za-z]:[^ :]*//g' $(@:.o=.dep) > $(@:.o=.d)
 TXTFILES := errormsgs.petscii system.petscii demolib.petscii fivedice.petscii
 TXTFILES += demolib2.petscii
 TXTFILES += bubbles.petscii
+TXTFILES += sfxdemo.petscii
 TXTFILES += sound.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
@@ -166,6 +168,9 @@ fivedice.petscii: $(FIVEDICEPAS)
 # Compiled, but not run, to check the Sprites and SpriteMove libraries
 bubbles.petscii: $(BUBBLESPAS)
 	dos2unix < $(BUBBLESPAS) | petcat -w2 -text -o bubbles.petscii
+
+sfxdemo.petscii: $(SFXDEMOPAS)
+	dos2unix < $(SFXDEMOPAS) | petcat -w2 -text -o sfxdemo.petscii
 
 $(BINDIR):
 	mkdir -p $@

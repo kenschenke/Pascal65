@@ -22,12 +22,14 @@
 .rodata
 
 ; Offset of each voice's registers from SID_BASE. The SIDs are 32 bytes
-; apart and a SID's voices 7 bytes apart.
+; apart and a SID's voices 7 bytes apart. Entries 12-15 are the SIDs'
+; own offsets, for the filter sweeps (SWEEP_SID in sound.inc).
 voiceRegs:
     .byte $00, $07, $0e
     .byte $20, $27, $2e
     .byte $40, $47, $4e
     .byte $60, $67, $6e
+    .byte $00, $20, $40, $60
 
 .bss
 

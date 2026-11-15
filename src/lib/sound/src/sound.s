@@ -14,6 +14,8 @@
 
 .import noteFreq, playNote, playFreq, isPlaying, stopVoice, stopAllVoices
 .import frameRate
+.import sweep, vibrato, pulseSweep, filterSweep
+.import getFrequency, getPulseWidth, getCutoff
 .import initSoundLibrary, cleanupSoundLibrary
 .import setSidMode, setVolume, setWaveform, setEnvelope, setFrequency
 .import setPulseWidth, setGate, setRingMod, setSync, setFilter
@@ -43,3 +45,10 @@ jmp isPlaying
 jmp stopVoice
 jmp stopAllVoices
 jmp frameRate
+jmp sweep
+jmp vibrato
+jmp pulseSweep
+jmp filterSweep
+jmp getFrequency
+jmp getPulseWidth
+jmp getCutoff

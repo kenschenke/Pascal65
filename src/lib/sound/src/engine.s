@@ -18,6 +18,7 @@
 .export voiceFlags, voiceFrames, irqWork
 
 .import ctrlShadow, voiceRegs
+.import initEffects, stopEffectsX, stopFilterSweeps, runEffects
 
 .bss
 
@@ -42,11 +43,11 @@ endbss:
     dex
     cpx #$ff
     bne :-
-    rts
+    jmp initEffects
 .endproc
 
-; Stops voice X (0-11): clears its state and closes its gate, so its
-; release plays. Keeps X.
+; Stops voice X (0-11): clears its state, ends its effects and closes its
+; gate, so its release plays. Keeps X.
 .proc stopVoiceX
     php
     sei
@@ -58,17 +59,18 @@ endbss:
     sta ctrlShadow,x
     ldy voiceRegs,x
     sta SID_BASE+SID_CTRL,y
+    jsr stopEffectsX
     plp
     rts
 .endproc
 
-; Stops all 12 voices
+; Stops all 12 voices and the filter sweeps
 .proc stopAllVoices
     ldx #NUM_VOICES-1
 :   jsr stopVoiceX
     dex
     bpl :-
-    rts
+    jmp stopFilterSweeps
 .endproc
 
 ; Adds the handler to the IRQ chain, the first time it's called. The
@@ -103,8 +105,9 @@ getIrqAddress:
     jsr setIrq
     ; irqHandler must be the very next line
 ; Runs once a frame, on the raster interrupt. It counts down each timed
-; note and closes the voice's gate when it runs out. It doesn't touch the
-; zero page or call the runtime, because it can interrupt either.
+; note and closes the voice's gate when it runs out, then runs the effects
+; (runEffects). It doesn't touch the zero page or call the runtime,
+; because it can interrupt either.
 irqHandler:
     lda irqWork
     beq irqReturn           ; Branch if no voice needs it
@@ -131,6 +134,7 @@ L1: lda voiceFrames,x
 MR: inc irqWork
 NX: dex
     bpl L1
+    jsr runEffects
 
 irqReturn:
     jmp $0000

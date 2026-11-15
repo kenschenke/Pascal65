@@ -85,7 +85,7 @@ BINFILES += $(MEMINFO)
 BINFILES += $(THEMES)
 BINFILES += $(MKHDR)
 
-TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii sound.petscii
+TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii sound.petscii sfxdemo.petscii
 
 all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SOUNDLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
 
@@ -115,6 +115,9 @@ spritemove.petscii: $(SPRITEMOVEDIR)/spritemove.pas
 
 sound.petscii: $(SOUNDLIBDIR)/sound.pas
 	dos2unix < $(SOUNDLIBDIR)/sound.pas | petcat -w2 -text -o sound.petscii
+
+sfxdemo.petscii: examples/sfxdemo.pas
+	dos2unix < examples/sfxdemo.pas | petcat -w2 -text -o sfxdemo.petscii
 
 system.petscii: $(SYSTEMLIBDIR)/system.pas
 	dos2unix < $(SYSTEMLIBDIR)/system.pas | petcat -w2 -text -o system.petscii
@@ -256,7 +259,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDEF) $(HDRFILES)
 	-write bubbles.petscii bubbles.pas,seq \
 	-write sprites.petscii sprites.pas,seq \
 	-write spritemove.petscii spritemove.pas,seq \
-	-write sound.petscii sound.pas,seq \
+	-write sound.petscii sound.pas,seq 	-write sfxdemo.petscii sfxdemo.pas,seq \
 	-write system.petscii system.pas,seq \
 	-write title.petscii title.txt,seq \
 	-write license.petscii license.txt,seq \

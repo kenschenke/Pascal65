@@ -49,6 +49,7 @@ strUnit: .asciiz "unit"
 strLibTest: .asciiz "libtest"
 strLibTest2: .asciiz "libtest2"
 strSoundTest: .asciiz "soundtest"
+strSoundFx: .asciiz "soundfx"
 strSoundCalls: .asciiz "soundcalls"
 strRtnArray: .asciiz "rtnarray"
 strRtnRecord: .asciiz "rtnrecord"
@@ -75,6 +76,7 @@ strRtDynA: .asciiz "rtdyna"
 strRtDynB: .asciiz "rtdynb"
 strFiveDice: .asciiz "fivedice"
 strBubbles: .asciiz "bubbles"
+strSfxDemo: .asciiz "sfxdemo"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
@@ -149,6 +151,8 @@ tests:
     .byte .lobyte(strLibTest2), .hibyte(strLibTest2)
     ; The Sound library
     .byte .lobyte(strSoundTest), .hibyte(strSoundTest)
+    ; The Sound library's effects
+    .byte .lobyte(strSoundFx), .hibyte(strSoundFx)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)
@@ -186,6 +190,8 @@ compileOnlyTests:
     .byte .lobyte(strRtDynB), .hibyte(strRtDynB)
     ; Calls every routine in the Sound library
     .byte .lobyte(strSoundCalls), .hibyte(strSoundCalls)
+    ; The Sound library's effects demo
+    .byte .lobyte(strSfxDemo), .hibyte(strSfxDemo)
 .endif
     .byte $00, $00
 

@@ -19,6 +19,8 @@
 .import loadVoice, loadSid, loadByteParam
 .import ctrlShadow, resShadow, modeShadow
 .import voiceIdx, voiceReg, sidIdx, sidReg, arg
+.import freq, setVoiceFreq, writeCutoffX
+.import pwLo, pwHi, valFrac, valLo, valHi, sweepLeft
 
 .rodata
 
@@ -155,29 +157,40 @@ DN: rts
 .endproc
 
 ; Procedure SetFrequency(voice : Byte; freq : Word);
+; Ends a frequency sweep on the voice and starts its vibrato over.
 .proc setFrequency
     jsr loadVoice
     bcs DN
     lda #1
     jsr rtLibLoadParam
-    ldy voiceReg
-    sta SID_BASE+SID_FREQLO,y
-    txa
-    sta SID_BASE+SID_FREQHI,y
+    sta freq
+    stx freq+1
+    jmp setVoiceFreq
 DN: rts
 .endproc
 
 ; Procedure SetPulseWidth(voice : Byte; width : Word);
+; A pulse sweep on the voice (PulseSweep) goes on from the new width.
 .proc setPulseWidth
     jsr loadVoice
     bcs DN
     lda #1
     jsr rtLibLoadParam
-    ldy voiceReg
-    sta SID_BASE+SID_PWLO,y
+    sta cutoff
     txa
     and #$0f                ; 12 bits
+    sta cutoff+1
+    php
+    sei                     ; The IRQ changes the width too
+    ldx voiceIdx
+    ldy voiceReg
+    lda cutoff
+    sta pwLo,x
+    sta SID_BASE+SID_PWLO,y
+    lda cutoff+1
+    sta pwHi,x
     sta SID_BASE+SID_PWHI,y
+    plp
 DN: rts
 .endproc
 
@@ -221,23 +234,31 @@ DN: rts
 
 ; Procedure SetFilter(sid : Byte; cutoff : Word; resonance : Byte;
 ;     mode : Word);
+; Ends a filter sweep on the SID. The cutoff is 11 bits.
 .proc setFilter
     jsr loadSid
     bcs DN
     lda #1
     jsr rtLibLoadParam
     sta cutoff
-    stx cutoff+1
-    and #$07                ; Bits 0-2
-    ldy sidReg
-    sta SID_BASE+SID_CUTLO,y
-    lda cutoff              ; Bits 3-10
-    ldx #3
-:   lsr cutoff+1
-    ror a
-    dex
-    bne :-
-    sta SID_BASE+SID_CUTHI,y
+    txa
+    and #>MAX_CUTOFF
+    sta cutoff+1
+    php
+    sei                     ; The IRQ changes the cutoff too
+    lda sidIdx
+    clc
+    adc #SWEEP_SID
+    tax
+    lda #0
+    sta sweepLeft,x
+    sta valFrac,x
+    lda cutoff
+    sta valLo,x
+    lda cutoff+1
+    sta valHi,x
+    jsr writeCutoffX
+    plp
 
     lda #2                  ; Resonance
     jsr loadByteParam

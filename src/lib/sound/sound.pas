@@ -62,6 +62,17 @@ Procedure StopVoice(voice : Byte);
 Procedure StopAll;
 Function FrameRate : Byte;
 
+// Effects, run by the raster interrupt each frame. A note keeps a
+// voice's vibrato and pulse sweep but ends its frequency sweep.
+// StopVoice and StopAll end every effect.
+Procedure Sweep(voice : Byte; fromFreq, toFreq : Word; frames : Byte);
+Procedure Vibrato(voice, depth, frames : Byte);
+Procedure PulseSweep(voice : Byte; stepSize : Integer);
+Procedure FilterSweep(sid : Byte; toCutoff : Word; frames : Byte);
+Function GetFrequency(voice : Byte) : Word;
+Function GetPulseWidth(voice : Byte) : Word;
+Function GetCutoff(sid : Byte) : Word;
+
 Implementation Library
 
 End.

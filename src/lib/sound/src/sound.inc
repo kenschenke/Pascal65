@@ -44,6 +44,16 @@ VF_PLAYING = $01            ; Playing a note (IsPlaying)
 
 NUM_NOTES = 96              ; C0 to B7
 
+; Sweeps (effects.s). Sweeps 0-11 move a voice's frequency and 12-15 a
+; SID's filter cutoff.
+SWEEP_SID = NUM_VOICES
+NUM_SWEEPS = NUM_VOICES + NUM_SIDS
+MAX_CUTOFF = 2047           ; The cutoff is 11 bits
+
+; PulseSweep turns around at these pulse widths
+PW_MIN = 128
+PW_MAX = 3968
+
 ; startNote keeps the gate closed for this many loops before opening it
 ; again, so the envelope sees it closed (see startNote)
 GATE_DELAY = 64

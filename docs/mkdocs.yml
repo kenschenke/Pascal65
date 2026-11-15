@@ -94,6 +94,7 @@ nav:
   - Sound Library:
     - Introduction: sound/intro.md
     - Notes: sound/notes.md
+    - Effects: sound/effects.md
   - Sprites Library:
     - Introduction: sprites/intro.md
     - GetSpritePos: sprites/getspritepos.md
