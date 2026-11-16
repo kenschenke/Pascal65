@@ -75,15 +75,18 @@ label: .res 16
 :   rts
 
 byteOper:
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genThree OC_JSR, RT_PUSHBYTESTACK
-    rts
+    ; The byte follows the JSR
+    genThree OC_JSR, RT_PUSHBYTEINLINE
+    lda operand1+1
+    jmp genOneInstruction
 
 wordOper:
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genTwoAbsolute OC_LDX_IMMEDIATE, operand1+2
-    genThree OC_JSR, RT_PUSHINTSTACK
-    rts
+    ; The integer follows the JSR
+    genThree OC_JSR, RT_PUSHINTINLINE
+    lda operand1+1
+    jsr genOneInstruction
+    lda operand1+2
+    jmp genOneInstruction
 
 dwordOper:
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+3
@@ -96,7 +99,19 @@ dwordOper:
     rts
 
 vdrOper:
-    ; The level, offset and type follow the JSR
+    ; At level 1 (a global) or 2 (in a routine declared in the program),
+    ; the offset and type follow the JSR
+    lda operand1+2
+    cmp #1
+    bne :+
+    genThree OC_JSR, RT_PUSHGLOBALINLINE
+
+    lda operand1+3                  ; offset
+    jsr genOneInstruction
+    lda operand1+1                  ; type
+    jmp genOneInstruction
+    ; Otherwise the level, offset and type follow the JSR
+:
     genThree OC_JSR, RT_PUSHVARINLINE
     lda operand1+2                  ; level
     jsr genOneInstruction
@@ -106,6 +121,15 @@ vdrOper:
     jmp genOneInstruction
 
 vdwOper:
+    ; At level 1 or 2, the offset follows the JSR
+    lda operand1+2
+    cmp #1
+    bne :+
+    genThree OC_JSR, RT_PUSHGLOBALADDR
+
+    lda operand1+3                  ; offset
+    jmp genOneInstruction
+:
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+2     ; level
     genTwoAbsolute OC_LDX_IMMEDIATE, operand1+3     ; offset
     genThree OC_JSR, RT_PUSHVARADDR
@@ -141,15 +165,7 @@ vvwOper:
     rts
 
 retOper:
-    genTwoImmediate OC_LDA_ZEROPAGE, ZP_STACKFRAMEL
-    genOne OC_SEC
-    genTwoImmediate OC_SBC_IMMEDIATE, 4
-    genOne OC_PHA
-    genTwoImmediate OC_LDA_ZEROPAGE, ZP_STACKFRAMEH
-    genTwoImmediate OC_SBC_IMMEDIATE, 0
-    genOne OC_TAX
-    genOne OC_PLA
-    genThree OC_JSR, RT_PUSHEAX
+    genThree OC_JSR, RT_PUSHRETADDR
     rts
 .endproc
 

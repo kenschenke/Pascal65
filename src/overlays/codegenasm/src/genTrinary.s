@@ -20,20 +20,21 @@
 .import pshOper, outOper, inpOper, strbuf, dataInstruction
 .import genOneInstruction, genTwoInstruction, genThreeAddr, operand1
 .import genArrayInit, genRecordInit, operand2, operand3
+.import pendingAsf
 
 .proc genTrinary
     cmp #IC_ADD
     bne :+
-    ldx #.lobyte(RT_ADD)
-    ldy #.hibyte(RT_ADD)
-    jsr genMath
+    ldx #.lobyte(RT_ADDINLINE)
+    ldy #.hibyte(RT_ADDINLINE)
+    jsr genMathInline
     rts
 
 :   cmp #IC_SUB
     bne :+
-    ldx #.lobyte(RT_SUBTRACT)
-    ldy #.hibyte(RT_SUBTRACT)
-    jsr genMath
+    ldx #.lobyte(RT_SUBINLINE)
+    ldy #.hibyte(RT_SUBINLINE)
+    jsr genMathInline
     rts
 
 :   cmp #IC_MUL
@@ -102,6 +103,18 @@
 :   rts
 .endproc
 
+; Writes a JSR to the routine in X/Y followed by the three types.
+.proc genMathInline
+    lda #OC_JSR
+    jsr genThreeAddr
+    lda operand1+1
+    jsr genOneInstruction
+    lda operand2+1
+    jsr genOneInstruction
+    lda operand3+1
+    jmp genOneInstruction
+.endproc
+
 .proc genMath
     phx
     phy
@@ -117,6 +130,47 @@
 .endproc
 
 .proc jsrOper
+    lda pendingAsf
+    beq NA
+    cmp #3                  ; level 2, plus one
+    bne L3
+
+    ; A routine at level 2: only its address follows the JSR
+    lda #<strbuf
+    ldx #>strbuf
+    ldy #LINKADDR_BOTH
+    ldz #3
+    jsr linkAddressLookup
+    lda operand3+1
+    beq :+
+    genThree OC_JSR, RT_CALLLIBROUTINE2
+    bra AD
+:   genThree OC_JSR, RT_CALLROUTINE2
+    bra AD
+
+L3:
+    ; ASF and the call in one: callRoutine (or callLibRoutine) takes the
+    ; level and the routine's address from the bytes after the JSR
+    lda #<strbuf
+    ldx #>strbuf
+    ldy #LINKADDR_BOTH
+    ldz #4                  ; past the JSR and the level
+    jsr linkAddressLookup
+    lda operand3+1
+    beq :+
+    genThree OC_JSR, RT_CALLLIBROUTINE
+    bra LV
+:   genThree OC_JSR, RT_CALLROUTINE
+LV: lda pendingAsf
+    dec a                   ; the level
+    jsr genOneInstruction
+AD: lda #0
+    sta pendingAsf
+    jsr genOneInstruction   ; the address, filled in by the linker
+    lda #0
+    jmp genOneInstruction
+
+NA:
     lda #<strbuf
     ldx #>strbuf
     ldy #LINKADDR_BOTH

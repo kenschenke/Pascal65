@@ -21,6 +21,7 @@
 .import pshOper, outOper, inpOper, strbuf
 .import genOneInstruction, genTwoInstruction, genThreeAddr, operand1
 .import genDeclInit, addStringLiteral
+.import pendingAsf
 
 .data
 
@@ -186,35 +187,39 @@ label: .res 16
 .endproc
 
 .proc asfOper
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genThree OC_JSR, RT_ACTIVATEFRAME
+    ; The JSR that follows activates the stack frame (callRoutine)
+    lda operand1+1
+    inc a
+    sta pendingAsf
     rts
 .endproc
 
 .proc bifOper
-    genThree OC_JSR, RT_POPEAX
-    genTwoImmediate OC_CMP_IMMEDIATE, 0
-    genTwoImmediate OC_BNE, 3
+    ; The target follows the JSR
     lda #<strbuf
     ldx #>strbuf
     ldy #LINKADDR_BOTH
-    ldz #1
+    ldz #3
     jsr linkAddressLookup
-    genThree OC_JMP, 0
-    rts
+    genThree OC_JSR, RT_BRANCHIFFALSE
+    lda #0
+    jsr genOneInstruction
+    lda #0
+    jmp genOneInstruction
 .endproc
 
 .proc bitOper
-    genThree OC_JSR, RT_POPEAX
-    genTwoImmediate OC_CMP_IMMEDIATE, 0
-    genTwoImmediate OC_BEQ, 3
+    ; The target follows the JSR
     lda #<strbuf
     ldx #>strbuf
     ldy #LINKADDR_BOTH
-    ldz #1
+    ldz #3
     jsr linkAddressLookup
-    genThree OC_JMP, 0
-    rts
+    genThree OC_JSR, RT_BRANCHIFTRUE
+    lda #0
+    jsr genOneInstruction
+    lda #0
+    jmp genOneInstruction
 .endproc
 
 .proc cpyOper
@@ -310,10 +315,8 @@ label: .res 16
 .endproc
 
 .proc scvOper
-    genThree OC_JSR, RT_POPEAX
-    genTwoAbsolute OC_LDY_IMMEDIATE, operand1+1
-    genThree OC_JSR, RT_CONVERTSTRING
-    genThree OC_JSR, RT_PUSHEAX
+    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
+    genThree OC_JSR, RT_CONVERTSTRPARAM
     rts
 .endproc
 

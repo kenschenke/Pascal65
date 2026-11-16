@@ -20,6 +20,7 @@
 
 .import genOneInstruction, genTwoInstruction, genThreeAddr
 .import operand1, operand2, strbuf
+.import pendingPops
 
 .proc genBinary
 
@@ -80,12 +81,7 @@
 
 :   cmp #IC_POF
     bne :+
-    ; Remove the stack frame, leaving a function's value
-    lda operand1+1
-    beq PP
-    genThree OC_JSR, RT_POPFRAMEFUNC
-    rts
-PP: genThree OC_JSR, RT_POPFRAMEPROC
+    jsr pofOper
     rts
 
 :   cmp #IC_PUF
@@ -116,12 +112,12 @@ PP: genThree OC_JSR, RT_POPFRAMEPROC
 .endproc
 
 .proc cviOper
-    genThree OC_JSR, RT_POPTOINTOP1AND2
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genTwoAbsolute OC_LDX_IMMEDIATE, operand2+1
-    genThree OC_JSR, RT_CONVERTINT
-    genThree OC_JSR, RT_PUSHFROMINTOP1AND2
-    rts
+    ; The two types follow the JSR
+    genThree OC_JSR, RT_CONVERTINLINE
+    lda operand1+1
+    jsr genOneInstruction
+    lda operand2+1
+    jmp genOneInstruction
 .endproc
 
 .proc dccOper
@@ -189,14 +185,14 @@ enum2:
     lda #TYPE_WORD
     sta operand2+1
 
-L2: genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genTwoAbsolute OC_LDX_IMMEDIATE, operand2+1
-
-    lda #OC_LDY_IMMEDIATE
-    plx
-    jsr genTwoInstruction
-    genThree OC_JSR, RT_COMP
-    rts
+L2: ; The two types and the comparison follow the JSR
+    genThree OC_JSR, RT_COMPINLINE
+    lda operand1+1
+    jsr genOneInstruction
+    lda operand2+1
+    jsr genOneInstruction
+    pla
+    jmp genOneInstruction
 .endproc
 
 .proc cctOper
@@ -214,26 +210,31 @@ L2: genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
 .endproc
 
 .proc pufOper
-    lda #<strbuf
-    ldx #>strbuf
-    ldy #LINKADDR_LOW
-    ldz #1
-    jsr linkAddressLookup
-
-    genTwoImmediate OC_LDA_IMMEDIATE, 0
-
-    lda #<strbuf
-    ldx #>strbuf
-    ldy #LINKADDR_HIGH
-    ldz #1
-    jsr linkAddressLookup
-
-    genTwoImmediate OC_LDX_IMMEDIATE, 0
-    genTwoAbsolute OC_LDY_IMMEDIATE, operand1+1
-
+    ; callRoutine stores the return address
+    lda operand1+1
+    cmp #2
+    bne :+
+    genThree OC_JSR, RT_PUSHFRAMECALL2
+    rts
+:   genTwoAbsolute OC_LDY_IMMEDIATE, operand1+1
     ; This leaves the stack frame pointer on the CPU stack. It is
-    ; popped back off by the ASF and JRP instructions.
-    genThree OC_JSR, RT_PUSHFRAME
+    ; popped back off by callRoutine.
+    genThree OC_JSR, RT_PUSHFRAMECALL
+    rts
+.endproc
+
+; Pops the parameters (the POPs before this) and removes the stack frame,
+; leaving a function's value. popFrameN takes the number of parameters,
+; plus $80 for a function, from the byte after the JSR.
+.proc pofOper
+    genThree OC_JSR, RT_POPFRAMEN
+    lda operand1+1
+    beq :+
+    lda #$80
+:   ora pendingPops
+    jsr genOneInstruction
+    lda #0
+    sta pendingPops
     rts
 .endproc
 
@@ -272,12 +273,16 @@ L1: genTwoAbsolute OC_LDX_IMMEDIATE, operand2+1
     cmp #TYPE_STRING_VAR
     beq :+
 
-    genTwoAbsolute OC_LDX_IMMEDIATE, operand1+1
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand2+1
-    genThree OC_JSR, RT_ASSIGNVAR
-    rts
+    ; The variable's type and the value's follow the JSR
+    genThree OC_JSR, RT_ASSIGNINLINE
+    lda operand1+1
+    jsr genOneInstruction
+    lda operand2+1
+    jmp genOneInstruction
 
-:   genTwoAbsolute OC_LDA_IMMEDIATE, operand2+1
-    genThree OC_JSR, RT_ASSIGNSTRVAR
+    ; The value's type follows the JSR
+:   genThree OC_JSR, RT_ASSIGNSTRINLINE
+    lda operand2+1
+    jmp genOneInstruction
     rts
 .endproc

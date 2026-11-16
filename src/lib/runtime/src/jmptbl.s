@@ -17,8 +17,14 @@
 .import popToIntOp2, pushFromIntOp1, pushRealStack, storeRealStack
 .import popToReal, pushByteStack
 .import pushStackFrameHeader, returnFromRoutine
-.import pushFrame, activateFrame, popFrameProc, popFrameFunc, pushVarAddr
+.import pushFrame, pushVarAddr
 .import pushVarInline, assignVar, assignStrVar
+.import pushFrameCall, callRoutine, callLibRoutine, popFrameN
+.import branchIfFalse, branchIfTrue, convertInline, convertStrParam
+.import pushRetAddr, popAndFree, pushByteInline, pushIntInline
+.import pushGlobalInline, pushGlobalAddr, assignInline, assignStrInline
+.import compInline, addInline, subInline
+.import pushFrameCall2, callRoutine2, callLibRoutine2
 .import popToIntOp1And2
 .import storeInt32Stack, pushFromIntOp1And2, getKey, clearKeyBuf
 
@@ -188,10 +194,29 @@ jmp setStringInput       ; BASE + 339
 jmp irqCallBegin         ; BASE + 342
 jmp irqCallEnd           ; BASE + 345
 jmp pushFrame            ; BASE + 348
-jmp activateFrame        ; BASE + 351
-jmp popFrameProc         ; BASE + 354
-jmp popFrameFunc         ; BASE + 357
-jmp pushVarAddr          ; BASE + 360
-jmp pushVarInline        ; BASE + 363
-jmp assignVar            ; BASE + 366
-jmp assignStrVar         ; BASE + 369
+jmp pushVarAddr          ; BASE + 351
+jmp pushVarInline        ; BASE + 354
+jmp assignVar            ; BASE + 357
+jmp assignStrVar         ; BASE + 360
+jmp pushFrameCall        ; BASE + 363
+jmp callRoutine          ; BASE + 366
+jmp callLibRoutine       ; BASE + 369
+jmp popFrameN            ; BASE + 372
+jmp branchIfFalse        ; BASE + 375
+jmp branchIfTrue         ; BASE + 378
+jmp convertInline        ; BASE + 381
+jmp convertStrParam      ; BASE + 384
+jmp pushRetAddr          ; BASE + 387
+jmp popAndFree           ; BASE + 390
+jmp pushByteInline       ; BASE + 393
+jmp pushIntInline        ; BASE + 396
+jmp pushGlobalInline     ; BASE + 399
+jmp pushGlobalAddr       ; BASE + 402
+jmp assignInline         ; BASE + 405
+jmp assignStrInline      ; BASE + 408
+jmp compInline           ; BASE + 411
+jmp addInline            ; BASE + 414
+jmp subInline            ; BASE + 417
+jmp pushFrameCall2       ; BASE + 420
+jmp callRoutine2         ; BASE + 423
+jmp callLibRoutine2      ; BASE + 426

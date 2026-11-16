@@ -512,12 +512,27 @@ compiler runs from must have them (`RTWRITE`), and dynamic programs need
 `runtimeN` on the disk they run from.
 
 Code generation keeps the code it writes short by calling the runtime for
-anything it would repeat (`callframe.s`): a call's stack frame
-(`pushFrame`, `activateFrame`, `popFrameProc`/`Func`), a variable's
-address (`pushVarAddr`) and an assignment (`assignVar`, `assignStrVar`).
-`pushVarInline` takes its level, offset and type from the three bytes
-after the `JSR` and returns past them. A new jump table entry grows
-`RT_JMPTBL_SIZE` and needs a new `RT_ABI_VERSION`.
+anything it would repeat (`callframe.s`). Most of these routines take
+their operands from the bytes after the `JSR` (`fetchInline1` to `3`
+read them and move the return address past them on the CPU stack), so
+the generated code is the `JSR` and the bytes: reading a variable or its
+address (with a short form for a global), an assignment, a
+comparison, `+` and `-`, a conversion, a constant, a branch and a call.
+
+A call is `PUF`: `pushFrameCall` (or `pushFrameCall2` for a routine at
+level 2) pushes the frame with no return address; then the arguments;
+then `ASF` and `JSR` together: `callRoutine` (or `callLibRoutine`, and
+the level 2 forms) takes the level and the routine's address from the
+bytes after its `JSR`, activates the frame and stores the address past
+them as the frame's return address; then the parameters' `POP`s and
+`POF` together: `popFrameN` takes the number of parameters (plus $80 for
+a function). Code generation holds `ASF` and the `POP`s back for this
+(`pendingAsf`, `pendingPops` in `processIcodeInstructions.s`); any other
+instruction writes the held `POP`s first. A call through a routine
+pointer (`PPF`, `JRP`) still uses `pushFrame` with the return address.
+
+A new jump table entry grows `RT_JMPTBL_SIZE` and needs a new
+`RT_ABI_VERSION` once the old one has been released.
 
 A test without a file variable can't write `testfailed`. The `rtpkg*` tests
 end with a runtime error instead (division by zero), which stops the chain.

@@ -15,7 +15,7 @@
 .include "codegen.inc"
 .include "cbm_kernal.inc"
 
-.export processIcodeInstructions, readIcodeByte
+.export processIcodeInstructions, readIcodeByte, pendingPops, pendingAsf
 
 .import readInstruction, instruction
 .import genThreeAddr, genOneInstruction, genTwoInstruction, genBinary, genTrinary, genUnary
@@ -23,10 +23,18 @@
 .bss
 
 readStatus: .res 1
+; POPs not written yet. A POF that follows them pops them too (popFrameN).
+pendingPops: .res 1
+; The level of an ASF not written yet, plus one, or 0. The JSR after it
+; activates the stack frame (callRoutine).
+pendingAsf: .res 1
 
 .code
 
 .proc processIcodeInstructions
+    lda #0
+    sta pendingPops
+    sta pendingAsf
 L1: jsr readIcodeByte
     ; ldx #2
     ; jsr CHKIN
@@ -37,11 +45,20 @@ L1: jsr readIcodeByte
     lda readStatus
     and #$40
     beq :+
-    rts
+    jmp flushPops
 
 :   lda instruction
     jsr readInstruction
     lda instruction
+    cmp #IC_POP
+    bne :+
+    inc pendingPops
+    jmp L1
+:   cmp #IC_POF
+    beq :+
+    jsr flushPops
+    lda instruction
+:
 
     bit #IC_MASK_TRINARY
     beq :+
@@ -81,14 +98,9 @@ L1: jsr readIcodeByte
     jsr roundTrunc
     jmp L1
 
-:   cmp #IC_POP
-    bne :+
-    genThree OC_JSR, RT_INCSP4
-    jmp L1
 :   cmp #IC_DEL
     bne :+
-    genThree OC_JSR, RT_POPEAX
-    genThree OC_JSR, RT_HEAPFREE
+    genThree OC_JSR, RT_POPANDFREE
     jmp L1
 
 :   cmp #IC_DEF
@@ -240,4 +252,14 @@ L1: ldx #ZP_INTOP2L
     genThree OC_JMP_INDIRECT, ZP_TMP1
 
     rts
+.endproc
+
+; This routine writes the POPs not written yet.
+.proc flushPops
+L1: lda pendingPops
+    beq DN
+    genThree OC_JSR, RT_INCSP4
+    dec pendingPops
+    bra L1
+DN: rts
 .endproc
