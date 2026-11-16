@@ -17,13 +17,23 @@ Const
     ChunkSize = 64;
     MinWordLen = 3;
     MaxWordLen = 12;
-    // How many words the loader test prints
-    NumShown = 8;
+    // Wrong guesses that lose a round: head, body, two arms, two legs
+    MaxMisses = 6;
+
+Type
+    GuessResult = (GuessCorrect, GuessWrong, GuessRepeat, GuessIgnored);
 
 Var
     Words : Array Of String;
     NumWords : Integer;
-    i : Integer;
+
+    // The round state
+    Secret : String;
+    // Letters guessed so far, right or wrong (there are no sets)
+    Guessed : Array['A'..'Z'] Of Boolean;
+    // Letters of Secret not yet revealed, counting repeats
+    LettersLeft : Integer;
+    Misses : Integer;
 
 // Returns a random number from 0 to 65535, from two reads of the
 // MEGA65's hardware random number generator.
@@ -33,12 +43,6 @@ Var
 Begin
     hi := Word(Peek($d7ef));
     RandomWord := (hi << 8) ! Word(Peek($d7ef));
-End;
-
-// Returns a random index into Words.
-Function RandomIndex : Integer;
-Begin
-    RandomIndex := Integer(RandomWord Mod Word(NumWords));
 End;
 
 // Returns True if s is a usable word: MinWordLen to MaxWordLen
@@ -123,30 +127,134 @@ Begin
     End;
 End;
 
-// Prints the first NumShown words, or all of them if there are fewer.
-Procedure ShowFirstWords;
+// Starts a round with word w: nothing guessed, no misses.
+Procedure StartRound(w : String);
+Var
+    c : Char;
+Begin
+    Secret := w;
+    For c := 'A' To 'Z' Do Guessed[c] := False;
+    LettersLeft := Length(Secret);
+    Misses := 0;
+End;
+
+// Returns ch in upper case if it is a letter, or Chr(0) if it isn't.
+// Unshifted keys give lower case and shifted keys upper case.
+Function KeyToLetter(ch : Char) : Char;
+Begin
+    If (ch >= 'a') And (ch <= 'z') Then
+        KeyToLetter := Chr(Ord(ch) - Ord('a') + Ord('A'))
+    Else If (ch >= 'A') And (ch <= 'Z') Then
+        KeyToLetter := ch
+    Else
+        KeyToLetter := Chr(0);
+End;
+
+// Plays the letter on key ch. A letter guessed before costs nothing,
+// and a key that isn't a letter is ignored.
+Function Guess(ch : Char) : GuessResult;
+Var
+    letter : Char;
+    i, found : Integer;
+Begin
+    letter := KeyToLetter(ch);
+    If letter = Chr(0) Then
+        Guess := GuessIgnored
+    Else If Guessed[letter] Then
+        Guess := GuessRepeat
+    Else Begin
+        Guessed[letter] := True;
+        found := 0;
+        For i := 1 To Length(Secret) Do
+            If Secret[i] = letter Then Inc(found);
+        If found > 0 Then Begin
+            LettersLeft := LettersLeft - found;
+            Guess := GuessCorrect;
+        End Else Begin
+            Inc(Misses);
+            Guess := GuessWrong;
+        End;
+    End;
+End;
+
+Function RoundWon : Boolean;
+Begin
+    RoundWon := LettersLeft = 0;
+End;
+
+Function RoundLost : Boolean;
+Begin
+    RoundLost := Misses >= MaxMisses;
+End;
+
+// Prints the word with an underscore for each letter not yet guessed.
+Procedure ShowWord;
 Var
     i : Integer;
 Begin
-    i := 0;
-    While (i < NumShown) And (i < NumWords) Do Begin
-        Write(' ', Words[i]);
-        Inc(i);
-    End;
+    Write('Word:   ');
+    For i := 1 To Length(Secret) Do
+        If Guessed[Secret[i]] Then
+            Write(' ', Secret[i])
+        Else
+            Write(' _');
     Writeln;
+End;
+
+// Prints the letters guessed so far, in alphabetical order.
+Procedure ShowGuessed;
+Var
+    c : Char;
+Begin
+    Write('Guessed:');
+    For c := 'A' To 'Z' Do
+        If Guessed[c] Then Write(' ', c);
+    Writeln;
+End;
+
+Procedure ShowState;
+Begin
+    Writeln;
+    ShowWord;
+    ShowGuessed;
+    Writeln('Misses:  ', Misses, ' of ', MaxMisses);
+End;
+
+// Plays one round with word w, until it is won or lost.
+Procedure PlayRound(w : String);
+Var
+    ch : Char;
+    res : GuessResult;
+Begin
+    StartRound(w);
+    ShowState;
+    While (Not RoundWon) And (Not RoundLost) Do Begin
+        Write('Press a letter: ');
+        Repeat
+            ch := GetKey;
+            res := Guess(ch);
+        Until res <> GuessIgnored;
+        Writeln(KeyToLetter(ch));
+        If res = GuessCorrect Then
+            Writeln('Yes!')
+        Else If res = GuessWrong Then
+            Writeln('No.')
+        Else
+            Writeln('Already guessed.');
+        If res <> GuessRepeat Then ShowState;
+    End;
+
+    Writeln;
+    If RoundWon Then
+        Writeln('You win! The word was ', Secret)
+    Else
+        Writeln('You lose. The word was ', Secret);
 End;
 
 Begin
     Writeln('Loading words...');
     If LoadWords Then Begin
-        Writeln('Loaded ', NumWords, ' words');
-
-        Write('Random picks:');
-        For i := 1 To NumShown Do Write(' ', Words[RandomIndex]);
-        Writeln;
-
         ShuffleWords;
-        Writeln('Shuffled, ', Length(Words), ' words. First ', NumShown, ':');
-        ShowFirstWords;
+        PlayRound(Words[0]);
     End;
 End.
