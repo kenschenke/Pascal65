@@ -40,7 +40,7 @@
 .include "linker.inc"
 .include "error.inc"
 
-JMPTBL_SIZE = $156
+JMPTBL_SIZE = RT_JMPTBL_SIZE
 PKG_HEADER_SIZE = 5         ; header size, before the entry list
 CODESEG_CEIL = $c000        ; the ceiling for a static program
 

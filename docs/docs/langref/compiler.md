@@ -57,7 +57,7 @@ Every compiled program needs the Pascal65 runtime library. A program can get
 it in one of two ways:
 
 * **Dynamic** (the default): the program loads the runtime from a file named
-  `runtime1` when it starts. The program file is much smaller, and compiling
+  `runtime2` when it starts. The program file is much smaller, and compiling
   is faster.
 * **Static**: the runtime is linked into the program file. The program
   carries only the parts of the runtime it uses, and needs no other file.
@@ -87,10 +87,10 @@ End.
 !!! warning
 
     A program compiled with the dynamic runtime (the default) won't run
-    without the `runtime1` file on the disk it was loaded from. If it's
-    missing, the program prints `runtime file runtime1 not found` and
+    without the `runtime2` file on the disk it was loaded from. If it's
+    missing, the program prints `runtime file runtime2 not found` and
     returns to BASIC. To give a program to someone else, give them
-    `runtime1` with it, or compile it with `$StaticRuntime`.
+    `runtime2` with it, or compile it with `$StaticRuntime`.
 
 !!! note
 

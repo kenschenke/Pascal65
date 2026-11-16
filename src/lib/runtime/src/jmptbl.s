@@ -21,6 +21,7 @@
 .import storeInt32Stack, pushFromIntOp1And2, getKey, clearKeyBuf
 
 .import runtimeErrorInit, popeax, incsp4, pushax
+.import irqCallBegin, irqCallEnd
 
 .import heapInit, heapAlloc, heapFree, rtInitTensTable32, clearInputBuf
 .import writeValue, leftpad, printz, strCase, trim, initFileIo, setFh
@@ -182,3 +183,5 @@ jmp libStackCleanup      ; BASE + 330
 jmp xorBitwise           ; BASE + 333
 jmp setArrayLength       ; BASE + 336
 jmp setStringInput       ; BASE + 339
+jmp irqCallBegin         ; BASE + 342
+jmp irqCallEnd           ; BASE + 345

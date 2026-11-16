@@ -20,12 +20,7 @@
 
 .import swapFPACCandFPOP, copyFPACCtoFPOP, convertType
 .import pusheax, swapInt8, swapInt16, swapInt32
-
-.bss
-
-oper1Type: .res 1
-oper2Type: .res 1
-resultType: .res 1
+.import oper1Type, oper2Type, resultType    ; irqcall.s
 
 .code
 

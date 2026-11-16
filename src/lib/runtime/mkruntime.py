@@ -48,7 +48,7 @@ import subprocess
 import sys
 
 RT_BASE = 0x2028
-JMPTBL_SIZE = 0x156
+JMPTBL_SIZE = None           # RT_JMPTBL_SIZE, read from asm.inc
 CEILING = 0xC000
 
 # Package segment name, file name prefix, largest expected size. The order
@@ -77,6 +77,14 @@ def abi_version(asm_inc):
     if not m:
         fail('RT_ABI_VERSION not found in ' + asm_inc)
     return int(m.group(1))
+
+
+def jmptbl_size(asm_inc):
+    with open(asm_inc) as f:
+        m = re.search(r'^RT_JMPTBL_SIZE\s*=\s*\$([0-9a-fA-F]+)', f.read(), re.M)
+    if not m:
+        fail('RT_JMPTBL_SIZE not found in ' + asm_inc)
+    return int(m.group(1), 16)
 
 
 def core_segments():
@@ -232,7 +240,9 @@ def main():
     ap.add_argument('core', nargs='+', help='core objects')
     args = ap.parse_args()
 
+    global JMPTBL_SIZE
     n = abi_version(args.asm_inc)
+    JMPTBL_SIZE = jmptbl_size(args.asm_inc)
     tmp = os.path.join(args.objdir, 'rtlink')
     os.makedirs(tmp, exist_ok=True)
     cfg = os.path.join(tmp, 'link.cfg')

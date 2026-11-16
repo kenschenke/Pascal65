@@ -35,31 +35,15 @@ endbss:
 
 .assert endbss-startbss <= 256, error, "engine BSS is over 256 bytes"
 
-globalFrame: .res 2         ; The program's stack frame (stackP at init)
-
 ; Only used by the IRQ
 doneVoice: .res 1           ; The voice the callback is called for (0-11)
-zpSave: .res ZP_SAVE_SIZE   ; The runtime's zero page, during the callback
-
-.assert ZP_SAVE_SIZE <= 128, error, "zero page save is over 128 bytes"
-
-; The callback's stack frame starts this many bytes below the runtime
-; stack pointer, so it can't change a value the interrupted code has just
-; popped and is still reading
-CB_STACK_GAP = 32
 
 .code
 
 ; Clears the engine's state. The handler isn't in the chain: the runtime
 ; puts the KERNAL's IRQ vector back when a program ends, so a program run
-; again from memory starts without it. The program calls the library's
-; init with stackP at its own stack frame, which never moves, so it's
-; kept for the done callback.
+; again from memory starts without it.
 .proc initEngine
-    lda stackP
-    sta globalFrame
-    lda stackP+1
-    sta globalFrame+1
     ldx #endbss-startbss-1
     lda #0
 :   sta startbss,x
@@ -146,31 +130,14 @@ CB_STACK_GAP = 32
     jmp rtPushEax
 .endproc
 
-; Calls the done callback for voice doneVoice, from the IRQ. Like any
-; library calling a Pascal routine, it pops the parameter and the stack
-; frame after: rtLibCallRoutine leaves the caller's nesting level on the
-; CPU stack for rtLibStackCleanup, so neither call can be a JMP.
-;
-; The routine's static link, which it reaches the program's variables
-; by, is worked out from stackP and currentNestingLevel. The IRQ may have
-; stopped the program between setting one and the other (on a call or a
-; return), so they are set to the program's frame and level first. That
-; is why the callback must be declared at the program's outer level. The
-; caller saved the zero page and puts it back after.
+; Calls the done callback for voice doneVoice, from the IRQ. The runtime's
+; rtIrqCallBegin and rtIrqCallEnd save and restore what the interrupted
+; program was using (see irqcall.s in the runtime). Like any library
+; calling a Pascal routine, it pops the parameter and the stack frame
+; after: rtLibCallRoutine leaves the caller's nesting level on the CPU
+; stack for rtLibStackCleanup.
 .proc callDoneCb
-    sec
-    lda sp
-    sbc #CB_STACK_GAP
-    sta sp
-    lda sp+1
-    sbc #0
-    sta sp+1
-    lda globalFrame
-    sta stackP
-    lda globalFrame+1
-    sta stackP+1
-    lda #1                  ; The program's nesting level
-    sta currentNestingLevel
+    jsr rtIrqCallBegin
     jsr pushDoneCb
     jsr rtLibStackHeader
     ldx doneVoice
@@ -185,23 +152,16 @@ CB_STACK_GAP = 32
     jsr rtPopEax            ; The parameter
     lda #0                  ; A procedure
     jsr rtLibStackCleanup
-    rts
+    jmp rtIrqCallEnd
 .endproc
 
 ; Clears VF_DONE of each voice that has it and calls the done callback
-; for it, if there is one. The callback is Pascal code, which uses the
-; runtime's zero page, so it is saved first: the IRQ may have stopped the
-; program in the middle of using it.
+; for it, if there is one
 .proc runDone
     lda doneCount
     beq DN                  ; Branch if no voice ended
     lda #0
     sta doneCount
-    ldx #ZP_SAVE_SIZE-1
-:   lda ZP_SAVE_START,x
-    sta zpSave,x
-    dex
-    bpl :-
     ldx #NUM_VOICES-1
 L1: lda voiceFlags,x
     and #VF_DONE
@@ -217,11 +177,6 @@ L1: lda voiceFlags,x
     ldx doneVoice
 NX: dex
     bpl L1
-    ldx #ZP_SAVE_SIZE-1
-:   lda zpSave,x
-    sta ZP_SAVE_START,x
-    dex
-    bpl :-
 DN: rts
 .endproc
 

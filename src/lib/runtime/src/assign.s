@@ -16,11 +16,7 @@
 
 .import convertType, pusheax, signExtend8To16
 .import pushRealStack, storeRealStack, storeByteStack
-
-.bss
-
-rightType: .res 1
-leftPtr: .res 2                 ; Preserve pointer to variable
+.import rightType, leftPtr    ; irqcall.s
 
 .code
 

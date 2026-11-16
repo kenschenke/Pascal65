@@ -50,3 +50,6 @@ any bits in **$D019** as discussed in the
 *Commodore 64 Programmer's Reference Guide*. That is handled by the
 runtime library. This is so any additional handlers can inspect the
 mask bits.
+
+A handler that calls a Pascal routine, such as a callback the program
+registered, must use [IrqCallBegin and IrqCallEnd](irqcall.md).

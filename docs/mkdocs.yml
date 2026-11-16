@@ -131,6 +131,7 @@ nav:
     - DivInt: runtime/divint.md
     - HeapAlloc: runtime/heapalloc.md
     - HeapFree: runtime/heapfree.md
+    - IrqCallBegin and IrqCallEnd: runtime/irqcall.md
     - LibCallRoutine: runtime/libcallroutine.md
     - LibLoadParam: runtime/libloadparam.md
     - LibReturnValue: runtime/libreturnvalue.md

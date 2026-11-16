@@ -73,11 +73,7 @@ irqHandler:
     bit VIC_IRR
     beq irqReturn
 
-    jsr pushRasterCb
-    jsr rtLibStackHeader
-
-    jsr pushRasterCb
-    jsr rtLibCallRoutine
+    jsr callRasterCb
 
 irqReturn:
     jmp $0000
@@ -90,4 +86,21 @@ irqReturn:
     lda rasterCb
     ldx rasterCb+1
     jmp rtPushEax
+.endproc
+
+; Calls the raster callback from the IRQ. The runtime's rtIrqCallBegin
+; and rtIrqCallEnd save and restore what the interrupted program was using
+; (see irqcall.s in the runtime), so the callback must be declared at the
+; program's outer level. Like any library calling a Pascal routine, it
+; calls rtLibStackCleanup after: rtLibCallRoutine leaves the caller's
+; nesting level on the CPU stack for it.
+.proc callRasterCb
+    jsr rtIrqCallBegin
+    jsr pushRasterCb
+    jsr rtLibStackHeader
+    jsr pushRasterCb
+    jsr rtLibCallRoutine
+    lda #0                  ; A procedure
+    jsr rtLibStackCleanup
+    jmp rtIrqCallEnd
 .endproc

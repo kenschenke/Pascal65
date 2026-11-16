@@ -54,10 +54,6 @@ SEQ_PULSE = 100             ; Low, high: SetPulseWidth
 SEQ_LOOP = 101              ; Back to the start
 SEQ_END = 102               ; Ends the sequence. So does any byte over it.
 
-; The runtime's zero page (runtime.inc), which the done callback saves
-ZP_SAVE_START = sp
-ZP_SAVE_SIZE = inputBufUsed + 1 - sp
-
 NUM_NOTES = 96              ; C0 to B7
 
 ; Sweeps (effects.s). Sweeps 0-11 move a voice's frequency and 12-15 a

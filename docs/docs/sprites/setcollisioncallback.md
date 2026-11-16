@@ -27,6 +27,12 @@ sprites are involved in a collision. The second parameter is *True* if the colli
 is a sprite-to-sprite collision. The parameter is *False* if it is a sprite-to-data
 (screen text or characters) collision.
 
+The procedure runs in the interrupt, which has stopped the program
+wherever it was. It must be declared at the program's outer level, not
+inside another procedure or function. Keep it short and don't wait in it.
+It can change the program's variables and do arithmetic, but it must not
+write to the screen or a file, read the keyboard, or work with strings.
+
 ## Example
 
 ```

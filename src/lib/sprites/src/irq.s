@@ -87,23 +87,41 @@ spriteIrqReturn:
     jmp rtPushEax
 .endproc
 
-; A is 1 if sprite/sprite collision
+; Calls the collision callback from the IRQ, with collisionBits and
+; spriteOnSprite. The runtime's rtIrqCallBegin and rtIrqCallEnd save and
+; restore what the interrupted program was using (see irqcall.s in the
+; runtime), so the callback must be declared at the program's outer
+; level. Like any library calling a Pascal routine, it pops the
+; parameters and calls rtLibStackCleanup after: rtLibCallRoutine leaves
+; the caller's nesting level on the CPU stack for it.
 .proc callCollisionCallback
     lda collisionCallback
     ora collisionCallback+1
     beq DN
+    jsr rtIrqCallBegin
     ; Set up the stack frame header
     jsr pushSpriteCallbackPointer
     jsr rtLibStackHeader
     ; First parameter (collision bits)
+    ldx #0
+    stx sreg
+    stx sreg+1
     lda collisionBits
     jsr rtPushEax
     ; Second parameter (isSpriteToSpriteCollision)
+    ldx #0
+    stx sreg
+    stx sreg+1
     lda spriteOnSprite
     jsr rtPushEax
     ; Call the routine
     jsr pushSpriteCallbackPointer
     jsr rtLibCallRoutine
+    jsr rtPopEax            ; The parameters
+    jsr rtPopEax
+    lda #0                  ; A procedure
+    jsr rtLibStackCleanup
+    jmp rtIrqCallEnd
 DN: rts
 .endproc
 

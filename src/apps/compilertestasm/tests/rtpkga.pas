@@ -2,7 +2,7 @@ Program RtPkgA;
 (* $StaticRuntime *)
 
 // Tests the trig runtime package on its own, right after the core
-// (trig1a). The program calls Sin, Cos and Tan, and declares no file
+// (trig2a). The program calls Sin, Cos and Tan, and declares no file
 // variable (only a file parameter) and calls no SetLength, so those two
 // packages must not be linked: their jump table entries still point at
 // the core's stubs.

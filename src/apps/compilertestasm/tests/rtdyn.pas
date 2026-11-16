@@ -1,7 +1,7 @@
 Program RtDyn;
 
 // Tests the dynamic runtime (the default without $StaticRuntime). The
-// program's loader loads runtime1 at the top of memory and copies its jump
+// program's loader loads runtime2 at the top of memory and copies its jump
 // table to RT_BASE. Every package is in the dynamic runtime, so every jump
 // table entry must point at its own routine there, never at a "package not
 // linked" stub, and the program can use dynamic arrays, files and trig

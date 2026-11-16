@@ -16,7 +16,7 @@
 
 ; imports
 
-.import popeax, pusheax, incsp4, irqInit
+.import popeax, pusheax, incsp4, irqInit, programFrame
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,6 +152,12 @@ L2:
 ; Initialize the runtime stack
 ; Stack size is passed in A/X
 .proc rtStackInit
+    ; stackP is the program's stack frame, which never moves. Keep it
+    ; for a callback from an IRQ handler (irqcall.s).
+    ldy stackP
+    sty programFrame
+    ldy stackP + 1
+    sty programFrame + 1
     ; Initialize the program's stack frame at the bottom
     lda #0
     tax

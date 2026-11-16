@@ -51,6 +51,7 @@ strLibTest2: .asciiz "libtest2"
 strSoundTest: .asciiz "soundtest"
 strSoundFx: .asciiz "soundfx"
 strSoundSeq: .asciiz "soundseq"
+strIrqCb: .asciiz "irqcb"
 strSoundCalls: .asciiz "soundcalls"
 strRtnArray: .asciiz "rtnarray"
 strRtnRecord: .asciiz "rtnrecord"
@@ -157,6 +158,8 @@ tests:
     .byte .lobyte(strSoundFx), .hibyte(strSoundFx)
     ; The Sound library's sequencer and done callback
     .byte .lobyte(strSoundSeq), .hibyte(strSoundSeq)
+    ; The System and Sprites libraries' IRQ callbacks
+    .byte .lobyte(strIrqCb), .hibyte(strIrqCb)
 .endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)

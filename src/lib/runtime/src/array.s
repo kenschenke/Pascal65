@@ -29,13 +29,14 @@ ARRAYDECL_ARRAY = 5
 
 .export writeCharArray, readCharArrayFromInput, calcArrayElem
 .export initArrayDeclaration, freeArrayDeclaration, cloneArrayDeclaration
-.export getArrayHeapSize, getArrayLength, numElems, ndxElems
+.export getArrayHeapSize, getArrayLength
 .export freeArrayStrings, freeArrayRecords, freeArrayFiles
 
 .import ltInt16, gtInt16, convertType, subInt16, addInt16, multInt16, skipSpaces
 .import memcopy, popax, pushax, FPINP, COMPLM, pusheax, popeax
 .import runtimeError, convertString, heapAlloc, heapFree
 .import freeRecordDeclaration, cloneRecordDeclaration, writeByte
+.import initPtr, isRealNeg, numElems, ndxElems, numLiterals, charPtr, charCount    ; irqcall.s
 
 .struct ARRAYDECL
     heapOffset .word                ; Byte offset into memory heap
@@ -47,20 +48,6 @@ ARRAYDECL_ARRAY = 5
     elemDecl .word                  ; Pointer to declaration block for array elements
     elemType .byte                  ; one of ARRAYDECL_*
 .endstruct
-
-.bss
-initPtr: .res 2
-isRealNeg: .res 1
-
-; Local variables used by initArrayDeclaration
-numElems: .res 2
-ndxElems: .res 2
-numLiterals: .res 2
-
-; Local variables used by writeCharArray. writeByte can allocate
-; heap memory when writing to a string, so they can't be in zero page.
-charPtr: .res 2
-charCount: .res 2
 
 .code
 

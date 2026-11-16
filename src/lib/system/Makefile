@@ -53,8 +53,17 @@ $(OBJTARGETDIR)/%.o: %.s | $(OBJTARGETDIR)
 	ca65 -t $(CC65TARGET) $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 
+# On the MEGA65 the library is in the v2 format (a relocation table, see
+# docs/docs/libraries/objfile.md), linked by mkreloc.py, so it can hold
+# any bytes and keep its BSS out of the file.
+MKRELOC := ../mkreloc.py
+ifeq ($(TARGET),mega65)
+$(PRGFILE): $(OBJECTS) $(CONFIG) $(MKRELOC)
+	python3 $(MKRELOC) -C $(CONFIG) -S 0x3000 -o $(PRGFILE) $(OBJECTS)
+else
 $(PRGFILE): $(OBJECTS) $(CONFIG)
 	ld65 $(LDFLAGS) -o $(PRGFILE) -C $(CONFIG) $(OBJECTS)
+endif
 
 clean:
 	$(RM) $(OBJECTS)

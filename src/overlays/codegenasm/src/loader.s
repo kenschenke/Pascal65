@@ -41,7 +41,7 @@
 .import PRG_HEADER_STACKSIZE1_H: zp, PRG_HEADER_STACKSIZE2_L: zp
 .import PRG_HEADER_STACKSIZE2_H: zp, PRG_HEADER_STACKTOP_H: zp
 
-JMPTBL_SIZE = $156
+JMPTBL_SIZE = RT_JMPTBL_SIZE
 LOADER_ADDR = RT_BASE + JMPTBL_SIZE
 MIN_HEAP_SIZE = 256         ; as in checkCodeSize (prgHeader.s)
 ZP_BACKUP_LEN = $5d         ; page zero bytes the header saves, from $04

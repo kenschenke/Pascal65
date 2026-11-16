@@ -121,7 +121,10 @@ RT_BASE = $2028
 ; core1 (see mkruntime.py), so a program is never linked with a runtime
 ; built for a different jump table. Raise it whenever the jump table or the
 ; zero-page contract changes. mkruntime.py reads it from here.
-RT_ABI_VERSION = 1
+RT_ABI_VERSION = 2
+
+; The size of the jump table at RT_BASE, 3 bytes an entry
+RT_JMPTBL_SIZE = $15c
 
 ; Runtime packages (see rtpkg.inc), in the order they follow the core
 RT_PKG_DYNARRAYS = 1

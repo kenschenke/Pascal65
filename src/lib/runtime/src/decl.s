@@ -72,11 +72,7 @@
 .import freeArrayDeclaration, freeRecordDeclaration
 .import cloneArrayDeclaration, cloneRecordDeclaration
 .import getArrayHeapSize, getRecordSize
-
-.bss
-heapAddr: .res 2
-declAddr: .res 2
-declType: .res 1
+.import heapAddr, declAddr, declType    ; irqcall.s
 
 .code
 

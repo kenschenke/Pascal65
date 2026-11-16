@@ -55,8 +55,8 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 # which need the room for the programs they compile and the files their
 # tests write (set 2's file tests hang on a full disk).
 comma := ,
-SET3PAS = libtest2 soundtest soundfx soundseq soundcalls dynarraya dynarrayb \
-	dynarrayc \
+SET3PAS = libtest2 soundtest soundfx soundseq irqcb soundcalls dynarraya \
+	dynarrayb dynarrayc \
 	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb
 ifeq ($(filter $(TESTSET),1 2),)
 SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \

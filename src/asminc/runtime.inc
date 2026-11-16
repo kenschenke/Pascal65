@@ -102,3 +102,6 @@ rtLibCallRoutine        = rt_base + 321
 rtAddIrqHandler         = rt_base + 324
 rtIrqCleanup            = rt_base + 327
 rtLibStackCleanup       = rt_base + 330
+; Bracket a call to a Pascal routine from an IRQ handler (irqcall.s)
+rtIrqCallBegin          = rt_base + 342
+rtIrqCallEnd            = rt_base + 345

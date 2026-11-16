@@ -17,12 +17,7 @@
 .include "runtime.inc"
 
 .export ROTATL, ROTL, ROTR, ROTATR, ADDER, COMPLM, CLRMEM, MOVIND, MOVIN, CALCPTR
-
-.bss
-
-ADDR1: .res 1
-ADDR2: .res 1
-ADDR3: .res 1
+.import ADDR1, ADDR2, ADDR3    ; irqcall.s
 
 .code
 

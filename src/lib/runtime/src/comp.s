@@ -32,10 +32,7 @@
 .import prepOperands32, prepOperandsReal, pusheax, geUint32, gtUint32, leUint32, ltUint32
 .import leUint32, ltUint32, eqInt32, leInt32, ltInt32, geInt32, gtInt32
 .import floatEq, floatGt, floatGte, floatLt, floatLte
-
-.bss
-
-compOper: .res 1
+.import compOper    ; irqcall.s
 
 .code
 

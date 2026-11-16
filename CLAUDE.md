@@ -510,13 +510,17 @@ that its cleanup and chain code are under the ROM.
 
 ### Library callbacks
 
-A library that runs a Pascal routine from the raster interrupt (the Sound
-library's done callback, `callDoneCb` in `engine.s`) must save the
-runtime's zero page and set `stackP` and `currentNestingLevel` to the
-program's frame and level 1 before `rtLibStackHeader`: the interrupted
-code may be between setting one and the other. After `rtLibCallRoutine`
-it pops the parameters and calls `rtLibStackCleanup`, which pulls the
-byte `rtLibCallRoutine` leaves on the CPU stack.
+A library that runs a Pascal routine from an interrupt (System's raster
+callback, Sprites' collision callback, Sound's done callback) brackets
+the call with `rtIrqCallBegin` and `rtIrqCallEnd` (`irqcall.s` in the
+runtime). They save the runtime's zero page and the runtime variables an
+expression uses for a moment, which `irqcall.s` holds in one block (a new
+one of those goes there), move `sp` down, and set `stackP` and
+`currentNestingLevel` to the program's frame (kept by `rtStackInit`) and
+level 1: the interrupted code may be between setting one and the other.
+After `rtLibCallRoutine` the library pops the parameters and calls
+`rtLibStackCleanup`, which pulls the byte `rtLibCallRoutine` leaves on
+the CPU stack. compilertestasm's `irqcb` and `soundseq` test this.
 
 Don't write `$Word` in a `(* *)` comment of a Pascal test: the tokenizer
 reads it as a directive.

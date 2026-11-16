@@ -17,11 +17,7 @@
 .export modulus
 
 .import divInt32, multInt32, swapInt32, subInt32, prepOperands32, runtimeError
-
-.bss
-
-dividend: .res 4
-divisor: .res 4
+.import dividend, divisor    ; irqcall.s
 
 .code
 
