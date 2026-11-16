@@ -9,4 +9,5 @@ versions of Pascal65.
 * File and directory library
 * Math / trig library
 * Graphics library
-* Sound library
+* Digital audio library: sample playback through the MEGA65's audio DMA
+  channels, and control of the audio mixer (panning and levels)

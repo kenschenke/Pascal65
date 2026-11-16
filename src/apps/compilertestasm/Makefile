@@ -63,6 +63,7 @@ SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
 	-write bubbles.petscii bubbles.pas$(comma)seq \
 	-write sfxdemo.petscii sfxdemo.pas$(comma)seq \
 	-write tunedemo.petscii tunedemo.pas$(comma)seq \
+	-write stereodemo.petscii stereodemo.pas$(comma)seq \
 	$(foreach t,$(SET3PAS),-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
 endif
 
@@ -93,6 +94,7 @@ FIVEDICEPAS = ../../../examples/fivedice.pas
 BUBBLESPAS = ../../../examples/bubbles.pas
 SFXDEMOPAS = ../../../examples/sfxdemo.pas
 TUNEDEMOPAS = ../../../examples/tunedemo.pas
+STEREODEMOPAS = ../../../examples/stereodemo.pas
 
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
@@ -142,6 +144,7 @@ TXTFILES += demolib2.petscii
 TXTFILES += bubbles.petscii
 TXTFILES += sfxdemo.petscii
 TXTFILES += tunedemo.petscii
+TXTFILES += stereodemo.petscii
 TXTFILES += sound.petscii
 
 TESTS := $(wildcard $(TESTSDIR)/*.pas)
@@ -179,6 +182,9 @@ sfxdemo.petscii: $(SFXDEMOPAS)
 
 tunedemo.petscii: $(TUNEDEMOPAS)
 	dos2unix < $(TUNEDEMOPAS) | petcat -w2 -text -o tunedemo.petscii
+
+stereodemo.petscii: $(STEREODEMOPAS)
+	dos2unix < $(STEREODEMOPAS) | petcat -w2 -text -o stereodemo.petscii
 
 $(BINDIR):
 	mkdir -p $@

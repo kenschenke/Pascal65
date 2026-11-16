@@ -31,6 +31,26 @@
          reported two or three times
     FIX: An enumeration value with the name of another identifier, such
          as a value of another enumeration, wasn't reported
+    NEW: Sound library: the 12 voices of the MEGA65's four SIDs, notes
+         that play for a number of frames without waiting, sweeps,
+         vibrato and pulse width effects, sequences that play a tune
+         under the program, and a callback when a voice finishes
+    NEW: sfxdemo.pas, tunedemo.pas and stereodemo.pas examples of the
+         Sound library on the compiler disk
+    NEW: A library object file can carry a relocation table (version 2),
+         so its code can hold any bytes
+    FIX: A Const block in a library's interface broke programs that used
+         the library
+    FIX: Arithmetic on a signed and an unsigned constant, such as 1234
+         and -500, could give an unsigned result
+    FIX: Arithmetic with a number in it, such as 4 * 12, warned of a loss
+         of precision when assigned to a Word, or of mixed signs when
+         compared with one
+    FIX: A large static program could crash when it ended
+    FIX: The raster and sprite collision callbacks left a byte on the CPU
+         stack each call and could upset the code they interrupted
+    FIX: A procedure called without parentheses just before End, Else or
+         Until, such as If a Then DoIt Else ..., was an error
 
 0.36-beta Nov 10 2026
     NEW: Compiler warning for possible loss of precision

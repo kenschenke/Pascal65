@@ -26,6 +26,11 @@ chip model, take a SID number. The others take a voice number.
     That's the MEGA65's default. The library doesn't change the audio
     mixer, so a program or the user can pan them differently.
 
+To place a sound on one side, play it on a voice of a SID on that side.
+To move it across, play it on a voice of each side and turn one SID's
+volume up as the other's goes down (*SetVolume*). `stereodemo.pas`, on
+the compiler disk, does both.
+
 A voice or SID number out of range is ignored: a procedure does nothing
 and a function returns 0.
 
@@ -158,38 +163,38 @@ program needs.
 
 ## Routines
 
-|Routine      |Purpose                                          |
-|-------------|-------------------------------------------------|
-|SetSidMode   |Makes a SID act like a 6581 or an 8580           |
-|SetVolume    |Sets a SID's volume, 0 to 15                     |
-|SetWaveform  |Sets a voice's waveform                          |
-|SetEnvelope  |Sets a voice's attack, decay, sustain and release|
-|SetFrequency |Sets a voice's frequency                         |
-|SetPulseWidth|Sets the width of a voice's pulse wave, 0 to 4095|
-|SetGate      |Starts or releases a voice's sound               |
-|SetRingMod   |Ring modulates a voice with the voice before it  |
-|SetSync      |Syncs a voice to the voice before it             |
-|SetFilter    |Sets a SID's filter cutoff, resonance and mode   |
-|FilterVoice  |Sends a voice through its SID's filter, or not   |
-|GetOsc3      |Reads the output of voice 3 of a SID             |
-|GetEnv3      |Reads the envelope of voice 3 of a SID           |
-|NoteFreq     |Returns the SID frequency of a note number       |
-|PlayNote     |Plays a note for a number of frames              |
-|PlayFreq     |Plays a SID frequency for a number of frames     |
-|IsPlaying    |Returns True while a voice plays a note or sequence|
-|StopVoice    |Stops a voice's note and starts its release      |
-|StopAll      |Stops every voice's note                         |
-|FrameRate    |Returns the frames a second, 50 or 60            |
-|Sweep        |Slides a voice's frequency to another            |
-|Vibrato      |Swings a voice's frequency up and down           |
-|PulseSweep   |Moves a voice's pulse width back and forth       |
-|FilterSweep  |Slides a SID's filter cutoff to another          |
-|GetFrequency |Returns the frequency a voice is playing         |
-|GetPulseWidth|Returns a voice's pulse width                    |
-|GetCutoff    |Returns a SID's filter cutoff                    |
-|PlaySequence |Plays a sequence of notes and commands on a voice|
-|SetSoundDoneCallback|Sets a procedure called when a voice finishes|
-|ClearSoundDoneCallback|Stops calling it                          |
+|Routine|Purpose|
+|-------|-------|
+|[SetSidMode](setsidmode.md)|Makes a SID act like a 6581 or an 8580|
+|[SetVolume](setvolume.md)|Sets a SID's volume, 0 to 15|
+|[SetWaveform](setwaveform.md)|Sets a voice's waveform|
+|[SetEnvelope](setenvelope.md)|Sets a voice's attack, decay, sustain and release|
+|[SetFrequency](setfrequency.md)|Sets a voice's frequency|
+|[SetPulseWidth](setpulsewidth.md)|Sets the width of a voice's pulse wave, 0 to 4095|
+|[SetGate](setgate.md)|Starts or releases a voice's sound|
+|[SetRingMod](setringmod.md)|Ring modulates a voice with the voice before it|
+|[SetSync](setsync.md)|Syncs a voice to the voice before it|
+|[SetFilter](setfilter.md)|Sets a SID's filter cutoff, resonance and mode|
+|[FilterVoice](filtervoice.md)|Sends a voice through its SID's filter, or not|
+|[GetOsc3](getosc3.md)|Reads the output of voice 3 of a SID|
+|[GetEnv3](getenv3.md)|Reads the envelope of voice 3 of a SID|
+|[NoteFreq](notefreq.md)|Returns the SID frequency of a note number|
+|[PlayNote](playnote.md)|Plays a note for a number of frames|
+|[PlayFreq](playfreq.md)|Plays a SID frequency for a number of frames|
+|[IsPlaying](isplaying.md)|Returns True while a voice plays a note or sequence|
+|[StopVoice](stopvoice.md)|Stops a voice's note and starts its release|
+|[StopAll](stopall.md)|Stops every voice's note|
+|[FrameRate](framerate.md)|Returns the frames a second, 50 or 60|
+|[Sweep](sweep.md)|Slides a voice's frequency to another|
+|[Vibrato](vibrato.md)|Swings a voice's frequency up and down|
+|[PulseSweep](pulsesweep.md)|Moves a voice's pulse width back and forth|
+|[FilterSweep](filtersweep.md)|Slides a SID's filter cutoff to another|
+|[GetFrequency](getfrequency.md)|Returns the frequency a voice is playing|
+|[GetPulseWidth](getpulsewidth.md)|Returns a voice's pulse width|
+|[GetCutoff](getcutoff.md)|Returns a SID's filter cutoff|
+|[PlaySequence](playsequence.md)|Plays a sequence of notes and commands on a voice|
+|[SetSoundDoneCallback](setsounddonecallback.md)|Sets a procedure called when a voice finishes|
+|[ClearSoundDoneCallback](clearsounddonecallback.md)|Stops calling the done callback|
 
 ## Example
 

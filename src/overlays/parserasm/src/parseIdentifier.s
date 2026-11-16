@@ -38,7 +38,15 @@ lnStr: .asciiz "ln"
     lda parserToken
     cmp #tcLParen
     beq L1
+    ; A name alone, followed by what can end a statement, is a call
+    ; with no arguments
     cmp #tcSemicolon
+    beq L1
+    cmp #tcEND
+    beq L1
+    cmp #tcELSE
+    beq L1
+    cmp #tcUNTIL
     bne L2
     ; procedure/function call
 L1: lda #STMT_EXPR

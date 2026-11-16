@@ -96,6 +96,36 @@ nav:
     - Notes: sound/notes.md
     - Effects: sound/effects.md
     - Sequences: sound/sequences.md
+    - ClearSoundDoneCallback: sound/clearsounddonecallback.md
+    - FilterSweep: sound/filtersweep.md
+    - FilterVoice: sound/filtervoice.md
+    - FrameRate: sound/framerate.md
+    - GetCutoff: sound/getcutoff.md
+    - GetEnv3: sound/getenv3.md
+    - GetFrequency: sound/getfrequency.md
+    - GetOsc3: sound/getosc3.md
+    - GetPulseWidth: sound/getpulsewidth.md
+    - IsPlaying: sound/isplaying.md
+    - NoteFreq: sound/notefreq.md
+    - PlayFreq: sound/playfreq.md
+    - PlayNote: sound/playnote.md
+    - PlaySequence: sound/playsequence.md
+    - PulseSweep: sound/pulsesweep.md
+    - SetEnvelope: sound/setenvelope.md
+    - SetFilter: sound/setfilter.md
+    - SetFrequency: sound/setfrequency.md
+    - SetGate: sound/setgate.md
+    - SetPulseWidth: sound/setpulsewidth.md
+    - SetRingMod: sound/setringmod.md
+    - SetSidMode: sound/setsidmode.md
+    - SetSoundDoneCallback: sound/setsounddonecallback.md
+    - SetSync: sound/setsync.md
+    - SetVolume: sound/setvolume.md
+    - SetWaveform: sound/setwaveform.md
+    - StopAll: sound/stopall.md
+    - StopVoice: sound/stopvoice.md
+    - Sweep: sound/sweep.md
+    - Vibrato: sound/vibrato.md
   - Sprites Library:
     - Introduction: sprites/intro.md
     - GetSpritePos: sprites/getspritepos.md

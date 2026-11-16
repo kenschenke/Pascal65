@@ -80,6 +80,7 @@ strFiveDice: .asciiz "fivedice"
 strBubbles: .asciiz "bubbles"
 strSfxDemo: .asciiz "sfxdemo"
 strTuneDemo: .asciiz "tunedemo"
+strStereoDemo: .asciiz "stereodemo"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
@@ -201,6 +202,8 @@ compileOnlyTests:
     .byte .lobyte(strSfxDemo), .hibyte(strSfxDemo)
     ; The Sound library's sequencer demo
     .byte .lobyte(strTuneDemo), .hibyte(strTuneDemo)
+    ; The Sound library's stereo demo
+    .byte .lobyte(strStereoDemo), .hibyte(strStereoDemo)
 .endif
     .byte $00, $00
 
