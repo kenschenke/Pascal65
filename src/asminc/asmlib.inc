@@ -109,3 +109,5 @@ scopeLookupCurrent = ASMBASE + 264
 setCompilerFilename = ASMBASE + 267
 setCompilerUnitFilename = ASMBASE + 270
 getCompilerFilename = ASMBASE + 273
+cloneEvalType = ASMBASE + 276
+freeEvalType = ASMBASE + 279

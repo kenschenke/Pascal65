@@ -27,7 +27,7 @@ LOC LBL xxxxx
 DEL
 POF IBS 1 IBS 0
 PSH VDW 15 1 1
-SET IBS 15 IBS 15
+SET IBS 15 IBS 16
 PUF IBS 2 LBL xxxxx
 PSH VDR 3 1 3
 CVI IBS 3 IBS 5
@@ -78,8 +78,9 @@ SET IBS 9 IBS 9
 // A call to a library routine. The routine reads its arguments as its
 // parameters' types, so an integer argument smaller than its parameter
 // is converted (CVI), which sign-extends a negative one. A string passed
-// by value is copied and freed after the call. Sin needs the runtime's
-// trig package.
+// by value is copied and freed after the call. UpCase's String result is
+// a string object (16), which the assignment frees. Sin needs the
+// runtime's trig package.
 
 Program Test;
 

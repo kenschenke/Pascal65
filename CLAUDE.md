@@ -240,6 +240,27 @@ only one, and otherwise the field is reported.
 The harness resolves as the compiler does: `initStandardRoutines` before
 `injectSystemUnit`, and the program's scope is freed with `freeSymtab`.
 
+A symbol for a declaration (`resolveDeclarationName`), a parameter
+(`paramListResolve`) or a unit's interface (`injectUnit`) shares the type it
+was made from and has `SYMBOL_FLAG_SHAREDTYPE`, so `freeSymbol` leaves the
+type alone. Declarations outlive the symbol tables (`astFreeBodies` frees
+only statements and values, and units are freed last). A change to a
+declaration's type is a change to its symbol's. When `resolveDeclared`
+replaces a declaration's type it moves the symbol to the new one, unless
+the old type's base is an enumeration: then the symbol keeps the old type
+and owns it.
+
+An expression's `evalType` is a shallow copy (`cloneEvalType` in asmlib):
+it owns its name and a subtype with `TYPE_FLAG_ISTEMP`, and shares the
+rest. Free it with `freeEvalType`, not `freeType`.
+
+`getTypeSize` doesn't keep ptr1: a record's size leaves it on the last
+field's type. A write through ptr1 after it once gave a record's last field
+the record's size.
+
+A symbol table node (`TREENODE`) is only as long as its key, which is its
+last member. `compareKeys` moves ptr1 to the key and back.
+
 `make TARGET=mega65 coverage` in `src/apps/resolvertest` runs the tests
 against a copy of the resolver with probes in it (editortest's
 `cov/mkcov.py`) and lists the lines that never ran in
@@ -490,6 +511,14 @@ debugging.
 compiler runs from must have them (`RTWRITE`), and dynamic programs need
 `runtimeN` on the disk they run from.
 
+Code generation keeps the code it writes short by calling the runtime for
+anything it would repeat (`callframe.s`): a call's stack frame
+(`pushFrame`, `activateFrame`, `popFrameProc`/`Func`), a variable's
+address (`pushVarAddr`) and an assignment (`assignVar`, `assignStrVar`).
+`pushVarInline` takes its level, offset and type from the three bytes
+after the `JSR` and returns past them. A new jump table entry grows
+`RT_JMPTBL_SIZE` and needs a new `RT_ABI_VERSION`.
+
 A test without a file variable can't write `testfailed`. The `rtpkg*` tests
 end with a runtime error instead (division by zero), which stops the chain.
 
@@ -501,7 +530,18 @@ of `compilertestasm` builds every program static (`FORCESTATIC`, from
 `STATICSETS` in its Makefile); sets 1 and 3 are dynamic. `rtdyn` runs with
 the dynamic runtime. After set 3 compiles, `rtdyntest.sh` checks that
 `rtdyna` and `rtdynb` (with and without `$DynamicRuntime`) are the same PRG
-and runs `rtdynb` with a missing, a bad and a too-low `runtimeN`.
+and runs `rtdynb` with a missing, a bad and a too-low `runtimeN`. It also
+runs `rterrexit`, which ends with a runtime error: `exit` (runtime) puts the
+KERNAL's IRQ handler back and jumps to the program's exit handler, the
+start of the libraries' cleanup, so the program must print the error and
+return to BASIC. The chained tests can't check that: an error stops the
+chain.
+
+A function's String result is a string object (the type checker sets
+`evalTypeKind` of a call returning String to `TYPE_STRING_OBJ`), so the
+assignment, the parameter copy (`SCV`) or the concatenation that uses it
+frees it. `strleak` calls such functions thousands of times and runs out
+of memory if one leaks.
 
 The header switches the BASIC ROM out of $A000-$BFFF. A large program's
 cleanup is under it, so the cleanup switches it back in from a stub it
@@ -515,7 +555,8 @@ callback, Sprites' collision callback, Sound's done callback) brackets
 the call with `rtIrqCallBegin` and `rtIrqCallEnd` (`irqcall.s` in the
 runtime). They save the runtime's zero page and the runtime variables an
 expression uses for a moment, which `irqcall.s` holds in one block (a new
-one of those goes there), move `sp` down, and set `stackP` and
+one of those goes there), and the inputs of the hardware multiplier and
+divider ($D770-$D777), move `sp` down, and set `stackP` and
 `currentNestingLevel` to the program's frame (kept by `rtStackInit`) and
 level 1: the interrupted code may be between setting one and the other.
 After `rtLibCallRoutine` the library pops the parameters and calls

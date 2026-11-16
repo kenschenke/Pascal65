@@ -50,20 +50,20 @@ treeStackItems: .res 1
     ldq ptr3
     jsr rtPushQ
 
-    ; Allocate a new tree node
-    lda #.sizeof(TREENODE)
+    ; Allocate a new tree node, with only as much room for the key as the
+    ; name needs. heapAlloc zeros it.
+    ldz #0
+:   nop
+    lda (ptr2),z
+    beq :+
+    inz
+    bne :-
+:   tza
+    clc
+    adc #TREENODE::key+1
     ldx #0
     jsr heapAlloc
     stq ptr4
-
-    ; Zero out the new node
-    lda #0
-    ldz #0
-:   nop
-    sta (ptr4),z
-    inz
-    cpz #.sizeof(TREENODE)
-    bne :-
 
     ; Restore ptr1, ptr2, and ptr3
     jsr rtPopQ
@@ -74,6 +74,7 @@ treeStackItems: .res 1
     stq ptr1
 
     ; Copy the name of the node
+    jsr ptr4ToKey
     ldz #0
 :   nop
     lda (ptr2),z
@@ -82,9 +83,10 @@ treeStackItems: .res 1
     sta (ptr4),z
     inz
     bne :-
+:   jsr ptr4FromKey
 
     ; Copy the data pointer
-:   ldx #0
+    ldx #0
     ldz #TREENODE::data
 :   lda ptr3,x
     nop
@@ -114,6 +116,7 @@ treeStackItems: .res 1
 ;
 ; Note: ptr1 is modified
 .proc saveInTree
+    jsr ptr4ToKey       ; compareKeys takes the new node's key in ptr4
 L1: ldq ptr1
     jsr isQZero
     beq L5
@@ -144,7 +147,8 @@ L4: neg
     stq ptr1
     bra L1
 
-L5: lda tmp1
+L5: jsr ptr4FromKey     ; the new node again
+    lda tmp1
     bne L6          ; Branch if appending to the left side of the tree
     ldz #TREENODE::right
     bra L7
@@ -163,12 +167,13 @@ L7: ldx #0
     rts
 .endproc
 
-; This routine compares the keys for two nodes
-; and sets CPU flags to indicate sort order.
+; This routine compares the key of the node in ptr1 with the key string
+; in ptr4 and sets CPU flags to indicate sort order.
 ; If the N flag is set, the key in ptr1 < ptr4.
 ; If the Z flag is set, key in ptr1 == ptr4.
 ; If the Z flag is cleared, the key in ptr1 > ptr4.
 .proc compareKeys
+    jsr ptr1ToKey
     ldz #0
 L1: nop
     lda (ptr1),z
@@ -182,7 +187,51 @@ L2: nop
     lda (ptr4),z
     beq L3
     lda #$80            ; Set the N flag
-L3: rts
+L3: php
+    jsr ptr1FromKey
+    plp
+    rts
+.endproc
+
+; These routines move ptr1 or ptr4 from a tree node to its key and back.
+.proc ptr1ToKey
+    clc
+    lda ptr1
+    adc #TREENODE::key
+    sta ptr1
+    bcc :+
+    inw ptr1+1
+:   rts
+.endproc
+
+.proc ptr1FromKey
+    sec
+    lda ptr1
+    sbc #TREENODE::key
+    sta ptr1
+    bcs :+
+    dew ptr1+1
+:   rts
+.endproc
+
+.proc ptr4ToKey
+    clc
+    lda ptr4
+    adc #TREENODE::key
+    sta ptr4
+    bcc :+
+    inw ptr4+1
+:   rts
+.endproc
+
+.proc ptr4FromKey
+    sec
+    lda ptr4
+    sbc #TREENODE::key
+    sta ptr4
+    bcs :+
+    dew ptr4+1
+:   rts
 .endproc
 
 ; This routine frees a tree 

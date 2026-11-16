@@ -96,19 +96,19 @@ dwordOper:
     rts
 
 vdrOper:
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+2     ; level
-    genTwoAbsolute OC_LDX_IMMEDIATE, operand1+3     ; offset
-    genTwoAbsolute OC_LDY_IMMEDIATE, operand1+1     ; type
-    genThree OC_JSR, RT_PUSHVAR
-    rts
+    ; The level, offset and type follow the JSR
+    genThree OC_JSR, RT_PUSHVARINLINE
+    lda operand1+2                  ; level
+    jsr genOneInstruction
+    lda operand1+3                  ; offset
+    jsr genOneInstruction
+    lda operand1+1                  ; type
+    jmp genOneInstruction
 
 vdwOper:
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+2     ; level
     genTwoAbsolute OC_LDX_IMMEDIATE, operand1+3     ; offset
-    genThree OC_JSR, RT_CALCSTACKOFFSET
-    genTwoImmediate OC_LDA_ZEROPAGE, ZP_PTR1L
-    genTwoImmediate OC_LDX_ZEROPAGE, ZP_PTR1H
-    genThree OC_JSR, RT_PUSHADDRSTACK
+    genThree OC_JSR, RT_PUSHVARADDR
     rts
 
 vvrOper:

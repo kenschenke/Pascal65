@@ -29,6 +29,7 @@
 .import astFreeBodies
 .import rtSetCompilerFilename, rtSetCompilerUnitFilename
 .import rtGetCompilerFilename
+.import cloneEvalType, freeEvalType
 
 .segment "JMPTBL"
 
@@ -124,3 +125,5 @@ jmp scopeLookupCurrent
 jmp rtSetCompilerFilename
 jmp rtSetCompilerUnitFilename
 jmp rtGetCompilerFilename
+jmp cloneEvalType
+jmp freeEvalType

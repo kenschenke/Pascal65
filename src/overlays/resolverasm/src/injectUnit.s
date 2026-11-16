@@ -91,8 +91,9 @@ L2: stq ptr1
     neg
     nop
     lda (ptr1),z
-    jsr typeClone
     stq ptr3
+    ; The new symbol shares the interface symbol's type. The unit is
+    ; freed after every scope that uses it (freeUnits).
     lda #SYMBOL_GLOBAL
     jsr pushA               ; kind
     ldq ptr3
@@ -100,6 +101,10 @@ L2: stq ptr1
     jsr symbolCreate
     stq ptr1
     stq newSym
+    ldz #symbol::flags
+    lda #SYMBOL_FLAG_SHAREDTYPE
+    nop
+    sta (ptr1),z
     ldq usesDecl
     stq ptr2
     ldq interfaceSym

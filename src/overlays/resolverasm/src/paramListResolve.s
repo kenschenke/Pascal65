@@ -66,7 +66,8 @@ L1: ldq paramPtr
     ldq paramPtr
     stq ptr1
 
-    ; Create a symbol structure
+    ; Create a symbol structure. It shares the parameter's type, which
+    ; the routine's type owns.
     lda #SYMBOL_LOCAL
     jsr pushA               ; symbol type
     ldz #param_list::type
@@ -74,10 +75,13 @@ L1: ldq paramPtr
     neg
     nop
     lda (ptr1),z
-    jsr typeClone
     jsr pushQ               ; type
     jsr symbolCreate
     stq ptr3                ; new symbol in ptr3
+    ldz #symbol::flags
+    lda #SYMBOL_FLAG_SHAREDTYPE
+    nop
+    sta (ptr3),z
 
     ; Set the symbol's offset
     ldz #symbol::offset

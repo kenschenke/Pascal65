@@ -51,6 +51,24 @@
          stack each call and could upset the code they interrupted
     FIX: A procedure called without parentheses just before End, Else or
          Until, such as If a Then DoIt Else ..., was an error
+    FIX: Reduced the compiler's memory use, so larger programs compile
+    FIX: Compiled programs are smaller: a routine call, reading a variable
+         and an assignment take fewer bytes. The runtime files are now
+         core3, runtime3 and so on
+    FIX: A String returned by a function, such as UpCase or Trim, was
+         never freed, so a program that called one in a loop ran out of
+         memory
+    FIX: A program stopped by a runtime error, such as running out of
+         memory, crashed or hung instead of returning to BASIC, and its
+         libraries didn't clean up (sound kept playing)
+    FIX: A program could corrupt its memory instead of reporting that it
+         ran out of memory
+    FIX: A raster, sprite collision or sound callback that multiplied or
+         divided could change the result of the program's own
+         multiplication or division
+    FIX: An array of records, such as Array[1..3] Of Point, or a record
+         holding records, set up its records at the wrong places in
+         memory, the last one past the end of the variable
 
 0.36-beta Nov 10 2026
     NEW: Compiler warning for possible loss of precision

@@ -661,7 +661,12 @@ LONG_MAX = $7fffffff
     decl .dword
     offset .word
     level .word
+    flags .byte             ; SYMBOL_FLAG_*
 .endstruct
+
+; The symbol's type belongs to something else, such as its declaration,
+; which outlives the symbol. freeSymbol doesn't free it.
+SYMBOL_FLAG_SHAREDTYPE = %00000001
 
 .struct unit
     name .res 13

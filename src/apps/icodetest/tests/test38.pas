@@ -78,16 +78,16 @@ DAT IBU 2 LBL xxxxx
    heap offset: 6
    rec size: 4
 DAT IBU 2 LBL xxxxx
-   heap offset: 12
+   heap offset: 10
    rec size: 4
 DAT IBU 2 LBL xxxxx
-   heap offset: 18
+   heap offset: 14
    rec size: 4
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 4
 DAT IBU 2 LBL xxxxx
-   heap offset: 10
+   heap offset: 8
    rec size: 4
 DAT IBU 2 LBL xxxxx
    heap offset: 0

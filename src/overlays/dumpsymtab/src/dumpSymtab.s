@@ -57,7 +57,7 @@ kinds: .byte .LOBYTE(strSYMBOL_LOCAL), .HIBYTE(strSYMBOL_LOCAL)
 
     ; Print the name
     jsr reloadPtr
-    ldz #0
+    ldz #TREENODE::key
     ldx #0
 :   nop
     lda (ptr1),z

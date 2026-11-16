@@ -16,7 +16,7 @@ decl test
     k SYMBOL-GLOBAL L:1 O:10 TYPE-SUBRANGE S:1
     lo SYMBOL-GLOBAL L:1 O:0 TYPE-BYTE S:1
     m SYMBOL-GLOBAL L:1 O:11 TYPE-SUBRANGE S:2
-    red SYMBOL-LOCAL L:0 O:0 TYPE-ENUMERATION-VALUE S:2
+    red SYMBOL-LOCAL L:0 O:0 TYPE-ENUMERATION-VALUE S:0
   decl lo L:1 O:0 TYPE-BYTE S:1
   decl hi L:1 O:1 TYPE-WORD S:2
   decl ch L:1 O:2 TYPE-CHARACTER S:1
@@ -34,7 +34,8 @@ decl test
 
 // A subrange's limits can be integers of different types, constants or
 // enumeration values. Its size is the size of the integer type that holds
-// both limits.
+// both limits. An enumeration value's type has no size (S:0), as for
+// Green and Blue: sizing m must not write into Red's.
 
 Program Test;
 

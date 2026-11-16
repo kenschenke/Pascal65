@@ -17,6 +17,7 @@
 
 .import savePtrs, restorePtrs, storePtr, nameClone, symbolClone, typeClone
 .import heapAlloc, isQZero, rtPushQ, rtPopQ
+.import cloneEvalType
 
 .proc exprClone
     jsr isQZero
@@ -182,7 +183,7 @@ CloneCommon:
     neg
     nop
     lda (ptr1),z
-    jsr typeClone
+    jsr cloneEvalType
     stq ptr3
     jsr restorePtrs
     ldz #expr::evalType

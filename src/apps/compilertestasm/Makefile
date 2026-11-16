@@ -57,7 +57,7 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 comma := ,
 SET3PAS = libtest2 soundtest soundfx soundseq irqcb soundcalls dynarraya \
 	dynarrayb dynarrayc \
-	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb
+	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb rterrexit
 ifeq ($(filter $(TESTSET),1 2),)
 SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
 	-write bubbles.petscii bubbles.pas$(comma)seq \
@@ -303,6 +303,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/stdroutines.pas stdroutines.pas,seq \
 	-write $(PETSCIIDIR)/incdec.pas incdec.pas,seq \
 	-write $(PETSCIIDIR)/strroutines.pas strroutines.pas,seq \
+	-write $(PETSCIIDIR)/strleak.pas strleak.pas,seq \
 	-write $(PETSCIIDIR)/writewidth.pas writewidth.pas,seq \
 	-write $(PETSCIIDIR)/strtests.pas strtests.pas,seq \
 	-write $(PETSCIIDIR)/recarray.pas recarray.pas,seq \

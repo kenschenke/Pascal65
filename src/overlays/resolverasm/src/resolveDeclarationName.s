@@ -135,8 +135,8 @@ L2: cmp #TYPE_PROGRAM
     bne L3
     rts             ; Nothing to do
 
+    ; The symbol shares the declaration's type, which outlives it
 L3: jsr getTypePtr
-    jsr typeClone
     stq ptr2            ; decl type in ptr2
     ldz #kindOffset
     nop
@@ -147,6 +147,10 @@ L3: jsr getTypePtr
     jsr symbolCreate
     stq ptr2            ; symbol in ptr2
     stq nodePtr
+    ldz #symbol::flags
+    lda #SYMBOL_FLAG_SHAREDTYPE
+    nop
+    sta (ptr2),z
     ; Put new symbol in decl::node
     ldz #declOffset
     neg

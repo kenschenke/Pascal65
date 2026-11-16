@@ -80,9 +80,12 @@
 
 :   cmp #IC_POF
     bne :+
-    ; Restore the nesting level
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genThree OC_JSR, RT_LIBSTACKCLEANUP
+    ; Remove the stack frame, leaving a function's value
+    lda operand1+1
+    beq PP
+    genThree OC_JSR, RT_POPFRAMEFUNC
+    rts
+PP: genThree OC_JSR, RT_POPFRAMEPROC
     rts
 
 :   cmp #IC_PUF
@@ -227,13 +230,10 @@ L2: genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
 
     genTwoImmediate OC_LDX_IMMEDIATE, 0
     genTwoAbsolute OC_LDY_IMMEDIATE, operand1+1
-    genThree OC_JSR, RT_PUSHSTACKFRAMEHEADER
 
-    ; Push the stack frame pointer onto the CPU stack.
-    ; This is popped back off by the ASF and JRP instructions.
-    genOne OC_PHA
-    genOne OC_TXA
-    genOne OC_PHA
+    ; This leaves the stack frame pointer on the CPU stack. It is
+    ; popped back off by the ASF and JRP instructions.
+    genThree OC_JSR, RT_PUSHFRAME
     rts
 .endproc
 
@@ -272,27 +272,12 @@ L1: genTwoAbsolute OC_LDX_IMMEDIATE, operand2+1
     cmp #TYPE_STRING_VAR
     beq :+
 
-    genThree OC_JSR, RT_POPEAX      ; pop the variable info off the stack
-    genTwoImmediate OC_STA_ZEROPAGE, ZP_PTR1L
-    genTwoImmediate OC_STX_ZEROPAGE, ZP_PTR1H
     genTwoAbsolute OC_LDX_IMMEDIATE, operand1+1
     genTwoAbsolute OC_LDA_IMMEDIATE, operand2+1
-    genThree OC_JSR, RT_ASSIGN
+    genThree OC_JSR, RT_ASSIGNVAR
     rts
 
-:   genThree OC_JSR, RT_POPEAX      ; pop the variable info off the stack
-    genTwoImmediate OC_STA_ZEROPAGE, ZP_PTR1L
-    genTwoImmediate OC_STX_ZEROPAGE, ZP_PTR1H
-    genThree OC_JSR, RT_POPEAX      ; pop the rvalue off the stack
-    genTwoImmediate OC_STA_ZEROPAGE, ZP_TMP1
-    genTwoImmediate OC_STX_ZEROPAGE, ZP_TMP2
-    genTwoAbsolute OC_LDA_IMMEDIATE, operand2+1
-    genThree OC_JSR, RT_PUSHAX      ; push the rvalue type onto the stack
-    genTwoImmediate OC_LDA_ZEROPAGE, ZP_PTR1L
-    genTwoImmediate OC_LDX_ZEROPAGE, ZP_PTR1H
-    genThree OC_JSR, RT_PUSHAX      ; push the lvalue address onto the stack
-    genTwoImmediate OC_LDA_ZEROPAGE, ZP_TMP1
-    genTwoImmediate OC_LDX_ZEROPAGE, ZP_TMP2
-    genThree OC_JSR, RT_ASSIGNSTRING
+:   genTwoAbsolute OC_LDA_IMMEDIATE, operand2+1
+    genThree OC_JSR, RT_ASSIGNSTRVAR
     rts
 .endproc

@@ -49,6 +49,13 @@ ZP_SAVE_SIZE = inputBufUsed + 1 - sp
 ; pointer
 CB_STACK_GAP = 32
 
+; The inputs of the MEGA65's hardware multiplier and divider. The
+; runtime's arithmetic loads them, then reads the result, and a callback
+; that does arithmetic in between would change it. The results follow
+; from the inputs, so only the inputs are saved.
+MATH_IN = $d770
+MATH_IN_SIZE = 8
+
 .bss
 
 stateStart:
@@ -87,6 +94,7 @@ STATE_SIZE = stateEnd - stateStart
 programFrame: .res 2            ; stackP of the program (rtStackInit)
 stateSave: .res STATE_SIZE
 zpSave: .res ZP_SAVE_SIZE
+mathSave: .res MATH_IN_SIZE
 
 .assert STATE_SIZE <= 128, error, "runtime state is over 128 bytes"
 .assert ZP_SAVE_SIZE <= 128, error, "zero page save is over 128 bytes"
@@ -94,6 +102,11 @@ zpSave: .res ZP_SAVE_SIZE
 .code
 
 .proc irqCallBegin
+    ldx #MATH_IN_SIZE-1
+:   lda MATH_IN,x
+    sta mathSave,x
+    dex
+    bpl :-
     ldx #ZP_SAVE_SIZE-1
 :   lda ZP_SAVE_START,x
     sta zpSave,x
@@ -122,6 +135,11 @@ zpSave: .res ZP_SAVE_SIZE
 .endproc
 
 .proc irqCallEnd
+    ldx #MATH_IN_SIZE-1
+:   lda mathSave,x
+    sta MATH_IN,x
+    dex
+    bpl :-
     ldx #STATE_SIZE-1
 :   lda stateSave,x
     sta stateStart,x

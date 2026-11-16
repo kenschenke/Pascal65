@@ -19,7 +19,7 @@
 .export prgCleanup
 
 .import genOneInstruction, genTwoInstruction, incCodeOffset
-.import tagBSS_ZPBACKUP, tagBSS_EXITHANDLER, chainPrgLength, writeChainCode
+.import tagBSS_ZPBACKUP, chainPrgLength, writeChainCode
 
 .data
 
@@ -68,10 +68,6 @@ PRG_EXIT_LENGTH = * - prgExitData
 .code
 
 .proc prgCleanup
-    lda #<tagBSS_EXITHANDLER
-    ldx #>tagBSS_EXITHANDLER
-    jsr linkAddressSet
-
     lda #<tagBSS_ZPBACKUP
     ldx #>tagBSS_ZPBACKUP
     ldy #LINKADDR_BOTH

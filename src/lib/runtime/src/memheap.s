@@ -345,7 +345,15 @@ L3: lda tmp3
     lda tmp2
     sta intOp2 + 1
     jsr addInt16
-    lda ptr4
+    ; The new MAT entry goes at ptr4 and a new terminating entry at
+    ; ptr4 - 4, so the block must end at or below ptr4 - 4.
+    lda intOp1
+    clc
+    adc #4
+    sta intOp1
+    bcc :+
+    inc intOp1 + 1
+:   lda ptr4
     sta intOp32
     lda ptr4 + 1
     sta intOp32 + 1

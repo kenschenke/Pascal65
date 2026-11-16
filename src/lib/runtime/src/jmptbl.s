@@ -17,6 +17,8 @@
 .import popToIntOp2, pushFromIntOp1, pushRealStack, storeRealStack
 .import popToReal, pushByteStack
 .import pushStackFrameHeader, returnFromRoutine
+.import pushFrame, activateFrame, popFrameProc, popFrameFunc, pushVarAddr
+.import pushVarInline, assignVar, assignStrVar
 .import popToIntOp1And2
 .import storeInt32Stack, pushFromIntOp1And2, getKey, clearKeyBuf
 
@@ -185,3 +187,11 @@ jmp setArrayLength       ; BASE + 336
 jmp setStringInput       ; BASE + 339
 jmp irqCallBegin         ; BASE + 342
 jmp irqCallEnd           ; BASE + 345
+jmp pushFrame            ; BASE + 348
+jmp activateFrame        ; BASE + 351
+jmp popFrameProc         ; BASE + 354
+jmp popFrameFunc         ; BASE + 357
+jmp pushVarAddr          ; BASE + 360
+jmp pushVarInline        ; BASE + 363
+jmp assignVar            ; BASE + 366
+jmp assignStrVar         ; BASE + 369

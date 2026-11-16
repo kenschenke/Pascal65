@@ -14,6 +14,8 @@
 
 .export exit
 
+.import irqCleanup
+
 exiting: .asciiz "exiting."
 
 .proc exit
@@ -30,6 +32,9 @@ exiting: .asciiz "exiting."
     ; restore the stack pointer
 :   ldx savedStackPtr
     txs
+    ; Put the KERNAL's IRQ handler back. The program's cleanup skips the
+    ; libraries', which do it.
+    jsr irqCleanup
     ; call the exit handler
     jmp (exitHandler)
 .endproc

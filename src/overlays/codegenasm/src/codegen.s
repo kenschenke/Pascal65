@@ -23,6 +23,7 @@
 .import initStringLiterals, writeStringLiterals, freeStringLiterals
 .import writeRuntimeBss, cleanupLibraries, checkCodeSize
 .import initDataSegment, writeDataSegment, freeDataSegment
+.import tagBSS_EXITHANDLER
 
 .data
 
@@ -114,7 +115,11 @@ astRoot: .res 4
 
     ; User code is written.
 
-    ; Clean up the libraries
+    ; Clean up the libraries. A runtime error (exit in the runtime) comes
+    ; here too, so the libraries clean up after it.
+    lda #<tagBSS_EXITHANDLER
+    ldx #>tagBSS_EXITHANDLER
+    jsr linkAddressSet
     ldq astRoot
     jsr cleanupLibraries
 

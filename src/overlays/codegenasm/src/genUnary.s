@@ -186,14 +186,8 @@ label: .res 16
 .endproc
 
 .proc asfOper
-    genOne OC_PLA
-    genTwoImmediate OC_STA_ZEROPAGE, ZP_STACKFRAMEH
-    genOne OC_PLA
-    genTwoImmediate OC_STA_ZEROPAGE, ZP_STACKFRAMEL
-    genTwoImmediate OC_LDA_ZEROPAGE, ZP_NESTINGLEVEL
-    genOne OC_PHA
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+1
-    genTwoImmediate OC_STA_ZEROPAGE, ZP_NESTINGLEVEL
+    genThree OC_JSR, RT_ACTIVATEFRAME
     rts
 .endproc
 
@@ -288,12 +282,9 @@ label: .res 16
 
     genTwoImmediate OC_LDX_IMMEDIATE, 0
     genTwoImmediate OC_LDY_ZEROPAGE, ZP_SREGL
-    genThree OC_JSR, RT_PUSHSTACKFRAMEHEADER
-    ; Push the stack frame pointer onto the CPU stack.
-    ; This is popped back off by the ASF and JRP instructions.
-    genOne OC_PHA
-    genOne OC_TXA
-    genOne OC_PHA
+    ; This leaves the stack frame pointer on the CPU stack. It is
+    ; popped back off by the ASF and JRP instructions.
+    genThree OC_JSR, RT_PUSHFRAME
     rts
 .endproc
 

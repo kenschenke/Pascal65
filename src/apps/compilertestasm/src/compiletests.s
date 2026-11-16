@@ -31,6 +31,7 @@ strLoops: .asciiz "loops"
 strStdRoutines: .asciiz "stdroutines"
 strIncDec: .asciiz "incdec"
 strStrRoutines: .asciiz "strroutines"
+strStrLeak: .asciiz "strleak"
 strWriteWidth: .asciiz "writewidth"
 strStrTests: .asciiz "strtests"
 strRecArray: .asciiz "recarray"
@@ -76,6 +77,7 @@ strRtPkgC: .asciiz "rtpkgc"
 strRtDyn: .asciiz "rtdyn"
 strRtDynA: .asciiz "rtdyna"
 strRtDynB: .asciiz "rtdynb"
+strRtErrExit: .asciiz "rterrexit"
 strFiveDice: .asciiz "fivedice"
 strBubbles: .asciiz "bubbles"
 strSfxDemo: .asciiz "sfxdemo"
@@ -107,6 +109,7 @@ tests:
     .byte .lobyte(strStdRoutines), .hibyte(strStdRoutines)
     .byte .lobyte(strIncDec), .hibyte(strIncDec)
     .byte .lobyte(strStrRoutines), .hibyte(strStrRoutines)
+    .byte .lobyte(strStrLeak), .hibyte(strStrLeak)
     .byte .lobyte(strWriteWidth), .hibyte(strWriteWidth)
     .byte .lobyte(strStrTests), .hibyte(strStrTests)
     .byte .lobyte(strRecArray), .hibyte(strRecArray)
@@ -196,6 +199,8 @@ compileOnlyTests:
     ; Makefile compares them (see testset).
     .byte .lobyte(strRtDynA), .hibyte(strRtDynA)
     .byte .lobyte(strRtDynB), .hibyte(strRtDynB)
+    ; Ends with a runtime error. rtdyntest.sh runs it.
+    .byte .lobyte(strRtErrExit), .hibyte(strRtErrExit)
     ; Calls every routine in the Sound library
     .byte .lobyte(strSoundCalls), .hibyte(strSoundCalls)
     ; The Sound library's effects demo

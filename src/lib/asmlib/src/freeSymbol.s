@@ -43,12 +43,17 @@ symPtr: .res 4
     stq ptr1
     jsr rtPushQ
 
-    ; Type
+    ; Type, unless it belongs to something else
+    ldz #symbol::flags
+    nop
+    lda (ptr1),z
+    and #SYMBOL_FLAG_SHAREDTYPE
+    bne :+
     ldz #symbol::type
     jsr loadPtr
     jsr freeType
 
-    jsr rtPopQ
+:   jsr rtPopQ
     jsr heapFree
     rts
 .endproc

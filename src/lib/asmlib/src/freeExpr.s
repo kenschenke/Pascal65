@@ -16,6 +16,7 @@
 .export freeExpr
 
 .import freeSymbol, freeType, loadPtr, rtPopQ, rtPushQ, heapFree, isQZero, peekQ
+.import freeEvalType
 
 .proc freeExpr
     stq ptr1
@@ -76,7 +77,7 @@ L1: jsr peekQ
     stq ptr1
     ldz #expr::evalType
     jsr loadPtr
-    jsr freeType
+    jsr freeEvalType
 
     ; Keep the right, free this expression, then free the right. That
     ; isn't a recursive call: array literal elements and routine arguments

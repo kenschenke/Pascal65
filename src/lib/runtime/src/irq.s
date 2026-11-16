@@ -109,6 +109,13 @@ irqChain: .word 0
 ; This is called during program cleanup and restores the KERNAL's IRQ
 ; cleanup, originally read from $314/$315.
 .proc irqCleanup
+    ; Once is enough: a second call would put $0000 in the vector. The
+    ; libraries' cleanup and exit (after a runtime error) both call it.
+    lda irqKERNAL
+    ora irqKERNAL+1
+    bne :+
+    rts
+:
     sei                     ; set interrupt bit, make the CPU ignore interrupt requests
     lda #%01111111          ; switch off interrupt signals from CIA-1
     sta CIA1_ICR

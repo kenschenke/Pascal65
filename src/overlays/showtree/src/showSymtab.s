@@ -40,7 +40,15 @@ prompt: .byte "L:left  R:right  S:symbol  ", $5f, ":back", $0d, $0d, $0
     lda #<keyLabel
     ldx #>keyLabel
     jsr printz
+    lda #TREENODE::key
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
     ldq ptr2
+    clc
+    adcq intOp32
     jsr printzLong
     lda #13
     jsr CHROUT

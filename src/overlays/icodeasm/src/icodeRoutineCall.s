@@ -370,13 +370,25 @@ DN: jsr popA                ; param type kind
     lda (ptr1),z
     jsr icodeExprRead
 
+    ; The argument's type, unless its expression is a string object (a
+    ; function's String result), which SCV frees after copying it
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
-    ldz #expr::evalTypeKind
+    ldz #expr::left
+    neg
+    neg
     nop
     lda (ptr1),z
-    jsr icodeOper1Short
+    stq ptr2
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_STRING_OBJ
+    beq :+
+    nop
+    lda (ptr1),z
+:   jsr icodeOper1Short
     lda #IC_SCV
     jsr icodeWriteInstruction
 

@@ -12,7 +12,18 @@
 Program Hangman;
 (* $StaticRuntime *)
 
-Uses Screen;
+Uses Screen, Sound;
+
+// Sounds play on SID 1 (the right channel) and the same voice of SID 3
+// (the left), so they come from both speakers. The music's melody and
+// bass are on voices 1 and 2, and the effects on voice 3. The helpers
+// below make each call on both voices.
+//
+// An array's initial values must be literals, so the sequences are
+// numbers. A note (0-95, octave * 12 + note) is followed by its length
+// in ticks. The commands are 96 SeqRest, 97 SeqWave, 98 SeqEnvelope,
+// 99 SeqTempo, 100 SeqPulse, 101 SeqLoop and 102 SeqEnd. A tick here is
+// 3 frames, a sixteenth note, so 4 is a quarter note.
 
 Const
     // The word list grows by this many elements at a time
@@ -33,6 +44,8 @@ Const
     ScoreCol = 3;
     PromptRow = 14;
     MessageRow = 16;
+    MusicCol = 67;
+    MusicRow = 25;
     // Spaces that clear the prompt or message, to the right edge
     LineWidth = 54;
 
@@ -71,6 +84,18 @@ Const
     ColorPrompt = 7;        // yellow
     ColorScore = 3;         // cyan
 
+    // Voices on SID 1 (right) and the same voices on SID 3 (left)
+    MelodyVoice = 1;
+    BassVoice = 2;
+    FxVoice = 3;
+    MelodyLeft = 7;
+    BassLeft = 8;
+    FxLeft = 9;
+    VicCtrl1 = $D011;       // Bit 7 is bit 8 of the raster line
+    // The lost round's "wah": a swing of 1.5% each way, 3 frames a swing
+    LoseVibratoDepth = 15;
+    LoseVibratoFrames = 3;
+
 Type
     GuessResult = (GuessCorrect, GuessWrong, GuessRepeat, GuessIgnored);
 
@@ -90,6 +115,58 @@ Var
     Won, Lost : Integer;
     // A key pressed to go on, whatever it is
     AnyKey : Char;
+
+    // True while the tune plays during a round. The 1 key changes it.
+    MusicOn : Boolean;
+    // True while the coin's second note waits for the first to end
+    CoinWaiting : Boolean;
+
+    // The round's tune, in A minor. A soft pulse wave, eight bars of
+    // 16 ticks, then it loops.
+    TuneMelody : Array[1..75] Of Byte = (
+        99, 3, 97, 64, 100, 0, 8, 98, 8, 86,
+        57, 4, 60, 4, 64, 4, 60, 4,             // A4 C5 E5 C5
+        62, 4, 60, 2, 59, 2, 57, 8,             // D5 C5 B4 A4
+        55, 4, 59, 4, 62, 4, 59, 4,             // G4 B4 D5 B4
+        60, 4, 59, 2, 57, 2, 55, 8,             // C5 B4 A4 G4
+        53, 4, 57, 4, 60, 4, 57, 4,             // F4 A4 C5 A4
+        52, 4, 55, 4, 59, 4, 64, 4,             // E4 G4 B4 E5
+        62, 2, 60, 2, 59, 2, 60, 2, 59, 4, 56, 4, // D5 C5 B4 C5 B4 G#4
+        57, 12, 96, 4,                          // A4, rest
+        101);
+    // A triangle wave, a root and a fifth in each bar
+    TuneBass : Array[1..40] Of Byte = (
+        99, 3, 97, 16, 98, 6, 132,
+        33, 8, 40, 8,                           // A2 E3
+        38, 8, 33, 8,                           // D3 A2
+        31, 8, 38, 8,                           // G2 D3
+        36, 8, 31, 8,                           // C3 G2
+        29, 8, 36, 8,                           // F2 C3
+        28, 8, 35, 8,                           // E2 B2
+        28, 8, 32, 8,                           // E2 G#2
+        33, 12, 96, 4,                          // A2, rest
+        101);
+
+    // A round won: a rising fanfare on a square wave, over C major
+    WinMelody : Array[1..23] Of Byte = (
+        99, 3, 97, 64, 100, 0, 8, 98, 9, 168,
+        60, 2, 64, 2, 67, 2, 72, 6, 67, 2, 72, 8, // C5 E5 G5 C6 G5 C6
+        102);
+    WinBass : Array[1..14] Of Byte = (
+        99, 3, 97, 16, 98, 9, 136,
+        36, 6, 43, 6, 48, 10,                   // C3 G3 C4
+        102);
+
+    // A round lost: a sawtooth falling a semitone at a time, with a
+    // vibrato (LoseVibrato) that makes it "wah", then a low note
+    LoseMelody : Array[1..16] Of Byte = (
+        99, 3, 97, 32, 98, 32, 200,
+        55, 8, 54, 8, 53, 8, 52, 20,            // G4 F#4 F4 E4
+        102);
+    LoseBass : Array[1..12] Of Byte = (
+        99, 3, 97, 32, 98, 0, 250,
+        96, 24, 28, 20,                         // rest, E2
+        102);
 
 // Returns a random number from 0 to 65535, from two reads of the
 // MEGA65's hardware random number generator.
@@ -400,6 +477,150 @@ Begin
     DrawScore;
 End;
 
+// Waits for the raster to go back to the top of the screen, so sounds
+// started next all start between two interrupts and stay together.
+Procedure WaitFrame;
+Begin
+    While (Peek(VicCtrl1) & 128) = 0 Do Begin End;
+    While (Peek(VicCtrl1) & 128) <> 0 Do Begin End;
+End;
+
+// Sets the waveform, pulse width and envelope of both effects voices.
+// Each effect sets them up first, since they share the voices.
+Procedure SetUpSfx(wave, width : Word; attack, decay, sustain,
+    release : Byte);
+Begin
+    SetWaveform(FxVoice, wave);
+    SetPulseWidth(FxVoice, width);
+    SetEnvelope(FxVoice, attack, decay, sustain, release);
+    SetWaveform(FxLeft, wave);
+    SetPulseWidth(FxLeft, width);
+    SetEnvelope(FxLeft, attack, decay, sustain, release);
+End;
+
+// Plays a note on both effects voices.
+Procedure Sfx(note : Word; frames : Byte);
+Begin
+    PlayNote(FxVoice, note, frames);
+    PlayNote(FxLeft, note, frames);
+End;
+
+// Starts two sequences together, mel on the melody voices and bas on
+// the bass voices. The sequences set their own waveforms and envelopes.
+Procedure PlayPairs(mel, bas : ^Byte);
+Begin
+    WaitFrame;
+    PlaySequence(MelodyVoice, mel);
+    PlaySequence(MelodyLeft, mel);
+    PlaySequence(BassVoice, bas);
+    PlaySequence(BassLeft, bas);
+End;
+
+// Stops the music voices, with their effects.
+Procedure StopTune;
+Begin
+    StopVoice(MelodyVoice);
+    StopVoice(MelodyLeft);
+    StopVoice(BassVoice);
+    StopVoice(BassLeft);
+End;
+
+// Starts the round's tune from the top, if the music is on. Stopping
+// the voices first ends the lost round's vibrato.
+Procedure StartTune;
+Begin
+    StopTune;
+    If MusicOn Then PlayPairs(@TuneMelody[1], @TuneBass[1]);
+End;
+
+// A correct letter: two quick rising square notes. The second starts
+// from CheckSound when the first ends, so the game doesn't wait.
+Procedure SfxCorrect;
+Begin
+    SetUpSfx(WavePulse, 2048, 0, 0, 15, 7);
+    Sfx(5 * 12 + NoteB, 4);
+    CoinWaiting := True;
+End;
+
+// A wrong letter: a low sawtooth that falls, a thud.
+Procedure SfxWrong;
+Begin
+    CoinWaiting := False;
+    SetUpSfx(WaveSaw, 0, 0, 8, 0, 8);
+    PlayFreq(FxVoice, 2500, 10);
+    PlayFreq(FxLeft, 2500, 10);
+    Sweep(FxVoice, 2500, 500, 15);
+    Sweep(FxLeft, 2500, 500, 15);
+End;
+
+// A letter guessed before: a short, quiet triangle blip.
+Procedure SfxRepeat;
+Begin
+    CoinWaiting := False;
+    SetUpSfx(WaveTriangle, 0, 0, 0, 6, 3);
+    Sfx(6 * 12 + NoteC, 3);
+End;
+
+// Plays the coin's second note once both voices have ended the first.
+Procedure CheckSound;
+Begin
+    If CoinWaiting And (Not IsPlaying(FxVoice))
+        And (Not IsPlaying(FxLeft)) Then Begin
+        Sfx(6 * 12 + NoteE, 12);
+        CoinWaiting := False;
+    End;
+End;
+
+// The jingles play on the music voices, with the music on or off.
+Procedure JingleWon;
+Begin
+    StopTune;
+    PlayPairs(@WinMelody[1], @WinBass[1]);
+End;
+
+// The vibrato is set before the sequence starts. It stays on from
+// note to note, and each note starts it over.
+Procedure JingleLost;
+Begin
+    StopTune;
+    Vibrato(MelodyVoice, LoseVibratoDepth, LoseVibratoFrames);
+    Vibrato(MelodyLeft, LoseVibratoDepth, LoseVibratoFrames);
+    PlayPairs(@LoseMelody[1], @LoseBass[1]);
+End;
+
+// Waits for a key. While the coin's second note is pending the key is
+// read without waiting, so CheckSound can start the note.
+Function WaitKey : Char;
+Var
+    ch : Char;
+Begin
+    ch := Chr(0);
+    While CoinWaiting And (ch = Chr(0)) Do Begin
+        ch := GetKeyNoWait;
+        CheckSound;
+    End;
+    If ch = Chr(0) Then ch := GetKey;
+    WaitKey := ch;
+End;
+
+// Shows what the 1 key does on the bottom line.
+Procedure DrawMusic;
+Begin
+    SetTextColor(ColorLabel);
+    If MusicOn Then
+        DrawText(MusicCol, MusicRow, '1: music off')
+    Else
+        DrawText(MusicCol, MusicRow, '1: music on ');
+End;
+
+// The 1 key during a round turns the music off or on.
+Procedure ToggleMusic;
+Begin
+    MusicOn := Not MusicOn;
+    If MusicOn Then StartTune Else StopTune;
+    DrawMusic;
+End;
+
 // Plays one round with word w, until it is won or lost.
 Procedure PlayRound(w : String);
 Var
@@ -408,32 +629,41 @@ Var
 Begin
     StartRound(w);
     DrawBoard;
+    DrawMusic;
+    StartTune;
     While (Not RoundWon) And (Not RoundLost) Do Begin
         ShowPrompt('press a letter', ColorPrompt);
         Repeat
-            ch := GetKey;
+            ch := WaitKey;
+            If ch = '1' Then ToggleMusic;
             res := Guess(ch);
         Until res <> GuessIgnored;
         letter := KeyToLetter(ch);
         If res = GuessCorrect Then Begin
+            SfxCorrect;
             ShowMessage('yes! ', ColorHit, letter);
             DrawWord(False);
             DrawGuessed;
         End Else If res = GuessWrong Then Begin
+            SfxWrong;
             ShowMessage('no ', ColorMiss, letter);
             DrawPart(Misses);
             DrawGuessed;
             DrawMisses;
-        End Else
+        End Else Begin
+            SfxRepeat;
             ShowMessage('already guessed ', ColorBlank, letter);
+        End;
     End;
 
     ClearLine(MessageRow);
     If RoundWon Then Begin
         Inc(Won);
+        JingleWon;
         ShowPrompt('you win!', ColorHit);
     End Else Begin
         Inc(Lost);
+        JingleLost;
         DrawWord(True);
         ShowPrompt('you lose! the word was ' + LowerCase(Secret), ColorMiss);
     End;
@@ -451,10 +681,12 @@ Begin
         SetBorderColor(0);
         Won := 0;
         Lost := 0;
+        MusicOn := True;
+        CoinWaiting := False;
         PlayRound(Words[0]);
         SetTextColor(ColorLabel);
         DrawText(LabelCol, MessageRow, 'press a key');
-        AnyKey := GetKey;
+        AnyKey := WaitKey;
         ClearScreen;
     End;
 End.

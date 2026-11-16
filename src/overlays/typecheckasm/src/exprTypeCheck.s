@@ -603,6 +603,22 @@ DN:
     nop
     sta (ptr1),z
 
+    ; A function's String result is a new string that nothing else
+    ; holds, like a concatenation's. As a string object, what uses it
+    ; frees it.
+    cmp #TYPE_STRING_VAR
+    bne NotObj
+    ldz #expr::kind
+    nop
+    lda (ptr1),z
+    cmp #EXPR_CALL
+    bne NotObj
+    lda #TYPE_STRING_OBJ
+    ldz #expr::evalTypeKind
+    nop
+    sta (ptr1),z
+NotObj:
+
     ; Is expr kind EXPR_POINTER?
     ldz #expr::kind
     nop
@@ -699,10 +715,12 @@ L1: ldz #exprOffset
     lda (ptr1),z
     jsr isQZero
     beq :+
-    jsr freeType
+    jsr freeEvalType
+    ; A shallow copy: it shares the declared types it points to (see
+    ; evalType.s in asmlib)
 :   ldz #typePtrOffset
     jsr loadStackValue
-    jsr typeClone
+    jsr cloneEvalType
     stq ptr2
     ldz #exprOffset
     jsr loadStackValue

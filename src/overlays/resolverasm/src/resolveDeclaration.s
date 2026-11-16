@@ -176,7 +176,17 @@ L5: jsr getTypePtr
     jsr isQZero
     beq L6
     stq ptr1
+    ; getTypeSize doesn't keep ptr1. A record's size leaves it on the
+    ; last field's type.
+    jsr pushQ
+    ldq ptr1                ; pushQ does not preserve Q
     jsr getTypeSize
+    pha
+    phx
+    jsr popQ
+    stq ptr1
+    plx
+    pla
     ldz #type::size
     nop
     sta (ptr1),z
