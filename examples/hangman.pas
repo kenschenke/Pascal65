@@ -28,6 +28,10 @@ Uses Screen, Sound;
 Const
     // The word list grows by this many elements at a time
     ChunkSize = 64;
+    // The most words the game loads; the rest of the file is ignored.
+    // The heap holds about 256, but growing the list past that needs
+    // the old and new arrays at once, and play needs some room too.
+    MaxWords = 220;
     MinWordLen = 3;
     MaxWordLen = 12;
     // Wrong guesses that lose a round: head, body, two arms, two legs
@@ -92,6 +96,10 @@ Const
     BassLeft = 8;
     FxLeft = 9;
     VicCtrl1 = $D011;       // Bit 7 is bit 8 of the raster line
+    // The screen state the game changes, put back before it ends
+    BorderReg = $D020;
+    BackgroundReg = $D021;
+    CharsetReg = $D068;     // The character set's address, 3 bytes
     // The lost round's "wah": a swing of 1.5% each way, 3 frames a swing
     LoseVibratoDepth = 15;
     LoseVibratoFrames = 3;
@@ -102,6 +110,9 @@ Type
 Var
     Words : Array Of String;
     NumWords : Integer;
+    // The next word to play. The words are shuffled, so taking them in
+    // order never repeats one until all have been played.
+    NextWord : Integer;
 
     // The round state
     Secret : String;
@@ -115,6 +126,11 @@ Var
     Won, Lost : Integer;
     // A key pressed to go on, whatever it is
     AnyKey : Char;
+
+    // The screen as the game found it
+    OldBorder, OldBackground : Byte;
+    OldCharset : Array[0..2] Of Byte;
+    OldCols, OldRows : Byte;
 
     // True while the tune plays during a round. The 1 key changes it.
     MusicOn : Boolean;
@@ -198,8 +214,8 @@ End;
 // Reads the "words" file into Words. The array grows in chunks of
 // ChunkSize, since SetLength copies the whole array each time, and
 // is trimmed to NumWords at the end. Lines that aren't usable words
-// are skipped. Returns False, after printing why, if the file can't
-// be read or holds no usable words.
+// are skipped, and reading stops at MaxWords. Returns False, after
+// printing why, if the file can't be read or holds no usable words.
 Function LoadWords : Boolean;
 Var
     f : Text;
@@ -217,7 +233,8 @@ Begin
     If err <> 0 Then
         Writeln('Cannot open the words file (error ', err, ')')
     Else Begin
-        While (Not readFailed) And (Not Eof(f)) Do Begin
+        While (Not readFailed) And (Not Eof(f))
+            And (NumWords < MaxWords) Do Begin
             Readln(f, line);
             err := IOResult;
             If err <> 0 Then Begin
@@ -670,23 +687,104 @@ Begin
     DrawScore;
 End;
 
+// Shows msg on the message line in ColorLabel.
+Procedure ShowNote(msg : String);
+Begin
+    ClearLine(MessageRow);
+    SetTextColor(ColorLabel);
+    DrawText(LabelCol, MessageRow, msg);
+End;
+
+// Returns the next word to play. Once every word has been played, it
+// says so with the fanfare and shuffles the list again. The word just
+// played doesn't come first after the shuffle.
+Function TakeWord : String;
+Var
+    tmp : String;
+Begin
+    If NextWord >= NumWords Then Begin
+        JingleWon;
+        ShowPrompt('you have played every word!', ColorTitle);
+        ShowNote('press a key to shuffle them');
+        AnyKey := WaitKey;
+        ShuffleWords;
+        If (NumWords > 1) And (CompareStr(Words[0], Secret) = 0) Then Begin
+            tmp := Words[0];
+            Words[0] := Words[NumWords - 1];
+            Words[NumWords - 1] := tmp;
+        End;
+        NextWord := 0;
+    End;
+    TakeWord := Words[NextWord];
+    Inc(NextWord);
+End;
+
+// Asks whether to play another round: Y plays again and N quits. The
+// 1 key sets the music for the next round without starting the tune,
+// so the jingle plays on. Other keys are ignored.
+Function PlayAgain : Boolean;
+Var
+    ch : Char;
+    answered : Boolean;
+Begin
+    ShowNote('play again? (y/n)');
+    answered := False;
+    Repeat
+        ch := WaitKey;
+        If (ch = 'y') Or (ch = 'Y') Then Begin
+            PlayAgain := True;
+            answered := True;
+        End Else If (ch = 'n') Or (ch = 'N') Then Begin
+            PlayAgain := False;
+            answered := True;
+        End Else If ch = '1' Then Begin
+            MusicOn := Not MusicOn;
+            DrawMusic;
+        End;
+    Until answered;
+End;
+
+// Keeps the screen size, colors and character set the game changes.
+Procedure SaveScreen;
+Begin
+    GetScreenSize(OldCols, OldRows);
+    OldBorder := Peek(BorderReg);
+    OldBackground := Peek(BackgroundReg);
+    OldCharset[0] := Peek(CharsetReg);
+    OldCharset[1] := Peek(CharsetReg + 1);
+    OldCharset[2] := Peek(CharsetReg + 2);
+End;
+
+// Puts back what SaveScreen kept and clears the screen for BASIC. The
+// size goes first, since changing it can reset the rest.
+Procedure RestoreScreen;
+Begin
+    SetScreenSize(OldCols, OldRows);
+    Poke(CharsetReg, OldCharset[0]);
+    Poke(CharsetReg + 1, OldCharset[1]);
+    Poke(CharsetReg + 2, OldCharset[2]);
+    SetBorderColor(OldBorder);
+    SetBackgroundColor(OldBackground);
+    ClearScreen;
+End;
 
 Begin
     Writeln('Loading words...');
     If LoadWords Then Begin
         ShuffleWords;
+        SaveScreen;
         SetScreenSize(80, 25);
         SetUpperCase;
         SetBackgroundColor(0);
         SetBorderColor(0);
         Won := 0;
         Lost := 0;
+        NextWord := 0;
         MusicOn := True;
         CoinWaiting := False;
-        PlayRound(Words[0]);
-        SetTextColor(ColorLabel);
-        DrawText(LabelCol, MessageRow, 'press a key');
-        AnyKey := WaitKey;
-        ClearScreen;
+        Repeat
+            PlayRound(TakeWord);
+        Until Not PlayAgain;
+        RestoreScreen;
     End;
 End.
