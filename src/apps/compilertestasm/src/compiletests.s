@@ -83,6 +83,7 @@ strBubbles: .asciiz "bubbles"
 strSfxDemo: .asciiz "sfxdemo"
 strTuneDemo: .asciiz "tunedemo"
 strStereoDemo: .asciiz "stereodemo"
+strHangman: .asciiz "hangman"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strRun1: .asciiz "Run "
@@ -209,6 +210,8 @@ compileOnlyTests:
     .byte .lobyte(strTuneDemo), .hibyte(strTuneDemo)
     ; The Sound library's stereo demo
     .byte .lobyte(strStereoDemo), .hibyte(strStereoDemo)
+    ; The Hangman game, with the Screen and Sound libraries
+    .byte .lobyte(strHangman), .hibyte(strHangman)
 .endif
     .byte $00, $00
 

@@ -10,6 +10,9 @@ DRVFILE = $(DRVDIR)/$(TARGET)-reu.emd
 
 BINTARGETDIR := $(BINDIR)/$(TARGET)
 D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
+# The Hangman game's own disk (see the hangman target)
+HANGMAND81 := $(BINTARGETDIR)/hangman.d81
+HANGMANPRG := examples/hangman.prg
 RUNTIMEDIR := src/lib/runtime
 SCREENLIBDIR := src/lib/screen
 SPRITESDIR := src/lib/sprites
@@ -87,7 +90,7 @@ BINFILES += $(MKHDR)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii sound.petscii sfxdemo.petscii tunedemo.petscii stereodemo.petscii
 
-all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SOUNDLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE)
+all: $(RUNTIME) editorapp compiler $(SCREENLIB) $(TIMELIB) $(SOUNDLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(SYSTEMLIB) $(ASMLIB) $(BINTARGETDIR) $(D81FILE) $(HANGMAND81)
 
 help.petscii: src/shared/help.txt
 	dos2unix < src/shared/help.txt | petcat -w2 -text -o help.petscii
@@ -276,6 +279,34 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDEF) $(HDRFILES)
 	-write $(THEMESDEF) themes.def,seq \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 
+# The Hangman game's disk, apart from the compiler's. It boots the intro,
+# which loads the game. The game is compiled in the emulator (it's static,
+# so it doesn't need runtimeN) and copied to examples/hangman.prg. The
+# libraries and runtime files are there to compile it again.
+hangman: $(HANGMAND81)
+
+.PHONY: hangman
+
+hangman-autoboot.prg: examples/hangman-autoboot.bas
+	dos2unix < examples/hangman-autoboot.bas | petcat -w65 -o hangman-autoboot.prg
+
+hangman.petscii: examples/hangman.pas
+	dos2unix < examples/hangman.pas | petcat -w2 -text -o hangman.petscii
+
+words.petscii: examples/words.txt
+	dos2unix < examples/words.txt | petcat -w2 -text -o words.petscii
+
+$(HANGMAND81): $(HANGMANPRG) hangman-autoboot.prg hangman.petscii \
+		words.petscii $(SCREENLIB) $(SOUNDLIB) $(RUNTIME) | $(BINTARGETDIR)
+	c1541 -format hangman,8a d81 $(HANGMAND81) \
+	-write hangman-autoboot.prg autoboot.c65,prg \
+	-write $(HANGMANPRG) hangman,prg \
+	-write words.petscii words,seq \
+	-write hangman.petscii hangman.pas,seq \
+	-write $(SCREENLIB) screen.lib,prg \
+	-write $(SOUNDLIB) sound.lib,prg \
+	$(RTWRITE)
+
 # Builds just mkhdr and its standalone disk image. mkhdr is also on the main
 # disk, which holds the tokenizer, parser, and library sources it needs. Run it
 # on the emulator for each library unit, then copy the .hdr files to src/lib/hdr.
@@ -291,6 +322,7 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(THEMESDEF)
 	$(RM) $(D81FILE)
+	$(RM) $(HANGMAND81) hangman-autoboot.prg hangman.petscii words.petscii
 
 run: $(RUNTIME) editorapp compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
 	$(EMUCMD) $(D81FILE)
