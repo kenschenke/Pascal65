@@ -85,7 +85,7 @@ astRoot: .res 4
     jsr SETLFS
     ; Call SETNAM
     ldx #<objFn
-    ldy #>objFn2
+    ldy #>objFn
     lda #objFn2-objFn
     jsr SETNAM
     ; Open the file and set output channel
