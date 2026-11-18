@@ -98,15 +98,34 @@ DN: jsr popA
     rts
 .endproc
 
+; The array's declaration is varIndex * 4 bytes into localDecls, which
+; needs 16 bits past 63 locals.
 .proc handleArray
     ldz #localDeclsOffset
     jsr loadStackValue
     stq ptr1
 
+    lda #0
+    sta tmp2
     lda varIndex
     asl a
+    rol tmp2
     asl a
-    taz
+    rol tmp2
+    clc
+    adc ptr1
+    sta ptr1
+    lda tmp2
+    adc ptr1+1
+    sta ptr1+1
+    lda ptr1+2
+    adc #0
+    sta ptr1+2
+    lda ptr1+3
+    adc #0
+    sta ptr1+3
+
+    ldz #0
     neg
     neg
     nop

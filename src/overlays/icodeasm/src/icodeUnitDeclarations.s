@@ -32,8 +32,6 @@ lblUnitInit: .asciiz "uinit"
 
 thisUnit: .res 4
 unitDecl: .res 4
-localVars: .res MAX_LOCAL_VARS
-localDecls: .res MAX_LOCAL_VARS*4
 stmtPtr: .res 4
 
 .code
@@ -137,16 +135,10 @@ NX: ldq thisUnit
     stq stmtPtr
     stq ptr1
 
-    lda #<localVars
-    ldx #>localVars
-    ldy #0
-    ldz #0
-    jsr pushQ               ; localVars
-    lda #<localDecls
-    ldx #>localDecls
-    ldy #0
-    ldz #0
-    jsr pushQ               ; localDecls
+    ; A unit's variables are never freed, like the program's, so nothing
+    ; is recorded for cleanup (no localVars storage).
+    jsr pushQZero           ; localVars
+    jsr pushQZero           ; localDecls
     ldz #stmt::decl
     neg
     neg
@@ -155,16 +147,8 @@ NX: ldq thisUnit
     jsr pushQ               ; declPtr
     jsr icodeVariableDeclarations
 
-    lda #<localVars
-    ldx #>localVars
-    ldy #0
-    ldz #0
-    jsr pushQ                   ; localVars
-    lda #<localDecls
-    ldx #>localDecls
-    ldy #0
-    ldz #0
-    jsr pushQ                   ; localDecls
+    jsr pushQZero               ; localVars
+    jsr pushQZero               ; localDecls
     ldq stmtPtr
     stq ptr1
     ldz #stmt::interfaceDecl

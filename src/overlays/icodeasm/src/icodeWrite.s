@@ -39,8 +39,6 @@ lblParamDeclInit: .asciiz "dp"
 
 astRoot: .res 4
 rootStmt: .res 4
-localVars: .res MAX_LOCAL_VARS
-localDecls: .res MAX_LOCAL_VARS*4
 currentLineNumber: .res 2
 icodeLabel: .res 20
 ; The runtime packages the program needs (RTF_* in asm.inc). Code
@@ -90,17 +88,10 @@ runtimeFeatures: .res 1
     lda (ptr1),z
     jsr scopeEnterSymtab
 
-    ; Create stack entries for the global variables
-    lda #<localVars
-    ldx #>localVars
-    ldy #0
-    ldz #0
-    jsr pushQ                   ; localVars
-    lda #<localDecls
-    ldx #>localDecls
-    ldy #0
-    ldz #0
-    jsr pushQ                   ; localDecls
+    ; Create stack entries for the global variables. Globals are never
+    ; freed, so nothing is recorded for cleanup (no localVars storage).
+    jsr pushQZero               ; localVars
+    jsr pushQZero               ; localDecls
     ldq astRoot
     stq ptr2
     ldz #decl::code

@@ -13,11 +13,12 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-; Local variables
-; localVarsOffset must be zero
+; Local variables: pointers to the heap storage that the routine's
+; cleanup frees its locals from (see icodeVariableDeclarations), sized to
+; the routine by countLocals.
 localVarsOffset = 0
-localDeclsOffset = localVarsOffset + MAX_LOCAL_VARS
-numLocalsOffset = localDeclsOffset + MAX_LOCAL_VARS*4
+localDeclsOffset = localVarsOffset + 4
+numLocalsOffset = localDeclsOffset + 4
 ; Parameters passed from caller
 typeOffset = numLocalsOffset + 1
 declOffset = typeOffset + 4
@@ -130,10 +131,8 @@ NX: ldq paramPtr
 .proc icodeRoutineDeclaration
     lda #0
     jsr pushA               ; numLocals
-    lda #MAX_LOCAL_VARS*4
-    jsr pushBlock
-    lda #MAX_LOCAL_VARS
-    jsr pushBlock
+    jsr pushQZero           ; localDecls
+    jsr pushQZero           ; localVars
 
     ; If this is a forward declaration, skip it
     ldz #typeOffset
@@ -146,19 +145,8 @@ NX: ldq paramPtr
     beq :+
     jmp DN
 
-    ; Clear localVars
-:   lda #0
-    tax
-    ldz #localVarsOffset
-:   nop
-    sta (stackPointer),z
-    inz
-    inx
-    cpx #MAX_LOCAL_VARS
-    bne :-
-
     ; Handle any nested routines
-    ldz #declOffset
+:   ldz #declOffset
     jsr loadStackValue
     stq ptr1
     ldz #decl::code
@@ -199,34 +187,39 @@ NX: ldq paramPtr
     lda #IC_LOC
     jsr icodeWriteInstruction
 
+    ; Storage for the locals' cleanup, sized to the routine. A fixed 32
+    ; entries once overflowed into numLocals and the routine's own
+    ; declaration pointer when a routine had more locals.
+    jsr loadFirstDecl
+    jsr countLocals         ; entries, in A/X
+    pha
+    phx
+    jsr heapAlloc           ; a byte each (zeroed)
+    stq ptr4
+    ldz #localVarsOffset
+    jsr storeStackPtr4
+    plx
+    pla
+    stx tmp2                ; four bytes each
+    asl a
+    rol tmp2
+    asl a
+    rol tmp2
+    ldx tmp2
+    jsr heapAlloc
+    stq ptr4
+    ldz #localDeclsOffset
+    jsr storeStackPtr4
+
     ; Push the local variables onto the stack
-    ldq stackPointer
-    stq ptr1
-    lda #localDeclsOffset
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq stackPointer
-    clc
-    adcq intOp32
-    stq ptr3
-    ldz #declOffset
+    jsr loadFirstDecl
+    stq ptr2
+    ldz #localVarsOffset
     jsr loadStackValue
-    stq ptr2
-    ldz #decl::code
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr2
-    ldz #stmt::decl
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    stq ptr2
+    stq ptr1
+    ldz #localDeclsOffset
+    jsr loadStackValue
+    stq ptr3
     ldq ptr1
     jsr pushQ               ; localVars storage
     ldq ptr3
@@ -269,21 +262,17 @@ NX: ldq paramPtr
     jsr scopeExit
 
     ; Tear down the routine's stack frame and free its local variables
-:   ldz #numLocalsOffset
+:   ldz #localVarsOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #localDeclsOffset
+    jsr loadStackValue
+    stq ptr2
+    ldz #numLocalsOffset
     nop
     lda (stackPointer),z
     pha
-    lda #localDeclsOffset
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq stackPointer
-    clc
-    adcq intOp32
-    stq ptr2
-    ldq stackPointer
+    ldq ptr1
     jsr pushQ               ; localVars
     ldq ptr2
     jsr pushQ               ; localDecls
@@ -293,12 +282,90 @@ NX: ldq paramPtr
     lda #IC_RTS
     jsr icodeWriteInstruction
 
-DN: lda #MAX_LOCAL_VARS
-    jsr popBlock
-    lda #MAX_LOCAL_VARS*4
-    jsr popBlock
-    jsr popA
+    ; Free the storage (none for a forward declaration)
+DN: ldz #localVarsOffset
+    jsr loadStackValue
+    jsr isQZero
+    beq :+
+    jsr heapFree
+:   ldz #localDeclsOffset
+    jsr loadStackValue
+    jsr isQZero
+    beq :+
+    jsr heapFree
+:   jsr popQ                ; localVars
+    jsr popQ                ; localDecls
+    jsr popA                ; numLocals
     jsr popQ
     jsr popQ
+    rts
+.endproc
+
+; This routine returns the first of the routine's declarations in Q
+.proc loadFirstDecl
+    ldz #declOffset
+    jsr loadStackValue
+    stq ptr1
+    ldz #decl::code
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #stmt::decl
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    rts
+.endproc
+
+; This routine returns in A/X the number of entries the cleanup storage
+; needs for the declarations starting with the one in Q: one for each
+; constant and variable, and one more for a declaration after the last of
+; them (icodeVariableDeclarations clears an entry for every declaration).
+.proc countLocals
+    stq ptr1
+    lda #1
+    sta intOp1
+    lda #0
+    sta intOp1+1
+
+L1: ldq ptr1
+    jsr isQZero
+    beq DN
+    ldz #decl::kind
+    nop
+    lda (ptr1),z
+    cmp #DECL_CONST
+    beq :+
+    cmp #DECL_VARIABLE
+    bne NX
+:   inc intOp1
+    bne NX
+    inc intOp1+1
+NX: ldz #decl::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    bra L1
+
+DN: lda intOp1
+    ldx intOp1+1
+    rts
+.endproc
+
+; This routine stores ptr4 at offset Z of the stack frame
+.proc storeStackPtr4
+    ldx #0
+:   lda ptr4,x
+    nop
+    sta (stackPointer),z
+    inz
+    inx
+    cpx #4
+    bne :-
     rts
 .endproc

@@ -31,6 +31,8 @@ localVarsOffset = localDeclsOffset + 4
 
 varIndex: .res 1
 declInitLabel: .res 15
+; Non-zero if the caller passed localVars and localDecls storage
+tracking: .res 1
 
 .data
 
@@ -44,9 +46,21 @@ lblLibDecl: .asciiz "libdecl"
 ;    pointer to storage for local variable declarations
 ;    first declaration
 ; Number of variables returned in A
+;
+; The storage is what a routine's cleanup frees its locals from: a byte
+; for each constant and variable, and four for each one's declaration,
+; plus one entry for a declaration after the last of them. The caller
+; sizes it (countLocals in icodeRoutineDeclaration). Null pointers mean
+; nothing is recorded: a program's and a unit's variables are never freed.
 .proc icodeVariableDeclarations
     lda #0
     sta varIndex
+    sta tracking
+    ldz #localVarsOffset
+    jsr loadStackValue
+    jsr isQZero
+    beq L1
+    inc tracking
 
     ; Loop through the declarations
 L1: ldz #declPtrOffset
@@ -57,13 +71,8 @@ L1: ldz #declPtrOffset
 
     ; Zero out the localVar value for this declaration
 :   stq ptr1
-    ldz #localVarsOffset
-    jsr loadStackValue
-    stq ptr2
-    ldz varIndex
     lda #0
-    nop
-    sta (ptr2),z
+    jsr storeLocalVar
 
     ; Zero out the localDecl value for this declaration
     lda #0
@@ -230,13 +239,8 @@ DN: jsr popQ
 .endproc
 
 .proc arrayValue
-    ldz #localVarsOffset
-    jsr loadStackValue
-    stq ptr3
-    ldz varIndex
     lda #LOCALVARS_ARRAY
-    nop
-    sta (ptr3),z
+    jsr storeLocalVar
 
     lda #0
     sta heapOffset
@@ -387,13 +391,8 @@ L1: jsr icodeOper1Int
     tay
     taz
     jsr icodeLongValue
-    ldz #localVarsOffset
-    jsr loadStackValue
-    stq ptr3
-    ldz varIndex
     lda #LOCALVARS_FILE
-    nop
-    sta (ptr3),z
+    jsr storeLocalVar
     rts
 .endproc
 
@@ -442,13 +441,8 @@ L1: jsr icodeOper1Int
 .endproc
 
 .proc recordValue
-    ldz #localVarsOffset
-    jsr loadStackValue
-    stq ptr3
-    ldz varIndex
     lda #LOCALVARS_RECORD
-    nop
-    sta (ptr3),z
+    jsr storeLocalVar
 
     ldz #type::size+1
     nop
@@ -514,13 +508,8 @@ L1: jsr icodeOper1Int
 .endproc
 
 .proc stringValue
-    ldz #localVarsOffset
-    jsr loadStackValue
-    stq ptr3
-    ldz varIndex
     lda #LOCALVARS_DEL
-    nop
-    sta (ptr3),z
+    jsr storeLocalVar
 
     ldz #declPtrOffset
     jsr loadStackValue
@@ -626,18 +615,40 @@ L2: ldz #expr::value
     rts
 .endproc
 
-; Stores the value in Q in the localDecl for the varIndex
+; Stores the value in Q in the localDecl for the varIndex, unless nothing
+; is recorded (tracking). The entry is varIndex * 4 bytes in, which needs
+; 16 bits past 63 entries.
 .proc storeLocalDeclValue
     stq ptr4
+    lda tracking
+    bne :+
+    rts
 
-    ldz #localDeclsOffset
+:   ldz #localDeclsOffset
     jsr loadStackValue
     stq ptr2
 
+    lda #0
+    sta tmp2
     lda varIndex
     asl a
+    rol tmp2
     asl a
-    taz
+    rol tmp2
+    clc
+    adc ptr2
+    sta ptr2
+    lda tmp2
+    adc ptr2+1
+    sta ptr2+1
+    lda ptr2+2
+    adc #0
+    sta ptr2+2
+    lda ptr2+3
+    adc #0
+    sta ptr2+3
+
+    ldz #0
     ldx #0
 :   lda ptr4,x
     nop
@@ -646,5 +657,23 @@ L2: ldz #expr::value
     inx
     cpx #4
     bne :-
+    rts
+.endproc
+
+; Stores the LOCALVARS_* in A in the localVar for the varIndex, unless
+; nothing is recorded (tracking). Keeps ptr1 and ptr2.
+.proc storeLocalVar
+    ldx tracking
+    bne :+
+    rts
+
+:   pha
+    ldz #localVarsOffset
+    jsr loadStackValue
+    stq ptr3
+    pla
+    ldz varIndex
+    nop
+    sta (ptr3),z
     rts
 .endproc
