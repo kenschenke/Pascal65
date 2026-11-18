@@ -12,8 +12,6 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-codeBase = $2001
-
 ; This file implements the linker tags system. This is used by the object
 ; code generator and the linker to resolve addresses in the program file.
 ;
@@ -27,11 +25,13 @@ codeBase = $2001
 ; high-order, or both are written to a memory buffer (membuf).
 ;
 ; When an identifiable location is being written to the object file,
-; the label and the location are saved in a binary tree.
+; the label and the location are saved in a binary tree. The location is the
+; offset from the start of the code (codeOffset), not an address.
 ;
-; Once all the object code is written, the linker goes through the list of
-; requested locations (from the membuf) and finds each in the binary tree
-; by the label. The requested address is then written back to the object file.
+; Once all the code is written, code generation goes through the list of
+; requested locations (from the membuf), finds each in the binary tree by
+; its label and writes it to the object file as a relocation (writeObjFile
+; in codegen). The linker never sees the tags.
 
 .export linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
 .export getLinkerTagsToFind, findLinkerTag
@@ -59,7 +59,7 @@ tagTreeStackSize: .res 2
 
 ; Finds a label in the binary tree.
 ; Null-terminated label in A/X
-; Code offset returned in A/X.
+; Code offset returned in A/X. Y is 1 if the label is set and 0 if not.
 .proc findLinkerTag
     sta ptr4
     stx ptr4+1
@@ -248,7 +248,9 @@ L3: jsr popTagTreeStack
 
 ; This routine adds a linker tag to the binary tree.
 ; A/X contains the pointer to the null-terminated tag string.
-; codeOffset is used as the location for the tag.
+; codeOffset is used as the location for the tag. The node's data is the
+; offset, then a 1, so findLinkerTag can tell a label at offset 0 from one
+; that isn't set.
 .proc linkAddressSet
     sta ptr2
     stx ptr2+1
@@ -256,16 +258,13 @@ L3: jsr popTagTreeStack
     sta ptr2+2
     sta ptr2+3
 
-    ; Add codeOffset and codeBase and store in ptr3
     lda codeOffset
-    clc
-    adc #.lobyte(codeBase)
     sta ptr3
     lda codeOffset+1
-    adc #.hibyte(codeBase)
     sta ptr3+1
-    lda #0
+    lda #1
     sta ptr3+2
+    lda #0
     sta ptr3+3
 
     ldq linkerTags

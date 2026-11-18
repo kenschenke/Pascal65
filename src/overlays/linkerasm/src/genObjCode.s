@@ -10,6 +10,7 @@
 ; genObjCode routine
 
 .include "c64.inc"
+.include "asm.inc"
 .include "asmlib.inc"
 .include "linker.inc"
 .include "zeropage.inc"
@@ -21,7 +22,7 @@ OBJ_FILENUM = 2
 PRG_FILENUM = 3
 RT_FILENUM = 4          ; a runtime file (see copyRuntime)
 
-.export genObjCode
+.export genObjCode, readByte, readStatus
 
 .import sortLinkerTags
 
@@ -42,8 +43,14 @@ tagToFix: .res .sizeof(TAGTOFIX)
 prgFilename: .res 17
 strbuf: .res 20
 readStatus: .res 1
+skipCount: .res 2           ; for readObjHeader
+skipCount2: .res 1          ; for skipBytes
 
 .data
+
+; The start of the object file's header
+objHeader: .byte OBJ_MAGIC0, OBJ_MAGIC1, OBJ_VERSION, RT_ABI_VERSION
+objHeader2:
 
 pasExt: .asciiz ".pas"
 prgExt: .asciiz ".prg"
@@ -53,12 +60,14 @@ writeExt: .asciiz ",p,w"
 
 .code
 
+; This routine links the object file, zztmp, that code generation wrote
+; (see linker.inc) into the PRG. It reads the header and the relocations,
+; then copies the code to the PRG, writing the addresses into it. A bad
+; object file is a compiler error, errObjFileInvalid, and makes no PRG.
+;
 ; Source filename passed in A/X
 .proc genObjCode
     jsr formatPrgFilename
-
-    jsr sortLinkerTags
-    stq tagsMemBuf
 
     ; Delete the output PRG file if it exists
     jsr deletePrgFile
@@ -77,12 +86,23 @@ writeExt: .asciiz ",p,w"
     ; Open the file
     jsr OPEN
 
-    ; Open the PRG file
-    jsr openPrgFile
-
     ; Clear readStatus
     lda #0
     sta readStatus
+
+    ; Read the header and the relocations
+    jsr readObjHeader
+    bcs BD
+    jsr sortLinkerTags
+    stq tagsMemBuf
+    lda readStatus
+    beq :+
+    ldq tagsMemBuf              ; The file ended before the code
+    jsr freeMemBuf
+BD: jmp objFileInvalid
+
+    ; Open the PRG file
+:   jsr openPrgFile
 
     ; Write the load address to the new PRG file
     ; $2001 for MEGA65
@@ -173,6 +193,94 @@ DN: ; Close the output PRG file
     jsr freeMemBuf
     
     rts
+.endproc
+
+; This routine reads the object file's header, up to its relocations. The
+; carry is set if it is bad: not an object file, another format version, a
+; runtime other than RT_ABI_VERSION, a unit, or a file with imports, which
+; can't be resolved yet. The symbols are skipped, since nothing imports
+; them.
+.proc readObjHeader
+    ; The magic number and the versions
+    ldx #0
+:   phx
+    jsr readByte
+    plx
+    cmp objHeader,x
+    bne BD
+    inx
+    cpx #objHeader2-objHeader
+    bne :-
+
+    ; The kind, then the flags and the features, which aren't used yet
+    jsr readByte
+    cmp #OBJ_KIND_PROGRAM
+    bne BD
+    lda #2
+    jsr skipBytes
+
+    ; The name, the global slots, the code length and the BSS length
+    jsr readByte
+    jsr skipBytes
+    lda #6
+    jsr skipBytes
+
+    ; The symbols
+    jsr readByte
+    sta skipCount
+    jsr readByte
+    sta skipCount+1
+L1: lda skipCount
+    ora skipCount+1
+    beq L2
+    lda readStatus
+    bne BD
+    jsr readByte                ; The name
+    jsr skipBytes
+    lda #3                      ; The offset and the flags
+    jsr skipBytes
+    lda skipCount
+    bne :+
+    dec skipCount+1
+:   dec skipCount
+    bra L1
+
+    ; The imports
+L2: jsr readByte
+    sta skipCount
+    jsr readByte
+    ora skipCount
+    bne BD
+    lda readStatus
+    bne BD
+    clc
+    rts
+
+BD: sec
+    rts
+.endproc
+
+; This routine reads and drops A bytes of the object file
+.proc skipBytes
+    sta skipCount2
+:   lda skipCount2
+    beq :+
+    jsr readByte
+    dec skipCount2
+    bra :-
+:   rts
+.endproc
+
+; This routine reports a bad object file and deletes it
+.proc objFileInvalid
+    lda #OBJ_FILENUM
+    jsr CLOSE
+    jsr CLRCHN
+    jsr deleteObjFile
+    lda #errObjFileInvalid
+    ldx #0
+    ldy #0
+    jmp compilerError
 .endproc
 
 .proc testObjCode

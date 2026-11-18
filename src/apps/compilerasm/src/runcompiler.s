@@ -291,7 +291,7 @@ strLinking: .asciiz "Linking"
     beq :+
 
     ; Error - so don't link
-    jmp freeLinkerTags
+    rts
 
 :   lda #<strLinking
     ldx #>strLinking
@@ -299,9 +299,7 @@ strLinking: .asciiz "Linking"
     jsr initLinker
     lda sourceFn
     ldx sourceFn+1
-    jsr genPrgFile
-    jsr freeLinkerTags
-    rts
+    jmp genPrgFile
 .endproc
 
 .proc printLine

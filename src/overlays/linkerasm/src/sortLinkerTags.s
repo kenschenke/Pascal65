@@ -17,10 +17,12 @@
 
 .export sortLinkerTags
 
+.import readByte, readStatus
+
 .bss
 
-tagsToFind: .res 4
-tagToFind: .res .sizeof(TAGTOFIND)
+relocsLeft: .res 2
+reloc: .res .sizeof(OBJRELOC)
 tagToFix: .res 4
 tagsTree: .res 4
 tagsMemBuf: .res 4
@@ -33,10 +35,10 @@ walkTreeStackSize: .res 2
 
 .code
 
-; This routine sorts the list of tags to fix in the object file by offset.
-; It does this by reading through the list of tags to fix and puts them into a
+; This routine reads the object file's relocations, which come next in it,
+; and sorts them by offset. It makes a TAGTOFIX for each and puts them into a
 ; binary tree, ordered by offset. It then walks the binary tree and writes the
-; TAGTOFIND structures to a memory buffer.
+; TAGTOFIX structures to a memory buffer.
 ;
 ; The memory buffer is returned in Q.
 .proc sortLinkerTags
@@ -217,69 +219,67 @@ L3: jsr popWalkStack
     stq tagsTree
     stq lastNode
 
-    jsr getLinkerTagsToFind
-    stq tagsToFind
-    stq ptr1
-    lda #0
-    tax
-    jsr setMemBufPos
+    ; The number of relocations
+    jsr readByte
+    sta relocsLeft
+    jsr readByte
+    sta relocsLeft+1
 
-    ; Loop through the tags to find
-L1: ldq tagsToFind
-    jsr isMemBufAtEnd
+    ; Loop through the relocations. A file that ends early is left for the
+    ; caller to report.
+L1: lda relocsLeft
+    ora relocsLeft+1
     bne :+
     jmp DN
+:   lda readStatus
+    beq :+
+    jmp DN
+:   lda relocsLeft
+    bne :+
+    dec relocsLeft+1
+:   dec relocsLeft
 
-    ; Load the TAGTOFIND structure
-:   ldq tagsToFind
-    stq ptr1
-    lda #<tagToFind
-    sta ptr2
-    lda #>tagToFind
-    sta ptr2+1
+    ; Read the relocation
     ldx #0
-    stx ptr2+2
-    stx ptr2+3
-    lda #.sizeof(TAGTOFIND)
-    jsr readFromMemBuf
+:   phx
+    jsr readByte
+    plx
+    sta reloc,x
+    inx
+    cpx #.sizeof(OBJRELOC)
+    bne :-
 
     ; Allocate memory for a new TAGTOFIX structure
     lda #.sizeof(TAGTOFIX)
     ldx #0
     jsr heapAlloc
     stq tagToFix
-
-    ; Find the tag in the tree
-    lda #<tagToFind
-    ldx #>tagToFind
-    jsr findLinkerTag
-    pha
-    phx
-    ldq tagToFix
     stq ptr1
-    pla
-    ldz #TAGTOFIX::address+1
+
+    ; The address is the target's, at LINK_CODE_BASE
+    lda reloc+OBJRELOC::target
+    clc
+    adc #<LINK_CODE_BASE
+    ldz #TAGTOFIX::address
     nop
     sta (ptr1),z
-    pla
-    dez
+    lda reloc+OBJRELOC::target+1
+    adc #>LINK_CODE_BASE
+    inz
     nop
     sta (ptr1),z
 
-    ldx #TAGTOFIND::type
-    lda tagToFind,x
+    lda reloc+OBJRELOC::kind
     ldz #TAGTOFIX::type
     nop
     sta (ptr1),z
 
-    ldx #TAGTOFIND::offset
-    lda tagToFind,x
+    lda reloc+OBJRELOC::offset
     sta intOp1
     ldz #TAGTOFIX::offset
     nop
     sta (ptr1),z
-    inx
-    lda tagToFind,x
+    lda reloc+OBJRELOC::offset+1
     sta intOp1+1
     inz
     nop

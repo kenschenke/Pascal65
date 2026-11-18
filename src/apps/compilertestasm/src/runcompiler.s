@@ -246,7 +246,6 @@ L3: lda #'L'
     lda sourceFn
     ldx sourceFn+1
     jsr genPrgFile
-    jsr freeLinkerTags
 
     ; An error or warning from code generation or linking fails the test
     lda errorCount
@@ -265,8 +264,6 @@ L3: lda #'L'
 ; tests unless code generation reported exactly one error, expectedError,
 ; and deleted its object file.
 .proc checkExpectedError
-    jsr freeLinkerTags
-
     lda errorCount
     cmp #1
     bne FL

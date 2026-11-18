@@ -284,7 +284,6 @@ L2: jsr setCodeGenProgramChain
     beq :+
 
     ; Error - so don't link
-    jsr freeLinkerTags
     jmp DN
 
 :   lda #<strLinking
@@ -299,13 +298,11 @@ L2: jsr setCodeGenProgramChain
     lda #<strRunFn
     ldx #>strRunFn
     jsr genPrgFile
-    bra L5
+    bra DN
 
 L4: lda #<sourceFn
     ldx #>sourceFn
     jsr genPrgFile
-
-L5: jsr freeLinkerTags
 
     ; The errors and warnings are in the build result. The editor shows
     ; them, so go straight back to it.

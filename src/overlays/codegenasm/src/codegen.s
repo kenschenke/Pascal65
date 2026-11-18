@@ -24,6 +24,7 @@
 .import writeRuntimeBss, cleanupLibraries, checkCodeSize
 .import initDataSegment, writeDataSegment, freeDataSegment
 .import tagBSS_EXITHANDLER
+.import writeObjFile, objFilename, codeFilename
 
 .data
 
@@ -32,17 +33,16 @@ icodeFn: .asciiz "zztmpicode"
 tempFn: .byte "zztmpicode,s,r"
 tempFn2:
 
-; This is used to delete the file if it exists
-objFilename: .asciiz "zztmp"
-
-; This is used to create the file
-objFn: .byte "zztmp,s,w"
-objFn2:
+; The code is written to this file, then copied into the object file
+; (writeObjFile)
+codeFn: .byte "zzcode,s,w"
+codeFn2:
 
 .bss
 
 runtimeStackSize: .res 2
 astRoot: .res 4
+delName: .res 2             ; for deleteIfExists
 
 .code
 
@@ -61,32 +61,25 @@ astRoot: .res 4
     sta codeOffset
     sta codeOffset+1
 
-    ; See if the object file already exists
+    ; Delete the object file and the code file if they exist
     lda #<objFilename
     ldx #>objFilename
-    ldy #0
-    ldz #0
-    jsr doesFileExist
-    beq :+
-    ; The file exists. Delete it.
-    lda #<objFilename
-    ldx #>objFilename
-    ldy #0
-    ldz #0
-    stq ptr1
-    jsr scratchFile
+    jsr deleteIfExists
+    lda #<codeFilename
+    ldx #>codeFilename
+    jsr deleteIfExists
 
-    ; Open the object code output file
+    ; Open the code file
     ; Call SETLFS
-:   ldx DEVNUM
+    ldx DEVNUM
     lda #1
     tay
     iny
     jsr SETLFS
     ; Call SETNAM
-    ldx #<objFn
-    ldy #>objFn
-    lda #objFn2-objFn
+    ldx #<codeFn
+    ldy #>codeFn
+    lda #codeFn2-codeFn
     jsr SETNAM
     ; Open the file and set output channel
     jsr OPEN
@@ -142,7 +135,7 @@ astRoot: .res 4
     ldx #0
     jsr CHKIN
 
-    ; Close the object code file
+    ; Close the code file
     lda #1
     jsr CLOSE
     ldx #0
@@ -163,16 +156,36 @@ astRoot: .res 4
     jsr CLRCHN
 
     ; Report a program too large for memory. It won't be linked, so
-    ; delete its object file.
+    ; it gets no object file.
     jsr checkCodeSize
     bcc :+
-    lda #<objFilename
-    ldx #>objFilename
+    lda #<codeFilename
+    ldx #>codeFilename
     ldy #0
     ldz #0
     stq ptr1
     jsr scratchFile
+    jmp freeLinkerTags
 
+    ; Write the object file. It frees the linker tags.
+:   ldq astRoot
+    jmp writeObjFile
+.endproc
+
+; This routine deletes the file named in A/X if it exists
+.proc deleteIfExists
+    sta delName
+    stx delName+1
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    beq :+
+    lda delName
+    ldx delName+1
+    ldy #0
+    ldz #0
+    stq ptr1
+    jsr scratchFile
 :   rts
 .endproc
 

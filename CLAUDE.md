@@ -355,6 +355,12 @@ A program the compiler must refuse goes in `errorTests` in `compiletests.s` inst
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
 
+After a set's compile step, `prgsums.sh` checks every PRG it compiled against its SHA-256 in `prgsums/setN.txt`, so a change that mustn't change the programs (`plans/objcode.md`) is checked. A new test, or a change meant to change the code, needs new checksums: check the programs, then `make TARGET=mega65 savesums` in `src/apps/compilertestasm` (asmlib built with `MEMCHECK=1`) records them.
+
+## Object file
+
+Code generation writes the code to `zzcode` and keeps its linker tags (`linkerTags.s` in asmlib) in the heap. At the end `writeObjFile` (`objFile.s`) writes the object file, `zztmp`: a header, symbols, imports, a relocation for each tag, then the code copied from `zzcode` (format in `linker.inc`). It deletes `zzcode` and frees the tags, so the codegen and linker overlays share nothing through the heap. A tag's location is its offset in the code, and a relocation's target is the offset of the label it names, so local labels need no symbol. A label referenced but never set is `errUndefinedLabel`, with its name printed after it. The linker (`genObjCode.s`) checks the header (`errObjFileInvalid`), sorts the relocations by offset (`sortLinkerTags.s`), adds `LINK_CODE_BASE` and patches the code into the PRG.
+
 ### Adding a test program
 
 Name its failure maker `testfailed`, call `ReportFailure` and make sure the program doesn't use that filename itself.

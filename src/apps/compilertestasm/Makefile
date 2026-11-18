@@ -50,6 +50,10 @@ else
 OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 endif
 D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
+# The PRGs on the disk before the compile step, and the checksums the
+# compiled ones must have (prgsums.sh)
+PRGSBEFORE = $(BINTARGETDIR)/$(PROGRAM)-before.txt
+PRGSUMS = prgsums/set$(TESTSET).txt
 
 # The sources only set 3 compiles. Sets 1 and 2 leave them off their disks,
 # which need the room for the programs they compile and the files their
@@ -404,14 +408,35 @@ test:
 # ("done") prints PASS. A test that finds a problem records its name and error
 # numbers in the "testfailed" file on the disk, which "done" prints before FAIL. A
 # runtime error ends the chain early, so the result line is never printed.
+#
+# After the compile step, each compiled program must match the checksum in
+# prgsums/setN.txt (prgsums.sh), so a change that must not change the
+# programs (plans/objcode.md) is checked.
 testset:
 	$(RM) $(D81FILE)
 	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
+	sh prgsums.sh list $(D81FILE) > $(PRGSBEFORE)
 	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE)
+	sh prgsums.sh check $(D81FILE) $(PRGSBEFORE) $(PRGSUMS)
 	$(if $(filter $(TESTSET),$(RTDYNSET)),sh rtdyntest.sh $(D81FILE) $(RTABI))
 	c1541 $(D81FILE) -read $(FIRSTTEST$(TESTSET)) $(BINTARGETDIR)/$(PROGRAM)-first.prg
 	../testcommon/runtest.sh $(PROGRAM)-run $(BINTARGETDIR)/$(PROGRAM)-first.prg $(D81FILE)
 
-.PHONY: test testset load hwimages hwimage
+# Compiles each set and records its programs' checksums in prgsums/setN.txt,
+# for a change that is meant to change the programs. Check that it does only
+# what it should first. Like test, it needs asmlib built with MEMCHECK=1.
+savesums:
+	@for s in $(TESTSETS); do \
+		$(MAKE) TARGET=$(TARGET) TESTSET=$$s savesumsset || exit 1; \
+	done
+
+savesumsset:
+	$(RM) $(D81FILE)
+	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
+	sh prgsums.sh list $(D81FILE) > $(PRGSBEFORE)
+	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE)
+	sh prgsums.sh save $(D81FILE) $(PRGSBEFORE) $(PRGSUMS)
+
+.PHONY: test testset load hwimages hwimage savesums savesumsset
 
 -include $(DEPENDS)

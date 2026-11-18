@@ -49,7 +49,7 @@ LFN_PKG = 3
 LFN_OBJ = 1                 ; the object file, opened by genObjCode
 
 .export genRuntime, setRuntimeFeatures, setRuntimeMode
-.export runtimeMode, codeCeiling
+.export runtimeMode, codeCeiling, runtimeFeatures
 
 .import incCodeOffset
 .import loaderStart, LOADER_SIZE, LOADER_INIT_L: zp, LOADER_INIT_H: zp

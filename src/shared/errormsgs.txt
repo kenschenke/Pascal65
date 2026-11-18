@@ -76,3 +76,5 @@ Missing runtime file
 Program-only directive
 Conflicting directives
 Too big; try static
+Undefined label
+Invalid object file
