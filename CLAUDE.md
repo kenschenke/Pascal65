@@ -41,7 +41,7 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has nine test suites, located in `src/apps`:
+The project has ten test suites, located in `src/apps`:
 
   - tokenizertest
   - parsertest
@@ -49,6 +49,7 @@ The project has nine test suites, located in `src/apps`:
   - typechecktest (see "Typecheck Tests")
   - icodetest
   - memtest (memory heap allocator in asmlib)
+  - membuftest (membuf routines in asmlib)
   - compilertestasm
   - editortest (editor buffer management)
   - themestest (themes overlay: theme files, palette, theme screen)
@@ -346,6 +347,30 @@ reading a whole record never reads memory (`MEM`).
 ### Heap Tests
 
 `memtest` checks block addresses and exact MAT entries. When you change `memheap.s`, run `make TARGET=mega65 coverage` in `src/apps/memtest`. It runs the tests against a copy of `memheap.s` with a probe at every basic block (`cov/mkcov.py`) and lists the lines that never ran.
+
+### Membuf Tests
+
+`membuftest` tests the membuf routines (`src/lib/asmlib/src/membuf`). A
+membuf is a header and a chain of 50-byte chunks. Each test keeps a model
+of its membufs: their bytes, position and used. `WRITE`, `READ` and `SEEK`
+do the same to the membuf and the model, `CHECK` walks the chunk chain
+itself and compares it and the header with the model, and `CHKCUR` checks
+which chunk is current and `posChunk`. Two membufs can be open at once
+(`SELECT`). `TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"` runs only those
+tests (remove `obj/mega65/main.o` first).
+
+A position at the end of a chunk is in that chunk, with `posChunk` 50, so
+`setMemBufPos` to the capacity still has a current chunk, and a position
+past the last chunk is the capacity. A membuf with chunks always has a
+current chunk. A write that runs into a chunk already there takes the rest
+of the caller's bytes, not the first ones again.
+
+`make TARGET=mega65 coverage` in `src/apps/membuftest` runs the tests
+against instrumented copies of the membuf files (editortest's
+`cov/mkcov.py`) linked into the test program, with `cov/covpatch.s`
+pointing asmlib's jump table at them, and lists the lines that never ran in
+`bin/mega65/coverage.txt`. Every line runs. Like `test`, it needs asmlib
+built with `MEMCHECK=1`.
 
 ### Compiler Tests
 

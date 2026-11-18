@@ -1,7 +1,7 @@
 ;
 ; writetomembuf.s
 ; Ken Schenke (kenschenke@gmail.com)
-; 
+;
 ; Copyright (c) 2025
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
@@ -26,7 +26,9 @@ toCopy: .res 1
 
 .code
 
-; Writes bytes to the membuf.
+; Writes bytes to the membuf at its position, overwriting what is there and
+; adding chunks as needed. The position moves past the bytes, and used grows
+; to the position if it is past it.
 ; Membuf header is in ptr1
 ; Caller's buffer is in ptr2
 ; Length to write passed in A/X
@@ -40,35 +42,16 @@ toCopy: .res 1
     ; Store callerPtr
     ldq ptr2
     stq callerPtr
-    ; Check if firstChunkNum is null
+    ; A membuf with no chunks gets its first one, which initMemBufChunk
+    ; makes the current chunk. A membuf with chunks always has a current
+    ; chunk (see setMemBufPos).
     ldz #MEMBUF::firstChunk
     jsr membufIsZero
-    bne :+              ; Branch if firstChunk is non-null
+    bne L1              ; Branch if firstChunk is non-null
     ldq membufPtr
     jsr initMemBufChunk ; Allocate the first chunk
     ldq membufPtr
     stq ptr1
-:   ; Check if currentChunk is null
-    ldz #MEMBUF::currentChunk
-    jsr membufIsZero
-    bne L1              ; Branch if currentChunk is non-null
-    ; Copy firstChunk to currentChunk
-    ldq membufPtr
-    stq ptr1
-    ldz #MEMBUF::firstChunk
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr3
-    ldz #MEMBUF::currentChunk+3
-    ldx #3
-:   lda ptr3,x
-    nop
-    sta (ptr1),z
-    dez
-    dex
-    bpl :-
 L1: ; Loop until length is zero
     lda dataSize
     ora dataSize+1
@@ -99,43 +82,24 @@ L2: ; ptr2 is the caller's data buffer
     stq ptr2
     lda toCopy
     bne :+
-    jmp NX
-:   ldz #MEMBUF::posChunk
-    nop
-    lda (ptr1),z
-    clc
-    adc toCopy
-    sec
-    sbc #MEMBUF_CHUNK_LEN
-    beq :+
-    bmi :+
-    ldz #MEMBUF::posChunk
-    nop
-    lda (ptr1),z
-    ldx toCopy
-    ; ptr3 is the membuf data buffer
+    jmp NX                  ; The current chunk is full
+    ; ptr3 is the membuf data buffer: currentChunk + data + posChunk
 :   ldz #MEMBUF::currentChunk
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr3
-    ; Add the data offset to ptr3
-    lda #MEMBUF_CHUNK::data
+    ldz #MEMBUF::posChunk
+    nop
+    lda (ptr1),z
+    clc
+    adc #MEMBUF_CHUNK::data
     sta intOp32
     lda #0
     sta intOp32+1
     sta intOp32+2
     sta intOp32+3
-    ldq ptr3
-    clc
-    adcq intOp32
-    stq ptr3
-    ; Add posChunk to ptr3
-    ldz #MEMBUF::posChunk
-    nop
-    lda (ptr1),z
-    sta intOp32
     ldq ptr3
     clc
     adcq intOp32
@@ -183,9 +147,19 @@ L2: ; ptr2 is the caller's data buffer
     lda dataSize
     ora dataSize+1
     beq DN
+NX: ; Move callerPtr past the bytes copied. The rest go in the next chunk,
+    ; whether it is new or already there.
+    lda toCopy
+    sta intOp32
+    lda #0
+    sta intOp32+1
+    sta intOp32+2
+    sta intOp32+3
+    ldq callerPtr
+    clc
+    adcq intOp32
+    stq callerPtr
     ; Check if the next chunk is already allocated
-NX: ldq membufPtr
-    stq ptr1
     ldz #MEMBUF::currentChunk
     neg
     neg
@@ -199,18 +173,8 @@ NX: ldq membufPtr
     lda (ptr3),z
     jsr isQZero
     bne L3
-    ; nextChunk is null - allocate a new chunk
-    ; But first, update callerPtr
-    lda toCopy
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq callerPtr
-    clc
-    adcq intOp32
-    stq callerPtr
+    ; nextChunk is null - allocate a new chunk. initMemBufChunk links it
+    ; after the current chunk and makes it the current chunk.
     ldq membufPtr
     jsr initMemBufChunk
     ldq membufPtr

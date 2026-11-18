@@ -17,7 +17,9 @@
 
 .import subInt16, isQZero
 
-; Reads bytes from the membuf.
+; Reads bytes from the membuf at its position and moves the position past
+; them. It stops at the end of the last chunk, not at used: the caller checks
+; isMemBufAtEnd.
 ; Membuf header is in ptr1
 ; Caller's buffer is in ptr2
 ; Length to read passed in A/X
@@ -25,30 +27,12 @@
     ; Store length in intOp1
     sta intOp1
     stx intOp1+1
-    ; If firstChunkNum is zero, bail out
+    ; If firstChunk is null there is nothing to read. A membuf with chunks
+    ; always has a current chunk (see setMemBufPos).
     ldz #MEMBUF::firstChunk
-    jsr membufIsZero
-    bne :+
-    jmp DN
-    ; If currentChunk is zero, set it to firstChunk
-:   ldz #MEMBUF::currentChunk
     jsr membufIsZero
     bne L1
-    ; Copy firstChunk to currentChunk
-    ldz #MEMBUF::firstChunk
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr3
-    ldz #MEMBUF::currentChunk+3
-    ldx #3
-:   lda ptr3,x
-    nop
-    sta (ptr1),z
-    dez
-    dex
-    bpl :-
+    jmp DN
     ; Loop until intOp1 is zero
 L1: ; Is intOp1 zero?
     lda intOp1
