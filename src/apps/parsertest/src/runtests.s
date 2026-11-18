@@ -35,7 +35,7 @@
 .import runTest
 .import heapWalk
 
-NUM_TESTS = 21
+NUM_TESTS = 24
 
 .bss
 

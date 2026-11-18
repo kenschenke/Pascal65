@@ -27,7 +27,12 @@ tlAddOps: .byte tcPlus, tcMinus, tcOR, tcXOR, tcLShift, tcRShift, tcDummy
 tlCaseLabelStart: .byte tcIdentifier, tcNumber, tcPlus, tcMinus, tcString, tcDummy
 tlColon: .byte tcColon, tcDummy
 tlColonEqual: .byte tcColonEqual, tcDummy
-tlDeclarationFollow: .byte tcSemicolon, tcIdentifier, tcDummy
+; Implementation ends a unit's interface and End its implementation, and
+; either may end with any section, not just a routine. Without them the
+; resync at the end of a Const, Type, Var or Uses section skipped them as
+; unexpected tokens.
+tlDeclarationFollow: .byte tcSemicolon, tcIdentifier, tcIMPLEMENTATION
+                     .byte tcEND, tcDummy
 tlDeclarationStart: .byte tcCONST, tcTYPE, tcVAR, tcPROCEDURE, tcFUNCTION, tcDummy
 tlDO: .byte tcDO, tcDummy
 tlEND: .byte tcEND, tcDummy
