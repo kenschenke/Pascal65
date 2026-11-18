@@ -1,4 +1,5 @@
 (* Test 7 - Case Statement
+HDR PRG test 0 200
 PSH IWU 0
 PSH IWU 0
 BRA LBL xxxxx
@@ -48,6 +49,7 @@ PSH IBS 8
 PSH VDW 4 1 1
 SET IBS 4 IBS 2
 LOC LBL xxxxx
+EOM IBU 0
 *)
 
 Program Test;

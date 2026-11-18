@@ -1,4 +1,5 @@
 (* Test 40 - More than 32 globals after a file variable
+HDR PRG test 0 200
 PSH ILS 0
 PSH IWU 0
 PSH IWU 0
@@ -45,6 +46,7 @@ LOC LBL xxxxx
 PSH IBS 1
 PSH VDW 4 1 28
 SET IBS 4 IBS 2
+EOM IBU 2
 *)
 
 // The globals' cleanup entries once went in fixed 32-entry arrays that

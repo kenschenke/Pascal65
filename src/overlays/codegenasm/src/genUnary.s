@@ -21,7 +21,7 @@
 .import pshOper, outOper, inpOper, strbuf
 .import genOneInstruction, genTwoInstruction, genThreeAddr, operand1
 .import genDeclInit, addStringLiteral
-.import pendingAsf
+.import pendingAsf, setRuntimeFeatures
 
 .data
 
@@ -73,6 +73,13 @@ label: .res 16
     ; compared it with the instructions below, and once wrote a stray
     ; negate after the JMP when it was IC_NEG.
     rts
+
+    ; The end of the module carries the runtime features it needs, for
+    ; the object file (writeObjFile). It writes no code.
+:   cmp #IC_EOM
+    bne :+
+    lda operand1+1
+    jmp setRuntimeFeatures
 
     ; A unit's init block runs as a 6502 subroutine. It pushes the unit's
     ; variables on the runtime stack, so it has no stack frame.

@@ -1,4 +1,5 @@
 (* Test 2 - Expressions
+HDR PRG test 0 200
 PSH IBS 0
 PSH IBS 0
 PSH BOO 0
@@ -145,6 +146,7 @@ PSH STR World
 CCT IBS 15 IBS a
 PSH VDW 15 1 6
 SET IBS 15 IBS 16
+EOM IBU 0
 *)
 
 Program Test;

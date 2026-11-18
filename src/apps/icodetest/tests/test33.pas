@@ -1,4 +1,5 @@
 (* Test 33 - Typed files of records and arrays
+HDR PRG test 0 200
 PSH ILS 0
 PSH ILS 0
 NEW IWS 4
@@ -46,6 +47,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 2
 *)
 
 // A record or array is written to and read from a typed file as bytes

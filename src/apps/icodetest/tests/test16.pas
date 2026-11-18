@@ -1,4 +1,5 @@
 (* Test 16 - Read, Readln, Readstr
+HDR PRG test 0 200
 PSH IWU 0
 PSH CHR 
 NEW IWS 10
@@ -50,6 +51,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 2
 *)
 
 Program Test;

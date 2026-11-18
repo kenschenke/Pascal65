@@ -1,4 +1,5 @@
 (* Test 19 - Array literals
+HDR PRG test 0 200
 NEW IWS 10
 DIA LBL xxxxx
 NEW IWS 36
@@ -92,6 +93,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: xxxxx
    num literals: 3
+EOM IBU 0
 *)
 
 Program Test;

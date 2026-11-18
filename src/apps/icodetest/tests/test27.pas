@@ -1,4 +1,5 @@
 (* Test 27 - Dynamic arrays
+HDR PRG test 0 200
 NEW IWS 6
 DIA LBL xxxxx
 NEW IWS 10
@@ -112,6 +113,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 1
 *)
 
 // SetLength writes SAL with the label of the array's declaration block,

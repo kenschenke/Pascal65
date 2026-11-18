@@ -1,4 +1,5 @@
 (* Test 20 - Array inside record
+HDR PRG test 0 200
 NEW IWS 14
 DIA LBL xxxxx
 DIR LBL xxxxx
@@ -25,6 +26,7 @@ DAT IBU 2 LBL xxxxx
    rec size: 20
    fields:
       offset: 4, ARRAY, xxxxx
+EOM IBU 0
 *)
 
 Program Test;

@@ -495,7 +495,14 @@ chosen by the `(* $StaticRuntime *)` and `(* $DynamicRuntime *)` directives
 (`RT_MODE_*` in `asm.inc`). Both are allowed only in a program
 (`errDirectiveProgramOnly`) and not together (`errConflictingDirectives`).
 The parser keeps `runtimeMode` and the compiler apps pass it from
-`getParserRuntimeMode` to `setCodeGenRuntimeMode`.
+`getParserRuntimeMode` to `setIcodeRuntimeMode`, with the stack size
+(`setIcodeStackSize`). The icode file's header carries both to code
+generation (`readIcodeHeader` in codegenasm). The header is the file's
+first bytes, before the instructions (`ICODE_*` in `icode.inc`). It holds
+the format version, the kind (program or unit), the mode, the stack size
+and the module's name. dumpicode prints it as the dump's first line,
+`HDR PRG name mode stacksize`. A header code generation can't read is
+`errIcodeFileInvalid`.
 
 - **Dynamic, the default.** The PRG has an empty jump table at `RT_BASE` and
   the loader (`loader.s` in linkerasm) after it. The header calls the
@@ -549,8 +556,9 @@ are reserved in the core (`pkgbss.s`), so they don't move.
 The icode overlay records the features a program uses in `runtimeFeatures`
 (`RTF_*` in `asm.inc`): a file variable, record field or array element
 (not a parameter), a `SetLength` call, or a library call to `Sin`, `Cos` or
-`Tan`. The compiler apps read it with `getIcodeRuntimeFeatures` and pass it
-to `setCodeGenRuntimeFeatures`. In static mode the linker (`runtime.s`)
+`Tan`. They are known only once the code is written, so the file's last
+instruction, `EOM`, carries them to code generation, which writes them to
+the object file. In static mode the linker (`runtime.s`)
 patches the jump table for each needed package and copies the core, then
 the variant of each. Dynamic mode ignores the features. `make ALLPKGS=1` in
 `src/overlays/codegenasm` links every package into every program, for

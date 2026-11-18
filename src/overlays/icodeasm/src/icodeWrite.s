@@ -12,11 +12,12 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.include "cbm_kernal.inc"
 
 .export icodeWriteX, currentLineNumber, loadStackValue
 .export icodeLabel, icodeFormatLabel, lblRoutineEnter, lblRoutineReturn
 .export lblDeclInit, lblParamDeclInit
-.export getRuntimeFeatures, setRuntimeFeature
+.export getRuntimeFeatures, setRuntimeFeature, setRuntimeMode, setStackSize
 
 .import icodeFileOpen, icodeFileClose, icodeWriteInstruction
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
@@ -44,6 +45,12 @@ icodeLabel: .res 20
 ; The runtime packages the program needs (RTF_* in asm.inc). Code
 ; generation links only these (see rtpkg.inc).
 runtimeFeatures: .res 1
+; The parser's settings, for the icode file's header. The compiler apps
+; set them (setRuntimeMode, setStackSize) before icodeWriteX.
+runtimeMode: .res 1
+stackSize: .res 2
+nameLen: .res 1             ; for writeHeader
+nameIndex: .res 1
 
 .code
 
@@ -61,6 +68,85 @@ runtimeFeatures: .res 1
     rts
 .endproc
 
+; Sets the runtime mode (RT_MODE_* in asm.inc) in A, for the header
+.proc setRuntimeMode
+    sta runtimeMode
+    rts
+.endproc
+
+; Sets the runtime stack size in A/X, for the header
+.proc setStackSize
+    sta stackSize
+    stx stackSize+1
+    rts
+.endproc
+
+; This routine writes the icode file's header (icode.inc) to the current
+; output. The module's root declaration is in astRoot.
+.proc writeHeader
+    lda #ICODE_MAGIC0
+    jsr CHROUT
+    lda #ICODE_MAGIC1
+    jsr CHROUT
+    lda #ICODE_VERSION
+    jsr CHROUT
+
+    ; The kind: a unit or the program
+    ldq astRoot
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    ldx #ICODE_KIND_PROGRAM
+    cmp #TYPE_UNIT
+    bne :+
+    ldx #ICODE_KIND_UNIT
+:   txa
+    jsr CHROUT
+
+    lda runtimeMode
+    jsr CHROUT
+    lda stackSize
+    jsr CHROUT
+    lda stackSize+1
+    jsr CHROUT
+
+    ; The name's length, then the name. CHROUT may change Z, so the
+    ; index is kept in nameIndex.
+    ldz #decl::name
+    ldx #0
+:   nop
+    lda (ptr1),z
+    beq :+
+    inz
+    inx
+    cpx #ICODE_MAX_NAME
+    bne :-
+:   stx nameLen
+    txa
+    jsr CHROUT
+    lda #0
+    sta nameIndex
+:   lda nameIndex
+    cmp nameLen
+    beq :+
+    clc
+    adc #decl::name
+    taz
+    nop
+    lda (ptr1),z
+    jsr CHROUT
+    inc nameIndex
+    bra :-
+:   rts
+.endproc
+
 ; Root of AST passed in Q
 .proc icodeWriteX
     ; Keep a copy of the root
@@ -75,8 +161,9 @@ runtimeFeatures: .res 1
     ; Initialize the data segments
     jsr icodeInitData
 
-    ; Open the icode temporary file
+    ; Open the icode temporary file and write its header
     jsr icodeFileOpen
+    jsr writeHeader
 
     ; Enter the main scope
     ldq astRoot
@@ -155,6 +242,14 @@ runtimeFeatures: .res 1
 
     ; Write out the data segments
     jsr icodeWriteData
+
+    ; The end of the module, with the runtime features it needs
+    lda #IC_IBU
+    sta operand1
+    lda runtimeFeatures
+    sta operand1+1
+    lda #IC_EOM
+    jsr icodeWriteInstruction
 
     ; Free data segments
     jsr icodeFreeData

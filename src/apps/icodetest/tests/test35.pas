@@ -1,4 +1,5 @@
 (* Test 35 - A library unit's variables and routines
+HDR PRG test 0 200
 PSH IWU 0
 SSP LBL xxxxx
 PSH ILS 0
@@ -21,6 +22,7 @@ PSH VDR 1e 1 1
 JRP
 LOC LBL xxxxx
 POF IBS 0 IBS 0
+EOM IBU 0
 *)
 
 // The address of each variable a library declares is written to its

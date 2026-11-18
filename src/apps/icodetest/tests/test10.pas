@@ -1,4 +1,5 @@
 (* Test 10 - Records
+HDR PRG test 0 200
 NEW IWS c
 DIR LBL xxxxx
 NEW IWS 14
@@ -31,6 +32,7 @@ DAT IBU 2 LBL xxxxx
       offset: 2, STRING
       offset: 4, RECORD, xxxxx
       offset: 16, RECORD, xxxxx
+EOM IBU 0
 *)
 
 Program Test;

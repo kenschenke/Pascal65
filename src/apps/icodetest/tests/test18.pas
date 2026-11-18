@@ -1,4 +1,5 @@
 (* Test 18 - Write, Writeln, Writestr
+HDR PRG test 0 200
 PSH BOO 0
 PSH IWU 0
 BRA LBL xxxxx
@@ -14,6 +15,7 @@ PSH IWU 929
 PSH VDW 4 1 1
 SET IBS 4 IBS 4
 LOC LBL xxxxx
+EOM IBU 0
 *)
 
 Program Test;

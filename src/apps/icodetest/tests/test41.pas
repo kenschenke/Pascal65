@@ -1,4 +1,5 @@
 (* Test 41 - A routine with more than 32 locals
+HDR PRG test 0 200
 BRA LBL xxxxx
 LOC LBL xxxxx
 NEW IWS c
@@ -106,6 +107,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 0
 *)
 
 // A routine's locals once went in fixed 32-entry arrays on the compiler's

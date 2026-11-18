@@ -53,7 +53,7 @@
 
 .import runTest
 
-NUM_TESTS = 41
+NUM_TESTS = 42
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"

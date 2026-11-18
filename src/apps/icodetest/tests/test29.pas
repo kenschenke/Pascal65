@@ -1,4 +1,5 @@
 (* Test 29 - Comparisons, pointer arithmetic, Inc and Dec, Round
+HDR PRG test 0 200
 PSH IWU 0
 PSH IWU 0
 PSH BOO 0
@@ -90,6 +91,7 @@ PSH VDR 7 1 6
 TRU
 PSH VDW 4 1 0
 SET IBS 4 IBS 4
+EOM IBU 0
 *)
 
 // An enumeration is compared as a Word. Adding to or subtracting from a

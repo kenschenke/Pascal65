@@ -79,3 +79,4 @@ Too big; try static
 Undefined label
 Invalid object file
 Invalid library file
+Invalid icode file

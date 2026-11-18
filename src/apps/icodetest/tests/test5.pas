@@ -1,4 +1,5 @@
 (* Test 5 - Repeat..Until
+HDR PRG test 0 200
 PSH IWU 1
 PSH IWU 0
 BRA LBL xxxxx
@@ -18,6 +19,7 @@ PSH VDR 4 1 0
 PSH IBS 5
 GRT IBS 4 IBS 2
 BIF LBL xxxxx
+EOM IBU 0
 *)
 
 Program Test;

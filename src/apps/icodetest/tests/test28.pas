@@ -1,4 +1,5 @@
 (* Test 28 - Unary minus
+HDR PRG test 0 200
 PSH IBS 0
 PSH IBS 0
 PSH IWU 0
@@ -42,6 +43,7 @@ NEG IBS 4
 MUL IBS 4 IBS 4 IBS 4
 PSH VDW 4 1 2
 SET IBS 4 IBS 4
+EOM IBU 0
 *)
 
 // A negated unsigned operand is converted to the signed type first. A

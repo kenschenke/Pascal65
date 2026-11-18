@@ -1,4 +1,5 @@
 (* Test 26 - For loop with a subrange control variable
+HDR PRG test 0 200
 PSH CHR 
 PSH CHR 
 BRA LBL xxxxx
@@ -24,6 +25,7 @@ PSH VDW 9 1 0
 SET IBS 9 IBS 9
 BRA LBL xxxxx
 LOC LBL xxxxx
+EOM IBU 0
 *)
 
 // The control variable is read and written, compared and passed to Succ

@@ -1,4 +1,5 @@
 (* Test 30 - Fields, pointers, string subscripts and file fields
+HDR PRG test 0 200
 SST STR Hello
 NEW IWS 12
 DIR LBL xxxxx
@@ -135,6 +136,7 @@ DAT IBU 2 LBL xxxxx
    fields:
       offset: 0, FILE
       offset: 4, FILE
+EOM IBU 2
 *)
 
 // A field of an array element and of a pointer's record, a record and a

@@ -108,7 +108,8 @@ errCodeSegmentOverflowDyn = 77  ; errCodeSegmentOverflow, dynamic runtime
 errUndefinedLabel = 78          ; the linker can't resolve an import
 errObjFileInvalid = 79          ; the linker can't read the object file
 errLibraryFileInvalid = 80      ; a library file is missing or bad
-numParserErrors = 81
+errIcodeFileInvalid = 81        ; code generation can't read the icode file
+numParserErrors = 82
 
 rteNone = 0
 rteStackOverflow = 1

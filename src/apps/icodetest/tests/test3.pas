@@ -1,4 +1,5 @@
 (* Test 3 - Scalar Variable Initial Values
+HDR PRG test 0 200
 PSH IBS 7b
 PSH IBS ea
 PSH BOO 1
@@ -11,6 +12,7 @@ SST STR Hello, World
 PSH CHR x
 BRA LBL xxxxx
 LOC LBL xxxxx
+EOM IBU 0
 *)
 
 Program Test;

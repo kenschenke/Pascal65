@@ -1,4 +1,5 @@
 (* Test 24 - Three level array literal
+HDR PRG test 0 200
 NEW IWS 48
 DIA LBL xxxxx
 DIA LBL xxxxx
@@ -114,6 +115,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: xxxxx
    num literals: 2
+EOM IBU 0
 *)
 
 Program Test;

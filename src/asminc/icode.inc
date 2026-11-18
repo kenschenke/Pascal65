@@ -5,6 +5,26 @@ icodeWrite = ICODE_BASE
 icodeFileErase = ICODE_BASE + 3
 setIcodeUnitsList = ICODE_BASE + 6
 getIcodeRuntimeFeatures = ICODE_BASE + 9
+setIcodeRuntimeMode = ICODE_BASE + 12   ; RT_MODE_* (asm.inc) in A
+setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
+
+; The icode file starts with a header, then the instructions. The last
+; instruction is EOM. Words are low byte first.
+;
+;    ICODE_MAGIC0, ICODE_MAGIC1, ICODE_VERSION
+;    ICODE_KIND_*
+;    runtime mode (RT_MODE_* in asm.inc)
+;    runtime stack size (2 bytes)
+;    length of the module's name, then the name (no terminating zero)
+;
+; The runtime features (RTF_* in asm.inc) are known only once the code is
+; written, so they are EOM's operand.
+ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
+ICODE_MAGIC1 = $43
+ICODE_VERSION = 1
+ICODE_KIND_PROGRAM = 0
+ICODE_KIND_UNIT = 1
+ICODE_MAX_NAME = 23     ; NAMELEN (ast.inc) less the terminating zero
 
 LOCALVARS_RECORD = 2
 LOCALVARS_DEL    = 1
@@ -97,6 +117,7 @@ IC_SAL          = $3b  ; 0011 1011  1:label of the array declaration block
                        ; (LongInt) on stack - set array length
 IC_UIC          = $3c  ; 0011 1100  1:label - call a unit's init block, which
                        ; pushes the unit's variables (no stack frame)
+IC_EOM          = $3d  ; 0011 1101  1:runtime features (RTF_*) - end of module
 
 ; These instructions take two operands
 IC_MASK_BINARY  = $40  ; 0100 0000

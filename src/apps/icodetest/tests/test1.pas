@@ -1,4 +1,5 @@
 (* Test 1 - Scalar Variable Assignments
+HDR PRG test 0 200
 PSH IBS 0
 PSH IBS 0
 PSH BOO 0
@@ -50,6 +51,7 @@ SET IBS 15 IBS a
 PSH CHR x
 PSH VDW 9 1 9
 SET IBS 9 IBS 9
+EOM IBU 0
 *)
 
 Program Test;

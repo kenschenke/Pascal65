@@ -1,4 +1,5 @@
 (* Test 38 - Whole records from elements, fields and pointers
+HDR PRG test 0 200
 NEW IWS 4
 DIR LBL xxxxx
 NEW IWS 12
@@ -95,6 +96,7 @@ DAT IBU 2 LBL xxxxx
    fields:
       offset: 0, RECORD, xxxxx
       offset: 4, RECORD, xxxxx
+EOM IBU 0
 *)
 
 // A record in an array or another record, or that a pointer points to,

@@ -1,4 +1,5 @@
 (* Test 34 - System library calls
+HDR PRG test 0 200
 PSH FLT 
 SST ILS 0
 PSH IBS 0
@@ -73,6 +74,7 @@ LOC LBL xxxxx
 POF IBS 1 IBS 0
 PSH VDW 9 1 5
 SET IBS 9 IBS 9
+EOM IBU 4
 *)
 
 // A call to a library routine. The routine reads its arguments as its

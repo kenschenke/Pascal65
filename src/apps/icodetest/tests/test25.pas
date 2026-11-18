@@ -1,4 +1,5 @@
 (* Test 25 - Arrays indexed by a declared type
+HDR PRG test 0 200
 PSH IBS 4
 NEW IWS 10
 DIA LBL xxxxx
@@ -35,6 +36,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 0
 *)
 
 // The bounds of an array indexed by a subrange, an enumeration or a

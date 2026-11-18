@@ -1,4 +1,5 @@
 (* Test 31 - Forward declarations, value parameters and local variables
+HDR PRG test 0 200
 NEW IWS c
 DIA LBL xxxxx
 SST ILS 0
@@ -180,6 +181,7 @@ DAT IBU 5 LBL xxxxx
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 4
+EOM IBU 2
 *)
 
 // An array or string passed by value is copied, and the copy is freed

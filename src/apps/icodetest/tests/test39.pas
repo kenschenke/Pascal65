@@ -1,4 +1,5 @@
 (* Test 39 - A unit's init block and a library's variables
+HDR PRG test 0 200
 PSH IWU 0
 UIC LBL xxxxx
 PSH IWU 0
@@ -42,6 +43,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: xxxxx
    num literals: 2
+EOM IBU 0
 *)
 
 // The units' variables follow the program's, in Uses order. IcUnit2's

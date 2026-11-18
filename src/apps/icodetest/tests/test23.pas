@@ -1,4 +1,5 @@
 (* Test 23 - Type casts
+HDR PRG test 0 200
 PSH IBS 0
 PSH IWU 0
 BRA LBL xxxxx
@@ -26,6 +27,7 @@ PSH IBS 5
 SUB IBS 1 IBS 2 IBS 4
 PSH VDW 4 1 1
 SET IBS 4 IBS 4
+EOM IBU 0
 *)
 
 Program Test;

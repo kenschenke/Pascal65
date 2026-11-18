@@ -207,6 +207,7 @@ nav:
       - DIA: icode/mne/dia.md
       - DIR: icode/mne/dir.md
       - DIV: icode/mne/div.md
+      - EOM: icode/mne/eom.md
       - DVI: icode/mne/dvi.md
       - EQU: icode/mne/equ.md
       - FSO: icode/mne/fso.md

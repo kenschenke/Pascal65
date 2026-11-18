@@ -11,14 +11,13 @@
 
 ; .import icodeWriteX, icodeFileEraseX, setIcodeUnitsList
 
-.import genObjCode, setRuntimeStackSize, setCodeGenUnitList, setChainProg
-.import setRuntimeFeatures, setRuntimeMode
+; The runtime mode and stack size come from the icode file's header and
+; the runtime features from its EOM (icode.inc), not from the compiler apps.
+
+.import genObjCode, setCodeGenUnitList, setChainProg
 
 .segment "JMPTBL"
 
 jmp genObjCode
-jmp setRuntimeStackSize
 jmp setCodeGenUnitList
 jmp setChainProg
-jmp setRuntimeFeatures
-jmp setRuntimeMode

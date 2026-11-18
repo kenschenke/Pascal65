@@ -1,4 +1,5 @@
 (* Test 13 - Routines
+HDR PRG test 0 200
 NEW IWS 10
 DIA LBL xxxxx
 NEW IWS 4
@@ -100,6 +101,7 @@ DAT IBU 5 LBL xxxxx
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 4
+EOM IBU 0
 *)
 
 Program Test;

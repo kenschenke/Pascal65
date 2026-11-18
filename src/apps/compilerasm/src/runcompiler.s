@@ -41,7 +41,6 @@ tokens: .res 4
 astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
-runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
 runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 
 .data
@@ -219,10 +218,13 @@ strLinking: .asciiz "Linking"
     jsr initIcode
     ldq unitList
     jsr setIcodeUnitsList
+    lda runtimeStackSize
+    ldx runtimeStackSize+1
+    jsr setIcodeStackSize
+    lda runtimeMode
+    jsr setIcodeRuntimeMode
     ldq astRoot
     jsr icodeWrite
-    jsr getIcodeRuntimeFeatures
-    sta runtimeFeatures
 
 .ifdef __HEAPPROFILE__
     ; Build with PROFILEFLAGS="-D __HEAPPROFILE__" to show a heap profile
@@ -255,13 +257,6 @@ strLinking: .asciiz "Linking"
     jsr initCodeGen
     ldq unitList
     jsr setCodeGenUnitList
-    lda runtimeStackSize
-    ldx runtimeStackSize+1
-    jsr setCodeGenStackSize
-    lda runtimeFeatures
-    jsr setCodeGenRuntimeFeatures
-    lda runtimeMode
-    jsr setCodeGenRuntimeMode
     lda #0
     tax
     tay

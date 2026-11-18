@@ -28,6 +28,26 @@ A [DAT](../mne/dat) instruction defines a data segment containing literal data.
 This might be a string literal or an array literal or a data block defining an array
 or record schema. These blocks of data are referenced within the code using a label.
 
+## File
+
+An intermediate code file holds one module, a program or a unit. It starts
+with a header, which isn't an instruction, followed by the instructions.
+The last instruction is [EOM](../mne/eom). Words are low byte first.
+
+|Offset|Size|Contents                                               |
+|------|----|-------------------------------------------------------|
+|0     |2   |"IC" ($49, $43)                                        |
+|2     |1   |The format's version, 1                                |
+|3     |1   |The kind: 0 for a program, 1 for a unit                |
+|4     |1   |The runtime mode: 0 dynamic, 1 static                  |
+|5     |2   |The runtime stack size                                 |
+|7     |1   |The length of the module's name, up to 23              |
+|8     |    |The name, with no terminating zero                     |
+
+The runtime features the module needs, such as files or trig, are only
+known once its code is written, so they are [EOM](../mne/eom)'s operand
+rather than part of the header.
+
 ## Operands
 
 An operand can be one of four categories: a literal, a variable reference,
@@ -81,6 +101,7 @@ The following instructions do not take an operand.
 |[SSR](../mne/ssr)    |0a       |0000 1010   |Read a string at a subscript   |
 |[SSW](../mne/ssw)    |0b       |0000 1011   |Write a string at a subscript  |
 |[TRU](../mne/tru)    |05       |0000 0101   |Truncate a real number         |
+|[UIR](../mne/uir)    |10       |0001 0000   |Return from a unit's init block|
 
 ### Unary Instructions
 
@@ -99,6 +120,7 @@ The following instructions take one operand.
 |[CPY](../mne/cpy)    |36       |0011 0110   |Clones memory                        |
 |[DIA](../mne/dia)    |25       |0010 0101   |Initializes an array                 |
 |[DIR](../mne/dir)    |21       |0010 0001   |Initializes a record                 |
+|[EOM](../mne/eom)    |3d       |0011 1101   |End of the module                    |
 |[INP](../mne/inp)    |26       |0010 0110   |Reads and stores a value from input  |
 |[LOC](../mne/loc)    |2e       |0010 1110   |Sets the target for the label        |
 |[MEM](../mne/mem)    |3a       |0011 1010   |Reads a value from a memory location |
@@ -114,6 +136,7 @@ The following instructions take one operand.
 |[SSP](../mne/ssp)    |39       |0011 1001   |Save the stack pointer               |
 |[SST](../mne/sst)    |2d       |0010 1101   |Initialize a string variable         |
 |[SUC](../mne/suc)    |29       |0010 1001   |Calcuate the successor of the value  |
+|[UIC](../mne/uic)    |3c       |0011 1100   |Call a unit's init block             |
 
 ### Binary Instructions
 

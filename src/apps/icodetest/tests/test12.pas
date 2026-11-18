@@ -1,4 +1,5 @@
 (* Test 12 - Standard Routines
+HDR PRG test 0 200
 PSH IWU 0
 PSH IBS 0
 PSH ILS 0
@@ -80,6 +81,7 @@ MUL IBS 1 IBS 4 IBS 4
 ADD IBS 1b IBS 4 IBS 1b
 PSH VDW 1b 1 8
 SET IBS 1b IBS 1b
+EOM IBU 0
 *)
 
 Program Test;

@@ -1,4 +1,5 @@
 (* Test 14 - Files
+HDR PRG test 0 200
 PSH ILS 0
 PSH ILS 0
 BRA LBL xxxxx
@@ -21,6 +22,7 @@ JSR LBL xxxxx IBS 2 IBS 0
 LOC LBL xxxxx
 POP
 POF IBS 0 IBS 0
+EOM IBU 2
 *)
 
 Program Test;

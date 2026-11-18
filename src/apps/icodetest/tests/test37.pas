@@ -1,4 +1,5 @@
 (* Test 37 - Dereferenced Var arguments and pointer offsets
+HDR PRG test 0 200
 PSH IWU 0
 PSH IBS 0
 PSH IWU 0
@@ -98,6 +99,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 0
 *)
 
 // The address of p^ is the value of p, so p^ passed to a Var parameter

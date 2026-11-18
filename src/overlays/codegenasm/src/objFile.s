@@ -47,7 +47,7 @@ skip:
 .endmacro
 
 .export writeObjFile, objFilename, codeFilename
-.export setRuntimeFeatures, setRuntimeMode
+.export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen
 
 .import runtimeStackSize, writeLibraries
 
@@ -104,11 +104,11 @@ copyBuf: .res 256
     rts
 .endproc
 
-; This routine writes the object file. The AST root is in Q.
+; This routine writes the object file. The AST root is in Q. The module's
+; name, runtime mode and stack size come from the icode file's header
+; (readIcodeHeader) and the features from its EOM.
 .proc writeObjFile
     stq astRoot
-    stq ptr1
-    jsr copyModuleName
     jsr addImports
 
     ; Open the object file
@@ -188,23 +188,6 @@ copyBuf: .res 256
     jsr scratchFile
 
     jmp freeLinkerTags
-.endproc
-
-; This routine copies the name of the module (decl::name) at ptr1 to
-; nameBuf and sets nameLen.
-.proc copyModuleName
-    ldz #decl::name
-    ldx #0
-:   nop
-    lda (ptr1),z
-    beq :+
-    sta nameBuf,x
-    inz
-    inx
-    cpx #NAMELEN
-    bne :-
-:   stx nameLen
-    rts
 .endproc
 
 ; This routine counts the relocations and finds the imports: the labels

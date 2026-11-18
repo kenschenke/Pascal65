@@ -2,11 +2,10 @@
 CODEGEN_BASE = $4000
 
 objCodeGen = CODEGEN_BASE
-setCodeGenStackSize = CODEGEN_BASE + 3
-setCodeGenUnitList = CODEGEN_BASE + 6
-setCodeGenProgramChain = CODEGEN_BASE + 9
-setCodeGenRuntimeFeatures = CODEGEN_BASE + 12
-setCodeGenRuntimeMode = CODEGEN_BASE + 15      ; RT_MODE_* (asm.inc) in A
+setCodeGenUnitList = CODEGEN_BASE + 3
+setCodeGenProgramChain = CODEGEN_BASE + 6
+; The runtime mode, stack size and features come from the icode file
+; (icode.inc). Set them in icode (setIcodeRuntimeMode, setIcodeStackSize).
 
 .macro genOne opcode
     lda #opcode

@@ -1,4 +1,5 @@
 (* Test 36 - A unit with code
+HDR PRG test 0 200
 UIC LBL xxxxx
 BRA LBL xxxxx
 LOC LBL xxxxx
@@ -24,6 +25,7 @@ PSH IBS 1
 ADD IBS 4 IBS 2 IBS 4
 PSH VDW 4 1 0
 SET IBS 4 IBS 4
+EOM IBU 0
 *)
 
 // A unit's routines are written in the unit's scope. Its variables are

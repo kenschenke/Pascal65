@@ -1,4 +1,5 @@
 (* Test 21 - Enumerations
+HDR PRG test 0 200
 NEW IWS 14
 DIA LBL xxxxx
 PSH IWU 0
@@ -157,6 +158,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: 
    num literals: 0
+EOM IBU 0
 *)
 
 Program Test;

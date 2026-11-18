@@ -16,6 +16,7 @@
 .include "cbm_kernal.inc"
 
 .export processIcodeInstructions, readIcodeByte, pendingPops, pendingAsf
+.export readStatus
 
 .import readInstruction, instruction
 .import genThreeAddr, genOneInstruction, genTwoInstruction, genBinary, genTrinary, genUnary

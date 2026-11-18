@@ -1,4 +1,5 @@
 (* Test 5 - For loops
+HDR PRG test 0 200
 PSH IWU 1
 PSH IWU 0
 BRA LBL xxxxx
@@ -49,6 +50,7 @@ PSH VDW 4 1 0
 SET IBS 4 IBS 4
 BRA LBL xxxxx
 LOC LBL xxxxx
+EOM IBU 0
 *)
 
 Program Test;

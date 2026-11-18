@@ -1,4 +1,5 @@
 (* Test 11 - Pointers
+HDR PRG test 0 200
 PSH IWU 0
 NEW IWS 10
 DIA LBL xxxxx
@@ -87,6 +88,7 @@ DAT IBU 5 LBL xxxxx
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 8
+EOM IBU 0
 *)
 
 Program Test;

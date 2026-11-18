@@ -1,4 +1,5 @@
 (* Test 9 - Strings
+HDR PRG test 0 200
 SST ILS 0
 PSH CHR 
 BRA LBL xxxxx
@@ -22,6 +23,7 @@ PSH VDR 9 1 1
 CCT IBS a IBS 9
 PSH VDW 15 1 0
 SET IBS 15 IBS 16
+EOM IBU 0
 *)
 
 Program Test;

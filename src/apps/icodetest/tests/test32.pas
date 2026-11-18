@@ -1,4 +1,5 @@
 (* Test 32 - Array bounds and element types
+HDR PRG test 0 200
 NEW IWS b
 DIA LBL xxxxx
 NEW IWS 14
@@ -159,6 +160,7 @@ DAT IBU 5 LBL xxxxx
    elem label: 
    literals: xxxxx
    num literals: 256
+EOM IBU 2
 *)
 
 // Character, negative and enumeration bounds, arrays of files, strings

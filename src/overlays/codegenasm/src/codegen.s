@@ -14,9 +14,10 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 .include "cbm_kernal.inc"
+.include "error.inc"
 
 .export genObjCode
-.export genThreeAddr, runtimeStackSize, setRuntimeStackSize
+.export genThreeAddr, runtimeStackSize
 .export genOneInstruction, genTwoInstruction, incCodeOffset, calcNamePtr
 
 .import writePrgHeader, processIcodeInstructions, prgCleanup
@@ -24,7 +25,7 @@
 .import cleanupLibraries
 .import initDataSegment, writeDataSegment, freeDataSegment
 .import tagBSS_EXITHANDLER
-.import writeObjFile, objFilename, codeFilename
+.import writeObjFile, objFilename, codeFilename, readIcodeHeader
 
 .data
 
@@ -86,10 +87,8 @@ delName: .res 2             ; for deleteIfExists
     ldx #1
     jsr CHKOUT
 
-    ldq astRoot
-    jsr writePrgHeader
-
-    ; Open the icode file
+    ; Open the icode file and read its header: the runtime mode and
+    ; stack size and the module's name (icode.inc)
     ; Call SETLFS
     ldx DEVNUM
     lda #2
@@ -103,6 +102,12 @@ delName: .res 2             ; for deleteIfExists
     jsr SETNAM
     ; Open the file
     jsr OPEN
+    jsr readIcodeHeader
+    bcc :+
+    jmp badIcode
+
+:   ldq astRoot
+    jsr writePrgHeader
 
     jsr processIcodeInstructions
 
@@ -178,10 +183,25 @@ delName: .res 2             ; for deleteIfExists
 :   rts
 .endproc
 
-.proc setRuntimeStackSize
-    sta runtimeStackSize
-    stx runtimeStackSize+1
-    rts
+; This routine reports an icode file code generation can't read: not icode,
+; another version, or not a program. It closes the files, deletes the code
+; file and frees what genObjCode set up. No object file is written.
+.proc badIcode
+    lda #2
+    jsr CLOSE
+    lda #1
+    jsr CLOSE
+    jsr CLRCHN
+    lda #<codeFilename
+    ldx #>codeFilename
+    jsr deleteIfExists
+    jsr freeStringLiterals
+    jsr freeDataSegment
+    jsr freeLinkerTags
+    lda #errIcodeFileInvalid
+    ldx #0
+    ldy #0
+    jmp compilerError
 .endproc
 
 .proc genOneInstruction

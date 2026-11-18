@@ -53,6 +53,8 @@ sourceFn: .res 16
 intBuf: .res 14
 tokens: .res 4
 astRoot: .res 4
+stackSize: .res 2           ; the parser's, for the icode file's header
+runtimeMode: .res 1
 icodeBuf: .res 4
 sourceBuf: .res 81
 dumpBuf: .res 81
@@ -100,7 +102,7 @@ expectedFeatures:
     .byte 0, 0, 0, 0, 0, 0, RTF_DYNARRAYS, 0        ; 21-28
     .byte 0, RTF_FILES, RTF_FILES                   ; 29-31
     .byte RTF_FILES, RTF_FILES, RTF_TRIG, 0, 0, 0   ; 32-37
-    .byte 0, 0, RTF_FILES, 0                        ; 38-41
+    .byte 0, 0, RTF_FILES, 0, 0                     ; 38-42
 
 .code
 
@@ -168,6 +170,12 @@ expectedFeatures:
     stq astRoot
     jsr getParserUnitsList
     stq unitList
+    ; The icode file's header carries them, as in the compiler apps
+    jsr getParserStackSize
+    sta stackSize
+    stx stackSize+1
+    jsr getParserRuntimeMode
+    sta runtimeMode
 
     ; Check the error count
     lda errorCount
@@ -326,6 +334,11 @@ expectedFeatures:
     jsr initIcode
     ldq unitList
     jsr setIcodeUnitsList
+    lda stackSize
+    ldx stackSize+1
+    jsr setIcodeStackSize
+    lda runtimeMode
+    jsr setIcodeRuntimeMode
     ldq astRoot
     jsr icodeWrite
 

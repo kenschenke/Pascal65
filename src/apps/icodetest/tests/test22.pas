@@ -1,4 +1,5 @@
 (* Test 22 - Constants
+HDR PRG test 0 200
 PSH IWU 3039
 PSH FLT 3.14159
 SST STR Hello World
@@ -33,6 +34,7 @@ SET IBS 8 IBS 8
 PSH VDR 9 1 4
 PSH VDW 9 1 9
 SET IBS 9 IBS 9
+EOM IBU 0
 *)
 
 Program Test;

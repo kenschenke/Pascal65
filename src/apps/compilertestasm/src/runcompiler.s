@@ -40,7 +40,6 @@ tokens: .res 4
 astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
-runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
 runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 prgName: .res 17                ; checkExpectedError: the PRG's name
 
@@ -185,10 +184,13 @@ prgName: .res 17                ; checkExpectedError: the PRG's name
     jsr initIcode
     ldq unitList
     jsr setIcodeUnitsList
+    lda runtimeStackSize
+    ldx runtimeStackSize+1
+    jsr setIcodeStackSize
+    lda runtimeMode
+    jsr setIcodeRuntimeMode
     ldq astRoot
     jsr icodeWrite
-    jsr getIcodeRuntimeFeatures
-    sta runtimeFeatures
 
     ; Free the PROGRAM scope symbol table
     jsr scopeExit
@@ -211,13 +213,6 @@ prgName: .res 17                ; checkExpectedError: the PRG's name
     jsr initCodeGen
     ldq unitList
     jsr setCodeGenUnitList
-    lda runtimeStackSize
-    ldx runtimeStackSize+1
-    jsr setCodeGenStackSize
-    lda runtimeFeatures
-    jsr setCodeGenRuntimeFeatures
-    lda runtimeMode
-    jsr setCodeGenRuntimeMode
     lda nextTestPrg
     beq L1
     lda #<nextTestPrg
