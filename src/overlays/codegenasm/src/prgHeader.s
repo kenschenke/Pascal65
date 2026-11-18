@@ -1,70 +1,51 @@
 ;
 ; prgHeader.s
 ; Ken Schenke (kenschenke@gmail.com)
-; 
+;
 ; Copyright (c) 2026
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
 ; prgHeader routine
+;
+; The program header is the first code in the program's module. The linker
+; puts the BASIC line, the runtime and the libraries before it and jumps
+; to it (see rtlayout.inc). The addresses only the linker knows, such as
+; the runtime's BSS and the top of the stack, are imports of linker symbols
+; (linker.inc).
 
 .include "asm.inc"
 .include "asmlib.inc"
 .include "linker.inc"
+.include "rtlayout.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
-.include "error.inc"
 
-STA_ZEROPAGE = 1
-AND_IMMEDIATE = 2
-ORA_IMMEDIATE = 3
-LDA_ZEROPAGE = 4
+.export writePrgHeader
+.export tagBSS_ZPBACKUP, tagBSS_EXITHANDLER
 
-; The program image, its heap and its runtime stack share $2001 up to
-; codeCeiling: $C000 for a static program, rtLow for a dynamic one (see
-; genRuntime.s). checkCodeSize fails a program that would leave less than
-; this much heap. The dynamic runtime's loader (loader.s) checks the same.
-MIN_HEAP_SIZE = 256
-
-.export writePrgHeader, checkCodeSize
-.export tagBSS_ZPBACKUP, tagBSS_EXITHANDLER, tagBSS_TENSTABLE, tagBSS_INPUTBUF
-.export tagBSS_HEAPBOTTOM, tagBSS_INTBUF
-
-; Offsets in the header that the loader reads and patches
-.exportzp PRG_HEADER_CODE_OFFSET_1, PRG_HEADER_CODE_OFFSET_2
-.exportzp PRG_HEADER_CODE_OFFSET_3, PRG_HEADER_STACKSIZE1_L
-.exportzp PRG_HEADER_STACKSIZE1_H, PRG_HEADER_STACKSIZE2_L
-.exportzp PRG_HEADER_STACKSIZE2_H, PRG_HEADER_STACKTOP_H
-
-.import genThreeAddr
-.import loadLibraries, genRuntime, runtimeStackSize, initLibraries, incCodeOffset
-.import runtimeMode, codeCeiling, LOADER_ADDR
+.import runtimeStackSize, initLibraries, incCodeOffset
 
 .bss
 
-intBuf: .res 12
-bytesOver: .res 4
 astRoot: .res 4
 
 .data
 
-tagInit: .asciiz "init"
 tagBSS_ZPBACKUP: .asciiz "zpbackup"
 tagBSS_HEAPBOTTOM: .asciiz "heapbottom"
 tagBSS_INTBUF: .asciiz "intbuf"
 tagBSS_TENSTABLE: .asciiz "tenstable"
 tagBSS_INPUTBUF: .asciiz "inputbuf"
 tagBSS_EXITHANDLER: .asciiz "exithandler"
-strTooLarge1: .asciiz "Program is "
-strTooLarge2: .asciiz " bytes too large"
+tagStackTop: .asciiz "stacktop"
+tagHeapTop: .asciiz "heaptop"
+tagRtInit: .asciiz "rtinit"
 
 prgHeader:
 
-    PRG_HEADER_CODE_OFFSET_1 = 13
-    PRG_HEADER_CODE_OFFSET_2 = 62
-    PRG_HEADER_CODE_OFFSET_3 = 64
     PRG_HEADER_CODE_OFFSET_4 = 89
     PRG_HEADER_CODE_OFFSET_5 = 93
     PRG_HEADER_CODE_OFFSET_6 = 97
@@ -74,13 +55,7 @@ prgHeader:
     PRG_HEADER_CODE_EXIT_HANDLER_L = 27
     PRG_HEADER_CODE_EXIT_HANDLER_H = 31
     PRG_HEADER_LENGTH = 109
-    PRG_HEADER_STACKSIZE1_L = 47
-    PRG_HEADER_STACKSIZE1_H = 49
-    PRG_HEADER_STACKSIZE2_L = 54
-    PRG_HEADER_STACKSIZE2_H = 58
     PRG_HEADER_RTINIT_L = 24
-    PRG_HEADER_RTINIT_H = 25
-    PRG_HEADER_STACKTOP_H = 41
 
     ; Disable BASIC ROM
     .byte OC_LDA_ZEROPAGE, 1
@@ -91,6 +66,7 @@ prgHeader:
     ; Make a backup copy of page zero
     .byte OC_LDX_IMMEDIATE, 0
     .byte OC_LDA_X_INDEXED_ZP, $04
+    .assert * - prgHeader + 1 = PRG_HEADER_CODE_OFFSET_1, error, "header offset"
     .byte OC_STA_ABSOLUTEX, 0, 0   ; PRG_HEADER_CODE_OFFSET_1
     .byte OC_INX
     .byte OC_CPX_IMMEDIATE, $5d
@@ -103,7 +79,7 @@ prgHeader:
     ; The runtime's first call. A dynamic program calls the loader instead,
     ; which loads the runtime and then jumps to RT_RUNTIMEERRORINIT.
     .assert * - prgHeader + 1 = PRG_HEADER_RTINIT_L, error, "header offset"
-    .byte OC_JSR, 0, 0          ; PRG_HEADER_RTINIT_L/H
+    .byte OC_JSR, 0, 0          ; PRG_HEADER_RTINIT_L/H (rtinit)
 
     ; Set the exit handler
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_CODE_EXIT_HANDLER_L
@@ -115,7 +91,7 @@ prgHeader:
     .byte OC_LDA_IMMEDIATE, 0
     .byte OC_STA_ZEROPAGE, ZP_SPL
     .byte OC_STA_ZEROPAGE, ZP_STACKFRAMEL
-    ; Runtime stack top at codeCeiling, a page boundary (grows downward)
+    ; Runtime stack top at the ceiling, a page boundary (grows downward)
     .assert * - prgHeader + 1 = PRG_HEADER_STACKTOP_H, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0               ; PRG_HEADER_STACKTOP_H
     .byte OC_STA_ZEROPAGE, ZP_SPH
@@ -124,6 +100,7 @@ prgHeader:
     ; Set the runtime stack size and initialize the stack
     .assert * - prgHeader + 1 = PRG_HEADER_STACKSIZE1_L, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE1_L
+    .assert * - prgHeader + 1 = PRG_HEADER_STACKSIZE1_H, error, "header offset"
     .byte OC_LDX_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE1_H
     .byte OC_JSR, .LOBYTE(RT_STACKINIT), .HIBYTE(RT_STACKINIT)
 
@@ -131,10 +108,12 @@ prgHeader:
     .assert * - prgHeader + 1 = PRG_HEADER_STACKSIZE2_L, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE2_L
     .byte OC_STA_ZEROPAGE, ZP_PTR1L
+    .assert * - prgHeader + 1 = PRG_HEADER_STACKSIZE2_H, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_STACKSIZE2_H
     .byte OC_STA_ZEROPAGE, ZP_PTR1H
     .assert * - prgHeader + 1 = PRG_HEADER_CODE_OFFSET_2, error, "header offset"
     .byte OC_LDA_IMMEDIATE, 0   ; PRG_HEADER_CODE_OFFSET_2
+    .assert * - prgHeader + 1 = PRG_HEADER_CODE_OFFSET_3, error, "header offset"
     .byte OC_LDX_IMMEDIATE, 0   ; PRG_HEADER_CODE_OFFSET_3
     .byte OC_JSR, .LOBYTE(RT_HEAPINIT), .HIBYTE(RT_HEAPINIT)
 
@@ -176,213 +155,67 @@ prgHeader:
     ; Clear the keyboard buffer
     .byte OC_JSR, .LOBYTE(RT_CLEARKEYBUF), .HIBYTE(RT_CLEARKEYBUF)
 
+    .assert * - prgHeader = PRG_HEADER_LENGTH, error, "header length"
+
+; The header's addresses: the label, the part of it and the offset
+.macro hdrTag label, kind, offset
+    .addr label
+    .byte kind, offset
+.endmacro
+hdrTags:
+    hdrTag tagBSS_ZPBACKUP, LINKADDR_BOTH, PRG_HEADER_CODE_OFFSET_1
+    hdrTag tagRtInit, LINKADDR_BOTH, PRG_HEADER_RTINIT_L
+    hdrTag tagBSS_EXITHANDLER, LINKADDR_LOW, PRG_HEADER_CODE_EXIT_HANDLER_L
+    hdrTag tagBSS_EXITHANDLER, LINKADDR_HIGH, PRG_HEADER_CODE_EXIT_HANDLER_H
+    hdrTag tagStackTop, LINKADDR_HIGH, PRG_HEADER_STACKTOP_H
+    hdrTag tagHeapTop, LINKADDR_LOW, PRG_HEADER_STACKSIZE2_L
+    hdrTag tagHeapTop, LINKADDR_HIGH, PRG_HEADER_STACKSIZE2_H
+    hdrTag tagBSS_HEAPBOTTOM, LINKADDR_LOW, PRG_HEADER_CODE_OFFSET_2
+    hdrTag tagBSS_HEAPBOTTOM, LINKADDR_HIGH, PRG_HEADER_CODE_OFFSET_3
+    hdrTag tagBSS_INPUTBUF, LINKADDR_LOW, PRG_HEADER_CODE_OFFSET_9
+    hdrTag tagBSS_INPUTBUF, LINKADDR_HIGH, PRG_HEADER_CODE_OFFSET_10
+    hdrTag tagBSS_INTBUF, LINKADDR_LOW, PRG_HEADER_CODE_OFFSET_4
+    hdrTag tagBSS_INTBUF, LINKADDR_HIGH, PRG_HEADER_CODE_OFFSET_5
+    hdrTag tagBSS_TENSTABLE, LINKADDR_LOW, PRG_HEADER_CODE_OFFSET_6
+    hdrTag tagBSS_TENSTABLE, LINKADDR_HIGH, PRG_HEADER_CODE_OFFSET_7
+hdrTagsEnd:
+
 .code
 
-codeBase = $2001
-
-; This routine writes the BASIC header to the PRG file
-; then writes initialization code.
+; This routine writes the program header, then the calls to the
+; libraries' initialization.
 ; AST root passed in Q
 .proc writePrgHeader
     stq astRoot
 
-    ; Link to next BASIC line
-    lda #.LOBYTE(codeBase+14)
-    jsr CHROUT
-    lda #.HIBYTE(codeBase+14)
-    jsr CHROUT
-
-    ; BASIC line number
-    lda #10
-    jsr CHROUT
-    lda #0
-    jsr CHROUT
-
-    ; BANK token
-    lda #$fe
-    jsr CHROUT
-    lda #2
-    jsr CHROUT
-
-    ; BANK argument
-    lda #'0'
-    jsr CHROUT
-
-    ; Colon to continue line
-    lda #':'
-    jsr CHROUT
-
-    ; SYS token
-    lda #$9e
-    jsr CHROUT
-
-    ; Starting address of code
-    lda #.LOBYTE(codeBase+16)
-    sta intOp1
-    lda #.HIBYTE(codeBase+16)
-    sta intOp1+1
-    lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt16
+    ; The header's addresses
     ldx #0
-:   lda intBuf,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-
-    ; End of BASIC line
-:   lda #0
-    jsr CHROUT
-
-    ; End of BASIC program marker
-    lda #0
-    jsr CHROUT
-    jsr CHROUT
-
-    lda #16
-    sta codeOffset
-
-    lda #<tagInit
-    ldx #>tagInit
-    ldy #LINKADDR_BOTH
-    ldz #1
+L1: phx
+    lda hdrTags+2,x
+    tay
+    lda hdrTags+3,x
+    taz
+    lda hdrTags+1,x
+    pha
+    lda hdrTags,x
+    plx
     jsr linkAddressLookup
+    pla
+    clc
+    adc #4
+    tax
+    cpx #hdrTagsEnd-hdrTags
+    bne L1
 
-    lda #OC_JMP
-    ldx #0
-    ldy #0
-    jsr genThreeAddr
-
-    ; Dedicate 20 bytes for the Mega65 DMA command block
-    ldx #20
-    lda #0
-:   jsr CHROUT
-    dex
-    bne :-
-    lda #20
-    jsr incCodeOffset
-
-    jsr genRuntime
-
-    ldq astRoot
-    jsr loadLibraries
-
-    lda #<tagInit
-    ldx #>tagInit
-    jsr linkAddressSet
-
-    lda #<tagBSS_ZPBACKUP
-    ldx #>tagBSS_ZPBACKUP
-    ldy #LINKADDR_BOTH
-    ldz #PRG_HEADER_CODE_OFFSET_1
-    jsr linkAddressLookup
-
-    lda #<tagBSS_HEAPBOTTOM
-    ldx #>tagBSS_HEAPBOTTOM
-    ldy #LINKADDR_LOW
-    ldz #PRG_HEADER_CODE_OFFSET_2
-    jsr linkAddressLookup
-
-    lda #<tagBSS_HEAPBOTTOM
-    ldx #>tagBSS_HEAPBOTTOM
-    ldy #LINKADDR_HIGH
-    ldz #PRG_HEADER_CODE_OFFSET_3
-    jsr linkAddressLookup
-
-    lda #<tagBSS_INTBUF
-    ldx #>tagBSS_INTBUF
-    ldy #LINKADDR_LOW
-    ldz #PRG_HEADER_CODE_OFFSET_4
-    jsr linkAddressLookup
-
-    lda #<tagBSS_INTBUF
-    ldx #>tagBSS_INTBUF
-    ldy #LINKADDR_HIGH
-    ldz #PRG_HEADER_CODE_OFFSET_5
-    jsr linkAddressLookup
-
-    lda #<tagBSS_TENSTABLE
-    ldx #>tagBSS_TENSTABLE
-    ldy #LINKADDR_LOW
-    ldz #PRG_HEADER_CODE_OFFSET_6
-    jsr linkAddressLookup
-
-    lda #<tagBSS_TENSTABLE
-    ldx #>tagBSS_TENSTABLE
-    ldy #LINKADDR_HIGH
-    ldz #PRG_HEADER_CODE_OFFSET_7
-    jsr linkAddressLookup
-
-    lda #<tagBSS_INPUTBUF
-    ldx #>tagBSS_INPUTBUF
-    ldy #LINKADDR_LOW
-    ldz #PRG_HEADER_CODE_OFFSET_9
-    jsr linkAddressLookup
-
-    lda #<tagBSS_INPUTBUF
-    ldx #>tagBSS_INPUTBUF
-    ldy #LINKADDR_HIGH
-    ldz #PRG_HEADER_CODE_OFFSET_10
-    jsr linkAddressLookup
-
-    lda #<tagBSS_EXITHANDLER
-    ldx #>tagBSS_EXITHANDLER
-    ldy #LINKADDR_LOW
-    ldz #PRG_HEADER_CODE_EXIT_HANDLER_L
-    jsr linkAddressLookup
-
-    lda #<tagBSS_EXITHANDLER
-    ldx #>tagBSS_EXITHANDLER
-    ldy #LINKADDR_HIGH
-    ldz #PRG_HEADER_CODE_EXIT_HANDLER_H
-    jsr linkAddressLookup
-
+    ; The runtime stack's size
     lda runtimeStackSize
-    ldx #PRG_HEADER_STACKSIZE1_L
-    sta prgHeader,x
+    sta prgHeader + PRG_HEADER_STACKSIZE1_L
     lda runtimeStackSize+1
-    ldx #PRG_HEADER_STACKSIZE1_H
-    sta prgHeader,x
-
-    ; The runtime's first call: the loader in a dynamic program
-    lda runtimeMode
-    cmp #RT_MODE_STATIC
-    beq :+
-    lda #.LOBYTE(LOADER_ADDR)
-    ldx #.HIBYTE(LOADER_ADDR)
-    bra :++
-:   lda #.LOBYTE(RT_RUNTIMEERRORINIT)
-    ldx #.HIBYTE(RT_RUNTIMEERRORINIT)
-:   sta prgHeader + PRG_HEADER_RTINIT_L
-    stx prgHeader + PRG_HEADER_RTINIT_H
-
-    ; The stack top and the heap top, from codeCeiling. The loader of a
-    ; dynamic program sets them again for the runtime it loads.
-    lda codeCeiling+1
-    sta prgHeader + PRG_HEADER_STACKTOP_H
-    lda codeCeiling
-    sta intOp1
-    lda codeCeiling+1
-    sta intOp1+1
-    lda runtimeStackSize
-    sta intOp2
-    lda runtimeStackSize+1
-    sta intOp2+1
-    jsr subInt16
-    lda #4
-    sta intOp2
-    lda #0
-    sta intOp2+1
-    jsr subInt16
-    lda intOp1
-    ldx #PRG_HEADER_STACKSIZE2_L
-    sta prgHeader,x
-    lda intOp1+1
-    ldx #PRG_HEADER_STACKSIZE2_H
-    sta prgHeader,x
+    sta prgHeader + PRG_HEADER_STACKSIZE1_H
 
     ; Write the program header
+    ldx #1
+    jsr CHKOUT
     ldx #0
 :   lda prgHeader,x
     jsr CHROUT
@@ -394,107 +227,5 @@ codeBase = $2001
     jsr incCodeOffset
 
     ldq astRoot
-    jsr initLibraries
-
-    rts
-.endproc
-
-; This routine checks that the program fits in memory once all of it has
-; been written. The runtime stack grows down from codeCeiling and the heap
-; runs from the end of the image up to the heap's MAT, four bytes below the
-; stack (see the header above). If less than MIN_HEAP_SIZE bytes are left
-; for the heap, errCodeSegmentOverflow (static) or errCodeSegmentOverflowDyn
-; (dynamic) is reported, followed by a line saying how many bytes too large
-; the program is, and the carry is set.
-; Otherwise the carry is clear.
-.proc checkCodeSize
-    ; intOp1/intOp2 (32 bits) = codeBase + stack + 4 + MIN_HEAP_SIZE
-    lda runtimeStackSize
-    clc
-    adc #.LOBYTE(codeBase + 4 + MIN_HEAP_SIZE)
-    sta intOp1
-    lda runtimeStackSize+1
-    adc #.HIBYTE(codeBase + 4 + MIN_HEAP_SIZE)
-    sta intOp1+1
-    lda #0
-    adc #0
-    sta intOp2
-    lda #0
-    sta intOp2+1
-
-    ; Add the image size. intOp1/intOp2 is then the address just past the
-    ; minimum heap, the stack and the image.
-    lda codeOffset
-    sta intOp32
-    lda codeOffset+1
-    sta intOp32+1
-    lda #0
-    sta intOp32+2
-    sta intOp32+3
-    ldq intOp1
-    clc
-    adcq intOp32
-    stq intOp1
-
-    ; intOp1/intOp2 = bytes over codeCeiling
-    lda codeCeiling
-    sta intOp32
-    lda codeCeiling+1
-    sta intOp32+1
-    ldq intOp1
-    sec
-    sbcq intOp32
-    stq intOp1
-    bcc OK                      ; Below the ceiling
-    lda intOp1
-    ora intOp1+1
-    ora intOp2
-    ora intOp2+1
-    bne ER                      ; Above the ceiling
-OK: clc                         ; It fits
-    rts
-
-    ; The error logger uses intOp1, so save the count
-ER: ldq intOp1
-    stq bytesOver
-    lda runtimeMode
-    cmp #RT_MODE_STATIC
-    bne :+
-    lda #errCodeSegmentOverflow
-    bra :++
-    ; A dynamic program has less room than a static one, so the error
-    ; suggests $StaticRuntime
-:   lda #errCodeSegmentOverflowDyn
-:   ldx #0
-    ldy #0
-    jsr compilerError
-
-    ; Report how many bytes too large the program is
-    ldq bytesOver
-    stq intOp1
-    ldx #0
-:   lda strTooLarge1,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   lda #<intBuf
-    ldx #>intBuf
-    jsr writeInt32
-    ldx #0
-:   lda intBuf,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   ldx #0
-:   lda strTooLarge2,x
-    beq :+
-    jsr CHROUT
-    inx
-    bne :-
-:   lda #13
-    jsr CHROUT
-    sec
-    rts
+    jmp initLibraries
 .endproc

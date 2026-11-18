@@ -256,15 +256,13 @@ L1: lda relocsLeft
     stq tagToFix
     stq ptr1
 
-    ; The address is the target's, at LINK_CODE_BASE
+    ; The target, which the linker turns into an address when it reaches
+    ; the offset (resolveTag in genObjCode.s)
     lda reloc+OBJRELOC::target
-    clc
-    adc #<LINK_CODE_BASE
     ldz #TAGTOFIX::address
     nop
     sta (ptr1),z
     lda reloc+OBJRELOC::target+1
-    adc #>LINK_CODE_BASE
     inz
     nop
     sta (ptr1),z

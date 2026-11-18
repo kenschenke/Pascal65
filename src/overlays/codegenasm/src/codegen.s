@@ -21,7 +21,7 @@
 
 .import writePrgHeader, processIcodeInstructions, prgCleanup
 .import initStringLiterals, writeStringLiterals, freeStringLiterals
-.import writeRuntimeBss, cleanupLibraries, checkCodeSize
+.import cleanupLibraries
 .import initDataSegment, writeDataSegment, freeDataSegment
 .import tagBSS_EXITHANDLER
 .import writeObjFile, objFilename, codeFilename
@@ -127,7 +127,7 @@ delName: .res 2             ; for deleteIfExists
 
     jsr freeDataSegment
 
-    jsr writeRuntimeBss
+    ; The linker puts the runtime's BSS after the program
 
     ; Close the intermediate code file
     lda #2
@@ -155,20 +155,9 @@ delName: .res 2             ; for deleteIfExists
     jsr CLOSE
     jsr CLRCHN
 
-    ; Report a program too large for memory. It won't be linked, so
-    ; it gets no object file.
-    jsr checkCodeSize
-    bcc :+
-    lda #<codeFilename
-    ldx #>codeFilename
-    ldy #0
-    ldz #0
-    stq ptr1
-    jsr scratchFile
-    jmp freeLinkerTags
-
-    ; Write the object file. It frees the linker tags.
-:   ldq astRoot
+    ; Write the object file. It frees the linker tags. The linker lays
+    ; out the program and checks that it fits in memory.
+    ldq astRoot
     jmp writeObjFile
 .endproc
 

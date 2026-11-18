@@ -1,5 +1,5 @@
 ;
-; genRuntime.s
+; runtime.s
 ; Ken Schenke (kenschenke@gmail.com)
 ;
 ; Copyright (c) 2026
@@ -7,10 +7,12 @@
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
-; genRuntime routine
+; The runtime, at RT_BASE in the PRG
 ;
 ; A program either has the runtime linked into it (static mode, chosen by
-; $StaticRuntime) or loads it when it runs (dynamic mode, the default).
+; $StaticRuntime) or loads it when it runs (dynamic mode, the default). The
+; object file's header gives the mode and the features (RTF_*) the program
+; uses.
 ;
 ; Static mode: the runtime is a core, which every program gets, and
 ; packages, which a program gets only if it uses their feature (see
@@ -21,13 +23,12 @@
 ; trig1c, and each starts with a header listing the jump table entries to
 ; point at the package's routines.
 ;
-; genRuntime reads the core's jump table, patches it from the header of
-; each package the program needs and writes it. The rest of the runtime
-; isn't written to the object file. A LINKADDR_RUNTIME tag marks where it
-; goes, and a list of the files to copy follows it (see linker.inc). The
-; linker copies them straight into the PRG.
+; layoutRuntime reads the core's jump table and patches it from the header
+; of each package the program needs, and works out the runtime's size.
+; writeRuntime writes the table, then copies the rest of the core and each
+; package straight into the PRG.
 ;
-; Dynamic mode: genRuntime writes an empty jump table and the loader
+; Dynamic mode: the runtime is an empty jump table and the loader
 ; (loader.s) after it. The loader fills the jump table at run time. The
 ; header of runtimeN gives rtLow, which takes the place of $C000 as the
 ; ceiling for the program, its heap and its stack.
@@ -38,20 +39,18 @@
 .include "asm.inc"
 .include "asmlib.inc"
 .include "linker.inc"
+.include "rtlayout.inc"
 .include "error.inc"
+.include "4510macros.inc"
 
 JMPTBL_SIZE = RT_JMPTBL_SIZE
-PKG_HEADER_SIZE = 5         ; header size, before the entry list
-CODESEG_CEIL = $c000        ; the ceiling for a static program
 
-LFN_CORE = 2                ; logical file numbers
-LFN_PKG = 3
-LFN_OBJ = 1                 ; the object file, opened by genObjCode
+LFN_RT = 4                  ; logical file numbers
+LFN_PRG = 3
 
-.export genRuntime, setRuntimeFeatures, setRuntimeMode
-.export runtimeMode, codeCeiling, runtimeFeatures
+.export layoutRuntime, writeRuntime, codeCeiling
 
-.import incCodeOffset
+.import objMode, objFeatures, progBase
 .import loaderStart, LOADER_SIZE, LOADER_INIT_L: zp, LOADER_INIT_H: zp
 
 .data
@@ -60,8 +59,6 @@ coreName: .asciiz .sprintf("core%d", RT_ABI_VERSION)
 runtimeName: .asciiz .sprintf("runtime%d", RT_ABI_VERSION)
 abiDigits: .asciiz .sprintf("%d", RT_ABI_VERSION)
 fileSuffix: .asciiz ",p,r"
-tagInit: .asciiz "init"
-tagRuntime: .asciiz "rtcopy"
 rtMagic: .byte RTH_MAGIC0, RTH_MAGIC1, RTH_MAGIC2, RTH_MAGIC3, RT_ABI_VERSION
 
 ; Package file name prefixes, in package order (RT_PKG_* in asm.inc)
@@ -73,8 +70,6 @@ pkgNamesH: .byte >pkgDynArrays, >pkgFiles, >pkgTrig
 
 .bss
 
-runtimeFeatures: .res 1     ; RTF_* (asm.inc) for the packages to link
-runtimeMode: .res 1         ; RT_MODE_* (asm.inc)
 codeCeiling: .res 2         ; the top of the program's memory
 jmpTable: .res JMPTBL_SIZE
 fileName: .res 24
@@ -86,54 +81,41 @@ pkgCount: .res 1            ; number of jump table entries in its header
 pkgSkips: .res RT_NUM_PKGS  ; for each package, the size of its header
 pkgLensL: .res RT_NUM_PKGS  ; and the length of its code
 pkgLensH: .res RT_NUM_PKGS
-numFiles: .res 1            ; files the linker copies
-coreLen: .res 2             ; length of the core file, after its length
+coreLen: .res 2             ; length of the core, after its jump table
 readCount: .res 2           ; bytes left for readBytes
 hdrBuf: .res 2 + RTH_SIZE   ; a package's header, or runtimeN's
+rtSize: .res 2              ; the runtime's size in the PRG
+rtSkip: .res 2              ; copyFile: bytes to skip at the file's start
+rtLeft: .res 2              ; copyFile: bytes left to copy
+rtBlock: .res 1             ; bytes in this block (0 means 256)
+rtBuf: .res 256
 
 .code
 
-; This routine sets the runtime features (RTF_* in asm.inc) in A. Code
-; generation links the runtime packages for them. A build with ALLPKGS
-; defined (make ALLPKGS=1) links every package, for debugging.
-.proc setRuntimeFeatures
-.ifdef ALLPKGS
-    lda #RTF_ALL
-.endif
-    sta runtimeFeatures
-    rts
-.endproc
-
-; This routine sets the runtime mode (RT_MODE_* in asm.inc) in A
-.proc setRuntimeMode
-    sta runtimeMode
-    rts
-.endproc
-
-; This routine writes the runtime, or the loader, to the object file and
-; sets codeCeiling. A missing or bad runtime file is a compiler error.
-.proc genRuntime
-    lda #<CODESEG_CEIL
+; This routine reads the runtime's files for the layout and sets
+; codeCeiling. The runtime's size is returned in A/X. A missing or bad
+; runtime file is errRuntimeFileInvalid, and the carry is set.
+.proc layoutRuntime
+    lda #<LINK_STATIC_CEILING
     sta codeCeiling
-    lda #>CODESEG_CEIL
+    lda #>LINK_STATIC_CEILING
     sta codeCeiling+1
-    lda runtimeMode
+    lda #<JMPTBL_SIZE
+    sta rtSize
+    lda #>JMPTBL_SIZE
+    sta rtSize+1
+    lda objMode
     cmp #RT_MODE_STATIC
     beq :+
-    jmp genDynamic
+    jmp layoutDynamic
 :
 
-    ; Open the core
+    ; Read the core's length and jump table
     lda #<coreName
     ldx #>coreName
     jsr startFileName
     jsr endFileName
-    lda #LFN_CORE
     jsr openFile
-
-    ; Read its length and the jump table
-    ldx #LFN_CORE
-    jsr CHKIN
     lda #<coreLen
     sta ptr1
     lda #>coreLen
@@ -141,9 +123,7 @@ hdrBuf: .res 2 + RTH_SIZE   ; a package's header, or runtimeN's
     ldx #2
     ldy #0
     jsr readBytes
-    bcc :+
-    jmp runtimeFileError
-:
+    bcs ER
     lda #<jmpTable
     sta ptr1
     lda #>jmpTable
@@ -151,11 +131,8 @@ hdrBuf: .res 2 + RTH_SIZE   ; a package's header, or runtimeN's
     ldx #<JMPTBL_SIZE
     ldy #>JMPTBL_SIZE
     jsr readBytes
-    bcc :+
-    jmp runtimeFileError
-:
-    lda #LFN_CORE
-    jsr CLOSE
+    bcs ER
+    jsr closeFile
 
     ; The rest of the core
     lda coreLen
@@ -165,98 +142,42 @@ hdrBuf: .res 2 + RTH_SIZE   ; a package's header, or runtimeN's
     lda coreLen+1
     sbc #>JMPTBL_SIZE
     sta coreLen+1
-    bcs :+
-    jmp runtimeFileError
-:
-
-    ; Patch the jump table for each package the program needs
-    lda #1
-    sta numFiles
-    jsr firstPackage
-L1: bcs L2                      ; Branch if no more packages
-    jsr patchJmpTable
-    bcc :+
-    jmp runtimeFileError
-:
-    inc numFiles
-    jsr nextPackage
-    bra L1
-
-    ; Write the jump table
-L2: ldx #LFN_OBJ
-    jsr CHKOUT
-    lda #<jmpTable
-    sta ptr1
-    lda #>jmpTable
-    sta ptr1+1
-    lda #<JMPTBL_SIZE
-    sta pkgLen
-    lda #>JMPTBL_SIZE
-    sta pkgLen+1
-    jsr writeOut
-
-    ; The linker copies the rest here
-    lda #<tagRuntime
-    ldx #>tagRuntime
-    jsr linkAddressSet
-    lda #<tagRuntime
-    ldx #>tagRuntime
-    ldy #LINKADDR_RUNTIME
-    ldz #0
-    jsr linkAddressLookup
-
-    ; Then the list of files for it to copy, starting with the core
-    ldx #LFN_OBJ
-    jsr CHKOUT
-    lda numFiles
-    jsr CHROUT
-    lda #<coreName
-    ldx #>coreName
-    jsr startFileName
-    jsr endFileName
-    lda #<(2 + JMPTBL_SIZE)
-    ldx #>(2 + JMPTBL_SIZE)
-    jsr writeEntryHead
+    bcc ER
     lda coreLen
     ldx coreLen+1
-    jsr writeEntryLen
+    jsr addSize
 
-    ; And each package
+    ; Patch the jump table for each package the program needs
     jsr firstPackage
-L3: bcs DN                      ; Branch if no more packages
-    jsr packageFileName
-    ldx pkgIndex
-    lda pkgSkips,x
-    ldx #0
-    jsr writeEntryHead
+L1: bcs DN                      ; Branch if no more packages
+    jsr patchJmpTable
+    bcs ER
     ldx pkgIndex
     lda pkgLensL,x
     pha
     lda pkgLensH,x
     tax
     pla
-    jsr writeEntryLen
+    jsr addSize
     jsr nextPackage
-    bra L3
+    bra L1
 
-DN: jmp finish
+DN: lda rtSize
+    ldx rtSize+1
+    clc
+    rts
 
-    ; A runtime file is missing or bad
 ER: jmp runtimeFileError
 .endproc
 
-; This routine writes the runtime for dynamic mode: an empty jump table and
-; the loader. codeCeiling is set to rtLow from runtimeN's header.
-.proc genDynamic
-    ; Read runtimeN's load address and header, and check them
+; This routine reads runtimeN's header for the layout of a dynamic program:
+; rtLow is the ceiling. The size is the jump table and the loader.
+.proc layoutDynamic
     lda #<runtimeName
     ldx #>runtimeName
     jsr startFileName
     jsr endFileName
-    lda #LFN_CORE
     jsr openFile
-    ldx #LFN_CORE
-    jsr CHKIN
     lda #<hdrBuf
     sta ptr1
     lda #>hdrBuf
@@ -264,9 +185,7 @@ ER: jmp runtimeFileError
     ldx #2 + RTH_SIZE
     ldy #0
     jsr readBytes
-    bcc :+
-    jmp runtimeFileError
-:
+    bcs ER
     lda hdrBuf                  ; The load address is rtLow
     cmp hdrBuf + 2 + RTH_LOW
     bne ER
@@ -280,15 +199,113 @@ ER: jmp runtimeFileError
     inx
     cpx #5
     bne :-
-    lda #LFN_CORE
-    jsr CLOSE
+    jsr closeFile
     lda hdrBuf
     sta codeCeiling
     lda hdrBuf+1
     sta codeCeiling+1
+    lda #<LOADER_SIZE
+    ldx #>LOADER_SIZE
+    jsr addSize
+    lda rtSize
+    ldx rtSize+1
+    clc
+    rts
 
-    ; The jump table, which the loader fills
-    ldx #LFN_OBJ
+ER: jmp runtimeFileError
+.endproc
+
+; This routine reports a missing or bad runtime file. The carry is set.
+.proc runtimeFileError
+    jsr closeFile
+    lda #errRuntimeFileInvalid
+    ldx #0
+    ldy #0
+    jsr compilerError
+    sec
+    rts
+.endproc
+
+; This routine adds A/X to rtSize
+.proc addSize
+    clc
+    adc rtSize
+    sta rtSize
+    txa
+    adc rtSize+1
+    sta rtSize+1
+    rts
+.endproc
+
+; This routine writes the runtime to the PRG, which is the current output.
+; A runtime file that's missing or too short, or changed since
+; layoutRuntime read it, is errRuntimeFileInvalid, and the carry is set.
+.proc writeRuntime
+    lda objMode
+    cmp #RT_MODE_STATIC
+    beq :+
+    jmp writeDynamic
+
+    ; The jump table
+:   ldx #LFN_PRG
+    jsr CHKOUT
+    ldx #0
+:   lda jmpTable,x
+    jsr CHROUT
+    inx
+    bne :-
+:   lda jmpTable+$100,x
+    jsr CHROUT
+    inx
+    cpx #<JMPTBL_SIZE
+    bne :-
+    .assert >JMPTBL_SIZE = 1, error, "the copy expects one full page"
+
+    ; The rest of the core
+    lda #<coreName
+    ldx #>coreName
+    jsr startFileName
+    jsr endFileName
+    lda #<(2 + JMPTBL_SIZE)
+    sta rtSkip
+    lda #>(2 + JMPTBL_SIZE)
+    sta rtSkip+1
+    lda coreLen
+    sta rtLeft
+    lda coreLen+1
+    sta rtLeft+1
+    jsr copyFile
+    bcs ER
+
+    ; And each package
+    jsr firstPackage
+L1: bcs DN                      ; Branch if no more packages
+    jsr packageFileName
+    ldx pkgIndex
+    lda pkgSkips,x
+    sta rtSkip
+    lda #0
+    sta rtSkip+1
+    lda pkgLensL,x
+    sta rtLeft
+    lda pkgLensH,x
+    sta rtLeft+1
+    jsr copyFile
+    bcs ER
+    jsr nextPackage
+    bra L1
+
+DN: clc
+    rts
+
+ER: jmp runtimeFileError
+.endproc
+
+; This routine writes a dynamic program's runtime: the empty jump table
+; and the loader, which reads the program header's address from its first
+; two instructions.
+.proc writeDynamic
+    ldx #LFN_PRG
     jsr CHKOUT
     lda #<JMPTBL_SIZE
     sta pkgLen
@@ -298,23 +315,12 @@ ER: jmp runtimeFileError
     jsr CHROUT
     jsr decPkgLen
     bne :-
-    lda #<JMPTBL_SIZE
-    ldx #>JMPTBL_SIZE
-    jsr addCodeOffset
 
-    ; The loader, which needs the program header's address
-    lda #<tagInit
-    ldx #>tagInit
-    ldy #LINKADDR_LOW
-    ldz #LOADER_INIT_L
-    jsr linkAddressLookup
-    lda #<tagInit
-    ldx #>tagInit
-    ldy #LINKADDR_HIGH
-    ldz #LOADER_INIT_H
-    jsr linkAddressLookup
-    ldx #LFN_OBJ
-    jsr CHKOUT
+    ; The loader, with the program header's address
+    lda progBase
+    sta loaderStart + LOADER_INIT_L
+    lda progBase+1
+    sta loaderStart + LOADER_INIT_H
     lda #<loaderStart
     sta ptr1
     lda #>loaderStart
@@ -323,93 +329,14 @@ ER: jmp runtimeFileError
     sta pkgLen
     lda #>LOADER_SIZE
     sta pkgLen+1
-    jsr writeOut
-    jmp finish
-
-ER: jmp runtimeFileError
-.endproc
-
-; This routine reports a missing or bad runtime file
-.proc runtimeFileError
-    lda #errRuntimeFileInvalid
-    ldx #0
     ldy #0
-    jsr compilerError
-    lda #LFN_CORE
-    jsr CLOSE
-    lda #LFN_PKG
-    jsr CLOSE
-    ; Fall through
-.endproc
-
-.proc finish
-    ldx #0
-    jsr CHKIN
-    ldx #LFN_OBJ
-    jmp CHKOUT
-.endproc
-
-; This routine writes pkgLen bytes from ptr1 to the object file, which must
-; be the current output, and adds them to codeOffset.
-.proc writeOut
-    lda pkgLen
-    ldx pkgLen+1
-    jsr addCodeOffset
-:   ldy #0
-    lda (ptr1),y
+:   lda (ptr1),y
     jsr CHROUT
     inw ptr1
     jsr decPkgLen
     bne :-
-    rts
-.endproc
-
-; This routine adds A/X to codeOffset
-.proc addCodeOffset
     clc
-    adc codeOffset
-    sta codeOffset
-    txa
-    adc codeOffset+1
-    sta codeOffset+1
     rts
-.endproc
-
-; This routine starts an entry in the list of files for the linker to copy:
-; the length of the name in fileName (Y), the name, and the number of bytes
-; to skip at the start of the file (A/X).
-.proc writeEntryHead
-    pha
-    phx
-    sty tmp1
-    ldx #LFN_OBJ
-    jsr CHKOUT
-    lda tmp1
-    jsr CHROUT
-    ldx #0
-:   lda fileName,x
-    jsr CHROUT
-    inx
-    cpx tmp1
-    bne :-
-    plx
-    pla
-    jsr CHROUT
-    txa
-    jmp CHROUT
-.endproc
-
-; This routine ends an entry in the list of files for the linker to copy
-; with the number of bytes to copy (A/X), and adds them to codeOffset.
-.proc writeEntryLen
-    pha
-    phx
-    jsr CHROUT
-    txa
-    jsr CHROUT
-    plx
-    pla
-    jmp addCodeOffset
 .endproc
 
 ; This routine starts the runtime packages loop at the first package
@@ -437,7 +364,7 @@ L1: lda pkgIndex
     cmp #RT_NUM_PKGS
     bcs DN                      ; Branch if no more packages
     lda pkgBit
-    and runtimeFeatures
+    and objFeatures
     bne FD                      ; Branch if the program needs this one
     inc pkgIndex
     asl pkgBit
@@ -445,7 +372,7 @@ L1: lda pkgIndex
 FD: lda pkgBit                  ; The packages before this one
     sec
     sbc #1
-    and runtimeFeatures
+    and objFeatures
     sta pkgPos
     clc
 DN: rts
@@ -477,11 +404,7 @@ DN: rts
 ; is set if the file is missing or doesn't match.
 .proc openPackage
     jsr packageFileName
-    lda #LFN_PKG
     jsr openFile
-
-    ldx #LFN_PKG
-    jsr CHKIN
     lda #<hdrBuf
     sta ptr1
     lda #>hdrBuf
@@ -510,7 +433,7 @@ BD: sec
 .endproc
 
 ; This routine patches jmpTable from the current package's header, and
-; saves the header's size and the package's length for the linker. The
+; saves the header's size and the package's length for writeRuntime. The
 ; carry is set if the file is missing or bad.
 .proc patchJmpTable
     jsr openPackage
@@ -569,8 +492,7 @@ L1: lda #<hdrBuf                ; Read the next entry
     sta (ptr1),y
     dec pkgCount
     bne L1
-CL: lda #LFN_PKG
-    jsr CLOSE
+CL: jsr closeFile
     clc
 DN: rts
 .endproc
@@ -586,7 +508,7 @@ DN: rts
     rts
 .endproc
 
-; This routine reads X/Y (low/high) bytes from the current input to ptr1.
+; This routine reads X/Y (low/high) bytes from the runtime file to ptr1.
 ; The carry is set if the file ends before the last one, or on a read
 ; error.
 .proc readBytes
@@ -595,6 +517,8 @@ DN: rts
     txa
     ora readCount+1
     beq OK
+    ldx #LFN_RT
+    jsr CHKIN
 L1: jsr CHRIN
     ldy #0
     sta (ptr1),y
@@ -617,6 +541,109 @@ LS: lda tmp1                    ; EOF on the last byte is fine
 OK: clc
     rts
 BD: sec
+    rts
+.endproc
+
+; This routine copies the runtime file named in fileName (Y characters)
+; into the PRG: it skips rtSkip bytes, then copies rtLeft. The carry is set
+; if the file is missing or too short.
+.proc copyFile
+    jsr openFile
+L1: lda rtSkip
+    ora rtSkip+1
+    beq L2
+    jsr CHRIN
+    lda STATUS
+    bne ER                      ; The file is missing or too short
+    lda rtSkip
+    bne :+
+    dec rtSkip+1
+:   dec rtSkip
+    bra L1
+
+L2: lda rtLeft
+    ora rtLeft+1
+    beq CL                      ; Branch if all of it is copied
+    jsr copyBlock
+    bcc L2
+
+ER: jsr closeFile
+    sec
+    rts
+CL: jsr closeFile
+    clc
+    rts
+.endproc
+
+; This routine copies the next block of the runtime file, up to 256 bytes
+; of rtLeft, and subtracts it from rtLeft. The bytes are copied in blocks so
+; the input and output channels change once a block rather than once a
+; byte. The carry is set if the file ends early or fails.
+.proc copyBlock
+    lda rtLeft+1
+    beq :+
+    lda #0                      ; A whole page
+    bra :++
+:   lda rtLeft
+:   sta rtBlock
+    ldx #LFN_RT
+    jsr CHKIN
+    ldx #0
+L1: phx
+    jsr CHRIN
+    plx
+    sta rtBuf,x
+    inx
+    lda STATUS
+    beq L2
+    ; The file ended or failed. Only its last byte may have EOF set.
+    and #$bf
+    bne ER
+    cpx rtBlock
+    bne ER                      ; Not the last byte of the block
+    lda rtBlock                 ; Nor the last block: rtLeft = rtBlock
+    bne :+
+    lda rtLeft                  ; A whole page: rtLeft = $100
+    bne ER
+    lda rtLeft+1
+    cmp #1
+    bne ER
+    bra L2
+:   lda rtLeft+1
+    bne ER
+    lda rtLeft
+    cmp rtBlock
+    bne ER
+L2: cpx rtBlock
+    bne L1
+
+    ldx #LFN_PRG
+    jsr CHKOUT
+    ldx #0
+:   lda rtBuf,x
+    jsr CHROUT
+    inx
+    cpx rtBlock
+    bne :-
+
+    ; Subtract the block from rtLeft. A whole page (rtBlock = 0) leaves
+    ; the low byte as it is and takes one from the high byte.
+    lda rtLeft
+    sec
+    sbc rtBlock
+    sta rtLeft
+    lda rtBlock
+    beq :+
+    lda rtLeft+1
+    sbc #0
+    sta rtLeft+1
+    clc
+    rts
+:   dec rtLeft+1
+    clc
+    rts
+
+ER: sec
     rts
 .endproc
 
@@ -654,19 +681,28 @@ BD: sec
     jmp addToFileName
 .endproc
 
-; This routine opens the file named in fileName (Y characters) as the
-; logical file in A. The secondary address is the file number plus one.
+; This routine opens the runtime file named in fileName (Y characters) and
+; makes it the input
 .proc openFile
     sty tmp1
-    pha
-    tay
-    iny
-    pla
     ldx DEVNUM
+    lda #LFN_RT
+    tay
     jsr SETLFS
     lda tmp1
     ldx #<fileName
     ldy #>fileName
     jsr SETNAM
-    jmp OPEN
+    jsr OPEN
+    ldx #LFN_RT
+    jmp CHKIN
+.endproc
+
+; This routine closes the runtime file and goes back to the default input.
+; The PRG stays the output.
+.proc closeFile
+    lda #LFN_RT
+    jsr CLOSE
+    ldx #0
+    jmp CHKIN
 .endproc

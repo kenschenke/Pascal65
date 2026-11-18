@@ -28,7 +28,7 @@
 # coreN starts with the length of the rest of the file (a word), not a load
 # address, because codegen and the linker copy it rather than load it.
 #
-# runtimeN is loaded by programs at run time (see loader.s in codegenasm).
+# runtimeN is loaded by programs at run time (see loader.s in linkerasm).
 # It ends at $BFFF and starts at rtLow, a page boundary as high as it fits.
 # It's linked once to get its size and again at rtLow. It starts with a
 # header (RTH_* in asm.inc), then the jump table, then everything else.

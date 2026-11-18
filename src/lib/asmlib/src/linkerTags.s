@@ -31,10 +31,12 @@
 ; Once all the code is written, code generation goes through the list of
 ; requested locations (from the membuf), finds each in the binary tree by
 ; its label and writes it to the object file as a relocation (writeObjFile
-; in codegen). The linker never sees the tags.
+; in codegen). A label that isn't set is an import, which the linker
+; resolves. Codegen adds each import to the tree with linkTagSet. The
+; linker uses a tree of its own for the names of the object file's imports.
 
 .export linkAddressLookup, linkAddressSet, initLinkerTags, freeLinkerTags
-.export getLinkerTagsToFind, findLinkerTag
+.export getLinkerTagsToFind, findLinkerTag, linkTagSet
 
 .import isQZero, addTreeNode, writeToMemBuf, addInt16, allocMemBuf, findInTree
 .import heapFree, rtPushQ, rtPopQ, loadPtr, freeMemBuf
@@ -60,6 +62,7 @@ tagTreeStackSize: .res 2
 ; Finds a label in the binary tree.
 ; Null-terminated label in A/X
 ; Code offset returned in A/X. Y is 1 if the label is set and 0 if not.
+; A tag added by linkTagSet returns its data: a word in A/X, its flag in Y.
 .proc findLinkerTag
     sta ptr4
     stx ptr4+1
@@ -252,19 +255,26 @@ L3: jsr popTagTreeStack
 ; offset, then a 1, so findLinkerTag can tell a label at offset 0 from one
 ; that isn't set.
 .proc linkAddressSet
+    ldy codeOffset
+    sty ptr3
+    ldy codeOffset+1
+    sty ptr3+1
+    ldy #1
+    sty ptr3+2
+    ; Fall through
+.endproc
+
+; This routine adds a linker tag to the binary tree with the data in ptr3:
+; a word, then a non-zero byte, which findLinkerTag returns in A/X and Y.
+; Code generation keeps its imports in the tree this way, and the linker
+; the names of the object file's imports (see linker.inc).
+; A/X contains the pointer to the null-terminated tag string.
+.proc linkTagSet
     sta ptr2
     stx ptr2+1
     lda #0
     sta ptr2+2
     sta ptr2+3
-
-    lda codeOffset
-    sta ptr3
-    lda codeOffset+1
-    sta ptr3+1
-    lda #1
-    sta ptr3+2
-    lda #0
     sta ptr3+3
 
     ldq linkerTags

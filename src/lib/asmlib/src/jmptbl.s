@@ -29,7 +29,7 @@
 .import astFreeBodies
 .import rtSetCompilerFilename, rtSetCompilerUnitFilename
 .import rtGetCompilerFilename
-.import cloneEvalType, freeEvalType
+.import cloneEvalType, freeEvalType, linkTagSet
 
 .segment "JMPTBL"
 
@@ -127,3 +127,4 @@ jmp rtSetCompilerUnitFilename
 jmp rtGetCompilerFilename
 jmp cloneEvalType
 jmp freeEvalType
+jmp linkTagSet

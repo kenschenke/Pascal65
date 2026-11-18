@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Tests the dynamic runtime's loader (loader.s in codegenasm) and the
+# Tests the dynamic runtime's loader (loader.s in linkerasm) and the
 # $DynamicRuntime directive, with programs set 3 compiled.
 #
 # usage: rtdyntest.sh <d81-file> <abi-version>

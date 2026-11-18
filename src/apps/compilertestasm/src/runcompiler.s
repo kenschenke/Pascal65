@@ -42,6 +42,7 @@ unitList: .res 4
 runtimeStackSize: .res 2
 runtimeFeatures: .res 1         ; runtime packages to link (RTF_*)
 runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
+prgName: .res 17                ; checkExpectedError: the PRG's name
 
 .code
 
@@ -235,10 +236,16 @@ L2: jsr setCodeGenProgramChain
 
     jsr freeUnits
 
-    ; A program the compiler must refuse isn't linked
+    ; A program the compiler must refuse may be refused by the linker
     lda expectedError
     beq L3
-    jmp checkExpectedError
+    lda errorCount
+    bne :+
+    jsr initLinker
+    lda sourceFn
+    ldx sourceFn+1
+    jsr genPrgFile
+:   jmp checkExpectedError
 
 L3: lda #'L'
     jsr CHROUT
@@ -261,8 +268,8 @@ L3: lda #'L'
 .endproc
 
 ; This routine finishes a program the compiler must refuse. It fails the
-; tests unless code generation reported exactly one error, expectedError,
-; and deleted its object file.
+; tests unless code generation or the linker reported exactly one error,
+; expectedError, and left no object file and no PRG.
 .proc checkExpectedError
     lda errorCount
     cmp #1
@@ -274,6 +281,29 @@ L3: lda #'L'
     ; The object file must be gone
     lda #<objFilename
     ldx #>objFilename
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    bne FL
+
+    ; Nor a PRG: the source's name without ".pas"
+    lda sourceFn
+    sta ptr1
+    lda sourceFn+1
+    sta ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    sta prgName,y
+    beq :+
+    iny
+    cpy #16
+    bne :-
+:   cpy #4
+    bcc FL
+    lda #0
+    sta prgName-4,y
+    lda #<prgName
+    ldx #>prgName
     ldy #0
     ldz #0
     jsr doesFileExist

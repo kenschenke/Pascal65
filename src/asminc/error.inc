@@ -105,9 +105,10 @@ errRuntimeFileInvalid = 74
 errDirectiveProgramOnly = 75    ; $StaticRuntime/$DynamicRuntime in a unit
 errConflictingDirectives = 76   ; $StaticRuntime and $DynamicRuntime
 errCodeSegmentOverflowDyn = 77  ; errCodeSegmentOverflow, dynamic runtime
-errUndefinedLabel = 78          ; codegen referenced a label it never set
+errUndefinedLabel = 78          ; the linker can't resolve an import
 errObjFileInvalid = 79          ; the linker can't read the object file
-numParserErrors = 80
+errLibraryFileInvalid = 80      ; a library file is missing or bad
+numParserErrors = 81
 
 rteNone = 0
 rteStackOverflow = 1

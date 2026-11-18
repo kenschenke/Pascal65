@@ -286,7 +286,7 @@ strLinking: .asciiz "Linking"
     jsr heapProfile
 .endif
 
-    ; Check the error count (code generation reports a program too large)
+    ; Check the error count (a code generation error)
     lda errorCount
     beq :+
 

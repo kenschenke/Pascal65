@@ -111,3 +111,4 @@ setCompilerUnitFilename = ASMBASE + 270
 getCompilerFilename = ASMBASE + 273
 cloneEvalType = ASMBASE + 276
 freeEvalType = ASMBASE + 279
+linkTagSet = ASMBASE + 282

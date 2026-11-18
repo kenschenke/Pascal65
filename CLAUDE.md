@@ -351,7 +351,7 @@ reading a whole record never reads memory (`MEM`).
 
 `compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from all three. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
-A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never linked or run. The compile step fails unless each one reports exactly that one error. `toolarge.pas` checks `errCodeSegmentOverflow`, which code generation reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by codegen, saying how many bytes too large the program is.
+A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. One that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
 
@@ -359,7 +359,11 @@ After a set's compile step, `prgsums.sh` checks every PRG it compiled against it
 
 ## Object file
 
-Code generation writes the code to `zzcode` and keeps its linker tags (`linkerTags.s` in asmlib) in the heap. At the end `writeObjFile` (`objFile.s`) writes the object file, `zztmp`: a header, symbols, imports, a relocation for each tag, then the code copied from `zzcode` (format in `linker.inc`). It deletes `zzcode` and frees the tags, so the codegen and linker overlays share nothing through the heap. A tag's location is its offset in the code, and a relocation's target is the offset of the label it names, so local labels need no symbol. A label referenced but never set is `errUndefinedLabel`, with its name printed after it. The linker (`genObjCode.s`) checks the header (`errObjFileInvalid`), sorts the relocations by offset (`sortLinkerTags.s`), adds `LINK_CODE_BASE` and patches the code into the PRG.
+Code generation writes only the program's own code, starting with the program header (`prgHeader.s`), to `zzcode` and keeps its linker tags (`linkerTags.s` in asmlib) in the heap. At the end `writeObjFile` (`objFile.s`) writes the object file, `zztmp`: a header (with the runtime mode, features and stack size), symbols, imports, the libraries, a relocation for each tag, then the code copied from `zzcode` (format in `linker.inc`). It deletes `zzcode` and frees the tags, so the codegen and linker overlays share nothing through the heap. A tag's location is its offset in the code, and a relocation's target is the offset of the label it names, so local labels need no symbol. A label referenced but never set is an import: the relocation has `LINKADDR_IMPORT` in its kind and the import's number as its target. Codegen keeps each import in the tag tree with `linkTagSet`.
+
+The imports are library slots and linker symbols (`linker.inc`): the runtime's BSS, `heapbottom`, `stacktop`, `heaptop` and `rtinit`. Library slots are named by AST addresses only codegen knows, so `libraryList.s` writes each library the program uses with the names of its jump table's slots, in order.
+
+The linker (`genObjCode.s`) decides every address (`rtlayout.inc`). It reads the header (`errObjFileInvalid`), the imports (`imports.s`), the libraries and the relocations, sorted by offset (`sortLinkerTags.s`). It lays out the BASIC line, the runtime (`runtime.s`), each library (`loadLibrary.s`, which defines a symbol at each slot), the program module and the runtime's BSS (`runtimeBss.s`). An import nothing defines is `errUndefinedLabel`, with its name printed after it, and a missing or bad library is `errLibraryFileInvalid`. Then it checks the size (`checkCodeSize`) and writes the PRG, patching each relocation as it copies the code. Any error deletes the object file and leaves no PRG.
 
 ### Adding a test program
 
@@ -459,17 +463,21 @@ The parser keeps `runtimeMode` and the compiler apps pass it from
 `getParserRuntimeMode` to `setCodeGenRuntimeMode`.
 
 - **Dynamic, the default.** The PRG has an empty jump table at `RT_BASE` and
-  the loader (`loader.s` in codegenasm) after it. The header calls the
+  the loader (`loader.s` in linkerasm) after it. The header calls the
   loader in place of `RT_RUNTIMEERRORINIT`. It loads `runtimeN` at `rtLow`
   (from the file's header, `RTH_*` in `asm.inc`), copies the jump table,
   patches the header's stack and heap tops and jumps to
   `RT_RUNTIMEERRORINIT`. A missing or bad runtime, or a program that doesn't
-  fit below `rtLow`, prints a message and returns to BASIC. Codegen reads
-  `runtimeN`'s header at compile time for `rtLow`, which `checkCodeSize`
-  uses as the ceiling.
-- **Static.** Codegen writes the patched jump table and a `LINKADDR_RUNTIME`
-  tag followed by the list of files to copy (`linker.inc`). The linker
-  copies the rest of the core and the packages straight into the PRG.
+  fit below `rtLow`, prints a message and returns to BASIC. The linker
+  reads `runtimeN`'s header at link time for `rtLow`, which `checkCodeSize`
+  uses as the ceiling, and patches the header's address into the loader's
+  first two instructions.
+- **Static.** The linker (`runtime.s`) reads the core's jump table, patches
+  it from each needed package's header, writes it and copies the rest of
+  the core and the packages straight into the PRG.
+
+The mode, the features and the stack size travel in the object file's
+header, so the linker needs no entry point of its own for them.
 
 `runtimeErrorInit` clears the runtime's BSS in both modes, so a program run
 again from memory finds it zeroed.
@@ -507,9 +515,9 @@ The icode overlay records the features a program uses in `runtimeFeatures`
 (`RTF_*` in `asm.inc`): a file variable, record field or array element
 (not a parameter), a `SetLength` call, or a library call to `Sin`, `Cos` or
 `Tan`. The compiler apps read it with `getIcodeRuntimeFeatures` and pass it
-to `setCodeGenRuntimeFeatures`. In static mode `genRuntime.s` patches the
-jump table for each needed package and the linker copies the core, then the
-variant of each. Dynamic mode ignores the features. `make ALLPKGS=1` in
+to `setCodeGenRuntimeFeatures`. In static mode the linker (`runtime.s`)
+patches the jump table for each needed package and copies the core, then
+the variant of each. Dynamic mode ignores the features. `make ALLPKGS=1` in
 `src/overlays/codegenasm` links every package into every program, for
 debugging.
 
@@ -646,7 +654,7 @@ its first line.
 
 ## Library object files
 
-`loadLibrary` (codegenasm) reads two formats
+`loadLibrary.s` (linkerasm) reads two formats
 (`docs/docs/libraries/objfile.md`). v1 is the ld65 PRG, relocated by
 treating any byte in the library's own pages as an address's high byte.
 v2 (load address $0000) carries a table of the addresses, written by

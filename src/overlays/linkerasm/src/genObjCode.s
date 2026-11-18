@@ -1,18 +1,35 @@
 ;
 ; genObjCode.s
 ; Ken Schenke (kenschenke@gmail.com)
-; 
+;
 ; Copyright (c) 2026
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
 ; genObjCode routine
+;
+; The linker reads the object file that code generation wrote (zztmp, see
+; linker.inc), lays out the program (rtlayout.inc) and writes the PRG:
+;
+;   1. Read. The header, the imports (imports.s), the libraries
+;      (loadLibrary.s) and the relocations, sorted by offset
+;      (sortLinkerTags.s). The code is read last, in step 3.
+;   2. Lay out. Place the runtime (runtime.s), then each library, which
+;      defines a symbol at each of its slots, then the program module, then
+;      the runtime's BSS (runtimeBss.s). Every import must then have an
+;      address, and the program must fit below the ceiling.
+;   3. Write. The BASIC line, the runtime and the libraries, then the code,
+;      patching each relocation with its address, then the BSS.
+;
+; A bad object file is errObjFileInvalid. Any error stops the link, deletes
+; the object file and leaves no PRG.
 
 .include "c64.inc"
 .include "asm.inc"
 .include "asmlib.inc"
 .include "linker.inc"
+.include "rtlayout.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
@@ -20,21 +37,29 @@
 
 OBJ_FILENUM = 2
 PRG_FILENUM = 3
-RT_FILENUM = 4          ; a runtime file (see copyRuntime)
 
-.export genObjCode, readByte, readStatus
+.export genObjCode, readByte, readStatus, readName
+.export objMode, objFeatures, stackSize, progBase
 
 .import sortLinkerTags
+.import initImports, readImports, importAddress, checkImports, freeImports
+.import symName
+.import initLibraries, readLibraryList, layoutLibraries, writeLibraries
+.import freeLibraries
+.import layoutRuntime, writeRuntime, codeCeiling
+.import defineLinkerSymbols, writeRuntimeBss, RTBSS_LEN: zp
 
 .bss
 
-; For copyRuntime
-rtFiles: .res 1         ; files left to copy
-rtNameLen: .res 1
-rtSkip: .res 2          ; bytes to skip at the start of the file
-rtLeft: .res 2          ; bytes left to copy
-rtBlock: .res 1         ; bytes in this block (0 means 256)
-rtBuf: .res 256
+objMode: .res 1             ; RT_MODE_* from the object file
+objFeatures: .res 1         ; RTF_*
+stackSize: .res 2           ; the runtime stack's size
+codeLen: .res 2             ; the module's code
+bssLen: .res 2              ; and BSS
+progBase: .res 2            ; the module's address
+skipCount: .res 2           ; for readObjHeader
+bytesOver: .res 4           ; for checkCodeSize
+intBuf: .res 12
 
 toGo: .res 2
 codePos: .res 2
@@ -43,8 +68,6 @@ tagToFix: .res .sizeof(TAGTOFIX)
 prgFilename: .res 17
 strbuf: .res 20
 readStatus: .res 1
-skipCount: .res 2           ; for readObjHeader
-skipCount2: .res 1          ; for skipBytes
 
 .data
 
@@ -57,14 +80,26 @@ prgExt: .asciiz ".prg"
 strObjFile: .byte "zztmp,s,r"
 strObjFile2:
 writeExt: .asciiz ",p,w"
+strTooLarge1: .asciiz "Program is "
+strTooLarge2: .asciiz " bytes too large"
+
+; The start of the PRG, after its load address: the BASIC line
+; "10 BANK 0:SYS 8209", then the JMP to the program header
+prgStub:
+    .word LINK_CODE_BASE + 14   ; the next line
+    .word 10                    ; the line number
+    .byte $fe, $02, '0', ':'    ; BANK 0:
+    .byte $9e                   ; SYS
+    .byte .sprintf("%d", LINK_CODE_BASE + 16)
+    .byte 0                     ; the end of the line
+    .byte 0, 0                  ; the end of the program
+    .assert * - prgStub = 16, error, "the BASIC line moved"
+    .byte OC_JMP
+prgStub2:
 
 .code
 
-; This routine links the object file, zztmp, that code generation wrote
-; (see linker.inc) into the PRG. It reads the header and the relocations,
-; then copies the code to the PRG, writing the addresses into it. A bad
-; object file is a compiler error, errObjFileInvalid, and makes no PRG.
-;
+; This routine links the object file, zztmp, into the PRG.
 ; Source filename passed in A/X
 .proc genObjCode
     jsr formatPrgFilename
@@ -72,55 +107,116 @@ writeExt: .asciiz ",p,w"
     ; Delete the output PRG file if it exists
     jsr deletePrgFile
 
+    jsr initLinkerTags
+    jsr initImports
+    jsr initLibraries
+    lda #0
+    tax
+    tay
+    taz
+    stq tagsMemBuf
+
     ; Open the object file
-    ; Call SETLFS
     ldx DEVNUM
     lda #OBJ_FILENUM
     tay
     jsr SETLFS
-    ; Call SETNAM
     ldx #<strObjFile
     ldy #>strObjFile
     lda #strObjFile2-strObjFile
     jsr SETNAM
-    ; Open the file
     jsr OPEN
 
-    ; Clear readStatus
     lda #0
     sta readStatus
 
-    ; Read the header and the relocations
+    ; 1. Read everything but the code
     jsr readObjHeader
+    bcs BD
+    jsr readImports
+    bcs BD
+    jsr readLibraryList
     bcs BD
     jsr sortLinkerTags
     stq tagsMemBuf
     lda readStatus
     beq :+
-    ldq tagsMemBuf              ; The file ended before the code
-    jsr freeMemBuf
 BD: jmp objFileInvalid
 
-    ; Open the PRG file
-:   jsr openPrgFile
+    ; 2. Lay out: the runtime, the libraries, the module and the BSS
+:   jsr layoutRuntime
+    bcs ER
+    clc
+    adc #<(LINK_CODE_BASE + LINK_STUB_SIZE)
+    pha
+    txa
+    adc #>(LINK_CODE_BASE + LINK_STUB_SIZE)
+    tax
+    pla
+    jsr layoutLibraries
+    bcs ER
+    sta progBase
+    stx progBase+1
+    clc
+    adc codeLen
+    pha
+    txa
+    adc codeLen+1
+    tax
+    pla
+    clc
+    adc bssLen
+    pha
+    txa
+    adc bssLen+1
+    tax
+    pla
+    jsr defineLinkerSymbols
+    jsr checkImports
+    bcs ER
+    jsr checkCodeSize
+    bcc :+
+ER: jmp finish
 
-    ; Write the load address to the new PRG file
-    ; $2001 for MEGA65
+    ; 3. Write the PRG: its load address and the BASIC line
+:   jsr openPrgFile
     ldx #PRG_FILENUM
     jsr CHKOUT
-    lda #1
+    lda #<LINK_CODE_BASE
     jsr CHROUT
-    lda #$20
+    lda #>LINK_CODE_BASE
+    jsr CHROUT
+    ldx #0
+:   lda prgStub,x
+    jsr CHROUT
+    inx
+    cpx #prgStub2-prgStub
+    bne :-
+    lda progBase
+    jsr CHROUT
+    lda progBase+1
     jsr CHROUT
 
-    ; Rewind the tagsMemBuf
+    ; 20 bytes for the MEGA65 DMA command block
+    ldx #20
+    lda #0
+:   jsr CHROUT
+    dex
+    bne :-
+    .assert prgStub2 - prgStub + 2 + 20 = LINK_STUB_SIZE, error, "stub size"
+
+    ; The runtime and the libraries
+    jsr writeRuntime
+    bcc :+
+    jmp prgError
+:   jsr writeLibraries
+
+    ; The module's code. Read the first tagToFix (initializes toGo).
     ldq tagsMemBuf
     stq ptr1
     lda #0
     tax
     jsr setMemBufPos
-
-    ; Read the first tagToFix from the membuf (initializes toGo)
     lda #0
     sta codePos
     sta codePos+1
@@ -179,10 +275,30 @@ L3: jsr readByte
     sta codePos+1
     bra L1
 
-DN: ; Close the output PRG file
+    ; The module's BSS, then the runtime's
+DN: ldx #PRG_FILENUM
+    jsr CHKOUT
+B1: lda bssLen
+    ora bssLen+1
+    beq B2
+    lda #0
+    jsr CHROUT
+    lda bssLen
+    bne :+
+    dec bssLen+1
+:   dec bssLen
+    bra B1
+B2: jsr writeRuntimeBss
+
+    ; Close the output PRG file
     lda #PRG_FILENUM
     jsr CLOSE
-    ; Close the input object file
+    ; Fall through
+.endproc
+
+; This routine finishes linking: it closes and deletes the object file and
+; frees what the linker allocated
+.proc finish
     lda #OBJ_FILENUM
     jsr CLOSE
     jsr CLRCHN
@@ -190,16 +306,37 @@ DN: ; Close the output PRG file
     jsr deleteObjFile
 
     ldq tagsMemBuf
+    jsr isQZero
+    beq :+
     jsr freeMemBuf
-    
-    rts
+:   jsr freeImports
+    jsr freeLibraries
+    jmp freeLinkerTags
 .endproc
 
-; This routine reads the object file's header, up to its relocations. The
+; This routine stops writing the PRG after an error and deletes it
+.proc prgError
+    lda #PRG_FILENUM
+    jsr CLOSE
+    jsr CLRCHN
+    jsr deletePrgFile
+    jmp finish
+.endproc
+
+; This routine reports a bad object file, then finishes
+.proc objFileInvalid
+    jsr CLRCHN
+    lda #errObjFileInvalid
+    ldx #0
+    ldy #0
+    jsr compilerError
+    jmp finish
+.endproc
+
+; This routine reads the object file's header, up to its imports. The
 ; carry is set if it is bad: not an object file, another format version, a
-; runtime other than RT_ABI_VERSION, a unit, or a file with imports, which
-; can't be resolved yet. The symbols are skipped, since nothing imports
-; them.
+; runtime other than RT_ABI_VERSION or a unit. The symbols are skipped,
+; since nothing imports them.
 .proc readObjHeader
     ; The magic number and the versions
     ldx #0
@@ -207,23 +344,45 @@ DN: ; Close the output PRG file
     jsr readByte
     plx
     cmp objHeader,x
-    bne BD
+    bne BD2
     inx
     cpx #objHeader2-objHeader
     bne :-
+    bra :+
+BD2: jmp BD
 
-    ; The kind, then the flags and the features, which aren't used yet
+    ; The kind and the flags, which aren't used yet
+:
     jsr readByte
     cmp #OBJ_KIND_PROGRAM
     bne BD
-    lda #2
-    jsr skipBytes
-
-    ; The name, the global slots, the code length and the BSS length
     jsr readByte
-    jsr skipBytes
-    lda #6
-    jsr skipBytes
+
+    ; The features, the runtime mode and the stack size
+    jsr readByte
+    sta objFeatures
+    jsr readByte
+    sta objMode
+    jsr readByte
+    sta stackSize
+    jsr readByte
+    sta stackSize+1
+
+    ; The name and the global slots
+    jsr readName
+    bcs BD
+    jsr readByte
+    jsr readByte
+
+    ; The code length and the BSS length
+    jsr readByte
+    sta codeLen
+    jsr readByte
+    sta codeLen+1
+    jsr readByte
+    sta bssLen
+    jsr readByte
+    sta bssLen+1
 
     ; The symbols
     jsr readByte
@@ -232,26 +391,21 @@ DN: ; Close the output PRG file
     sta skipCount+1
 L1: lda skipCount
     ora skipCount+1
-    beq L2
+    beq OK
     lda readStatus
     bne BD
-    jsr readByte                ; The name
-    jsr skipBytes
-    lda #3                      ; The offset and the flags
-    jsr skipBytes
+    jsr readName
+    bcs BD
+    jsr readByte                ; The offset and the flags
+    jsr readByte
+    jsr readByte
     lda skipCount
     bne :+
     dec skipCount+1
 :   dec skipCount
     bra L1
 
-    ; The imports
-L2: jsr readByte
-    sta skipCount
-    jsr readByte
-    ora skipCount
-    bne BD
-    lda readStatus
+OK: lda readStatus
     bne BD
     clc
     rts
@@ -260,72 +414,138 @@ BD: sec
     rts
 .endproc
 
-; This routine reads and drops A bytes of the object file
-.proc skipBytes
-    sta skipCount2
-:   lda skipCount2
-    beq :+
+; This routine reads a name from the object file into symName, with a null
+; after it. The carry is set if it's longer than OBJ_NAME_MAX.
+.proc readName
     jsr readByte
-    dec skipCount2
-    bra :-
-:   rts
-.endproc
-
-; This routine reports a bad object file and deletes it
-.proc objFileInvalid
-    lda #OBJ_FILENUM
-    jsr CLOSE
-    jsr CLRCHN
-    jsr deleteObjFile
-    lda #errObjFileInvalid
+    cmp #OBJ_NAME_MAX + 1
+    bcs DN
+    sta skipCount
     ldx #0
-    ldy #0
-    jmp compilerError
+:   cpx skipCount
+    beq :+
+    phx
+    jsr readByte
+    plx
+    sta symName,x
+    inx
+    bra :-
+:   lda #0
+    sta symName,x
+    clc
+DN: rts
 .endproc
 
-.proc testObjCode
-    ; Open the object file
-    ; Call SETLFS
-    ldx DEVNUM
-    lda #OBJ_FILENUM
-    tay
-    jsr SETLFS
-    ; Call SETNAM
-    ldx #<strObjFile
-    ldy #>strObjFile
-    lda #strObjFile2-strObjFile
-    jsr SETNAM
-    ; Open the file
-    jsr OPEN
-
-    ; Open the PRG file
-    jsr openPrgFile
-
-    ; Clear readStatus
+; This routine checks that the program fits in memory. The runtime stack
+; grows down from the ceiling (codeCeiling) and the heap runs from the end
+; of the image up to the heap's MAT, four bytes below the stack. If less
+; than MIN_HEAP_SIZE bytes are left for the heap, errCodeSegmentOverflow
+; (static) or errCodeSegmentOverflowDyn (dynamic) is reported, followed by
+; a line saying how many bytes too large the program is, and the carry is
+; set. Otherwise the carry is clear.
+.proc checkCodeSize
+    ; intOp1/intOp2 (32 bits) = the module's end + the runtime's BSS +
+    ; the stack + 4 + MIN_HEAP_SIZE
     lda #0
-    sta readStatus
+    sta intOp2+1
+    sta intOp32+2
+    sta intOp32+3
+    lda progBase
+    clc
+    adc codeLen
+    sta intOp1
+    lda progBase+1
+    adc codeLen+1
+    sta intOp1+1
+    lda #0
+    adc #0
+    sta intOp2
+    lda bssLen
+    sta intOp32
+    lda bssLen+1
+    sta intOp32+1
+    jsr addOp32
+    lda stackSize
+    sta intOp32
+    lda stackSize+1
+    sta intOp32+1
+    jsr addOp32
+    lda #<(RTBSS_LEN + 4 + MIN_HEAP_SIZE)
+    sta intOp32
+    lda #>(RTBSS_LEN + 4 + MIN_HEAP_SIZE)
+    sta intOp32+1
+    jsr addOp32
 
-    jsr readByte
-    pha
-    ldx #PRG_FILENUM
-    jsr CHKOUT
-    pla
+    ; intOp1/intOp2 = bytes over codeCeiling
+    lda codeCeiling
+    sta intOp32
+    lda codeCeiling+1
+    sta intOp32+1
+    ldq intOp1
+    sec
+    sbcq intOp32
+    stq intOp1
+    bcc OK                      ; Below the ceiling
+    lda intOp1
+    ora intOp1+1
+    ora intOp2
+    ora intOp2+1
+    bne ER                      ; Above the ceiling
+OK: clc                         ; It fits
+    rts
+
+    ; The error logger uses intOp1, so save the count
+ER: ldq intOp1
+    stq bytesOver
+    lda objMode
+    cmp #RT_MODE_STATIC
+    bne :+
+    lda #errCodeSegmentOverflow
+    bra :++
+    ; A dynamic program has less room than a static one, so the error
+    ; suggests $StaticRuntime
+:   lda #errCodeSegmentOverflowDyn
+:   ldx #0
+    ldy #0
+    jsr compilerError
+
+    ; Report how many bytes too large the program is
+    ldq bytesOver
+    stq intOp1
+    ldx #0
+:   lda strTooLarge1,x
+    beq :+
     jsr CHROUT
-
-    jsr readByte
-    pha
-    ldx #PRG_FILENUM
-    jsr CHKOUT
-    pla
+    inx
+    bne :-
+:   lda #<intBuf
+    ldx #>intBuf
+    jsr writeInt32
+    ldx #0
+:   lda intBuf,x
+    beq :+
     jsr CHROUT
+    inx
+    bne :-
+:   ldx #0
+:   lda strTooLarge2,x
+    beq :+
+    jsr CHROUT
+    inx
+    bne :-
+:   lda #13
+    jsr CHROUT
+    sec
+    rts
+.endproc
 
-    lda #1
-    jsr CLOSE
-    lda #2
-    jsr CLOSE
-
-    jsr CLRCHN
-
+; This routine adds intOp32 (16 bits; its high word is zero) to
+; intOp1/intOp2
+.proc addOp32
+    ldq intOp1
+    clc
+    adcq intOp32
+    stq intOp1
     rts
 .endproc
 
@@ -539,6 +759,9 @@ L4: phx                 ; X contains length of filename (including ",p,w")
     rts
 .endproc
 
+; This routine reads the next relocation into tagToFix and works out its
+; address (resolveTag). toGo is set to the bytes before it, or $FFFF if
+; there are no more.
 .proc readTagToFix
     ldq tagsMemBuf
     jsr isMemBufAtEnd
@@ -559,6 +782,7 @@ L4: phx                 ; X contains length of filename (including ",p,w")
     stx ptr2+3
     lda #.sizeof(TAGTOFIX)
     jsr readFromMemBuf
+    jsr resolveTag
 
     ldx #TAGTOFIX::offset
     lda tagToFix,x
@@ -579,16 +803,45 @@ L4: phx                 ; X contains length of filename (including ",p,w")
     rts
 .endproc
 
-.proc updateOffset
+; This routine turns tagToFix's target into an address: an import's, or
+; an offset in the module from progBase
+.proc resolveTag
     ldx #TAGTOFIX::type
     lda tagToFix,x
-    cmp #LINKADDR_RUNTIME
-    bne :+
-    jmp copyRuntime
+    bpl LC
+    .assert LINKADDR_IMPORT = $80, error, "LINKADDR_IMPORT must be bit 7"
+    and #$7f
+    sta tagToFix,x
+    ldx #TAGTOFIX::address
+    lda tagToFix,x
+    pha
+    lda tagToFix+1,x
+    tax
+    pla
+    jsr importAddress
+    bra ST
 
-:   ldx #OBJ_FILENUM
-    jsr CHKIN
-    jsr CHRIN           ; discard the current byte
+LC: ldx #TAGTOFIX::address
+    lda tagToFix,x
+    clc
+    adc progBase
+    pha
+    lda tagToFix+1,x
+    adc progBase+1
+    tax
+    pla
+ST: ldy #TAGTOFIX::address
+    sta tagToFix,y
+    txa
+    sta tagToFix+1,y
+    rts
+.endproc
+
+; This routine writes the address of the relocation in tagToFix in place of
+; the bytes at its offset, then reads the next one. readByte reads the bytes
+; replaced, so readStatus says if they end the file.
+.proc updateOffset
+    jsr readByte        ; discard the current byte
 
     ldx #TAGTOFIX::type
     lda tagToFix,x
@@ -603,9 +856,7 @@ L4: phx                 ; X contains length of filename (including ",p,w")
     ldx #TAGTOFIX::address
     lda tagToFix,x
     jsr CHROUT
-    ldx #OBJ_FILENUM
-    jsr CHKIN
-    jsr CHRIN           ; discard the next byte too
+    jsr readByte        ; discard the next byte too
     ldx #PRG_FILENUM
     jsr CHKOUT
     ldx #TAGTOFIX::address+1
@@ -641,164 +892,4 @@ RN: clc
 
     ; Read the next tag to fix
     jmp readTagToFix
-.endproc
-
-; This routine copies the rest of a static runtime into the PRG, at a
-; LINKADDR_RUNTIME tag. The object file has the list of files to copy there
-; (see linker.inc), which isn't copied. codePos counts the bytes copied, as
-; codegen's codeOffset did. A runtime file that's missing or too short is a
-; compiler error, errRuntimeFileInvalid.
-;
-; The bytes are copied in blocks of up to 256, so the input and output
-; channels change once a block rather than once a byte.
-.proc copyRuntime
-    jsr readByte                ; The number of files
-    sta rtFiles
-
-L1: lda rtFiles
-    bne :+
-    jmp readTagToFix            ; Done
-
-    ; The file's name
-:   jsr readByte
-    sta rtNameLen
-    ldx #0
-:   phx
-    jsr readByte
-    plx
-    sta strbuf,x
-    inx
-    cpx rtNameLen
-    bne :-
-
-    ; The bytes to skip and to copy
-    jsr readByte
-    sta rtSkip
-    jsr readByte
-    sta rtSkip+1
-    jsr readByte
-    sta rtLeft
-    sta intOp1
-    jsr readByte
-    sta rtLeft+1
-    sta intOp1+1
-    lda codePos                 ; Count them now
-    clc
-    adc intOp1
-    sta codePos
-    lda codePos+1
-    adc intOp1+1
-    sta codePos+1
-
-    ; Open the file and skip to the part to copy
-    ldx DEVNUM
-    lda #RT_FILENUM
-    tay
-    jsr SETLFS
-    lda rtNameLen
-    ldx #<strbuf
-    ldy #>strbuf
-    jsr SETNAM
-    jsr OPEN
-    ldx #RT_FILENUM
-    jsr CHKIN
-L2: lda rtSkip
-    ora rtSkip+1
-    beq L3
-    jsr CHRIN
-    lda STATUS
-    bne ER                      ; The file is missing or too short
-    lda rtSkip
-    bne :+
-    dec rtSkip+1
-:   dec rtSkip
-    bra L2
-
-    ; Copy it
-L3: lda rtLeft
-    ora rtLeft+1
-    beq CL                      ; Branch if all of it is copied
-    jsr copyRuntimeBlock
-    bcc L3
-
-ER: jsr CLRCHN
-    lda #errRuntimeFileInvalid
-    ldx #0
-    ldy #0
-    jsr compilerError
-CL: lda #RT_FILENUM
-    jsr CLOSE
-    dec rtFiles
-    jmp L1
-.endproc
-
-; This routine copies the next block of a runtime file, up to 256 bytes of
-; rtLeft, and subtracts it from rtLeft. The carry is set if the file ends
-; early or fails.
-.proc copyRuntimeBlock
-    lda rtLeft+1
-    beq :+
-    lda #0                      ; A whole page
-    bra :++
-:   lda rtLeft
-:   sta rtBlock
-    ldx #RT_FILENUM
-    jsr CHKIN
-    ldx #0
-L1: phx
-    jsr CHRIN
-    plx
-    sta rtBuf,x
-    inx
-    lda STATUS
-    beq L2
-    ; The file ended or failed. Only its last byte may have EOF set.
-    and #$bf
-    bne ER
-    cpx rtBlock
-    bne ER                      ; Not the last byte of the block
-    lda rtBlock                 ; Nor the last block: rtLeft = rtBlock
-    bne :+
-    lda rtLeft                  ; A whole page: rtLeft = $100
-    bne ER
-    lda rtLeft+1
-    cmp #1
-    bne ER
-    bra L2
-:   lda rtLeft+1
-    bne ER
-    lda rtLeft
-    cmp rtBlock
-    bne ER
-L2: cpx rtBlock
-    bne L1
-
-    ldx #PRG_FILENUM
-    jsr CHKOUT
-    ldx #0
-:   lda rtBuf,x
-    jsr CHROUT
-    inx
-    cpx rtBlock
-    bne :-
-
-    ; Subtract the block from rtLeft. A whole page (rtBlock = 0) leaves
-    ; the low byte as it is and takes one from the high byte.
-    lda rtLeft
-    sec
-    sbc rtBlock
-    sta rtLeft
-    lda rtBlock
-    beq :+
-    lda rtLeft+1
-    sbc #0
-    sta rtLeft+1
-    clc
-    rts
-:   dec rtLeft+1
-    clc
-    rts
-
-ER: sec
-    rts
 .endproc

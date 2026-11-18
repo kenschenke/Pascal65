@@ -69,6 +69,10 @@ label: .res 16
     ldz #1
     jsr linkAddressLookup
     genThree OC_JMP, 0
+    ; genThree leaves codeOffset's high byte in A. Falling through
+    ; compared it with the instructions below, and once wrote a stray
+    ; negate after the JMP when it was IC_NEG.
+    rts
 
 :   cmp #IC_BIF
     bne :+

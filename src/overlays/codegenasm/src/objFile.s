@@ -12,12 +12,15 @@
 ; Code generation writes the code to zzcode as it goes and keeps the linker
 ; tags in the heap (linkerTags.s in asmlib). When the code is done,
 ; writeObjFile writes the object file, zztmp: a header, the symbols, the
-; imports and a relocation for each tag, then the code, copied from zzcode
-; (see linker.inc for the format). It deletes zzcode and frees the tags, so
-; code generation leaves nothing in the heap for the linker.
+; imports, the libraries and a relocation for each tag, then the code,
+; copied from zzcode (see linker.inc for the format). It deletes zzcode and
+; frees the tags, so code generation leaves nothing in the heap for the
+; linker.
 ;
-; Every label is in this module, so a relocation's target is the label's
-; offset in the code. The object file has no symbols or imports yet.
+; A label set in this module is a relocation's target as its offset in the
+; code. A label that isn't set is an import: a library's slot or a linker
+; symbol, which the linker resolves. Each import is added to the tags with
+; its number, so a relocation finds it as it finds a label.
 
 .include "c64.inc"
 .include "asm.inc"
@@ -27,14 +30,26 @@
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
-.include "error.inc"
 
 LFN_OBJ = 1                 ; logical file numbers
 LFN_CODE = 2
 
-.export writeObjFile, objFilename, codeFilename
+TAG_SET = 1                 ; findLinkerTag's Y for a label that's set
+TAG_IMPORT = 2              ; and for an import (see addImports)
 
-.import runtimeFeatures
+; Adds one to the word at addr
+.macro incWord addr
+    .local skip
+    inc addr
+    bne skip
+    inc addr+1
+skip:
+.endmacro
+
+.export writeObjFile, objFilename, codeFilename
+.export setRuntimeFeatures, setRuntimeMode
+
+.import runtimeStackSize, writeLibraries
 
 .data
 
@@ -53,11 +68,18 @@ objHeader2:
 
 .bss
 
+runtimeFeatures: .res 1     ; RTF_* (asm.inc) for the packages to link
+runtimeMode: .res 1         ; RT_MODE_* (asm.inc)
+astRoot: .res 4
 tagsToFind: .res 4
 tagToFind: .res .sizeof(TAGTOFIND)
 relocCount: .res 2
+importCount: .res 2
+importsWritten: .res 2
 target: .res 2              ; the target of the relocation being written
+kind: .res 1                ; and its kind
 nameLen: .res 1
+importLen: .res 1
 nameBuf: .res NAMELEN
 copyLen: .res 1             ; bytes in copyBuf, 0 for 256
 copyStatus: .res 1          ; STATUS after the last byte read
@@ -65,10 +87,29 @@ copyBuf: .res 256
 
 .code
 
+; This routine sets the runtime features (RTF_* in asm.inc) in A. The
+; linker links the runtime packages for them. A build with ALLPKGS defined
+; (make ALLPKGS=1) links every package, for debugging.
+.proc setRuntimeFeatures
+.ifdef ALLPKGS
+    lda #RTF_ALL
+.endif
+    sta runtimeFeatures
+    rts
+.endproc
+
+; This routine sets the runtime mode (RT_MODE_* in asm.inc) in A
+.proc setRuntimeMode
+    sta runtimeMode
+    rts
+.endproc
+
 ; This routine writes the object file. The AST root is in Q.
 .proc writeObjFile
+    stq astRoot
     stq ptr1
     jsr copyModuleName
+    jsr addImports
 
     ; Open the object file
     ldx DEVNUM
@@ -92,8 +133,14 @@ copyBuf: .res 256
     cpx #objHeader2-objHeader
     bne :-
 
-    ; The runtime features
+    ; The runtime features and mode and the stack size
     lda runtimeFeatures
+    jsr CHROUT
+    lda runtimeMode
+    jsr CHROUT
+    lda runtimeStackSize
+    jsr CHROUT
+    lda runtimeStackSize+1
     jsr CHROUT
 
     ; The module's name
@@ -119,13 +166,16 @@ copyBuf: .res 256
     lda codeOffset+1
     jsr CHROUT
 
-    ; The BSS length, the symbols and the imports: none yet
-    ldx #6
+    ; The BSS length and the symbols: none yet
+    ldx #4
 :   lda #0
     jsr CHROUT
     dex
     bne :-
 
+    jsr writeImports
+    ldq astRoot
+    jsr writeLibraries
     jsr writeRelocations
     jsr copyCode
 
@@ -157,28 +207,99 @@ copyBuf: .res 256
     rts
 .endproc
 
-; This routine writes the relocations: their count, then one for each
-; linker tag to find. A label that was never set is a compiler error,
-; errUndefinedLabel, and its name is printed after it.
-.proc writeRelocations
+; This routine counts the relocations and finds the imports: the labels
+; that aren't set. Each is added to the tags with its number, in the order
+; first referenced, and flag TAG_IMPORT.
+.proc addImports
     jsr getLinkerTagsToFind
     stq tagsToFind
 
-    ; Count them
     lda #0
     sta relocCount
     sta relocCount+1
+    sta importCount
+    sta importCount+1
     jsr rewindTags
 L1: ldq tagsToFind
     jsr isMemBufAtEnd
-    beq L2
-    jsr readTag
-    inc relocCount
-    bne L1
-    inc relocCount+1
+    bne :+
+    rts
+:   jsr readTag
+    incWord relocCount
+    lda #<tagToFind
+    ldx #>tagToFind
+    jsr findLinkerTag
+    cpy #0
+    bne L1                      ; Branch if set, or already an import
+    lda importCount
+    sta ptr3
+    lda importCount+1
+    sta ptr3+1
+    lda #TAG_IMPORT
+    sta ptr3+2
+    lda #<tagToFind
+    ldx #>tagToFind
+    jsr linkTagSet
+    incWord importCount
     bra L1
+.endproc
 
-L2: ldx #LFN_OBJ
+; This routine writes the imports: their count, then their names, in the
+; order of their numbers.
+.proc writeImports
+    ldx #LFN_OBJ
+    jsr CHKOUT
+    lda importCount
+    jsr CHROUT
+    lda importCount+1
+    jsr CHROUT
+
+    lda #0
+    sta importsWritten
+    sta importsWritten+1
+    jsr rewindTags
+L1: ldq tagsToFind
+    jsr isMemBufAtEnd
+    bne :+
+    rts
+:   jsr readTag
+    lda #<tagToFind
+    ldx #>tagToFind
+    jsr findLinkerTag
+    cpy #TAG_IMPORT
+    bne L1
+    cmp importsWritten          ; The next one to write?
+    bne L1
+    cpx importsWritten+1
+    bne L1
+    incWord importsWritten
+
+    ; The name
+    ldx #LFN_OBJ
+    jsr CHKOUT
+    ldx #0
+:   lda tagToFind,x
+    beq :+
+    inx
+    cpx #OBJ_NAME_MAX
+    bne :-
+:   stx importLen
+    txa
+    jsr CHROUT
+    ldx #0
+:   cpx importLen
+    beq L1
+    lda tagToFind,x
+    jsr CHROUT
+    inx
+    bra :-
+.endproc
+
+; This routine writes the relocations: their count, then one for each
+; linker tag to find. An import's has LINKADDR_IMPORT in its kind and the
+; import's number as its target.
+.proc writeRelocations
+    ldx #LFN_OBJ
     jsr CHKOUT
     lda relocCount
     jsr CHROUT
@@ -187,7 +308,7 @@ L2: ldx #LFN_OBJ
 
     ; Write each
     jsr rewindTags
-L3: ldq tagsToFind
+L1: ldq tagsToFind
     jsr isMemBufAtEnd
     bne :+
     rts
@@ -197,43 +318,27 @@ L3: ldq tagsToFind
     jsr findLinkerTag
     sta target
     stx target+1
-    cpy #0
-    bne L4                      ; Branch if the label is set
-    jsr undefinedLabel
+    ldx #TAGTOFIND::type
+    lda tagToFind,x
+    cpy #TAG_IMPORT
+    bne :+
+    ora #LINKADDR_IMPORT
+:   sta kind
 
-L4: ldx #LFN_OBJ
+    ldx #LFN_OBJ
     jsr CHKOUT
     ldx #TAGTOFIND::offset
     lda tagToFind,x
     jsr CHROUT
     lda tagToFind+1,x
     jsr CHROUT
-    ldx #TAGTOFIND::type
-    lda tagToFind,x
+    lda kind
     jsr CHROUT
     lda target
     jsr CHROUT
     lda target+1
     jsr CHROUT
-    bra L3
-.endproc
-
-; This routine reports the label in tagToFind, which was never set
-.proc undefinedLabel
-    jsr CLRCHN
-    lda #errUndefinedLabel
-    ldx #0
-    ldy #0
-    jsr compilerError
-    ldx #0
-:   lda tagToFind,x
-    beq :+
-    jsr CHROUT
-    inx
-    cpx #TAGTOFIND::type        ; the label's size
-    bne :-
-:   lda #13
-    jmp CHROUT
+    bra L1
 .endproc
 
 ; This routine moves to the start of the tags to find

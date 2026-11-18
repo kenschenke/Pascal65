@@ -10,8 +10,9 @@
 ; The dynamic runtime loader
 ;
 ; A program built for the dynamic runtime (the default) has an empty jump
-; table at RT_BASE and this loader right after it, at LOADER_ADDR. Codegen
-; copies it into the program as it is. The program header calls it where a
+; table at RT_BASE and this loader right after it, at LOADER_ADDR. The
+; linker copies it into the program (runtime.s). The program header calls
+; it where a
 ; static program calls RT_RUNTIMEERRORINIT, after it has saved page zero and
 ; the stack pointer. The loader:
 ;
@@ -27,23 +28,17 @@
 ; message, restores what the header changed and returns to BASIC.
 ;
 ; It reads the program header's values through the header's address, which
-; the linker patches into the first two instructions (the "init" tag).
+; the linker patches into the first two instructions. The header's offsets
+; and LOADER_ADDR are in rtlayout.inc.
 
 .include "asm.inc"
+.include "rtlayout.inc"
 .include "c64.inc"
 .include "cbm_kernal.inc"
 
 .export loaderStart, LOADER_SIZE, LOADER_INIT_L, LOADER_INIT_H
 
-; Offsets in the program header (prgHeader.s)
-.import PRG_HEADER_CODE_OFFSET_1: zp, PRG_HEADER_CODE_OFFSET_2: zp
-.import PRG_HEADER_CODE_OFFSET_3: zp, PRG_HEADER_STACKSIZE1_L: zp
-.import PRG_HEADER_STACKSIZE1_H: zp, PRG_HEADER_STACKSIZE2_L: zp
-.import PRG_HEADER_STACKSIZE2_H: zp, PRG_HEADER_STACKTOP_H: zp
-
 JMPTBL_SIZE = RT_JMPTBL_SIZE
-LOADER_ADDR = RT_BASE + JMPTBL_SIZE
-MIN_HEAP_SIZE = 256         ; as in checkCodeSize (prgHeader.s)
 ZP_BACKUP_LEN = $5d         ; page zero bytes the header saves, from $04
 LFN = 1
 
@@ -53,9 +48,8 @@ SRC = ZP_PTR2L
 DST = ZP_PTR3L
 TMP = ZP_PTR4L
 
-.export LOADER_ADDR
-
-.rodata
+; In DATA, not RODATA: the linker patches the first two instructions here
+.data
 
 loaderStart:
 

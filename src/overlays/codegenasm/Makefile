@@ -11,8 +11,9 @@ LIBFILE := $(BINTARGETDIR)/codegen
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
 # make ALLPKGS=1 links every runtime package into every program, whatever
-# the program uses (see genRuntime.s). It's for debugging. Any make without
-# it, such as the one a test suite runs, builds without it again.
+# the program uses (see setRuntimeFeatures in objFile.s). It's for debugging.
+# Any make without it, such as the one a test suite runs, builds without it
+# again.
 ALLPKGS ?= 0
 ifeq ($(ALLPKGS),1)
 ASFLAGS += -D ALLPKGS

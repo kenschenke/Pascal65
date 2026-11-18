@@ -279,7 +279,7 @@ L2: jsr setCodeGenProgramChain
 
     jsr freeUnits
 
-    ; Check the error count (code generation reports a program too large)
+    ; Check the error count (a code generation error)
     jsr buildHasErrors
     beq :+
 
