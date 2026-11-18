@@ -53,6 +53,15 @@ L1: ldz #currentDecl
     jmp L8
 :   cmp #TYPE_UNIT
     bne :+
+    ; A Uses entry has no slots of its own. The unit's variables get
+    ; theirs from setUnitOffsets.s, which places each unit after the one
+    ; before it. Doing it here too placed them among the variables of
+    ; the program or unit with the Uses.
+    ldz #decl::kind
+    nop
+    lda (ptr1),z
+    cmp #DECL_USES
+    beq L8
     jsr setUnitOffsets
     jmp L8
 :   cmp #TYPE_FUNCTION
@@ -216,6 +225,17 @@ L9: jsr popA
     lda tmp3
     jsr pushA
     jsr setDeclOffsets
+
+    ; The offset after the unit's variables is where the next unit's
+    ; start (setUnitOffsets.s). Without it every unit started at the
+    ; same slot, and a second unit's variables shared the first's.
+    ldz #startingOffset
+    nop
+    sta (stackPointer),z
+    txa
+    inz
+    nop
+    sta (stackPointer),z
     rts
 .endproc
 

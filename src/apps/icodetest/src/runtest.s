@@ -100,7 +100,7 @@ expectedFeatures:
     .byte 0, 0, 0, 0, 0, 0, RTF_DYNARRAYS, 0        ; 21-28
     .byte 0, RTF_FILES, RTF_FILES                   ; 29-31
     .byte RTF_FILES, RTF_FILES, RTF_TRIG, 0, 0, 0   ; 32-37
-    .byte 0                                         ; 38
+    .byte 0, 0                                      ; 38-39
 
 .code
 

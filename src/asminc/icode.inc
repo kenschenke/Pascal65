@@ -62,14 +62,15 @@ IC_FSO          = $0c  ; 0000 1100  flush string output
 IC_DEF          = $0d  ; 0000 1101  pop and free a file handle and close file
 IC_JRP          = $0e  ; 0000 1110  call a routine from a pointer on the stack
 IC_RTS          = $0f  ; 0000 1111  return from a routine using the stack frame return addr
+IC_UIR          = $10  ; 0001 0000  return from a unit's init block (see UIC)
 
 ; These instructions take one operand
 IC_MASK_UNARY   = $20  ; 0010 0000
-IC_DIR          = $21  ; 0010 0001  1:record declaration chunknum
+IC_DIR          = $21  ; 0010 0001  1:label of the record's declaration block
 IC_NEG          = $22  ; 0010 0010  1:type
 IC_ABS          = $23  ; 0010 0011  1:type
 IC_PPF          = $24  ; 0010 0100  1:label
-IC_DIA          = $25  ; 0010 0101  1:array declaration chunknum
+IC_DIA          = $25  ; 0010 0101  1:label of the array's declaration block
 IC_INP          = $26  ; 0010 0110  1:type
 IC_PSH          = $27  ; 0010 0111  1:type
 IC_PRE          = $28  ; 0010 1000  1:type
@@ -95,6 +96,8 @@ IC_MEM          = $3a  ; 0011 1010  1:type
 IC_SAL          = $3b  ; 0011 1011  1:label of the array declaration block
                        ; variable ref of the array under the new length
                        ; (LongInt) on stack - set array length
+IC_UIC          = $3c  ; 0011 1100  1:label - call a unit's init block, which
+                       ; pushes the unit's variables (no stack frame)
 
 ; These instructions take two operands
 IC_MASK_BINARY  = $40  ; 0100 0000

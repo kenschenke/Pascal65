@@ -1,6 +1,9 @@
 (* Test 36 - A unit with code
-PSH IWU 0
+UIC LBL xxxxx
 BRA LBL xxxxx
+LOC LBL xxxxx
+PSH IWU 0
+UIR
 LOC LBL xxxxx
 PSH VDR 4 1 0
 PSH VDR 4 2 0
@@ -23,7 +26,9 @@ PSH VDW 4 1 0
 SET IBS 4 IBS 4
 *)
 
-// A unit's routines are written in the unit's scope.
+// A unit's routines are written in the unit's scope. Its variables are
+// pushed by its init block, which the startup calls with UIC and which
+// ends with UIR. The block comes before the unit's routines.
 
 Program Test;
 

@@ -14,7 +14,7 @@
 
 .export icodeUnitRoutines
 
-.import units, icodeRoutineDeclarations
+.import units, icodeRoutineDeclarations, icodeUnitInit
 
 .bss
 
@@ -22,6 +22,8 @@ thisUnit: .res 4
 
 .code
 
+; This routine writes each unit's init block (icodeUnitInit), then its
+; routines.
 .proc icodeUnitRoutines
     ldq units
     stq thisUnit
@@ -32,7 +34,10 @@ L1: ldq thisUnit
     bne :+
     rts
 
-:   stq ptr1
+:   jsr icodeUnitInit
+
+    ldq thisUnit
+    stq ptr1
     ldz #unit::astRoot
     neg
     neg

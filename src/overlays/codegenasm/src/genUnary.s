@@ -74,6 +74,18 @@ label: .res 16
     ; negate after the JMP when it was IC_NEG.
     rts
 
+    ; A unit's init block runs as a 6502 subroutine. It pushes the unit's
+    ; variables on the runtime stack, so it has no stack frame.
+:   cmp #IC_UIC
+    bne :+
+    lda #<strbuf
+    ldx #>strbuf
+    ldy #LINKADDR_BOTH
+    ldz #1
+    jsr linkAddressLookup
+    genThree OC_JSR, 0
+    rts
+
 :   cmp #IC_BIF
     bne :+
     jsr bifOper

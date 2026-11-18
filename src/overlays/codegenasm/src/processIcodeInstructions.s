@@ -103,6 +103,13 @@ L1: jsr readIcodeByte
     genThree OC_JSR, RT_POPANDFREE
     jmp L1
 
+    ; The end of a unit's init block (UIC in genUnary)
+:   cmp #IC_UIR
+    bne :+
+    lda #OC_RTS
+    jsr genOneInstruction
+    jmp L1
+
 :   cmp #IC_DEF
     bne :+
     genThree OC_JSR, RT_FILEFREE

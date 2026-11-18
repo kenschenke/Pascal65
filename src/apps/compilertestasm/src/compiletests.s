@@ -67,6 +67,7 @@ strForOrd: .asciiz "forord"
 strDeclOrdr: .asciiz "declordr"
 strNegate: .asciiz "negate"
 strSubrange: .asciiz "subrange"
+strUnitInit: .asciiz "unitinit"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
@@ -122,6 +123,9 @@ tests:
     .byte .lobyte(strDeclOrdr), .hibyte(strDeclOrdr)
     .byte .lobyte(strNegate), .hibyte(strNegate)
     .byte .lobyte(strSubrange), .hibyte(strSubrange)
+    ; Units' init blocks (UIC/UIR), with the dynamic runtime. unit is in
+    ; set 2, with the static one.
+    .byte .lobyte(strUnitInit), .hibyte(strUnitInit)
 .endif
 .if TESTSET = 0 || TESTSET = 2
     .byte .lobyte(strSubtract), .hibyte(strSubtract)

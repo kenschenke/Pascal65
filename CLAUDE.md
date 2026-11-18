@@ -338,6 +338,16 @@ split. Like `test`, it needs asmlib built with `MEMCHECK=1`. The lines
 left are ones no program can reach, such as defaults for kinds no caller
 passes and cases the type checker rejects.
 
+A unit's variables are level 1 slots after the program's, unit by unit in
+the units list's order. The resolver numbers them in that order
+(`setUnitOffsets.s`). `setDeclOffsets` skips a `DECL_USES` entry, so the
+offsets come from that one pass. A library's variables are pushed by the
+program's startup. A Pascal unit's are pushed by its own init block
+(`icodeUnitInit`): `LOC`, the variables, then `UIR`, written before the
+unit's routines. The startup calls it with `UIC`. Codegen makes `UIC` a
+6502 `JSR` and `UIR` an `RTS`, since a routine's stack frame would pop
+the slots. icodetest 39 and compilertestasm's `unitinit` check this.
+
 In icode, `isRead` 0 asks an expression for the address of what it
 names, to write to or pass by reference, and 1 for its value. The
 address of `p^` is p's value. A record variable holds its heap address,

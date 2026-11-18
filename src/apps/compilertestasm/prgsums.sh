@@ -97,7 +97,9 @@ fi
 echo "=== Checking PRG checksums"
 FAILED=0
 for name in $NAMES; do
-    WANT=$(sed -n "s/^$name \([0-9a-f]*\)$/\1/p" "$SUMS" 2>/dev/null)
+    # Git's autocrlf may check the sums out with CRLF line endings
+    WANT=$(tr -d '\r' < "$SUMS" 2>/dev/null |
+        sed -n "s/^$name \([0-9a-f]*\)$/\1/p")
     GOT=$(prgSum "$name")
     if [ -z "$WANT" ]; then
         echo "$name: no checksum recorded (make savesums)"

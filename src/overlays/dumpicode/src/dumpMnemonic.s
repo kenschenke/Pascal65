@@ -95,6 +95,8 @@ strIC_PRP: .byte "PRP"
 strIC_BWX: .byte "BWX"
 strIC_DAT: .byte "DAT"
 strIC_SAL: .byte "SAL"
+strIC_UIC: .byte "UIC"
+strIC_UIR: .byte "UIR"
 
 mne:
 .byte IC_CHR, .LOBYTE(strIC_CHR), .HIBYTE(strIC_CHR)
@@ -183,6 +185,8 @@ mne:
 .byte IC_BWX, .LOBYTE(strIC_BWX), .HIBYTE(strIC_BWX)
 .byte IC_DAT, .LOBYTE(strIC_DAT), .HIBYTE(strIC_DAT)
 .byte IC_SAL, .LOBYTE(strIC_SAL), .HIBYTE(strIC_SAL)
+.byte IC_UIC, .LOBYTE(strIC_UIC), .HIBYTE(strIC_UIC)
+.byte IC_UIR, .LOBYTE(strIC_UIR), .HIBYTE(strIC_UIR)
 
 .bss
 
