@@ -32,6 +32,7 @@ exprPtrOffset = symPtrOffset + 4
 .export icodeRoutineCall
 
 .import loadStackValue, lblRoutineReturn, icodeFormatLabel, icodeVar
+.import icodeFormatBlockLabel
 .import icodeWriteInstruction, icodeOper1Short, icodeOper1Label, icodeOper2Label
 .import icodeExprRead, lblDeclInit, icodeOper2Short, icodeExpr
 
@@ -439,7 +440,7 @@ DN: jsr popA                ; param type kind
     stq ptr2                    ; Save for later too
     lda #<lblDeclInit
     ldx #>lblDeclInit
-    jsr icodeFormatLabel
+    jsr icodeFormatBlockLabel
 
     ldz #paramTypeKindOffset
     nop

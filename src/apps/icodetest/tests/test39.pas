@@ -2,23 +2,26 @@
 HDR PRG test 0 200
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-IMP LIB iclib 5
-   RRVVR
+IMP LIB iclib 6
+   RRVVVR
 PSH IWU 0
-UIC LBL xxxxx
+UIC LBL icunit2.0
 PSH IWU 0
-SSP LBL xxxxx
+SSP LBL iclib.2
 PSH ILS 0
-SSP LBL xxxxx
+SSP LBL iclib.3
+NEW IWS 4
+DIR LBL xxxxx
+SSP LBL iclib.4
 BRA LBL xxxxx
-LOC LBL xxxxx
+LOC LBL icunit2.0
 NEW IWS 4
 DIR LBL xxxxx
 SST STR hi
 NEW IWS a
-DIA LBL xxxxx
+DIA LBL icunit2.3
 UIR
-LOC LBL xxxxx
+LOC LBL icunit2.4
 PSH IBS 1
 PSH VDR 14 1 1
 SET IBS 4 IBS 2
@@ -36,9 +39,12 @@ SET IBS 4 IBS 4
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 4
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 4
 DAT IBU 0 LBL xxxxx
    05 00 06 00 
-DAT IBU 5 LBL xxxxx
+DAT IBU 5 LBL icunit2.3
    heap offset: 0
    low bound: 1
    high bound: 2

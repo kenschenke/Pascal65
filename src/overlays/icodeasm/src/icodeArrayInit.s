@@ -524,8 +524,8 @@ DN: lda litCount
     ldx #0
     jsr writeToMemBuf
 
-    ; Add a ".1" to the label
-    lda #'.'
+    ; Add a "+1" to the label
+    lda #'+'
     sta buffer
     lda #'1'
     sta buffer+1

@@ -330,8 +330,8 @@ DN: jsr popAX           ; index
     sta (ptr2),z
     inz
     bne :-
-:   ; Add "."
-    lda #'.'
+:   ; Add "+"
+    lda #'+'
     nop
     sta (ptr2),z
     inz

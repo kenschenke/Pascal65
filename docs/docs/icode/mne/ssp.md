@@ -14,4 +14,6 @@ public declarations.
 
 ### Label Operand
 
-The operand is a label that defines the target.
+The operand is a label that defines the target: the library variable's
+slot, named for the library and the slot's number (see
+[entries](../../intro#entries)).

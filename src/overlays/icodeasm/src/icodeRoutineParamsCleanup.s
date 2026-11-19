@@ -18,6 +18,7 @@ paramTypesOffset = paramPtrsOffset + 4
 .export icodeRoutineParamsCleanup
 
 .import loadStackValue, icodeFormatLabel, lblDeclInit
+.import icodeFormatBlockLabel
 .import icodeOper1Label, icodeOper2Short, icodeWriteInstruction
 
 .bss
@@ -94,7 +95,7 @@ DN: jsr popQ
     stq intOp32
     lda #<lblDeclInit
     ldx #>lblDeclInit
-    jsr icodeFormatLabel
+    jsr icodeFormatBlockLabel
     jsr icodeOper1Label
 
     ldz #paramTypesOffset

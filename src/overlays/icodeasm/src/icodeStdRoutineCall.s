@@ -21,6 +21,7 @@ routineCodeOffset = argPtrOffset + 4
 .export icodeStdRoutineCall, formatArrayDeclLabel
 
 .import loadStackValue, icodeReadReadlnCall, icodeWriteWritelnCall
+.import icodeFormatBlockLabel
 .import icodeExprRead, icodeOper1Short, icodeWriteInstruction, icodeDecIncCall
 .import icodeExpr, icodeOper2Short, icodeOper3Short, icodeOper1Int
 .import icodeOper1Label, icodeFormatLabel, lblDeclInit, lblParamDeclInit
@@ -562,7 +563,7 @@ DN: lda lenCount
     stq intOp32
     lda #<lblDeclInit
     ldx #>lblDeclInit
-    jmp icodeFormatLabel
+    jmp icodeFormatBlockLabel
 PR: lda #<lblParamDeclInit
     ldx #>lblParamDeclInit
     jmp icodeFormatLabel

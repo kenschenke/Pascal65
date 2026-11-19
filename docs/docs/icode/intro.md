@@ -59,13 +59,26 @@ library the program uses, in the order of its `Uses` clause:
 |1   |The kind: 1 for a library                                       |
 |1+  |The library's name: its length, then the characters             |
 |2   |The number of slots in the library's jump table                 |
-|    |Each slot: its kind (1 a routine, 2 a variable), then its label |
+|    |Each slot's kind: 1 a routine, 2 a variable                     |
 
 The first two slots are the library's initialization and cleanup
 routines, then a slot for each routine and variable in its interface, in
-order. The code calls a library routine or uses a library variable by the
-slot's label. The program's code generation calls each library's
-initialization before the program starts and its cleanup after it ends.
+order. The program's code generation calls each library's initialization
+before the program starts and its cleanup after it ends.
+
+### Entries
+
+A library's slots and a unit's entries are numbered the same way: 0 is
+the module's initialization, 1 its cleanup, then from 2 each routine and
+variable in its interface, in order. Code outside the module names an
+entry by a label made of the module's name, a period and the entry's
+number in decimal: `system.18`, or `myunit.0` for a unit's
+[initialization block](../mne/uic). The unit's own code defines its
+entries with the same labels: its initialization block, the
+[LOC](../mne/loc) of each interface routine and the [DAT](../mne/dat)
+block of each interface record or array variable. A unit has no cleanup,
+and its other variables are slots in the program's stack frame, so those
+entries are never named. No other label has a period.
 
 ## Operands
 

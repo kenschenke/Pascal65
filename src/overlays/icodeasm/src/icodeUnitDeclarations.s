@@ -22,11 +22,7 @@
 .export icodeUnitDeclarations, icodeUnitInit
 
 .import units, icodeVariableDeclarations, icodeWriteInstruction
-.import icodeFormatLabel, icodeOper1Label
-
-.data
-
-lblUnitInit: .asciiz "uinit"
+.import icodeOper1Label, formatEntryLabel, entryNum
 
 .bss
 
@@ -80,6 +76,7 @@ NX: ldq thisUnit
 ; pushes and initializes the unit's variables, then UIR. It writes
 ; nothing for a library. The unit is passed in Q.
 .proc icodeUnitInit
+    stq thisUnit
     jsr loadUnitDecl
     ldz #decl::isLibrary
     nop
@@ -113,13 +110,13 @@ NX: ldq thisUnit
 .endproc
 
 ; This routine formats the label of the init block of the unit in
-; unitDecl in icodeLabel.
+; thisUnit in icodeLabel: the unit's entry 0 (icodeExports.s).
 .proc formatInitLabel
-    ldq unitDecl
-    stq intOp32
-    lda #<lblUnitInit
-    ldx #>lblUnitInit
-    jmp icodeFormatLabel
+    lda #0
+    sta entryNum
+    sta entryNum+1
+    ldq thisUnit            ; unit::name is its first member
+    jmp formatEntryLabel
 .endproc
 
 ; This routine writes the code that pushes and initializes the variables

@@ -26,6 +26,7 @@ declOffset = typeOffset + 4
 .export icodeRoutineDeclaration
 
 .import loadStackValue, icodeRoutineDeclarations, icodeFormatLabel
+.import icodeFormatDeclLabel
 .import lblRoutineEnter, icodeOper1Label, icodeWriteInstruction
 .import icodeVariableDeclarations, icodeRoutineCleanup, icodeStmts
 .import icodeArrayInit, formatArrayDeclLabel, icodeLabel, heapOffset
@@ -182,7 +183,7 @@ NX: ldq paramPtr
     stq intOp32
     lda #<lblRoutineEnter
     ldx #>lblRoutineEnter
-    jsr icodeFormatLabel
+    jsr icodeFormatDeclLabel
     jsr icodeOper1Label
     lda #IC_LOC
     jsr icodeWriteInstruction

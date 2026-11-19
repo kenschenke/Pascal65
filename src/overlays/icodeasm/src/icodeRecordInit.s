@@ -567,7 +567,7 @@ DN: ldz #declMemBufOffset
     inc tmp1
     inc tmp2
     bne :-
-:   lda #'.'
+:   lda #'+'
     ldz tmp2
     nop
     sta (stackPointer),z

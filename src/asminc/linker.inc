@@ -36,8 +36,7 @@ LINKADDR_IMPORT = $80
 ;    .byte library count        then each library, in the order to place
 ;                               them: its name (the file is name.lib),
 ;                               .word its jump table's slot count, then
-;                               each slot: .byte OBJLIB_*, the name of the
-;                               symbol the linker defines at the slot
+;                               each slot's kind: .byte OBJLIB_*
 ;    .word relocation count     then each: OBJRELOC
 ;    the code, to the end of the file
 ;
@@ -57,10 +56,13 @@ LINKADDR_IMPORT = $80
 ;    rtinit                  the runtime's first call: RT_RUNTIMEERRORINIT,
 ;                            or LOADER_ADDR for a dynamic program
 ;
+;    name.N                  slot N of the library, in decimal: the
+;                            linker defines one at each slot
+;
 ; An import that resolves to neither is errUndefinedLabel, with its name.
 OBJ_MAGIC0 = 'O'
 OBJ_MAGIC1 = 'B'
-OBJ_VERSION = 2
+OBJ_VERSION = 3
 OBJ_NAME_MAX = 23           ; the longest name, TAGTOFIND's label less one
 
 OBJ_KIND_PROGRAM = 0

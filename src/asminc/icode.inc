@@ -21,16 +21,21 @@ setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
 ; the program's Uses order:
 ;
 ;    ICODE_IMPORT_LIBRARY, then the library as the object file lists it
-;    (linker.inc): its name, a word with its slot count, then each slot:
-;    OBJLIB_*, the slot's label
+;    (linker.inc): its name, a word with its slot count, then each slot's
+;    kind (OBJLIB_*)
 ;
-; A name or label is its length in a byte, then that many characters.
+; A name is its length in a byte, then that many characters.
+;
+; Code reaches another module's entry, a library slot or a unit's init
+; block, routine or variable, by the label "name.N": the module's name and
+; the entry's number in decimal (icodeExports.s in icodeasm). No other
+; label has a period.
 ;
 ; The runtime features (RTF_* in asm.inc) are known only once the code is
 ; written, so they are EOM's operand.
 ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
 ICODE_MAGIC1 = $43
-ICODE_VERSION = 1
+ICODE_VERSION = 2
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
 ICODE_IMPORT_LIBRARY = 1

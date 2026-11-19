@@ -26,11 +26,12 @@ localVarsOffset = localDeclsOffset + 4
 .import icodeOper1Label, icodeArrayInit, icodeLabel, icodeRecordInit
 .import loadStackValue, icodeFormatLabel, countArrayLiterals
 .import setRuntimeFeature
+.import icodeFormatDeclLabel, icodeFormatBlockLabel
 
 .bss
 
 varIndex: .res 1
-declInitLabel: .res 15
+declInitLabel: .res 24
 ; Non-zero if the caller passed localVars and localDecls storage
 tracking: .res 1
 
@@ -396,18 +397,15 @@ L1: jsr icodeOper1Int
     rts
 .endproc
 
-; This routine writes the address of this library declaration
-; to the library's jump table
+; This routine writes the address of this library declaration (ptr1)
+; to the library's jump table. Its slot is the library's entry
+; (icodeExports.s).
 .proc libraryDecl
-    ldz #decl::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    ldq ptr1
     stq intOp32
     lda #<lblLibDecl
     ldx #>lblLibDecl
-    jsr icodeFormatLabel
+    jsr icodeFormatDeclLabel
     jsr icodeOper1Label
     lda #IC_SSP
     jsr icodeWriteInstruction
@@ -591,28 +589,24 @@ L2: ldz #expr::value
     rts
 .endproc
 
+; This routine formats the label of the declaration block of the
+; declaration in declPtr in declInitLabel. A unit's interface variable's
+; is the unit's entry (icodeExports.s), which another module can use. A
+; library's isn't.
 .proc formatDeclLabel
-    ldx #0
-:   lda diStr,x
-    beq :+
-    sta declInitLabel,x
-    inx
-    bne :-
-
-:   stx tmp1
     ldz #declPtrOffset
     jsr loadStackValue
     stq intOp32
-    lda #<declInitLabel
-    clc
-    adc tmp1
-    pha
-    lda #>declInitLabel
-    adc #0
-    tax
-    pla
-    jsr hexstr
-    rts
+    lda #<diStr
+    ldx #>diStr
+    jsr icodeFormatBlockLabel
+    ldx #0
+:   lda icodeLabel,x
+    sta declInitLabel,x
+    beq :+
+    inx
+    bne :-
+:   rts
 .endproc
 
 ; Stores the value in Q in the localDecl for the varIndex, unless nothing

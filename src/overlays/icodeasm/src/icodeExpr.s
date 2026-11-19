@@ -21,6 +21,7 @@ exprOffset = isReadOffset + 1
 .export icodeExpr, icodeExprRead
 
 .import loadStackValue, getExprTypeKind, icodeIntOrRealMath
+.import icodeFormatDeclLabel
 .import icodeOper1Short, icodeOper2Short, icodeOper3Short, icodeWriteInstruction
 .import icodeSubroutineCall, icodeCompExpr, getExprType, icodeStringValue
 .import lblRoutineEnter, icodeFormatLabel, icodeOper1Label, icodeVar
@@ -750,7 +751,7 @@ L5: ldq symPtr
     stq intOp32
     lda #<lblRoutineEnter
     ldx #>lblRoutineEnter
-    jsr icodeFormatLabel
+    jsr icodeFormatDeclLabel
     jsr icodeOper1Label
     ldq symPtr
     stq ptr1

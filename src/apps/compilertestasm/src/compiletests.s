@@ -68,6 +68,7 @@ strDeclOrdr: .asciiz "declordr"
 strNegate: .asciiz "negate"
 strSubrange: .asciiz "subrange"
 strUnitInit: .asciiz "unitinit"
+strUnitRefs: .asciiz "unitrefs"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
@@ -100,6 +101,9 @@ TESTSET = 0
 
 tests:
 .if TESTSET = 0 || TESTSET = 1
+    ; References to a unit's entries (unit.N in icode). First, so adding it
+    ; changed no other program's chain target.
+    .byte .lobyte(strUnitRefs), .hibyte(strUnitRefs)
     .byte .lobyte(strAdd), .hibyte(strAdd)
     .byte .lobyte(strAssign), .hibyte(strAssign)
     .byte .lobyte(strVarInit), .hibyte(strVarInit)

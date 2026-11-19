@@ -21,7 +21,7 @@ MAX_COUNT = 20
 .import readOperand, dumpChar, dumpHexByte, operandValue
 
 .ifndef __DEBUG__
-.import dumpLabelXXXXX
+.import dumpLabelFrom
 .endif
 
 .bss
@@ -223,9 +223,7 @@ L3: rts
     jsr dumpString
 .else
     jsr CHRIN
-    beq :+
-    jsr dumpLabelXXXXX
-:
+    jsr dumpLabelFrom
 .endif
     lda #13
     jsr dumpChar
@@ -244,9 +242,7 @@ L3: rts
     jsr dumpString
 .else
     jsr CHRIN
-    beq :+
-    jsr dumpLabelXXXXX
-:
+    jsr dumpLabelFrom
 .endif
     lda #13
     jsr dumpChar
@@ -370,10 +366,7 @@ L2: lda #0
     jsr CHRIN
     bne :-
 .else
-    jsr CHRIN
-    beq :+
-    jsr dumpLabelXXXXX
-:
+    jsr dumpLabelFrom
 .endif
     jmp L1
 

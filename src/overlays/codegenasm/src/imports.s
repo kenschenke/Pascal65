@@ -8,11 +8,13 @@
 ; https://opensource.org/licenses/MIT
 ;
 ; The icode file's imports table (icode.inc, icodeImports.s in icodeasm):
-; the libraries the program uses, in its Uses order, each with the labels
+; the libraries the program uses, in its Uses order, each with the kinds
 ; of its jump table's slots. Code generation keeps them in a membuf as the
 ; object file lists them (linker.inc). It calls each library's init (slot
-; 0) after the program header and its cleanup (slot 1) at the end, and
-; copies the list into the object file.
+; 0, "name.0") after the program header and its cleanup (slot 1,
+; "name.1") at the end, and copies the list into the object file. The
+; code names every slot that way (icodeExports.s in icodeasm), and the
+; linker defines the names.
 
 .include "asm.inc"
 .include "icode.inc"
@@ -37,7 +39,7 @@ left: .res 1                ; libraries left to read or walk
 slotsLeft: .res 2           ; slots left in the library
 byte: .res 1                ; for putByte and getByte
 labelLen: .res 1
-label: .res OBJ_NAME_MAX+1  ; a slot's label, null-terminated
+label: .res OBJ_NAME_MAX+3  ; a slot's label, null-terminated
 isInit: .res 1
 
 .code
@@ -73,14 +75,12 @@ L1: lda left
     sta slotsLeft+1
     jsr putByte
 
-    ; Each slot: its kind and label
+    ; Each slot's kind
 L2: lda slotsLeft
     ora slotsLeft+1
     beq L1
     jsr readIcodeByte
     jsr putByte
-    jsr copyName
-    bcs BD
     lda slotsLeft
     bne :+
     dec slotsLeft+1
@@ -97,7 +97,7 @@ BD: sec
     rts
 .endproc
 
-; This routine copies a name or label (its length, then its characters)
+; This routine copies a name (its length, then its characters)
 ; from the icode file to the membuf. The carry is set if it is too long.
 .proc copyName
     jsr readIcodeByte
@@ -163,8 +163,8 @@ DN: rts
     jmp setMemBufPos
 .endproc
 
-; This routine reads a name or label from the membuf into label,
-; null-terminated
+; This routine reads a name from the membuf into label, null-terminated,
+; with its length in labelLen
 .proc getLabel
     jsr getByte
     sta labelLen
@@ -213,31 +213,24 @@ L1: lda left
     jsr getByte
     sta slotsLeft+1
 
-    ; Slot 0 is the init, slot 1 the cleanup
-    jsr getByte                 ; slot 0's kind
-    jsr getLabel
+    ; Slot 0 is the init, "name.0", and slot 1 the cleanup, "name.1"
+    ldx labelLen
+    lda #'.'
+    sta label,x
     lda isInit
-    beq :+
-    jsr genCall
-:   jsr getByte                 ; slot 1's kind
-    jsr getLabel
-    lda isInit
-    bne :+
+    eor #1
+    clc
+    adc #'0'
+    sta label+1,x
+    lda #0
+    sta label+2,x
     jsr genCall
 
-    ; Skip the rest of the slots
-:   sec
-    lda slotsLeft
-    sbc #2
-    sta slotsLeft
-    lda slotsLeft+1
-    sbc #0
-    sta slotsLeft+1
+    ; Skip the slots' kinds
 L2: lda slotsLeft
     ora slotsLeft+1
     beq L1
-    jsr getByte                 ; the slot's kind
-    jsr getLabel
+    jsr getByte
     lda slotsLeft
     bne :+
     dec slotsLeft+1

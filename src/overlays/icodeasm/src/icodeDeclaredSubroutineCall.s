@@ -24,6 +24,7 @@ exprOffset = symPtrOffset + 4
 .export icodeDeclaredSubroutineCall
 
 .import icodeRoutineCall, icodeFormatLabel, icodeWriteInstruction
+.import icodeFormatDeclLabel
 .import icodeOper1Label, icodeOper1Short, icodeOper2Short, icodeOper3Short
 .import icodeRoutineParamsCleanup, loadStackValue, lblRoutineEnter, lblRoutineReturn
 
@@ -122,7 +123,7 @@ exprOffset = symPtrOffset + 4
     stq intOp32
     lda #<lblRoutineEnter
     ldx #>lblRoutineEnter
-    jsr icodeFormatLabel
+    jsr icodeFormatDeclLabel
     jsr icodeOper1Label
     ldz #levelOffset
     nop

@@ -26,4 +26,6 @@ program's startup itself.
 
 ### Label Operand
 
-The operand is the label of the unit's init block.
+The operand is the label of the unit's init block, its entry 0: the
+unit's name followed by `.0` (see [entries](../../intro#entries)).
+

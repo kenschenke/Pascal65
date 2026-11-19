@@ -6,7 +6,7 @@
 .export readOperand, operandValue
 
 .ifndef __DEBUG__
-.export dumpLabelXXXXX
+.export dumpLabelXXXXX, dumpLabelFrom
 .endif
 
 .import dumpMnemonic, dumpHexByte, dumpHex, dumpChar, instruction
@@ -18,7 +18,10 @@ operandValue: .res 4
 strlen: .res 1
 
 .ifndef __DEBUG__
+LBLMAX = 31
 lblIndex: .res 1
+hasDot: .res 1
+lblBuf: .res LBLMAX+1
 .endif
 
 .code
@@ -122,20 +125,55 @@ L2: rts
 .endproc
 
 .ifndef __DEBUG__
+; This routine dumps a label read from the file: in full if it names a
+; module's entry ("name.N", icodeExports.s in icodeasm), otherwise as
+; five x's, since the other labels are made from heap addresses.
 .proc dumpLabelXXXXX
-    ; First, consume all the characters in the label
-:   jsr CHRIN
-    bne :-
+    jsr CHRIN
+    ; Fall through
+.endproc
 
-    ; Second, dump 5 x's
-    lda #5
+; As dumpLabelXXXXX, with the label's first character, already read, in A.
+; A label with no characters dumps nothing.
+.proc dumpLabelFrom
+    ldx #0
+    stx hasDot
+L1: cpx #LBLMAX
+    bcs :+
+    sta lblBuf,x
+    inx
+:   cmp #0
+    beq L2
+    cmp #'.'
+    bne :+
+    sta hasDot
+:   phx
+    jsr CHRIN
+    plx
+    bra L1
+
+L2: lda #0
+    sta lblBuf+LBLMAX
+    cpx #1
+    beq DN                  ; no characters
+    lda hasDot
+    beq XX
+    ldx #0
+:   lda lblBuf,x
+    beq DN
+    phx
+    jsr dumpChar
+    plx
+    inx
+    bra :-
+
+XX: lda #5
     sta lblIndex
 :   lda #'x'
     jsr dumpChar
     dec lblIndex
     bne :-
-
-    rts
+DN: rts
 .endproc
 .endif
 

@@ -30,7 +30,7 @@ TARGET := mega65
 # on one disk image. A set's disk also needs room for the files its tests
 # write (filetesta and filetestb in set 2).
 TESTSETS := 1 2 3
-FIRSTTEST1 := add
+FIRSTTEST1 := unitrefs
 FIRSTTEST2 := subtract
 FIRSTTEST3 := dynarraya
 # Programs are built for the dynamic runtime unless they say
@@ -59,6 +59,13 @@ PRGSUMS = prgsums/set$(TESTSET).txt
 # which need the room for the programs they compile and the files their
 # tests write (set 2's file tests hang on a full disk).
 comma := ,
+# Set 1's own sources. unitrefs is the set's first program, so no
+# program's chain target changed when it was added.
+SET1PAS = unitrefs urefs
+ifeq ($(filter $(TESTSET),2 3),)
+SET1WRITE = $(foreach t,$(SET1PAS), \
+	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
+endif
 SET3PAS = libtest2 soundtest soundfx soundseq irqcb soundcalls dynarraya \
 	dynarrayb dynarrayc \
 	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb rterrexit
@@ -351,6 +358,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PETSCIIDIR)/namedidx.pas namedidx.pas,seq \
 	-write $(PETSCIIDIR)/done.pas done.pas,seq \
 	-write $(PETSCIIDIR)/toolarge.pas toolarge.pas,seq \
+	$(SET1WRITE) \
 	$(SET3WRITE) \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
 

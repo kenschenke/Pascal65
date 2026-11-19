@@ -9,10 +9,12 @@
 ;
 ; The libraries
 ;
-; The object file lists the libraries the program uses, each with the names
+; The object file lists the libraries the program uses, each with the kinds
 ; of its jump table's slots (linker.inc). readLibraryList keeps the list.
 ; layoutLibraries reads each library file into the heap, places it and
-; defines a symbol at each slot. writeLibraries relocates each library and
+; defines a symbol at each slot: the library's name, a period and the
+; slot's number in decimal ("name.N", as icodeExports.s in icodeasm names
+; them). writeLibraries relocates each library and
 ; writes it to the PRG.
 ;
 ; A library file is in one of two formats (docs/docs/libraries/objfile.md).
@@ -54,6 +56,8 @@ libIndex: .res 1            ; the library being laid out or written
 slotsLeft: .res 2
 slotKind: .res 1
 slotAddr: .res 2
+slotNum: .res 2
+libName: .res OBJ_NAME_MAX + 1  ; the library being laid out, null-terminated
 
 ; Each library, by number, from layoutLibraries for writeLibraries
 libBufs: .res 4 * MAX_LIBS      ; membuf of its code
@@ -202,8 +206,6 @@ L2: lda slotsLeft
     beq L1
     jsr readByte                ; The slot's kind
     jsr appendList
-    jsr copyName                ; and name
-    bcs BD
     jsr decSlots
     bra L2
 
@@ -330,7 +332,13 @@ L1: lda libIndex
     rts
 
 :   jsr readListName
-    jsr loadLibrary
+    ldx #0
+:   lda symName,x
+    sta libName,x
+    beq :+
+    inx
+    bra :-
+:   jsr loadLibrary
     php
 
     ; Keep its membufs, which freeLibraries frees if it fails
@@ -354,14 +362,20 @@ L1: lda libIndex
     sta slotAddr
     lda libBase+1
     sta slotAddr+1
+    lda #0
+    sta slotNum
+    sta slotNum+1
     jsr readSlotCount
 L2: lda slotsLeft
     ora slotsLeft+1
     beq NX
     jsr readList
     sta slotKind
-    jsr readListName
-    lda slotAddr
+    jsr slotName
+    inc slotNum
+    bne :+
+    inc slotNum+1
+:   lda slotAddr
     ldx slotAddr+1
     jsr defineSymbol
     lda slotKind
@@ -418,6 +432,33 @@ NX: ldx libIndex
     sta libBase+1
     inc libIndex
     jmp L1
+.endproc
+
+; This routine names the slot slotNum of the library in libName in symName:
+; "name.N", with N in decimal.
+.proc slotName
+    ldx #0
+:   lda libName,x
+    sta symName,x
+    beq :+
+    inx
+    bra :-
+:   lda #'.'
+    sta symName,x
+    inx
+    lda slotNum
+    sta intOp1
+    lda slotNum+1
+    sta intOp1+1
+    txa
+    clc
+    adc #<symName
+    pha
+    lda #>symName
+    adc #0
+    tax
+    pla
+    jmp writeInt16
 .endproc
 
 ; This routine reads the library named in symName into libBuf. The carry is
@@ -810,7 +851,6 @@ L1: lda slotsLeft
 
 :   jsr readList
     sta slotKind
-    jsr readListName            ; The name isn't needed
     lda slotKind
     cmp #OBJLIB_VARIABLE
     beq VR

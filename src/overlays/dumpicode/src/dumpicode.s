@@ -169,9 +169,8 @@ BD: lda #<strBadHdr
 
 ; This routine dumps the imports table that follows the header. Each
 ; library is a line, then its slots' kinds (R for a routine, V for a
-; variable), 64 to a line. The labels are AST addresses, so they aren't
-; shown. A table with no imports dumps nothing. The carry is set if an
-; import isn't a library.
+; variable), 64 to a line. A table with no imports dumps nothing. The
+; carry is set if an import isn't a library.
 ;    IMP LIB name slotcount
 ;       RRVRR...
 .proc dumpImports
@@ -219,7 +218,7 @@ L1: lda impLeft
     lda #0
     sta lineLen
 
-    ; Each slot's kind; its label is skipped
+    ; Each slot's kind
 L2: lda slotsLeft
     ora slotsLeft+1
     bne :+
@@ -238,14 +237,7 @@ L2: lda slotsLeft
     bra :++
 :   lda #'V'
 :   jsr dumpChar
-    jsr CHRIN               ; the label: its length, then its characters
-    sta hdrCount
-:   lda hdrCount
-    beq :+
-    jsr CHRIN
-    dec hdrCount
-    bra :-
-:   inc lineLen
+    inc lineLen
     lda lineLen
     cmp #64
     bne :+

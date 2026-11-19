@@ -208,10 +208,9 @@ COVFILES5 := addEmbeddedArrayOrRecord.s icodeValue.s \
 COVFILES6 := icodeDecIncCall.s icodeDeclaredSubroutineCall.s \
 	icodeForLoop.s icodeIntOrRealMath.s icodeLibrarySubroutineCall.s \
 	icodeRoutineCleanup.s icodeRoutineDeclarations.s \
-	icodeRoutineParamsCleanup.s icodeStmts.s icodeSubroutineCall.s \
-	icodeWrite.s
-# The imports table
-COVFILES7 := icodeImports.s findUnit.s
+	icodeRoutineParamsCleanup.s icodeStmts.s icodeSubroutineCall.s
+# The file's header, imports and entries
+COVFILES7 := icodeWrite.s icodeImports.s findUnit.s icodeExports.s
 
 ICODESRCDIR := $(ICODEDIR)/src
 ICODESOURCES := $(wildcard $(ICODESRCDIR)/*.s)

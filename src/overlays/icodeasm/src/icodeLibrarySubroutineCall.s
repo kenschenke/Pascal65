@@ -25,6 +25,7 @@ exprOffset = symPtrOffset + 4
 .export icodeLibrarySubroutineCall
 
 .import icodeRoutineCall, icodeFormatLabel, icodeWriteInstruction
+.import icodeFormatDeclLabel
 .import icodeOper1Label, icodeOper1Short, icodeOper2Short, icodeOper3Short
 .import icodeRoutineParamsCleanup, loadStackValue, lblRoutineEnter, lblRoutineReturn
 .import setRuntimeFeature
@@ -166,7 +167,7 @@ FD: lda #RTF_TRIG
     jsr checkTrigCall
     lda #<lblRoutineEnter
     ldx #>lblRoutineEnter
-    jsr icodeFormatLabel
+    jsr icodeFormatDeclLabel
     jsr icodeOper1Label
     ldz #levelOffset
     nop

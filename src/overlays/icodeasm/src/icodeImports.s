@@ -10,14 +10,14 @@
 ; writeImports routine
 ;
 ; The icode file's imports table follows its header (icode.inc). It lists
-; each library the program uses, in its Uses order, with the labels of its
+; each library the program uses, in its Uses order, with the kinds of its
 ; jump table's slots in order: its init and cleanup, then a routine or
-; variable for each of its interface declarations. The code reaches a
-; library through those labels, which are made from AST addresses, so code
-; generation reads them here rather than from the AST. It calls each
-; library's init and cleanup (slots 0 and 1) and copies each entry into the
-; object file, where the linker defines each label at its slot (see
-; linker.inc and loadLibrary.s in linkerasm).
+; variable for each of its interface's entries (icodeExports.s). The code
+; names a slot by the library and its number ("name.N"), so the table
+; needs no labels. Code generation calls each library's init and cleanup
+; (slots 0 and 1) and copies each entry into the object file, where the
+; linker defines a symbol at each slot (linker.inc and loadLibrary.s in
+; linkerasm).
 
 .include "ast.inc"
 .include "asmlib.inc"
@@ -30,14 +30,7 @@
 
 .export writeImports
 
-.import findUnit
-
-.data
-
-strInit: .asciiz "init"
-strCleanup: .asciiz "cleanup"
-strRtnEnter: .asciiz "rtnenter"
-strLibDecl: .asciiz "libdecl"
+.import findUnit, entryStart, entryNext, entryNum
 
 .bss
 
@@ -45,11 +38,9 @@ firstDecl: .res 4           ; the program's first declaration
 usesDecl: .res 4            ; the Uses declaration being looked at
 unitName: .res 4
 libRoot: .res 4             ; the library's AST root
-currentDecl: .res 4         ; its interface declaration being looked at
 libCount: .res 1
 writing: .res 1             ; zero while counting, non-zero while writing
 slotCount: .res 2
-slotKind: .res 1
 labelLen: .res 1
 label: .res 24
 
@@ -142,7 +133,7 @@ NX: ldq usesDecl
 .endproc
 
 ; This routine writes the library in unitName and libRoot: its kind
-; (ICODE_IMPORT_LIBRARY), name, slot count and slots.
+; (ICODE_IMPORT_LIBRARY), name, slot count and each slot's kind.
 .proc writeLibrary
     lda #ICODE_IMPORT_LIBRARY
     jsr CHROUT
@@ -163,147 +154,36 @@ NX: ldq usesDecl
 :   stx labelLen
     jsr writeLabel
 
-    ; Count the slots, then write them
-    lda #2                      ; init and cleanup
+    ; The slot count: init and cleanup, then the entries, which end one
+    ; less
+    ldq libRoot
+    jsr entryStart
+:   jsr entryNext
+    bcc :-
+    lda entryNum
+    clc
+    adc #1
     sta slotCount
-    lda #0
+    lda entryNum+1
+    adc #0
     sta slotCount+1
-    sta writing
-    jsr walkInterface
     lda slotCount
     jsr CHROUT
     lda slotCount+1
     jsr CHROUT
-    inc writing
 
-    ; Init and cleanup are labeled by the library's AST root
-    ldq libRoot
-    stq intOp32
-    lda #OBJLIB_ROUTINE
-    ldx #<strInit
-    ldy #>strInit
-    jsr writeSlot
-    ldq libRoot
-    stq intOp32
-    lda #OBJLIB_ROUTINE
-    ldx #<strCleanup
-    ldy #>strCleanup
-    jsr writeSlot
-    ; Fall through
-.endproc
-
-; This routine counts the library's routines and variables in slotCount, or
-; writes a slot for each.
-.proc walkInterface
-    ldq libRoot
-    stq ptr1
-    ldz #decl::code
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #stmt::interfaceDecl
-    neg
-    neg
-    nop
-    lda (ptr1),z
-L1: stq currentDecl
-    jsr isQZero
-    bne :+
-    rts
-
-:   stq ptr1
-    ldz #decl::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr2
-
-    ; A routine is labeled by its declaration
-    ldz #type::kind
-    nop
-    lda (ptr2),z
-    cmp #TYPE_FUNCTION
-    beq RT
-    cmp #TYPE_PROCEDURE
-    beq RT
-
-    ; A variable is labeled by its type
-    ldz #decl::kind
-    nop
-    lda (ptr1),z
-    cmp #DECL_VARIABLE
-    bne NX
-    ldq ptr2
-    stq intOp32
-    lda #OBJLIB_VARIABLE
-    ldx #<strLibDecl
-    ldy #>strLibDecl
-    bra SL
-RT: ldq ptr1
-    stq intOp32
-    lda #OBJLIB_ROUTINE
-    ldx #<strRtnEnter
-    ldy #>strRtnEnter
-SL: jsr slot
-
-NX: ldq currentDecl
-    stq ptr1
-    ldz #decl::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    bra L1
-.endproc
-
-; This routine counts a slot, or writes it while writing (see writeSlot)
-.proc slot
-    pha
-    lda writing
-    bne WR
-    pla
-    inc slotCount
-    bne :+
-    inc slotCount+1
-:   rts
-WR: pla
-    jmp writeSlot
-.endproc
-
-; This routine writes a slot: its kind (OBJLIB_*) in A, then its label: the
-; prefix in X/Y followed by intOp32 in hex.
-.proc writeSlot
-    sta slotKind
-    stx ptr2
-    sty ptr2+1
-    ldy #0
-:   lda (ptr2),y
-    beq :+
-    sta label,y
-    iny
-    bne :-
-:   tya
-    clc
-    adc #<label
-    pha
-    lda #>label
-    adc #0
-    tax
-    pla
-    jsr hexstr
-
-    ldx #0
-:   lda label,x
-    beq :+
-    inx
-    bne :-
-:   stx labelLen
-    lda slotKind
+    ; The slots' kinds
+    lda #OBJLIB_ROUTINE         ; init
     jsr CHROUT
-    ; Fall through
+    lda #OBJLIB_ROUTINE         ; cleanup
+    jsr CHROUT
+    ldq libRoot
+    jsr entryStart
+:   jsr entryNext
+    bcs :+
+    jsr CHROUT
+    bra :-
+:   rts
 .endproc
 
 ; This routine writes the name in label, labelLen characters long
@@ -319,6 +199,7 @@ WR: pla
     bra :-
 :   rts
 .endproc
+
 
 ; This routine adds the offset in Z to the pointer in A/X/Y and returns the
 ; sum in Q (as calcNamePtr in codegenasm).
