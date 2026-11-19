@@ -18,12 +18,19 @@
 .import readIcodeByte, readStatus, runtimeStackSize, setRuntimeMode
 .import nameBuf, nameLen
 
+.export globalSlots
+
+.bss
+
+globalSlots: .res 2         ; the module's own level 1 slots
+
 .code
 
 ; This routine reads the icode file's header (icode.inc). The file is open
-; on logical file 2. It sets the runtime mode and stack size and the
-; module's name (nameBuf and nameLen, for the object file). The carry is
-; set if the file isn't icode or is another version.
+; on logical file 2. It sets the runtime mode and stack size, the module's
+; level 1 slot count (globalSlots) and its name (nameBuf and nameLen, for
+; the object file). The carry is set if the file isn't icode or is another
+; version.
 .proc readIcodeHeader
     jsr readIcodeByte
     cmp #ICODE_MAGIC0
@@ -46,6 +53,10 @@
     sta runtimeStackSize
     jsr readIcodeByte
     sta runtimeStackSize+1
+    jsr readIcodeByte
+    sta globalSlots
+    jsr readIcodeByte
+    sta globalSlots+1
 
     ; The module's name
     jsr readIcodeByte

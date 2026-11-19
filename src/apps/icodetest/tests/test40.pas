@@ -1,5 +1,5 @@
 (* Test 40 - More than 32 globals after a file variable
-HDR PRG test 0 200
+HDR PRG test 0 200 29
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH ILS 0

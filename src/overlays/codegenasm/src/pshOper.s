@@ -19,7 +19,7 @@
 .export pshOper
 
 .import operand1, genOneInstruction, genTwoInstruction, genThreeAddr
-.import addStringLiteral
+.import addStringLiteral, frameReloc
 
 .data
 
@@ -106,6 +106,8 @@ vdrOper:
     bne :+
     genThree OC_JSR, RT_PUSHGLOBALINLINE
 
+    ldz #0
+    jsr frameOffset
     lda operand1+3                  ; offset
     jsr genOneInstruction
     lda operand1+1                  ; type
@@ -127,16 +129,22 @@ vdwOper:
     bne :+
     genThree OC_JSR, RT_PUSHGLOBALADDR
 
+    ldz #0
+    jsr frameOffset
     lda operand1+3                  ; offset
     jmp genOneInstruction
 :
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+2     ; level
+    ldz #1
+    jsr frameOffset
     genTwoAbsolute OC_LDX_IMMEDIATE, operand1+3     ; offset
     genThree OC_JSR, RT_PUSHVARADDR
     rts
 
 vvrOper:
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+2     ; level
+    ldz #1
+    jsr frameOffset
     genTwoAbsolute OC_LDX_IMMEDIATE, operand1+3     ; offset
     genThree OC_JSR, RT_CALCSTACKOFFSET
     genTwoImmediate OC_LDA_ZEROPAGE, ZP_PTR1L
@@ -151,6 +159,8 @@ vvrOper:
 
 vvwOper:
     genTwoAbsolute OC_LDA_IMMEDIATE, operand1+2     ; level
+    ldz #1
+    jsr frameOffset
     genTwoAbsolute OC_LDX_IMMEDIATE, operand1+3     ; offset
     genThree OC_JSR, RT_CALCSTACKOFFSET
     genTwoImmediate OC_LDA_IMMEDIATE, 0
@@ -167,6 +177,17 @@ vvwOper:
 retOper:
     genThree OC_JSR, RT_PUSHRETADDR
     rts
+.endproc
+
+; This routine writes a LINKADDR_FRAME relocation for a level 1 offset in
+; another frame than the program's (operand1+4, frames.s), Z bytes past
+; codeOffset. The offset is relative to the frame's first slot, which the
+; linker adds.
+.proc frameOffset
+    lda operand1+4
+    beq :+
+    jmp frameReloc
+:   rts
 .endproc
 
 .proc strOper

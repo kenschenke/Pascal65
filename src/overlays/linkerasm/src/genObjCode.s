@@ -46,10 +46,13 @@ PRG_FILENUM = 3
 .import symName
 .import initLibraries, readLibraryList, layoutLibraries, writeLibraries
 .import freeLibraries
+.import readFrames, setGlobalSlots
 .import layoutRuntime, writeRuntime, codeCeiling
 .import defineLinkerSymbols, writeRuntimeBss, RTBSS_LEN: zp
 
 .bss
+
+curByte: .res 1             ; the byte a relocation patches
 
 objMode: .res 1             ; RT_MODE_* from the object file
 objFeatures: .res 1         ; RTF_*
@@ -136,6 +139,8 @@ prgStub2:
     jsr readImports
     bcs BD
     jsr readLibraryList
+    bcs BD
+    jsr readFrames
     bcs BD
     jsr sortLinkerTags
     stq tagsMemBuf
@@ -368,11 +373,15 @@ BD2: jmp BD
     jsr readByte
     sta stackSize+1
 
-    ; The name and the global slots
+    ; The name and the global slots, where the frames start (frames.s)
     jsr readName
     bcs BD
     jsr readByte
+    pha
     jsr readByte
+    tax
+    pla
+    jsr setGlobalSlots
 
     ; The code length and the BSS length
     jsr readByte
@@ -841,7 +850,8 @@ ST: ldy #TAGTOFIX::address
 ; the bytes at its offset, then reads the next one. readByte reads the bytes
 ; replaced, so readStatus says if they end the file.
 .proc updateOffset
-    jsr readByte        ; discard the current byte
+    jsr readByte        ; the current byte, which only a frame keeps
+    sta curByte
 
     ldx #TAGTOFIX::type
     lda tagToFix,x
@@ -849,6 +859,8 @@ ST: ldy #TAGTOFIX::address
     beq LO
     cmp #LINKADDR_HIGH
     beq HI
+    cmp #LINKADDR_FRAME
+    beq FR
 
     ; Update both bytes
     ldx #PRG_FILENUM
@@ -870,6 +882,19 @@ LO: ldx #PRG_FILENUM
     jsr CHKOUT
     ldx #TAGTOFIX::address
     lda tagToFix,x
+    jsr CHROUT
+    lda #1
+    bra RN
+
+    ; Add a frame's first slot to a level 1 offset (frames.s)
+FR: lda curByte
+    clc
+    ldx #TAGTOFIX::address
+    adc tagToFix,x
+    pha
+    ldx #PRG_FILENUM
+    jsr CHKOUT
+    pla
     jsr CHROUT
     lda #1
     bra RN

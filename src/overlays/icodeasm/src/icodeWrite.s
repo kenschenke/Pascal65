@@ -18,12 +18,13 @@
 .export icodeLabel, icodeFormatLabel, lblRoutineEnter, lblRoutineReturn
 .export lblDeclInit, lblParamDeclInit
 .export getRuntimeFeatures, setRuntimeFeature, setRuntimeMode, setStackSize
+.export setGlobalSlots
 
 .import icodeFileOpen, icodeFileClose, icodeWriteInstruction
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
 .import icodeUnitDeclarations, icodeVariableDeclarations
 .import icodeInitData, icodeWriteData, icodeFreeData, icodeSuppress
-.import writeImports
+.import writeImports, writeFrames
 
 .import operand1
 
@@ -50,6 +51,7 @@ runtimeFeatures: .res 1
 ; set them (setRuntimeMode, setStackSize) before icodeWriteX.
 runtimeMode: .res 1
 stackSize: .res 2
+globalSlots: .res 2         ; the program's own level 1 slots
 nameLen: .res 1             ; for writeHeader
 nameIndex: .res 1
 
@@ -79,6 +81,14 @@ nameIndex: .res 1
 .proc setStackSize
     sta stackSize
     stx stackSize+1
+    rts
+.endproc
+
+; Sets the number of the program's own level 1 slots in A/X, for the
+; header. The resolver returns it (setDeclOffsets).
+.proc setGlobalSlots
+    sta globalSlots
+    stx globalSlots+1
     rts
 .endproc
 
@@ -116,6 +126,10 @@ nameIndex: .res 1
     lda stackSize
     jsr CHROUT
     lda stackSize+1
+    jsr CHROUT
+    lda globalSlots
+    jsr CHROUT
+    lda globalSlots+1
     jsr CHROUT
 
     ; The name's length, then the name. CHROUT may change Z, so the
@@ -162,11 +176,13 @@ nameIndex: .res 1
     ; Initialize the data segments
     jsr icodeInitData
 
-    ; Open the icode temporary file and write its header and imports
+    ; Open the icode temporary file and write its header, imports and
+    ; frames
     jsr icodeFileOpen
     jsr writeHeader
     ldq astRoot
     jsr writeImports
+    jsr writeFrames
 
     ; Enter the main scope
     ldq astRoot

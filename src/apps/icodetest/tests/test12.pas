@@ -1,5 +1,5 @@
 (* Test 12 - Standard Routines
-HDR PRG test 0 200
+HDR PRG test 0 200 9
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IWU 0

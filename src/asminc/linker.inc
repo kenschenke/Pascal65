@@ -8,6 +8,9 @@ genPrgFile = LINKER_BASE
 LINKADDR_LOW = 1
 LINKADDR_HIGH = 2
 LINKADDR_BOTH = 3
+; A level 1 offset in a variable reference: the target, a frame's first
+; slot (the import "name.frame"), is added to the byte
+LINKADDR_FRAME = 4
 
 ; A relocation's kind has this bit set when its target is an import's
 ; number rather than an offset in the module's code.
@@ -28,7 +31,7 @@ LINKADDR_IMPORT = $80
 ;    .byte runtime mode         RT_MODE_* (asm.inc)
 ;    .word stack size           the runtime stack's size in bytes
 ;    name                       the module's name
-;    .word global slots         unit variables (see plans/tpu.md)
+;    .word global slots         the module's own level 1 slots
 ;    .word code length          the code's size in memory
 ;    .word BSS length           zero bytes the linker reserves after it
 ;    .word symbol count         then each: name, .word offset, .byte flags
@@ -37,6 +40,9 @@ LINKADDR_IMPORT = $80
 ;                               them: its name (the file is name.lib),
 ;                               .word its jump table's slot count, then
 ;                               each slot's kind: .byte OBJLIB_*
+;    .byte frame count          then each unit or library with level 1
+;                               slots, in the order the startup pushes
+;                               them: its name, .word its slot count
 ;    .word relocation count     then each: OBJRELOC
 ;    the code, to the end of the file
 ;
@@ -58,11 +64,14 @@ LINKADDR_IMPORT = $80
 ;
 ;    name.N                  slot N of the library, in decimal: the
 ;                            linker defines one at each slot
+;    name.frame              the first level 1 slot of a frame: the
+;                            module's global slots, then each frame's
+;                            count, in order
 ;
 ; An import that resolves to neither is errUndefinedLabel, with its name.
 OBJ_MAGIC0 = 'O'
 OBJ_MAGIC1 = 'B'
-OBJ_VERSION = 3
+OBJ_VERSION = 4
 OBJ_NAME_MAX = 23           ; the longest name, TAGTOFIND's label less one
 
 OBJ_KIND_PROGRAM = 0

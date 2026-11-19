@@ -37,7 +37,17 @@ L1: ldq unit
     jsr isQZero
     beq L2
 
+    ; The unit's first slot. icode makes its level 1 offsets relative to
+    ; it, and the linker adds it back (LINKADDR_FRAME).
     stq ptr1
+    ldz #unit::firstSlot
+    lda offset
+    nop
+    sta (ptr1),z
+    inz
+    lda offset+1
+    nop
+    sta (ptr1),z
     ldz #unit::astRoot
     neg
     neg
@@ -50,11 +60,29 @@ L1: ldq unit
     lda #0
     jsr pushA
     jsr setDeclOffsets
+    pha
+    phx
+
+    ; How many slots it has
+    ldq unit
+    stq ptr1
+    plx
+    pla
+    pha
+    sec
+    sbc offset
+    ldz #unit::slots
+    nop
+    sta (ptr1),z
+    txa
+    sbc offset+1
+    inz
+    nop
+    sta (ptr1),z
+    pla
     sta offset
     stx offset+1
 
-    ldq unit
-    stq ptr1
     ldz #unit::next
     neg
     neg

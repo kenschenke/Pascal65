@@ -42,8 +42,9 @@ byte first.
 |3     |1   |The kind: 0 for a program, 1 for a unit                |
 |4     |1   |The runtime mode: 0 dynamic, 1 static                  |
 |5     |2   |The runtime stack size                                 |
-|7     |1   |The length of the module's name, up to 23              |
-|8     |    |The name, with no terminating zero                     |
+|7     |2   |The module's own global (level 1) slots                |
+|9     |1   |The length of the module's name, up to 23              |
+|10    |    |The name, with no terminating zero                     |
 
 The runtime features the module needs, such as files or trig, are only
 known once its code is written, so they are [EOM](../mne/eom)'s operand
@@ -65,6 +66,26 @@ The first two slots are the library's initialization and cleanup
 routines, then a slot for each routine and variable in its interface, in
 order. The program's code generation calls each library's initialization
 before the program starts and its cleanup after it ends.
+
+### Frames
+
+The program's global (level 1) stack frame holds the program's own
+variables, then each unit's and library's, in the order the program's
+startup pushes them. The part a module owns is its frame. The frames
+table follows the imports table. It is a count byte, then each unit or
+library that has variables, in that order:
+
+|Size|Contents                                                        |
+|----|----------------------------------------------------------------|
+|1+  |The module's name: its length, then the characters              |
+|2   |The number of its global slots                                  |
+
+A [variable](../variables) operand names the frame its variable is in: 0
+for the module's own, or a frame's number in the table, from 1. A global
+variable's offset counts from its frame's first slot, so a unit's code
+doesn't depend on how many variables the program and the other units
+have. The linker works out each frame's first slot from the slot counts
+and adds it to the offset.
 
 ### Entries
 

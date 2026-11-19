@@ -1,5 +1,5 @@
 (* Test 3 - Scalar Variable Initial Values
-HDR PRG test 0 200
+HDR PRG test 0 200 a
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IBS 7b

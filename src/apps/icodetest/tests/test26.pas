@@ -1,5 +1,5 @@
 (* Test 26 - For loop with a subrange control variable
-HDR PRG test 0 200
+HDR PRG test 0 200 2
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH CHR 

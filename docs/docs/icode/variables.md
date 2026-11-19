@@ -9,8 +9,15 @@ are zero-based.
 ## Operands
 
 There are four operands that reference variables. The operands are used by the
-[PSH](../mne/psh) instruction. All four operands are accompanied by three pieces
-of data: scope level, offset within the scope, and variable type.
+[PSH](../mne/psh) instruction. All four operands are accompanied by four pieces
+of data: variable type, scope level, offset within the scope, and frame.
+
+The frame matters only for a global (level 1) variable. The program's global
+scope holds the program's own variables, then each unit's and library's. The
+part a module owns is its frame, listed in the file's frames table (see
+[frames](../intro#frames)). A frame of 0 means the module's own variables;
+otherwise it is the number of a frame in the table, from 1, and the offset is
+counted from that frame's first variable.
 
 |Operand|Description                       |
 |-------|----------------------------------|

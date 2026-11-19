@@ -10,7 +10,7 @@
 ; intermediate code entry points
 
 .import icodeWriteX, icodeFileEraseX, setIcodeUnitsList, getRuntimeFeatures
-.import setRuntimeMode, setStackSize
+.import setRuntimeMode, setStackSize, setGlobalSlots
 
 .segment "JMPTBL"
 
@@ -20,3 +20,4 @@ jmp setIcodeUnitsList
 jmp getRuntimeFeatures
 jmp setRuntimeMode
 jmp setStackSize
+jmp setGlobalSlots

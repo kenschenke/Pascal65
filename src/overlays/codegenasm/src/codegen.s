@@ -23,6 +23,7 @@
 .import writePrgHeader, processIcodeInstructions, prgCleanup
 .import initStringLiterals, writeStringLiterals, freeStringLiterals
 .import cleanupLibraries, readIcodeImports, initImports, freeImports
+.import readIcodeFrames, initFrames, freeFrames
 .import initDataSegment, writeDataSegment, freeDataSegment
 .import tagBSS_EXITHANDLER
 .import writeObjFile, objFilename, codeFilename, readIcodeHeader
@@ -47,9 +48,11 @@ delName: .res 2             ; for deleteIfExists
 .code
 
 ; The icode file holds everything code generation needs: the header,
-; the imports table and the code (icode.inc). It doesn't use the AST.
+; the imports and frames tables and the code (icode.inc). It doesn't use
+; the AST.
 .proc genObjCode
     jsr initImports
+    jsr initFrames
 
     ; Initialize the linkerTags and tagsToFind containers.
     jsr initLinkerTags
@@ -105,6 +108,8 @@ delName: .res 2             ; for deleteIfExists
     jsr readIcodeHeader
     bcs :+
     jsr readIcodeImports
+    bcs :+
+    jsr readIcodeFrames
     bcc :++
 :   jmp badIcode
 
@@ -198,6 +203,7 @@ delName: .res 2             ; for deleteIfExists
     jsr freeDataSegment
     jsr freeLinkerTags
     jsr freeImports
+    jsr freeFrames
     lda #errIcodeFileInvalid
     ldx #0
     ldy #0

@@ -43,7 +43,10 @@ nameOffset = 1
     lda parserToken
     cmp #tcLParen
     bne L1
-    ldz #isWriteWritelnOffset
+    ; The flag is under the name expression just pushed. Read at offset 0,
+    ; it was the low byte of the expression's address, so any call took a
+    ; field width, and Writeln took none when the address ended in $00.
+    ldz #isWriteWritelnOffset+4
     nop
     lda (stackPointer),z
     jsr parseActualParmList

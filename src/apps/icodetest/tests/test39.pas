@@ -1,9 +1,11 @@
 (* Test 39 - A unit's init block and a library's variables
-HDR PRG test 0 200
+HDR PRG test 0 200 1
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 IMP LIB iclib 6
    RRVVVR
+FRM icunit2 3
+FRM iclib 3
 PSH IWU 0
 UIC LBL icunit2.0
 PSH IWU 0
@@ -23,18 +25,18 @@ DIA LBL icunit2.3
 UIR
 LOC LBL icunit2.4
 PSH IBS 1
-PSH VDR 14 1 1
+PSH VDR 14 1 0 icunit2
 SET IBS 4 IBS 2
 RTS
 LOC LBL xxxxx
-PSH VDR b 1 3
+PSH VDR b 1 2 icunit2
 PSH IBS 2
 AIX IBS 2
 MEM IBS 4
 PSH VDW 4 1 0
 SET IBS 4 IBS 4
 PSH VDR 4 1 0
-PSH VDW 4 1 4
+PSH VDW 4 1 0 iclib
 SET IBS 4 IBS 4
 DAT IBU 2 LBL xxxxx
    heap offset: 0

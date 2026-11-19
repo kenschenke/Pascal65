@@ -36,6 +36,8 @@
 
 .bss
 
+globalSlots: .res 2
+
 sourceFn: .res 2
 tokens: .res 4
 astRoot: .res 4
@@ -168,6 +170,9 @@ strLinking: .asciiz "Linking"
     lda #0
     jsr pushA
     jsr setDeclOffsets
+    ; The program's own level 1 slots, for the icode header
+    sta globalSlots
+    stx globalSlots+1
     jsr setUnitOffsets
     ldq astRoot
     jsr fixGlobalOffsets
@@ -221,6 +226,9 @@ strLinking: .asciiz "Linking"
     lda runtimeStackSize
     ldx runtimeStackSize+1
     jsr setIcodeStackSize
+    lda globalSlots
+    ldx globalSlots+1
+    jsr setIcodeGlobalSlots
     lda runtimeMode
     jsr setIcodeRuntimeMode
     ldq astRoot

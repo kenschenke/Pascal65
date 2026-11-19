@@ -1,5 +1,5 @@
 (* Test 41 - A routine with more than 32 locals
-HDR PRG test 0 200
+HDR PRG test 0 200 0
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 BRA LBL xxxxx

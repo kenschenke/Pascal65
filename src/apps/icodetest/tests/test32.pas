@@ -1,5 +1,5 @@
 (* Test 32 - Array bounds and element types
-HDR PRG test 0 200
+HDR PRG test 0 200 c
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS b

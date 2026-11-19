@@ -10,6 +10,7 @@
 .endif
 
 .import dumpMnemonic, dumpHexByte, dumpHex, dumpChar, instruction
+.import dumpFrameName
 
 .bss
 
@@ -200,7 +201,11 @@ DN: rts
     ldz #0
     jsr dumpHex
 
-    rts
+    ; The frame, by name, unless it's the module's own
+    jsr CHRIN
+    beq :+
+    jmp dumpFrameName
+:   rts
 .endproc
 
 .proc dumpString

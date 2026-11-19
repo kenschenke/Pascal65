@@ -50,6 +50,7 @@ skip:
 .export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen
 
 .import runtimeStackSize, writeLibraries, freeImports
+.import writeFrames, freeFrames, globalSlots
 
 .data
 
@@ -152,10 +153,10 @@ copyBuf: .res 256
     inx
     bra :-
 
-    ; The global slots, which only a unit has
-:   lda #0
+    ; The module's own level 1 slots
+:   lda globalSlots
     jsr CHROUT
-    lda #0
+    lda globalSlots+1
     jsr CHROUT
 
     ; The code length
@@ -173,6 +174,7 @@ copyBuf: .res 256
 
     jsr writeImports
     jsr writeLibraries
+    jsr writeFrames
     jsr writeRelocations
     jsr copyCode
 
@@ -185,6 +187,7 @@ copyBuf: .res 256
     jsr scratchFile
 
     jsr freeImports
+    jsr freeFrames
     jmp freeLinkerTags
 .endproc
 

@@ -672,4 +672,8 @@ SYMBOL_FLAG_SHAREDTYPE = %00000001
     name .res 13
     astRoot .dword
     next .dword
+    ; The unit's level 1 slots: the first, numbered after the program's
+    ; and the units' before it, and how many (setUnitOffsets.s)
+    firstSlot .word
+    slots .word
 .endstruct

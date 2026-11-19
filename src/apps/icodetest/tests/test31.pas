@@ -1,5 +1,5 @@
 (* Test 31 - Forward declarations, value parameters and local variables
-HDR PRG test 0 200
+HDR PRG test 0 200 5
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS c

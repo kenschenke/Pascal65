@@ -334,9 +334,11 @@ against copies of the icode overlay with probes in them (editortest's
 `bin/mega65/coverage.txt`. The probes don't all fit in the overlay at
 once, so the files are instrumented in sets (`COVFILESn`). A new file
 must go in a set, and a set that no longer fits fails to link and must be
-split. Like `test`, it needs asmlib built with `MEMCHECK=1`. The lines
-left are ones no program can reach, such as defaults for kinds no caller
-passes and cases the type checker rejects.
+split. The overlay is near 18K, so a set holds only about 330 probes, and
+`icodeExpr.s` is split at `exprField` (`icodeExpr.s:-exprField`). Like
+`test`, it needs asmlib built with `MEMCHECK=1`. The lines left are ones
+no program can reach, such as defaults for kinds no caller passes and
+cases the type checker rejects.
 
 A unit's variables are level 1 slots after the program's, unit by unit in
 the units list's order. The resolver numbers them in that order
@@ -347,6 +349,21 @@ program's startup. A Pascal unit's are pushed by its own init block
 unit's routines. The startup calls it with `UIC`. Codegen makes `UIC` a
 6502 `JSR` and `UIR` an `RTS`, since a routine's stack frame would pop
 the slots. icodetest 39 and compilertestasm's `unitinit` check this.
+
+The resolver records each unit's first slot and count in its `unit`
+(`firstSlot`, `slots`), and the apps pass the program's own count to icode
+(`setIcodeGlobalSlots`, from `setDeclOffsets`) for the header. icode
+writes a frames table after the imports (`icodeFrames.s`): each unit or
+library with slots, in the units list's order, with its count. A variable
+operand has a fourth byte, its frame: 0 for the module's own, or a frame's
+number from 1. `icodeVar` makes a level 1 offset in a unit's range relative
+to the unit's first slot (`frameOf`). Codegen writes the byte with a
+`LINKADDR_FRAME` relocation against the import `name.frame` (`frames.s`),
+and the linker defines that as the program's slots plus the counts of the
+frames before it (`frames.s` in linkerasm) and adds it to the byte. A unit
+then needs no base it can't know when compiled on its own. dumpicode shows
+the header's count, a `FRM name slots` line for each frame and the frame's
+name after a variable operand; the 256-slot limit isn't checked yet.
 
 In icode, `isRead` 0 asks an expression for the address of what it
 names, to write to or pass by reference, and 1 for its value. The

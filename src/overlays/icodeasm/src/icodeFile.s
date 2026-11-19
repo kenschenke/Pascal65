@@ -219,7 +219,7 @@ L1: ldx DEVNUM
     rts
 
     ; Variable reference
-IV: lda #3
+IV: lda #4
     jmp writeOperandValue
 
     ; Label

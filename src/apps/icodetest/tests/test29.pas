@@ -1,5 +1,5 @@
 (* Test 29 - Comparisons, pointer arithmetic, Inc and Dec, Round
-HDR PRG test 0 200
+HDR PRG test 0 200 9
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IWU 0

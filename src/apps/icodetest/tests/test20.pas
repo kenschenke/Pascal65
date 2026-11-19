@@ -1,5 +1,5 @@
 (* Test 20 - Array inside record
-HDR PRG test 0 200
+HDR PRG test 0 200 1
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 14

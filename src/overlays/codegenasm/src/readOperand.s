@@ -64,13 +64,13 @@ strbuf: .res MAX_LINE_LENGTH+1
     cmp #IC_STR
     beq readString
     cmp #IC_VDR
-    beq read3
+    beq read4
     cmp #IC_VDW
-    beq read3
+    beq read4
     cmp #IC_VVR
-    beq read3
+    beq read4
     cmp #IC_VVW
-    beq read3
+    beq read4
     cmp #IC_CHR
     beq read1
     cmp #IC_IBU

@@ -1,5 +1,5 @@
 (* Test 24 - Three level array literal
-HDR PRG test 0 200
+HDR PRG test 0 200 1
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 48

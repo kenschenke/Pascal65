@@ -1,5 +1,5 @@
 (* Test 27 - Dynamic arrays
-HDR PRG test 0 200
+HDR PRG test 0 200 5
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 6

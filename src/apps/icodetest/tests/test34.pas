@@ -1,5 +1,5 @@
 (* Test 34 - System library calls
-HDR PRG test 0 200
+HDR PRG test 0 200 8
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH FLT 

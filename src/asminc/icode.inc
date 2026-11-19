@@ -7,14 +7,17 @@ setIcodeUnitsList = ICODE_BASE + 6
 getIcodeRuntimeFeatures = ICODE_BASE + 9
 setIcodeRuntimeMode = ICODE_BASE + 12   ; RT_MODE_* (asm.inc) in A
 setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
+setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 
-; The icode file starts with a header, then the imports table, then the
-; instructions. The last instruction is EOM. Words are low byte first.
+; The icode file starts with a header, then the imports and frames tables,
+; then the instructions. The last instruction is EOM. Words are low byte
+; first.
 ;
 ;    ICODE_MAGIC0, ICODE_MAGIC1, ICODE_VERSION
 ;    ICODE_KIND_*
 ;    runtime mode (RT_MODE_* in asm.inc)
 ;    runtime stack size (2 bytes)
+;    the module's own level 1 slots (2 bytes)
 ;    length of the module's name, then the name (no terminating zero)
 ;
 ; The imports table (icodeImports.s): a count byte, then each import, in
@@ -23,6 +26,11 @@ setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
 ;    ICODE_IMPORT_LIBRARY, then the library as the object file lists it
 ;    (linker.inc): its name, a word with its slot count, then each slot's
 ;    kind (OBJLIB_*)
+;
+; The frames table (icodeFrames.s) follows: a count byte, then each unit
+; or library with level 1 slots, in the order the startup pushes them:
+;
+;    its name, then its slot count (2 bytes)
 ;
 ; A name is its length in a byte, then that many characters.
 ;
@@ -35,7 +43,7 @@ setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
 ; written, so they are EOM's operand.
 ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
 ICODE_MAGIC1 = $43
-ICODE_VERSION = 2
+ICODE_VERSION = 3
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
 ICODE_IMPORT_LIBRARY = 1
@@ -70,7 +78,10 @@ IC_ILS          = $18  ; 0001 1000 : Signed 32-bit integer
 IC_FLT          = $19  ; 0001 1001 : Real number
 IC_STR          = $1a  ; 0001 1010 : String
 
-; Variable operand types
+; Variable operand types. The operand is the variable's type, its level,
+; its offset and its frame: 0 for the module's own, or the number of a
+; unit's in the frames table, from 1. A level 1 offset counts from the
+; frame's first slot (icodeFrames.s).
 IC_VDR          = $f1  ; 1111 0001  direct read
 IC_VDW          = $f2  ; 1111 0010  direct write
 IC_VVR          = $f3  ; 1111 0011  var (by ref) read

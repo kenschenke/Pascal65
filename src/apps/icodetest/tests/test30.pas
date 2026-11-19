@@ -1,5 +1,5 @@
 (* Test 30 - Fields, pointers, string subscripts and file fields
-HDR PRG test 0 200
+HDR PRG test 0 200 b
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 SST STR Hello

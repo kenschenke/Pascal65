@@ -1,5 +1,5 @@
 (* Test 16 - Read, Readln, Readstr
-HDR PRG test 0 200
+HDR PRG test 0 200 5
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IWU 0

@@ -6,7 +6,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export dumpIcode, memBuf, dumpNewline, dumpChar, printz
+.export dumpIcode, memBuf, dumpNewline, dumpChar, printz, dumpFrameName
 
 .import readInstruction, dumpHex
 
@@ -22,6 +22,7 @@ strBadHdr: .asciiz "BAD HEADER"
 strImpLib: .asciiz "IMP LIB "
 strBadImp: .asciiz "BAD IMPORT"
 strIndent: .asciiz "   "
+strFrm: .asciiz "FRM "
 
 .bss
 
@@ -32,6 +33,13 @@ hdrCount: .res 1
 impLeft: .res 1             ; for dumpImports
 slotsLeft: .res 2
 lineLen: .res 1
+slotsLo: .res 1             ; the header's level 1 slots
+slotsHi: .res 1
+MAX_FRAMES = 16             ; frames dumped by name
+NAME_SIZE = 13              ; unit::name
+frameNames: .res MAX_FRAMES * NAME_SIZE
+frameIdx: .res 1
+namePos: .res 1
 
 .code
 
@@ -60,6 +68,7 @@ lineLen: .res 1
     bcs L3
     jsr dumpImports
     bcs L3
+    jsr dumpFrames
 
     ; Loop, reading instructions from the icode
 L1: lda STATUS
@@ -93,21 +102,22 @@ L3: lda #1
 .endproc
 
 ; This routine dumps the icode file's header (icode.inc) as one line:
-;    HDR PRG|UNIT name mode stacksize
-; with the mode and stack size in hex. If the file isn't icode of this
-; version it dumps BAD HEADER and returns with the carry set.
+;    HDR PRG|UNIT name mode stacksize slots
+; with the mode, stack size and level 1 slots in hex. If the file isn't
+; icode of this version it dumps BAD HEADER and returns with the carry set.
 .proc dumpHeader
     jsr CHRIN
     cmp #ICODE_MAGIC0
-    bne BD
+    bne BX
     jsr CHRIN
     cmp #ICODE_MAGIC1
-    bne BD
+    bne BX
     jsr CHRIN
     cmp #ICODE_VERSION
-    bne BD
+    beq :+
+BX: jmp BD
 
-    lda #<strHdr
+:   lda #<strHdr
     ldx #>strHdr
     jsr printz
     jsr CHRIN
@@ -120,7 +130,8 @@ L3: lda #1
     ldx #>strUnit
 :   jsr printz
 
-    ; The mode and the stack size, read before the name that follows them
+    ; The mode, the stack size and the slots, read before the name that
+    ; follows them
     jsr CHRIN
     sta hdrByte
     jsr CHRIN
@@ -130,6 +141,10 @@ L3: lda #1
     pla
     phx
     pha
+    jsr CHRIN
+    sta slotsLo
+    jsr CHRIN
+    sta slotsHi
 
     ; The name
     jsr CHRIN
@@ -152,6 +167,13 @@ L3: lda #1
     jsr dumpChar
     pla
     plx
+    ldy #0
+    ldz #0
+    jsr dumpHex
+    lda #' '
+    jsr dumpChar
+    lda slotsLo
+    ldx slotsHi
     ldy #0
     ldz #0
     jsr dumpHex
@@ -248,6 +270,108 @@ L2: lda slotsLeft
     dec slotsLeft+1
 :   dec slotsLeft
     bra L2
+.endproc
+
+; This routine dumps the frames table that follows the imports table, a
+; line for each frame with its slot count in hex, and keeps the names for
+; dumpFrameName:
+;    FRM name slots
+.proc dumpFrames
+    jsr CHRIN
+    sta impLeft
+    lda #0
+    sta frameIdx
+L1: lda impLeft
+    bne :+
+    rts
+:   dec impLeft
+    lda #<strFrm
+    ldx #>strFrm
+    jsr printz
+
+    ; The name, kept in frameNames if there's room
+    jsr nameSlot
+    jsr CHRIN
+    sta hdrCount
+:   lda hdrCount
+    beq :+
+    jsr CHRIN
+    jsr keepChar
+    jsr dumpChar
+    dec hdrCount
+    bra :-
+:   lda #0
+    jsr keepChar
+    inc frameIdx
+    lda #' '
+    jsr dumpChar
+    jsr CHRIN
+    pha
+    jsr CHRIN
+    tax
+    pla
+    ldy #0
+    ldz #0
+    jsr dumpHex
+    jsr dumpNewline
+    bra L1
+.endproc
+
+; This routine sets namePos to the start of frameIdx's name in frameNames,
+; or $FF if it has no room
+.proc nameSlot
+    lda #$ff
+    ldx frameIdx
+    cpx #MAX_FRAMES
+    bcs DN
+    lda #0
+:   cpx #0
+    beq DN
+    clc
+    adc #NAME_SIZE
+    dex
+    bra :-
+DN: sta namePos
+    rts
+.endproc
+
+; This routine keeps the character in A at namePos, if there's room, and
+; moves namePos on. It keeps A.
+.proc keepChar
+    ldx namePos
+    cpx #$ff
+    beq :+
+    sta frameNames,x
+    inc namePos
+:   rts
+.endproc
+
+; This routine dumps a space and the name of the frame numbered in A (from
+; 1), or its number in hex past MAX_FRAMES
+.proc dumpFrameName
+    pha
+    lda #' '
+    jsr dumpChar
+    pla
+    sta frameIdx
+    dec frameIdx
+    jsr nameSlot
+    lda namePos
+    cmp #$ff
+    bne L1
+    inc frameIdx
+    lda frameIdx
+    ldx #0
+    ldy #0
+    ldz #0
+    jmp dumpHex
+L1: ldx namePos
+    lda frameNames,x
+    beq DN
+    jsr dumpChar
+    inc namePos
+    bra L1
+DN: rts
 .endproc
 
 .proc dumpNewline

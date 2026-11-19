@@ -47,6 +47,8 @@
 
 .bss
 
+globalSlots: .res 2
+
 ch: .res 1
 testNum: .res 2
 sourceFn: .res 16
@@ -244,6 +246,9 @@ expectedFeatures:
     lda #0
     jsr pushA
     jsr setDeclOffsets
+    ; The program's own level 1 slots, for the icode header
+    sta globalSlots
+    stx globalSlots+1
     jsr setUnitOffsets
     ldq astRoot
     jsr fixGlobalOffsets
@@ -338,6 +343,9 @@ expectedFeatures:
     lda stackSize
     ldx stackSize+1
     jsr setIcodeStackSize
+    lda globalSlots
+    ldx globalSlots+1
+    jsr setIcodeGlobalSlots
     lda runtimeMode
     jsr setIcodeRuntimeMode
     ldq astRoot

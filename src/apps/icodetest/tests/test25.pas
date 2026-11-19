@@ -1,5 +1,5 @@
 (* Test 25 - Arrays indexed by a declared type
-HDR PRG test 0 200
+HDR PRG test 0 200 4
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IBS 4

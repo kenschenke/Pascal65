@@ -186,31 +186,36 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 COVTOOLS := ../editortest/cov
 COVMAP := 14848
 COVSIZE := 512
-COVSETS := 1 2 3 4 5 6 7
+COVSETS := 1 2 3 4 5 6 7 8 9 10
 COVSET ?= 1
-# Expressions
-COVFILES1 := icodeExpr.s getExprType.s getExprTypeKind.s \
-	setIcodeUnitsList.s icodeVar.s
-# Array initializers, routine calls and loops
-COVFILES2 := icodeArrayInit.s icodeRoutineCall.s icodeOper.s \
-	icodeRepeatStmt.s icodeWhileStmt.s
-# Standard routines, variable declarations and if statements
-COVFILES3 := icodeStdRoutineCall.s icodeVariableDeclarations.s \
-	icodeIfStmt.s icodeCompExpr.s
-# Records, files, case statements, Write and units
-COVFILES4 := icodeRecordInit.s icodeFile.s icodeCaseStmt.s \
-	icodeWriteWritelnCall.s icodeUnitDeclarations.s icodeUnitRoutines.s
-# Literals, values, data, Read and routine declarations
+# Expressions, to exprField (icodeExpr.s is too big for one set)
+COVFILES1 := icodeExpr.s:-exprField getExprType.s getExprTypeKind.s \
+	setIcodeUnitsList.s icodeVar.s icodeCompExpr.s
+# Array initializers and loops
+COVFILES2 := icodeArrayInit.s icodeOper.s icodeRepeatStmt.s \
+	icodeWhileStmt.s
+# Standard routines and if statements
+COVFILES3 := icodeStdRoutineCall.s icodeIfStmt.s
+# Records, files and case statements
+COVFILES4 := icodeRecordInit.s icodeFile.s icodeCaseStmt.s
+# Literals, values, data and Read
 COVFILES5 := addEmbeddedArrayOrRecord.s icodeValue.s \
 	addScalarArrayLiterals.s addStringArrayLiterals.s icodeData.s \
-	icodeReadReadlnCall.s icodeRoutineDeclaration.s
+	icodeReadReadlnCall.s
 # Subroutine calls, for loops, math and statements
 COVFILES6 := icodeDecIncCall.s icodeDeclaredSubroutineCall.s \
-	icodeForLoop.s icodeIntOrRealMath.s icodeLibrarySubroutineCall.s \
-	icodeRoutineCleanup.s icodeRoutineDeclarations.s \
-	icodeRoutineParamsCleanup.s icodeStmts.s icodeSubroutineCall.s
-# The file's header, imports and entries
-COVFILES7 := icodeWrite.s icodeImports.s findUnit.s icodeExports.s
+	icodeForLoop.s icodeIntOrRealMath.s icodeRoutineCleanup.s \
+	icodeRoutineDeclarations.s icodeRoutineParamsCleanup.s icodeStmts.s
+# The file's header, imports, frames and entries
+COVFILES7 := icodeWrite.s icodeImports.s findUnit.s icodeExports.s \
+	icodeFrames.s icodeSubroutineCall.s
+# Expressions, from exprField, and Write
+COVFILES8 := icodeExpr.s:exprField- icodeWriteWritelnCall.s
+# Routine calls and declarations
+COVFILES9 := icodeRoutineCall.s icodeRoutineDeclaration.s
+# Variable declarations, units and library calls
+COVFILES10 := icodeVariableDeclarations.s icodeUnitDeclarations.s \
+	icodeUnitRoutines.s icodeLibrarySubroutineCall.s
 
 ICODESRCDIR := $(ICODEDIR)/src
 ICODESOURCES := $(wildcard $(ICODESRCDIR)/*.s)

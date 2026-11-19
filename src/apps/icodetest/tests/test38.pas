@@ -1,5 +1,5 @@
 (* Test 38 - Whole records from elements, fields and pointers
-HDR PRG test 0 200
+HDR PRG test 0 200 6
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 4

@@ -1,5 +1,5 @@
 (* Test 33 - Typed files of records and arrays
-HDR PRG test 0 200
+HDR PRG test 0 200 4
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH ILS 0
