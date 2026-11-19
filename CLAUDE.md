@@ -81,6 +81,19 @@ Code $23 isn't a bad free. With `__DEBUG__` defined, `heapAlloc` and
 `heapFree` call `verifyHeap`, which walks the bank's MAT and executes BRK if
 the heap's caches (see `memheap.s`) don't match it.
 
+With `__DEBUG__` defined, `heapFree` also fills the block it frees with
+`$DD`, so code that reads a block after freeing it gets garbage at once
+rather than the old bytes, whatever the heap's layout. A pointer read that
+way is `$DDDDDDDD`, which the checks above report as a bad free, or sends
+the program off into memory (no result). Three such reads were found this
+way: `freeUnits` read `unit::next` after freeing the unit; `astFree` freed
+a block's declarations before its statements, whose evaluated types share
+the declared types (`evalType.s`); and icodetest freed the program's
+symbol table before `icodeWrite`, which reads it. `astFree` now frees
+every statement and value first (`astFreeBodies`), `freeUnits` frees every
+unit's before freeing any unit, and icodetest frees the table after icode,
+as the compiler does.
+
 `testInit` in `testresult.s` points the KERNAL's BRK vector (`$0316`) at a trap. The trap reports any BRK as a test failure, with its code and routine. `testPass` and `testFail` restore the vector. A program that ends without either must call `testRestoreBrk`.
 
 Each suite calls `testMemCheck` right after `initMemHeap`. It frees a block twice. If asmlib was built without the checks, that doesn't execute BRK, and the suite fails with "asmlib has no memory checks". New suites must do the same.

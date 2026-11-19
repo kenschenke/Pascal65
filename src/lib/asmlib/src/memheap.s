@@ -926,8 +926,23 @@ NF: sec
     ldz #1
     nop
     sta (ptr1),z
+.ifdef __DEBUG__
+    pha                 ; the block's size
+    phy
+.endif
     tya
     jsr incFreeCount
+.ifdef __DEBUG__
+    ; Fill the block, so code that reads it after freeing it gets $DD at
+    ; once, whatever the heap's layout, rather than the old bytes. A block
+    ; is inside one 64k bank, as memFill needs.
+    ldq ptr2
+    stq ptr1
+    plx
+    ply
+    lda #$DD
+    jsr memFill
+.endif
 L4: jsr trimFreeBlocks
 .ifdef __DEBUG__
     jsr verifyHeap

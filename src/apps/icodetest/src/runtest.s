@@ -325,12 +325,8 @@ expectedFeatures:
     ; Show an error message and pause
     jsr errorCountMessage
 
-    ; Free the PROGRAM scope symbol table
-:   jsr scopeExit
-    jsr freeSymtab
-
     ; Reset the error count
-    lda #0
+:   lda #0
     sta errorCount
 
     ; Generate the intermediate code
@@ -350,6 +346,12 @@ expectedFeatures:
     jsr setIcodeRuntimeMode
     ldq astRoot
     jsr icodeWrite
+
+    ; Free the PROGRAM scope symbol table, as the compiler does once the
+    ; icode is written. icode reads the symbols, so freeing it before
+    ; read freed memory.
+    jsr scopeExit
+    jsr freeSymtab
 
     ; Check the error count
     lda errorCount

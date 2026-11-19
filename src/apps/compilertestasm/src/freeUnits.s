@@ -21,10 +21,16 @@
 .bss
 
 thisUnit: .res 4
+nextUnit: .res 4
 
 .code
 
+; This routine frees every unit. Their statements and values go first,
+; while every unit's types are still there: an expression's evaluated type
+; shares the declared types, also another unit's, and the System unit is
+; first in the list.
 .proc freeUnits
+    jsr freeUnitBodies
     ldq unitList
     stq thisUnit
 
@@ -40,8 +46,7 @@ L1: ldq thisUnit
     lda (ptr1),z
     jsr astFree
 
-    ldq thisUnit
-    jsr heapFree
+    ; The next unit, read before this one is freed
     ldq thisUnit
     stq ptr1
     ldz #unit::next
@@ -49,6 +54,10 @@ L1: ldq thisUnit
     neg
     nop
     lda (ptr1),z
+    stq nextUnit
+    ldq thisUnit
+    jsr heapFree
+    ldq nextUnit
     stq thisUnit
     bra L1
 
