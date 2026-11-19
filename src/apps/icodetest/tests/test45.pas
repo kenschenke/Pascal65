@@ -4,6 +4,7 @@ IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 IMP LIB iclib 6
    RRVVVR
+IMP UNIT icunit5
 FRM iclib 3
 PSH IWU 0
 SSP LBL iclib.2
@@ -14,6 +15,24 @@ DIR LBL xxxxx
 SSP LBL iclib.4
 UIC LBL icunit5.0
 BRA LBL xxxxx
+LOC LBL xxxxx
+PUF IBS 2 LBL xxxxx
+PSH IBS 4
+ASF IBS 2
+JSR LBL icunit5.2 IBS 2 IBS 0
+LOC LBL xxxxx
+POP
+POF IBS 0 IBS 0
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 4
+EOM IBU 0
+HDR UNIT icunit5 0 0 0
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+IMP LIB iclib 6
+   RRVVVR
+FRM iclib 3
 LOC LBL icunit5.0
 UIR
 LOC LBL icunit5.2
@@ -28,17 +47,6 @@ LOC LBL xxxxx
 POP
 POF IBS 0 IBS 0
 RTS
-LOC LBL xxxxx
-PUF IBS 2 LBL xxxxx
-PSH IBS 4
-ASF IBS 2
-JSR LBL icunit5.2 IBS 2 IBS 0
-LOC LBL xxxxx
-POP
-POF IBS 0 IBS 0
-DAT IBU 2 LBL xxxxx
-   heap offset: 0
-   rec size: 4
 EOM IBU 0
 *)
 

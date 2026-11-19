@@ -8,6 +8,7 @@
 ; https://opensource.org/licenses/MIT
 
 .include "c64.inc"
+.include "ast.inc"
 .include "icode.inc"
 .include "asmlib.inc"
 .include "zeropage.inc"
@@ -15,9 +16,9 @@
 .include "4510macros.inc"
 
 .export icodeFileOpen, icodeFileClose, icodeWriteInstruction, writeOperand
-.export icodeFileEraseX, icodeSuppress
+.export icodeFileEraseX, icodeSuppress, icodeUnitFileOpen, icodeUnitFileClose
 
-.import operand1, operand2, operand3
+.import operand1, operand2, operand3, units
 
 .bss
 
@@ -25,6 +26,9 @@
 ; records uses it to build the declaration blocks for its elements without
 ; the instructions that would initialize them. It is a count, so it nests.
 icodeSuppress: .res 1
+unitFn: .res 24              ; a unit's icode file name, then ",s,w"
+unitFnLen: .res 1
+eraseUnit: .res 4
 
 .data
 
@@ -33,11 +37,18 @@ tempFn2:
 
 tempFnShort: .asciiz "zztmpicode"
 
+unitPrefix: .asciiz ICODE_UNIT_PREFIX
+strSeqWrite: .asciiz ",s,w"
+
 .code
 
 ; This routine opens the temporary file to store the intermediate code.
 ; On exit, the file is the current output file.
 .proc icodeFileOpen
+    ; Erasing a file closes every open file (it closes the command
+    ; channel), so the units' old files go first
+    jsr icodeEraseUnitFiles
+
     ; First, check to see if the temporary file already exists
     lda #<tempFnShort
     ldx #>tempFnShort
@@ -324,4 +335,115 @@ L2: ldz tmp1
     bne L2
 
 :   rts
+.endproc
+
+; This routine opens the icode file of the unit in Q, its own file, on
+; logical file 3 and makes it the output. The program's stays open on 1.
+; An old one was erased before the program's was opened
+; (icodeEraseUnitFiles).
+.proc icodeUnitFileOpen
+    jsr unitFileName
+
+    ; Open it with ",s,w"
+    ldx unitFnLen
+    ldy #0
+:   lda strSeqWrite,y
+    sta unitFn,x
+    beq :+
+    inx
+    iny
+    bra :-
+:   stx unitFnLen
+    ldx DEVNUM
+    lda #3
+    tay
+    jsr SETLFS
+    lda unitFnLen
+    ldx #<unitFn
+    ldy #>unitFn
+    jsr SETNAM
+    jsr OPEN
+    ldx #3
+    jmp CHKOUT
+.endproc
+
+; This routine puts the name of the icode file of the unit in Q in
+; unitFn, null-terminated, and its length in unitFnLen: ICODE_UNIT_PREFIX,
+; then the unit's name.
+.proc unitFileName
+    stq ptr1
+    ldx #0
+:   lda unitPrefix,x
+    beq :+
+    sta unitFn,x
+    inx
+    bra :-
+:   ldz #0                      ; unit::name is the first member
+:   nop
+    lda (ptr1),z
+    beq :+
+    sta unitFn,x
+    inx
+    inz
+    cpz #12                     ; unit::name holds 12 and a zero
+    bne :-
+:   stx unitFnLen
+    lda #0
+    sta unitFn,x
+    rts
+.endproc
+
+; This routine closes the unit's icode file and makes the program's the
+; output again
+.proc icodeUnitFileClose
+    lda #3
+    jsr CLOSE
+    ldx #1
+    jmp CHKOUT
+.endproc
+
+; This routine erases the old icode file of each Pascal unit in the units
+; list, if it's there. It must run while no file is open: erasing one
+; closes the drive's command channel, which closes every open file.
+.proc icodeEraseUnitFiles
+    ldq units
+L1: stq eraseUnit
+    jsr isQZero
+    bne :+
+    rts
+:   stq ptr1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq NX                      ; not parsed (icodetest)
+    stq ptr1
+    ldz #decl::isLibrary
+    nop
+    lda (ptr1),z
+    bne NX
+    ldq eraseUnit
+    jsr unitFileName
+    lda #<unitFn
+    ldx #>unitFn
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    beq NX
+    lda #<unitFn
+    ldx #>unitFn
+    ldy #0
+    ldz #0
+    stq ptr1
+    jsr scratchFile
+NX: ldq eraseUnit
+    stq ptr1
+    ldz #unit::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    bra L1
 .endproc

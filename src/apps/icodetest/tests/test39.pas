@@ -2,6 +2,7 @@
 HDR PRG test 0 200 1
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+IMP UNIT icunit2
 IMP LIB iclib 6
    RRVVVR
 FRM icunit2 3
@@ -16,20 +17,6 @@ NEW IWS 4
 DIR LBL xxxxx
 SSP LBL iclib.4
 BRA LBL xxxxx
-MDL IBU 1
-LOC LBL icunit2.0
-NEW IWS 4
-DIR LBL xxxxx
-SST STR hi
-NEW IWS a
-DIA LBL icunit2.3
-UIR
-LOC LBL icunit2.4
-PSH IBS 1
-PSH VDR 14 1 0
-SET IBS 4 IBS 2
-RTS
-MDL IBU 0
 LOC LBL xxxxx
 PSH VDR b 1 2 icunit2
 PSH IBS 2
@@ -43,6 +30,22 @@ SET IBS 4 IBS 4
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 4
+EOM IBU 0
+HDR UNIT icunit2 0 0 3
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+LOC LBL icunit2.0
+NEW IWS 4
+DIR LBL xxxxx
+SST STR hi
+NEW IWS a
+DIA LBL icunit2.3
+UIR
+LOC LBL icunit2.4
+PSH IBS 1
+PSH VDR 14 1 0
+SET IBS 4 IBS 2
+RTS
 DAT IBU 2 LBL xxxxx
    heap offset: 0
    rec size: 4

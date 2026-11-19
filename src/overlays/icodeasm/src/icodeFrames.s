@@ -14,46 +14,52 @@
 ; the program's first (setUnitOffsets.s), and records each unit's first
 ; slot and count.
 ;
-; A variable operand names its frame (icode.inc): 0 for this module's,
-; or a unit's in the frames table, which follows the imports table. Its
-; offset is relative to the frame's first slot. Code generation writes it
-; with a LINKADDR_FRAME relocation, and the linker adds the first slot,
-; which it works out from the slot counts. A unit compiled on its own
-; then needs no base it can't know.
+; Each module has its own icode file (icode.inc). A variable operand names
+; its frame: 0 for the module's own, or a frame in the module's frames
+; table, which follows the imports table and lists the modules with slots
+; that it imports. Its offset is relative to the frame's first slot. Code
+; generation writes it with a LINKADDR_FRAME relocation, and the linker
+; adds the first slot, which it works out from the slot counts. A unit
+; compiled on its own then needs no base it can't know.
+;
+; moduleUnit is the module whose file is being written: a unit, or zero
+; for the program.
 
 .include "ast.inc"
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
-.include "icode.inc"
 .include "4510macros.inc"
 
-.export writeFrames, frameOf, writeModule
+.export writeFrames, frameOf, moduleUnit, inModule
 
-.import units, operand1, icodeWriteInstruction
+.import units
 
 .bss
 
+moduleUnit: .res 4          ; the module being written, or zero
 thisUnit: .res 4
 frameNum: .res 1
-moduleFrame: .res 1          ; the frame of the module whose code this is
 writing: .res 1             ; zero while counting, non-zero while writing
 offset: .res 1              ; for frameOf
 first: .res 2
 count: .res 2
 savedPtrs: .res 8           ; ptr1 and ptr2
-target: .res 4              ; for writeModule
 nameLen: .res 1
 nameBuf: .res 13
+testUnit: .res 4            ; for inModule
+declPtr: .res 4
+codePtr: .res 4
+chain: .res 1
 
 .code
 
 ; This routine writes the frames table to the current output: a count,
-; then each unit with slots, in the units list's order: its name (its
-; length, then its characters) and its slot count (a word).
+; then each unit with slots that the module imports, in the units list's
+; order: its name (its length, then its characters) and its slot count
+; (a word).
 .proc writeFrames
     lda #0
-    sta moduleFrame
     sta writing
     jsr walk
     lda frameNum
@@ -72,10 +78,8 @@ L1: stq thisUnit
     bne :+
     rts
 
-:   jsr loadSlots
-    lda count
-    ora count+1
-    beq NX
+:   jsr isFrame
+    bcc NX
     inc frameNum
     lda writing
     beq NX
@@ -110,6 +114,35 @@ L1: stq thisUnit
 
 NX: jsr nextUnit
     bra L1
+.endproc
+
+; This routine loads thisUnit's first slot and slot count into first and
+; count, and returns with the carry set if it is a frame in the module's
+; table: it has slots, it isn't the module and the module imports it. It
+; changes ptr1 and ptr2.
+.proc isFrame
+    jsr loadSlots
+    lda count
+    ora count+1
+    beq NO
+    jsr isModule
+    beq NO
+    ldq thisUnit
+    jmp inModule
+NO: clc
+    rts
+.endproc
+
+; This routine returns with Z set if thisUnit is moduleUnit
+.proc isModule
+    ldx #3
+:   lda thisUnit,x
+    cmp moduleUnit,x
+    bne :+
+    dex
+    bpl :-
+    lda #0
+:   rts
 .endproc
 
 ; This routine loads the first slot and the slot count of the unit in
@@ -148,10 +181,119 @@ NX: jsr nextUnit
     rts
 .endproc
 
+; This routine returns with the carry set if the module imports the unit
+; in Q: the program imports every unit, and a unit the units its Uses
+; name (interface or implementation) and System, which every module uses.
+; It changes ptr1 and ptr2.
+.proc inModule
+    stq testUnit
+    ldq moduleUnit
+    jsr isQZero
+    bne :+
+    jmp YS
+:
+
+    ; System
+    ldq testUnit
+    stq ptr1
+    ldx #0
+    ldz #unit::name
+:   nop
+    lda (ptr1),z
+    cmp strSystem,x
+    bne :+
+    cmp #0
+    bne IS
+    jmp YS
+IS:
+    inz
+    inx
+    bra :-
+
+    ; The module's Uses declarations
+:   ldq moduleUnit
+    stq ptr1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #decl::code
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq codePtr
+    lda #stmt::interfaceDecl
+    sta chain
+L1: ldq codePtr
+    stq ptr1
+    ldz chain
+    neg
+    neg
+    nop
+    lda (ptr1),z
+L2: stq declPtr
+    jsr isQZero
+    beq L4
+    stq ptr1
+    ldz #decl::kind
+    nop
+    lda (ptr1),z
+    cmp #DECL_USES
+    bne L3
+
+    ; Compare its name with the unit's
+    ldq testUnit
+    stq ptr2
+    ldz #decl::name
+    ldx #0
+:   txa
+    taz
+    nop
+    lda (ptr2),z                ; unit::name is the first member
+    pha
+    txa
+    clc
+    adc #decl::name
+    taz
+    pla
+    nop
+    cmp (ptr1),z
+    bne L3
+    cmp #0
+    beq YS
+    inx
+    bra :-
+
+L3: ldq declPtr
+    stq ptr1
+    ldz #decl::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    bra L2
+
+    ; Then the implementation's
+L4: lda chain
+    cmp #stmt::decl
+    beq NO
+    lda #stmt::decl
+    sta chain
+    bra L1
+
+NO: clc
+    rts
+YS: sec
+    rts
+.endproc
+
 ; This routine finds the frame of the level 1 slot whose offset (from the
 ; program's first slot) is in A. It returns the frame's number in X, 0 for
-; the module's own (writeModule), and the offset in the frame in A. It
-; keeps ptr1 and ptr2.
+; the module's own, and the offset in the frame in A. It keeps ptr1 and
+; ptr2.
 .proc frameOf
     sta offset
     ldx #7
@@ -166,13 +308,14 @@ NX: jsr nextUnit
 L1: stq thisUnit
     jsr isQZero
     beq PR
-    jsr loadSlots
-    lda count
-    ora count+1
-    beq NX
+    jsr isFrame
+    bcc :+
     inc frameNum
 
     ; first <= offset < first + count
+:   lda count
+    ora count+1
+    beq NX
     lda first+1
     bne NX
     lda offset
@@ -195,14 +338,15 @@ NX: jsr nextUnit
     ; The program's own
 PR: lda #0
     sta frameNum
+    bra DN
 
-    ; The module's own is frame 0
-FN: lda frameNum
-    cmp moduleFrame
-    bne :+
+    ; The unit's: frame 0 if it is the module
+FN: jsr isModule
+    bne DN
     lda #0
     sta frameNum
-:   ldx #7
+
+DN: ldx #7
 :   lda savedPtrs,x
     sta ptr1,x
     dex
@@ -212,55 +356,6 @@ FN: lda frameNum
     rts
 .endproc
 
-; This routine writes MDL, which starts the code of the module in Q: a
-; unit, or zero for the program. Its operand is the module's frame in the
-; frames table, or 0 for the program or a unit with no slots. It writes
-; nothing if that is the frame already in effect, which at first is 0.
-; Until the next MDL, frame 0 is that module's (frameOf), so a unit's
-; code names its own variables as its own icode file will. Code
-; generation relocates them against the frame MDL names. It changes ptr1.
-.proc writeModule
-    stq thisUnit
-    jsr isQZero
-    beq L3
-    stq target
+.data
 
-    ; Count the frames up to the unit's
-    lda #0
-    sta frameNum
-    ldq units
-L1: stq thisUnit
-    jsr isQZero
-    beq L3                      ; not in the list
-    jsr loadSlots
-    lda count
-    ora count+1
-    beq L2
-    inc frameNum
-L2: ldx #3
-:   lda thisUnit,x
-    cmp target,x
-    bne :+
-    dex
-    bpl :-
-    lda count                   ; the unit: frame 0 if it has no slots
-    ora count+1
-    bne L4
-    bra L3
-:   jsr nextUnit
-    bra L1
-
-L3: lda #0
-    sta frameNum
-L4: lda frameNum
-    cmp moduleFrame
-    bne :+
-    rts                         ; no change
-:   sta moduleFrame
-    lda #IC_IBU
-    sta operand1
-    lda frameNum
-    sta operand1+1
-    lda #IC_MDL
-    jmp icodeWriteInstruction
-.endproc
+strSystem: .asciiz "system"

@@ -21,7 +21,7 @@
 .import pshOper, outOper, inpOper, strbuf
 .import genOneInstruction, genTwoInstruction, genThreeAddr, operand1
 .import genDeclInit, addStringLiteral
-.import pendingAsf, setRuntimeFeatures, moduleFrame
+.import pendingAsf, addRuntimeFeatures
 
 .data
 
@@ -74,20 +74,13 @@ label: .res 16
     ; negate after the JMP when it was IC_NEG.
     rts
 
-    ; The end of the module carries the runtime features it needs, for
-    ; the object file (writeObjFile). It writes no code.
+    ; The end of a module carries the runtime features it needs. They
+    ; are added to the program's, for the object file (writeObjFile). It
+    ; writes no code.
 :   cmp #IC_EOM
     bne :+
     lda operand1+1
-    jmp setRuntimeFeatures
-
-    ; The module whose code follows. A level 1 operand with frame 0 is in
-    ; its frame (frameOffset in pshOper.s). It writes no code.
-:   cmp #IC_MDL
-    bne :+
-    lda operand1+1
-    sta moduleFrame
-    rts
+    jmp addRuntimeFeatures
 
     ; A unit's init block runs as a 6502 subroutine. It pushes the unit's
     ; variables on the runtime stack, so it has no stack frame.

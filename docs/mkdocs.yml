@@ -218,7 +218,6 @@ nav:
       - LOC: icode/mne/loc.md
       - LSE: icode/mne/lse.md
       - LST: icode/mne/lst.md
-      - MDL: icode/mne/mdl.md
       - MEM: icode/mne/mem.md
       - MOD: icode/mne/mod.md
       - MUL: icode/mne/mul.md

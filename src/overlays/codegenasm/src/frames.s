@@ -23,9 +23,9 @@
 .include "4510macros.inc"
 
 .export readIcodeFrames, writeFrames, freeFrames, initFrames
-.export frameReloc, moduleFrame
+.export frameReloc, isUnitModule, beginUnitFrames, endUnitFrames
 
-.import readIcodeByte, readStatus
+.import readIcodeByte, readStatus, modName
 
 .data
 
@@ -35,7 +35,10 @@ strFrame: .asciiz ".frame"
 
 frames: .res 4              ; the membuf, or zero
 frameCount: .res 1
-moduleFrame: .res 1         ; the frame of the module being generated (MDL)
+isUnitModule: .res 1        ; non-zero while a unit's own file is read
+prgFrames: .res 4           ; the program's, while a unit's are read
+prgFrameCount: .res 1
+prgFramesLen: .res 2
 framesLen: .res 2           ; bytes in frames
 left: .res 1
 byte: .res 1
@@ -91,9 +94,19 @@ BD: sec
 
 ; This routine writes a LINKADDR_FRAME relocation for the byte Z bytes
 ; past codeOffset, against the first slot of the frame numbered in A (from
-; 1, in the frames table). Z must be kept for linkAddressLookup.
+; 1, in the frames table), or 0 for a unit's own (modName). Z must be kept
+; for linkAddressLookup.
 .proc frameReloc
     phz
+    cmp #0
+    bne :+
+    ldx #0
+OW: lda modName,x
+    beq L3
+    sta label,x
+    inx
+    bra OW
+:
     pha
     ldq frames
     stq ptr1
@@ -127,6 +140,7 @@ L2: jsr getByte
     sta label,x
     inx
     bra :-
+L3:
 :   ldy #0
 :   lda strFrame,y
     sta label,x
@@ -218,10 +232,51 @@ DN: rts
 ; anything else, since an overlay's BSS isn't cleared.
 .proc initFrames
     lda #0
-    sta moduleFrame
+    sta isUnitModule
     tax
     tay
     taz
     stq frames
+    rts
+.endproc
+
+; This routine keeps the program's frames aside, for the object file,
+; while a unit's own icode file is read. The unit's frames table numbers
+; the frames its operands name, and frame 0 is the unit's own.
+.proc beginUnitFrames
+    ldq frames
+    stq prgFrames
+    lda frameCount
+    sta prgFrameCount
+    lda framesLen
+    sta prgFramesLen
+    lda framesLen+1
+    sta prgFramesLen+1
+    lda #1
+    sta isUnitModule
+    lda #0
+    tax
+    tay
+    taz
+    stq frames
+    rts
+.endproc
+
+; This routine frees the unit's frames and puts back the program's
+.proc endUnitFrames
+    ldq frames
+    jsr isQZero
+    beq :+
+    jsr freeMemBuf
+:   ldq prgFrames
+    stq frames
+    lda prgFrameCount
+    sta frameCount
+    lda prgFramesLen
+    sta framesLen
+    lda prgFramesLen+1
+    sta framesLen+1
+    lda #0
+    sta isUnitModule
     rts
 .endproc

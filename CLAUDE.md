@@ -372,8 +372,8 @@ against copies of the icode overlay with probes in them (editortest's
 `bin/mega65/coverage.txt`. The probes don't all fit in the overlay at
 once, so the files are instrumented in sets (`COVFILESn`). A new file
 must go in a set, and a set that no longer fits fails to link and must be
-split. The overlay is near 18K, so a set holds only about 330 probes, and
-`icodeExpr.s` is split at `exprField` (`icodeExpr.s:-exprField`). Like
+split. The overlay is near 18.7K, so a set holds only about 230 probes (15
+sets), and `icodeExpr.s` is split at `exprField` (`icodeExpr.s:-exprField`). Like
 `test`, it needs asmlib built with `MEMCHECK=1`. The lines left are ones
 no program can reach, such as defaults for kinds no caller passes and
 cases the type checker rejects.
@@ -392,23 +392,37 @@ The resolver records each unit's first slot and count in its `unit`
 (`firstSlot`, `slots`), and the apps pass the program's own count to icode
 (`setIcodeGlobalSlots`, from `setDeclOffsets`) for the header. icode
 writes a frames table after the imports (`icodeFrames.s`): each unit or
-library with slots, in the units list's order, with its count. A variable
-operand has a fourth byte, its frame: 0 for the module's own, or a frame's
-number from 1. `icodeVar` makes a level 1 offset in a unit's range relative
-to the unit's first slot (`frameOf`). Codegen writes the byte with a
-`LINKADDR_FRAME` relocation against the import `name.frame` (`frames.s`),
-and the linker defines that as the program's slots plus the counts of the
-frames before it (`frames.s` in linkerasm) and adds it to the byte. A unit
-then needs no base it can't know when compiled on its own. The program's
-icode holds its units' code, so each unit's (its init block and routines,
-`icodeUnitRoutines`) starts with `MDL` and its frame's number, and the
-program's after them with `MDL 0` (`writeModule`, written only when the
-frame changes). Until the next `MDL`, frame 0 is that module's: `frameOf`
-gives a unit's own variables frame 0, and codegen relocates a level 1,
-frame 0 operand against `moduleFrame` (`frameOffset` in `pshOper.s`). A
-unit names its own variables as its own icode file will. dumpicode shows
-the header's count, a `FRM name slots` line for each frame and the frame's
-name after a variable operand.
+library with slots that the module imports, in the units list's order,
+with its count. A variable operand has a fourth byte, its frame: 0 for the
+module's own, or a frame's number in its file's table from 1. `icodeVar`
+makes a level 1 offset in a unit's range relative to the unit's first slot
+(`frameOf`). Codegen writes the byte with a `LINKADDR_FRAME` relocation
+against the import `name.frame` (`frames.s`), and the linker defines that
+as the program's slots plus the counts of the frames before it (`frames.s`
+in linkerasm) and adds it to the byte. A unit then needs no base it can't
+know when compiled on its own. dumpicode shows the header's count, a `FRM
+name slots` line for each frame and the frame's name after a variable
+operand.
+
+Each module has its own icode file. icode writes the program's,
+`zztmpicode`, and each Pascal unit's own, `zzi` and its name
+(`ICODE_UNIT_PREFIX`), from `icodeUnitRoutines`, on logical file 3 while
+the program's stays open on 1, in the program's scope. A unit's file has
+its header (kind unit, its own slots), its imports and frames (`moduleUnit`
+and `inModule` in `icodeFrames.s`: the units its `Uses` name, and System),
+its init block and routines, its data segments (`icodeKeepData`) and its
+`EOM` with its own features (`icodeKeepFeatures`; `getRuntimeFeatures`
+still gives them all). The program's imports list each unit
+(`ICODE_IMPORT_UNIT`). Codegen reads the program's file, then each unit's
+in the imports' order (`genUnits`), skipping a unit's imports and reading
+its frames in place of the program's (`beginUnitFrames`). Frame 0 in a
+unit's file is relocated against its own `name.frame`. A unit's code
+follows the program's cleanup, which never falls through, and its data
+the program's. dumpicode dumps the program's file, then each unit's. A DOS
+command (`doesFileExist`, `scratchFile`) closes the command channel,
+which closes every open file, so icode erases the old unit files before
+it opens any (`icodeEraseUnitFiles`) and codegen deletes the icode files
+only once the code file is closed (`deleteIcode`).
 
 A variable operand's offset is one byte, so a scope has at most 256 slots,
 and level 1 is one scope for the program and all its units. `setVarOffset`

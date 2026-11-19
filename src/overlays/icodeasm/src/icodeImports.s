@@ -31,7 +31,7 @@
 
 .export writeImports
 
-.import units, entryStart, entryNext, entryNum
+.import units, entryStart, entryNext, entryNum, moduleUnit, inModule
 
 .bss
 
@@ -47,10 +47,11 @@ label: .res 24
 .code
 
 ; This routine writes the imports table to the current output: the count,
-; then each library. The libraries come from the units list, so a
-; library that only a unit uses is there too. Their order is
-; the order the parser met each unit, so the program's own libraries are in
-; its Uses order, and those only units use come after them.
+; then each library and Pascal unit the module imports (inModule): the
+; program imports the whole units list, so a library or unit only a unit
+; uses is there too, and a unit those its Uses name and System. They're
+; in the units list's order: each unit after the units it uses
+; (orderUnits in the resolver), otherwise the order the parser met them.
 .proc writeImports
     ; Count them, then write them
     lda #0
@@ -62,8 +63,7 @@ label: .res 24
     ; Fall through
 .endproc
 
-; This routine counts the libraries in the units list in libCount, or
-; writes each one.
+; This routine counts the imports in libCount, or writes each one.
 .proc walkUses
     lda #0
     sta libCount
@@ -84,17 +84,31 @@ L1: stq thisUnit
     ; A unit that wasn't parsed (icodetest's tests without units) has none
     jsr isQZero
     beq NX
+
+    ; Only what the module imports, not the module itself
+    ldx #3
+:   lda thisUnit,x
+    cmp moduleUnit,x
+    bne :+
+    dex
+    bpl :-
+    bra NX
+:   ldq thisUnit
+    jsr inModule
+    bcc NX
+
+    inc libCount
+    lda writing
+    beq NX
     ldq libRoot
     stq ptr2
     ldz #decl::isLibrary
     nop
     lda (ptr2),z
-    beq NX
-
-    inc libCount
-    lda writing
-    beq NX
-    jsr writeLibrary
+    bne :+
+    jsr writeUnit
+    bra NX
+:   jsr writeLibrary
 
 NX: ldq thisUnit
     stq ptr1
@@ -106,27 +120,20 @@ NX: ldq thisUnit
     bra L1
 .endproc
 
+; This routine writes the Pascal unit in unitName: its kind
+; (ICODE_IMPORT_UNIT) and name. Its code is in its own icode file.
+.proc writeUnit
+    lda #ICODE_IMPORT_UNIT
+    jsr CHROUT
+    jmp writeName
+.endproc
+
 ; This routine writes the library in unitName and libRoot: its kind
 ; (ICODE_IMPORT_LIBRARY), name, slot count and each slot's kind.
 .proc writeLibrary
     lda #ICODE_IMPORT_LIBRARY
     jsr CHROUT
-
-    ; The name
-    ldq unitName
-    stq ptr1
-    ldz #0
-    ldx #0
-:   nop
-    lda (ptr1),z
-    beq :+
-    sta label,x
-    inz
-    inx
-    cpx #OBJ_NAME_MAX
-    bne :-
-:   stx labelLen
-    jsr writeLabel
+    jsr writeName
 
     ; The slot count: init and cleanup, then the entries, which end one
     ; less
@@ -161,6 +168,25 @@ NX: ldq thisUnit
 .endproc
 
 ; This routine writes the name in label, labelLen characters long
+; This routine writes the name of the unit in unitName: its length, then
+; its characters
+.proc writeName
+    ldq unitName
+    stq ptr1
+    ldz #0
+    ldx #0
+:   nop
+    lda (ptr1),z
+    beq :+
+    sta label,x
+    inz
+    inx
+    cpx #OBJ_NAME_MAX
+    bne :-
+:   stx labelLen
+    ; Fall through to writeLabel
+.endproc
+
 .proc writeLabel
     lda labelLen
     jsr CHROUT

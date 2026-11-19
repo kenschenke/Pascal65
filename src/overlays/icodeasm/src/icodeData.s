@@ -88,12 +88,14 @@ saveDataMemBufOffset = saveDataLabelOffset + 4
 saveDataTypeOffset = saveDataMemBufOffset + 4
 
 .export icodeInitData, icodeSaveData, icodeWriteData, icodeFreeData
+.export icodeKeepData, icodeRestoreData
 
 .import loadStackValue
 
 .bss
 
 dataMemBuf: .res 4
+keptMemBuf: .res 4          ; the program's, while a unit's are written
 callerMemBuf: .res 4
 buffer: .res 1
 buflen: .res 2
@@ -391,6 +393,22 @@ DN: ldq dataMemBuf
     tax
     tay
     taz
+    stq dataMemBuf
+    rts
+.endproc
+
+; This routine keeps the program's data segments aside and starts a
+; unit's, which go in the unit's own icode file
+.proc icodeKeepData
+    ldq dataMemBuf
+    stq keptMemBuf
+    jmp icodeInitData
+.endproc
+
+; This routine puts back the program's data segments. The unit's must
+; have been freed (icodeFreeData).
+.proc icodeRestoreData
+    ldq keptMemBuf
     stq dataMemBuf
     rts
 .endproc

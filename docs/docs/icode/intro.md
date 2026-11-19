@@ -30,30 +30,35 @@ or record schema. These blocks of data are referenced within the code using a la
 
 ## File
 
-An intermediate code file holds one module, a program or a unit. It starts
-with a header and an imports table, which aren't instructions, followed by
-the instructions. The last instruction is [EOM](../mne/eom). Words are low
+An intermediate code file holds one module, a program or a unit. A compile
+writes one for the program and one for each of its Pascal units, which
+code generation reads in turn. A file starts with a header and the imports
+and frames tables, which aren't instructions, followed by the
+instructions. The last instruction is [EOM](../mne/eom). Words are low
 byte first.
 
 |Offset|Size|Contents                                               |
 |------|----|-------------------------------------------------------|
 |0     |2   |"IC" ($49, $43)                                        |
-|2     |1   |The format's version, 4                                |
+|2     |1   |The format's version, 5                                |
 |3     |1   |The kind: 0 for a program, 1 for a unit                |
-|4     |1   |The runtime mode: 0 dynamic, 1 static                  |
-|5     |2   |The runtime stack size                                 |
+|4     |1   |The runtime mode: 0 dynamic, 1 static (a unit's is 0)   |
+|5     |2   |The runtime stack size (a unit's is 0)                 |
 |7     |2   |The module's own global (level 1) slots                |
 |9     |1   |The length of the module's name, up to 23              |
 |10    |    |The name, with no terminating zero                     |
 
 The runtime features the module needs, such as files or trig, are only
 known once its code is written, so they are [EOM](../mne/eom)'s operand
-rather than part of the header.
+rather than part of the header. A program needs its own and its units'.
 
 ### Imports
 
 The imports table follows the header. It is a count byte, then each
-library the program uses, in the order of its `Uses` clause:
+library and unit the module uses. The program lists every library and
+unit it needs, including those only its units use, each unit after the
+units it uses. A unit lists those its `Uses` clauses name, and System.
+A library is:
 
 |Size|Contents                                                        |
 |----|----------------------------------------------------------------|
@@ -67,13 +72,16 @@ routines, then a slot for each routine and variable in its interface, in
 order. The program's code generation calls each library's initialization
 before the program starts and its cleanup after it ends.
 
+A Pascal unit is its kind, 2, and its name: its length, then the
+characters. Its code is in its own file, named `zzi` and the unit's name.
+
 ### Frames
 
 The program's global (level 1) stack frame holds the program's own
 variables, then each unit's and library's, in the order the program's
 startup pushes them. The part a module owns is its frame. The frames
 table follows the imports table. It is a count byte, then each unit or
-library that has variables, in that order:
+library the module imports that has variables, in that order:
 
 |Size|Contents                                                        |
 |----|----------------------------------------------------------------|
@@ -86,9 +94,6 @@ variable's offset counts from its frame's first slot, so a unit's code
 doesn't depend on how many variables the program and the other units
 have. The linker works out each frame's first slot from the slot counts
 and adds it to the offset.
-
-A program's icode holds its units' code too. [MDL](../mne/mdl) starts each
-unit's, and frame 0 is that unit's until the next MDL.
 
 ### Entries
 
@@ -179,7 +184,6 @@ The following instructions take one operand.
 |[EOM](../mne/eom)    |3d       |0011 1101   |End of the module                    |
 |[INP](../mne/inp)    |26       |0010 0110   |Reads and stores a value from input  |
 |[LOC](../mne/loc)    |2e       |0010 1110   |Sets the target for the label        |
-|[MDL](../mne/mdl)    |3e       |0011 1110   |Start a module's code                |
 |[MEM](../mne/mem)    |3a       |0011 1010   |Reads a value from a memory location |
 |[NEG](../mne/neg)    |22       |0010 0010   |Negate value at top of stack         |
 |[NEW](../mne/new)    |2b       |0010 1011   |Allocate memory from the heap        |

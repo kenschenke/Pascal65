@@ -15,6 +15,7 @@
 .include "4510macros.inc"
 .include "cbm_kernal.inc"
 .include "error.inc"
+.include "icode.inc"
 
 .export genObjCode
 .export genThreeAddr, runtimeStackSize
@@ -27,10 +28,14 @@
 .import initDataSegment, writeDataSegment, freeDataSegment
 .import tagBSS_EXITHANDLER
 .import writeObjFile, objFilename, codeFilename, readIcodeHeader
+.import readUnitHeader, skipIcodeImports, unitCount, getImportUnit
+.import beginUnitFrames, endUnitFrames, setRuntimeFeatures
 
 .data
 
 icodeFn: .asciiz "zztmpicode"
+unitPrefix: .asciiz ICODE_UNIT_PREFIX
+strSeqRead: .asciiz ",s,r"
 
 tempFn: .byte "zztmpicode,s,r"
 tempFn2:
@@ -44,15 +49,21 @@ codeFn2:
 
 runtimeStackSize: .res 2
 delName: .res 2             ; for deleteIfExists
+unitIdx: .res 1             ; the unit whose icode file is read
+unitFn: .res 24             ; its name, then ",s,r"
+unitFnLen: .res 1           ; the name's length, without ",s,r"
+unitFnTotal: .res 1
 
 .code
 
-; The icode file holds everything code generation needs: the header,
-; the imports and frames tables and the code (icode.inc). It doesn't use
-; the AST.
+; The icode files hold everything code generation needs: each module's
+; header, imports and frames tables and code (icode.inc). It reads the
+; program's, then each Pascal unit's (genUnits). It doesn't use the AST.
 .proc genObjCode
     jsr initImports
     jsr initFrames
+    lda #0
+    jsr setRuntimeFeatures      ; each module's EOM adds its own
 
     ; Initialize the linkerTags and tagsToFind containers.
     jsr initLinkerTags
@@ -129,6 +140,15 @@ delName: .res 2             ; for deleteIfExists
     ; Add some code to clean up the runtime and return to BASIC.
     jsr prgCleanup
 
+    ; The program's icode is done. Each Pascal unit's code, in its own
+    ; icode file, follows the cleanup, which never falls through.
+    lda #2
+    jsr CLOSE
+    jsr genUnits
+    bcc :+
+    jmp badIcode
+:
+
     jsr writeStringLiterals
 
     jsr freeStringLiterals
@@ -139,9 +159,6 @@ delName: .res 2             ; for deleteIfExists
 
     ; The linker puts the runtime's BSS after the program
 
-    ; Close the intermediate code file
-    lda #2
-    jsr CLOSE
     ldx #0
     jsr CHKIN
 
@@ -151,23 +168,127 @@ delName: .res 2             ; for deleteIfExists
     ldx #0
     jsr CHKOUT
 
-    ; Delete the intermediate code file
-    lda #<icodeFn
-    ldx #>icodeFn
-    ldy #0
-    ldz #0
-    stq ptr1
-    jsr scratchFile
-
     lda #1
     jsr CLOSE
     lda #2
     jsr CLOSE
     jsr CLRCHN
 
+    ; Delete the icode files. Not before: deleting a file closes every
+    ; open file (it closes the drive's command channel).
+    jsr deleteIcode
+
     ; Write the object file. It frees the linker tags. The linker lays
     ; out the program and checks that it fits in memory.
     jmp writeObjFile
+.endproc
+
+; This routine deletes the program's icode file and each unit's
+.proc deleteIcode
+    lda #<icodeFn
+    ldx #>icodeFn
+    ldy #0
+    ldz #0
+    stq ptr1
+    jsr scratchFile
+    lda #0
+    sta unitIdx
+L1: lda unitIdx
+    cmp unitCount
+    bne :+
+    rts
+:   jsr unitFileName
+    lda #<unitFn
+    ldx #>unitFn
+    ldy #0
+    ldz #0
+    stq ptr1
+    jsr scratchFile
+    inc unitIdx
+    bra L1
+.endproc
+
+; This routine puts the name of the icode file of the unit numbered
+; unitIdx in unitFn, null-terminated, and its length in unitFnLen:
+; ICODE_UNIT_PREFIX, then the unit's name.
+.proc unitFileName
+    lda unitIdx
+    jsr getImportUnit
+    sta ptr1
+    stx ptr1+1
+    ldx #0
+:   lda unitPrefix,x
+    beq :+
+    sta unitFn,x
+    inx
+    bra :-
+:   ldy #0
+:   lda (ptr1),y
+    sta unitFn,x
+    beq :+
+    inx
+    iny
+    bra :-
+:   stx unitFnLen
+    rts
+.endproc
+
+; This routine generates the code of each Pascal unit the program's
+; imports table lists (ICODE_IMPORT_UNIT), from the unit's own icode file
+; (icode.inc), in the table's order. A unit's imports are the program's
+; too, so they're skipped, and its frames are read in place of the
+; program's while its code is generated. deleteIcode deletes the files.
+; The carry is set if a file can't be read: the file is left open on 2.
+.proc genUnits
+    lda #0
+    sta unitIdx
+L1: lda unitIdx
+    cmp unitCount
+    bne :+
+    clc
+    rts
+
+:   jsr unitFileName
+
+    ; Open it with ",s,r"
+    ldx unitFnLen
+    ldy #0
+:   lda strSeqRead,y
+    sta unitFn,x
+    beq :+
+    inx
+    iny
+    bra :-
+:   stx unitFnTotal
+    ldx DEVNUM
+    lda #2
+    tay
+    iny
+    jsr SETLFS
+    lda unitFnTotal
+    ldx #<unitFn
+    ldy #>unitFn
+    jsr SETNAM
+    jsr OPEN
+
+    jsr readUnitHeader
+    bcs BD
+    jsr skipIcodeImports
+    bcs BD
+    jsr beginUnitFrames
+    jsr readIcodeFrames
+    bcs BF
+    jsr processIcodeInstructions
+    jsr endUnitFrames
+    lda #2
+    jsr CLOSE
+
+    inc unitIdx
+    jmp L1
+
+BF: jsr endUnitFrames
+BD: sec
+    rts
 .endproc
 
 ; This routine deletes the file named in A/X if it exists

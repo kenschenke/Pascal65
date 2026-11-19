@@ -14,7 +14,11 @@
 
 .export icodeUnitRoutines
 
-.import units, icodeRoutineDeclarations, icodeUnitInit, writeModule
+.import units, icodeRoutineDeclarations, icodeUnitInit, moduleUnit
+.import icodeUnitFileOpen, icodeUnitFileClose, writeUnitHeader
+.import writeImports, writeFrames, icodeWriteEom
+.import icodeKeepFeatures, icodeRestoreFeatures
+.import icodeKeepData, icodeRestoreData, icodeWriteData, icodeFreeData
 
 .bss
 
@@ -22,10 +26,11 @@ thisUnit: .res 4
 
 .code
 
-; This routine writes each unit's init block (icodeUnitInit), then its
-; routines. A Pascal unit's start with MDL, so frame 0 is the unit's own
-; (writeModule), and the program's code after them with MDL 0. MDL is
-; written only when the frame changes.
+; This routine writes each Pascal unit's icode file: its header, imports
+; and frames, its init block (icodeUnitInit), its routines, its data
+; segments and EOM. A library has no code. It runs while the program's
+; file is written, in the program's scope, and leaves that file the
+; output.
 .proc icodeUnitRoutines
     ldq units
     stq thisUnit
@@ -33,31 +38,37 @@ thisUnit: .res 4
     ; Loop through the units
 L1: ldq thisUnit
     jsr isQZero
-    bne UN
+    bne :+
+    rts
 
-    ; The program's code follows
-    lda #0
-    tax
-    tay
-    taz
-    jmp writeModule
-
-    ; A Pascal unit's code is its module's (MDL). A library has none.
-UN: stq ptr1
+    ; A library has no code. Neither has a unit that wasn't parsed
+    ; (icodetest's tests without units).
+:   stq ptr1
     ldz #unit::astRoot
     neg
     neg
     nop
     lda (ptr1),z
+    jsr isQZero
+    beq NX
     stq ptr1
     ldz #decl::isLibrary
     nop
     lda (ptr1),z
-    bne :+
-    ldq thisUnit
-    jsr writeModule
+    bne NX
 
-:   ldq thisUnit
+    ; The unit's own file
+    ldq thisUnit
+    stq moduleUnit
+    jsr icodeUnitFileOpen
+    jsr icodeKeepFeatures
+    jsr icodeKeepData
+    ldq thisUnit
+    jsr writeUnitHeader
+    jsr writeImports
+    jsr writeFrames
+
+    ldq thisUnit
     jsr icodeUnitInit
 
     ldq thisUnit
@@ -68,14 +79,12 @@ UN: stq ptr1
     nop
     lda (ptr1),z
     stq ptr1
-    
     ldz #decl::code
     neg
     neg
     nop
     lda (ptr1),z
     stq ptr1
-
     ldz #stmt::decl
     neg
     neg
@@ -83,7 +92,19 @@ UN: stq ptr1
     lda (ptr1),z
     jsr icodeRoutineDeclarations
 
-    ldq thisUnit
+    jsr icodeWriteData
+    jsr icodeWriteEom
+    jsr icodeFreeData
+    jsr icodeRestoreData
+    jsr icodeRestoreFeatures
+    jsr icodeUnitFileClose
+    lda #0
+    tax
+    tay
+    taz
+    stq moduleUnit
+
+NX: ldq thisUnit
     stq ptr1
     ldz #unit::next
     neg

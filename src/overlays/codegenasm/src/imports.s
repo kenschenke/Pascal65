@@ -15,6 +15,10 @@
 ; "name.1") at the end, and copies the list into the object file. The
 ; code names every slot that way (icodeExports.s in icodeasm), and the
 ; linker defines the names.
+;
+; The table also lists the program's Pascal units (ICODE_IMPORT_UNIT), each
+; with its code in its own icode file, which genUnits (codegen.s) reads
+; after the program's. A unit's own imports are skipped (skipIcodeImports).
 
 .include "asm.inc"
 .include "icode.inc"
@@ -26,7 +30,7 @@
 .include "4510macros.inc"
 
 .export readIcodeImports, initLibraries, cleanupLibraries
-.export writeLibraries, freeImports
+.export writeLibraries, freeImports, skipIcodeImports, unitCount, getImportUnit
 
 .import readIcodeByte, readStatus, genThreeAddr
 
@@ -41,6 +45,13 @@ byte: .res 1                ; for putByte and getByte
 labelLen: .res 1
 label: .res OBJ_NAME_MAX+3  ; a slot's label, null-terminated
 isInit: .res 1
+; The program's Pascal units (ICODE_IMPORT_UNIT), each in its own icode
+; file, in the units list's order: each name null-terminated
+MAX_UNITS = 16
+UNIT_NAME_SIZE = 13         ; unit::name
+unitCount: .res 1
+unitNames: .res MAX_UNITS * UNIT_NAME_SIZE
+unitIdx: .res 1
 
 .code
 
@@ -54,16 +65,24 @@ isInit: .res 1
     sta libsLen
     sta libsLen+1
 
-    jsr readIcodeByte
+    lda #0
     sta libCount
+    sta unitCount
+    jsr readIcodeByte
     sta left
 
 L1: lda left
     beq DN
     dec left
     jsr readIcodeByte
-    cmp #ICODE_IMPORT_LIBRARY
+    cmp #ICODE_IMPORT_UNIT
+    bne :+
+    jsr readUnit
+    bcs BD
+    bra L1
+:   cmp #ICODE_IMPORT_LIBRARY
     bne BD
+    inc libCount
 
     ; The library's name and slot count
     jsr copyName
@@ -291,5 +310,112 @@ L1: lda libsLen
     tay
     taz
     stq libs
+    rts
+.endproc
+
+; This routine reads a Pascal unit's name from the imports table into
+; unitNames. The carry is set if it is too long or there are too many.
+.proc readUnit
+    lda unitCount
+    cmp #MAX_UNITS
+    bcs DN
+    jsr unitNamePtr
+    jsr readIcodeByte
+    cmp #UNIT_NAME_SIZE
+    bcs DN
+    sta labelLen
+    ldy #0
+:   cpy labelLen
+    beq :+
+    phy
+    jsr readIcodeByte
+    ply
+    sta (ptr3),y
+    iny
+    bra :-
+:   lda #0
+    sta (ptr3),y
+    inc unitCount
+    clc
+DN: rts
+.endproc
+
+; This routine points ptr3 (16 bits) at the name numbered unitCount in
+; unitNames
+.proc unitNamePtr
+    lda #<unitNames
+    sta ptr3
+    lda #>unitNames
+    sta ptr3+1
+    ldx unitCount
+:   beq DN
+    lda ptr3
+    clc
+    adc #UNIT_NAME_SIZE
+    sta ptr3
+    bcc :+
+    inc ptr3+1
+:   dex
+    bra :--
+DN: rts
+.endproc
+
+; This routine returns in A/X a pointer to the name of the program's
+; Pascal unit numbered in A, from 0 (null-terminated)
+.proc getImportUnit
+    ldx unitCount
+    phx
+    sta unitCount
+    jsr unitNamePtr
+    pla
+    sta unitCount
+    lda ptr3
+    ldx ptr3+1
+    rts
+.endproc
+
+; This routine reads past a unit's imports table. Only the program's
+; imports are linked, and code names a library's slots by name. The carry
+; is set if the table is bad.
+.proc skipIcodeImports
+    jsr readIcodeByte
+    sta left
+L1: lda left
+    beq DN
+    dec left
+    jsr readIcodeByte
+    pha
+    jsr readIcodeByte           ; the name
+    sta labelLen
+:   lda labelLen
+    beq :+
+    jsr readIcodeByte
+    dec labelLen
+    bra :-
+:   pla
+    cmp #ICODE_IMPORT_UNIT
+    beq L1
+    cmp #ICODE_IMPORT_LIBRARY
+    bne BD
+    jsr readIcodeByte           ; the slot count, then the slots' kinds
+    sta slotsLeft
+    jsr readIcodeByte
+    sta slotsLeft+1
+L2: lda slotsLeft
+    ora slotsLeft+1
+    beq L1
+    jsr readIcodeByte
+    lda slotsLeft
+    bne :+
+    dec slotsLeft+1
+:   dec slotsLeft
+    bra L2
+
+DN: lda readStatus
+    and #$40
+    bne BD
+    clc
+    rts
+BD: sec
     rts
 .endproc

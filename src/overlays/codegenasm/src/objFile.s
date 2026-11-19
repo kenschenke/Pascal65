@@ -47,7 +47,7 @@ skip:
 .endmacro
 
 .export writeObjFile, objFilename, codeFilename
-.export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen
+.export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen, addRuntimeFeatures
 
 .import runtimeStackSize, writeLibraries, freeImports
 .import writeFrames, freeFrames, globalSlots
@@ -96,6 +96,13 @@ copyBuf: .res 256
 .endif
     sta runtimeFeatures
     rts
+.endproc
+
+; This routine adds the runtime features in A, a module's (its EOM), to
+; the program's. genObjCode starts them at 0 (setRuntimeFeatures).
+.proc addRuntimeFeatures
+    ora runtimeFeatures
+    jmp setRuntimeFeatures
 .endproc
 
 ; This routine sets the runtime mode (RT_MODE_* in asm.inc) in A

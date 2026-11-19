@@ -9,9 +9,11 @@ setIcodeRuntimeMode = ICODE_BASE + 12   ; RT_MODE_* (asm.inc) in A
 setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
 setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 
-; The icode file starts with a header, then the imports and frames tables,
-; then the instructions. The last instruction is EOM. Words are low byte
-; first.
+; Each module has its own icode file: the program's is "zztmpicode" and a
+; Pascal unit's is ICODE_UNIT_PREFIX and the unit's name, both written by
+; one compile. A file starts with a header, then the imports and frames
+; tables, then the instructions. The last instruction is EOM. Words are
+; low byte first.
 ;
 ;    ICODE_MAGIC0, ICODE_MAGIC1, ICODE_VERSION
 ;    ICODE_KIND_*
@@ -20,21 +22,23 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ;    the module's own level 1 slots (2 bytes)
 ;    length of the module's name, then the name (no terminating zero)
 ;
-; The imports table (icodeImports.s): a count byte, then each import, in
-; the program's Uses order:
+; The imports table (icodeImports.s): a count byte, then each library and
+; Pascal unit the module uses, in the units list's order. The program
+; lists every one in the list; a unit, those its Uses name, and System:
 ;
 ;    ICODE_IMPORT_LIBRARY, then the library as the object file lists it
 ;    (linker.inc): its name, a word with its slot count, then each slot's
 ;    kind (OBJLIB_*)
+;    ICODE_IMPORT_UNIT, then the unit's name. Its code is in its own file.
 ;
 ; The frames table (icodeFrames.s) follows: a count byte, then each unit
-; or library with level 1 slots, in the order the startup pushes them:
+; or library with level 1 slots that the module imports, in the order the
+; startup pushes them:
 ;
 ;    its name, then its slot count (2 bytes)
 ;
-; A variable operand's frame is 0 for the module's own. A program's file
-; holds its units' code too: MDL starts each unit's, naming the frame
-; that frame 0 is until the next MDL (writeModule in icodeFrames.s).
+; A variable operand's frame is 0 for the module's own, or its number in
+; the frames table, from 1.
 ;
 ; A name is its length in a byte, then that many characters.
 ;
@@ -44,14 +48,16 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ; label has a period.
 ;
 ; The runtime features (RTF_* in asm.inc) are known only once the code is
-; written, so they are EOM's operand.
+; written, so they are EOM's operand. Code generation ORs the modules'.
 ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
 ICODE_MAGIC1 = $43
-ICODE_VERSION = 4
+ICODE_VERSION = 5
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
 ICODE_IMPORT_LIBRARY = 1
+ICODE_IMPORT_UNIT = 2
 ICODE_MAX_NAME = 23     ; NAMELEN (ast.inc) less the terminating zero
+.define ICODE_UNIT_PREFIX "zzi"  ; a unit's icode file: this, then its name
 
 LOCALVARS_RECORD = 2
 LOCALVARS_DEL    = 1
@@ -148,8 +154,6 @@ IC_SAL          = $3b  ; 0011 1011  1:label of the array declaration block
 IC_UIC          = $3c  ; 0011 1100  1:label - call a unit's init block, which
                        ; pushes the unit's variables (no stack frame)
 IC_EOM          = $3d  ; 0011 1101  1:runtime features (RTF_*) - end of module
-IC_MDL          = $3e  ; 0011 1110  1:frame - the code of the module whose
-                       ; frame this is follows (0: the program's)
 
 ; These instructions take two operands
 IC_MASK_BINARY  = $40  ; 0100 0000

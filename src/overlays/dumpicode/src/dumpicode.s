@@ -20,6 +20,9 @@ strPrg: .asciiz "PRG "
 strUnit: .asciiz "UNIT "
 strBadHdr: .asciiz "BAD HEADER"
 strImpLib: .asciiz "IMP LIB "
+strImpUnit: .asciiz "IMP UNIT "
+unitPrefix: .asciiz ICODE_UNIT_PREFIX
+strSeqRead: .asciiz ",s,r"
 strBadImp: .asciiz "BAD IMPORT"
 strIndent: .asciiz "   "
 strFrm: .asciiz "FRM "
@@ -40,24 +43,83 @@ NAME_SIZE = 13              ; unit::name
 frameNames: .res MAX_FRAMES * NAME_SIZE
 frameIdx: .res 1
 namePos: .res 1
+MAX_UNITS = 16              ; unit files dumped
+unitCount: .res 1
+unitNames: .res MAX_UNITS * NAME_SIZE
+unitIdx: .res 1
+recording: .res 1           ; non-zero while the program's file is dumped
+unitFn: .res 24
+unitFnLen: .res 1
 
 .code
 
+; This routine dumps the program's icode file, then each Pascal unit's own
+; file its imports table lists (icode.inc), into a membuf it returns in Q.
 .proc dumpIcode
     jsr allocMemBuf
     stq memBuf
+    lda #0
+    sta unitCount
+    sta unitIdx
 
-    ; Open the icode file
-    ; Call SETLFS
+    lda #1
+    sta recording
+    ldx #<tempFn
+    ldy #>tempFn
+    lda #tempFn2-tempFn
+    jsr dumpFile
+    lda #0
+    sta recording
+
+    ; Each unit's: ICODE_UNIT_PREFIX, its name, then ",s,r"
+L1: lda unitIdx
+    cmp unitCount
+    bne :+
+    ldq memBuf
+    rts
+:   lda unitIdx
+    jsr unitNamePos
+    tay
+    ldx #0
+:   lda unitPrefix,x
+    beq :+
+    sta unitFn,x
+    inx
+    bra :-
+:   lda unitNames,y
+    beq :+
+    sta unitFn,x
+    inx
+    iny
+    bra :-
+:   ldy #0
+:   lda strSeqRead,y
+    beq :+
+    sta unitFn,x
+    inx
+    iny
+    bra :-
+:   txa
+    ldx #<unitFn
+    ldy #>unitFn
+    jsr dumpFile
+    inc unitIdx
+    bra L1
+.endproc
+
+; This routine dumps the icode file named in X/Y, its length in A
+.proc dumpFile
+    pha
+    phx
+    phy
     ldx DEVNUM
     lda #1
     tay
     iny
     jsr SETLFS
-    ; Call SETNAM
-    ldx #<tempFn
-    ldy #>tempFn
-    lda #tempFn2-tempFn
+    ply
+    plx
+    pla
     jsr SETNAM
     ; Open the file and set input channel
     jsr OPEN
@@ -95,10 +157,7 @@ L2: jsr readInstruction
     ; Close the icode file
 L3: lda #1
     jsr CLOSE
-    jsr CLRCHN
-
-    ldq memBuf
-    rts
+    jmp CLRCHN
 .endproc
 
 ; This routine dumps the icode file's header (icode.inc) as one line:
@@ -205,6 +264,11 @@ L1: lda impLeft
     rts
 :   dec impLeft
     jsr CHRIN
+    cmp #ICODE_IMPORT_UNIT
+    bne :+
+    jsr dumpUnitImport
+    jmp L1
+:
     cmp #ICODE_IMPORT_LIBRARY
     beq :+
     lda #<strBadImp
@@ -419,4 +483,63 @@ DN: rts
     jsr popQ
     stq ptr1
     rts
+.endproc
+
+; This routine dumps a Pascal unit's import as a line, and in the
+; program's file keeps its name, to dump the unit's own file after it:
+;    IMP UNIT name
+.proc dumpUnitImport
+    lda #<strImpUnit
+    ldx #>strImpUnit
+    jsr printz
+    lda unitCount
+    jsr unitNamePos
+    sta namePos
+    jsr CHRIN
+    sta hdrCount
+:   lda hdrCount
+    beq :+
+    jsr CHRIN
+    jsr keepUnitChar
+    jsr dumpChar
+    dec hdrCount
+    bra :-
+:   lda #0
+    jsr keepUnitChar
+    lda recording
+    beq :+
+    lda unitCount
+    cmp #MAX_UNITS
+    bcs :+
+    inc unitCount
+:   jmp dumpNewline
+.endproc
+
+; This routine keeps the character in A at namePos in unitNames, while
+; the program's file is dumped and there's room, and moves namePos on. It
+; keeps A.
+.proc keepUnitChar
+    ldx recording
+    beq :+
+    ldx unitCount
+    cpx #MAX_UNITS
+    bcs :+
+    ldx namePos
+    sta unitNames,x
+    inc namePos
+:   rts
+.endproc
+
+; This routine returns in A the offset in unitNames of the name numbered
+; in A
+.proc unitNamePos
+    tax
+    lda #0
+:   cpx #0
+    beq :+
+    clc
+    adc #NAME_SIZE
+    dex
+    bra :-
+:   rts
 .endproc

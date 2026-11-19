@@ -18,13 +18,14 @@
 .export icodeLabel, icodeFormatLabel, lblRoutineEnter, lblRoutineReturn
 .export lblDeclInit, lblParamDeclInit
 .export getRuntimeFeatures, setRuntimeFeature, setRuntimeMode, setStackSize
-.export setGlobalSlots
+.export setGlobalSlots, writeUnitHeader, icodeWriteEom
+.export icodeKeepFeatures, icodeRestoreFeatures
 
 .import icodeFileOpen, icodeFileClose, icodeWriteInstruction
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
 .import icodeUnitDeclarations, icodeVariableDeclarations
 .import icodeInitData, icodeWriteData, icodeFreeData, icodeSuppress
-.import writeImports, writeFrames
+.import writeImports, writeFrames, moduleUnit
 
 .import operand1
 
@@ -47,6 +48,14 @@ icodeLabel: .res 20
 ; The runtime packages the program needs (RTF_* in asm.inc). Code
 ; generation links only these (see rtpkg.inc).
 runtimeFeatures: .res 1
+; The ones this file's module needs, for its EOM. A unit's own icode file
+; has its own (icodeKeepFeatures).
+fileFeatures: .res 1
+keptFeatures: .res 1
+hdrRoot: .res 4              ; the module's root declaration, for writeHeader
+hdrSlots: .res 2             ; its own level 1 slots
+hdrMode: .res 1
+hdrStack: .res 2
 ; The parser's settings, for the icode file's header. The compiler apps
 ; set them (setRuntimeMode, setStackSize) before icodeWriteX.
 runtimeMode: .res 1
@@ -66,8 +75,12 @@ nameIndex: .res 1
 
 ; Records that the program uses the runtime feature (RTF_*) in A
 .proc setRuntimeFeature
+    pha
     ora runtimeFeatures
     sta runtimeFeatures
+    pla
+    ora fileFeatures
+    sta fileFeatures
     rts
 .endproc
 
@@ -95,6 +108,48 @@ nameIndex: .res 1
 ; This routine writes the icode file's header (icode.inc) to the current
 ; output. The module's root declaration is in astRoot.
 .proc writeHeader
+    ldq astRoot
+    stq hdrRoot
+    lda globalSlots
+    sta hdrSlots
+    lda globalSlots+1
+    sta hdrSlots+1
+    lda runtimeMode
+    sta hdrMode
+    lda stackSize
+    sta hdrStack
+    lda stackSize+1
+    sta hdrStack+1
+    bra writeHeaderX
+.endproc
+
+; This routine writes the header of the unit in Q's own icode file. The
+; runtime mode and stack size are the program's, so a unit's are 0.
+.proc writeUnitHeader
+    stq ptr1
+    ldz #unit::slots
+    nop
+    lda (ptr1),z
+    sta hdrSlots
+    inz
+    nop
+    lda (ptr1),z
+    sta hdrSlots+1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq hdrRoot
+    lda #0
+    sta hdrMode
+    sta hdrStack
+    sta hdrStack+1
+    ; Fall through to writeHeaderX
+.endproc
+
+; This routine writes the header of the module in hdrRoot
+.proc writeHeaderX
     lda #ICODE_MAGIC0
     jsr CHROUT
     lda #ICODE_MAGIC1
@@ -103,7 +158,7 @@ nameIndex: .res 1
     jsr CHROUT
 
     ; The kind: a unit or the program
-    ldq astRoot
+    ldq hdrRoot
     stq ptr1
     ldz #decl::type
     neg
@@ -121,15 +176,15 @@ nameIndex: .res 1
 :   txa
     jsr CHROUT
 
-    lda runtimeMode
+    lda hdrMode
     jsr CHROUT
-    lda stackSize
+    lda hdrStack
     jsr CHROUT
-    lda stackSize+1
+    lda hdrStack+1
     jsr CHROUT
-    lda globalSlots
+    lda hdrSlots
     jsr CHROUT
-    lda globalSlots+1
+    lda hdrSlots+1
     jsr CHROUT
 
     ; The name's length, then the name. CHROUT may change Z, so the
@@ -169,6 +224,11 @@ nameIndex: .res 1
 
     lda #0
     sta runtimeFeatures
+    sta fileFeatures
+    tax
+    tay
+    taz
+    stq moduleUnit          ; the program's file first
 
     lda #0
     sta icodeSuppress
@@ -263,12 +323,7 @@ nameIndex: .res 1
     jsr icodeWriteData
 
     ; The end of the module, with the runtime features it needs
-    lda #IC_IBU
-    sta operand1
-    lda runtimeFeatures
-    sta operand1+1
-    lda #IC_EOM
-    jsr icodeWriteInstruction
+    jsr icodeWriteEom
 
     ; Free data segments
     jsr icodeFreeData
@@ -318,5 +373,34 @@ nameIndex: .res 1
     lda intOp1
     ldx intOp1+1
     jsr hexstr
+    rts
+.endproc
+
+; This routine writes EOM, the end of the module, with the runtime
+; features its file's code needs
+.proc icodeWriteEom
+    lda #IC_IBU
+    sta operand1
+    lda fileFeatures
+    sta operand1+1
+    lda #IC_EOM
+    jmp icodeWriteInstruction
+.endproc
+
+; This routine keeps the program file's runtime features aside while a
+; unit's own file is written. runtimeFeatures keeps them all, for
+; getRuntimeFeatures.
+.proc icodeKeepFeatures
+    lda fileFeatures
+    sta keptFeatures
+    lda #0
+    sta fileFeatures
+    rts
+.endproc
+
+; This routine puts back the program file's runtime features
+.proc icodeRestoreFeatures
+    lda keptFeatures
+    sta fileFeatures
     rts
 .endproc
