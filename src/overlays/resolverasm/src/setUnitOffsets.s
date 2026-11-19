@@ -16,7 +16,7 @@
 
 .export setUnitOffsets
 
-.import units, setDeclOffsets
+.import units, setDeclOffsets, fixGlobalOffsets
 
 .bss
 
@@ -91,5 +91,30 @@ L1: ldq unit
     stq unit
     bra L1
 
-L2: rts
+    ; A unit's table holds the variables of the units it uses (injectUnit).
+    ; They get their levels and offsets as the program's do, once every
+    ; unit is numbered. Without it they were level 0, offset 0.
+L2: ldq units
+L3: stq unit
+    jsr isQZero
+    beq DN
+    stq ptr1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr isQZero
+    beq :+
+    jsr fixGlobalOffsets
+:   ldq unit
+    stq ptr1
+    ldz #unit::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    bra L3
+
+DN: rts
 .endproc

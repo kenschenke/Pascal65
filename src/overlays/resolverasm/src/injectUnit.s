@@ -66,7 +66,17 @@ L1: jsr isQZero
     bne :+
     jmp L4
 
-:   ldz #decl::name
+    ; A Uses in the interface makes another unit visible in this one, not
+    ; in its importers. It has no symbol in the unit's table.
+:   stq ptr1
+    ldz #decl::kind
+    nop
+    lda (ptr1),z
+    cmp #DECL_USES
+    bne :+
+    jmp L3
+:   ldq interfaceDecl
+    ldz #decl::name
     jsr calcNamePtr
     stq ptr4
     stq symKey

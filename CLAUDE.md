@@ -254,6 +254,17 @@ only one, and otherwise the field is reported.
 The harness resolves as the compiler does: `initStandardRoutines` before
 `injectSystemUnit`, and the program's scope is freed with `freeSymtab`.
 
+A unit can use another unit (`Uses` in its interface). The parser adds a
+unit to the units list once, however many modules name it (`addUnit`).
+`injectUnit` skips a `Uses` in the interface: it makes the other unit
+visible in the unit, not in its importers, and has no symbol in the unit's
+table (it was `errMissingUnitDeclaration`). The variables `injectUnit` puts
+in a unit's table get their slots from `fixGlobalOffsets`, which
+`setUnitOffsets` runs on every unit's table once all are numbered; it was
+only run on the program's, so a unit read another unit's variables at
+level 0, offset 0. icodetest 44 and compilertestasm's `unituses` (set 1's
+first program) check this.
+
 A symbol for a declaration (`resolveDeclarationName`), a parameter
 (`paramListResolve`) or a unit's interface (`injectUnit`) shares the type it
 was made from and has `SYMBOL_FLAG_SHAREDTYPE`, so `freeSymbol` leaves the
