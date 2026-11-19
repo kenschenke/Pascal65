@@ -26,7 +26,7 @@ HDR_FILENUM = 2
 .export makeHeader
 
 .import initTokenizer, initParser, errorCount
-.import hdrWrite
+.import hdrWrite, hdrOutVec
 
 .data
 
@@ -120,6 +120,10 @@ resultHi: .res 1
 
     ; The header's records, in the shared writer (hdrwrite.s)
     jsr openOutput
+    lda #<CHROUT
+    sta hdrOutVec
+    lda #>CHROUT
+    sta hdrOutVec+1
     ldq astRoot
     jsr hdrWrite
     sta resultLo

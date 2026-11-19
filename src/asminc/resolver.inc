@@ -11,3 +11,4 @@ setUnitOffsets = RESOLVER_BASE + 18
 fixGlobalOffsets = RESOLVER_BASE + 21
 verifyFwdDeclarations = RESOLVER_BASE + 24
 initStandardRoutines = RESOLVER_BASE + 27
+addModuleUnit = RESOLVER_BASE + 30   ; a unit compiled on its own, root in Q

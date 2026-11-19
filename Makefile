@@ -27,6 +27,7 @@ RESOLVERDIR := src/overlays/resolverasm
 TYPECHECKDIR := src/overlays/typecheckasm
 EDITOROVLYDIR := src/overlays/editorasm
 ICODEDIR := src/overlays/icodeasm
+TPUDIR := src/overlays/tpuasm
 CODEGENDIR := src/overlays/codegenasm
 LINKERDIR := src/overlays/linkerasm
 COMPILERDIR := src/apps/compilerasm
@@ -56,6 +57,7 @@ RESOLVER = $(RESOLVERDIR)/bin/$(TARGET)/resolver
 TYPECHECK = $(TYPECHECKDIR)/bin/$(TARGET)/typecheck
 EDITOROVLY = $(EDITOROVLYDIR)/bin/$(TARGET)/editor
 ICODE = $(ICODEDIR)/bin/$(TARGET)/icode
+TPU = $(TPUDIR)/bin/$(TARGET)/tpu
 CODEGEN = $(CODEGENDIR)/bin/$(TARGET)/codegen
 LINKER = $(LINKERDIR)/bin/$(TARGET)/linker
 COMPILER = $(COMPILERDIR)/bin/$(TARGET)/compiler
@@ -81,6 +83,7 @@ BINFILES += $(SOUNDLIB)
 BINFILES += $(RESOLVER)
 BINFILES += $(TYPECHECK)
 BINFILES += $(ICODE)
+BINFILES += $(TPU)
 BINFILES += $(CODEGEN)
 BINFILES += $(LINKER)
 BINFILES += $(EDITOROVLY)
@@ -203,6 +206,9 @@ $(TYPECHECK): FORCE
 $(ICODE): FORCE
 	cd $(ICODEDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(TPU): FORCE
+	cd $(TPUDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(CODEGEN): FORCE
 	cd $(CODEGENDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -242,6 +248,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDEF) $(HDRFILES)
 	-write $(RESOLVER) resolver,prg \
 	-write $(TYPECHECK) typecheck,prg \
 	-write $(ICODE) icode,prg \
+	-write $(TPU) tpu,prg \
 	-write $(CODEGEN) codegen,prg \
 	-write $(LINKER) linker,prg \
 	-write $(MEMINFO) meminfo,prg \

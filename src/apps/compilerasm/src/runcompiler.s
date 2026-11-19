@@ -20,6 +20,9 @@
 .include "icode.inc"
 .include "resolver.inc"
 .include "meminfo.inc"
+.include "tpu.inc"
+.include "ast.inc"
+.include "error.inc"
 .include "4510macros.inc"
 
 .export runCompiler, unitList
@@ -30,6 +33,7 @@
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
 .import freeUnitBodies
+.import initTpu
 .ifdef __HEAPPROFILE__
 .import initMemInfo
 .endif
@@ -44,6 +48,8 @@ astRoot: .res 4
 unitList: .res 4
 runtimeStackSize: .res 2
 runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
+unitMode: .res 1                ; non-zero for a unit compiled to its TPU
+unitName: .res 13
 
 .data
 
@@ -55,6 +61,7 @@ strTypeChecking: .asciiz "Type Checking"
 strIcode: .asciiz "Intermediate Code"
 strCodeGen: .asciiz "Generating Object Code"
 strLinking: .asciiz "Linking"
+strTpu: .asciiz "Writing Unit File"
 
 .code
 
@@ -139,7 +146,23 @@ strLinking: .asciiz "Linking"
 
     jsr tokenizeAndParseUnits
 
-    lda #<strResolving
+    ; A unit compiled on its own (unit mode) is written to its TPU. Its
+    ; interface is written now, as the parser made it.
+    jsr checkUnitMode
+    lda unitMode
+    beq :+
+    jsr initTpu
+    ldq unitList
+    jsr pushQ
+    lda sourceFn
+    ldx sourceFn+1
+    jsr pushAX
+    ldq astRoot
+    jsr tpuBegin
+    bcc :+
+    jmp tpuError
+
+:   lda #<strResolving
     ldx #>strResolving
     jsr printLine
     jsr initResolver
@@ -148,11 +171,28 @@ strLinking: .asciiz "Linking"
     jsr initScopeStack
     jsr initStandardRoutines
     jsr injectSystemUnit
-    jsr resolveUnits
+
+    ; The unit goes in the units list, after injectSystemUnit, and is
+    ; resolved with the units it uses. Its slots are numbered from 0.
+    lda unitMode
+    beq :+
+    ldq astRoot
+    jsr addModuleUnit
+:   jsr resolveUnits
+    lda unitMode
+    beq :+
+    lda #0
+    sta globalSlots
+    sta globalSlots+1
+    tax
+    jsr setUnitOffsets
+    jsr getResolverUnitsList
+    stq unitList
+    jmp RD
 
     ; resolveUnits reports errors in each unit's file. The rest are in
     ; the program's.
-    lda sourceFn
+:   lda sourceFn
     ldx sourceFn+1
     jsr setCompilerFilename
 
@@ -180,6 +220,7 @@ strLinking: .asciiz "Linking"
     jsr verifyFwdDeclarations
     jsr getResolverUnitsList
     stq unitList
+RD:
 
     ; Check the error count
     lda errorCount
@@ -202,9 +243,11 @@ strLinking: .asciiz "Linking"
     ldx #>strTypeChecking
     jsr printLine
     jsr initTypeCheck
+    lda unitMode                ; a unit is type checked with the units
+    bne :+
     ldq astRoot
     jsr declTypeCheck
-    ldq unitList
+:   ldq unitList
     jsr typeCheckUnits
     lda sourceFn
     ldx sourceFn+1
@@ -253,6 +296,24 @@ strLinking: .asciiz "Linking"
     ; Error - so don't continue
     rts
 
+    ; A unit's TPU: what tpuBegin wrote, then the unit's icode. It has no
+    ; code generation. Its root is in the units list, which frees it.
+:   lda unitMode
+    beq :+
+    lda #<strTpu
+    ldx #>strTpu
+    jsr printLine
+    jsr initTpu
+    lda #<unitName
+    ldx #>unitName
+    jsr tpuFinish
+    php
+    jsr freeUnits
+    plp
+    bcc DN
+    jmp tpuError
+DN: rts
+
 :   ; The statements and expressions have been turned into intermediate
     ; code. Free them to make room for code generation.
     ldq astRoot
@@ -300,6 +361,49 @@ strLinking: .asciiz "Linking"
     lda sourceFn
     ldx sourceFn+1
     jmp genPrgFile
+.endproc
+
+; This routine sets unitMode if the source parsed into astRoot is a unit,
+; to be compiled on its own to its TPU, and keeps its name in unitName
+.proc checkUnitMode
+    lda #0
+    sta unitMode
+    ldq astRoot
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_UNIT
+    beq :+
+    rts
+:   inc unitMode
+    ldz #decl::name
+    ldx #0
+:   nop
+    lda (ptr1),z
+    sta unitName,x
+    beq :+
+    inz
+    inx
+    cpx #12
+    bne :-
+    lda #0
+    sta unitName,x
+:   rts
+.endproc
+
+; This routine reports that the unit's TPU couldn't be written
+.proc tpuError
+    lda #errUnitNotWritten
+    ldx #0
+    ldy #0
+    jmp compilerError
 .endproc
 
 .proc printLine

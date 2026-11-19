@@ -11,7 +11,7 @@
 
 .import declResolve, setUnitsList, getUnitsList, injectSystemUnit
 .import resolveUnits, setDeclOffsets, setUnitOffsets, fixGlobalOffsets
-.import verifyFwdDeclarations, initStandardRoutines
+.import verifyFwdDeclarations, initStandardRoutines, addModuleUnit
 
 .segment "JMPTBL"
 
@@ -25,3 +25,4 @@ jmp setUnitOffsets
 jmp fixGlobalOffsets
 jmp verifyFwdDeclarations
 jmp initStandardRoutines
+jmp addModuleUnit

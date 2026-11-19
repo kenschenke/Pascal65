@@ -5,6 +5,7 @@ OBJDIR := obj
 BINDIR := bin
 TOKENIZERDIR := ../../overlays/tokenizerasm
 ICODEDIR := ../../overlays/icodeasm
+TPUDIR := ../../overlays/tpuasm
 PARSERDIR := ../../overlays/parserasm
 RESOLVERDIR := ../../overlays/resolverasm
 TYPECHECKDIR := ../../overlays/typecheckasm
@@ -26,6 +27,7 @@ ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
 TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
 ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
+TPU = ../../overlays/tpuasm/bin/$(TARGET)/tpu
 RESOLVER = ../../overlays/resolverasm/bin/$(TARGET)/resolver
 TYPECHECK = ../../overlays/typecheckasm/bin/$(TARGET)/typecheck
 MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
@@ -40,6 +42,7 @@ SYSTEMPAS = ../../lib/system/system.pas
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
 BINFILES += $(ICODE)
+BINFILES += $(TPU)
 BINFILES += $(RESOLVER)
 BINFILES += $(TYPECHECK)
 BINFILES += $(MEMINFO)
@@ -105,6 +108,9 @@ $(TOKENIZER): FORCE
 $(ICODE): FORCE
 	cd $(ICODEDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(TPU): FORCE
+	cd $(TPUDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(CODEGEN): FORCE
 	cd $(CODEGENDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -138,6 +144,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(PRGFILE) compiler,prg \
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(ICODE) icode,prg \
+	-write $(TPU) tpu,prg \
 	-write $(PARSER) parser,prg \
 	-write $(RESOLVER) resolver,prg \
 	-write $(TYPECHECK) typecheck,prg \

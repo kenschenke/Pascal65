@@ -67,7 +67,6 @@ unitList: .res 4
 isResolvingUnits: .res 1
 unitMode: .res 1            ; non-zero if the source is a unit (on its own)
 unitName: .res 13           ; its name
-lastUnit: .res 4
 
 .data
 
@@ -234,9 +233,10 @@ expectedFeatures:
     jsr injectSystemUnit
     lda unitMode
     beq :+
-    jsr addMainUnit
-    ldq unitList
-    jsr setResolverUnitsList
+    ldq astRoot
+    jsr addModuleUnit
+    jsr getResolverUnitsList
+    stq unitList
 :   lda #0
     sta isResolvingUnits
     plp
@@ -961,7 +961,7 @@ L1: ldq icodeBuf
     rts
 :   inc unitMode
 
-    ; Its name, which unitCreate takes from 16-bit memory
+    ; Its name, for dumpUnitIcode
     ldz #decl::name
     ldx #0
 :   nop
@@ -976,59 +976,4 @@ L1: ldq icodeBuf
     sta unitName,x
 
 :   rts
-.endproc
-
-; This routine puts the unit compiled on its own at the end of the units
-; list, after the units its Uses add, so the resolver, the type checker
-; and icode treat it as in a program compile (orderUnits puts it after the
-; units it uses). It runs after injectSystemUnit: the parser gave the unit
-; a Uses of System, as it gives the first module it parses, and
-; injectSystemUnit gives every unit in the list another, which injected
-; System's interface twice and leaked the first copy's symbols.
-.proc addMainUnit
-    lda #<unitName
-    ldx #>unitName
-    jsr unitCreate
-    stq ptr1
-    ldz #unit::astRoot
-    ldx #0
-:   lda astRoot,x
-    nop
-    sta (ptr1),z
-    inz
-    inx
-    cpx #4
-    bne :-
-
-    ; At the end of the list
-    ldq unitList
-    jsr isQZero
-    bne :+
-    ldq ptr1
-    stq unitList
-    rts
-:   stq lastUnit
-L1: ldq lastUnit
-    stq ptr2
-    ldz #unit::next
-    neg
-    neg
-    nop
-    lda (ptr2),z
-    jsr isQZero
-    beq L2
-    stq lastUnit
-    bra L1
-L2: ldq lastUnit
-    stq ptr2
-    ldz #unit::next
-    ldx #0
-:   lda ptr1,x
-    nop
-    sta (ptr2),z
-    inz
-    inx
-    cpx #4
-    bne :-
-    rts
 .endproc

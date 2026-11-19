@@ -19,7 +19,7 @@
 .include "hdr.inc"
 .include "4510macros.inc"
 
-.export hdrWrite
+.export hdrWrite, hdrOutVec
 
 .import hdrRecSize, hdrFieldFirst, hdrFieldNext, hdrTbl, hdrEntryPtr
 
@@ -40,16 +40,20 @@ emitIdx: .res 1
 resultLo: .res 1
 resultHi: .res 1
 errCode: .res 1
+; Each byte is written by jumping through this vector: CHROUT for a file,
+; or a routine that counts or checksums the bytes. The caller sets it.
+hdrOutVec: .res 2
 outBuf: .res 64
 
 .code
 
 ; This routine writes the header of the module whose root declaration is
-; in Q to the current output (CHROUT): the magic, version and record count,
-; then every record reachable from it, the root first. Pointers become
-; record numbers. It returns with the carry clear and the record count in
-; A/X, or with the carry set and an HDR_ERR_* code in A. The caller opens
-; and closes the output.
+; in Q, a byte at a time through hdrOutVec (CHROUT to write it to the
+; current output): the magic, version and record count, then every record
+; reachable from it, the root first. Pointers become record numbers. It
+; returns with the carry clear and the record count in A/X, or with the
+; carry set and an HDR_ERR_* code in A. The caller opens and closes the
+; output.
 .proc hdrWrite
     stq candAddr
 
@@ -120,15 +124,15 @@ PhaseADone:
 
     ; Header: magic, version, record count
     lda #'P'
-    jsr CHROUT
+    jsr hdrOut
     lda #'H'
-    jsr CHROUT
+    jsr hdrOut
     lda #HDR_VERSION
-    jsr CHROUT
+    jsr hdrOut
     lda count
-    jsr CHROUT
+    jsr hdrOut
     lda count+1
-    jsr CHROUT
+    jsr hdrOut
 
     ; Phase 2. Write each record.
     lda #1
@@ -163,15 +167,15 @@ WriteName:
     tza
     sta nameLen
     lda #HDR_REC_NAME
-    jsr CHROUT
+    jsr hdrOut
     lda nameLen
-    jsr CHROUT
+    jsr hdrOut
     lda #0
     sta emitIdx
 :   ldz emitIdx
     nop
     lda (ptr1),z
-    jsr CHROUT
+    jsr hdrOut
     inc emitIdx
     lda emitIdx
     cmp nameLen
@@ -286,12 +290,12 @@ ZeroField:
 
 Emit:
     lda recKind
-    jsr CHROUT
+    jsr hdrOut
     lda #0
     sta emitIdx
 :   ldx emitIdx
     lda outBuf,x
-    jsr CHROUT
+    jsr hdrOut
     inc emitIdx
     lda emitIdx
     cmp recSize
@@ -399,4 +403,9 @@ NotFound:
 Full:
     sec
     rts
+.endproc
+
+; This routine writes the byte in A through hdrOutVec
+.proc hdrOut
+    jmp (hdrOutVec)
 .endproc
