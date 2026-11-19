@@ -16,6 +16,10 @@ To regenerate after changing a library's `.pas` file:
    (for example `c1541 mkhdr.d81 -read system.hdr system.hdr`).
 4. Rebuild the compiler disk.
 
+Or regenerate them all at once, headless, from WSL in `src/apps/mkhdr`:
+`make TARGET=mega65 checkhdrs` compares each new header with the one here,
+and `make TARGET=mega65 savehdrs` copies them here.
+
 mkhdr can also run without the prompt. Like the compiler, it reads the
 source file name from a SEQ file named `autosrc` if the disk has one. To
 make `sound.hdr` headless, from WSL in `src/apps/mkhdr`:

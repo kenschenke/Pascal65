@@ -43,7 +43,7 @@ SHAREDSRC := backupZeroPage initlib loadfile inittokenizer initparser keybuf \
 	logerror m65hdr loadaddr sourcefn
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
-OBJECTS += $(addprefix $(OBJTARGETDIR)/,$(addsuffix .o,$(SHAREDSRC) hdrtables))
+OBJECTS += $(addprefix $(OBJTARGETDIR)/,$(addsuffix .o,$(SHAREDSRC) hdrtables hdrwrite))
 DEPENDS := $(OBJECTS:.o=.d)
 DEPFLAGS = --create-dep $(@:.o=.dep)
 # ca65 is the Windows build, which names cc65's own headers by Windows
@@ -135,6 +135,16 @@ clean:
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)
+
+# Regenerates every library header and compares it with src/lib/hdr
+# (checkhdrs.sh). savehdrs copies them there instead.
+checkhdrs: all
+	sh checkhdrs.sh
+
+savehdrs: all
+	sh checkhdrs.sh save
+
+.PHONY: checkhdrs savehdrs
 
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'

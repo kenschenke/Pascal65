@@ -43,3 +43,8 @@ HDR_TK_ZERO = $80       ; field is not stored. Written as zero.
 ; Maximum number of records in one header (index table is 5 bytes each)
 HDR_MAX_RECORDS = 3000
 HDR_ENTRY_SIZE = 5
+
+; hdrWrite's errors (hdrwrite.s), in A with the carry set
+HDR_ERR_TOO_MANY  = 1      ; more than HDR_MAX_RECORDS records
+HDR_ERR_NAME_LONG = 2      ; a name of 255 characters or more
+HDR_ERR_INTERNAL  = 3      ; a pointer the first walk missed
