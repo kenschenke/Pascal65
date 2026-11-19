@@ -6,7 +6,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export dumpIcode, memBuf, dumpNewline, dumpChar, printz, dumpFrameName
+.export dumpIcode, dumpUnitIcode, memBuf, dumpNewline, dumpChar, printz, dumpFrameName
 
 .import readInstruction, dumpHex
 
@@ -71,6 +71,12 @@ unitFnLen: .res 1
     lda #0
     sta recording
 
+    ; Fall through to dumpUnits
+.endproc
+
+; This routine dumps the icode file of each unit in unitNames, from
+; unitIdx, and returns the membuf in Q
+.proc dumpUnits
     ; Each unit's: ICODE_UNIT_PREFIX, its name, then ",s,r"
 L1: lda unitIdx
     cmp unitCount
@@ -542,4 +548,29 @@ DN: rts
     dex
     bra :-
 :   rts
+.endproc
+
+; This routine dumps the icode file of the unit named at A/X (16 bits,
+; null-terminated), a unit compiled on its own, which has no program's
+; file. It returns the membuf in Q.
+.proc dumpUnitIcode
+    sta ptr2
+    stx ptr2+1
+    ldy #0
+:   lda (ptr2),y
+    sta unitNames,y
+    beq :+
+    iny
+    cpy #NAME_SIZE-1
+    bne :-
+    lda #0
+    sta unitNames,y
+:   jsr allocMemBuf
+    stq memBuf
+    lda #0
+    sta recording
+    sta unitIdx
+    lda #1
+    sta unitCount
+    jmp dumpUnits
 .endproc

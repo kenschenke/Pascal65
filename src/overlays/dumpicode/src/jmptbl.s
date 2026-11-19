@@ -9,8 +9,9 @@
 ;
 ; parser entry points
 
-.import dumpIcode
+.import dumpIcode, dumpUnitIcode
 
 .segment "JMPTBL"
 
 jmp dumpIcode
+jmp dumpUnitIcode

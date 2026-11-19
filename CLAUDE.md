@@ -360,6 +360,21 @@ features (`RTF_*`) each test must find. The tests in `unitTests`
 the ones that call System routines or use `iclib.pas` (a library) or
 `icunit.pas`. Every `.pas` file in `tests` goes on the disk.
 
+A test whose source is a unit is compiled on its own (unit mode), as a
+unit will be compiled to its TPU. `checkUnitMode` (`runtest.s`) sees the
+root is a unit, and `addMainUnit` puts it at the end of the units list
+after `injectSystemUnit`, so `resolveUnits`, `setUnitOffsets` (from slot
+0) and `typeCheckUnits` treat it as in a program compile; the program's
+own `declResolve`, `setDeclOffsets` and `declTypeCheck` are skipped. It
+must go in after `injectSystemUnit`: the parser gives the first module it
+parses a `Uses` of System, and `injectSystemUnit` gives every unit in the
+list another, which injected System's interface twice and leaked 33
+symbols. icode sees the root is a unit (`writeUnitMode`) and writes only
+the unit's own file, and dumpicode's `dumpUnitIcode` dumps it. A unit's
+code is written with its own symbol table entered (`icodeUnitFile`), in
+either mode, so both write the same: test 46 compiles `Test46` on its
+own, and its dump is the same as `Test46`'s file in test 47's.
+
 `make TARGET=mega65 savedump TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"`
 writes the dump of each selected test to `bin/mega65/dumpN.txt` in place
 of comparing it, for a new test's header. Check every line of it before
@@ -372,8 +387,9 @@ against copies of the icode overlay with probes in them (editortest's
 `bin/mega65/coverage.txt`. The probes don't all fit in the overlay at
 once, so the files are instrumented in sets (`COVFILESn`). A new file
 must go in a set, and a set that no longer fits fails to link and must be
-split. The overlay is near 18.7K, so a set holds only about 230 probes (15
-sets), and `icodeExpr.s` is split at `exprField` (`icodeExpr.s:-exprField`). Like
+split. The overlay is near 18.9K, so a set holds only about 200 probes (17
+sets), and `icodeExpr.s` is split in three at `exprField` and `exprNegate`
+(`icodeExpr.s:-exprField`). Like
 `test`, it needs asmlib built with `MEMCHECK=1`. The lines left are ones
 no program can reach, such as defaults for kinds no caller passes and
 cases the type checker rejects.

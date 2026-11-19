@@ -26,6 +26,7 @@
 .import icodeUnitDeclarations, icodeVariableDeclarations
 .import icodeInitData, icodeWriteData, icodeFreeData, icodeSuppress
 .import writeImports, writeFrames, moduleUnit
+.import units, programOpen, icodeEraseUnitFiles, icodeUnitFile
 
 .import operand1
 
@@ -42,6 +43,7 @@ lblParamDeclInit: .asciiz "dp"
 .bss
 
 astRoot: .res 4
+unitPtr: .res 4             ; for writeUnitMode
 rootStmt: .res 4
 currentLineNumber: .res 2
 icodeLabel: .res 20
@@ -236,9 +238,25 @@ nameIndex: .res 1
     ; Initialize the data segments
     jsr icodeInitData
 
+    ; A unit compiled on its own (unit mode) has only its own file
+    ldq astRoot
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_UNIT
+    bne :+
+    jmp writeUnitMode
+
     ; Open the icode temporary file and write its header, imports and
     ; frames
-    jsr icodeFileOpen
+:   jsr icodeFileOpen
     jsr writeHeader
     ldq astRoot
     jsr writeImports
@@ -332,6 +350,43 @@ nameIndex: .res 1
     jsr icodeFileClose
 
     rts
+.endproc
+
+; This routine writes the icode of a unit compiled on its own, the root
+; in astRoot: only the unit's own file, as a program compile writes it
+; (icodeUnitFile). The compiler apps put the unit in the units list, after
+; the units it uses, so it is resolved, numbered and type checked as in a
+; program compile, and it is found there by its root.
+.proc writeUnitMode
+    lda #0
+    sta programOpen
+    jsr icodeEraseUnitFiles
+    ldq units
+L1: stq unitPtr
+    jsr isQZero
+    beq DN                      ; not in the list: nothing to write
+    stq ptr1
+    ldz #unit::astRoot
+    ldx #0
+:   nop
+    lda (ptr1),z
+    cmp astRoot,x
+    bne NX
+    inz
+    inx
+    cpx #4
+    bne :-
+    ldq unitPtr
+    jsr icodeUnitFile
+DN: jmp icodeFreeData
+NX: ldq unitPtr
+    stq ptr1
+    ldz #unit::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    bra L1
 .endproc
 
 .proc loadStackValue

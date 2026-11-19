@@ -12,7 +12,7 @@
 .include "zeropage.inc"
 .include "4510macros.inc"
 
-.export icodeUnitRoutines
+.export icodeUnitRoutines, icodeUnitFile
 
 .import units, icodeRoutineDeclarations, icodeUnitInit, moduleUnit
 .import icodeUnitFileOpen, icodeUnitFileClose, writeUnitHeader
@@ -23,14 +23,13 @@
 .bss
 
 thisUnit: .res 4
+fileUnit: .res 4
 
 .code
 
-; This routine writes each Pascal unit's icode file: its header, imports
-; and frames, its init block (icodeUnitInit), its routines, its data
-; segments and EOM. A library has no code. It runs while the program's
-; file is written, in the program's scope, and leaves that file the
-; output.
+; This routine writes each Pascal unit's icode file (icodeUnitFile). A
+; library has no code. It runs while the program's file is written, in the
+; program's scope, and leaves that file the output.
 .proc icodeUnitRoutines
     ldq units
     stq thisUnit
@@ -57,21 +56,56 @@ L1: ldq thisUnit
     lda (ptr1),z
     bne NX
 
-    ; The unit's own file
     ldq thisUnit
+    jsr icodeUnitFile
+
+NX: ldq thisUnit
+    stq ptr1
+    ldz #unit::next
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq thisUnit
+    bra L1
+.endproc
+
+; This routine writes the icode file of the Pascal unit in Q: its header,
+; imports and frames, its init block (icodeUnitInit), its routines, its
+; data segments and EOM. Its code is written in its own scope, the unit's
+; symbol table, on top of the program's or, compiling the unit on its own
+; (icodeWriteX), of the global scope, so both compiles write the same.
+.proc icodeUnitFile
+    stq fileUnit
     stq moduleUnit
     jsr icodeUnitFileOpen
     jsr icodeKeepFeatures
     jsr icodeKeepData
-    ldq thisUnit
+    ldq fileUnit
     jsr writeUnitHeader
     jsr writeImports
     jsr writeFrames
 
-    ldq thisUnit
+    ; The unit's scope
+    ldq fileUnit
+    stq ptr1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #decl::symtab
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr scopeEnterSymtab
+
+    ldq fileUnit
     jsr icodeUnitInit
 
-    ldq thisUnit
+    ldq fileUnit
     stq ptr1
     ldz #unit::astRoot
     neg
@@ -91,6 +125,7 @@ L1: ldq thisUnit
     nop
     lda (ptr1),z
     jsr icodeRoutineDeclarations
+    jsr scopeExit
 
     jsr icodeWriteData
     jsr icodeWriteEom
@@ -103,14 +138,5 @@ L1: ldq thisUnit
     tay
     taz
     stq moduleUnit
-
-NX: ldq thisUnit
-    stq ptr1
-    ldz #unit::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq thisUnit
-    jmp L1
+    rts
 .endproc

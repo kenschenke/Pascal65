@@ -1,0 +1,113 @@
+(* Test 47 - A program that uses the unit of test 46
+HDR PRG test 0 200 0
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+IMP UNIT icunit
+IMP LIB iclib 6
+   RRVVVR
+IMP UNIT test46
+FRM icunit 1
+FRM iclib 3
+FRM test46 3
+UIC LBL icunit.0
+PSH IWU 0
+SSP LBL iclib.2
+PSH ILS 0
+SSP LBL iclib.3
+NEW IWS 4
+DIR LBL xxxxx
+SSP LBL iclib.4
+UIC LBL test46.0
+BRA LBL xxxxx
+LOC LBL xxxxx
+PUF IBS 2 LBL xxxxx
+PSH IBS 2
+ASF IBS 2
+JSR LBL test46.4 IBS 2 IBS 0
+LOC LBL xxxxx
+POP
+POF IBS 0 IBS 0
+PSH VDR 4 1 1 test46
+PSH IBS 1
+ADD IBS 4 IBS 2 IBS 4
+PSH VDW 4 1 1 test46
+SET IBS 4 IBS 4
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 4
+EOM IBU 0
+HDR UNIT icunit 0 0 1
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+LOC LBL icunit.0
+PSH IWU 0
+UIR
+LOC LBL icunit.3
+PSH VDR 4 1 0
+PSH VDR 4 2 0
+ADD IBS 4 IBS 4 IBS 4
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+RTS
+EOM IBU 0
+HDR UNIT test46 0 0 3
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+IMP UNIT icunit
+IMP LIB iclib 6
+   RRVVVR
+FRM icunit 1
+FRM iclib 3
+LOC LBL test46.0
+PSH IWU 0
+PSH IWU 0
+NEW IWS 4
+DIR LBL test46.3
+UIR
+LOC LBL test46.4
+PSH VDR 4 1 1
+PSH VDR 4 2 0
+ADD IBS 4 IBS 4 IBS 4
+PSH VDW 4 1 1
+SET IBS 4 IBS 4
+PSH VDR 4 1 0 icunit
+PSH VDW 4 1 0
+SET IBS 4 IBS 4
+PUF IBS 2 LBL xxxxx
+PSH VDR 4 2 0
+ASF IBS 2
+JSR LBL icunit.3 IBS 2 IBS 0
+LOC LBL xxxxx
+POP
+POF IBS 0 IBS 0
+PSH VDR 4 1 1
+PSH VDW 4 1 0 iclib
+SET IBS 4 IBS 4
+PUF IBS 2 LBL xxxxx
+PSH VDR 4 2 0
+ASF IBS 2
+JSR LBL iclib.5 IBS 2 IBS 1
+LOC LBL xxxxx
+POP
+POF IBS 0 IBS 0
+PSH VDR 4 2 0
+PSH VDR 14 1 2
+SET IBS 4 IBS 4
+RTS
+DAT IBU 2 LBL test46.3
+   heap offset: 0
+   rec size: 4
+EOM IBU 0
+*)
+
+// Test46's file here must be the same as test 46's, where the unit is
+// compiled on its own.
+
+Program Test;
+
+Uses Test46;
+
+Begin
+  Bump(2);
+  Count := Count + 1;
+End.

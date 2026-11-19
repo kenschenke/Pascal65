@@ -17,6 +17,7 @@
 
 .export icodeFileOpen, icodeFileClose, icodeWriteInstruction, writeOperand
 .export icodeFileEraseX, icodeSuppress, icodeUnitFileOpen, icodeUnitFileClose
+.export icodeEraseUnitFiles, programOpen
 
 .import operand1, operand2, operand3, units
 
@@ -29,6 +30,7 @@ icodeSuppress: .res 1
 unitFn: .res 24              ; a unit's icode file name, then ",s,w"
 unitFnLen: .res 1
 eraseUnit: .res 4
+programOpen: .res 1        ; non-zero while the program's file is open
 
 .data
 
@@ -73,12 +75,16 @@ L1: ldx DEVNUM
     jsr SETNAM
     ; Open the file and set output channel
     jsr OPEN
+    lda #1
+    sta programOpen
     ldx #1
     jsr CHKOUT
     rts
 .endproc
 
 .proc icodeFileClose
+    lda #0
+    sta programOpen
     lda #1
     jsr CLOSE
     jsr CLRCHN
@@ -394,11 +400,14 @@ L2: ldz tmp1
 .endproc
 
 ; This routine closes the unit's icode file and makes the program's the
-; output again
+; output again, if it's open. Compiling a unit on its own, it isn't.
 .proc icodeUnitFileClose
     lda #3
     jsr CLOSE
-    ldx #1
+    lda programOpen
+    bne :+
+    jmp CLRCHN
+:   ldx #1
     jmp CHKOUT
 .endproc
 

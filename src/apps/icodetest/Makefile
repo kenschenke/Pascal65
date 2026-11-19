@@ -186,45 +186,48 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 COVTOOLS := ../editortest/cov
 COVMAP := 14848
 COVSIZE := 512
-COVSETS := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+COVSETS := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
 COVSET ?= 1
 # Expressions, to exprField (icodeExpr.s is too big for one set)
-COVFILES1 := icodeExpr.s:-exprField getExprType.s getExprTypeKind.s \
-	setIcodeUnitsList.s icodeVar.s
-# Array initializers and loops
-COVFILES2 := icodeArrayInit.s icodeOper.s icodeRepeatStmt.s \
-	icodeWhileStmt.s
-# Standard routines and if statements
-COVFILES3 := icodeStdRoutineCall.s icodeIfStmt.s
-# Records and case statements
-COVFILES4 := icodeRecordInit.s icodeCaseStmt.s
+COVFILES1 := icodeExpr.s:-exprField getExprType.s setIcodeUnitsList.s
+# Array initializers
+COVFILES2 := icodeArrayInit.s
+# Standard routines
+COVFILES3 := icodeStdRoutineCall.s
+# Records, if statements and operands
+COVFILES4 := icodeRecordInit.s icodeIfStmt.s icodeOper.s
 # Literals and values
 COVFILES5 := addEmbeddedArrayOrRecord.s icodeValue.s \
-	addScalarArrayLiterals.s addStringArrayLiterals.s
+	addScalarArrayLiterals.s
 # Subroutine calls, for loops and math
 COVFILES6 := icodeDecIncCall.s icodeDeclaredSubroutineCall.s \
 	icodeForLoop.s icodeIntOrRealMath.s
 # The file's header, imports and frames
 COVFILES7 := icodeWrite.s icodeImports.s icodeFrames.s
-# Expressions, from exprField
-COVFILES8 := icodeExpr.s:exprField-
+# Expressions, exprField and exprName
+COVFILES8 := icodeExpr.s:exprField-exprNegate
 # Routine calls
 COVFILES9 := icodeRoutineCall.s
-# Variable declarations and units
-COVFILES10 := icodeVariableDeclarations.s icodeUnitDeclarations.s \
-	icodeUnitRoutines.s
-# Comparisons and the files
-COVFILES11 := icodeCompExpr.s icodeFile.s
-# Data and Read
-COVFILES12 := icodeData.s icodeReadReadlnCall.s
-# Cleanup, routine declarations and statements
+# Variable declarations
+COVFILES10 := icodeVariableDeclarations.s
+# Comparisons, the files and units' files
+COVFILES11 := icodeCompExpr.s icodeFile.s icodeUnitRoutines.s
+# Data, Read, variables and expression types
+COVFILES12 := icodeData.s icodeReadReadlnCall.s icodeVar.s \
+	getExprTypeKind.s
+# Cleanup, routine declarations, statements and while loops
 COVFILES13 := icodeRoutineCleanup.s icodeRoutineDeclarations.s \
-	icodeRoutineParamsCleanup.s icodeStmts.s
+	icodeRoutineParamsCleanup.s icodeStmts.s icodeWhileStmt.s
 # Entries, subroutine calls and library calls
 COVFILES14 := icodeExports.s icodeSubroutineCall.s \
 	icodeLibrarySubroutineCall.s
 # Write and routine declarations
 COVFILES15 := icodeWriteWritelnCall.s icodeRoutineDeclaration.s
+# Case and repeat statements, string literals and units' declarations
+COVFILES16 := icodeCaseStmt.s icodeRepeatStmt.s addStringArrayLiterals.s \
+	icodeUnitDeclarations.s
+# Expressions, from exprNegate
+COVFILES17 := icodeExpr.s:exprNegate-
 
 ICODESRCDIR := $(ICODEDIR)/src
 ICODESOURCES := $(wildcard $(ICODESRCDIR)/*.s)

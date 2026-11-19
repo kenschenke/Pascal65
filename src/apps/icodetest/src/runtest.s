@@ -65,6 +65,9 @@ lineNumber: .res 2
 foundDiff: .res 1
 unitList: .res 4
 isResolvingUnits: .res 1
+unitMode: .res 1            ; non-zero if the source is a unit (on its own)
+unitName: .res 13           ; its name
+lastUnit: .res 4
 
 .data
 
@@ -108,6 +111,8 @@ expectedFeatures:
     .byte RTF_DYNARRAYS                             ; 43
     .byte 0                                         ; 44
     .byte 0                                         ; 45
+    .byte 0                                         ; 46
+    .byte 0                                         ; 47
 
 .code
 
@@ -181,6 +186,7 @@ expectedFeatures:
     stx stackSize+1
     jsr getParserRuntimeMode
     sta runtimeMode
+    jsr checkUnitMode
 
     ; Check the error count
     lda errorCount
@@ -226,15 +232,35 @@ expectedFeatures:
     jsr initScopeStack
     jsr initStandardRoutines
     jsr injectSystemUnit
-    lda #0
+    lda unitMode
+    beq :+
+    jsr addMainUnit
+    ldq unitList
+    jsr setResolverUnitsList
+:   lda #0
     sta isResolvingUnits
     plp
-    bcc :+
-    lda #1
+    bcs RU
+    lda unitMode                ; a unit compiled on its own resolves them
+    beq :+
+RU: lda #1
     sta isResolvingUnits
     jsr resolveUnits
 
-:   ldq astRoot
+    ; In unit mode the unit is in the units list, and was resolved with
+    ; them. There's no program: the units' slots are numbered from 0.
+:   lda unitMode
+    beq PR
+    lda #0
+    sta globalSlots
+    sta globalSlots+1
+    tax
+    jsr setUnitOffsets
+    jsr getResolverUnitsList
+    stq unitList
+    jmp RD
+
+PR: ldq astRoot
 
     jsr pushQ
     jsr pushQZero
@@ -258,6 +284,7 @@ expectedFeatures:
     jsr verifyFwdDeclarations
     jsr getResolverUnitsList
     stq unitList
+RD:
 
     ; Show the AST tree
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -292,8 +319,11 @@ expectedFeatures:
     ldx #>strTypeChecking
     jsr printLine
     jsr initTypeCheck
+    lda unitMode                ; a unit is type checked with the units
+    bne :+
     ldq astRoot
     jsr declTypeCheck
+:
 
     ; Type check the units, as the compiler does, if they were resolved
     lda isResolvingUnits
@@ -370,15 +400,25 @@ expectedFeatures:
     ldx #>strDumping
     jsr printLine
     jsr initDumpIcode
-    jsr dumpIcode
-    stq icodeBuf
+    lda unitMode
+    beq :+
+    lda #<unitName              ; only the unit's own file
+    ldx #>unitName
+    jsr dumpUnitIcode
+    bra :++
+:   jsr dumpIcode
+:   stq icodeBuf
 
     ; Erase the temporary icode file
     jsr initIcode
     jsr icodeFileErase
 
+    ; In unit mode the root is the unit's, which freeUnits frees
+    lda unitMode
+    bne :+
     ldq astRoot
     jsr astFree
+:
 
     jsr freeUnits
 
@@ -897,4 +937,98 @@ L1: ldq icodeBuf
     inx
     phx
     bra L1
+.endproc
+
+; This routine sets unitMode if the source parsed into astRoot is a unit,
+; compiled on its own as the compiler will compile a unit to its TPU, and
+; keeps its name in unitName.
+.proc checkUnitMode
+    lda #0
+    sta unitMode
+    ldq astRoot
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_UNIT
+    beq :+
+    rts
+:   inc unitMode
+
+    ; Its name, which unitCreate takes from 16-bit memory
+    ldz #decl::name
+    ldx #0
+:   nop
+    lda (ptr1),z
+    sta unitName,x
+    beq :+
+    inz
+    inx
+    cpx #12
+    bne :-
+    lda #0
+    sta unitName,x
+
+:   rts
+.endproc
+
+; This routine puts the unit compiled on its own at the end of the units
+; list, after the units its Uses add, so the resolver, the type checker
+; and icode treat it as in a program compile (orderUnits puts it after the
+; units it uses). It runs after injectSystemUnit: the parser gave the unit
+; a Uses of System, as it gives the first module it parses, and
+; injectSystemUnit gives every unit in the list another, which injected
+; System's interface twice and leaked the first copy's symbols.
+.proc addMainUnit
+    lda #<unitName
+    ldx #>unitName
+    jsr unitCreate
+    stq ptr1
+    ldz #unit::astRoot
+    ldx #0
+:   lda astRoot,x
+    nop
+    sta (ptr1),z
+    inz
+    inx
+    cpx #4
+    bne :-
+
+    ; At the end of the list
+    ldq unitList
+    jsr isQZero
+    bne :+
+    ldq ptr1
+    stq unitList
+    rts
+:   stq lastUnit
+L1: ldq lastUnit
+    stq ptr2
+    ldz #unit::next
+    neg
+    neg
+    nop
+    lda (ptr2),z
+    jsr isQZero
+    beq L2
+    stq lastUnit
+    bra L1
+L2: ldq lastUnit
+    stq ptr2
+    ldz #unit::next
+    ldx #0
+:   lda ptr1,x
+    nop
+    sta (ptr2),z
+    inz
+    inx
+    cpx #4
+    bne :-
+    rts
 .endproc
