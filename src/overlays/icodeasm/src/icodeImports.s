@@ -10,9 +10,10 @@
 ; writeImports routine
 ;
 ; The icode file's imports table follows its header (icode.inc). It lists
-; each library the program uses, in its Uses order, with the kinds of its
-; jump table's slots in order: its init and cleanup, then a routine or
-; variable for each of its interface's entries (icodeExports.s). The code
+; each library the program or any of its units uses, in the units list's
+; order, with the kinds of its jump table's slots in order: its init and
+; cleanup, then a routine or variable for each of its interface's entries
+; (icodeExports.s). The code
 ; names a slot by the library and its number ("name.N"), so the table
 ; needs no labels. Code generation calls each library's init and cleanup
 ; (slots 0 and 1) and copies each entry into the object file, where the
@@ -30,12 +31,11 @@
 
 .export writeImports
 
-.import findUnit, entryStart, entryNext, entryNum
+.import units, entryStart, entryNext, entryNum
 
 .bss
 
-firstDecl: .res 4           ; the program's first declaration
-usesDecl: .res 4            ; the Uses declaration being looked at
+thisUnit: .res 4            ; the unit being looked at
 unitName: .res 4
 libRoot: .res 4             ; the library's AST root
 libCount: .res 1
@@ -47,23 +47,11 @@ label: .res 24
 .code
 
 ; This routine writes the imports table to the current output: the count,
-; then each library the program uses. The AST root is in Q.
+; then each library. The libraries come from the units list, so a
+; library that only a unit uses is there too. Their order is
+; the order the parser met each unit, so the program's own libraries are in
+; its Uses order, and those only units use come after them.
 .proc writeImports
-    ; The first declaration of the program's code block
-    stq ptr1
-    ldz #decl::code
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
-    ldz #stmt::decl
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq firstDecl
-
     ; Count them, then write them
     lda #0
     sta writing
@@ -74,32 +62,18 @@ label: .res 24
     ; Fall through
 .endproc
 
-; This routine counts the libraries in the program's Uses declarations in
-; libCount, or writes each one.
+; This routine counts the libraries in the units list in libCount, or
+; writes each one.
 .proc walkUses
     lda #0
     sta libCount
-    ldq firstDecl
-L1: stq usesDecl
+    ldq units
+L1: stq thisUnit
     jsr isQZero
     bne :+
     rts
 
-:   stq ptr1
-    ldz #decl::kind
-    nop
-    lda (ptr1),z
-    cmp #DECL_USES
-    bne NX
-
-    ldq ptr1
-    ldz #decl::name
-    jsr calcNamePtr
-    stq unitName
-    jsr findUnit
-    jsr isQZero
-    beq NX
-
+:   stq unitName            ; unit::name is its first member
     stq ptr1
     ldz #unit::astRoot
     neg
@@ -122,9 +96,9 @@ L1: stq usesDecl
     beq NX
     jsr writeLibrary
 
-NX: ldq usesDecl
+NX: ldq thisUnit
     stq ptr1
-    ldz #decl::next
+    ldz #unit::next
     neg
     neg
     nop
@@ -200,16 +174,3 @@ NX: ldq usesDecl
 :   rts
 .endproc
 
-
-; This routine adds the offset in Z to the pointer in A/X/Y and returns the
-; sum in Q (as calcNamePtr in codegenasm).
-.proc calcNamePtr
-    stz intOp32
-    ldz #0
-    stz intOp32+1
-    stz intOp32+2
-    stz intOp32+3
-    clc
-    adcq intOp32
-    rts
-.endproc

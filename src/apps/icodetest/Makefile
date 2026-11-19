@@ -207,7 +207,7 @@ COVFILES6 := icodeDecIncCall.s icodeDeclaredSubroutineCall.s \
 	icodeForLoop.s icodeIntOrRealMath.s icodeRoutineCleanup.s \
 	icodeRoutineDeclarations.s icodeRoutineParamsCleanup.s icodeStmts.s
 # The file's header, imports, frames and entries
-COVFILES7 := icodeWrite.s icodeImports.s findUnit.s icodeExports.s \
+COVFILES7 := icodeWrite.s icodeImports.s icodeExports.s \
 	icodeFrames.s icodeSubroutineCall.s
 # Expressions, from exprField, and Write
 COVFILES8 := icodeExpr.s:exprField- icodeWriteWritelnCall.s

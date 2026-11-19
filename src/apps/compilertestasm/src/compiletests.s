@@ -70,6 +70,7 @@ strSubrange: .asciiz "subrange"
 strUnitInit: .asciiz "unitinit"
 strUnitRefs: .asciiz "unitrefs"
 strUnitUses: .asciiz "unituses"
+strUnitLib: .asciiz "unitlib"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
@@ -102,6 +103,9 @@ TESTSET = 0
 
 tests:
 .if TESTSET = 0 || TESTSET = 1
+    ; A library only a unit uses. First, so adding it changed no other
+    ; program's chain target.
+    .byte .lobyte(strUnitLib), .hibyte(strUnitLib)
     ; A unit used by the program and by another unit. First, so adding it
     ; changed no other program's chain target.
     .byte .lobyte(strUnitUses), .hibyte(strUnitUses)

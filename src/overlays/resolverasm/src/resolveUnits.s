@@ -16,7 +16,7 @@
 
 .export resolveUnits
 
-.import units, declResolve
+.import units, declResolve, orderUnits
 
 .bss
 
@@ -24,7 +24,9 @@ currentUnit: .res 4
 
 .code
 
+; This routine resolves each unit, after the units it uses (orderUnits)
 .proc resolveUnits
+    jsr orderUnits
     ldq units
     stq currentUnit
 

@@ -30,7 +30,7 @@ TARGET := mega65
 # on one disk image. A set's disk also needs room for the files its tests
 # write (filetesta and filetestb in set 2).
 TESTSETS := 1 2 3
-FIRSTTEST1 := unituses
+FIRSTTEST1 := unitlib
 FIRSTTEST2 := subtract
 FIRSTTEST3 := dynarraya
 # Programs are built for the dynamic runtime unless they say
@@ -59,9 +59,9 @@ PRGSUMS = prgsums/set$(TESTSET).txt
 # which need the room for the programs they compile and the files their
 # tests write (set 2's file tests hang on a full disk).
 comma := ,
-# Set 1's own sources. unituses and unitrefs were each added as the set's
-# first program, so no program's chain target changed.
-SET1PAS = unituses uusea uuseb unitrefs urefs
+# Set 1's own sources. unitlib, unituses and unitrefs were each added as
+# the set's first program, so no program's chain target changed.
+SET1PAS = unitlib ulib unituses uusea uuseb unitrefs urefs
 ifeq ($(filter $(TESTSET),2 3),)
 SET1WRITE = $(foreach t,$(SET1PAS), \
 	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)

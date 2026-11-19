@@ -53,7 +53,7 @@
 
 .import runTest
 
-NUM_TESTS = 44
+NUM_TESTS = 45
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"
@@ -121,4 +121,4 @@ NO: clc
 
 ; The tests that resolve units, ending with 0. They call System routines
 ; or use a unit.
-unitTests: .byte 27, 32, 34, 35, 36, 38, 39, 43, 44, 0
+unitTests: .byte 27, 32, 34, 35, 36, 38, 39, 43, 44, 45, 0
