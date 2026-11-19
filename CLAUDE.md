@@ -397,7 +397,10 @@ cases the type checker rejects.
 
 A unit's variables are level 1 slots after the program's, unit by unit in
 the units list's order. The resolver numbers them in that order
-(`setUnitOffsets.s`). `setDeclOffsets` skips a `DECL_USES` entry, so the
+(`setUnitOffsets.s`). Within a unit the interface's come first, then the
+implementation's (`setDeclOffsets.s`, and `unitVariables` pushes them so),
+so a program that has only a unit's interface (its TPU) numbers them the
+same. `setDeclOffsets` skips a `DECL_USES` entry, so the
 offsets come from that one pass. A library's variables are pushed by the
 program's startup. A Pascal unit's are pushed by its own init block
 (`icodeUnitInit`): `LOC`, the variables, then `UIR`, written before the

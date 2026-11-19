@@ -18,7 +18,7 @@ DIR LBL xxxxx
 SSP LBL iclib.4
 BRA LBL xxxxx
 LOC LBL xxxxx
-PSH VDR b 1 2 icunit2
+PSH VDR b 1 1 icunit2
 PSH IBS 2
 AIX IBS 2
 MEM IBS 4
@@ -35,20 +35,17 @@ HDR UNIT icunit2 0 0 3
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 LOC LBL icunit2.0
-NEW IWS 4
-DIR LBL xxxxx
 SST STR hi
 NEW IWS a
 DIA LBL icunit2.3
+NEW IWS 4
+DIR LBL xxxxx
 UIR
 LOC LBL icunit2.4
 PSH IBS 1
-PSH VDR 14 1 0
+PSH VDR 14 1 2
 SET IBS 4 IBS 2
 RTS
-DAT IBU 2 LBL xxxxx
-   heap offset: 0
-   rec size: 4
 DAT IBU 0 LBL xxxxx
    05 00 06 00 
 DAT IBU 5 LBL icunit2.3
@@ -60,6 +57,9 @@ DAT IBU 5 LBL icunit2.3
    elem label: 
    literals: xxxxx
    num literals: 2
+DAT IBU 2 LBL xxxxx
+   heap offset: 0
+   rec size: 4
 EOM IBU 0
 *)
 

@@ -133,10 +133,12 @@ NX: ldq thisUnit
     stq ptr1
 
     ; A unit's variables are never freed, like the program's, so nothing
-    ; is recorded for cleanup (no localVars storage).
+    ; is recorded for cleanup (no localVars storage). The interface's are
+    ; pushed first, then the implementation's, the order the resolver
+    ; numbers them in (setDeclOffsets.s).
     jsr pushQZero           ; localVars
     jsr pushQZero           ; localDecls
-    ldz #stmt::decl
+    ldz #stmt::interfaceDecl
     neg
     neg
     nop
@@ -148,7 +150,7 @@ NX: ldq thisUnit
     jsr pushQZero               ; localDecls
     ldq stmtPtr
     stq ptr1
-    ldz #stmt::interfaceDecl
+    ldz #stmt::decl
     neg
     neg
     nop

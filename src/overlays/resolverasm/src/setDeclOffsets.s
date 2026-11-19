@@ -173,12 +173,14 @@ L9: jsr popA
     nop
     lda (ptr2),z
     stq ptr3                ; stmt block in ptr3
-    ldz #stmt::decl
+    ; The interface's slots come first, then the implementation's. An
+    ; importer that has only the interface (a TPU's) numbers it the same.
+    ldz #stmt::interfaceDecl
     neg
     neg
     nop
     lda (ptr3),z
-    stq ptr4                ; first block declaration in ptr4
+    stq ptr4                ; first interface declaration in ptr4
     ; Get current offset and store in tmp1/tmp2
     ldz #startingOffset
     nop
@@ -194,7 +196,7 @@ L9: jsr popA
     lda (stackPointer),z
     sta tmp3
     inc tmp3
-    ; Call setDeclOffset for stmt block
+    ; Call setDeclOffset for the interface
     ldq ptr3
     jsr pushQ               ; save stmt block for next call
     ldq ptr4
@@ -214,7 +216,7 @@ L9: jsr popA
     lda (stackPointer),z
     sta tmp3
     inc tmp3
-    ldz #stmt::interfaceDecl
+    ldz #stmt::decl             ; then the implementation
     neg
     neg
     nop
