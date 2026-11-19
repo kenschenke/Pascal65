@@ -26,7 +26,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-NUM_TESTS = 46
+NUM_TESTS = 48
 
 .export runErrorTests
 .import testFail
@@ -100,6 +100,8 @@ errors: .byte $0c, $00, errMultiDimDynArray, 1  ; Array of a dynamic type
         .byte $07, $00, errInvalidIndexType, 1  ; Enumeration index in place
         .byte $0a, $00, errUndefinedIdentifier, 1 ; End of 300 literals
         .byte $16, $00, errUndefinedIdentifier, 2 ; End of 150 Writeln args
+        .byte $23, $00, errTooManyVariables, 1 ; 257 globals
+        .byte $25, $00, errTooManyVariables, 1 ; 257 slots in a routine
 
 strFnPrefix: .asciiz "error"
 strFnSuffix: .asciiz ".pas"

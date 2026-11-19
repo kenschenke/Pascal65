@@ -20,8 +20,12 @@
 
 .bss
 
+; CBM filenames are at most 16 characters (error.s in asmlib)
+MAX_FILENAME_LENGTH = 16
+
 offset: .res 2
 unit: .res 4
+savedFilename: .res MAX_FILENAME_LENGTH+1
 
 .code
 
@@ -30,15 +34,32 @@ unit: .res 4
     sta offset
     stx offset+1
 
-    ldq units
+    ; A unit's errors (errTooManyVariables) are in its own file. Keep the
+    ; caller's to put back.
+    jsr getCompilerFilename
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    sta savedFilename,y
+    beq :+
+    iny
+    cpy #MAX_FILENAME_LENGTH
+    bne :-
+    lda #0
+    sta savedFilename,y
+
+:   ldq units
     stq unit
 
 L1: ldq unit
     jsr isQZero
     beq L2
+    jsr setCompilerUnitFilename
 
     ; The unit's first slot. icode makes its level 1 offsets relative to
     ; it, and the linker adds it back (LINKADDR_FRAME).
+    ldq unit
     stq ptr1
     ldz #unit::firstSlot
     lda offset
@@ -94,7 +115,10 @@ L1: ldq unit
     ; A unit's table holds the variables of the units it uses (injectUnit).
     ; They get their levels and offsets as the program's do, once every
     ; unit is numbered. Without it they were level 0, offset 0.
-L2: ldq units
+L2: lda #<savedFilename
+    ldx #>savedFilename
+    jsr setCompilerFilename
+    ldq units
 L3: stq unit
     jsr isQZero
     beq DN

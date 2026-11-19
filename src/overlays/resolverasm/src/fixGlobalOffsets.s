@@ -25,6 +25,8 @@ symtabOffset = 0
 
 name: .res 4
 currentUnit: .res 4
+leftNode: .res 4
+rightNode: .res 4
 
 .code
 
@@ -39,6 +41,11 @@ currentUnit: .res 4
 ; it updates the offset and level.
 ;
 ; Input: unit astRoot in Q
+;
+; A table whose names were added in order is a chain as long as the table,
+; so the walk keeps the nodes still to visit on the runtime stack, not in
+; calls: a recursive walk on a long chain ran out of CPU stack. A zero
+; below them marks the end.
 .proc fixGlobalOffsets
     stq ptr1
     ldz #decl::symtab
@@ -46,18 +53,22 @@ currentUnit: .res 4
     neg
     nop
     lda (ptr1),z
-    ; Fall through to fixGlobalOffset
-.endproc
-
-; Symbol table node at top of runtime stack
-.proc fixGlobalOffset
     jsr isQZero
     bne :+
     rts
-
-:   stq ptr1
+:   stq name
+    jsr pushQZero           ; the end marker
+    ldq name
     jsr pushQ
-    ldz #TREENODE::data
+
+    ; The node on top of the stack
+L1: jsr loadSymtab
+    ldq ptr1
+    jsr isQZero
+    bne :+
+    jmp popQ                ; the end marker
+
+:   ldz #TREENODE::data
     neg
     neg
     nop
@@ -67,7 +78,7 @@ currentUnit: .res 4
     neg
     neg
     nop
-    lda (ptr1),z ; <--
+    lda (ptr1),z
     stq ptr2
     ldz #decl::type
     neg
@@ -75,44 +86,51 @@ currentUnit: .res 4
     nop
     lda (ptr2),z
     jsr isQZero
-    beq L1
+    beq L2
 
     ldz #type::kind
     nop
     lda (ptr2),z
     cmp #TYPE_FUNCTION
-    beq L1
+    beq L2
     cmp #TYPE_PROCEDURE
-    beq L1
+    beq L2
     ldz #symbol::offset
     nop
     lda (ptr1),z
-    bne L1
+    bne L2
     ldz #symbol::level
     nop
     lda (ptr1),z
-    bne L1
+    bne L2
 
     jsr fixOffsets
 
-L1: jsr loadSymtab
+    ; Replace the node with its children
+L2: jsr loadSymtab
     ldz #TREENODE::left
     neg
     neg
     nop
     lda (ptr1),z
-    jsr fixGlobalOffset
-
-    jsr loadSymtab
+    stq leftNode
     ldz #TREENODE::right
     neg
     neg
     nop
     lda (ptr1),z
-    jsr fixGlobalOffset
-
+    stq rightNode
     jsr popQ
-    rts
+    ldq leftNode
+    jsr isQZero
+    beq :+
+    jsr pushQ
+:   ldq rightNode
+    jsr isQZero
+    bne :+
+    jmp L1
+:   jsr pushQ
+    jmp L1
 .endproc
 
 ; Loop through the units

@@ -109,7 +109,8 @@ errUndefinedLabel = 78          ; the linker can't resolve an import
 errObjFileInvalid = 79          ; the linker can't read the object file
 errLibraryFileInvalid = 80      ; a library file is missing or bad
 errIcodeFileInvalid = 81        ; code generation can't read the icode file
-numParserErrors = 82
+errTooManyVariables = 82        ; a scope has more than 256 slots
+numParserErrors = 83
 
 rteNone = 0
 rteStackOverflow = 1

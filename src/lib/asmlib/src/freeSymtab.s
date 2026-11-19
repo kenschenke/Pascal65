@@ -27,42 +27,65 @@ symPtr: .res 4
 
 .code
 
+; This routine frees a symbol table: each node and its symbol.
+; Input: the root node in Q
+;
+; A table whose names were added in order is a chain as long as the table,
+; so the walk keeps the nodes still to free on the runtime stack, not in
+; calls: a recursive walk on a long chain ran out of CPU stack. A zero
+; below them marks where this call's nodes end, since freeSymbol can
+; free a record's table on the way.
 .proc freeSymtab
-    stq symPtr
     jsr isQZero
     bne :+
     rts
+:   stq symPtr
+    lda #0
+    tax
+    tay
+    taz
+    jsr rtPushQ             ; the end marker
+    ldq symPtr
+    jsr rtPushQ
+
+L1: jsr rtPopQ
+    jsr isQZero
+    bne :+
+    rts                     ; the end marker
+:   stq symPtr
 .ifdef __DEBUG__
-:   jsr isHeapAllocated
+    jsr isHeapAllocated
     bne :+
     ldz #$13
     brk
     rts
-.endif
 :   ldq symPtr
-    stq ptr1
-    jsr rtPushQ
+.endif
 
-    ; LeftChild
+    ; The children, if any, to free after this node
+    stq ptr1
     ldz #TREENODE::left
     jsr loadPtr
-    jsr freeSymtab
-
-    ; RightChild
-    jsr peekQ
+    jsr isQZero
+    beq :+
+    jsr rtPushQ
+:   ldq symPtr
     stq ptr1
     ldz #TREENODE::right
     jsr loadPtr
-    jsr freeSymtab
+    jsr isQZero
+    beq :+
+    jsr rtPushQ
 
-    ; Symbol
+    ; The symbol, then the node
+:   ldq symPtr
+    jsr rtPushQ
     jsr peekQ
     stq ptr1
     ldz #TREENODE::data
     jsr loadPtr
     jsr freeSymbol
-
     jsr rtPopQ
     jsr heapFree
-    rts
+    bra L1
 .endproc

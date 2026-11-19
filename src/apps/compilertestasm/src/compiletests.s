@@ -71,6 +71,7 @@ strUnitInit: .asciiz "unitinit"
 strUnitRefs: .asciiz "unitrefs"
 strUnitUses: .asciiz "unituses"
 strUnitLib: .asciiz "unitlib"
+strSlots256: .asciiz "slots256"
 strDynArrayA: .asciiz "dynarraya"
 strDynArrayB: .asciiz "dynarrayb"
 strDynArrayC: .asciiz "dynarrayc"
@@ -90,6 +91,7 @@ strStereoDemo: .asciiz "stereodemo"
 strHangman: .asciiz "hangman"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
+strTooManyVars: .asciiz "toomanyvars"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -103,6 +105,9 @@ TESTSET = 0
 
 tests:
 .if TESTSET = 0 || TESTSET = 1
+    ; A program and unit that fill all 256 level 1 slots. First, so adding
+    ; it changed no other program's chain target.
+    .byte .lobyte(strSlots256), .hibyte(strSlots256)
     ; A library only a unit uses. First, so adding it changed no other
     ; program's chain target.
     .byte .lobyte(strUnitLib), .hibyte(strUnitLib)
@@ -197,6 +202,9 @@ errorTests:
 .if TESTSET = 0 || TESTSET = 1
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
     .byte errCodeSegmentOverflowDyn
+    ; Its unit's variables need slot 256
+    .byte .lobyte(strTooManyVars), .hibyte(strTooManyVars)
+    .byte errTooManyVariables
 .endif
 .if TESTSET = 2
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)

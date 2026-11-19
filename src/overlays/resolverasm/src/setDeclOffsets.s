@@ -10,6 +10,7 @@
 ; setDeclOffsets routine
 
 .include "ast.inc"
+.include "error.inc"
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
@@ -20,7 +21,7 @@ currentDecl = 3
 
 .export setDeclOffsets
 
-.import findUnit, calcNamePtr
+.import findUnit, calcNamePtr, currentLineNumber, resolverError
 
 ; This routine calculates declaration offsets.
 ; On input on the runtime stack, bottom to top:
@@ -398,8 +399,35 @@ L2: ldz #startingOffset
     lda intOp1+1
     nop
     sta (ptr3),z
+    jsr setLevel
 
-L3: ldz #levelOffset
+    ; A variable operand's offset is one byte, so a scope has at most 256
+    ; slots. The program's and its units' variables are one scope, at
+    ; level 1, so the variable that takes offset 256 may be in a unit.
+    ; Report it once, at that variable.
+    lda intOp1+1
+    cmp #1
+    bne :+
+    lda intOp1
+    bne :+
+    ldz #decl::lineNumber
+    nop
+    lda (ptr1),z
+    sta currentLineNumber
+    inz
+    nop
+    lda (ptr1),z
+    sta currentLineNumber+1
+    lda #errTooManyVariables
+    jmp resolverError
+:   rts
+
+L3: jmp setLevel
+.endproc
+
+; This routine stores the level in the symbol in ptr3
+.proc setLevel
+    ldz #levelOffset
     nop
     lda (stackPointer),z
     ldz #symbol::level

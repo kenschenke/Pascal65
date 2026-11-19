@@ -168,8 +168,20 @@ prgName: .res 17                ; checkExpectedError: the PRG's name
     lda errorCount
     beq :+
 
+    ; A program the compiler must refuse may be refused by the resolver
+    ; (errTooManyVariables). Free it as resolvertest does, then check.
+    lda expectedError
+    bne RE
+
     ; Error - so don't continue
     jmp failTests
+
+RE: jsr scopeExit
+    jsr freeSymtab
+    ldq astRoot
+    jsr astFree
+    jsr freeUnits
+    jmp checkExpectedError
 
     ; Reset the error count
 :   lda #0
@@ -268,7 +280,8 @@ L3: lda #'L'
 .endproc
 
 ; This routine finishes a program the compiler must refuse. It fails the
-; tests unless code generation or the linker reported exactly one error,
+; tests unless the resolver, code generation or the linker reported
+; exactly one error,
 ; expectedError, and left no object file and no PRG.
 .proc checkExpectedError
     lda errorCount

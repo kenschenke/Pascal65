@@ -111,7 +111,11 @@ stage. Array literal elements and routine arguments are chained through
 `expr::right`, so a walk over an expression must follow the right in a
 loop, not a recursive call (`exprResolve`, `freeExpr`, and the argument
 chain in `exprTypeCheck`, which checks each argument on its own with
-`parentIsFuncCall` 2). A hang leaves no
+`parentIsFuncCall` 2). A symbol table is an unbalanced binary tree, so
+names declared in order make a chain as long as the table: `freeSymtab`
+and `fixGlobalOffsets` keep the nodes to visit on the runtime stack, below
+a zero marker, not in calls (resolvertest error test 47 has 258 names in
+order). A hang leaves no
 screen dump. To find one, fill the stack page below SP with a pattern
 before a stage and look for the lowest byte it changed after.
 
@@ -397,7 +401,17 @@ and the linker defines that as the program's slots plus the counts of the
 frames before it (`frames.s` in linkerasm) and adds it to the byte. A unit
 then needs no base it can't know when compiled on its own. dumpicode shows
 the header's count, a `FRM name slots` line for each frame and the frame's
-name after a variable operand; the 256-slot limit isn't checked yet.
+name after a variable operand.
+
+A variable operand's offset is one byte, so a scope has at most 256 slots,
+and level 1 is one scope for the program and all its units. `setVarOffset`
+(`setDeclOffsets.s`) reports `errTooManyVariables` at the variable that
+takes offset 256, once per scope. `setUnitOffsets` reports a unit's in the
+unit's file and puts the caller's file name back. The linker doesn't check
+the frames' sum yet, since today one compile numbers every module; separate
+compilation will need it. resolvertest error tests 47 and 48 and
+compilertestasm's `slots256` (set 1's first program, all 256 slots used)
+and `toomanyvars` (an error test) check this.
 
 In icode, `isRead` 0 asks an expression for the address of what it
 names, to write to or pass by reference, and 1 for its value. The
@@ -437,7 +451,7 @@ built with `MEMCHECK=1`.
 
 `compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from all three. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
-A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. One that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
+A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. The resolver reports some errors (`toomanyvars`), and one that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
 
