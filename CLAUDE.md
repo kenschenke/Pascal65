@@ -458,8 +458,11 @@ and `toomanyvars` (an error test) check this.
 
 `tputest` compiles each `tests/testN.pas` (N to `NUM_TESTS` in
 `runtests.s`), a unit, to its TPU as `compilerasm` does (`runtest.s`),
-using icodetest's loaders and `tokenizeAndParseUnits` and compilerasm's
-`initTpu` (vpath in the Makefile). The header comment holds the dump
+using icodetest's loaders and compilerasm's `initTpu` and
+`tokenizeAndParseUnits` (vpath and a rule of its own in the Makefile).
+The TPUs stay on the disk, so a later test's unit loads an earlier
+test's unit from its TPU: 6 uses test 1's, 7 test 2's (and the units it
+lists) and 8 `TpuCrc`'s, which has no source on the disk. The header comment holds the dump
 dumpicode's `dumpTpu` must make: a `TPU` line (versions, flags, the
 source's CRC as `xxxx` and the interface's CRC), a `USE` line for each
 used unit with its CRC, the interface section's length and record count
@@ -874,6 +877,19 @@ in the format of a library's `.hdr`, so it can be loaded the same way.
 The records hold line numbers, so moving the interface's lines (a comment
 above it) changes its CRC. dumpicode's `dumpTpu` dumps a TPU, and
 `tputest` checks them (see "TPU Tests").
+
+A unit with a TPU is loaded from it in place of its source (`tpuLoad`,
+`tpuload.s`), whether or not the TPU is current (that's Phase 5).
+`tokenizeAndParseUnits` in the compiler apps tries `<unit>.hdr`, then
+`<unit>.tpu` (it loads the overlay only if the file is there), then
+`<unit>.pas`. `tpuLoad` reads the interface with the `.hdr` loader
+(`hdrReadOpen`, which reads from the open file), adds the units the TPU
+lists to the units list, and keeps in the `unit` its interface CRC and
+the slot count from its icode header (`fromTpu`, `tpuSlots`, `ifCrc`).
+The interface's variables come first in a unit's slots, so the resolver
+numbers them from the interface alone, and `setUnitOffsets` ends the
+unit's slots at its TPU's count (`tpuSlotsEnd`). `tpuBegin` gives such a
+unit's recorded CRC to the units that use it.
 
 ## Non-negotiables
 

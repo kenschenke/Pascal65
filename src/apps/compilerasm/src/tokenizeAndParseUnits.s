@@ -14,16 +14,18 @@
 .include "parser.inc"
 .include "zeropage.inc"
 .include "tokenizer.inc"
+.include "tpu.inc"
 .include "4510macros.inc"
 
 .export tokenizeAndParseUnits
 
-.import unitList, initTokenizer, initParser, loadHeader
+.import unitList, initTokenizer, initParser, loadHeader, initTpu
 
 .data
 
 strPas: .asciiz ".pas"
 strHdr: .asciiz "hdr"
+strTpu: .asciiz "tpu"
 
 .bss
 
@@ -31,6 +33,7 @@ any: .res 1
 currentUnit: .res 4
 filename: .res 17               ; unit name, ".pas" and a null
 hdrFilename: .res 17
+extPos: .res 1                  ; where formatHdrFilename put "hdr"
 tokenHeap: .res 4
 
 .code
@@ -54,9 +57,10 @@ L2: ldq currentUnit
     nop
     lda (ptr1),z
     jsr isQZero
-    bne L3
+    beq :+
+    jmp L3
 
-    lda #1
+:   lda #1
     sta any
 
     ldq ptr1
@@ -73,7 +77,27 @@ L2: ldq currentUnit
     jsr storeAstRoot
     jmp L3
 
-:   jsr initTokenizer
+    ; A unit compiled to its TPU: its interface, and the units it uses
+    ; are added to the list (tpuload.s)
+:   jsr formatTpuFilename
+    lda #<hdrFilename
+    ldx #>hdrFilename
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    cmp #0
+    beq PS
+    jsr initTpu
+    ldq unitList
+    jsr pushQ
+    ldq currentUnit
+    jsr tpuLoad
+    bcc PS
+    stq ptr2
+    jsr storeAstRoot
+    jmp L3
+
+PS: jsr initTokenizer
     lda #<filename
     ldx #>filename
     jsr tokenize
@@ -144,7 +168,21 @@ L5: rts
     sec
     sbc #3                      ; back up over "pas"
     tay
+    sty extPos
 :   lda strHdr,x
+    sta hdrFilename,y
+    beq :+
+    iny
+    inx
+    bne :-
+:   rts
+.endproc
+
+; Replace hdrFilename's "hdr" extension with "tpu".
+.proc formatTpuFilename
+    ldy extPos
+    ldx #0
+:   lda strTpu,x
     sta hdrFilename,y
     beq :+
     iny

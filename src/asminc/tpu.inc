@@ -30,6 +30,7 @@ TPU_BASE = $4000
 
 tpuBegin  = TPU_BASE        ; after parsing; see tpu.s
 tpuFinish = TPU_BASE + 3    ; after icode; see tpu.s
+tpuLoad   = TPU_BASE + 6    ; a unit from its TPU; see tpuload.s
 
 TPU_MAGIC0 = $54            ; "TP", as numbers so no charmap changes them
 TPU_MAGIC1 = $50

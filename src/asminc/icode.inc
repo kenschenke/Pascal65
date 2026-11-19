@@ -52,6 +52,7 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
 ICODE_MAGIC1 = $43
 ICODE_VERSION = 5
+ICODE_HDR_SLOTS = 7     ; the header's offset of the level 1 slots
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
 ICODE_IMPORT_LIBRARY = 1

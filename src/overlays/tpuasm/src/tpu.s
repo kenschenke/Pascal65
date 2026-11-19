@@ -60,6 +60,7 @@ copyFrom: .res 4            ; the root makeCopy copies
 copyCode: .res 4            ; for makeCopy
 copyNext: .res 4
 thisUnit: .res 4
+usedRoot: .res 4             ; usedUnit's, kept from walkUsed's declPtr
 declPtr: .res 4
 codePtr: .res 4
 chain: .res 1
@@ -455,7 +456,8 @@ ER: rts
     inx
     bra :-
 
-    ; Its interface CRC, from its root in the units list
+    ; Its interface CRC, from its root in the units list, or the one its
+    ; TPU recorded if it was loaded from it (tpuload.s)
 :   jsr findUnit
     jsr isQZero
     bne :+
@@ -463,7 +465,24 @@ ER: rts
     sta crc
     sta crc+1
     bra WR
-:   jsr interfaceCrc
+:   stq usedRoot
+    ldq thisUnit
+    stq ptr1
+    ldz #unit::fromTpu
+    nop
+    lda (ptr1),z
+    beq :+
+    ldz #unit::ifCrc
+    nop
+    lda (ptr1),z
+    sta crc
+    inz
+    nop
+    lda (ptr1),z
+    sta crc+1
+    bra WR
+:   ldq usedRoot
+    jsr interfaceCrc
     bcc WR
     rts
 WR: lda crc

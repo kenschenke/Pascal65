@@ -16,6 +16,7 @@ ASFLAGS = -I ../../asminc -t c64 --cpu 4510
 
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 SOURCES += $(HDRSHAREDDIR)/hdrwrite.s $(HDRSHAREDDIR)/hdrtables.s
+SOURCES += $(HDRSHAREDDIR)/hdrload.s
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 DEPENDS := $(OBJECTS:.o=.d)
 DEPFLAGS = --create-dep $(@:.o=.dep)

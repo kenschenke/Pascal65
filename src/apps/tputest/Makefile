@@ -11,9 +11,11 @@ RESOLVERDIR := ../../overlays/resolverasm
 TYPECHECKDIR := ../../overlays/typecheckasm
 TPUDIR := ../../overlays/tpuasm
 ASMLIBDIR := ../../lib/asmlib
-# icodetest's loaders and pipeline routines, and compilerasm's initTpu
+# icodetest's loaders and pipeline routines, and compilerasm's initTpu and
+# tokenizeAndParseUnits, which loads a unit from its TPU (tpuload.s)
 ICODETESTSRC := ../icodetest/src
 COMPILERSRC := ../compilerasm/src
+HDRSHAREDDIR := ../../shared/hdr
 
 PROGRAM := tputest
 TARGET := mega65
@@ -47,11 +49,12 @@ BINFILES += $(PRGFILE)
 
 SHARED := freeUnits initdumpicode initicode initlib initparser \
 	initresolver inittokenizer inittypecheck loadaddr loadfile logerror \
-	m65hdr timer tokenizeAndParseUnits
+	m65hdr timer
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 OBJECTS += $(addprefix $(OBJTARGETDIR)/,$(addsuffix .o,$(SHARED)))
-OBJECTS += $(OBJTARGETDIR)/inittpu.o
+OBJECTS += $(OBJTARGETDIR)/inittpu.o $(OBJTARGETDIR)/tokenizeAndParseUnits.o
+OBJECTS += $(OBJTARGETDIR)/hdrload.o $(OBJTARGETDIR)/hdrtables.o
 OBJECTS += $(OBJTARGETDIR)/testresult.o
 DEPENDS := $(OBJECTS:.o=.d)
 DEPFLAGS = --create-dep $(@:.o=.dep)
@@ -116,8 +119,15 @@ $(ASMLIB): FORCE
 
 include ../debug.mk
 
-vpath %.s $(SRCDIR) $(ICODETESTSRC) $(COMPILERSRC) ../testcommon
+vpath %.s $(SRCDIR) $(ICODETESTSRC) $(COMPILERSRC) $(HDRSHAREDDIR) \
+	../testcommon
 $(OBJTARGETDIR)/%.o: %.s $(FLAGSFILE) | $(OBJTARGETDIR)
+	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
+	$(FIXDEP)
+
+# icodetest has its own, which vpath would find first
+$(OBJTARGETDIR)/tokenizeAndParseUnits.o: \
+	$(COMPILERSRC)/tokenizeAndParseUnits.s $(FLAGSFILE) | $(OBJTARGETDIR)
 	ca65 $(ASFLAGS) $(DEPFLAGS) -o $@ $<
 	$(FIXDEP)
 

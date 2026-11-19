@@ -676,4 +676,10 @@ SYMBOL_FLAG_SHAREDTYPE = %00000001
     ; and the units' before it, and how many (setUnitOffsets.s)
     firstSlot .word
     slots .word
+    ; A unit loaded from its TPU (tpuLoad, tpu.s): non-zero, the slots
+    ; its icode header gives (its interface alone doesn't have the
+    ; implementation's) and its interface's CRC
+    fromTpu .byte
+    tpuSlots .word
+    ifCrc .word
 .endstruct

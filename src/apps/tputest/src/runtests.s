@@ -16,13 +16,15 @@
 ;    3: TpuCrc, the unit tests 4 and 5 change
 ;    4: TpuCrc with only its implementation changed
 ;    5: TpuCrc with its interface changed
-;    6: A unit that uses test 1, with test 1's interface CRC
+;    6: A unit that uses test 1, loaded from its TPU
+;    7: A unit that uses a unit loaded from its TPU (test 2's)
+;    8: A unit that uses a unit with only a TPU (test 5's)
 
 .export runTests
 
 .import runTest, clearCrcs
 
-NUM_TESTS = 6
+NUM_TESTS = 8
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"

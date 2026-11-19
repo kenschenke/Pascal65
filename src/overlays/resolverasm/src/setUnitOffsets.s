@@ -81,6 +81,7 @@ L1: ldq unit
     lda #0
     jsr pushA
     jsr setDeclOffsets
+    jsr tpuSlotsEnd
     pha
     phx
 
@@ -141,4 +142,37 @@ L3: stq unit
     bra L3
 
 DN: rts
+.endproc
+
+; A unit loaded from its TPU (tpuload.s) has only its interface, whose
+; variables come first (setDeclOffsets.s). Its slots end where its TPU
+; says: this routine returns its first slot plus its TPU's count in A/X.
+; Any other unit's end, in A/X, is kept.
+.proc tpuSlotsEnd
+    pha
+    phx
+    ldq unit
+    stq ptr1
+    ldz #unit::fromTpu
+    nop
+    lda (ptr1),z
+    bne :+
+    plx
+    pla
+    rts
+:   plx
+    pla
+    ldz #unit::tpuSlots
+    nop
+    lda (ptr1),z
+    clc
+    adc offset
+    pha
+    inz
+    nop
+    lda (ptr1),z
+    adc offset+1
+    tax
+    pla
+    rts
 .endproc

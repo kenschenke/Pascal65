@@ -20,7 +20,7 @@
 
 HDR_FILENUM = 3
 
-.export loadHeader
+.export loadHeader, hdrReadOpen
 
 .import hdrRecSize, hdrFieldFirst, hdrFieldNext, hdrTbl, hdrEntryPtr
 
@@ -69,12 +69,23 @@ rootAddr: .res 4
     rts
 
 :   jsr openInput
-    jsr readPreamble
-    bcc Fail
-    jsr readRecords
+    jsr hdrReadOpen
     php
     jsr closeInput
     plp
+    ldq rootAddr                ; closing changes Q; ldq keeps the carry
+    rts
+.endproc
+
+; Load a header from the current input, which is at its first byte (a
+; TPU's interface section, tpu.s). The input is left open.
+;
+; Returns carry set on success, with the unit's module decl in Q, or
+; carry clear if it is not a valid header of this format version.
+.proc hdrReadOpen
+    jsr readPreamble
+    bcc Fail
+    jsr readRecords
     bcc FailFree
     jsr fixPointers
     bcc FailFree
@@ -102,11 +113,7 @@ rootAddr: .res 4
 FailFree:
     ldq hdrTbl
     jsr heapFree
-    clc
-    rts
-
 Fail:
-    jsr closeInput
     clc
     rts
 .endproc
