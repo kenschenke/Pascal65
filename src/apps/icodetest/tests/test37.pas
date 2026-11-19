@@ -1,5 +1,7 @@
 (* Test 37 - Dereferenced Var arguments and pointer offsets
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IWU 0
 PSH IBS 0
 PSH IWU 0

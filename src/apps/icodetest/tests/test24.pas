@@ -1,5 +1,7 @@
 (* Test 24 - Three level array literal
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 48
 DIA LBL xxxxx
 DIA LBL xxxxx

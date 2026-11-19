@@ -1,5 +1,6 @@
 .include "c64.inc"
 .include "icode.inc"
+.include "linker.inc"
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
@@ -18,6 +19,9 @@ strHdr: .asciiz "HDR "
 strPrg: .asciiz "PRG "
 strUnit: .asciiz "UNIT "
 strBadHdr: .asciiz "BAD HEADER"
+strImpLib: .asciiz "IMP LIB "
+strBadImp: .asciiz "BAD IMPORT"
+strIndent: .asciiz "   "
 
 .bss
 
@@ -25,6 +29,9 @@ memBuf: .res 4
 buf: .res 1
 hdrByte: .res 1
 hdrCount: .res 1
+impLeft: .res 1             ; for dumpImports
+slotsLeft: .res 2
+lineLen: .res 1
 
 .code
 
@@ -50,6 +57,8 @@ hdrCount: .res 1
     jsr CHKIN
 
     jsr dumpHeader
+    bcs L3
+    jsr dumpImports
     bcs L3
 
     ; Loop, reading instructions from the icode
@@ -156,6 +165,97 @@ BD: lda #<strBadHdr
     jsr dumpNewline
     sec
     rts
+.endproc
+
+; This routine dumps the imports table that follows the header. Each
+; library is a line, then its slots' kinds (R for a routine, V for a
+; variable), 64 to a line. The labels are AST addresses, so they aren't
+; shown. A table with no imports dumps nothing. The carry is set if an
+; import isn't a library.
+;    IMP LIB name slotcount
+;       RRVRR...
+.proc dumpImports
+    jsr CHRIN
+    sta impLeft
+
+L1: lda impLeft
+    bne :+
+    clc
+    rts
+:   dec impLeft
+    jsr CHRIN
+    cmp #ICODE_IMPORT_LIBRARY
+    beq :+
+    lda #<strBadImp
+    ldx #>strBadImp
+    jsr printz
+    jsr dumpNewline
+    sec
+    rts
+
+    ; IMP LIB, the name and the slot count
+:   lda #<strImpLib
+    ldx #>strImpLib
+    jsr printz
+    jsr CHRIN
+    sta hdrCount
+:   lda hdrCount
+    beq :+
+    jsr CHRIN
+    jsr dumpChar
+    dec hdrCount
+    bra :-
+:   lda #' '
+    jsr dumpChar
+    jsr CHRIN
+    sta slotsLeft
+    jsr CHRIN
+    sta slotsLeft+1
+    tax
+    lda slotsLeft
+    ldy #0
+    ldz #0
+    jsr dumpHex
+    lda #0
+    sta lineLen
+
+    ; Each slot's kind; its label is skipped
+L2: lda slotsLeft
+    ora slotsLeft+1
+    bne :+
+    jsr dumpNewline
+    jmp L1
+:   lda lineLen
+    bne :+
+    jsr dumpNewline
+    lda #<strIndent
+    ldx #>strIndent
+    jsr printz
+:   jsr CHRIN
+    cmp #OBJLIB_VARIABLE
+    beq :+
+    lda #'R'
+    bra :++
+:   lda #'V'
+:   jsr dumpChar
+    jsr CHRIN               ; the label: its length, then its characters
+    sta hdrCount
+:   lda hdrCount
+    beq :+
+    jsr CHRIN
+    dec hdrCount
+    bra :-
+:   inc lineLen
+    lda lineLen
+    cmp #64
+    bne :+
+    lda #0
+    sta lineLen
+:   lda slotsLeft
+    bne :+
+    dec slotsLeft+1
+:   dec slotsLeft
+    bra L2
 .endproc
 
 .proc dumpNewline

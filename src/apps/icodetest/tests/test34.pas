@@ -1,5 +1,7 @@
 (* Test 34 - System library calls
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH FLT 
 SST ILS 0
 PSH IBS 0

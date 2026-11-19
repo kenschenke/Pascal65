@@ -253,8 +253,6 @@ strEditorFn: .asciiz "pascal65"
     ldx #>strCodeGen
     jsr printLine
     jsr initCodeGen
-    ldq unitList
-    jsr setCodeGenUnitList
     lda loopCode
     cmp #3 ; EDITOR_LOOP_RUN
     bne L1
@@ -266,7 +264,6 @@ L1: lda #0
     tax
     tay
 L2: jsr setCodeGenProgramChain
-    ldq astRoot
     jsr objCodeGen
 
     ldq astRoot

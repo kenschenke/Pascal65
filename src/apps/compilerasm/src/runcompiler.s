@@ -255,13 +255,10 @@ strLinking: .asciiz "Linking"
     ldx #>strCodeGen
     jsr printLine
     jsr initCodeGen
-    ldq unitList
-    jsr setCodeGenUnitList
     lda #0
     tax
     tay
     jsr setCodeGenProgramChain
-    ldq astRoot
     jsr objCodeGen
 
 .ifdef __HEAPPROFILE__

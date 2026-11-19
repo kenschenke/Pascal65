@@ -11,13 +11,13 @@
 
 ; .import icodeWriteX, icodeFileEraseX, setIcodeUnitsList
 
-; The runtime mode and stack size come from the icode file's header and
-; the runtime features from its EOM (icode.inc), not from the compiler apps.
+; Everything else code generation needs comes from the icode file (icode.inc):
+; the runtime mode and stack size and the libraries from its header and
+; imports table, and the runtime features from its EOM.
 
-.import genObjCode, setCodeGenUnitList, setChainProg
+.import genObjCode, setChainProg
 
 .segment "JMPTBL"
 
 jmp genObjCode
-jmp setCodeGenUnitList
 jmp setChainProg

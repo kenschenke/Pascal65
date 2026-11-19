@@ -30,7 +30,6 @@
 
 .bss
 
-astRoot: .res 4
 
 .data
 
@@ -184,9 +183,7 @@ hdrTagsEnd:
 
 ; This routine writes the program header, then the calls to the
 ; libraries' initialization.
-; AST root passed in Q
 .proc writePrgHeader
-    stq astRoot
 
     ; The header's addresses
     ldx #0
@@ -226,6 +223,5 @@ L1: phx
     lda #PRG_HEADER_LENGTH
     jsr incCodeOffset
 
-    ldq astRoot
     jmp initLibraries
 .endproc

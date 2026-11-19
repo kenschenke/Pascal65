@@ -1,5 +1,7 @@
 (* Test 17 - Write, Writeln, Writestr
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IWU 0
 PSH CHR 
 NEW IWS 10

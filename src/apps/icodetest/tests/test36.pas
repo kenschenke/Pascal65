@@ -1,5 +1,7 @@
 (* Test 36 - A unit with code
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 UIC LBL xxxxx
 BRA LBL xxxxx
 LOC LBL xxxxx

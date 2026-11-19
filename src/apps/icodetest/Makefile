@@ -186,7 +186,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 COVTOOLS := ../editortest/cov
 COVMAP := 14848
 COVSIZE := 512
-COVSETS := 1 2 3 4 5 6
+COVSETS := 1 2 3 4 5 6 7
 COVSET ?= 1
 # Expressions
 COVFILES1 := icodeExpr.s getExprType.s getExprTypeKind.s \
@@ -210,6 +210,8 @@ COVFILES6 := icodeDecIncCall.s icodeDeclaredSubroutineCall.s \
 	icodeRoutineCleanup.s icodeRoutineDeclarations.s \
 	icodeRoutineParamsCleanup.s icodeStmts.s icodeSubroutineCall.s \
 	icodeWrite.s
+# The imports table
+COVFILES7 := icodeImports.s findUnit.s
 
 ICODESRCDIR := $(ICODEDIR)/src
 ICODESOURCES := $(wildcard $(ICODESRCDIR)/*.s)

@@ -31,8 +31,9 @@ or record schema. These blocks of data are referenced within the code using a la
 ## File
 
 An intermediate code file holds one module, a program or a unit. It starts
-with a header, which isn't an instruction, followed by the instructions.
-The last instruction is [EOM](../mne/eom). Words are low byte first.
+with a header and an imports table, which aren't instructions, followed by
+the instructions. The last instruction is [EOM](../mne/eom). Words are low
+byte first.
 
 |Offset|Size|Contents                                               |
 |------|----|-------------------------------------------------------|
@@ -47,6 +48,24 @@ The last instruction is [EOM](../mne/eom). Words are low byte first.
 The runtime features the module needs, such as files or trig, are only
 known once its code is written, so they are [EOM](../mne/eom)'s operand
 rather than part of the header.
+
+### Imports
+
+The imports table follows the header. It is a count byte, then each
+library the program uses, in the order of its `Uses` clause:
+
+|Size|Contents                                                        |
+|----|----------------------------------------------------------------|
+|1   |The kind: 1 for a library                                       |
+|1+  |The library's name: its length, then the characters             |
+|2   |The number of slots in the library's jump table                 |
+|    |Each slot: its kind (1 a routine, 2 a variable), then its label |
+
+The first two slots are the library's initialization and cleanup
+routines, then a slot for each routine and variable in its interface, in
+order. The code calls a library routine or uses a library variable by the
+slot's label. The program's code generation calls each library's
+initialization before the program starts and its cleanup after it ends.
 
 ## Operands
 

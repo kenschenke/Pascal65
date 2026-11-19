@@ -1,5 +1,9 @@
 (* Test 35 - A library unit's variables and routines
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+IMP LIB iclib 5
+   RRVVR
 PSH IWU 0
 SSP LBL xxxxx
 PSH ILS 0

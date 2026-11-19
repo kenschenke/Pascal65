@@ -1,5 +1,7 @@
 (* Test 42 - The header from the directives and the name
 HDR PRG headername 1 3e8
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 BRA LBL xxxxx
 LOC LBL xxxxx
 EOM IBU 0

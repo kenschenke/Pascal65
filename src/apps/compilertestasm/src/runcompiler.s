@@ -211,8 +211,6 @@ prgName: .res 17                ; checkExpectedError: the PRG's name
     lda #'G'
     jsr CHROUT
     jsr initCodeGen
-    ldq unitList
-    jsr setCodeGenUnitList
     lda nextTestPrg
     beq L1
     lda #<nextTestPrg
@@ -223,7 +221,6 @@ L1: lda #0
     tax
     tay
 L2: jsr setCodeGenProgramChain
-    ldq astRoot
     jsr objCodeGen
 
     ldq astRoot

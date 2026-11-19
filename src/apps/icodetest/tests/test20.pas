@@ -1,5 +1,7 @@
 (* Test 20 - Array inside record
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 14
 DIA LBL xxxxx
 DIR LBL xxxxx

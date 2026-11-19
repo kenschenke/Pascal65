@@ -1,5 +1,7 @@
 (* Test 1 - Scalar Variable Assignments
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH IBS 0
 PSH IBS 0
 PSH BOO 0

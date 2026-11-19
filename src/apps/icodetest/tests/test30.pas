@@ -1,5 +1,7 @@
 (* Test 30 - Fields, pointers, string subscripts and file fields
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 SST STR Hello
 NEW IWS 12
 DIR LBL xxxxx

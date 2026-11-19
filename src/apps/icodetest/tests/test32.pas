@@ -1,5 +1,7 @@
 (* Test 32 - Array bounds and element types
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS b
 DIA LBL xxxxx
 NEW IWS 14

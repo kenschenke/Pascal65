@@ -22,7 +22,7 @@
 
 .import writePrgHeader, processIcodeInstructions, prgCleanup
 .import initStringLiterals, writeStringLiterals, freeStringLiterals
-.import cleanupLibraries
+.import cleanupLibraries, readIcodeImports, initImports, freeImports
 .import initDataSegment, writeDataSegment, freeDataSegment
 .import tagBSS_EXITHANDLER
 .import writeObjFile, objFilename, codeFilename, readIcodeHeader
@@ -42,14 +42,14 @@ codeFn2:
 .bss
 
 runtimeStackSize: .res 2
-astRoot: .res 4
 delName: .res 2             ; for deleteIfExists
 
 .code
 
-; AST root passed in Q
+; The icode file holds everything code generation needs: the header,
+; the imports table and the code (icode.inc). It doesn't use the AST.
 .proc genObjCode
-    stq astRoot
+    jsr initImports
 
     ; Initialize the linkerTags and tagsToFind containers.
     jsr initLinkerTags
@@ -103,11 +103,12 @@ delName: .res 2             ; for deleteIfExists
     ; Open the file
     jsr OPEN
     jsr readIcodeHeader
-    bcc :+
-    jmp badIcode
+    bcs :+
+    jsr readIcodeImports
+    bcc :++
+:   jmp badIcode
 
-:   ldq astRoot
-    jsr writePrgHeader
+:   jsr writePrgHeader
 
     jsr processIcodeInstructions
 
@@ -118,7 +119,6 @@ delName: .res 2             ; for deleteIfExists
     lda #<tagBSS_EXITHANDLER
     ldx #>tagBSS_EXITHANDLER
     jsr linkAddressSet
-    ldq astRoot
     jsr cleanupLibraries
 
     ; Add some code to clean up the runtime and return to BASIC.
@@ -162,7 +162,6 @@ delName: .res 2             ; for deleteIfExists
 
     ; Write the object file. It frees the linker tags. The linker lays
     ; out the program and checks that it fits in memory.
-    ldq astRoot
     jmp writeObjFile
 .endproc
 
@@ -198,6 +197,7 @@ delName: .res 2             ; for deleteIfExists
     jsr freeStringLiterals
     jsr freeDataSegment
     jsr freeLinkerTags
+    jsr freeImports
     lda #errIcodeFileInvalid
     ldx #0
     ldy #0

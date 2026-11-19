@@ -49,7 +49,7 @@ skip:
 .export writeObjFile, objFilename, codeFilename
 .export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen
 
-.import runtimeStackSize, writeLibraries
+.import runtimeStackSize, writeLibraries, freeImports
 
 .data
 
@@ -70,7 +70,6 @@ objHeader2:
 
 runtimeFeatures: .res 1     ; RTF_* (asm.inc) for the packages to link
 runtimeMode: .res 1         ; RT_MODE_* (asm.inc)
-astRoot: .res 4
 tagsToFind: .res 4
 tagToFind: .res .sizeof(TAGTOFIND)
 relocCount: .res 2
@@ -104,11 +103,10 @@ copyBuf: .res 256
     rts
 .endproc
 
-; This routine writes the object file. The AST root is in Q. The module's
+; This routine writes the object file. The module's
 ; name, runtime mode and stack size come from the icode file's header
 ; (readIcodeHeader) and the features from its EOM.
 .proc writeObjFile
-    stq astRoot
     jsr addImports
 
     ; Open the object file
@@ -174,7 +172,6 @@ copyBuf: .res 256
     bne :-
 
     jsr writeImports
-    ldq astRoot
     jsr writeLibraries
     jsr writeRelocations
     jsr copyCode
@@ -187,6 +184,7 @@ copyBuf: .res 256
     stq ptr1
     jsr scratchFile
 
+    jsr freeImports
     jmp freeLinkerTags
 .endproc
 

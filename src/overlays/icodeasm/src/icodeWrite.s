@@ -23,6 +23,7 @@
 .import icodeStmts, icodeUnitRoutines, icodeRoutineDeclarations
 .import icodeUnitDeclarations, icodeVariableDeclarations
 .import icodeInitData, icodeWriteData, icodeFreeData, icodeSuppress
+.import writeImports
 
 .import operand1
 
@@ -161,9 +162,11 @@ nameIndex: .res 1
     ; Initialize the data segments
     jsr icodeInitData
 
-    ; Open the icode temporary file and write its header
+    ; Open the icode temporary file and write its header and imports
     jsr icodeFileOpen
     jsr writeHeader
+    ldq astRoot
+    jsr writeImports
 
     ; Enter the main scope
     ldq astRoot

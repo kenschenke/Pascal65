@@ -1,5 +1,7 @@
 (* Test 18 - Write, Writeln, Writestr
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 PSH BOO 0
 PSH IWU 0
 BRA LBL xxxxx

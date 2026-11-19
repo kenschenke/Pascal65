@@ -8,14 +8,23 @@ getIcodeRuntimeFeatures = ICODE_BASE + 9
 setIcodeRuntimeMode = ICODE_BASE + 12   ; RT_MODE_* (asm.inc) in A
 setIcodeStackSize = ICODE_BASE + 15     ; runtime stack size in A/X
 
-; The icode file starts with a header, then the instructions. The last
-; instruction is EOM. Words are low byte first.
+; The icode file starts with a header, then the imports table, then the
+; instructions. The last instruction is EOM. Words are low byte first.
 ;
 ;    ICODE_MAGIC0, ICODE_MAGIC1, ICODE_VERSION
 ;    ICODE_KIND_*
 ;    runtime mode (RT_MODE_* in asm.inc)
 ;    runtime stack size (2 bytes)
 ;    length of the module's name, then the name (no terminating zero)
+;
+; The imports table (icodeImports.s): a count byte, then each import, in
+; the program's Uses order:
+;
+;    ICODE_IMPORT_LIBRARY, then the library as the object file lists it
+;    (linker.inc): its name, a word with its slot count, then each slot:
+;    OBJLIB_*, the slot's label
+;
+; A name or label is its length in a byte, then that many characters.
 ;
 ; The runtime features (RTF_* in asm.inc) are known only once the code is
 ; written, so they are EOM's operand.
@@ -24,6 +33,7 @@ ICODE_MAGIC1 = $43
 ICODE_VERSION = 1
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
+ICODE_IMPORT_LIBRARY = 1
 ICODE_MAX_NAME = 23     ; NAMELEN (ast.inc) less the terminating zero
 
 LOCALVARS_RECORD = 2

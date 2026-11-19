@@ -1,5 +1,7 @@
 (* Test 15 - Array Literals
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 NEW IWS 10
 DIA LBL xxxxx
 BRA LBL xxxxx

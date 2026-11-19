@@ -1,5 +1,9 @@
 (* Test 39 - A unit's init block and a library's variables
 HDR PRG test 0 200
+IMP LIB system 22
+   RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+IMP LIB iclib 5
+   RRVVR
 PSH IWU 0
 UIC LBL xxxxx
 PSH IWU 0

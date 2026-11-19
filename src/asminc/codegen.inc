@@ -1,11 +1,11 @@
 
 CODEGEN_BASE = $4000
 
-objCodeGen = CODEGEN_BASE
-setCodeGenUnitList = CODEGEN_BASE + 3
-setCodeGenProgramChain = CODEGEN_BASE + 6
-; The runtime mode, stack size and features come from the icode file
-; (icode.inc). Set them in icode (setIcodeRuntimeMode, setIcodeStackSize).
+objCodeGen = CODEGEN_BASE              ; takes no AST: all from the icode
+setCodeGenProgramChain = CODEGEN_BASE + 3
+; The runtime mode, stack size, libraries and features come from the icode
+; file (icode.inc). Set the mode and stack size in icode
+; (setIcodeRuntimeMode, setIcodeStackSize).
 
 .macro genOne opcode
     lda #opcode

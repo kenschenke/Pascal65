@@ -1,5 +1,5 @@
 ;
-; libraryList.s
+; icodeImports.s
 ; Ken Schenke (kenschenke@gmail.com)
 ;
 ; Copyright (c) 2026
@@ -7,16 +7,17 @@
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
-; writeLibraries routine
+; writeImports routine
 ;
-; The linker places the libraries and relocates them (loadLibrary.s in
-; linkerasm). The code calls a library's routines and uses its variables
-; through its jump table, by labels made from AST addresses, which only
-; code generation knows. So the object file lists each library with the
-; labels of its slots, in the jump table's order (see linker.inc): its
-; init and cleanup, then a routine or variable for each of its interface
-; declarations. The labels are imports of the program, and the linker
-; defines each at its slot.
+; The icode file's imports table follows its header (icode.inc). It lists
+; each library the program uses, in its Uses order, with the labels of its
+; jump table's slots in order: its init and cleanup, then a routine or
+; variable for each of its interface declarations. The code reaches a
+; library through those labels, which are made from AST addresses, so code
+; generation reads them here rather than from the AST. It calls each
+; library's init and cleanup (slots 0 and 1) and copies each entry into the
+; object file, where the linker defines each label at its slot (see
+; linker.inc and loadLibrary.s in linkerasm).
 
 .include "ast.inc"
 .include "asmlib.inc"
@@ -25,9 +26,11 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export writeLibraries
+.include "icode.inc"
 
-.import findUnit, calcNamePtr
+.export writeImports
+
+.import findUnit
 
 .data
 
@@ -52,9 +55,9 @@ label: .res 24
 
 .code
 
-; This routine writes the object file's libraries, the current output: their
-; count, then each library the program uses. The AST root is in Q.
-.proc writeLibraries
+; This routine writes the imports table to the current output: the count,
+; then each library the program uses. The AST root is in Q.
+.proc writeImports
     ; The first declaration of the program's code block
     stq ptr1
     ldz #decl::code
@@ -113,6 +116,10 @@ L1: stq usesDecl
     nop
     lda (ptr1),z
     stq libRoot
+    ; A unit that wasn't parsed (icodetest's tests without units) has none
+    jsr isQZero
+    beq NX
+    ldq libRoot
     stq ptr2
     ldz #decl::isLibrary
     nop
@@ -134,9 +141,12 @@ NX: ldq usesDecl
     bra L1
 .endproc
 
-; This routine writes the library in unitName and libRoot: its name, its
-; slot count and its slots.
+; This routine writes the library in unitName and libRoot: its kind
+; (ICODE_IMPORT_LIBRARY), name, slot count and slots.
 .proc writeLibrary
+    lda #ICODE_IMPORT_LIBRARY
+    jsr CHROUT
+
     ; The name
     ldq unitName
     stq ptr1
@@ -308,4 +318,17 @@ WR: pla
     inx
     bra :-
 :   rts
+.endproc
+
+; This routine adds the offset in Z to the pointer in A/X/Y and returns the
+; sum in Q (as calcNamePtr in codegenasm).
+.proc calcNamePtr
+    stz intOp32
+    ldz #0
+    stz intOp32+1
+    stz intOp32+2
+    stz intOp32+3
+    clc
+    adcq intOp32
+    rts
 .endproc
