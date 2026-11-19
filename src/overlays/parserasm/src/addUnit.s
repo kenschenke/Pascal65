@@ -44,12 +44,7 @@ L1: ldq thisUnit
     jsr isQZero
     beq L2
     stq ptr1
-    ldz #unit::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr isUnitNameEqual
+    jsr isUnitNameEqual     ; the unit in Q; its name is its first member
     beq L2
     ldq thisUnit
     stq lastUnit
@@ -134,29 +129,37 @@ L4: ; declCreate
     rts
 .endproc
 
-; This routine compares the unit name, in Q to the name passed to addUnit.
-; If they are equal, the Z flag is set.
+; This routine compares the name of the unit in Q (unit::name, its first
+; member) with the name passed to addUnit, a pointer in bank 0. The Z flag
+; is set if they are equal. It once took the name's first four bytes as
+; the pointer and returned after one byte, so it never matched, and a
+; unit named twice was added twice.
 .proc isUnitNameEqual
     stq ptr3
     ldz #nameOffset
-    neg
+    nop
     lda (stackPointer),z
     sta ptr2
     inz
     nop
     lda (stackPointer),z
     sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
 
     ldz #0
-    ldy #0
 L1: nop
     lda (ptr3),z
-    cmp (ptr2),y
-    bne L2
-    lda (ptr2),y
-    bne L2
-    iny
+    beq L2                  ; The end of the unit's name
+    nop
+    cmp (ptr2),z
+    bne L3
     inz
-    bra L2
-L2: rts
+    bne L1
+
+    ; The names are equal if the other one ends here too
+L2: nop
+    lda (ptr2),z
+L3: rts
 .endproc
