@@ -29,7 +29,7 @@
 .import tagBSS_EXITHANDLER
 .import writeObjFile, objFilename, codeFilename, readIcodeHeader
 .import readUnitHeader, skipIcodeImports, unitCount, getImportUnit
-.import beginUnitFrames, endUnitFrames, setRuntimeFeatures
+.import beginUnitFrames, endUnitFrames, setRuntimeFeatures, labelScope
 
 .data
 
@@ -64,6 +64,8 @@ unitFnTotal: .res 1
     jsr initFrames
     lda #0
     jsr setRuntimeFeatures      ; each module's EOM adds its own
+    lda #0
+    sta labelScope              ; the program's labels are unchanged
 
     ; Initialize the linkerTags and tagsToFind containers.
     jsr initLinkerTags
@@ -278,7 +280,14 @@ L1: lda unitIdx
     jsr beginUnitFrames
     jsr readIcodeFrames
     bcs BF
+
+    ; Its labels are its own (readOperand.s): its number from 1
+    ldx unitIdx
+    inx
+    stx labelScope
     jsr processIcodeInstructions
+    lda #0
+    sta labelScope
     jsr endUnitFrames
     lda #2
     jsr CLOSE

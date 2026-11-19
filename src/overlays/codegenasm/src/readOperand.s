@@ -15,7 +15,7 @@
 .include "cbm_kernal.inc"
 
 .export readOperand1, readOperand2, readOperand3
-.export operand1, operand2, operand3, strbuf
+.export operand1, operand2, operand3, strbuf, labelScope, scopeLabel
 
 .import readIcodeByte
 
@@ -25,6 +25,14 @@ operand1: .res 5
 operand2: .res 5
 operand3: .res 5
 strbuf: .res MAX_LINE_LENGTH+1
+; A label is local to its icode file, except an entry ("name.N", the only
+; labels with a period). The files are read into one object, so a label
+; from a unit's file gets this scope, its number from 1 (genUnits), as a
+; first byte of $80 plus the scope (scopeLabel). It is 0 in the
+; program's, whose labels are unchanged.
+labelScope: .res 1
+scopeTmp: .res 1
+savedPtr4: .res 2
 
 .code
 
@@ -95,7 +103,10 @@ readLabel:
     beq :+
     inx
     bne :-
-:   rts
+:   lda #<strbuf
+    ldx #>strbuf
+    ldy labelScope
+    jmp scopeLabel
 
 readString:
     lda #0
@@ -143,5 +154,57 @@ readBytes:
     inc tmp2
     dec tmp1
     bne :-
+    rts
+.endproc
+
+; This routine gives the null-terminated label at A/X the scope in Y
+; (labelScope): unless the scope is 0, the label is empty or it is an
+; entry (it has a period), it is moved up a byte and $80 plus the scope
+; put in front of it. No icode label has a byte of $80 or more. The
+; buffer must have room for one more byte.
+.proc scopeLabel
+    cpy #0
+    bne :+
+    rts
+:   sty scopeTmp
+    ldy ptr4
+    sty savedPtr4
+    ldy ptr4+1
+    sty savedPtr4+1
+    sta ptr4
+    stx ptr4+1
+
+    ; Its length, unless it is empty or has a period
+    ldy #0
+:   lda (ptr4),y
+    beq :+
+    cmp #'.'
+    beq DN
+    iny
+    bra :-
+:   cpy #0
+    beq DN
+
+    ; Move it up a byte, the terminating zero first
+    tya
+    tax
+    inx
+:   lda (ptr4),y
+    iny
+    sta (ptr4),y
+    dey
+    dey
+    dex
+    bne :-
+
+    ldy #0
+    lda scopeTmp
+    ora #$80
+    sta (ptr4),y
+
+DN: lda savedPtr4
+    sta ptr4
+    lda savedPtr4+1
+    sta ptr4+1
     rts
 .endproc

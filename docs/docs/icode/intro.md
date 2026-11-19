@@ -109,6 +109,11 @@ block of each interface record or array variable. A unit has no cleanup,
 and its other variables are slots in the program's stack frame, so those
 entries are never named. No other label has a period.
 
+Every other label is local to its file: two files can use the same one
+without meaning the same place. Code generation reads a program's files
+into one object, so it gives each unit's file's local labels a scope of
+their own.
+
 ## Operands
 
 An operand can be one of four categories: a literal, a variable reference,
