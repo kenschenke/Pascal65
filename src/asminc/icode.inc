@@ -32,6 +32,10 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ;
 ;    its name, then its slot count (2 bytes)
 ;
+; A variable operand's frame is 0 for the module's own. A program's file
+; holds its units' code too: MDL starts each unit's, naming the frame
+; that frame 0 is until the next MDL (writeModule in icodeFrames.s).
+;
 ; A name is its length in a byte, then that many characters.
 ;
 ; Code reaches another module's entry, a library slot or a unit's init
@@ -43,7 +47,7 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ; written, so they are EOM's operand.
 ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
 ICODE_MAGIC1 = $43
-ICODE_VERSION = 3
+ICODE_VERSION = 4
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
 ICODE_IMPORT_LIBRARY = 1
@@ -144,6 +148,8 @@ IC_SAL          = $3b  ; 0011 1011  1:label of the array declaration block
 IC_UIC          = $3c  ; 0011 1100  1:label - call a unit's init block, which
                        ; pushes the unit's variables (no stack frame)
 IC_EOM          = $3d  ; 0011 1101  1:runtime features (RTF_*) - end of module
+IC_MDL          = $3e  ; 0011 1110  1:frame - the code of the module whose
+                       ; frame this is follows (0: the program's)
 
 ; These instructions take two operands
 IC_MASK_BINARY  = $40  ; 0100 0000

@@ -399,7 +399,14 @@ to the unit's first slot (`frameOf`). Codegen writes the byte with a
 `LINKADDR_FRAME` relocation against the import `name.frame` (`frames.s`),
 and the linker defines that as the program's slots plus the counts of the
 frames before it (`frames.s` in linkerasm) and adds it to the byte. A unit
-then needs no base it can't know when compiled on its own. dumpicode shows
+then needs no base it can't know when compiled on its own. The program's
+icode holds its units' code, so each unit's (its init block and routines,
+`icodeUnitRoutines`) starts with `MDL` and its frame's number, and the
+program's after them with `MDL 0` (`writeModule`, written only when the
+frame changes). Until the next `MDL`, frame 0 is that module's: `frameOf`
+gives a unit's own variables frame 0, and codegen relocates a level 1,
+frame 0 operand against `moduleFrame` (`frameOffset` in `pshOper.s`). A
+unit names its own variables as its own icode file will. dumpicode shows
 the header's count, a `FRM name slots` line for each frame and the frame's
 name after a variable operand.
 

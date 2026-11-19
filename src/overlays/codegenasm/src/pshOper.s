@@ -19,7 +19,7 @@
 .export pshOper
 
 .import operand1, genOneInstruction, genTwoInstruction, genThreeAddr
-.import addStringLiteral, frameReloc
+.import addStringLiteral, frameReloc, moduleFrame
 
 .data
 
@@ -180,13 +180,19 @@ retOper:
 .endproc
 
 ; This routine writes a LINKADDR_FRAME relocation for a level 1 offset in
-; another frame than the program's (operand1+4, frames.s), Z bytes past
-; codeOffset. The offset is relative to the frame's first slot, which the
-; linker adds.
+; another frame than the program's, Z bytes past codeOffset. The offset is
+; relative to the frame's first slot, which the linker adds. The frame is
+; operand1+4, or for 0, the module's own: the frame the last MDL named
+; (moduleFrame), which is 0 in the program's code.
 .proc frameOffset
     lda operand1+4
+    bne RL
+    lda operand1+2
+    cmp #1
+    bne :+
+    lda moduleFrame
     beq :+
-    jmp frameReloc
+RL: jmp frameReloc
 :   rts
 .endproc
 

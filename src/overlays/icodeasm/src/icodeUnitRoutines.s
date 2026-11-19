@@ -14,7 +14,7 @@
 
 .export icodeUnitRoutines
 
-.import units, icodeRoutineDeclarations, icodeUnitInit
+.import units, icodeRoutineDeclarations, icodeUnitInit, writeModule
 
 .bss
 
@@ -23,7 +23,9 @@ thisUnit: .res 4
 .code
 
 ; This routine writes each unit's init block (icodeUnitInit), then its
-; routines.
+; routines. A Pascal unit's start with MDL, so frame 0 is the unit's own
+; (writeModule), and the program's code after them with MDL 0. MDL is
+; written only when the frame changes.
 .proc icodeUnitRoutines
     ldq units
     stq thisUnit
@@ -31,10 +33,32 @@ thisUnit: .res 4
     ; Loop through the units
 L1: ldq thisUnit
     jsr isQZero
-    bne :+
-    rts
+    bne UN
 
-:   jsr icodeUnitInit
+    ; The program's code follows
+    lda #0
+    tax
+    tay
+    taz
+    jmp writeModule
+
+    ; A Pascal unit's code is its module's (MDL). A library has none.
+UN: stq ptr1
+    ldz #unit::astRoot
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr1
+    ldz #decl::isLibrary
+    nop
+    lda (ptr1),z
+    bne :+
+    ldq thisUnit
+    jsr writeModule
+
+:   ldq thisUnit
+    jsr icodeUnitInit
 
     ldq thisUnit
     stq ptr1
@@ -67,5 +91,5 @@ L1: ldq thisUnit
     nop
     lda (ptr1),z
     stq thisUnit
-    bra L1
+    jmp L1
 .endproc

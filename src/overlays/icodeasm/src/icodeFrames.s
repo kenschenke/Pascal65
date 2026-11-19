@@ -25,21 +25,24 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
+.include "icode.inc"
 .include "4510macros.inc"
 
-.export writeFrames, frameOf
+.export writeFrames, frameOf, writeModule
 
-.import units
+.import units, operand1, icodeWriteInstruction
 
 .bss
 
 thisUnit: .res 4
 frameNum: .res 1
+moduleFrame: .res 1          ; the frame of the module whose code this is
 writing: .res 1             ; zero while counting, non-zero while writing
 offset: .res 1              ; for frameOf
 first: .res 2
 count: .res 2
 savedPtrs: .res 8           ; ptr1 and ptr2
+target: .res 4              ; for writeModule
 nameLen: .res 1
 nameBuf: .res 13
 
@@ -50,6 +53,7 @@ nameBuf: .res 13
 ; length, then its characters) and its slot count (a word).
 .proc writeFrames
     lda #0
+    sta moduleFrame
     sta writing
     jsr walk
     lda frameNum
@@ -146,7 +150,8 @@ NX: jsr nextUnit
 
 ; This routine finds the frame of the level 1 slot whose offset (from the
 ; program's first slot) is in A. It returns the frame's number in X, 0 for
-; the program's, and the offset in the frame in A. It keeps ptr1 and ptr2.
+; the module's own (writeModule), and the offset in the frame in A. It
+; keeps ptr1 and ptr2.
 .proc frameOf
     sta offset
     ldx #7
@@ -191,7 +196,13 @@ NX: jsr nextUnit
 PR: lda #0
     sta frameNum
 
-FN: ldx #7
+    ; The module's own is frame 0
+FN: lda frameNum
+    cmp moduleFrame
+    bne :+
+    lda #0
+    sta frameNum
+:   ldx #7
 :   lda savedPtrs,x
     sta ptr1,x
     dex
@@ -199,4 +210,57 @@ FN: ldx #7
     lda offset
     ldx frameNum
     rts
+.endproc
+
+; This routine writes MDL, which starts the code of the module in Q: a
+; unit, or zero for the program. Its operand is the module's frame in the
+; frames table, or 0 for the program or a unit with no slots. It writes
+; nothing if that is the frame already in effect, which at first is 0.
+; Until the next MDL, frame 0 is that module's (frameOf), so a unit's
+; code names its own variables as its own icode file will. Code
+; generation relocates them against the frame MDL names. It changes ptr1.
+.proc writeModule
+    stq thisUnit
+    jsr isQZero
+    beq L3
+    stq target
+
+    ; Count the frames up to the unit's
+    lda #0
+    sta frameNum
+    ldq units
+L1: stq thisUnit
+    jsr isQZero
+    beq L3                      ; not in the list
+    jsr loadSlots
+    lda count
+    ora count+1
+    beq L2
+    inc frameNum
+L2: ldx #3
+:   lda thisUnit,x
+    cmp target,x
+    bne :+
+    dex
+    bpl :-
+    lda count                   ; the unit: frame 0 if it has no slots
+    ora count+1
+    bne L4
+    bra L3
+:   jsr nextUnit
+    bra L1
+
+L3: lda #0
+    sta frameNum
+L4: lda frameNum
+    cmp moduleFrame
+    bne :+
+    rts                         ; no change
+:   sta moduleFrame
+    lda #IC_IBU
+    sta operand1
+    lda frameNum
+    sta operand1+1
+    lda #IC_MDL
+    jmp icodeWriteInstruction
 .endproc

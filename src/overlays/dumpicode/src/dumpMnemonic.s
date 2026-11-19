@@ -98,6 +98,7 @@ strIC_SAL: .byte "SAL"
 strIC_UIC: .byte "UIC"
 strIC_UIR: .byte "UIR"
 strIC_EOM: .byte "EOM"
+strIC_MDL: .byte "MDL"
 
 mne:
 .byte IC_CHR, .LOBYTE(strIC_CHR), .HIBYTE(strIC_CHR)
@@ -189,6 +190,7 @@ mne:
 .byte IC_UIC, .LOBYTE(strIC_UIC), .HIBYTE(strIC_UIC)
 .byte IC_UIR, .LOBYTE(strIC_UIR), .HIBYTE(strIC_UIR)
 .byte IC_EOM, .LOBYTE(strIC_EOM), .HIBYTE(strIC_EOM)
+.byte IC_MDL, .LOBYTE(strIC_MDL), .HIBYTE(strIC_MDL)
 
 .bss
 

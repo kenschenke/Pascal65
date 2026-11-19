@@ -6,16 +6,18 @@ FRM icunit 1
 UIC LBL icunit.0
 UIC LBL icunit4.0
 BRA LBL xxxxx
+MDL IBU 1
 LOC LBL icunit.0
 PSH IWU 0
 UIR
 LOC LBL icunit.3
-PSH VDR 4 1 0 icunit
+PSH VDR 4 1 0
 PSH VDR 4 2 0
 ADD IBS 4 IBS 4 IBS 4
-PSH VDW 4 1 0 icunit
+PSH VDW 4 1 0
 SET IBS 4 IBS 4
 RTS
+MDL IBU 0
 LOC LBL icunit4.0
 UIR
 LOC LBL icunit4.2

@@ -23,7 +23,7 @@
 .include "4510macros.inc"
 
 .export readIcodeFrames, writeFrames, freeFrames, initFrames
-.export frameReloc
+.export frameReloc, moduleFrame
 
 .import readIcodeByte, readStatus
 
@@ -35,6 +35,7 @@ strFrame: .asciiz ".frame"
 
 frames: .res 4              ; the membuf, or zero
 frameCount: .res 1
+moduleFrame: .res 1         ; the frame of the module being generated (MDL)
 framesLen: .res 2           ; bytes in frames
 left: .res 1
 byte: .res 1
@@ -217,6 +218,7 @@ DN: rts
 ; anything else, since an overlay's BSS isn't cleared.
 .proc initFrames
     lda #0
+    sta moduleFrame
     tax
     tay
     taz

@@ -38,7 +38,7 @@ byte first.
 |Offset|Size|Contents                                               |
 |------|----|-------------------------------------------------------|
 |0     |2   |"IC" ($49, $43)                                        |
-|2     |1   |The format's version, 1                                |
+|2     |1   |The format's version, 4                                |
 |3     |1   |The kind: 0 for a program, 1 for a unit                |
 |4     |1   |The runtime mode: 0 dynamic, 1 static                  |
 |5     |2   |The runtime stack size                                 |
@@ -86,6 +86,9 @@ variable's offset counts from its frame's first slot, so a unit's code
 doesn't depend on how many variables the program and the other units
 have. The linker works out each frame's first slot from the slot counts
 and adds it to the offset.
+
+A program's icode holds its units' code too. [MDL](../mne/mdl) starts each
+unit's, and frame 0 is that unit's until the next MDL.
 
 ### Entries
 
@@ -176,6 +179,7 @@ The following instructions take one operand.
 |[EOM](../mne/eom)    |3d       |0011 1101   |End of the module                    |
 |[INP](../mne/inp)    |26       |0010 0110   |Reads and stores a value from input  |
 |[LOC](../mne/loc)    |2e       |0010 1110   |Sets the target for the label        |
+|[MDL](../mne/mdl)    |3e       |0011 1110   |Start a module's code                |
 |[MEM](../mne/mem)    |3a       |0011 1010   |Reads a value from a memory location |
 |[NEG](../mne/neg)    |22       |0010 0010   |Negate value at top of stack         |
 |[NEW](../mne/new)    |2b       |0010 1011   |Allocate memory from the heap        |

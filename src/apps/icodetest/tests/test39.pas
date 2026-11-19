@@ -16,6 +16,7 @@ NEW IWS 4
 DIR LBL xxxxx
 SSP LBL iclib.4
 BRA LBL xxxxx
+MDL IBU 1
 LOC LBL icunit2.0
 NEW IWS 4
 DIR LBL xxxxx
@@ -25,9 +26,10 @@ DIA LBL icunit2.3
 UIR
 LOC LBL icunit2.4
 PSH IBS 1
-PSH VDR 14 1 0 icunit2
+PSH VDR 14 1 0
 SET IBS 4 IBS 2
 RTS
+MDL IBU 0
 LOC LBL xxxxx
 PSH VDR b 1 2 icunit2
 PSH IBS 2

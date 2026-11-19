@@ -21,7 +21,7 @@
 .import pshOper, outOper, inpOper, strbuf
 .import genOneInstruction, genTwoInstruction, genThreeAddr, operand1
 .import genDeclInit, addStringLiteral
-.import pendingAsf, setRuntimeFeatures
+.import pendingAsf, setRuntimeFeatures, moduleFrame
 
 .data
 
@@ -80,6 +80,14 @@ label: .res 16
     bne :+
     lda operand1+1
     jmp setRuntimeFeatures
+
+    ; The module whose code follows. A level 1 operand with frame 0 is in
+    ; its frame (frameOffset in pshOper.s). It writes no code.
+:   cmp #IC_MDL
+    bne :+
+    lda operand1+1
+    sta moduleFrame
+    rts
 
     ; A unit's init block runs as a 6502 subroutine. It pushes the unit's
     ; variables on the runtime stack, so it has no stack frame.
