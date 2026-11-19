@@ -7,6 +7,7 @@
 .include "4510macros.inc"
 
 .export dumpIcode, dumpUnitIcode, memBuf, dumpNewline, dumpChar, printz, dumpFrameName
+.export dumpStream, dumpTpuStart
 
 .import readInstruction, dumpHex
 
@@ -132,6 +133,12 @@ L1: lda unitIdx
     ldx #1
     jsr CHKIN
 
+    ; Fall through to dumpStream
+.endproc
+
+; This routine dumps the icode in the input (logical file 1), from its
+; header to the end of the file, and closes the file
+.proc dumpStream
     jsr dumpHeader
     bcs L3
     jsr dumpImports
@@ -573,4 +580,16 @@ DN: rts
     lda #1
     sta unitCount
     jmp dumpUnits
+.endproc
+
+; This routine starts a TPU's dump (dumpTpu.s): a new membuf, in memBuf,
+; with no unit files to dump after it
+.proc dumpTpuStart
+    jsr allocMemBuf
+    stq memBuf
+    lda #0
+    sta recording
+    sta unitIdx
+    sta unitCount
+    rts
 .endproc

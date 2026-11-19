@@ -41,13 +41,14 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has ten test suites, located in `src/apps`:
+The project has eleven test suites, located in `src/apps`:
 
   - tokenizertest
   - parsertest
   - resolvertest
   - typechecktest (see "Typecheck Tests")
   - icodetest
+  - tputest (compiled units, see "TPU Tests")
   - memtest (memory heap allocator in asmlib)
   - membuftest (membuf routines in asmlib)
   - compilertestasm
@@ -450,6 +451,30 @@ compilation will need it. resolvertest error tests 47 and 48 and
 compilertestasm's `slots256` (set 1's first program, all 256 slots used)
 and `toomanyvars` (an error test) check this.
 
+### TPU Tests
+
+`tputest` compiles each `tests/testN.pas` (N to `NUM_TESTS` in
+`runtests.s`), a unit, to its TPU as `compilerasm` does (`runtest.s`),
+using icodetest's loaders and `tokenizeAndParseUnits` and compilerasm's
+`initTpu` (vpath in the Makefile). The header comment holds the dump
+dumpicode's `dumpTpu` must make: a `TPU` line (versions, flags, the
+source's CRC as `xxxx` and the interface's CRC), a `USE` line for each
+used unit with its CRC, the interface section's length and record count
+(`INT`), the icode section's length (`COD`) and the icode as
+`dumpUnitIcode` dumps it. `checkTpu` (`checktpu.s`) then checks what the
+dump can't: the source's CRC against the source file, the interface's
+CRC against the section's bytes, and the icode section's length against
+the rest of the file. It keeps each test's interface CRC and checks the
+pairs in `crcPairs`: tests 3 to 5 are one unit, and 4 changes only its
+implementation (same CRC) and 5 its interface (different).
+
+The interface records hold line numbers, so a header whose dump changes
+length moves the interface and changes its CRC, and a unit that uses it
+sees the new one. Tests 3 to 5 keep their headers the same length.
+`make TARGET=mega65 savedump` works as in icodetest. A new test's header
+takes two passes: paste the dump in, save again and paste once more,
+since the first paste moves the lines. `TESTSEL` works as in icodetest.
+
 In icode, `isRead` 0 asks an expression for the address of what it
 names, to write to or pass by reference, and 1 for its value. The
 address of `p^` is p's value. A record variable holds its heap address,
@@ -843,6 +868,9 @@ A CRC is CRC-16/CCITT ($1021, starting at $FFFF). Each routine erases
 files before it opens any (a DOS command closes every open file). A TPU
 that can't be written is `errUnitNotWritten`. The interface's records are
 in the format of a library's `.hdr`, so it can be loaded the same way.
+The records hold line numbers, so moving the interface's lines (a comment
+above it) changes its CRC. dumpicode's `dumpTpu` dumps a TPU, and
+`tputest` checks them (see "TPU Tests").
 
 ## Non-negotiables
 
