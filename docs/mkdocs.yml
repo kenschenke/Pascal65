@@ -120,6 +120,7 @@ nav:
     - SetSidMode: sound/setsidmode.md
     - SetSoundDoneCallback: sound/setsounddonecallback.md
     - SetSync: sound/setsync.md
+    - SetVoice3Off: sound/setvoice3off.md
     - SetVolume: sound/setvolume.md
     - SetWaveform: sound/setwaveform.md
     - StopAll: sound/stopall.md

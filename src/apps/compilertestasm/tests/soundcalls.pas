@@ -33,6 +33,8 @@ Begin
     SetSync(1, True);
     SetFilter(1, 1024, 8, FilterLow + FilterBand + FilterHigh);
     FilterVoice(1, True);
+    SetVoice3Off(1, True);
+    SetVoice3Off(1, False);
     b := GetOsc3(1);
     b := GetEnv3(1);
     octave := 4;

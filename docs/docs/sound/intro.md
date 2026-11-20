@@ -176,6 +176,7 @@ program needs.
 |[SetSync](setsync.md)|Syncs a voice to the voice before it|
 |[SetFilter](setfilter.md)|Sets a SID's filter cutoff, resonance and mode|
 |[FilterVoice](filtervoice.md)|Sends a voice through its SID's filter, or not|
+|[SetVoice3Off](setvoice3off.md)|Silences voice 3 of a SID while it goes on playing|
 |[GetOsc3](getosc3.md)|Reads the output of voice 3 of a SID|
 |[GetEnv3](getenv3.md)|Reads the envelope of voice 3 of a SID|
 |[NoteFreq](notefreq.md)|Returns the SID frequency of a note number|
