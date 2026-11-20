@@ -91,14 +91,16 @@ SENTINEL = $5aa5c33c
     .word value
 .endmacro
 
-; The header: state, counts, entries, files and current
+; The header: state, counts, entries, files, current and the highlight's
+; state
 .macro CHKHEAD st, errs, warns, ents, fils
     .byte OP_CHECK
     .word 0
     .byte BUILDRESULT::files
     .byte st
     .word errs, warns
-    .byte ents, fils, BUILD_SUMMARY
+    .byte ents, fils, BUILD_SUMMARY, BUILD_HL_NEW
+    .word 0                 ; hlLines
 .endmacro
 
 .macro CHKFILE n, name
