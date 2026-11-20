@@ -43,6 +43,8 @@
 
 lastTheme: .res 4
 filenamePtr: .res 2
+searchFile: .res 1          ; non-zero to look on the system disk too
+fileDevice: .res 1
 recordPos: .res 1           ; The bytes of the record read so far
 recordLen: .res 1           ; THEME_SIZE, or THEME_SIZE_V0 in version 0
 
@@ -76,6 +78,8 @@ builtinTheme:
     sta filenamePtr
     lda #>strFilename
     sta filenamePtr+1
+    lda #0                      ; the work disk's
+    sta searchFile
 
     jsr readThemeFileX
     lda numThemes
@@ -90,6 +94,8 @@ builtinTheme:
     sta filenamePtr
     lda #>strDefFilename
     sta filenamePtr+1
+    lda #1                      ; the work disk's, then the system disk's
+    sta searchFile
 
     jsr readThemeFileX
     lda numThemes
@@ -166,12 +172,22 @@ L1: ldq lastTheme
     stq themeList
     sta numThemes
 
+    lda workDevice
+    sta fileDevice
     lda filenamePtr
     ldx filenamePtr+1
     ldy #0
     ldz #0
+    stq ptr1
+    lda searchFile
+    beq WK
+    ldq ptr1
+    jsr locateFile
+    sta fileDevice
+    bra EX
+WK: ldq ptr1
     jsr doesFileExist
-    bne :+
+EX: bne :+
     rts
 
 :   lda filenamePtr
@@ -181,7 +197,7 @@ L1: ldq lastTheme
     sec
     jsr makeFilename
     jsr SETNAM
-    ldx workDevice
+    ldx fileDevice
     lda #1
     tay
     iny

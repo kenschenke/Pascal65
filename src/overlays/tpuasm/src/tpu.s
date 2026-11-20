@@ -33,7 +33,7 @@
 .export tpuBeginX, tpuFinishX, tpuAbortX
 ; For tpumake.s
 .export nameToFn, addSuffix, openIn, startCrc, crcByte, crc, interfaceCrc
-.export fnBuf, fnLen, eraseFile
+.export fnBuf, fnLen, eraseFile, inDevice
 
 .import hdrWrite, hdrOutVec
 
@@ -75,6 +75,7 @@ nameLen: .res 1
 nameBuf: .res 24
 fnBuf: .res 32              ; a file name, then ",s,r" or ",s,w"
 fnLen: .res 1
+inDevice: .res 1            ; the disk openIn opens fnBuf on
 outBuf: .res 32             ; <unit>.tpu, then ",s,w"
 outLen: .res 1
 codeLen: .res 2             ; the icode file's length
@@ -101,10 +102,18 @@ status: .res 1
     ldx #>strTemp
     jsr eraseFile
 
-    ; The source's CRC
+    ; The source's CRC. It is on the work disk or the system disk.
     lda srcName
     ldx srcName+1
     jsr nameToFn
+    lda #<fnBuf
+    ldx #>fnBuf
+    ldy #0
+    ldz #0
+    jsr locateFile
+    bne :+
+    lda workDevice
+:   sta inDevice
     lda #<strSeqRead
     ldx #>strSeqRead
     jsr openIn
@@ -231,7 +240,7 @@ ER: jsr closeOut
     jsr icodeFn
     lda #<strSeqRead
     ldx #>strSeqRead
-    jsr openIn
+    jsr openWorkIn
     lda #0
     sta codeLen
     sta codeLen+1
@@ -276,7 +285,7 @@ CD: lda #FILE_IN
     jsr nameToFn
     lda #<strSeqRead
     ldx #>strSeqRead
-    jsr openIn
+    jsr openWorkIn
     jsr copyIn
     lda #FILE_IN
     jsr CLOSE
@@ -290,7 +299,7 @@ CD: lda #FILE_IN
     jsr icodeFn
     lda #<strSeqRead
     ldx #>strSeqRead
-    jsr openIn
+    jsr openWorkIn
     jsr copyIn
     lda #FILE_IN
     jsr CLOSE
@@ -806,10 +815,18 @@ LK: ldq copyDecl
 .endproc
 
 ; This routine adds the suffix at A/X (",s,r") to fnBuf and opens it as
-; the input
+; the input, on the work disk
+.proc openWorkIn
+    ldy workDevice
+    sty inDevice
+    ; Fall through to openIn
+.endproc
+
+; This routine adds the suffix at A/X (",s,r") to fnBuf and opens it as
+; the input, on inDevice
 .proc openIn
     jsr addSuffix
-    ldx workDevice
+    ldx inDevice
     lda #FILE_IN
     tay
     jsr SETLFS

@@ -78,14 +78,14 @@ L2: ldq currentUnit
     jmp L3
 
     ; A unit compiled to its TPU: its interface, and the units it uses
-    ; are added to the list (tpuload.s)
+    ; are added to the list (tpuload.s). On the work disk or the system
+    ; disk, as the header and the source.
 :   jsr formatTpuFilename
     lda #<hdrFilename
     ldx #>hdrFilename
     ldy #0
     ldz #0
-    jsr doesFileExist
-    cmp #0
+    jsr locateFile
     beq PS
     jsr initTpu
     ldq unitList

@@ -37,7 +37,8 @@
 
 .data
 
-strTpuSuffix: .asciiz ".tpu,s,r"
+strTpuSuffix: .asciiz ".tpu"
+strSeqRead: .asciiz ",s,r"
 strTpu: .asciiz "TPU "
 strMask: .asciiz "xxxx "
 strUse: .asciiz "USE "
@@ -52,6 +53,7 @@ fnBuf: .res 24
 count: .res 1
 nameLen: .res 1
 left: .res 2
+tpuDevice: .res 1
 
 .code
 
@@ -68,7 +70,8 @@ left: .res 2
 
 ; This routine dumps <name>.tpu, the unit's name at A/X, into memBuf,
 ; and returns memBuf in Q. A program's dump dumps a unit whose code is
-; in its TPU this way (dumpUnits).
+; in its TPU this way (dumpUnits). The TPU is on the work disk or the
+; system disk (locateFile).
 .proc dumpTpuFile
     sta ptr2
     stx ptr2+1
@@ -87,7 +90,24 @@ left: .res 2
     iny
     bra :-
 :   phy
-    ldx workDevice
+    lda #<fnBuf
+    ldx #>fnBuf
+    ldy #0
+    ldz #0
+    jsr locateFile
+    bne :+
+    lda workDevice
+:   sta tpuDevice
+    ply
+    ldx #0
+:   lda strSeqRead,x
+    sta fnBuf,y
+    beq :+
+    inx
+    iny
+    bra :-
+:   phy
+    ldx tpuDevice
     lda #1
     tay
     iny

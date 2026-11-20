@@ -42,6 +42,7 @@ fieldOff: .res 1
 readIdx: .res 1
 refIdx: .res 2
 rootAddr: .res 4
+hdrDevice: .res 1           ; the disk the header is on (locateFile)
 
 .code
 
@@ -57,13 +58,13 @@ rootAddr: .res 4
     sta ptr1+2
     sta ptr1+3
 
-    ; Does the file exist?
+    ; Is the file on the work disk or the system disk? locateFile keeps ptr1.
     lda ptr1
     ldx ptr1+1
     ldy #0
     ldz #0
-    jsr doesFileExist
-    cmp #0
+    jsr locateFile
+    sta hdrDevice
     bne :+
     clc
     rts
@@ -137,7 +138,7 @@ Fail:
     bne :-
 :   sty rdLen
 
-    ldx workDevice
+    ldx hdrDevice
     lda #HDR_FILENUM
     tay
     jsr SETLFS

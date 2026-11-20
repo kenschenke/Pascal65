@@ -32,7 +32,7 @@
 .import beginUnitFrames, endUnitFrames, setRuntimeFeatures
 .import isImportTpu, readIcodeByte, initExports, freeExports, setObjModule
 .import modName, nameBuf, nameLen
-.import tpuKey, objCurrent, keyValid, initGenNames, addGenName
+.import tpuKey, objCurrent, keyValid, initGenNames, addGenName, tpuDevice
 
 .data
 
@@ -303,6 +303,7 @@ L1: lda unitIdx
     lda unitIdx
     jsr isImportTpu
     beq GN                      ; no TPU: made each time
+    jsr findUnitTpu
     lda unitIdx
     jsr getImportUnit
     jsr tpuKey
@@ -330,8 +331,14 @@ GN: lda unitIdx
     iny
     bra :-
 :   stx unitFnTotal
+    lda unitIdx                 ; a TPU on the disk findUnitTpu found
+    jsr isImportTpu
+    php
     ldx workDevice
-    lda #2
+    plp
+    beq :+
+    ldx tpuDevice
+:   lda #2
     tay
     iny
     jsr SETLFS
@@ -380,6 +387,23 @@ GN: lda unitIdx
 
 BF: jsr endUnitFrames
 BD: sec
+    rts
+.endproc
+
+; This routine finds the TPU of the unit numbered unitIdx, on the work
+; disk or the system disk (locateFile), and puts its disk in tpuDevice: the
+; work disk if it is on neither. A probe closes the files open on its
+; disk, so genUnits calls it when none are open.
+.proc findUnitTpu
+    jsr unitFileName
+    lda #<unitFn
+    ldx #>unitFn
+    ldy #0
+    ldz #0
+    jsr locateFile
+    bne :+
+    lda workDevice
+:   sta tpuDevice
     rts
 .endproc
 

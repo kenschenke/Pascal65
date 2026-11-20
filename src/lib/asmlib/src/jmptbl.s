@@ -29,7 +29,7 @@
 .import astFreeBodies
 .import rtSetCompilerFilename, rtSetCompilerUnitFilename
 .import rtGetCompilerFilename
-.import cloneEvalType, freeEvalType, linkTagSet
+.import cloneEvalType, freeEvalType, linkTagSet, locateFile
 
 .segment "JMPTBL"
 
@@ -128,6 +128,7 @@ jmp rtGetCompilerFilename
 jmp cloneEvalType
 jmp freeEvalType
 jmp linkTagSet
+jmp locateFile
 
 ; The disk devices, at fixed addresses after the jump table (asmlib.inc).
 ; asmlib stays loaded while overlays come and go, so they last the whole

@@ -26,7 +26,7 @@
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 
-.export tpuKey, objCurrent, keySrc, keyStamp, keyValid
+.export tpuKey, objCurrent, keySrc, keyStamp, keyValid, tpuDevice
 .export initGenNames, addGenName, getGenUnitsX
 
 .import readIcodeByte, readStatus
@@ -51,6 +51,7 @@ objStart2:
 keySrc: .res 2              ; the TPU's source CRC
 keyStamp: .res 2            ; the CRC of its header and used units
 keyValid: .res 1            ; non-zero once tpuKey has made them
+tpuDevice: .res 1           ; the disk the TPU is on (genUnits)
 crc: .res 2
 fn: .res 24                 ; a unit's file name, then the suffix
 left: .res 1
@@ -181,8 +182,11 @@ NO: jsr closeFile
 .endproc
 
 ; This routine opens the file named at A/X (null-terminated), with the
-; suffix ".tpu,s,r" if Y is 0 or ".obj,s,r" if it is 1, on LFN_IN to read
+; suffix ".tpu,s,r" if Y is 0 or ".obj,s,r" if it is 1, on LFN_IN to read.
+; A TPU is opened on tpuDevice, an object (always the work disk's) on
+; workDevice.
 .proc openFile
+    phy
     sta ptr1
     stx ptr1+1
     lda #<strTpu
@@ -207,8 +211,11 @@ NO: jsr closeFile
     inw ptr2
     bra :-
 :   sty nameLen
+    ldx tpuDevice
+    pla
+    beq :+
     ldx workDevice
-    lda #LFN_IN
+:   lda #LFN_IN
     tay
     jsr SETLFS
     lda nameLen

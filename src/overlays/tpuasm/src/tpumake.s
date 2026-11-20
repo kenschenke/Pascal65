@@ -47,7 +47,7 @@
 .export tpuMakeX, tpuCleanX
 
 .import nameToFn, addSuffix, openIn, startCrc, crcByte, crc, interfaceCrc
-.import fnBuf, fnLen, loadHeader, eraseFile
+.import fnBuf, fnLen, loadHeader, eraseFile, inDevice
 
 FILE_IN = 2                 ; as tpu.s's
 
@@ -1183,15 +1183,17 @@ DN: rts
     rts
 .endproc
 
-; This routine returns Z clear if the file named in fnBuf exists
+; This routine returns Z clear if the file named in fnBuf exists, on the
+; work disk or the system disk (locateFile). openIn then opens it there.
 .proc fileExists
     lda #<fnBuf
     ldx #>fnBuf
     ldy #0
     ldz #0
-    jsr doesFileExist
-    cmp #0
-    rts
+    jsr locateFile
+    beq :+
+    sta inDevice                ; Z stays clear
+:   rts
 .endproc
 
 .proc closeIn

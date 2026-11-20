@@ -31,18 +31,21 @@ BUFFER_LENGTH = 81
 buffer: .res BUFFER_LENGTH          ; Current input line buffer
 pBufChar: .res 2                    ; Pointer into buffer to current character
 lineNumberChanged: .res 1
+srcDevice: .res 1                   ; the disk the source is on
 
 .code
 
 ; This routine opens the source file. The null-terminated filename
-; is passed in A/X
+; is passed in A/X. It is searched for: the work disk, then the system
+; disk (locateFile).
 .proc openSourceFile
     ; Make sure the file exists first
     pha
     phx
     ldy #0
     ldz #0
-    jsr doesFileExist
+    jsr locateFile
+    sta srcDevice
     cmp #0
     bne :+
     ; The file does not exist
@@ -64,7 +67,7 @@ lineNumberChanged: .res 1
     ; Call SETNAM
     jsr SETNAM
     ; Call SETLFS
-    ldx workDevice
+    ldx srcDevice
     lda #1
     tay
     iny

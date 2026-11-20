@@ -48,6 +48,7 @@ nameLen: .res 1
 nameBuf: .res 24
 fnBuf: .res 24
 fnLen: .res 1
+tpuDevice: .res 1           ; the disk the TPU is on (locateFile)
 
 .code
 
@@ -84,8 +85,8 @@ fnLen: .res 1
     ldx #>fnBuf
     ldy #0
     ldz #0
-    jsr doesFileExist
-    cmp #0
+    jsr locateFile                ; the work disk, then the system disk
+    sta tpuDevice
     bne :+
     clc
     rts
@@ -241,7 +242,7 @@ DN: rts
     iny
     bra :-
 :   stx fnLen
-    ldx workDevice
+    ldx tpuDevice
     lda #FILE_IN
     tay
     jsr SETLFS

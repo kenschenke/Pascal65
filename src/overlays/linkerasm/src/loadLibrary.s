@@ -91,6 +91,8 @@ relocHi: .res 1         ; v2: non-zero if the next byte is a high byte
 relocCarry: .res 1      ; v2: carry from relocating the low byte
 rdIdx: .res 1           ; readLibBuf: index in buf
 rdCount: .res 1         ; readLibBuf: bytes left to relocate
+libDevice: .res 1       ; the disk the library is on (locateFile)
+fnLen: .res 1
 
 .code
 
@@ -769,7 +771,9 @@ DN: rts
 .endproc
 
 ; This routine opens the library named in symName: up to 12 characters of
-; the name, then ".lib"
+; the name, then ".lib". It is on the work disk or the system disk
+; (locateFile). No file is open while the libraries are laid out, so the
+; probe closes none.
 .proc openLibrary
     ldx #0
 :   lda symName,x
@@ -786,7 +790,19 @@ DN: rts
     inx
     iny
     bne :-
-:   ldy #0
+:   stx fnLen
+    lda #0
+    sta filename,x
+    lda #<filename
+    ldx #>filename
+    ldy #0
+    ldz #0
+    jsr locateFile
+    bne :+
+    lda workDevice  ; on neither: the open finds nothing
+:   sta libDevice
+    ldx fnLen
+    ldy #0
 :   lda strSuffix,y
     beq :+
     sta filename,x
@@ -796,7 +812,7 @@ DN: rts
 
     ; Open the library file
 :   phx             ; Save the filename length
-    ldx workDevice
+    ldx libDevice
     lda #LFN_LIB
     tay
     jsr SETLFS

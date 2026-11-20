@@ -15,13 +15,19 @@
 .include "zeropage.inc"
 
 .export scratchFile, renameFile, IOResult, makeFilename, doesFileExist
+.export locateFile
 
-.import workDevice
+.import workDevice, sysDevice
 
 .bss
 
 buffer: .res 34
 IOResult: .res 1
+
+.data
+
+; locateFile's device, or 0 for workDevice. Data, not BSS: it must start 0.
+cmdDevice: .byte 0
 
 .code
 
@@ -53,6 +59,37 @@ IOResult: .res 1
     lda IOResult
     sec
     sbc #2
+    rts
+.endproc
+
+; This routine finds a file that is searched for: on the work disk, then
+; on the system disk (plans/workdisks.md). Q contains the pointer to the
+; null-terminated filename. A is the device it is on, or 0 if it is on
+; neither, and Z is set if it is 0. In single-disk mode (the devices
+; equal) it is one doesFileExist. A probe of a disk closes the files open
+; on that disk, as any DOS command does.
+.proc locateFile
+    stq ptr1
+    stq ptr2
+    jsr renameFile              ; on workDevice
+    lda IOResult
+    cmp #2
+    beq :+
+    lda workDevice
+    rts
+:   lda sysDevice
+    cmp workDevice
+    beq NO
+    sta cmdDevice
+    jsr renameFile              ; ptr1 and ptr2 are kept
+    lda #0
+    sta cmdDevice
+    lda IOResult
+    cmp #2
+    beq NO
+    lda sysDevice
+    rts
+NO: lda #0
     rts
 .endproc
 
@@ -149,6 +186,8 @@ DN: inx
 .proc openErrChannel
     lda #15             ; File number 15
     tay                 ; Copy to command channel
+    ldx cmdDevice       ; locateFile's probe of the system disk
+    bne :+
     ldx workDevice      ; DOS commands are for the work disk
     bne :+
     ldx #8              ; Default to device 8
