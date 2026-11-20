@@ -117,6 +117,16 @@ unit (one with a .hdr file or **Implementation Library**) is never compiled.
 and every unit those use, whether its .tpu file is current or not, then
 the file itself. Library units and units with no source are left alone.
 
+### Unit Object Files
+
+The compiler also keeps each unit's machine code, in *unit-name*.obj beside
+its .tpu file. When a unit hasn't changed since the last build, its code
+isn't generated again, which makes building a program faster. The .obj file
+is made again when the unit's .tpu file changes in a way that affects its
+code, and after a new compiler runtime. Rebuild All (**F8**) makes every
+unit's .obj file again too. Deleting a .obj file is always safe: the next
+build makes it.
+
 ### Circular References
 
 Two units can't use each other, either directly or through other units. The

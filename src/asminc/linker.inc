@@ -28,6 +28,9 @@ LINKADDR_IMPORT = $80
 ;    .byte RT_ABI_VERSION       the runtime the code calls
 ;    .byte kind                 OBJ_KIND_*: the program's is the first
 ;    .byte flags                OBJ_FLAG_*
+;    .word key source CRC       a unit's TPU's (OBJ_FLAG_CACHED; objcache.s
+;    .word key stamp            in codegen): the CRC of the TPU's header
+;                               and used units
 ;    .byte features             RTF_* (asm.inc), ORed into the program's
 ;    .byte runtime mode         RT_MODE_* (asm.inc), the program's
 ;    .word stack size           the runtime stack's size in bytes, the
@@ -53,7 +56,10 @@ LINKADDR_IMPORT = $80
 ;    the code, to the end of the file
 ;
 ; A unit's object file has no libraries, frames or units: those counts
-; are 0. The linker ORs every module's features.
+; are 0. The linker ORs every module's features. A unit's object file
+; stays beside its TPU, and code generation makes it again only when the
+; TPU's key, the object format or the runtime changes (objcache.s in
+; codegen). The linker deletes only the program's.
 ;
 ; A relocation's target is an offset in the module's code, so a label that
 ; isn't exported needs no symbol. A label the module uses but doesn't set
@@ -82,13 +88,14 @@ LINKADDR_IMPORT = $80
 ; An import that resolves to neither is errUndefinedLabel, with its name.
 OBJ_MAGIC0 = 'O'
 OBJ_MAGIC1 = 'B'
-OBJ_VERSION = 5
+OBJ_VERSION = 6
 OBJ_NAME_MAX = 23           ; the longest name, TAGTOFIND's label less one
 
 OBJ_KIND_PROGRAM = 0
 OBJ_KIND_UNIT = 1
 
 OBJ_FLAG_OVERLAY = $01      ; an overlay unit (see plans/overlays.md)
+OBJ_FLAG_CACHED = $02       ; a unit's object, kept for its TPU's key
 
 OBJSYM_EXPORTED = $01       ; a symbol's flags
 

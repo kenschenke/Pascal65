@@ -24,7 +24,7 @@
 .include "ast.inc"
 .include "tpu.inc"
 
-.export runCompiler, unitList, madeUnits, makeRebuild
+.export runCompiler, unitList, madeUnits, makeRebuild, genUnits
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
@@ -56,6 +56,8 @@ makeFn: .res 17                 ; a unit's source, from tpuMake
 MADE_MAX = 64
 madeUnits: .res MADE_MAX + 1    ; the units runCompiler compiled
 madeLen: .res 1
+GEN_MAX = 64
+genUnits: .res GEN_MAX + 1     ; the units the last code generation made
 makeRebuild: .res 1             ; non-zero: rebuild every unit, then clear
 
 .code
@@ -75,6 +77,7 @@ makeRebuild: .res 1             ; non-zero: rebuild every unit, then clear
     sta madeLen
     sta madeUnits
     sta errorCount
+    sta genUnits
     lda makeRebuild
     beq L1
     lda #0
@@ -343,6 +346,22 @@ L1: lda #0
     tay
 L2: jsr setCodeGenProgramChain
     jsr objCodeGen
+
+    ; The units whose code it generated, before another overlay is
+    ; loaded over its list (getCodeGenUnits)
+    jsr getCodeGenUnits
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    sta genUnits,y
+    beq :+
+    iny
+    cpy #GEN_MAX
+    bne :-
+    lda #0
+    sta genUnits,y
+:
 
     ldq astRoot
     jsr astFree

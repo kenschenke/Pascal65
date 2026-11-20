@@ -15,9 +15,10 @@
 ; the runtime mode and stack size and the libraries from its header and
 ; imports table, and the runtime features from its EOM.
 
-.import genObjCode, setChainProg
+.import genObjCode, setChainProg, getGenUnitsX
 
 .segment "JMPTBL"
 
 jmp genObjCode
 jmp setChainProg
+jmp getGenUnitsX

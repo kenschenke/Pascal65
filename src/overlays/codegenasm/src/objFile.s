@@ -57,7 +57,7 @@ skip:
 .export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen, addRuntimeFeatures
 
 .import runtimeStackSize, writeLibraries, writeUnits, deleteIfExists
-.import writeFrames, freeFrames, globalSlots
+.import writeFrames, freeFrames, globalSlots, keyValid, keySrc
 
 .data
 
@@ -191,8 +191,20 @@ expName: .res OBJ_NAME_MAX+1
     beq :+
     lda #OBJ_KIND_UNIT
 :   jsr CHROUT
+
+    ; The flags, and the key of the TPU a unit's object was made from
+    ; (objcache.s), so the next build can keep it
     lda #0
+    ldx keyValid
+    beq :+
+    lda #OBJ_FLAG_CACHED
+:   jsr CHROUT
+    ldx #0
+:   lda keySrc,x
     jsr CHROUT
+    inx
+    cpx #4
+    bne :-
 
     ; The runtime features and mode and the stack size
     lda runtimeFeatures

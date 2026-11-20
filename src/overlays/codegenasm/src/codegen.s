@@ -32,6 +32,7 @@
 .import beginUnitFrames, endUnitFrames, setRuntimeFeatures
 .import isImportTpu, readIcodeByte, initExports, freeExports, setObjModule
 .import modName, nameBuf, nameLen
+.import tpuKey, objCurrent, keyValid, initGenNames, addGenName
 
 .data
 
@@ -72,8 +73,10 @@ objName: .res 17           ; a unit's object file: its name, then ".obj"
     jsr initImports
     jsr initFrames
     jsr initExports
+    jsr initGenNames
     lda #0
     sta unitCount               ; for badIcode, until the imports are read
+    sta keyValid                ; the program's object has no key
 
     ; Delete the object file and the code file if they exist
     lda #<objFilename
@@ -280,7 +283,8 @@ TP: lda unitIdx
 ; This routine generates the code of each Pascal unit the program's
 ; imports table lists, from the unit's own icode file or its TPU's icode
 ; section (icode.inc), in the table's order, and writes its object file,
-; <unit>.obj. Code names other modules' entries and libraries' slots by
+; <unit>.obj. A unit loaded from its TPU whose object is current is skipped:
+; its object stays as it is (objcache.s). Code names other modules' entries and libraries' slots by
 ; name, so a unit's imports table is skipped. Its frames table numbers the
 ; frames its operands name. deleteIcode deletes the icode files.
 ; The carry is set if a file can't be read: the file is left open on 2.
@@ -293,7 +297,27 @@ L1: lda unitIdx
     clc
     rts
 
-:   jsr startModule
+    ; A unit whose object is current for its TPU is skipped (objcache.s)
+:   lda #0
+    sta keyValid
+    lda unitIdx
+    jsr isImportTpu
+    beq GN                      ; no TPU: made each time
+    lda unitIdx
+    jsr getImportUnit
+    jsr tpuKey
+    bcs GN
+    lda unitIdx
+    jsr getImportUnit
+    jsr objCurrent
+    bcs GN
+    inc unitIdx
+    jmp L1
+
+GN: lda unitIdx
+    jsr getImportUnit
+    jsr addGenName
+    jsr startModule
     jsr unitFileName
 
     ; Open it with ",s,r"

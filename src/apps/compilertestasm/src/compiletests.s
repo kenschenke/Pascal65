@@ -16,7 +16,7 @@
 
 .export compileTests, nextTestPrg, expectedError
 
-.import runCompiler, madeUnits, failTests, makeRebuild
+.import runCompiler, madeUnits, failTests, makeRebuild, genUnits
 
 .data
 
@@ -205,12 +205,15 @@ tests:
 ; compiled (tpuMake), so every program is built with its units loaded from
 ; their TPUs (tpuload.s).
 
-; The make tests: DOS commands that change the sources and TPUs, and
-; compiles that must compile exactly the units named, in that order (each
-; followed by a space). MkProg uses MkB and MkC, MkB uses MkA in its
+; The make tests: DOS commands that change the sources, TPUs and objects,
+; and compiles that must compile exactly the units named, in that order
+; (each followed by a space), then generate the code of exactly the units
+; named second: those whose object isn't current for their TPU
+; (objcache.s in codegen). MkProg uses MkB and MkC, MkB uses MkA in its
 ; interface and MkC uses MkB in its implementation.
 MK_DOS = 1                  ; .word the command
 MK_COMPILE = 2              ; .word the program, .word the units expected
+                            ; to compile, .word those to generate
 MK_REBUILD = 3              ; the same, rebuilding every unit (tpuClean)
 
 .macro MKDOS cmd
@@ -218,14 +221,14 @@ MK_REBUILD = 3              ; the same, rebuilding every unit (tpuClean)
     .word cmd
 .endmacro
 
-.macro MKCOMPILE prog, units
+.macro MKCOMPILE prog, units, gen
     .byte MK_COMPILE
-    .word prog, units
+    .word prog, units, gen
 .endmacro
 
-.macro MKREBUILD prog, units
+.macro MKREBUILD prog, units, gen
     .byte MK_REBUILD
-    .word prog, units
+    .word prog, units, gen
 .endmacro
 
 makeTests:
@@ -233,34 +236,40 @@ makeTests:
     MKDOS strMkScratchTpus
     MKDOS strMkScratchA
     MKDOS strMkCopyA1
-    ; No TPUs: each unit, deepest first
-    MKCOMPILE strMkProg, strMkAll
+    ; No TPUs or objects: each unit, deepest first
+    MKCOMPILE strMkProg, strMkAll, strMkAll
     ; All current
-    MKCOMPILE strMkProg, strMkNone
+    MKCOMPILE strMkProg, strMkNone, strMkNone
     ; MkA's implementation changed: its interface CRC didn't, so it alone
     MKDOS strMkScratchA
     MKDOS strMkCopyA2
-    MKCOMPILE strMkProg, strMkA
+    MKCOMPILE strMkProg, strMkA, strMkA
     ; MkA's interface changed: MkB used it, but MkB's own interface
-    ; didn't change, so MkC is current
+    ; didn't change, so MkC is current. MkB's TPU records MkA's new
+    ; interface CRC, so its object isn't current either.
     MKDOS strMkScratchA
     MKDOS strMkCopyA3
-    MKCOMPILE strMkProg, strMkAB
-    ; MkC's TPU is of another icode version
+    MKCOMPILE strMkProg, strMkAB, strMkAB
+    ; MkC's TPU is of another icode version. Compiled again, its TPU is
+    ; the one its object was made from, so the object is current.
     MKDOS strMkScratchC
     MKDOS strMkCopyStale
-    MKCOMPILE strMkProg, strMkC
+    MKCOMPILE strMkProg, strMkC, strMkNone
     ; MkA's TPU is missing. Compiled from the same source, its interface
-    ; CRC is the same, so MkB is current.
+    ; CRC is the same, so MkB is current, and so is MkA's object.
     MKDOS strMkScratchATpu
-    MKCOMPILE strMkProg, strMkA
-    ; Rebuild all: every unit, though all are current
-    MKREBUILD strMkProg, strMkAll
+    MKCOMPILE strMkProg, strMkA, strMkNone
+    ; MkB's object is missing: its code alone
+    MKDOS strMkScratchBObj
+    MKCOMPILE strMkProg, strMkNone, strMkB
+    ; Rebuild all: every unit and every unit's code, though all are current
+    MKREBUILD strMkProg, strMkAll, strMkAll
 .endif
     .byte 0
 
 strMkProg: .asciiz "mkprog"
-strMkScratchTpus: .asciiz "s:mk*.tpu"
+strMkScratchTpus: .asciiz "s:mk*.tpu,mk*.obj"
+strMkScratchBObj: .asciiz "s:mkb.obj"
 strMkScratchA: .asciiz "s:mka.pas"
 strMkScratchATpu: .asciiz "s:mka.tpu"
 strMkScratchC: .asciiz "s:mkc.tpu"
@@ -273,6 +282,8 @@ strMkNone: .asciiz ""
 strMkA: .asciiz "mka "
 strMkAB: .asciiz "mka mkb "
 strMkC: .asciiz "mkc "
+strMkB: .asciiz "mkb "
+strMkGenerated: .asciiz "Generated: "
 strMkExpected: .asciiz "Expected: "
 strMkMade: .asciiz "Compiled: "
 
@@ -343,6 +354,7 @@ sourceFn: .res 16           ; null-terminated source filename for the current te
 nextTestPrg: .res 16        ; null-terminated PRG filename of the next test
 mkPtr: .res 2               ; the make test step
 mkExpected: .res 2          ; the units its compile must compile
+mkGenExpected: .res 2       ; and generate the code of
 
 .code
 
@@ -518,12 +530,18 @@ CP: cmp #MK_REBUILD
     iny
     lda (ptr3),y
     sta mkExpected+1
+    iny
+    lda (ptr3),y
+    sta mkGenExpected
+    iny
+    lda (ptr3),y
+    sta mkGenExpected+1
     jsr makeSourceFilename
     lda #<sourceFn
     ldx #>sourceFn
     jsr runCompiler
     jsr checkMade
-    lda #5
+    lda #7
 
 NX: clc
     adc mkPtr
@@ -548,6 +566,20 @@ NX: clc
     beq :+
     iny
     bra :-
+
+    ; The units whose code was generated
+:   lda mkGenExpected
+    sta ptr4
+    lda mkGenExpected+1
+    sta ptr4+1
+    ldy #0
+:   lda (ptr4),y
+    cmp genUnits,y
+    bne FL
+    cmp #0
+    beq :+
+    iny
+    bra :-
 :   rts
 
 FL: lda #13
@@ -565,6 +597,22 @@ FL: lda #13
     jsr printStr
     lda #<madeUnits
     ldx #>madeUnits
+    jsr printStr
+    lda #13
+    jsr CHROUT
+    lda #<strMkExpected
+    ldx #>strMkExpected
+    jsr printStr
+    lda mkGenExpected
+    ldx mkGenExpected+1
+    jsr printStr
+    lda #13
+    jsr CHROUT
+    lda #<strMkGenerated
+    ldx #>strMkGenerated
+    jsr printStr
+    lda #<genUnits
+    ldx #>genUnits
     jsr printStr
     lda #13
     jsr CHROUT

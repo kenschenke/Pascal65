@@ -29,7 +29,8 @@
 ;      BSS.
 ;
 ; A bad object file is errObjFileInvalid. Any error stops the link. The
-; object files are deleted, and an error leaves no PRG.
+; program's object file is deleted, and an error leaves no PRG. A unit's
+; stays beside its TPU, for the next build.
 
 .include "c64.inc"
 .include "asm.inc"
@@ -242,8 +243,8 @@ L2: jsr writeModule
     ; Fall through
 .endproc
 
-; This routine finishes linking: it closes and deletes the object files
-; and frees what the linker allocated
+; This routine finishes linking: it closes the object files, deletes the
+; program's and frees what the linker allocated
 .proc finish
     lda #OBJ_FILENUM
     jsr CLOSE
@@ -707,6 +708,14 @@ BD2: jmp BD
     bne BD2
 :   jsr readByte
 
+    ; A unit's TPU's key, which only code generation reads
+    ldx #4
+:   phx
+    jsr readByte
+    plx
+    dex
+    bne :-
+
     ; The features, which add to the program's, then the runtime mode
     ; and the stack size, which are the program's
     jsr readByte
@@ -940,12 +949,12 @@ ER: ldq intOp1
     rts
 .endproc
 
-; This routine deletes the object files: the program's, then each unit's
-; it names
+; This routine deletes the program's object file. Each unit's stays beside
+; its TPU for the next build (objcache.s in codegen).
 .proc deleteObjFiles
     lda #0
     sta curMod
-L1: jsr modFilename
+    jsr modFilename
     lda #<strbuf
     sta ptr1
     lda #>strbuf
@@ -953,13 +962,7 @@ L1: jsr modFilename
     lda #0
     sta ptr1+2
     sta ptr1+3
-    jsr scratchFile
-    lda curMod
-    cmp numUnits
-    beq :+
-    inc curMod
-    bra L1
-:   rts
+    jmp scratchFile
 .endproc
 
 ; This routine formats the output PRG filename.

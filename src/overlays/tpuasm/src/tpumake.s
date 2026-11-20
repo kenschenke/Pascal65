@@ -31,8 +31,9 @@
 ; file is read whole before any check that needs one.
 ;
 ; tpuCleanX (tpuClean) makes the same walk, but erases the TPU of each
-; unit make could compile in place of checking it, so the make loop after
-; it compiles them all (Rebuild all).
+; unit make could compile in place of checking it, and the unit's object
+; file, so the make loop after it compiles them all and code generation
+; makes every unit's code again (Rebuild all).
 
 .include "c64.inc"
 .include "tpu.inc"
@@ -84,6 +85,7 @@ STOP_ERROR = 2              ; an error was reported
 strPas: .asciiz ".pas"
 strHdr: .asciiz ".hdr"
 strTpu: .asciiz ".tpu"
+strObj: .asciiz ".obj"
 strSeqRead: .asciiz ",s,r"
 strSystem: .asciiz "system"
 strUses: .asciiz "uses"
@@ -307,6 +309,12 @@ OK: lda #1
     beq CK
     lda #<strTpu
     ldx #>strTpu
+    jsr entryFn
+    lda #<fnBuf
+    ldx #>fnBuf
+    jsr eraseFile
+    lda #<strObj                ; and its object (objcache.s in codegen)
+    ldx #>strObj
     jsr entryFn
     lda #<fnBuf
     ldx #>fnBuf
