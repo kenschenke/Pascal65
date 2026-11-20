@@ -96,7 +96,7 @@ YES:
     stq lastPtr
 
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     ldy #0
     ; tay

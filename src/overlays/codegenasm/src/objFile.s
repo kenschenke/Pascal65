@@ -165,7 +165,7 @@ expName: .res OBJ_NAME_MAX+1
 :   sty objFnLen
 
     ; Open the object file
-    ldx DEVNUM
+    ldx workDevice
     lda #LFN_OBJ
     tay
     iny
@@ -583,7 +583,7 @@ L1: ldq tagsToFind
 ; blocks of up to 256 bytes so the channels change once a block. Both files
 ; are closed after.
 .proc copyCode
-    ldx DEVNUM
+    ldx workDevice
     lda #LFN_CODE
     tay
     iny

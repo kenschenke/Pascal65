@@ -18,7 +18,7 @@
 .export rtInitCompilerErrors, rtCompilerError, rtCompilerWarning, rtInitCompilerWarnings
 .export rtSetCompilerFilename, rtSetCompilerUnitFilename, rtGetCompilerFilename
 
-.import heapAlloc, exit, rtPushQ
+.import heapAlloc, exit, rtPushQ, sysDevice
 
 ; CBM filenames are at most 16 characters
 MAX_FILENAME_LENGTH = 16
@@ -218,7 +218,7 @@ L1: ldq ptr1
 ; The buffer pointer is expected in ptr1
 .proc readErrorFile
     jsr SETNAM
-    ldx DEVNUM
+    ldx sysDevice           ; errormsgs.txt is a system file
     lda #1
     tay
     iny

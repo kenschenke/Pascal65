@@ -43,15 +43,24 @@ pasExtension: .asciiz "pas"
 
 .code
 
-; This routine opens a file from the null-terminated filename in fnBuf.
-; The routine then calls readFile which adds the lines to currentFile.
+; This routine opens a file on the work disk from the null-terminated
+; filename in fnBuf.
 .proc openFile
+    lda workDevice
+    ; Fall through
+.endproc
+
+; This routine opens a file on the device in A from the null-terminated
+; filename in fnBuf. The routine then calls readFile which adds the lines
+; to currentFile.
+.proc openFileDev
+    pha
     ; Allocate a file
     jsr initFile
     ; See if the file is Pascal
     jsr setIsPascal
     ; Call SETLFS
-    ldx DEVNUM
+    plx
     lda #1
     tay
     iny
@@ -101,10 +110,11 @@ pasExtension: .asciiz "pas"
     rts
 .endproc
 
-; This routine opens a file by calling openFile
-; then sets the read-only flag.
+; This routine opens a file on the system disk (help.txt) then sets the
+; read-only flag.
 .proc openFileRO
-    jsr openFile
+    lda sysDevice
+    jsr openFileDev
     ldz #EDITFILE::readOnly
     lda #1
     nop
@@ -230,7 +240,7 @@ L4: cmp #13             ; Is that a CR?
 .endproc
 
 .proc readTitleFile
-    ldx DEVNUM
+    ldx sysDevice
     lda #1
     tay
     iny

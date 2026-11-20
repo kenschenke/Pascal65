@@ -48,7 +48,7 @@ includeAllEntries: .res 1
     lda #filename2-filename
     jsr SETNAM
 
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

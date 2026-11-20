@@ -245,7 +245,7 @@ CopyAll:
     sta ptr1+3
     jsr scratchFile
 
-    ldx DEVNUM
+    ldx workDevice
     lda #HDR_FILENUM
     tay
     jsr SETLFS

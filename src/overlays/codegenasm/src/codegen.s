@@ -91,7 +91,7 @@ objName: .res 17           ; a unit's object file: its name, then ".obj"
     ; Open the icode file and read its header: the runtime mode and
     ; stack size and the module's name (icode.inc)
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #2
     tay
     iny
@@ -162,7 +162,7 @@ objName: .res 17           ; a unit's object file: its name, then ".obj"
 
     ; Open the code file
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny
@@ -330,7 +330,7 @@ GN: lda unitIdx
     iny
     bra :-
 :   stx unitFnTotal
-    ldx DEVNUM
+    ldx workDevice
     lda #2
     tay
     iny

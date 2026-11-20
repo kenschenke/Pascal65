@@ -64,7 +64,7 @@ lineNumberChanged: .res 1
     ; Call SETNAM
     jsr SETNAM
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

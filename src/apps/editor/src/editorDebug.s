@@ -10,6 +10,7 @@
 ; Editor debug functionality
 
 .include "c64.inc"
+.include "asmlib.inc"
 .include "meminfo.inc"
 .include "cbm_kernal.inc"
 
@@ -49,7 +50,7 @@ heapFn2:
 .endproc
 
 .proc editorWriteHeapStateFile
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

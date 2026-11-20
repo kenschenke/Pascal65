@@ -1093,7 +1093,7 @@ DN: tya
     sec
     jsr setFileName
     lda #2
-    ldx DEVNUM
+    ldx workDevice
     ldy #2
     jsr SETLFS
     jsr OPEN

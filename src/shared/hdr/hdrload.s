@@ -137,7 +137,7 @@ Fail:
     bne :-
 :   sty rdLen
 
-    ldx DEVNUM
+    ldx workDevice
     lda #HDR_FILENUM
     tay
     jsr SETLFS

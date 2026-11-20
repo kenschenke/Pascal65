@@ -286,7 +286,7 @@ NX: iny
 
 ; This routine opens fnBuf as the input
 .proc openIn
-    ldx DEVNUM
+    ldx workDevice
     lda #FILE_IN
     tay
     jsr SETLFS

@@ -511,7 +511,7 @@ L2: rts
     jsr appendDOSSuffix
 
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

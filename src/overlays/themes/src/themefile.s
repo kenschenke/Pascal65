@@ -181,7 +181,7 @@ L1: ldq lastTheme
     sec
     jsr makeFilename
     jsr SETNAM
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny
@@ -300,7 +300,7 @@ DN: jmp addTheme
     clc
     jsr makeFilename
     jsr SETNAM
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

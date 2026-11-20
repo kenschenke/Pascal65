@@ -20,6 +20,7 @@
 ; Rebuild all erases the objects with the TPUs (tpuClean in tpumake.s).
 
 .include "c64.inc"
+.include "asmlib.inc"
 .include "asm.inc"
 .include "linker.inc"
 .include "zeropage.inc"
@@ -206,7 +207,7 @@ NO: jsr closeFile
     inw ptr2
     bra :-
 :   sty nameLen
-    ldx DEVNUM
+    ldx workDevice
     lda #LFN_IN
     tay
     jsr SETLFS

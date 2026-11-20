@@ -63,7 +63,7 @@ strSeqWrite: .asciiz ",s,w"
     jsr icodeFileEraseX
 
     ; Call SETLFS
-L1: ldx DEVNUM
+L1: ldx workDevice
     lda #1
     tay
     iny
@@ -360,7 +360,7 @@ L2: ldz tmp1
     iny
     bra :-
 :   stx unitFnLen
-    ldx DEVNUM
+    ldx workDevice
     lda #3
     tay
     jsr SETLFS

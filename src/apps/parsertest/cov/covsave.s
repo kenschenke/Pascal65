@@ -17,6 +17,7 @@
 
 .include "cbm_kernal.inc"
 .include "c64.inc"
+.include "asmlib.inc"
 .include "zeropage.inc"
 
 .export covInit, covSave
@@ -51,7 +52,7 @@ L1:
     ldy #>fname
     jsr SETNAM
     lda #1
-    ldx DEVNUM
+    ldx workDevice
     ldy #0
     jsr SETLFS
     lda #<COVMAP

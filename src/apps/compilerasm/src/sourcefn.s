@@ -55,7 +55,7 @@ filename: .res 20
     jsr makeFilename
     jsr SETNAM
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

@@ -93,7 +93,7 @@ multilineCommentCarry: .res 1
     jsr scratchFile
 
     ; Call SETLFS
-L1: ldx DEVNUM
+L1: ldx workDevice
     lda #1
     tay
     iny

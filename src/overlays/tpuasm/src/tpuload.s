@@ -241,7 +241,7 @@ DN: rts
     iny
     bra :-
 :   stx fnLen
-    ldx DEVNUM
+    ldx workDevice
     lda #FILE_IN
     tay
     jsr SETLFS

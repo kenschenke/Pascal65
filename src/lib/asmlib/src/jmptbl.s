@@ -128,3 +128,13 @@ jmp rtGetCompilerFilename
 jmp cloneEvalType
 jmp freeEvalType
 jmp linkTagSet
+
+; The disk devices, at fixed addresses after the jump table (asmlib.inc).
+; asmlib stays loaded while overlays come and go, so they last the whole
+; program. initLib sets both to the device the program was loaded from.
+; System files (overlays, messages, runtime pieces) are read from
+; sysDevice and the user's files from workDevice. Single-disk mode is the
+; two equal.
+.export sysDevice, workDevice
+sysDevice: .byte 0
+workDevice: .byte 0

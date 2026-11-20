@@ -140,7 +140,7 @@ L1: lda unitIdx
     pha
     phx
     phy
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

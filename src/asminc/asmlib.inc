@@ -112,3 +112,7 @@ getCompilerFilename = ASMBASE + 273
 cloneEvalType = ASMBASE + 276
 freeEvalType = ASMBASE + 279
 linkTagSet = ASMBASE + 282
+
+; The disk devices (jmptbl.s): bytes, not entry points
+sysDevice = ASMBASE + 285
+workDevice = ASMBASE + 286

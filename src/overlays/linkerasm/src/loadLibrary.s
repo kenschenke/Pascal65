@@ -796,7 +796,7 @@ DN: rts
 
     ; Open the library file
 :   phx             ; Save the filename length
-    ldx DEVNUM
+    ldx workDevice
     lda #LFN_LIB
     tay
     jsr SETLFS

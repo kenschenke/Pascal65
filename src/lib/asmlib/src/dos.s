@@ -16,6 +16,8 @@
 
 .export scratchFile, renameFile, IOResult, makeFilename, doesFileExist
 
+.import workDevice
+
 .bss
 
 buffer: .res 34
@@ -147,7 +149,7 @@ DN: inx
 .proc openErrChannel
     lda #15             ; File number 15
     tay                 ; Copy to command channel
-    ldx DEVNUM          ; Device number
+    ldx workDevice      ; DOS commands are for the work disk
     bne :+
     ldx #8              ; Default to device 8
 :   jsr SETLFS

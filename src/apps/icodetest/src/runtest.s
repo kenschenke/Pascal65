@@ -505,7 +505,7 @@ RD:
     ldy #>sourceFn
     jsr SETNAM
     lda #1
-    ldx DEVNUM
+    ldx workDevice
     ldy #2
     jsr SETLFS
     jsr OPEN
@@ -726,7 +726,7 @@ L2: rts
     jsr appendDOSSuffix
 
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

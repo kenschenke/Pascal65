@@ -11,6 +11,7 @@
 
 .include "cbm_kernal.inc"
 .include "c64.inc"
+.include "asmlib.inc"
 
 .export loadfile
 
@@ -23,7 +24,7 @@
     jsr SETNAM
 
     ; Call SETLFS
-    ldx DEVNUM
+    ldx sysDevice           ; overlays and libraries are system files
     lda #1
     tay
     iny

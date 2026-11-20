@@ -78,7 +78,7 @@ L3: rts
     ldy #>fname
     jsr SETNAM
     lda #1
-    ldx DEVNUM
+    ldx workDevice
     ldy #0
     jsr SETLFS
     lda #<covMap

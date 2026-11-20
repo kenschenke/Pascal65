@@ -387,7 +387,7 @@ DN: rts
     iny
     bra :-
 :   phx
-    ldx DEVNUM
+    ldx workDevice
     lda #OBJ_FILENUM
     tay
     jsr SETLFS
@@ -1119,7 +1119,7 @@ L3: lda writeExt,y
 
     ; Call SETLFS
 L4: phx                 ; X contains length of filename (including ",p,w")
-    ldx DEVNUM
+    ldx workDevice
     lda #PRG_FILENUM
     tay
     jsr SETLFS

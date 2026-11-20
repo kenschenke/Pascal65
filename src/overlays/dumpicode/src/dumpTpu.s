@@ -87,7 +87,7 @@ left: .res 2
     iny
     bra :-
 :   phy
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

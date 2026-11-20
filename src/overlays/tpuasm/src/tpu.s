@@ -261,7 +261,7 @@ CD: lda #FILE_IN
     iny
     bra :-
 :   stx outLen
-    ldx DEVNUM
+    ldx workDevice
     lda #FILE_OUT
     tay
     jsr SETLFS
@@ -809,7 +809,7 @@ LK: ldq copyDecl
 ; the input
 .proc openIn
     jsr addSuffix
-    ldx DEVNUM
+    ldx workDevice
     lda #FILE_IN
     tay
     jsr SETLFS
@@ -826,7 +826,7 @@ LK: ldq copyDecl
 ; the output
 .proc openOut
     jsr addSuffix
-    ldx DEVNUM
+    ldx workDevice
     lda #FILE_OUT
     tay
     jsr SETLFS

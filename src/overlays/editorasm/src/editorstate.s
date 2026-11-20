@@ -165,7 +165,7 @@ L2: lda tmp1
 .endproc
 
 .proc editorRestoreState
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny
@@ -215,7 +215,7 @@ L2: lda #1
     bne :+
     rts
 
-:   ldx DEVNUM
+:   ldx workDevice
     lda #1
     tay
     iny

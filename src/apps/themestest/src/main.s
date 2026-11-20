@@ -333,7 +333,7 @@ DN: rts
     ldy #>cmdBuf
     jsr SETNAM
     lda #15
-    ldx DEVNUM
+    ldx workDevice
     ldy #15
     jsr SETLFS
     jsr OPEN
@@ -856,7 +856,7 @@ NE: inc tmp3                ; Skip the rest of the buffer
     ldy #>cmdBuf
     jsr SETNAM
     lda #2
-    ldx DEVNUM
+    ldx workDevice
     ldy #2
     jsr SETLFS
     jsr OPEN

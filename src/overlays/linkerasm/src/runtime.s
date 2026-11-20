@@ -685,7 +685,7 @@ ER: sec
 ; makes it the input
 .proc openFile
     sty tmp1
-    ldx DEVNUM
+    ldx sysDevice           ; the runtime pieces are system files
     lda #LFN_RT
     tay
     jsr SETLFS

@@ -29,7 +29,7 @@ tmpFn: .asciiz "tmp.txt"
 ; This routine saves the lines from the current file.
 .proc saveToExisting
     ; Call SETLFS
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

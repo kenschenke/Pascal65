@@ -391,7 +391,7 @@ CM: ldq dumpMemBuf
     ldy #>sourceFn
     jsr SETNAM
     lda #1
-    ldx DEVNUM
+    ldx workDevice
     ldy #2
     jsr SETLFS
     jsr OPEN
@@ -575,7 +575,7 @@ L2: rts
 .proc openSourceFile
     jsr appendDOSSuffix
 
-    ldx DEVNUM
+    ldx workDevice
     lda #1
     tay
     iny

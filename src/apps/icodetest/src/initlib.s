@@ -11,6 +11,7 @@
 
 .include "cbm_kernal.inc"
 .include "c64.inc"
+.include "asmlib.inc"
 
 .data
 
@@ -24,10 +25,19 @@ fnAsmLib2:
 .import loadfile
 
 .proc initLib
+    ; The device the program was loaded from. loadfile reads it from
+    ; asmlib, so it goes there before the load and again after, since
+    ; the load overwrites it.
+    lda DEVNUM
+    pha
+    sta sysDevice
     ldx #<fnAsmLib
     ldy #>fnAsmLib
     lda #fnAsmLib2-fnAsmLib
     jsr loadfile
+    pla
+    sta sysDevice
+    sta workDevice
 
     rts
 .endproc

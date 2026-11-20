@@ -13,6 +13,7 @@
 .include "cbm_kernal.inc"
 .include "error.inc"
 .include "c64.inc"
+.include "asmlib.inc"
 
 .export compileTests, nextTestPrg, expectedError
 
@@ -646,7 +647,7 @@ FL: lda #13
     ldy ptr4+1
     jsr SETNAM
     lda #15
-    ldx DEVNUM
+    ldx workDevice
     ldy #15
     jsr SETLFS
     jsr OPEN
