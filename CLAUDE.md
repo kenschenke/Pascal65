@@ -526,9 +526,11 @@ built with `MEMCHECK=1`.
 
 `compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from all three. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
-A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. The resolver reports some errors (`toomanyvars`), and one that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
+A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. The make walk reports some errors (`mkcycle`), the resolver some (`toomanyvars`), and one that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
 
-The Pascal units the tests use are in `unitTests` (`compiletests.s`), compiled first, each on its own to its TPU (unit mode, `compileUnit` in `runcompiler.s`, as `compilerasm` compiles one), so every program that uses them is built with them loaded from their TPUs. A unit comes after the units it uses. Each disk holds the `tpu` overlay and the TPUs. The error tests' units are in the list too. The PRGs are the same as when the units were parsed from source, so the checksums didn't change. A TPU unit's routine symbols name the interface's declarations, which have no code and no level (no body sets them); `@` of one was read as a constant and given level 0 until `unitrefs` differed (tputest 10).
+The Pascal units the tests use aren't listed. `runCompiler` makes them as `compilerasm` does (see "Make"): the first program that uses a unit compiles it on its own to its TPU (unit mode, `compileUnit` in `runcompiler.s`), so every program that uses it is built with it loaded from its TPU. Each disk holds the `tpu` overlay and the TPUs. The PRGs are the same as when the units were parsed from source, so the checksums didn't change.
+
+The make tests (`makeTests` in `compiletests.s`, set 1, run after `compileOnlyTests`) are steps: a DOS command (`MKDOS`, to scratch a file or copy one over another with `C:`) or a compile that must compile exactly the units named, in order (`MKCOMPILE`). `runCompiler` lists the units it compiled in `madeUnits`, and a mismatch prints both lists and fails the compile step. `mkprog` uses MkB and MkC, MkB uses MkA in its interface and MkC uses MkB in its implementation. The harness copies `mka1.pas`, `mka2.pas` (a new implementation) and `mka3.pas` (a new interface) to `mka.pas`, and `mkstale.tpu`, which the Makefile writes (`TP`, TPU version 1, icode version 0), over `mkc.tpu`. `mkcycle` is an error test: CycA and CycB use each other. A TPU unit's routine symbols name the interface's declarations, which have no code and no level (no body sets them); `@` of one was read as a constant and given level 0 until `unitrefs` differed (tputest 10).
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
 
@@ -858,9 +860,9 @@ is the v2 twin of demolib.
 
 ## Compiled units (TPU)
 
-A unit given to `compilerasm` as its source is compiled on its own (unit
-mode) to `<unit>.tpu` (`tpu.inc`, `plans/tpu.md`). `checkUnitMode`
-(`runcompiler.s`) sees the root is a unit; the resolver's
+A unit given to `compilerasm` or the editor as its source is compiled on
+its own (unit mode) to `<unit>.tpu` (`tpu.inc`, `plans/tpu.md`).
+`checkUnitMode` (`runcompiler.s`) sees the root is a unit; the resolver's
 `addModuleUnit` puts it in the units list after `injectSystemUnit`, so it
 is resolved, numbered from slot 0, type checked and written to icode as
 in a program compile, and there is no code generation.
@@ -888,7 +890,7 @@ above it) changes its CRC. dumpicode's `dumpTpu` dumps a TPU, and
 `tputest` checks them (see "TPU Tests").
 
 A unit with a TPU is loaded from it in place of its source (`tpuLoad`,
-`tpuload.s`), whether or not the TPU is current (that's Phase 5).
+`tpuload.s`). Make (below) has brought it up to date first.
 `tokenizeAndParseUnits` in the compiler apps tries `<unit>.hdr`, then
 `<unit>.tpu` (it loads the overlay only if the file is there), then
 `<unit>.pas`. `tpuLoad` reads the interface with the `.hdr` loader
@@ -907,6 +909,33 @@ code file), knows its code is the TPU's icode section. `genUnits` opens
 `<unit>.tpu` and skips to that section (`skipToIcode`), and `deleteIcode`
 leaves the TPU. dumpicode shows `IMP TPU name` and dumps the unit's TPU
 (`dumpTpuFile`) after the program.
+
+### Make
+
+`runCompiler` in `compilerasm`, the editor and compilertestasm first
+brings the file's units up to date, as Turbo Pascal's Make did. It calls
+`tpuMake` (`tpumake.s` in the tpu overlay) until it names no unit,
+compiling each one it names on its own (`compileFile` in unit mode), then
+compiles the file. A unit's compile error stops it. The editor keeps one
+build result for them all.
+
+`tpuMake` walks the units the file uses, depth first, and names the first
+one whose TPU isn't current. It reads each unit's source without parsing
+it (`scanSource`): the source's CRC, as `tpuBegin` makes it, and the
+names after `Uses`, outside comments and strings, with System first. A
+unit with a `.hdr` or `Implementation Library` is a library and is never
+compiled. A TPU is current when it has this TPU and icode version, its
+source's CRC, and the interface CRC of each unit it lists: a unit's from
+its own current TPU, a library's made from its `.hdr` (`interfaceCrc`,
+then `astFree`). A library parsed from its `.pas` has none to compare,
+and a unit with no source keeps its TPU. A unit met again while its own
+units are walked is `errCircularUnitReference`, reported in its source;
+the file being compiled is in the walk too. Nothing is kept between
+calls, since the overlays loaded in between overwrite its BSS: the walk
+starts again from the files. The caller's buffer holds the last name, so
+the same unit twice in a row (its compile left the TPU stale) is
+`errUnitNotWritten`. A DOS command closes every open file, so each file
+is read whole (its names into a list in the heap) before the next check.
 
 ## Non-negotiables
 

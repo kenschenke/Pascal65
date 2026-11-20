@@ -50,6 +50,8 @@ runtimeStackSize: .res 2
 runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 unitMode: .res 1                ; non-zero for a unit compiled to its TPU
 unitName: .res 13
+makeRoot: .res 2                ; runCompiler's file
+makeFn: .res 17                 ; a unit's source, from tpuMake
 
 .data
 
@@ -65,9 +67,40 @@ strTpu: .asciiz "Writing Unit File"
 
 .code
 
+; This routine compiles the file named at A/X (null-terminated). First it
+; compiles each unit the file needs whose TPU isn't current, on its own
+; (unit mode), in the order tpuMake names them, as Turbo Pascal's Make
+; did.
+.proc runCompiler
+    sta makeRoot
+    stx makeRoot+1
+    lda #0
+    sta makeFn
+    sta errorCount
+L1: jsr initTpu
+    lda #<makeFn
+    ldx #>makeFn
+    jsr pushAX
+    lda makeRoot
+    ldx makeRoot+1
+    jsr tpuMake
+    bcs DN
+    cmp #0
+    beq FL
+    lda #<makeFn
+    ldx #>makeFn
+    jsr compileFile
+    lda errorCount
+    beq L1
+DN: rts
+FL: lda makeRoot
+    ldx makeRoot+1
+    ; Fall through
+.endproc
+
 ; This routine loads the compiler modules, one by one, and runs them.
 ; The null-terminated filename is passed in A/X.
-.proc runCompiler
+.proc compileFile
     sta sourceFn
     sta ptr1
     stx sourceFn+1

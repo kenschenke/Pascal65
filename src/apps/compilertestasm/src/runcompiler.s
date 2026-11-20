@@ -24,7 +24,7 @@
 .include "ast.inc"
 .include "tpu.inc"
 
-.export runCompiler, unitList
+.export runCompiler, unitList, madeUnits
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
@@ -49,12 +49,86 @@ runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 prgName: .res 17                ; checkExpectedError: the PRG's name
 unitMode: .res 1                ; non-zero for a unit compiled to its TPU
 unitName: .res 13
+makeRoot: .res 2                ; runCompiler's file
+makeFn: .res 17                 ; a unit's source, from tpuMake
+MADE_MAX = 64
+madeUnits: .res MADE_MAX + 1    ; the units runCompiler compiled
+madeLen: .res 1
 
 .code
 
+; This routine compiles the file named at A/X (null-terminated), as
+; compilerasm does: first each unit it needs whose TPU isn't current, on
+; its own (unit mode), in the order tpuMake names them. madeUnits gets
+; each unit's source name, without ".pas", and a space. A make error is
+; checked as an error test's, if one is expected.
+.proc runCompiler
+    sta makeRoot
+    stx makeRoot+1
+    lda #0
+    sta makeFn
+    sta madeLen
+    sta madeUnits
+    sta errorCount
+L1: jsr initTpu
+    lda #<makeFn
+    ldx #>makeFn
+    jsr pushAX
+    lda makeRoot
+    ldx makeRoot+1
+    jsr tpuMake
+    bcs ER
+    cmp #0
+    beq FL
+    jsr addMade
+    lda #<makeFn
+    ldx #>makeFn
+    jsr compileFile
+    bra L1
+FL: lda makeRoot
+    ldx makeRoot+1
+    jmp compileFile
+
+ER: lda expectedError
+    bne :+
+    jmp failTests
+:   lda makeRoot
+    sta sourceFn
+    lda makeRoot+1
+    sta sourceFn+1
+    jmp checkExpectedError
+.endproc
+
+; This routine adds makeFn's name, without ".pas", and a space to
+; madeUnits, as far as it holds them
+.proc addMade
+    ldx madeLen
+    cpx #MADE_MAX - 1
+    bcc :+
+    rts
+:   ldy #0
+:   lda makeFn,y
+    beq :+
+    cmp #'.'
+    beq :+
+    cpx #MADE_MAX - 1
+    bcs :+
+    sta madeUnits,x
+    inx
+    iny
+    bra :-
+:   lda #' '
+    sta madeUnits,x
+    inx
+    lda #0
+    sta madeUnits,x
+    stx madeLen
+    rts
+.endproc
+
 ; This routine loads the compiler modules, one by one, and runs them.
 ; The null-terminated filename is passed in A/X.
-.proc runCompiler
+.proc compileFile
     sta sourceFn
     sta ptr1
     stx sourceFn+1

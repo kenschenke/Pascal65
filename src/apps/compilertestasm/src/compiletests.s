@@ -12,10 +12,11 @@
 .include "zeropage.inc"
 .include "cbm_kernal.inc"
 .include "error.inc"
+.include "c64.inc"
 
 .export compileTests, nextTestPrg, expectedError
 
-.import runCompiler
+.import runCompiler, madeUnits, failTests
 
 .data
 
@@ -93,16 +94,7 @@ strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strTooManyVars: .asciiz "toomanyvars"
 strTooManyImpl: .asciiz "toomanyimpl"
-strTmvUnit: .asciiz "tmvunit"
-strTmvImpl: .asciiz "tmvimpl"
-strS256U: .asciiz "s256u"
-strULib: .asciiz "ulib"
-strUUseA: .asciiz "uusea"
-strUUseB: .asciiz "uuseb"
-strURefs: .asciiz "urefs"
-strUInitA: .asciiz "uinita"
-strUInitB: .asciiz "uinitb"
-strUnit1: .asciiz "unit1"
+strMkCycle: .asciiz "mkcycle"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -203,28 +195,73 @@ tests:
 .endif
     .byte $00, $00
 
-; The Pascal units the tests use, each compiled on its own to its TPU
-; (unit mode) before any program, so the programs are built with them
-; loaded from their TPUs (tpuload.s). A unit comes after the units it
-; uses.
-unitTests:
+; The Pascal units the tests use aren't listed. runCompiler compiles each
+; one to its TPU (unit mode) when the first program that uses it is
+; compiled (tpuMake), so every program is built with its units loaded from
+; their TPUs (tpuload.s).
+
+; The make tests: DOS commands that change the sources and TPUs, and
+; compiles that must compile exactly the units named, in that order (each
+; followed by a space). MkProg uses MkB and MkC, MkB uses MkA in its
+; interface and MkC uses MkB in its implementation.
+MK_DOS = 1                  ; .word the command
+MK_COMPILE = 2              ; .word the program, .word the units expected
+
+.macro MKDOS cmd
+    .byte MK_DOS
+    .word cmd
+.endmacro
+
+.macro MKCOMPILE prog, units
+    .byte MK_COMPILE
+    .word prog, units
+.endmacro
+
+makeTests:
 .if TESTSET = 0 || TESTSET = 1
-    .byte .lobyte(strS256U), .hibyte(strS256U)
-    .byte .lobyte(strULib), .hibyte(strULib)
-    .byte .lobyte(strUUseA), .hibyte(strUUseA)
-    .byte .lobyte(strUUseB), .hibyte(strUUseB)
-    .byte .lobyte(strURefs), .hibyte(strURefs)
-    .byte .lobyte(strUInitA), .hibyte(strUInitA)
-    .byte .lobyte(strUInitB), .hibyte(strUInitB)
-    ; The error tests' units: TmvUnit's interface and TmvImpl's
-    ; implementation overflow the slots
-    .byte .lobyte(strTmvUnit), .hibyte(strTmvUnit)
-    .byte .lobyte(strTmvImpl), .hibyte(strTmvImpl)
+    MKDOS strMkScratchTpus
+    MKDOS strMkScratchA
+    MKDOS strMkCopyA1
+    ; No TPUs: each unit, deepest first
+    MKCOMPILE strMkProg, strMkAll
+    ; All current
+    MKCOMPILE strMkProg, strMkNone
+    ; MkA's implementation changed: its interface CRC didn't, so it alone
+    MKDOS strMkScratchA
+    MKDOS strMkCopyA2
+    MKCOMPILE strMkProg, strMkA
+    ; MkA's interface changed: MkB used it, but MkB's own interface
+    ; didn't change, so MkC is current
+    MKDOS strMkScratchA
+    MKDOS strMkCopyA3
+    MKCOMPILE strMkProg, strMkAB
+    ; MkC's TPU is of another icode version
+    MKDOS strMkScratchC
+    MKDOS strMkCopyStale
+    MKCOMPILE strMkProg, strMkC
+    ; MkA's TPU is missing. Compiled from the same source, its interface
+    ; CRC is the same, so MkB is current.
+    MKDOS strMkScratchATpu
+    MKCOMPILE strMkProg, strMkA
 .endif
-.if TESTSET = 0 || TESTSET = 2
-    .byte .lobyte(strUnit1), .hibyte(strUnit1)
-.endif
-    .byte $00, $00
+    .byte 0
+
+strMkProg: .asciiz "mkprog"
+strMkScratchTpus: .asciiz "s:mk*.tpu"
+strMkScratchA: .asciiz "s:mka.pas"
+strMkScratchATpu: .asciiz "s:mka.tpu"
+strMkScratchC: .asciiz "s:mkc.tpu"
+strMkCopyA1: .asciiz "c:mka.pas=mka1.pas"
+strMkCopyA2: .asciiz "c:mka.pas=mka2.pas"
+strMkCopyA3: .asciiz "c:mka.pas=mka3.pas"
+strMkCopyStale: .asciiz "c:mkc.tpu=mkstale.tpu"
+strMkAll: .asciiz "mka mkb mkc "
+strMkNone: .asciiz ""
+strMkA: .asciiz "mka "
+strMkAB: .asciiz "mka mkb "
+strMkC: .asciiz "mkc "
+strMkExpected: .asciiz "Expected: "
+strMkMade: .asciiz "Compiled: "
 
 ; Programs the compiler must refuse, each followed by the one error it must
 ; report. They are compiled before the tests above, aren't linked and aren't
@@ -244,6 +281,9 @@ errorTests:
     ; resolver: the linker reports it from the frames (checkSlots)
     .byte .lobyte(strTooManyImpl), .hibyte(strTooManyImpl)
     .byte errTooManyVariables
+    ; Its units use each other. The make walk reports it (tpumake.s).
+    .byte .lobyte(strMkCycle), .hibyte(strMkCycle)
+    .byte errCircularUnitReference
 .endif
 .if TESTSET = 2
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
@@ -284,13 +324,15 @@ testNum: .res 1
 expectedError: .res 1       ; error the current test must report, or 0
 sourceFn: .res 16           ; null-terminated source filename for the current test
 nextTestPrg: .res 16        ; null-terminated PRG filename of the next test
+mkPtr: .res 2               ; the make test step
+mkExpected: .res 2          ; the units its compile must compile
 
 .code
 
 .proc compileTests
-    jsr compileUnits
     jsr compileErrorTests
     jsr compileOnly
+    jsr compileMakeTests
 
     lda #0
     sta testNum
@@ -409,32 +451,137 @@ L1: lda testNum                 ; Y = testNum * 3
 DN: rts
 .endproc
 
-; This routine compiles the units in unitTests to their TPUs. runCompiler
-; fails the tests if any reports an error or a warning.
-.proc compileUnits
+; This routine runs the steps in makeTests. A compile fails the tests if
+; it reports an error or a warning, or doesn't compile exactly the units
+; expected (madeUnits in runcompiler.s).
+.proc compileMakeTests
     lda #0
-    sta testNum
     sta expectedError
     sta nextTestPrg
+    lda #<makeTests
+    sta mkPtr
+    lda #>makeTests
+    sta mkPtr+1
 
-L1: lda testNum                 ; Y = testNum * 2
-    asl a
-    tay
-    lda unitTests,y
-    ora unitTests+1,y
-    beq DN
-    lda unitTests,y
+L1: lda mkPtr
+    sta ptr3
+    lda mkPtr+1
+    sta ptr3+1
+    ldy #0
+    lda (ptr3),y
+    bne :+
+    rts
+:   cmp #MK_DOS
+    bne CP
+    iny
+    lda (ptr3),y
+    pha
+    iny
+    lda (ptr3),y
+    tax
+    pla
+    jsr dosCommand
+    lda #3
+    bra NX
+
+CP: iny
+    lda (ptr3),y
     sta ptr1
-    lda unitTests+1,y
+    iny
+    lda (ptr3),y
     sta ptr1+1
+    iny
+    lda (ptr3),y
+    sta mkExpected
+    iny
+    lda (ptr3),y
+    sta mkExpected+1
     jsr makeSourceFilename
     lda #<sourceFn
     ldx #>sourceFn
     jsr runCompiler
-    inc testNum
-    bra L1
+    jsr checkMade
+    lda #5
 
-DN: rts
+NX: clc
+    adc mkPtr
+    sta mkPtr
+    bcc L1
+    inc mkPtr+1
+    bra L1
+.endproc
+
+; This routine fails the tests unless madeUnits is the string at
+; mkExpected, and prints both if it isn't
+.proc checkMade
+    lda mkExpected
+    sta ptr4
+    lda mkExpected+1
+    sta ptr4+1
+    ldy #0
+:   lda (ptr4),y
+    cmp madeUnits,y
+    bne FL
+    cmp #0
+    beq :+
+    iny
+    bra :-
+:   rts
+
+FL: lda #13
+    jsr CHROUT
+    lda #<strMkExpected
+    ldx #>strMkExpected
+    jsr printStr
+    lda mkExpected
+    ldx mkExpected+1
+    jsr printStr
+    lda #13
+    jsr CHROUT
+    lda #<strMkMade
+    ldx #>strMkMade
+    jsr printStr
+    lda #<madeUnits
+    ldx #>madeUnits
+    jsr printStr
+    lda #13
+    jsr CHROUT
+    jmp failTests
+.endproc
+
+; This routine prints the null-terminated string at A/X
+.proc printStr
+    sta ptr4
+    stx ptr4+1
+    ldy #0
+:   lda (ptr4),y
+    beq :+
+    jsr CHROUT
+    iny
+    bra :-
+:   rts
+.endproc
+
+; This routine sends the null-terminated DOS command at A/X to the drive
+.proc dosCommand
+    sta ptr4
+    stx ptr4+1
+    ldy #0
+:   lda (ptr4),y
+    beq :+
+    iny
+    bra :-
+:   tya
+    ldx ptr4
+    ldy ptr4+1
+    jsr SETNAM
+    lda #15
+    ldx DEVNUM
+    ldy #15
+    jsr SETLFS
+    jsr OPEN
+    lda #15
+    jmp CLOSE
 .endproc
 
 ; This routine compiles and links the programs in compileOnlyTests.

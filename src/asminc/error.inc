@@ -111,7 +111,8 @@ errLibraryFileInvalid = 80      ; a library file is missing or bad
 errIcodeFileInvalid = 81        ; code generation can't read the icode file
 errTooManyVariables = 82        ; a scope has more than 256 slots
 errUnitNotWritten = 83          ; a unit's TPU couldn't be written
-numParserErrors = 84
+errCircularUnitReference = 84   ; units that use each other (tpumake.s)
+numParserErrors = 85
 
 rteNone = 0
 rteStackOverflow = 1

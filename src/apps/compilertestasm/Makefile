@@ -62,12 +62,18 @@ PRGSUMS = prgsums/set$(TESTSET).txt
 comma := ,
 # Set 1's own sources. slots256, unitlib, unituses and unitrefs were each
 # added as the set's first program, so no program's chain target changed.
-# toomanyvars and toomanyimpl are two of set 1's errorTests.
+# toomanyvars, toomanyimpl and mkcycle are three of set 1's errorTests.
+# The mk files are its makeTests; mkstale.tpu is a TPU of an old icode
+# version.
 SET1PAS = slots256 s256u toomanyvars tmvunit toomanyimpl tmvimpl unitlib \
-	ulib unituses uusea uuseb unitrefs urefs
+	ulib unituses uusea uuseb unitrefs urefs mkprog mka1 mka2 mka3 mkb mkc \
+	mkcycle cyca cycb
+MKSTALE = $(BINTARGETDIR)/mkstale.tpu
 ifeq ($(filter $(TESTSET),2 3),)
 SET1WRITE = $(foreach t,$(SET1PAS), \
-	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
+	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq) \
+	-write $(MKSTALE) mkstale.tpu$(comma)seq
+SET1FILES = $(MKSTALE)
 endif
 SET3PAS = libtest2 soundtest soundfx soundseq irqcb soundcalls dynarraya \
 	dynarrayb dynarrayc \
@@ -294,7 +300,12 @@ $(PRGFILE): $(OBJECTS)
 
 FORCE:
 
-$(D81FILE): $(BINFILES) $(TXTFILES)
+# "TP", TPU_VERSION 1 and ICODE_VERSION 0 (tpu.inc): enough for the make
+# walk to find it out of date
+$(MKSTALE): | $(BINTARGETDIR)
+	printf 'TP\001\000' > $@
+
+$(D81FILE): $(BINFILES) $(TXTFILES) $(SET1FILES)
 	c1541 -format $(PROGRAM),8a d81 $(D81FILE) \
 	-write $(PRGFILE) compiler,prg \
 	-write $(TOKENIZER) tokenizer,prg \

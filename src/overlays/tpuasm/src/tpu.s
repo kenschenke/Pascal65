@@ -29,6 +29,9 @@
 .include "4510macros.inc"
 
 .export tpuBeginX, tpuFinishX
+; For tpumake.s
+.export nameToFn, addSuffix, openIn, startCrc, crcByte, crc, interfaceCrc
+.export fnBuf, fnLen
 
 .import hdrWrite, hdrOutVec
 
