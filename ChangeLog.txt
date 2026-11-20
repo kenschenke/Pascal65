@@ -1,3 +1,8 @@
+0.38-beta
+    NEW: Units are now compiled into TPU files: self contained files that
+         contain the intermediate code and information needed for
+         programs to use the unit.
+
 0.37-beta Nov 20 2026
     NEW: The IDE keeps a build's errors and warnings instead of printing
          them, and goes straight back to the editor after a build. A
