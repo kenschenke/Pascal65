@@ -296,13 +296,13 @@ noFileQuit:
     ENDTEST
 
 noFileHelp:
-    TEST "help with no file open", keysNoFileHelp, F_SKIPLINES, 0, 0, 35, 0
+    TEST "help with no file open", keysNoFileHelp, F_SKIPLINES, 0, 0, 36, 0
     CHKNAME "Help File"
     CHKFILES 1
     ENDTEST
 
 helpWithFile:
-    TEST "help with a file open", keysHelpWithFile, F_SKIPLINES, 0, 0, 35, 0
+    TEST "help with a file open", keysHelpWithFile, F_SKIPLINES, 0, 0, 36, 0
     CHKNAME "Help File"
     CHKFILES 2
     ENDTEST

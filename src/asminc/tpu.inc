@@ -32,6 +32,8 @@ tpuBegin  = TPU_BASE        ; after parsing; see tpu.s
 tpuFinish = TPU_BASE + 3    ; after icode; see tpu.s
 tpuLoad   = TPU_BASE + 6    ; a unit from its TPU; see tpuload.s
 tpuMake   = TPU_BASE + 9    ; the next unit to compile; see tpumake.s
+tpuClean  = TPU_BASE + 12   ; erase the units' TPUs; see tpumake.s
+tpuAbort  = TPU_BASE + 15   ; a failed compile's temporary files; tpu.s
 
 TPU_MAGIC0 = $54            ; "TP", as numbers so no charmap changes them
 TPU_MAGIC1 = $50

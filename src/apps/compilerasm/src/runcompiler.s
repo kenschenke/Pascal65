@@ -260,7 +260,7 @@ RD:
     beq :+
 
     ; Error - so don't continue
-    rts
+    jmp failed
 
 .ifdef __HEAPPROFILE__
     ; Profile before type checking (shows as "Resolving")
@@ -327,7 +327,7 @@ RD:
     beq :+
 
     ; Error - so don't continue
-    rts
+    jmp failed
 
     ; A unit's TPU: what tpuBegin wrote, then the unit's icode. It has no
     ; code generation. Its root is in the units list, which frees it.
@@ -396,6 +396,23 @@ DN: rts
     jmp genPrgFile
 .endproc
 
+; This routine ends a compile that failed. A unit's erases its temporary
+; files (tpuAbort).
+.proc failed
+    lda unitMode
+    bne abortUnit
+    rts
+.endproc
+
+; This routine erases the temporary files of the unit's compile, which
+; failed
+.proc abortUnit
+    jsr initTpu
+    lda #<unitName
+    ldx #>unitName
+    jmp tpuAbort
+.endproc
+
 ; This routine sets unitMode if the source parsed into astRoot is a unit,
 ; to be compiled on its own to its TPU, and keeps its name in unitName
 .proc checkUnitMode
@@ -433,6 +450,7 @@ DN: rts
 
 ; This routine reports that the unit's TPU couldn't be written
 .proc tpuError
+    jsr abortUnit
     lda #errUnitNotWritten
     ldx #0
     ldy #0

@@ -27,6 +27,12 @@ The compiler can be run inside the IDE and this is the normal workflow during de
 file first. After a compile, the IDE goes straight back to the editor. If the compile
 found an error, **F5** doesn't run the program.
 
+Before the file, the IDE compiles each unit it uses whose compiled unit file (.tpu) is
+missing or out of date (see [Compiled Units](langref/units.md#compiled-units)).
+**F8** (Rebuild All) compiles every unit it uses first, current or not, then the
+file. The current file can be a unit: it is compiled to its .tpu file, and **F5**
+doesn't run anything.
+
 The line above the key help at the bottom of the screen shows the result of the last
 compile:
 

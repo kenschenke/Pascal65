@@ -42,8 +42,8 @@
 
 .data
 
-defaultStatusMsg: .byte "F1: open  F3: save  F5: run  F7: compile  ", $5f, ": files  "
-    .byte "F9/11: errors  Ctrl-X: quit", $0
+defaultStatusMsg: .byte "F1:open F3:save F5:run F7:compile F8:rebuild ", $5f, ":files "
+    .byte "F9/11:errors Ctrl-X:quit", $0
 .assert * - defaultStatusMsg <= DEFAULT_COLS, error, "statusmsg holds 79"
 promptUnsavedFiles: .asciiz "Unsaved files. Exit anyway? Y/N"
 welcomeMsg: .asciiz "Welcome"
@@ -296,11 +296,14 @@ L2: ldz #EDITFILE::nextFile
 :   cmp #CH_F7
     bne :+
     jmp editorHandleRunAndCompile
+:   cmp #CH_F8
+    bne :+
+    jmp editorHandleRunAndCompile
 :   cmp #CH_F4
     bne :+
     jmp editorHandleTheme
 .ifdef __DEBUG__
-:   cmp #CH_F8
+:   cmp #CH_F10
     bne :+
     jmp editorHandleDebugKey
 .endif
@@ -1271,12 +1274,14 @@ L2: jsr closeEditBuf
     rts
 
 L3: pla
-    cmp #CH_F5 ; run
-    bne L4
-    lda #EDITOR_LOOP_RUN
-    bra L5
-L4: lda #EDITOR_LOOP_COMPILE
-L5: sta loopCode
+    ldx #EDITOR_LOOP_RUN
+    cmp #CH_F5
+    beq L5
+    ldx #EDITOR_LOOP_REBUILD
+    cmp #CH_F8
+    beq L5
+    ldx #EDITOR_LOOP_COMPILE
+L5: stx loopCode
     jsr copyCompileFn
     jsr editorSaveState
     jsr editorCloseAllFiles

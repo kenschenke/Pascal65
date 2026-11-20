@@ -62,12 +62,13 @@ PRGSUMS = prgsums/set$(TESTSET).txt
 comma := ,
 # Set 1's own sources. slots256, unitlib, unituses and unitrefs were each
 # added as the set's first program, so no program's chain target changed.
-# toomanyvars, toomanyimpl and mkcycle are three of set 1's errorTests.
+# toomanyvars, toomanyimpl, mkcycle and mkbad are four of set 1's
+# errorTests.
 # The mk files are its makeTests; mkstale.tpu is a TPU of an old icode
 # version.
 SET1PAS = slots256 s256u toomanyvars tmvunit toomanyimpl tmvimpl unitlib \
 	ulib unituses uusea uuseb unitrefs urefs mkprog mka1 mka2 mka3 mkb mkc \
-	mkcycle cyca cycb
+	mkcycle cyca cycb mkbad mkerr
 MKSTALE = $(BINTARGETDIR)/mkstale.tpu
 ifeq ($(filter $(TESTSET),2 3),)
 SET1WRITE = $(foreach t,$(SET1PAS), \

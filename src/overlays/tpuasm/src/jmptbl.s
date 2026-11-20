@@ -9,7 +9,7 @@
 ;
 ; Jump table for the tpu overlay (tpu.inc)
 
-.import tpuBeginX, tpuFinishX, tpuLoadX, tpuMakeX
+.import tpuBeginX, tpuFinishX, tpuLoadX, tpuMakeX, tpuCleanX, tpuAbortX
 
 .segment "JMPTBL"
 
@@ -17,3 +17,5 @@ jmp tpuBeginX
 jmp tpuFinishX
 jmp tpuLoadX
 jmp tpuMakeX
+jmp tpuCleanX
+jmp tpuAbortX

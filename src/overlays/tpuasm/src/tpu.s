@@ -13,7 +13,9 @@
 ; unit and the units it uses are parsed, and the interface must be written
 ; as the parser made it, before the resolver changes it. So tpuBeginX
 ; writes the first part of the file to zztpu then, and tpuFinishX copies it
-; and the unit's icode file to <unit>.tpu once icode has written it.
+; and the unit's icode file to <unit>.tpu once icode has written it. A
+; compile that fails between them calls tpuAbortX (tpuAbort), which erases
+; both temporary files.
 ;
 ; Erasing a file closes every open file (the drive's command channel), so
 ; each routine erases files before it opens any.
@@ -28,10 +30,10 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export tpuBeginX, tpuFinishX
+.export tpuBeginX, tpuFinishX, tpuAbortX
 ; For tpumake.s
 .export nameToFn, addSuffix, openIn, startCrc, crcByte, crc, interfaceCrc
-.export fnBuf, fnLen
+.export fnBuf, fnLen, eraseFile
 
 .import hdrWrite, hdrOutVec
 
@@ -204,20 +206,10 @@ ER: jsr closeOut
 ; name), and erases zztpu and the icode file. The unit's name is at A/X
 ; (16 bits, null-terminated). The carry is set if it can't be written.
 .proc tpuFinishX
-    sta ptr1
-    stx ptr1+1
-    ldy #0
-:   lda (ptr1),y
-    sta unitName,y
-    beq :+
-    iny
-    cpy #12
-    bne :-
-    lda #0
-    sta unitName,y
+    jsr setUnitName
 
     ; <unit>.tpu, erased first
-:   ldy #0
+    ldy #0
 :   lda unitName,y
     beq :+
     sta outBuf,y
@@ -306,13 +298,7 @@ CD: lda #FILE_IN
 
     ; zztpu and the unit's icode file, which is in the TPU now, aren't
     ; needed any more
-    lda #<strTemp
-    ldx #>strTemp
-    jsr eraseFile
-    jsr icodeFn
-    lda #<fnBuf
-    ldx #>fnBuf
-    jsr eraseFile
+    jsr eraseTemps
     clc
     rts
 
@@ -321,6 +307,44 @@ BD: lda #FILE_IN
     jsr CLRCHN
     sec
     rts
+.endproc
+
+; This routine copies the unit's name at A/X (16 bits, null-terminated) to
+; unitName, at most 12 characters
+.proc setUnitName
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    sta unitName,y
+    beq :+
+    iny
+    cpy #12
+    bne :-
+    lda #0
+    sta unitName,y
+:   rts
+.endproc
+
+; This routine erases the temporary files of a unit's compile that failed
+; after tpuBeginX: zztpu and the unit's icode file, if they're there. The
+; unit's name is at A/X (16 bits, null-terminated). The unit's old TPU,
+; if it has one, is left: its source's CRC no longer matches, so make
+; compiles the unit again.
+.proc tpuAbortX
+    jsr setUnitName
+    ; Fall through
+.endproc
+
+; This routine erases zztpu and the icode file of the unit in unitName
+.proc eraseTemps
+    lda #<strTemp
+    ldx #>strTemp
+    jsr eraseFile
+    jsr icodeFn
+    lda #<fnBuf
+    ldx #>fnBuf
+    jmp eraseFile
 .endproc
 
 ; This routine copies the input file to the output file, to the end

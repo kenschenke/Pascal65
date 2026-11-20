@@ -16,7 +16,7 @@
 
 .export compileTests, nextTestPrg, expectedError
 
-.import runCompiler, madeUnits, failTests
+.import runCompiler, madeUnits, failTests, makeRebuild
 
 .data
 
@@ -95,6 +95,7 @@ strTooLarge: .asciiz "toolarge"
 strTooManyVars: .asciiz "toomanyvars"
 strTooManyImpl: .asciiz "toomanyimpl"
 strMkCycle: .asciiz "mkcycle"
+strMkBad: .asciiz "mkbad"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -206,6 +207,7 @@ tests:
 ; interface and MkC uses MkB in its implementation.
 MK_DOS = 1                  ; .word the command
 MK_COMPILE = 2              ; .word the program, .word the units expected
+MK_REBUILD = 3              ; the same, rebuilding every unit (tpuClean)
 
 .macro MKDOS cmd
     .byte MK_DOS
@@ -214,6 +216,11 @@ MK_COMPILE = 2              ; .word the program, .word the units expected
 
 .macro MKCOMPILE prog, units
     .byte MK_COMPILE
+    .word prog, units
+.endmacro
+
+.macro MKREBUILD prog, units
+    .byte MK_REBUILD
     .word prog, units
 .endmacro
 
@@ -243,6 +250,8 @@ makeTests:
     ; CRC is the same, so MkB is current.
     MKDOS strMkScratchATpu
     MKCOMPILE strMkProg, strMkA
+    ; Rebuild all: every unit, though all are current
+    MKREBUILD strMkProg, strMkAll
 .endif
     .byte 0
 
@@ -284,6 +293,10 @@ errorTests:
     ; Its units use each other. The make walk reports it (tpumake.s).
     .byte .lobyte(strMkCycle), .hibyte(strMkCycle)
     .byte errCircularUnitReference
+    ; Its unit has an error, which make finds compiling it. The unit's
+    ; compile must erase its temporary files (runcompiler.s).
+    .byte .lobyte(strMkBad), .hibyte(strMkBad)
+    .byte errIncompatibleAssignment
 .endif
 .if TESTSET = 2
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
@@ -330,6 +343,8 @@ mkExpected: .res 2          ; the units its compile must compile
 .code
 
 .proc compileTests
+    lda #0
+    sta makeRebuild
     jsr compileErrorTests
     jsr compileOnly
     jsr compileMakeTests
@@ -484,7 +499,10 @@ L1: lda mkPtr
     lda #3
     bra NX
 
-CP: iny
+CP: cmp #MK_REBUILD
+    bne :+
+    sta makeRebuild
+:   iny
     lda (ptr3),y
     sta ptr1
     iny

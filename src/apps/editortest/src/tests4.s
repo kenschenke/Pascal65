@@ -25,7 +25,8 @@
 tests:
     .addr closeSecond, closeFirst, dirMove, dirScroll, dirAll, dirSeqOnly
     .addr dirRename, help, helpCopy, run, restoreRun, compile
-    .addr restoreCompile, runSaves, restoreSaved, dirScratch
+    .addr restoreCompile, rebuild, restoreRebuild, runSaves, restoreSaved
+    .addr dirScratch
     .addr 0
 
 ; The key scripts
@@ -100,6 +101,11 @@ keysCompile:
     OPENFILE 6
     .byte F7, 0
 
+; F8 does the same, to rebuild every unit and compile
+keysRebuild:
+    OPENFILE 6
+    .byte F8, 0
+
 ; F5 saves the changed files first
 keysRunSaves:
     OPENFILE 6
@@ -162,7 +168,7 @@ dirRename:
     ENDTEST
 
 help:
-    TEST "help file", keysHelp, F_SKIPLINES, 0, 0, 35, 0
+    TEST "help file", keysHelp, F_SKIPLINES, 0, 0, 36, 0
     CHKNAME "Help File"
     CHKBYTE EDITFILE::readOnly, 1
     CHKBYTE EDITFILE::dirty, 0
@@ -203,6 +209,21 @@ restoreCompile:
     .asciiz "two"
     CHKNAME "save.txt"
     CHKFILES 2
+    ENDTEST
+
+rebuild:
+    TEST "rebuild", keysRebuild, F_NOFILE, 0, 0, 0, 0
+    CHKLOOP EDITOR_LOOP_REBUILD
+    CHKFN "save.txt"
+    ENDTEST
+
+restoreRebuild:
+    TEST "restore after rebuilding", keysRestore, 0, 0, 0, 2, 2
+    .asciiz "one"
+    .asciiz "two"
+    CHKNAME "save.txt"
+    CHKFILES 1
+    CHKNOTONDISK "zzstate"
     ENDTEST
 
 runSaves:

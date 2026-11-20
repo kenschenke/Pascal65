@@ -29,6 +29,7 @@ Save File                     F3
 Other File Functions      Back arrow
 Run Pascal File               F5
 Compile Pascal File           F7
+Rebuild All Units             F8
 Next Error or Warning         F11
 Previous Error or Warning     F9
 Syntax Highlighting Colors    F4

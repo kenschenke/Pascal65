@@ -103,6 +103,7 @@ F3 = CH_F3
 F4 = CH_F4
 F5 = CH_F5
 F7 = CH_F7
+F8 = CH_F8
 HELP = CH_HELP
 
 ; Letters as the keyboard sends them (ASCII)

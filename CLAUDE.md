@@ -526,11 +526,11 @@ built with `MEMCHECK=1`.
 
 `compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from all three. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
-A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. The make walk reports some errors (`mkcycle`), the resolver some (`toomanyvars`), and one that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
+A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. The make walk reports some errors (`mkcycle`), a unit's compile some (`mkbad`), the resolver some (`toomanyvars`), and one that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
 
 The Pascal units the tests use aren't listed. `runCompiler` makes them as `compilerasm` does (see "Make"): the first program that uses a unit compiles it on its own to its TPU (unit mode, `compileUnit` in `runcompiler.s`), so every program that uses it is built with it loaded from its TPU. Each disk holds the `tpu` overlay and the TPUs. The PRGs are the same as when the units were parsed from source, so the checksums didn't change.
 
-The make tests (`makeTests` in `compiletests.s`, set 1, run after `compileOnlyTests`) are steps: a DOS command (`MKDOS`, to scratch a file or copy one over another with `C:`) or a compile that must compile exactly the units named, in order (`MKCOMPILE`). `runCompiler` lists the units it compiled in `madeUnits`, and a mismatch prints both lists and fails the compile step. `mkprog` uses MkB and MkC, MkB uses MkA in its interface and MkC uses MkB in its implementation. The harness copies `mka1.pas`, `mka2.pas` (a new implementation) and `mka3.pas` (a new interface) to `mka.pas`, and `mkstale.tpu`, which the Makefile writes (`TP`, TPU version 1, icode version 0), over `mkc.tpu`. `mkcycle` is an error test: CycA and CycB use each other. A TPU unit's routine symbols name the interface's declarations, which have no code and no level (no body sets them); `@` of one was read as a constant and given level 0 until `unitrefs` differed (tputest 10).
+The make tests (`makeTests` in `compiletests.s`, set 1, run after `compileOnlyTests`) are steps: a DOS command (`MKDOS`, to scratch a file or copy one over another with `C:`) or a compile that must compile exactly the units named, in order (`MKCOMPILE`). `runCompiler` lists the units it compiled in `madeUnits`, and a mismatch prints both lists and fails the compile step. `mkprog` uses MkB and MkC, MkB uses MkA in its interface and MkC uses MkB in its implementation. The harness copies `mka1.pas`, `mka2.pas` (a new implementation) and `mka3.pas` (a new interface) to `mka.pas`, and `mkstale.tpu`, which the Makefile writes (`TP`, TPU version 1, icode version 0), over `mkc.tpu`. The last step rebuilds (`MKREBUILD`: `makeRebuild` makes `runCompiler` call `tpuClean` first) and must compile all three. `mkcycle` is an error test: CycA and CycB use each other. A TPU unit's routine symbols name the interface's declarations, which have no code and no level (no body sets them); `@` of one was read as a constant and given level 0 until `unitrefs` differed (tputest 10).
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
 
@@ -936,6 +936,18 @@ starts again from the files. The caller's buffer holds the last name, so
 the same unit twice in a row (its compile left the TPU stale) is
 `errUnitNotWritten`. A DOS command closes every open file, so each file
 is read whole (its names into a list in the heap) before the next check.
+
+F8 in the editor is Rebuild all (`EDITOR_LOOP_REBUILD`; the debug key
+is F10). `runCompiler` first calls `tpuClean`, the same walk, which
+erases the TPU of each unit make could compile in place of checking it,
+so the loop compiles them all. A unit compile that fails after
+`tpuBegin` calls `tpuAbort` (`tpu.s`), which erases `zztpu` and the
+unit's icode file; the unit's old TPU stays, stale by its source's CRC.
+The editor runs nothing after compiling a unit (`runCompiler` returns
+the carry clear). compilertestasm's `mkbad` is an error test whose unit,
+MkErr, has a type error: `compileUnit` frees it, aborts and fails the
+step unless both files are gone, and returns the error to `runCompiler`,
+which checks it as an error test's.
 
 ## Non-negotiables
 

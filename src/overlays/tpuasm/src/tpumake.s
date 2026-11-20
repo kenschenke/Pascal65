@@ -29,6 +29,10 @@
 ;
 ; A DOS command closes every open file (doesFileExist, loadHeader), so a
 ; file is read whole before any check that needs one.
+;
+; tpuCleanX (tpuClean) makes the same walk, but erases the TPU of each
+; unit make could compile in place of checking it, so the make loop after
+; it compiles them all (Rebuild all).
 
 .include "c64.inc"
 .include "tpu.inc"
@@ -39,10 +43,10 @@
 .include "4510macros.inc"
 .include "icode.inc"
 
-.export tpuMakeX
+.export tpuMakeX, tpuCleanX
 
 .import nameToFn, addSuffix, openIn, startCrc, crcByte, crc, interfaceCrc
-.import fnBuf, fnLen, loadHeader
+.import fnBuf, fnLen, loadHeader, eraseFile
 
 FILE_IN = 2                 ; as tpu.s's
 
@@ -89,6 +93,8 @@ strLibrary: .asciiz "library"
 .bss
 
 rootFn: .res 2              ; the file to compile's name
+cleanMode: .res 1           ; non-zero for tpuCleanX: erase, don't check
+cleanBuf: .res NAME_MAX + 5 ; tpuCleanX's result buffer, never written
 resultBuf: .res 2           ; the caller's buffer
 prevFn: .res NAME_MAX + 5   ; the buffer's name from the last call
 entries: .res 4             ; the entries
@@ -124,6 +130,23 @@ WORD_LONG = 16
 
 .code
 
+; This routine erases the TPU of every unit the file named at A/X (16
+; bits, null-terminated) uses, and of the units they use, that make can
+; compile again: a unit with a source that isn't a library. The make loop
+; then compiles them all (Rebuild all in the IDE). Returns the carry set
+; if it reported an error (errCircularUnitReference).
+.proc tpuCleanX
+    sta rootFn
+    stx rootFn+1
+    lda #1
+    sta cleanMode
+    lda #0
+    sta cleanBuf
+    lda #<cleanBuf
+    ldx #>cleanBuf
+    jmp walk
+.endproc
+
 ; This routine finds the next unit to compile before the file named at
 ; A/X (16 bits, null-terminated). On the runtime stack is the 16-bit
 ; address of a buffer of 17 bytes, which the caller clears before its
@@ -134,7 +157,15 @@ WORD_LONG = 16
 .proc tpuMakeX
     sta rootFn
     stx rootFn+1
+    lda #0
+    sta cleanMode
     jsr popAX
+    ; Fall through
+.endproc
+
+; This routine walks the units of the file in rootFn, the result buffer
+; at A/X: tpuMakeX's, or tpuCleanX's
+.proc walk
     sta resultBuf
     stx resultBuf+1
 
@@ -272,7 +303,16 @@ OK: lda #1
     bne LB
     jsr visitDeps
     bcs RT
-    jsr checkTpu
+    lda cleanMode
+    beq CK
+    lda #<strTpu
+    ldx #>strTpu
+    jsr entryFn
+    lda #<fnBuf
+    ldx #>fnBuf
+    jsr eraseFile
+    bra LB
+CK: jsr checkTpu
     bcs CP
     lda tpuIfCrc
     ldx tpuIfCrc+1

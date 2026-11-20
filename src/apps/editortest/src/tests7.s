@@ -207,8 +207,8 @@ rows50:
 ignoredCodes:
     TEST "ignored key codes", keysIgnored, 0, 2, 0, 0, 1
     .asciiz "abcd"
-    CHKSCREEN 24, 0, "F1: open"
-    CHKSCREEN 24, 52, "F9/11: errors  Ctrl-X: quit "
+    CHKSCREEN 24, 0, "F1:open"
+    CHKSCREEN 24, 53, "F9/11:errors Ctrl-X:quit "
     ENDTEST
 
 ; The build results

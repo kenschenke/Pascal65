@@ -24,7 +24,7 @@
 .include "ast.inc"
 .include "tpu.inc"
 
-.export runCompiler, unitList, madeUnits
+.export runCompiler, unitList, madeUnits, makeRebuild
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
@@ -35,6 +35,8 @@
 .data
 
 objFilename: .asciiz "zztmp"
+tempFilename: .asciiz "zztpu"         ; tpuBegin's (tpu.s)
+unitPrefix: .asciiz ICODE_UNIT_PREFIX
 
 .bss
 
@@ -54,6 +56,7 @@ makeFn: .res 17                 ; a unit's source, from tpuMake
 MADE_MAX = 64
 madeUnits: .res MADE_MAX + 1    ; the units runCompiler compiled
 madeLen: .res 1
+makeRebuild: .res 1             ; non-zero: rebuild every unit, then clear
 
 .code
 
@@ -61,7 +64,9 @@ madeLen: .res 1
 ; compilerasm does: first each unit it needs whose TPU isn't current, on
 ; its own (unit mode), in the order tpuMake names them. madeUnits gets
 ; each unit's source name, without ".pas", and a space. A make error is
-; checked as an error test's, if one is expected.
+; checked as an error test's, if one is expected, and so is a unit's.
+; With makeRebuild set, it first erases every unit's TPU (tpuClean), as
+; the editor's Rebuild all does.
 .proc runCompiler
     sta makeRoot
     stx makeRoot+1
@@ -70,6 +75,15 @@ madeLen: .res 1
     sta madeLen
     sta madeUnits
     sta errorCount
+    lda makeRebuild
+    beq L1
+    lda #0
+    sta makeRebuild
+    jsr initTpu
+    lda makeRoot
+    ldx makeRoot+1
+    jsr tpuClean
+    bcs ER
 L1: jsr initTpu
     lda #<makeFn
     ldx #>makeFn
@@ -84,6 +98,8 @@ L1: jsr initTpu
     lda #<makeFn
     ldx #>makeFn
     jsr compileFile
+    lda errorCount              ; a unit's error (compileUnit)
+    bne ER
     bra L1
 FL: lda makeRoot
     ldx makeRoot+1
@@ -401,7 +417,9 @@ L3: lda #'L'
 
 ; This routine compiles the unit in astRoot on its own to its TPU, as
 ; compilerasm does (unit mode, runcompiler.s there), once it and the units
-; it uses are parsed. Any error fails the tests.
+; it uses are parsed. An error in resolving, type checking or icode frees
+; the unit, erases its temporary files (tpuAbort) and returns, with
+; errorCount set, for runCompiler to check as an error test's.
 .proc compileUnit
     lda #'U'
     jsr CHROUT
@@ -436,7 +454,9 @@ L3: lda #'L'
     stq unitList
     lda errorCount
     beq :+
-    jmp failTests
+    jsr scopeExit
+    jsr freeSymtab
+    jmp UF
 :
 
     lda #'K'
@@ -463,7 +483,7 @@ L3: lda #'L'
     jsr scopeExit
     jsr freeSymtab
     lda errorCount
-    bne FL
+    bne UF
 
     ; Its TPU. Its root is in the units list, which frees it.
     jsr initTpu
@@ -477,6 +497,46 @@ L3: lda #'L'
     lda #13
     jmp CHROUT
 
+FL: jmp failTests
+
+UF: jsr freeUnits
+    jmp abortUnit
+.endproc
+
+; This routine erases the temporary files of the unit's compile, which
+; failed, and fails the tests unless they're gone: zztpu and its icode
+; file (ICODE_UNIT_PREFIX and its name)
+.proc abortUnit
+    jsr initTpu
+    lda #<unitName
+    ldx #>unitName
+    jsr tpuAbort
+    lda #<tempFilename
+    ldx #>tempFilename
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    bne FL
+    ldx #0
+:   lda unitPrefix,x
+    beq :+
+    sta prgName,x
+    inx
+    bra :-
+:   ldy #0
+:   lda unitName,y
+    sta prgName,x
+    beq :+
+    inx
+    iny
+    bra :-
+:   lda #<prgName
+    ldx #>prgName
+    ldy #0
+    ldz #0
+    jsr doesFileExist
+    bne FL
+    rts
 FL: jmp failTests
 .endproc
 

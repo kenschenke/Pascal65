@@ -180,6 +180,7 @@ nav:
     - Literals: icode/literals.md
     - Variables: icode/variables.md
     - Data Types: icode/types.md
+    - Compiled Unit File: icode/tpu.md
     - Instructions:
       - ABS: icode/mne/abs.md
       - ADD: icode/mne/add.md

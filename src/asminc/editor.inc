@@ -16,6 +16,7 @@ EDITOR_LOOP_COMPILE = 2
 EDITOR_LOOP_RUN = 3
 EDITOR_LOOP_DEBUG = 4
 EDITOR_LOOP_THEME = 5
+EDITOR_LOOP_REBUILD = 6         ; compile, every unit too (Rebuild all)
 
 DEFAULT_COLS = 80
 DEFAULT_ROWS = 25
@@ -63,8 +64,9 @@ CH_F3 = 243
 CH_F4 = 244
 CH_F5 = 245
 CH_F7 = 247
-CH_F8 = 248
+CH_F8 = 248                 ; Rebuild all
 CH_F9 = 249                 ; Previous build entry
+CH_F10 = 250                ; Debug (debug builds)
 CH_F11 = 251                ; Next build entry
 ; editorReadKey turns these Esc commands into codes of their own, which
 ; the keyboard ($D610) doesn't send: it sends F10 to F14 as $FA to $FE.

@@ -16,7 +16,7 @@
 
 .export editorLoop
 
-.import initEditor, initThemes, runCompiler, buildHasErrors, buildResult
+.import initEditor, initThemes, runCompiler, buildResult
 
 .ifdef __DEBUG__
 .import editorDebug
@@ -49,6 +49,8 @@ L1: jsr initEditor      ; load the editor overlay from disk
     beq QT
     cmp #EDITOR_LOOP_COMPILE
     beq CP
+    cmp #EDITOR_LOOP_REBUILD
+    beq CP
 .ifdef __DEBUG__
     cmp #EDITOR_LOOP_DEBUG
     beq DB
@@ -58,12 +60,10 @@ L1: jsr initEditor      ; load the editor overlay from disk
     cmp #EDITOR_LOOP_RUN
     bne L1
 
-    ; Run, unless the compile failed. Then go back to the editor like
-    ; Compile does.
+    ; Run, unless the compile failed or compiled a unit, which has no
+    ; program to run. Then go back to the editor like Compile does.
     jsr runCompiler
-    jsr buildHasErrors
-    bne CP2
-    sec
+    bcc CP2
     rts
 
 .ifdef __DEBUG__

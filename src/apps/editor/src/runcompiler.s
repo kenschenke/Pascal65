@@ -69,6 +69,9 @@ strTpu: .asciiz "Writing Unit File"
 ; it compiles each unit the file needs whose TPU isn't current, on its
 ; own (unit mode), in the order tpuMake names them, as Turbo Pascal's
 ; Make did. The build result holds the errors and warnings of them all.
+; EDITOR_LOOP_REBUILD first erases the TPU of every unit make can compile
+; (tpuClean), so it compiles them all. Returns the carry set if a program
+; was linked to run: not after an error, nor for a unit.
 .proc runCompiler
     sta loopCode
     ; Copy the source filename into rootFn
@@ -90,6 +93,15 @@ strTpu: .asciiz "Writing Unit File"
 
     lda #0
     sta makeFn
+    sta unitMode
+    lda loopCode
+    cmp #6 ; EDITOR_LOOP_REBUILD (editor.inc)
+    bne L1
+    jsr initTpu
+    lda #<rootFn
+    ldx #>rootFn
+    jsr tpuClean
+    bcs DN
 L1: jsr initTpu
     lda #<makeFn
     ldx #>makeFn
@@ -112,7 +124,15 @@ FL: lda #<rootFn
 
     ; The errors and warnings are in the build result. The editor shows
     ; them, so go straight back to it.
-DN: jmp finishBuildResult
+DN: jsr finishBuildResult
+    lda unitMode
+    bne NR
+    jsr buildHasErrors
+    bne NR
+    sec
+    rts
+NR: clc
+    rts
 .endproc
 
 ; This routine loads the compiler modules, one by one, and runs them.
@@ -366,8 +386,8 @@ DN: rts
 
 ; This routine compiles the unit in astRoot on its own to its TPU, as
 ; compilerasm does (unit mode), once it and the units it uses are parsed.
-; Its interface is written first, as the parser made it. An error leaves
-; the heap to editorLoop, which clears it.
+; Its interface is written first, as the parser made it. An error erases
+; the temporary files and leaves the heap to editorLoop, which clears it.
 .proc compileUnit
     jsr initTpu
     ldq unitList
@@ -399,7 +419,7 @@ DN: rts
     jsr getResolverUnitsList
     stq unitList
     jsr buildHasErrors
-    bne RT
+    bne AB
 
     lda #<strTypeChecking
     ldx #>strTypeChecking
@@ -430,7 +450,7 @@ DN: rts
     jsr scopeExit
     jsr freeSymtab
     jsr buildHasErrors
-    bne RT
+    bne AB
 
     ; Its TPU. Its root is in the units list, which frees it.
     lda #<strTpu
@@ -444,15 +464,26 @@ DN: rts
     jsr freeUnits
     plp
     bcs tpuError
-RT: rts
+    rts
+AB: jmp abortUnit
 .endproc
 
 ; This routine reports that the unit's TPU couldn't be written
 .proc tpuError
+    jsr abortUnit
     lda #errUnitNotWritten
     ldx #0
     ldy #0
     jmp compilerError
+.endproc
+
+; This routine erases the temporary files of the unit's compile, which
+; failed (tpuAbort)
+.proc abortUnit
+    jsr initTpu
+    lda #<unitName
+    ldx #>unitName
+    jmp tpuAbort
 .endproc
 
 ; This routine sets unitMode if the source parsed into astRoot is a unit,

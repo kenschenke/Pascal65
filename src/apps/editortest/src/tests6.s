@@ -66,7 +66,7 @@ TEXT
 noBuild:
     TEST "no build", keysNone, F_NOFILE, 0, 0, 0, 0
     CHKSCREEN 23, 0, "No build          "
-    CHKSCREEN 24, 0, "F1: open"
+    CHKSCREEN 24, 0, "F1:open F3:save F5:run F7:compile F8:rebuild"
     ENDTEST
 
 success:
@@ -75,7 +75,7 @@ success:
     CHKSCREEN 22, 0, "[No Name]"
     CHKSCREEN 22, 69, "C:2"
     CHKSCREEN 23, 0, "Build Success: Error(s): 0, Warning(s): 3     "
-    CHKSCREEN 24, 0, "F1: open"
+    CHKSCREEN 24, 0, "F1:open"
     ENDTEST
 
 ; The counts are unsigned words
@@ -115,7 +115,7 @@ noFile:
 noBuild50:
     TEST "no build, 50 rows", keysNoFile50, F_NOFILE, 0, 0, 0, 0
     CHKSCREEN 48, 0, "No build          "
-    CHKSCREEN 49, 0, "F1: open"
+    CHKSCREEN 49, 0, "F1:open"
     ENDTEST
 
 failed50:
@@ -123,7 +123,7 @@ failed50:
     .asciiz "a"
     CHKSCREEN 47, 0, "[No Name]"
     CHKSCREEN 48, 0, "Build Failed: Error(s): 40, Warning(s): 65535   "
-    CHKSCREEN 49, 0, "F1: open"
+    CHKSCREEN 49, 0, "F1:open"
     ENDTEST
 
 entry50:
@@ -138,7 +138,7 @@ back25:
     .asciiz "a"
     CHKSCREEN 22, 0, "[No Name]"
     CHKSCREEN 23, 0, "Build Success: Error(s): 0, Warning(s): 3     "
-    CHKSCREEN 24, 0, "F1: open"
+    CHKSCREEN 24, 0, "F1:open"
     ENDTEST
 
 fileScreen:
@@ -147,7 +147,7 @@ fileScreen:
     CHKSCREEN 22, 0, "[No Name]"
     CHKSCREEN 23, 0, "Error File not found, unit.pas    "
     CHKSCREEN 23, 66, "Showing 1 of 2"
-    CHKSCREEN 24, 0, "F1: open"
+    CHKSCREEN 24, 0, "F1:open"
     ENDTEST
 
 dirScreen:
@@ -156,7 +156,7 @@ dirScreen:
     CHKSCREEN 22, 0, "[No Name]"
     CHKSCREEN 23, 0, "Error File not found, unit.pas    "
     CHKSCREEN 23, 66, "Showing 1 of 2"
-    CHKSCREEN 24, 0, "F1: open"
+    CHKSCREEN 24, 0, "F1:open"
     ENDTEST
 
 ; A message longer than the compiler's is cut off at the end of the line,
