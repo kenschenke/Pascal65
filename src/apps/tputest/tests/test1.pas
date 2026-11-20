@@ -1,5 +1,5 @@
 (* Test 1 - A unit that uses only System
-TPU 1 5 0 xxxx 9652
+TPU 1 6 0 xxxx 9652
 USE system bf05
 INT 3fd 18
 COD f2

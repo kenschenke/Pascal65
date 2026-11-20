@@ -30,12 +30,14 @@
 .import writeObjFile, objFilename, codeFilename, readIcodeHeader
 .import readUnitHeader, skipIcodeImports, unitCount, getImportUnit
 .import beginUnitFrames, endUnitFrames, setRuntimeFeatures, labelScope
+.import isImportTpu, readIcodeByte
 
 .data
 
 icodeFn: .asciiz "zztmpicode"
 unitPrefix: .asciiz ICODE_UNIT_PREFIX
 strSeqRead: .asciiz ",s,r"
+strTpuSuffix: .asciiz ".tpu"
 
 tempFn: .byte "zztmpicode,s,r"
 tempFn2:
@@ -53,6 +55,8 @@ unitIdx: .res 1             ; the unit whose icode file is read
 unitFn: .res 24             ; its name, then ",s,r"
 unitFnLen: .res 1           ; the name's length, without ",s,r"
 unitFnTotal: .res 1
+skipLeft: .res 2            ; for skipToIcode
+skipCount: .res 1
 
 .code
 
@@ -199,21 +203,28 @@ L1: lda unitIdx
     cmp unitCount
     bne :+
     rts
-:   jsr unitFileName
+:   lda unitIdx                 ; a unit's TPU is kept
+    jsr isImportTpu
+    bne NX
+    jsr unitFileName
     lda #<unitFn
     ldx #>unitFn
     ldy #0
     ldz #0
     stq ptr1
     jsr scratchFile
-    inc unitIdx
+NX: inc unitIdx
     bra L1
 .endproc
 
 ; This routine puts the name of the icode file of the unit numbered
 ; unitIdx in unitFn, null-terminated, and its length in unitFnLen:
-; ICODE_UNIT_PREFIX, then the unit's name.
+; ICODE_UNIT_PREFIX, then the unit's name. A unit whose code is in its TPU
+; (ICODE_IMPORT_TPU) has the TPU's: its name, then ".tpu".
 .proc unitFileName
+    lda unitIdx
+    jsr isImportTpu
+    bne TP
     lda unitIdx
     jsr getImportUnit
     sta ptr1
@@ -232,6 +243,26 @@ L1: lda unitIdx
     iny
     bra :-
 :   stx unitFnLen
+    rts
+
+TP: lda unitIdx
+    jsr getImportUnit
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    beq :+
+    sta unitFn,y
+    iny
+    bra :-
+:   ldx #0
+:   lda strTpuSuffix,x
+    sta unitFn,y
+    beq :+
+    iny
+    inx
+    bra :-
+:   sty unitFnLen
     rts
 .endproc
 
@@ -272,8 +303,12 @@ L1: lda unitIdx
     ldy #>unitFn
     jsr SETNAM
     jsr OPEN
+    lda unitIdx                 ; a TPU's icode is its last section
+    jsr isImportTpu
+    beq :+
+    jsr skipToIcode
 
-    jsr readUnitHeader
+:   jsr readUnitHeader
     bcs BD
     jsr skipIcodeImports
     bcs BD
@@ -298,6 +333,46 @@ L1: lda unitIdx
 BF: jsr endUnitFrames
 BD: sec
     rts
+.endproc
+
+; This routine reads a TPU (tpu.inc), open on 2, to its icode section's
+; first byte: past its header, the units it uses, its interface section
+; and the icode section's length. The icode's header checks the rest.
+.proc skipToIcode
+    ldx #9                      ; the magic to the interface's CRC
+:   jsr readIcodeByte
+    dex
+    bne :-
+    jsr readIcodeByte           ; the units it uses: names and CRCs
+    sta skipCount
+L1: lda skipCount
+    beq IN
+    dec skipCount
+    jsr readIcodeByte
+    clc
+    adc #2
+    tax
+:   jsr readIcodeByte
+    dex
+    bne :-
+    bra L1
+
+IN: jsr readIcodeByte           ; the interface section
+    sta skipLeft
+    jsr readIcodeByte
+    sta skipLeft+1
+L2: lda skipLeft
+    ora skipLeft+1
+    beq CD
+    jsr readIcodeByte
+    lda skipLeft
+    bne :+
+    dec skipLeft+1
+:   dec skipLeft
+    bra L2
+
+CD: jsr readIcodeByte           ; the icode section's length
+    jmp readIcodeByte
 .endproc
 
 ; This routine deletes the file named in A/X if it exists

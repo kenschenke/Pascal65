@@ -19,12 +19,14 @@
 ;    6: A unit that uses test 1, loaded from its TPU
 ;    7: A unit that uses a unit loaded from its TPU (test 2's)
 ;    8: A unit that uses a unit with only a TPU (test 5's)
+;    9: A program that uses units loaded from their TPUs
+;   10: Routine addresses in a unit loaded from its TPU
 
 .export runTests
 
 .import runTest, clearCrcs
 
-NUM_TESTS = 8
+NUM_TESTS = 10
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"

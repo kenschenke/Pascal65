@@ -18,9 +18,10 @@
 
 .include "asmlib.inc"
 .include "linker.inc"
+.include "error.inc"
 .include "4510macros.inc"
 
-.export readFrames, setGlobalSlots
+.export readFrames, setGlobalSlots, checkSlots
 
 .import readByte, readName, symName, defineSymbol
 
@@ -86,5 +87,28 @@ L1: lda left
     bra L1
 
 BD: sec
+    rts
+.endproc
+
+; This routine reports errTooManyVariables if the frames end past the
+; 256 level 1 slots a variable operand's one-byte offset reaches, and
+; returns the carry set. The resolver reports it at the variable for the
+; modules it numbers, but a unit loaded from its TPU has only its
+; interface's variables there (tpuload.s), so the frames' sum is checked
+; here.
+.proc checkSlots
+    lda base+1
+    beq OK                      ; under 256
+    cmp #1
+    bne ER
+    lda base
+    beq OK                      ; exactly 256
+ER: lda #errTooManyVariables
+    ldx #0
+    ldy #0
+    jsr compilerError
+    sec
+    rts
+OK: clc
     rts
 .endproc

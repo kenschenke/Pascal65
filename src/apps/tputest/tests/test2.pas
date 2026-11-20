@@ -1,5 +1,5 @@
 (* Test 2 - A unit that uses a unit and a library
-TPU 1 5 0 xxxx 1f5f
+TPU 1 6 0 xxxx 1f5f
 USE system bf05
 USE tpuunit 8556
 USE tpulib 53ee

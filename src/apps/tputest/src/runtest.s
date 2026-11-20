@@ -7,15 +7,18 @@
 ; license that can be found in the LICENSE file or at
 ; https://opensource.org/licenses/MIT
 ;
-; Routines to run a TPU test. Each test's source is a unit, compiled on its
-; own to its TPU as compilerasm compiles one (runcompiler.s): tpuBegin
+; Routines to run a TPU test. A test whose source is a unit compiles it on
+; its own to its TPU as compilerasm compiles one (runcompiler.s): tpuBegin
 ; after parsing, then resolving, type checking and icode, then tpuFinish.
 ; checkTpu checks the TPU's CRCs and lengths, and the dumpicode overlay
-; dumps it (dumpTpu). The dump is compared to the dump at the start of the
-; source file, which must be formatted as shown:
+; dumps it (dumpTpu). A test whose source is a program compiles it to icode
+; as icodetest does, with the units it uses loaded from their TPUs where
+; they have them, and dumpIcode dumps it and each unit's code, from a TPU
+; for a unit loaded from it. The dump is compared to the dump at the start
+; of the source file, which must be formatted as shown:
 ;
 ; (* TestXXX
-; Dump of the TPU
+; Dump of the TPU or icode
 ; ...
 ; *)
 ;
@@ -47,6 +50,8 @@
 .bss
 
 ch: .res 1
+unitMode: .res 1            ; non-zero if the source is a unit
+globalSlots: .res 2         ; a program's own level 1 slots
 testNum: .res 2
 sourceFn: .res 16
 intBuf: .res 14
@@ -62,7 +67,6 @@ lineNumber: .res 2
 foundDiff: .res 1
 unitList: .res 4
 unitName: .res 13           ; the unit's name
-fnBuf: .res 24
 
 .data
 
@@ -86,9 +90,7 @@ strPass: .asciiz "Pass"
 strErrorCount: .asciiz "Errors encountered"
 strErrorNum: .asciiz "Error "
 strErrorLine: .asciiz " on line "
-strNotUnit: .asciiz "The source isn't a unit"
 strNoTpu: .asciiz "The TPU wasn't written"
-unitPrefix: .asciiz ICODE_UNIT_PREFIX
 .ifdef SAVEDUMP
 strDumpPrefix: .asciiz "dump"
 strWriteSuffix: .asciiz ",s,w"
@@ -158,7 +160,9 @@ strWriteSuffix: .asciiz ",s,w"
     jsr tokenizeAndParseUnits
     jsr checkErrors
 
-    ; The first part of the TPU, as the parser made the interface
+    ; A unit's TPU: the first part, as the parser made the interface
+    lda unitMode
+    beq RS
     lda #<strTpu
     ldx #>strTpu
     jsr printLine
@@ -170,12 +174,12 @@ strWriteSuffix: .asciiz ",s,w"
     jsr pushAX
     ldq astRoot
     jsr tpuBegin
-    bcc :+
+    bcc RS
     jmp noTpu
 
-    ; The unit is resolved with the units it uses, in the units list,
-    ; and its slots are numbered from 0
-:   lda #<strResolving
+    ; A unit is resolved with the units it uses, in the units list, and
+    ; its slots are numbered from 0. A program's are numbered first.
+RS: lda #<strResolving
     ldx #>strResolving
     jsr printLine
     jsr initResolver
@@ -184,13 +188,22 @@ strWriteSuffix: .asciiz ",s,w"
     jsr initScopeStack
     jsr initStandardRoutines
     jsr injectSystemUnit
+    lda #0
+    sta globalSlots
+    sta globalSlots+1
+    lda unitMode
+    beq :+
     ldq astRoot
     jsr addModuleUnit
-    jsr resolveUnits
+:   jsr resolveUnits
+    lda unitMode
+    beq :+
     lda #0
     tax
     jsr setUnitOffsets
-    jsr getResolverUnitsList
+    bra RD
+:   jsr resolveProgram
+RD: jsr getResolverUnitsList
     stq unitList
     jsr checkErrors
 
@@ -198,7 +211,11 @@ strWriteSuffix: .asciiz ",s,w"
     ldx #>strTypeChecking
     jsr printLine
     jsr initTypeCheck
-    ldq unitList
+    lda unitMode
+    bne :+
+    ldq astRoot
+    jsr declTypeCheck
+:   ldq unitList
     jsr typeCheckUnits
     jsr checkErrors
 
@@ -211,8 +228,8 @@ strWriteSuffix: .asciiz ",s,w"
     lda stackSize
     ldx stackSize+1
     jsr setIcodeStackSize
-    lda #0
-    tax
+    lda globalSlots
+    ldx globalSlots+1
     jsr setIcodeGlobalSlots
     lda runtimeMode
     jsr setIcodeRuntimeMode
@@ -224,8 +241,13 @@ strWriteSuffix: .asciiz ",s,w"
     jsr freeSymtab
     jsr checkErrors
 
+    lda unitMode
+    bne :+
+    jsr dumpProgram
+    bra CM
+
     ; The rest of the TPU: its icode section
-    jsr initTpu
+:   jsr initTpu
     lda #<unitName
     ldx #>unitName
     jsr tpuFinish
@@ -234,7 +256,6 @@ strWriteSuffix: .asciiz ",s,w"
 
     ; The root is the unit's, which freeUnits frees
 :   jsr freeUnits
-    jsr eraseIcode
 
     lda testNum
     jsr checkTpu
@@ -247,6 +268,7 @@ strWriteSuffix: .asciiz ",s,w"
     ldx #>unitName
     jsr dumpTpu
     stq dumpMemBuf
+CM: ldq dumpMemBuf
     stq ptr1
     lda #0
     tax
@@ -281,30 +303,45 @@ strWriteSuffix: .asciiz ",s,w"
     jmp CHROUT
 .endproc
 
-; This routine erases the unit's icode file (ICODE_UNIT_PREFIX and its
-; name), which tpuFinish copied into the TPU
-.proc eraseIcode
-    ldx #0
-:   lda unitPrefix,x
-    beq :+
-    sta fnBuf,x
-    inx
-    bra :-
-:   ldy #0
-:   lda unitName,y
-    sta fnBuf,x
-    beq :+
-    inx
-    iny
-    bra :-
-:   lda #<fnBuf
-    sta ptr1
-    lda #>fnBuf
-    sta ptr1+1
+; This routine resolves the program in astRoot, once its units are, as
+; icodetest does: its slots first, then the units'
+.proc resolveProgram
+    ldq astRoot
+    jsr pushQ
+    jsr pushQZero
+    jsr declResolve
+
+    ldq astRoot
+    jsr pushQ
     lda #0
-    sta ptr1+2
-    sta ptr1+3
-    jmp scratchFile
+    tax
+    jsr pushAX
+    lda #0
+    jsr pushA
+    jsr setDeclOffsets
+    sta globalSlots
+    stx globalSlots+1
+    jsr setUnitOffsets
+    ldq astRoot
+    jsr fixGlobalOffsets
+    ldq astRoot
+    jmp verifyFwdDeclarations
+.endproc
+
+; This routine dumps the program's icode file and each unit's code into
+; dumpMemBuf, then erases the program's file and frees the program
+.proc dumpProgram
+    lda #<strDumping
+    ldx #>strDumping
+    jsr printLine
+    jsr initDumpIcode
+    jsr dumpIcode
+    stq dumpMemBuf
+    jsr initIcode
+    jsr icodeFileErase
+    ldq astRoot
+    jsr astFree
+    jmp freeUnits
 .endproc
 
 .proc noTpu
@@ -734,9 +771,11 @@ L1: ldq dumpMemBuf
     bra L1
 .endproc
 
-; This routine keeps the unit's name in unitName, and fails the test if
-; the source parsed into astRoot isn't a unit
+; This routine sets unitMode if the source parsed into astRoot is a unit,
+; and keeps its name in unitName
 .proc checkUnitMode
+    lda #0
+    sta unitMode
     ldq astRoot
     stq ptr1
     ldz #decl::type
@@ -750,14 +789,10 @@ L1: ldq dumpMemBuf
     lda (ptr2),z
     cmp #TYPE_UNIT
     beq :+
-    lda #13
-    jsr CHROUT
-    lda #<strNotUnit
-    ldx #>strNotUnit
-    jsr printLine
-    jmp testFail
+    rts
 
-:   ldz #decl::name
+:   inc unitMode
+    ldz #decl::name
     ldx #0
 :   nop
     lda (ptr1),z

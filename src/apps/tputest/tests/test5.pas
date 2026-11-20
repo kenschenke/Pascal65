@@ -1,5 +1,5 @@
 (* Test 5 - TpuCrc with its interface changed
-TPU 1 5 0 xxxx e8f0
+TPU 1 6 0 xxxx e8f0
 USE system bf05
 INT 188 9
 COD 7f

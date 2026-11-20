@@ -21,12 +21,15 @@
 .include "resolver.inc"
 .include "4510macros.inc"
 .include "asm.inc"
+.include "ast.inc"
+.include "tpu.inc"
 
 .export runCompiler, unitList
 
 .import initTokenizer, initParser, initResolver, initTypeCheck, errorCount
 .import initIcode, initCodeGen, initLinker, freeUnits, tokenizeAndParseUnits
 .import freeUnitBodies
+.import initTpu
 .import nextTestPrg, failTests, expectedError, lastError
 
 .data
@@ -44,6 +47,8 @@ unitList: .res 4
 runtimeStackSize: .res 2
 runtimeMode: .res 1             ; RT_MODE_* (asm.inc)
 prgName: .res 17                ; checkExpectedError: the PRG's name
+unitMode: .res 1                ; non-zero for a unit compiled to its TPU
+unitName: .res 13
 
 .code
 
@@ -129,7 +134,13 @@ prgName: .res 17                ; checkExpectedError: the PRG's name
 
     jsr tokenizeAndParseUnits
 
-    lda #'R'
+    ; A unit (unitTests in compiletests.s) is compiled to its TPU
+    jsr checkUnitMode
+    lda unitMode
+    beq :+
+    jmp compileUnit
+
+:   lda #'R'
     jsr CHROUT
     jsr initResolver
     ldq unitList
@@ -277,6 +288,122 @@ L3: lda #'L'
 
     rts
 
+.endproc
+
+; This routine sets unitMode if the source parsed into astRoot is a unit,
+; and keeps its name in unitName
+.proc checkUnitMode
+    lda #0
+    sta unitMode
+    ldq astRoot
+    stq ptr1
+    ldz #decl::type
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    stq ptr2
+    ldz #type::kind
+    nop
+    lda (ptr2),z
+    cmp #TYPE_UNIT
+    beq :+
+    rts
+:   inc unitMode
+    ldz #decl::name
+    ldx #0
+:   nop
+    lda (ptr1),z
+    sta unitName,x
+    beq :+
+    inz
+    inx
+    cpx #12
+    bne :-
+    lda #0
+    sta unitName,x
+:   rts
+.endproc
+
+; This routine compiles the unit in astRoot on its own to its TPU, as
+; compilerasm does (unit mode, runcompiler.s there), once it and the units
+; it uses are parsed. Any error fails the tests.
+.proc compileUnit
+    lda #'U'
+    jsr CHROUT
+    jsr initTpu
+    ldq unitList
+    jsr pushQ
+    lda sourceFn
+    ldx sourceFn+1
+    jsr pushAX
+    ldq astRoot
+    jsr tpuBegin
+    bcc :+
+    jmp failTests
+:
+
+    ; It is resolved with the units it uses, and numbered from slot 0
+    lda #'R'
+    jsr CHROUT
+    jsr initResolver
+    ldq unitList
+    jsr setResolverUnitsList
+    jsr initScopeStack
+    jsr initStandardRoutines
+    jsr injectSystemUnit
+    ldq astRoot
+    jsr addModuleUnit
+    jsr resolveUnits
+    lda #0
+    tax
+    jsr setUnitOffsets
+    jsr getResolverUnitsList
+    stq unitList
+    lda errorCount
+    beq :+
+    jmp failTests
+:
+
+    lda #'K'
+    jsr CHROUT
+    jsr initTypeCheck
+    ldq unitList
+    jsr typeCheckUnits
+
+    lda #'I'
+    jsr CHROUT
+    jsr initIcode
+    ldq unitList
+    jsr setIcodeUnitsList
+    lda runtimeStackSize
+    ldx runtimeStackSize+1
+    jsr setIcodeStackSize
+    lda #0
+    tax
+    jsr setIcodeGlobalSlots
+    lda runtimeMode
+    jsr setIcodeRuntimeMode
+    ldq astRoot
+    jsr icodeWrite
+    jsr scopeExit
+    jsr freeSymtab
+    lda errorCount
+    bne FL
+
+    ; Its TPU. Its root is in the units list, which frees it.
+    jsr initTpu
+    lda #<unitName
+    ldx #>unitName
+    jsr tpuFinish
+    php
+    jsr freeUnits
+    plp
+    bcs FL
+    lda #13
+    jmp CHROUT
+
+FL: jmp failTests
 .endproc
 
 ; This routine finishes a program the compiler must refuse. It fails the

@@ -41,8 +41,13 @@ L1: ldq thisUnit
     rts
 
     ; A library has no code. Neither has a unit that wasn't parsed
-    ; (icodetest's tests without units).
+    ; (icodetest's tests without units), and a unit loaded from its TPU
+    ; has its code there.
 :   stq ptr1
+    ldz #unit::fromTpu
+    nop
+    lda (ptr1),z
+    bne NX
     ldz #unit::astRoot
     neg
     neg

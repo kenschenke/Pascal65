@@ -1,5 +1,5 @@
 (* Test 7 - A unit that uses a unit loaded from its TPU
-TPU 1 5 0 xxxx dee8
+TPU 1 6 0 xxxx dee8
 USE system bf05
 USE test2 1f5f
 INT 188 9
@@ -7,7 +7,7 @@ COD 115
 HDR UNIT test7 0 0 1
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-IMP UNIT test2
+IMP TPU test2
 FRM test2 1
 LOC LBL test7.0
 PSH IWU 0

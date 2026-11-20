@@ -46,7 +46,7 @@ PRG_FILENUM = 3
 .import symName
 .import initLibraries, readLibraryList, layoutLibraries, writeLibraries
 .import freeLibraries
-.import readFrames, setGlobalSlots
+.import readFrames, setGlobalSlots, checkSlots
 .import layoutRuntime, writeRuntime, codeCeiling
 .import defineLinkerSymbols, writeRuntimeBss, RTBSS_LEN: zp
 
@@ -148,8 +148,11 @@ prgStub2:
     beq :+
 BD: jmp objFileInvalid
 
-    ; 2. Lay out: the runtime, the libraries, the module and the BSS
-:   jsr layoutRuntime
+    ; 2. Lay out: the runtime, the libraries, the module and the BSS. The
+    ; level 1 slots must fit first (frames.s).
+:   jsr checkSlots
+    bcs ER
+    jsr layoutRuntime
     bcs ER
     clc
     adc #<(LINK_CODE_BASE + LINK_STUB_SIZE)

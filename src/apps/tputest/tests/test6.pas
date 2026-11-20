@@ -1,5 +1,5 @@
 (* Test 6 - A unit that uses test 1
-TPU 1 5 0 xxxx 7f4f
+TPU 1 6 0 xxxx 7f4f
 USE system bf05
 USE test1 9652
 INT 211 d
@@ -7,7 +7,7 @@ COD 130
 HDR UNIT test6 0 0 1
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-IMP UNIT test1
+IMP TPU test1
 FRM test1 4
 LOC LBL test6.0
 NEW IWS 4

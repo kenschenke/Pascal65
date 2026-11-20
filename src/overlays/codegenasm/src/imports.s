@@ -31,6 +31,7 @@
 
 .export readIcodeImports, initLibraries, cleanupLibraries
 .export writeLibraries, freeImports, skipIcodeImports, unitCount, getImportUnit
+.export isImportTpu
 
 .import readIcodeByte, readStatus, genThreeAddr
 
@@ -52,6 +53,8 @@ UNIT_NAME_SIZE = 13         ; unit::name
 unitCount: .res 1
 unitNames: .res MAX_UNITS * UNIT_NAME_SIZE
 unitIdx: .res 1
+unitTpu: .res MAX_UNITS      ; non-zero for a unit whose code is in its TPU
+tpuFlag: .res 1
 
 .code
 
@@ -77,7 +80,12 @@ L1: lda left
     jsr readIcodeByte
     cmp #ICODE_IMPORT_UNIT
     bne :+
-    jsr readUnit
+    lda #0                      ; its code is in its own file
+    bra RU
+:   cmp #ICODE_IMPORT_TPU
+    bne :+
+    lda #1                      ; its code is in its TPU
+RU: jsr readUnit
     bcs BD
     bra L1
 :   cmp #ICODE_IMPORT_LIBRARY
@@ -314,8 +322,10 @@ L1: lda libsLen
 .endproc
 
 ; This routine reads a Pascal unit's name from the imports table into
-; unitNames. The carry is set if it is too long or there are too many.
+; unitNames, and keeps in unitTpu the flag in A: non-zero if its code is
+; in its TPU (ICODE_IMPORT_TPU). The carry is set if it is too long or there are too many.
 .proc readUnit
+    sta tpuFlag
     lda unitCount
     cmp #MAX_UNITS
     bcs DN
@@ -335,6 +345,9 @@ L1: lda libsLen
     bra :-
 :   lda #0
     sta (ptr3),y
+    ldx unitCount
+    lda tpuFlag
+    sta unitTpu,x
     inc unitCount
     clc
 DN: rts
@@ -358,6 +371,14 @@ DN: rts
 :   dex
     bra :--
 DN: rts
+.endproc
+
+; This routine returns in A non-zero if the program's Pascal unit
+; numbered in A, from 0, has its code in its TPU (ICODE_IMPORT_TPU)
+.proc isImportTpu
+    tax
+    lda unitTpu,x
+    rts
 .endproc
 
 ; This routine returns in A/X a pointer to the name of the program's
@@ -394,6 +415,8 @@ L1: lda left
     bra :-
 :   pla
     cmp #ICODE_IMPORT_UNIT
+    beq L1
+    cmp #ICODE_IMPORT_TPU
     beq L1
     cmp #ICODE_IMPORT_LIBRARY
     bne BD

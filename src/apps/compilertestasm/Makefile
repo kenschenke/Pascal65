@@ -13,6 +13,7 @@ TYPECHECKDIR := ../../overlays/typecheckasm
 LINKERDIR := ../../overlays/linkerasm
 CODEGENDIR := ../../overlays/codegenasm
 MEMINFODIR := ../../overlays/meminfo
+TPUDIR := ../../overlays/tpuasm
 ASMLIBDIR := ../../lib/asmlib
 SYSTEMLIBDIR := ../../lib/system
 DEMOLIBDIR := ../../lib/demolib
@@ -61,9 +62,9 @@ PRGSUMS = prgsums/set$(TESTSET).txt
 comma := ,
 # Set 1's own sources. slots256, unitlib, unituses and unitrefs were each
 # added as the set's first program, so no program's chain target changed.
-# toomanyvars is one of set 1's errorTests.
-SET1PAS = slots256 s256u toomanyvars tmvunit unitlib ulib unituses uusea \
-	uuseb unitrefs urefs
+# toomanyvars and toomanyimpl are two of set 1's errorTests.
+SET1PAS = slots256 s256u toomanyvars tmvunit toomanyimpl tmvimpl unitlib \
+	ulib unituses uusea uuseb unitrefs urefs
 ifeq ($(filter $(TESTSET),2 3),)
 SET1WRITE = $(foreach t,$(SET1PAS), \
 	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
@@ -94,6 +95,7 @@ ICODE = ../../overlays/icodeasm/bin/$(TARGET)/icode
 RESOLVER = ../../overlays/resolverasm/bin/$(TARGET)/resolver
 TYPECHECK = ../../overlays/typecheckasm/bin/$(TARGET)/typecheck
 MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
+TPU = ../../overlays/tpuasm/bin/$(TARGET)/tpu
 CODEGEN = ../../overlays/codegenasm/bin/$(TARGET)/codegen
 LINKER = ../../overlays/linkerasm/bin/$(TARGET)/linker
 SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
@@ -117,6 +119,7 @@ BINFILES += $(ICODE)
 BINFILES += $(RESOLVER)
 BINFILES += $(TYPECHECK)
 BINFILES += $(MEMINFO)
+BINFILES += $(TPU)
 BINFILES += $(ASMLIB)
 BINFILES += $(DEMOLIB)
 BINFILES += $(DEMOLIB2)
@@ -245,6 +248,9 @@ $(LINKER): FORCE
 $(MEMINFO): FORCE
 	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
 
+$(TPU): FORCE
+	cd $(TPUDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -299,6 +305,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(CODEGEN) codegen,prg \
 	-write $(LINKER) linker,prg \
 	-write $(MEMINFO) meminfo,prg \
+	-write $(TPU) tpu,prg \
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(DEMOLIB) demolib.lib,prg \
 	-write $(DEMOLIB2) demolib2.lib,prg \

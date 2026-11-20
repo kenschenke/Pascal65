@@ -711,6 +711,14 @@ LS: lda rightType+type::flags
     beq L4
     cmp #DECL_CONST
     beq L4
+    ; A routine. One with no code is in a library or a unit loaded from
+    ; its TPU, whose symbols name the interface's declarations, not the
+    ; bodies: it isn't a constant.
+    lda rightType
+    cmp #TYPE_FUNCTION
+    beq L4
+    cmp #TYPE_PROCEDURE
+    beq L4
     ldz #decl::code
     neg
     neg
@@ -753,12 +761,16 @@ L5: ldq symPtr
     ldx #>lblRoutineEnter
     jsr icodeFormatDeclLabel
     jsr icodeOper1Label
+    ; Its level, 2 if its symbol has none, as a call takes it (NP in
+    ; icodeRoutineCall.s): a TPU unit's routine has no body to set it
     ldq symPtr
     stq ptr1
     ldz #symbol::level
     nop
     lda (ptr1),z
-    jsr icodeOper2Short
+    bne :+
+    lda #2
+:   jsr icodeOper2Short
     lda #0
     jsr icodeOper3Short
     lda #IC_PRP

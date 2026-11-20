@@ -448,11 +448,14 @@ A variable operand's offset is one byte, so a scope has at most 256 slots,
 and level 1 is one scope for the program and all its units. `setVarOffset`
 (`setDeclOffsets.s`) reports `errTooManyVariables` at the variable that
 takes offset 256, once per scope. `setUnitOffsets` reports a unit's in the
-unit's file and puts the caller's file name back. The linker doesn't check
-the frames' sum yet, since today one compile numbers every module; separate
-compilation will need it. resolvertest error tests 47 and 48 and
-compilertestasm's `slots256` (set 1's first program, all 256 slots used)
-and `toomanyvars` (an error test) check this.
+unit's file and puts the caller's file name back. A unit loaded from its
+TPU has only its interface's variables to number, so the linker checks
+the frames' sum too (`checkSlots` in linkerasm's `frames.s`, before
+layout) and reports `errTooManyVariables` with no line. resolvertest
+error tests 47 and 48 and compilertestasm's `slots256` (set 1's first
+program, all 256 slots used), `toomanyvars` (an error test, its unit's
+interface over) and `toomanyimpl` (its unit's implementation over, which
+only the linker sees) check this.
 
 ### TPU Tests
 
@@ -462,8 +465,12 @@ using icodetest's loaders and compilerasm's `initTpu` and
 `tokenizeAndParseUnits` (vpath and a rule of its own in the Makefile).
 The TPUs stay on the disk, so a later test's unit loads an earlier
 test's unit from its TPU: 6 uses test 1's, 7 test 2's (and the units it
-lists) and 8 `TpuCrc`'s, which has no source on the disk. The header comment holds the dump
-dumpicode's `dumpTpu` must make: a `TPU` line (versions, flags, the
+lists) and 8 `TpuCrc`'s, which has no source on the disk. A test whose
+source is a program is compiled to icode as icodetest compiles one and
+dumped with `dumpIcode`, which dumps a unit loaded from its TPU from the
+TPU: test 9 uses tests 1 and 2's, and test 10 takes the addresses of
+test 1's routines. A unit's header comment holds the dump dumpicode's
+`dumpTpu` must make: a `TPU` line (versions, flags, the
 source's CRC as `xxxx` and the interface's CRC), a `USE` line for each
 used unit with its CRC, the interface section's length and record count
 (`INT`), the icode section's length (`COD`) and the icode as
@@ -520,6 +527,8 @@ built with `MEMCHECK=1`.
 `compilertestasm` runs as three sets because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from all three. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to the D81 file list in the Makefile.
 
 A program the compiler must refuse goes in `errorTests` in `compiletests.s` instead, followed by the error number it must report. These are compiled first and never run. The resolver reports some errors (`toomanyvars`), and one that code generation passes is linked, since the linker reports some errors. The compile step fails unless each one reports exactly that one error and leaves no object file and no PRG. `toolarge.pas` checks `errCodeSegmentOverflow`, which the linker reports when the program, a 256-byte minimum heap and the runtime stack don't fit below $C000 (static) or `rtLow` (dynamic). A dynamic program gets `errCodeSegmentOverflowDyn` ("Too big; try static") instead, so set 1 expects that and set 2 the other. Either is followed by a line, printed by the linker, saying how many bytes too large the program is.
+
+The Pascal units the tests use are in `unitTests` (`compiletests.s`), compiled first, each on its own to its TPU (unit mode, `compileUnit` in `runcompiler.s`, as `compilerasm` compiles one), so every program that uses them is built with them loaded from their TPUs. A unit comes after the units it uses. Each disk holds the `tpu` overlay and the TPUs. The error tests' units are in the list too. The PRGs are the same as when the units were parsed from source, so the checksums didn't change. A TPU unit's routine symbols name the interface's declarations, which have no code and no level (no body sets them); `@` of one was read as a constant and given level 0 until `unitrefs` differed (tputest 10).
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
 
@@ -890,6 +899,14 @@ The interface's variables come first in a unit's slots, so the resolver
 numbers them from the interface alone, and `setUnitOffsets` ends the
 unit's slots at its TPU's count (`tpuSlotsEnd`). `tpuBegin` gives such a
 unit's recorded CRC to the units that use it.
+
+icode writes no file for a unit loaded from its TPU, and lists it in the
+imports as `ICODE_IMPORT_TPU` (`writeUnit` in `icodeImports.s`), so code
+generation, which can't look for files (a DOS command would close the
+code file), knows its code is the TPU's icode section. `genUnits` opens
+`<unit>.tpu` and skips to that section (`skipToIcode`), and `deleteIcode`
+leaves the TPU. dumpicode shows `IMP TPU name` and dumps the unit's TPU
+(`dumpTpuFile`) after the program.
 
 ## Non-negotiables
 

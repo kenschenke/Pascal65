@@ -92,6 +92,17 @@ strHangman: .asciiz "hangman"
 strDone: .asciiz "done"
 strTooLarge: .asciiz "toolarge"
 strTooManyVars: .asciiz "toomanyvars"
+strTooManyImpl: .asciiz "toomanyimpl"
+strTmvUnit: .asciiz "tmvunit"
+strTmvImpl: .asciiz "tmvimpl"
+strS256U: .asciiz "s256u"
+strULib: .asciiz "ulib"
+strUUseA: .asciiz "uusea"
+strUUseB: .asciiz "uuseb"
+strURefs: .asciiz "urefs"
+strUInitA: .asciiz "uinita"
+strUInitB: .asciiz "uinitb"
+strUnit1: .asciiz "unit1"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -192,6 +203,29 @@ tests:
 .endif
     .byte $00, $00
 
+; The Pascal units the tests use, each compiled on its own to its TPU
+; (unit mode) before any program, so the programs are built with them
+; loaded from their TPUs (tpuload.s). A unit comes after the units it
+; uses.
+unitTests:
+.if TESTSET = 0 || TESTSET = 1
+    .byte .lobyte(strS256U), .hibyte(strS256U)
+    .byte .lobyte(strULib), .hibyte(strULib)
+    .byte .lobyte(strUUseA), .hibyte(strUUseA)
+    .byte .lobyte(strUUseB), .hibyte(strUUseB)
+    .byte .lobyte(strURefs), .hibyte(strURefs)
+    .byte .lobyte(strUInitA), .hibyte(strUInitA)
+    .byte .lobyte(strUInitB), .hibyte(strUInitB)
+    ; The error tests' units: TmvUnit's interface and TmvImpl's
+    ; implementation overflow the slots
+    .byte .lobyte(strTmvUnit), .hibyte(strTmvUnit)
+    .byte .lobyte(strTmvImpl), .hibyte(strTmvImpl)
+.endif
+.if TESTSET = 0 || TESTSET = 2
+    .byte .lobyte(strUnit1), .hibyte(strUnit1)
+.endif
+    .byte $00, $00
+
 ; Programs the compiler must refuse, each followed by the one error it must
 ; report. They are compiled before the tests above, aren't linked and aren't
 ; part of the chain.
@@ -202,8 +236,13 @@ errorTests:
 .if TESTSET = 0 || TESTSET = 1
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
     .byte errCodeSegmentOverflowDyn
-    ; Its unit's variables need slot 256
+    ; Its unit's variables need slot 256. They're in the unit's
+    ; interface, so the resolver numbers them from its TPU and reports it.
     .byte .lobyte(strTooManyVars), .hibyte(strTooManyVars)
+    .byte errTooManyVariables
+    ; Its unit's implementation's do, which its TPU doesn't show the
+    ; resolver: the linker reports it from the frames (checkSlots)
+    .byte .lobyte(strTooManyImpl), .hibyte(strTooManyImpl)
     .byte errTooManyVariables
 .endif
 .if TESTSET = 2
@@ -249,6 +288,7 @@ nextTestPrg: .res 16        ; null-terminated PRG filename of the next test
 .code
 
 .proc compileTests
+    jsr compileUnits
     jsr compileErrorTests
     jsr compileOnly
 
@@ -363,6 +403,34 @@ L1: lda testNum                 ; Y = testNum * 3
     ldx #>sourceFn
     jsr runCompiler
 
+    inc testNum
+    bra L1
+
+DN: rts
+.endproc
+
+; This routine compiles the units in unitTests to their TPUs. runCompiler
+; fails the tests if any reports an error or a warning.
+.proc compileUnits
+    lda #0
+    sta testNum
+    sta expectedError
+    sta nextTestPrg
+
+L1: lda testNum                 ; Y = testNum * 2
+    asl a
+    tay
+    lda unitTests,y
+    ora unitTests+1,y
+    beq DN
+    lda unitTests,y
+    sta ptr1
+    lda unitTests+1,y
+    sta ptr1+1
+    jsr makeSourceFilename
+    lda #<sourceFn
+    ldx #>sourceFn
+    jsr runCompiler
     inc testNum
     bra L1
 

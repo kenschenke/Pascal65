@@ -120,11 +120,20 @@ NX: ldq thisUnit
     bra L1
 .endproc
 
-; This routine writes the Pascal unit in unitName: its kind
-; (ICODE_IMPORT_UNIT) and name. Its code is in its own icode file.
+; This routine writes the Pascal unit in unitName and thisUnit: its kind
+; and name. Its code is in its own icode file (ICODE_IMPORT_UNIT) or, if
+; it was loaded from its TPU, in the TPU (ICODE_IMPORT_TPU).
 .proc writeUnit
-    lda #ICODE_IMPORT_UNIT
-    jsr CHROUT
+    ldq thisUnit
+    stq ptr2
+    ldz #unit::fromTpu
+    nop
+    lda (ptr2),z
+    beq :+
+    lda #ICODE_IMPORT_TPU
+    bra :++
+:   lda #ICODE_IMPORT_UNIT
+:   jsr CHROUT
     jmp writeName
 .endproc
 

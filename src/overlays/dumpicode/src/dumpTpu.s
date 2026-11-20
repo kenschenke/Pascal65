@@ -30,7 +30,7 @@
 .include "cbm_kernal.inc"
 .include "4510macros.inc"
 
-.export dumpTpu
+.export dumpTpu, dumpTpuFile
 
 .import dumpStream, dumpTpuStart, dumpChar, dumpNewline, printz, dumpHex
 .import memBuf
@@ -58,6 +58,18 @@ left: .res 2
 ; This routine dumps <name>.tpu, the unit's name at A/X (16 bits,
 ; null-terminated), into a membuf it returns in Q
 .proc dumpTpu
+    pha
+    phx
+    jsr dumpTpuStart
+    plx
+    pla
+    ; Fall through to dumpTpuFile
+.endproc
+
+; This routine dumps <name>.tpu, the unit's name at A/X, into memBuf,
+; and returns memBuf in Q. A program's dump dumps a unit whose code is
+; in its TPU this way (dumpUnits).
+.proc dumpTpuFile
     sta ptr2
     stx ptr2+1
     ldy #0
@@ -75,7 +87,6 @@ left: .res 2
     iny
     bra :-
 :   phy
-    jsr dumpTpuStart
     ldx DEVNUM
     lda #1
     tay

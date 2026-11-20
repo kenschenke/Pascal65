@@ -1,5 +1,5 @@
 (* Test 4 - TpuCrc with only its implementation changed
-TPU 1 5 0 xxxx cd5a
+TPU 1 6 0 xxxx cd5a
 USE system bf05
 INT 188 9
 COD 7f

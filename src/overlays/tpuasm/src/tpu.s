@@ -198,8 +198,8 @@ ER: jsr closeOut
 
 ; This routine writes <unit>.tpu: zztpu, then the icode section, the
 ; length and bytes of the unit's icode file (ICODE_UNIT_PREFIX and its
-; name), and erases zztpu. The unit's name is at A/X (16 bits,
-; null-terminated). The carry is set if it can't be written.
+; name), and erases zztpu and the icode file. The unit's name is at A/X
+; (16 bits, null-terminated). The carry is set if it can't be written.
 .proc tpuFinishX
     sta ptr1
     stx ptr1+1
@@ -301,9 +301,14 @@ CD: lda #FILE_IN
     jsr CLOSE
     jsr closeOut
 
-    ; zztpu isn't needed any more
+    ; zztpu and the unit's icode file, which is in the TPU now, aren't
+    ; needed any more
     lda #<strTemp
     ldx #>strTemp
+    jsr eraseFile
+    jsr icodeFn
+    lda #<fnBuf
+    ldx #>fnBuf
     jsr eraseFile
     clc
     rts

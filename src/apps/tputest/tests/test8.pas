@@ -1,5 +1,5 @@
 (* Test 8 - A unit that uses a unit with only a TPU
-TPU 1 5 0 xxxx b31
+TPU 1 6 0 xxxx b31
 USE system bf05
 USE tpucrc e8f0
 INT e4 5
@@ -7,7 +7,7 @@ COD c9
 HDR UNIT test8 0 0 0
 IMP LIB system 22
    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-IMP UNIT tpucrc
+IMP TPU tpucrc
 FRM tpucrc 1
 LOC LBL test8.0
 UIR

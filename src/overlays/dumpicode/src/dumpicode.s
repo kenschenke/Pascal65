@@ -8,6 +8,7 @@
 
 .export dumpIcode, dumpUnitIcode, memBuf, dumpNewline, dumpChar, printz, dumpFrameName
 .export dumpStream, dumpTpuStart
+.import dumpTpuFile
 
 .import readInstruction, dumpHex
 
@@ -22,6 +23,7 @@ strUnit: .asciiz "UNIT "
 strBadHdr: .asciiz "BAD HEADER"
 strImpLib: .asciiz "IMP LIB "
 strImpUnit: .asciiz "IMP UNIT "
+strImpTpu: .asciiz "IMP TPU "
 unitPrefix: .asciiz ICODE_UNIT_PREFIX
 strSeqRead: .asciiz ",s,r"
 strBadImp: .asciiz "BAD IMPORT"
@@ -47,6 +49,8 @@ namePos: .res 1
 MAX_UNITS = 16              ; unit files dumped
 unitCount: .res 1
 unitNames: .res MAX_UNITS * NAME_SIZE
+unitTpu: .res MAX_UNITS       ; non-zero for one whose code is in its TPU
+impKind: .res 1
 unitIdx: .res 1
 recording: .res 1           ; non-zero while the program's file is dumped
 unitFn: .res 24
@@ -84,6 +88,23 @@ L1: lda unitIdx
     bne :+
     ldq memBuf
     rts
+:   ldx unitIdx                 ; one in its TPU: the TPU's dump
+    lda unitTpu,x
+    cmp #ICODE_IMPORT_TPU
+    bne :+
+    lda unitIdx
+    jsr unitNamePos
+    clc
+    adc #<unitNames
+    pha
+    lda #>unitNames
+    adc #0
+    tax
+    pla
+    jsr dumpTpuFile
+    inc unitIdx
+    bra L1
+
 :   lda unitIdx
     jsr unitNamePos
     tay
@@ -278,8 +299,10 @@ L1: lda impLeft
 :   dec impLeft
     jsr CHRIN
     cmp #ICODE_IMPORT_UNIT
-    bne :+
-    jsr dumpUnitImport
+    beq :+
+    cmp #ICODE_IMPORT_TPU
+    bne :++
+:   jsr dumpUnitImport
     jmp L1
 :
     cmp #ICODE_IMPORT_LIBRARY
@@ -501,10 +524,19 @@ DN: rts
 ; This routine dumps a Pascal unit's import as a line, and in the
 ; program's file keeps its name, to dump the unit's own file after it:
 ;    IMP UNIT name
+; or, for one whose code is in its TPU (ICODE_IMPORT_TPU), whose TPU is
+; dumped after it (dumpTpuFile):
+;    IMP TPU name
 .proc dumpUnitImport
+    sta impKind
+    cmp #ICODE_IMPORT_TPU
+    beq :+
     lda #<strImpUnit
     ldx #>strImpUnit
-    jsr printz
+    bra :++
+:   lda #<strImpTpu
+    ldx #>strImpTpu
+:   jsr printz
     lda unitCount
     jsr unitNamePos
     sta namePos
@@ -524,6 +556,9 @@ DN: rts
     lda unitCount
     cmp #MAX_UNITS
     bcs :+
+    ldx unitCount
+    lda impKind
+    sta unitTpu,x
     inc unitCount
 :   jmp dumpNewline
 .endproc
@@ -577,6 +612,7 @@ DN: rts
     lda #0
     sta recording
     sta unitIdx
+    sta unitTpu                 ; in its own file
     lda #1
     sta unitCount
     jmp dumpUnits

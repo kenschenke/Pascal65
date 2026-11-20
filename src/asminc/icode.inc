@@ -30,6 +30,8 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ;    (linker.inc): its name, a word with its slot count, then each slot's
 ;    kind (OBJLIB_*)
 ;    ICODE_IMPORT_UNIT, then the unit's name. Its code is in its own file.
+;    ICODE_IMPORT_TPU, then the unit's name: a unit loaded from its TPU
+;    (tpuload.s), whose code is the TPU's icode section
 ;
 ; The frames table (icodeFrames.s) follows: a count byte, then each unit
 ; or library with level 1 slots that the module imports, in the order the
@@ -51,12 +53,13 @@ setIcodeGlobalSlots = ICODE_BASE + 18   ; the program's level 1 slots in A/X
 ; written, so they are EOM's operand. Code generation ORs the modules'.
 ICODE_MAGIC0 = $49      ; "IC", as numbers so no charmap changes them
 ICODE_MAGIC1 = $43
-ICODE_VERSION = 5
+ICODE_VERSION = 6
 ICODE_HDR_SLOTS = 7     ; the header's offset of the level 1 slots
 ICODE_KIND_PROGRAM = 0
 ICODE_KIND_UNIT = 1
 ICODE_IMPORT_LIBRARY = 1
 ICODE_IMPORT_UNIT = 2
+ICODE_IMPORT_TPU = 3
 ICODE_MAX_NAME = 23     ; NAMELEN (ast.inc) less the terminating zero
 .define ICODE_UNIT_PREFIX "zzi"  ; a unit's icode file: this, then its name
 
