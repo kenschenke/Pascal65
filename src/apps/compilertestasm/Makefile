@@ -31,7 +31,7 @@ TARGET := mega65
 # on one disk image. A set's disk also needs room for the files its tests
 # write (filetesta and filetestb in set 2).
 TESTSETS := 1 2 3
-FIRSTTEST1 := slots256
+FIRSTTEST1 := unitobjs
 FIRSTTEST2 := subtract
 FIRSTTEST3 := dynarraya
 # Programs are built for the dynamic runtime unless they say
@@ -60,15 +60,16 @@ PRGSUMS = prgsums/set$(TESTSET).txt
 # which need the room for the programs they compile and the files their
 # tests write (set 2's file tests hang on a full disk).
 comma := ,
-# Set 1's own sources. slots256, unitlib, unituses and unitrefs were each
-# added as the set's first program, so no program's chain target changed.
+# Set 1's own sources. slots256, unitlib, unituses, unitrefs and unitobjs
+# were each added as the set's first program, so no program's chain
+# target changed.
 # toomanyvars, toomanyimpl, mkcycle and mkbad are four of set 1's
 # errorTests.
 # The mk files are its makeTests; mkstale.tpu is a TPU of an old icode
 # version.
 SET1PAS = slots256 s256u toomanyvars tmvunit toomanyimpl tmvimpl unitlib \
 	ulib unituses uusea uuseb unitrefs urefs mkprog mka1 mka2 mka3 mkb mkc \
-	mkcycle cyca cycb mkbad mkerr
+	mkcycle cyca cycb mkbad mkerr unitobjs uobjs uobjl uobjr
 MKSTALE = $(BINTARGETDIR)/mkstale.tpu
 ifeq ($(filter $(TESTSET),2 3),)
 SET1WRITE = $(foreach t,$(SET1PAS), \

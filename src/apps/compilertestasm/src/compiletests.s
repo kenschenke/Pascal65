@@ -70,6 +70,7 @@ strNegate: .asciiz "negate"
 strSubrange: .asciiz "subrange"
 strUnitInit: .asciiz "unitinit"
 strUnitRefs: .asciiz "unitrefs"
+strUnitObjs: .asciiz "unitobjs"
 strUnitUses: .asciiz "unituses"
 strUnitLib: .asciiz "unitlib"
 strSlots256: .asciiz "slots256"
@@ -109,6 +110,9 @@ TESTSET = 0
 
 tests:
 .if TESTSET = 0 || TESTSET = 1
+    ; Modules linked from their own object files, a unit used by two
+    ; others. First, so adding it changed no other program's chain target.
+    .byte .lobyte(strUnitObjs), .hibyte(strUnitObjs)
     ; A program and unit that fill all 256 level 1 slots. First, so adding
     ; it changed no other program's chain target.
     .byte .lobyte(strSlots256), .hibyte(strSlots256)

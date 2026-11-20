@@ -9,18 +9,24 @@
 ;
 ; writeObjFile routine
 ;
-; Code generation writes the code to zzcode as it goes and keeps the linker
-; tags in the heap (linkerTags.s in asmlib). When the code is done,
-; writeObjFile writes the object file, zztmp: a header, the symbols, the
-; imports, the libraries and a relocation for each tag, then the code,
-; copied from zzcode (see linker.inc for the format). It deletes zzcode and
-; frees the tags, so code generation leaves nothing in the heap for the
-; linker.
+; Code generation writes each module's code to zzcode as it goes and keeps
+; the linker tags in the heap (linkerTags.s in asmlib). When the module's
+; code is done, writeObjFile writes its object file, zztmp for the program
+; and <unit>.obj for a unit: a header, the symbols, the imports, the
+; libraries, the frames, the units and a relocation for each tag, then the
+; code, copied from zzcode (see linker.inc for the format). It deletes
+; zzcode and frees the tags, so code generation leaves nothing in the heap
+; for the linker.
 ;
 ; A label set in this module is a relocation's target as its offset in the
 ; code. A label that isn't set is an import: a library's slot or a linker
 ; symbol, which the linker resolves. Each import is added to the tags with
 ; its number, so a relocation finds it as it finds a label.
+;
+; A label with a period that the module sets is an entry, "name.N"
+; (icodeExports.s in icodeasm): a unit's init block, routine or variable
+; block, which another module imports. setLabel keeps each one, and the
+; object file lists them as its exported symbols.
 
 .include "c64.inc"
 .include "asm.inc"
@@ -47,16 +53,16 @@ skip:
 .endmacro
 
 .export writeObjFile, objFilename, codeFilename
+.export setObjModule, setLabel, initExports, freeExports
 .export setRuntimeFeatures, setRuntimeMode, nameBuf, nameLen, addRuntimeFeatures
 
-.import runtimeStackSize, writeLibraries, freeImports
+.import runtimeStackSize, writeLibraries, writeUnits, deleteIfExists
 .import writeFrames, freeFrames, globalSlots
 
 .data
 
 objFilename: .asciiz "zztmp"
-objFn: .byte "zztmp,s,w"
-objFn2:
+strSeqWrite: .asciiz ",s,w"
 codeFilename: .asciiz "zzcode"
 codeFn: .byte "zzcode,s,r"
 codeFn2:
@@ -64,7 +70,6 @@ codeFn2:
 ; The start of the header
 objHeader:
     .byte OBJ_MAGIC0, OBJ_MAGIC1, OBJ_VERSION, RT_ABI_VERSION
-    .byte OBJ_KIND_PROGRAM, 0
 objHeader2:
 
 .bss
@@ -84,6 +89,14 @@ nameBuf: .res NAMELEN
 copyLen: .res 1             ; bytes in copyBuf, 0 for 256
 copyStatus: .res 1          ; STATUS after the last byte read
 copyBuf: .res 256
+objName: .res 2             ; the object file's name (setObjModule)
+objModule: .res 1           ; $FF for the program, or the unit's number
+objFn: .res 21              ; the name, then ",s,w"
+objFnLen: .res 1
+exports: .res 4             ; the entries set (setLabel), a membuf, or 0
+exportCount: .res 2
+labelPtr: .res 2
+expName: .res OBJ_NAME_MAX+1
 
 .code
 
@@ -111,11 +124,45 @@ copyBuf: .res 256
     rts
 .endproc
 
-; This routine writes the object file. The module's
-; name, runtime mode and stack size come from the icode file's header
-; (readIcodeHeader) and the features from its EOM.
+; This routine sets the module whose object file writeObjFile writes: its
+; name at A/X (null-terminated) and in Y $FF for the program or the unit's
+; number, from 0
+.proc setObjModule
+    sta objName
+    stx objName+1
+    sty objModule
+    rts
+.endproc
+
+; This routine writes the module's object file (setObjModule). The
+; module's name, runtime mode and stack size come from the icode file's
+; header (readIcodeHeader) and the features from its EOM. No file may be
+; open: the old object file is deleted first.
 .proc writeObjFile
     jsr addImports
+
+    ; The file's name, then ",s,w". An old one is deleted first.
+    lda objName
+    ldx objName+1
+    jsr deleteIfExists
+    lda objName
+    sta ptr1
+    lda objName+1
+    sta ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    beq :+
+    sta objFn,y
+    iny
+    bra :-
+:   ldx #0
+:   lda strSeqWrite,x
+    beq :+
+    sta objFn,y
+    iny
+    inx
+    bra :-
+:   sty objFnLen
 
     ; Open the object file
     ldx DEVNUM
@@ -123,9 +170,9 @@ copyBuf: .res 256
     tay
     iny
     jsr SETLFS
+    lda objFnLen
     ldx #<objFn
     ldy #>objFn
-    lda #objFn2-objFn
     jsr SETNAM
     jsr OPEN
     ldx #LFN_OBJ
@@ -138,6 +185,14 @@ copyBuf: .res 256
     inx
     cpx #objHeader2-objHeader
     bne :-
+    lda #OBJ_KIND_PROGRAM
+    ldx objModule
+    inx
+    beq :+
+    lda #OBJ_KIND_UNIT
+:   jsr CHROUT
+    lda #0
+    jsr CHROUT
 
     ; The runtime features and mode and the stack size
     lda runtimeFeatures
@@ -172,17 +227,27 @@ copyBuf: .res 256
     lda codeOffset+1
     jsr CHROUT
 
-    ; The BSS length and the symbols: none yet
-    ldx #4
-:   lda #0
+    ; The BSS length: none
+    lda #0
     jsr CHROUT
-    dex
-    bne :-
+    jsr CHROUT
 
+    jsr writeSymbols
     jsr writeImports
-    jsr writeLibraries
+
+    ; The libraries, the frames and the units are the program's
+    lda objModule
+    cmp #$ff
+    beq :+
+    lda #0
+    jsr CHROUT
+    jsr CHROUT
+    jsr CHROUT
+    bra :++
+:   jsr writeLibraries
     jsr writeFrames
-    jsr writeRelocations
+    jsr writeUnits
+:   jsr writeRelocations
     jsr copyCode
 
     ; Delete the code file
@@ -193,9 +258,154 @@ copyBuf: .res 256
     stq ptr1
     jsr scratchFile
 
-    jsr freeImports
     jsr freeFrames
+    jsr freeExports
     jmp freeLinkerTags
+.endproc
+
+; This routine starts with no exports
+.proc initExports
+    lda #0
+    sta exportCount
+    sta exportCount+1
+    tax
+    tay
+    taz
+    stq exports
+    rts
+.endproc
+
+; This routine frees the exports' membuf, if there is one
+.proc freeExports
+    ldq exports
+    jsr isQZero
+    beq :+
+    jsr freeMemBuf
+:   jmp initExports
+.endproc
+
+; This routine sets the label at A/X (null-terminated) at codeOffset
+; (linkAddressSet). A label with a period is an entry, which the object
+; file exports: its name is kept, in OBJ_NAME_MAX + 1 bytes.
+.proc setLabel
+    sta labelPtr
+    stx labelPtr+1
+    jsr linkAddressSet
+    lda labelPtr
+    sta ptr1
+    lda labelPtr+1
+    sta ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    beq DN
+    cmp #'.'
+    beq :+
+    iny
+    bra :-
+
+    ; Copy it, zero-filled
+:   ldy #0
+:   lda (ptr1),y
+    sta expName,y
+    beq :+
+    iny
+    cpy #OBJ_NAME_MAX
+    bne :-
+:   lda #0
+:   sta expName,y
+    iny
+    cpy #OBJ_NAME_MAX+1
+    bcc :-
+
+    ldq exports
+    jsr isQZero
+    bne :+
+    jsr allocMemBuf
+    stq exports
+:   ldq exports
+    stq ptr1
+    jsr ptr2ToExpName
+    lda #OBJ_NAME_MAX+1
+    ldx #0
+    jsr writeToMemBuf
+    incWord exportCount
+DN: rts
+.endproc
+
+; This routine points ptr2 at expName
+.proc ptr2ToExpName
+    lda #<expName
+    sta ptr2
+    lda #>expName
+    sta ptr2+1
+    lda #0
+    sta ptr2+2
+    sta ptr2+3
+    rts
+.endproc
+
+; This routine writes the symbols: their count, then each export's name,
+; its offset in the code and OBJSYM_EXPORTED.
+.proc writeSymbols
+    lda exportCount
+    jsr CHROUT
+    lda exportCount+1
+    jsr CHROUT
+    ldq exports
+    jsr isQZero
+    bne :+
+    rts
+:   ldq exports
+    stq ptr1
+    lda #0
+    tax
+    jsr setMemBufPos
+L1: ldq exports
+    jsr isMemBufAtEnd
+    bne :+
+    rts
+:   ldq exports
+    stq ptr1
+    jsr ptr2ToExpName
+    lda #OBJ_NAME_MAX+1
+    ldx #0
+    jsr readFromMemBuf
+
+    ; The name
+    ldx #0
+:   lda expName,x
+    beq :+
+    inx
+    bra :-
+:   stx importLen
+    ldx #LFN_OBJ
+    jsr CHKOUT
+    lda importLen
+    jsr CHROUT
+    ldx #0
+:   cpx importLen
+    beq :+
+    lda expName,x
+    jsr CHROUT
+    inx
+    bra :-
+
+    ; Its offset and flags
+:   lda #<expName
+    ldx #>expName
+    jsr findLinkerTag
+    pha
+    phx
+    ldx #LFN_OBJ
+    jsr CHKOUT
+    plx
+    pla
+    jsr CHROUT
+    txa
+    jsr CHROUT
+    lda #OBJSYM_EXPORTED
+    jsr CHROUT
+    bra L1
 .endproc
 
 ; This routine counts the relocations and finds the imports: the labels

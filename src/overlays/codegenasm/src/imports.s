@@ -16,9 +16,10 @@
 ; code names every slot that way (icodeExports.s in icodeasm), and the
 ; linker defines the names.
 ;
-; The table also lists the program's Pascal units (ICODE_IMPORT_UNIT), each
-; with its code in its own icode file, which genUnits (codegen.s) reads
-; after the program's. A unit's own imports are skipped (skipIcodeImports).
+; The table also lists the program's Pascal units (ICODE_IMPORT_UNIT or
+; ICODE_IMPORT_TPU), each with its code in its own icode file or its TPU,
+; which genUnits (codegen.s) reads after the program's, each into its own
+; object file. A unit's own imports are skipped (skipIcodeImports).
 
 .include "asm.inc"
 .include "icode.inc"
@@ -31,7 +32,7 @@
 
 .export readIcodeImports, initLibraries, cleanupLibraries
 .export writeLibraries, freeImports, skipIcodeImports, unitCount, getImportUnit
-.export isImportTpu
+.export isImportTpu, writeUnits
 
 .import readIcodeByte, readStatus, genThreeAddr
 
@@ -292,6 +293,39 @@ L1: lda libsLen
     bne :+
     dec libsLen+1
 :   dec libsLen
+    bra L1
+.endproc
+
+; This routine writes the object file's units to the current output: their
+; count, then each one's name (its length, then its characters), in the
+; imports table's order. The linker links each one's object file after the
+; program's.
+.proc writeUnits
+    lda unitCount
+    jsr CHROUT
+    lda #0
+    sta unitIdx
+L1: lda unitIdx
+    cmp unitCount
+    bne :+
+    rts
+:   jsr getImportUnit
+    sta ptr3
+    stx ptr3+1
+    ldy #0
+:   lda (ptr3),y
+    beq :+
+    iny
+    bra :-
+:   tya
+    jsr CHROUT
+    ldy #0
+:   lda (ptr3),y
+    beq :+
+    jsr CHROUT
+    iny
+    bra :-
+:   inc unitIdx
     bra L1
 .endproc
 

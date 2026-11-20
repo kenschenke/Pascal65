@@ -9,21 +9,27 @@
 ;
 ; genObjCode routine
 ;
-; The linker reads the object file that code generation wrote (zztmp, see
-; linker.inc), lays out the program (rtlayout.inc) and writes the PRG:
+; The linker reads the object files that code generation wrote (see
+; linker.inc): the program's, zztmp, then each unit's, <unit>.obj, in the
+; order the program's lists them. It lays out the program (rtlayout.inc)
+; and writes the PRG:
 ;
-;   1. Read. The header, the imports (imports.s), the libraries
-;      (loadLibrary.s) and the relocations, sorted by offset
-;      (sortLinkerTags.s). The code is read last, in step 3.
+;   1. Read. Each module's header, exports, imports (imports.s) and
+;      relocations, sorted by offset (sortLinkerTags.s), and the program's
+;      libraries (loadLibrary.s), frames (frames.s) and units. The code is
+;      read last, in step 3.
 ;   2. Lay out. Place the runtime (runtime.s), then each library, which
-;      defines a symbol at each of its slots, then the program module, then
-;      the runtime's BSS (runtimeBss.s). Every import must then have an
-;      address, and the program must fit below the ceiling.
-;   3. Write. The BASIC line, the runtime and the libraries, then the code,
-;      patching each relocation with its address, then the BSS.
+;      defines a symbol at each of its slots, then the modules, the program
+;      first, then the runtime's BSS (runtimeBss.s). The modules' exports
+;      and the frames are defined once the modules are placed. Every import
+;      must then have an address, and the program must fit below the
+;      ceiling.
+;   3. Write. The BASIC line, the runtime and the libraries, then each
+;      module's code, patching each relocation with its address, then the
+;      BSS.
 ;
-; A bad object file is errObjFileInvalid. Any error stops the link, deletes
-; the object file and leaves no PRG.
+; A bad object file is errObjFileInvalid. Any error stops the link. The
+; object files are deleted, and an error leaves no PRG.
 
 .include "c64.inc"
 .include "asm.inc"
@@ -38,12 +44,17 @@
 OBJ_FILENUM = 2
 PRG_FILENUM = 3
 
+MAX_UNITS = 16              ; as code generation's (imports.s there)
+MAX_MODULES = MAX_UNITS + 1 ; the program, then its units
+UNIT_NAME_SIZE = 13         ; a unit's name and a zero
+
 .export genObjCode, readByte, readStatus, readName
-.export objMode, objFeatures, stackSize, progBase
+.export objMode, objFeatures, stackSize, progBase, modBase
 
 .import sortLinkerTags
 .import initImports, readImports, importAddress, checkImports, freeImports
-.import symName
+.import symName, allocImports, deferSymbol, defineDeferred
+.import mapImport, setImportMap
 .import initLibraries, readLibraryList, layoutLibraries, writeLibraries
 .import freeLibraries
 .import readFrames, setGlobalSlots, checkSlots
@@ -54,22 +65,35 @@ PRG_FILENUM = 3
 
 curByte: .res 1             ; the byte a relocation patches
 
-objMode: .res 1             ; RT_MODE_* from the object file
-objFeatures: .res 1         ; RTF_*
+objMode: .res 1             ; RT_MODE_* from the program's object file
+objFeatures: .res 1         ; RTF_*, every module's
 stackSize: .res 2           ; the runtime stack's size
-codeLen: .res 2             ; the module's code
-bssLen: .res 2              ; and BSS
-progBase: .res 2            ; the module's address
-skipCount: .res 2           ; for readObjHeader
+progBase: .res 2            ; the program module's address
+modEnd: .res 2              ; the address after the last module
+skipCount: .res 2           ; for readObjHeader and readName
 bytesOver: .res 4           ; for checkCodeSize
 intBuf: .res 12
+
+; The modules: the program (0), then its units
+numUnits: .res 1
+unitNames: .res MAX_UNITS * UNIT_NAME_SIZE
+curMod: .res 1              ; the module being read or written
+modCode: .res MAX_MODULES * 2   ; its code's length
+modBss: .res MAX_MODULES * 2    ; its BSS's
+modBase: .res MAX_MODULES * 2   ; its address
+modStart: .res MAX_MODULES * 2  ; the offset of its code in its file
+modTags: .res MAX_MODULES * 4   ; its relocations, sorted (a membuf)
+modMap: .res MAX_MODULES * 4    ; its imports' numbers (imports.s)
+filePos: .res 2             ; bytes read from the object file
+bssLeft: .res 2
+qTmp: .res 4
 
 toGo: .res 2
 codePos: .res 2
 tagsMemBuf: .res 4
 tagToFix: .res .sizeof(TAGTOFIX)
 prgFilename: .res 17
-strbuf: .res 20
+strbuf: .res 22
 readStatus: .res 1
 
 .data
@@ -80,8 +104,9 @@ objHeader2:
 
 pasExt: .asciiz ".pas"
 prgExt: .asciiz ".prg"
-strObjFile: .byte "zztmp,s,r"
-strObjFile2:
+strProgObj: .asciiz "zztmp"
+strObjExt: .asciiz ".obj"
+strRead: .asciiz ",s,r"
 writeExt: .asciiz ",p,w"
 strTooLarge1: .asciiz "Program is "
 strTooLarge2: .asciiz " bytes too large"
@@ -102,7 +127,7 @@ prgStub2:
 
 .code
 
-; This routine links the object file, zztmp, into the PRG.
+; This routine links the object files into the PRG.
 ; Source filename passed in A/X
 .proc genObjCode
     jsr formatPrgFilename
@@ -114,41 +139,30 @@ prgStub2:
     jsr initImports
     jsr initLibraries
     lda #0
-    tax
-    tay
-    taz
-    stq tagsMemBuf
+    sta numUnits
+    sta objFeatures
+    ldx #MAX_MODULES * 4 - 1
+:   sta modTags,x
+    sta modMap,x
+    dex
+    bpl :-
 
-    ; Open the object file
-    ldx DEVNUM
-    lda #OBJ_FILENUM
-    tay
-    jsr SETLFS
-    ldx #<strObjFile
-    ldy #>strObjFile
-    lda #strObjFile2-strObjFile
-    jsr SETNAM
-    jsr OPEN
-
+    ; 1. Read everything but the code: the program's object file, then
+    ; each unit's
     lda #0
-    sta readStatus
-
-    ; 1. Read everything but the code
-    jsr readObjHeader
+    sta curMod
+L1: jsr readModule
     bcs BD
-    jsr readImports
-    bcs BD
-    jsr readLibraryList
-    bcs BD
-    jsr readFrames
-    bcs BD
-    jsr sortLinkerTags
-    stq tagsMemBuf
-    lda readStatus
+    lda curMod
+    cmp numUnits
     beq :+
+    inc curMod
+    bra L1
+:   jsr allocImports
+    bra :+
 BD: jmp objFileInvalid
 
-    ; 2. Lay out: the runtime, the libraries, the module and the BSS. The
+    ; 2. Lay out: the runtime, the libraries, the modules and the BSS. The
     ; level 1 slots must fit first (frames.s).
 :   jsr checkSlots
     bcs ER
@@ -163,22 +177,10 @@ BD: jmp objFileInvalid
     pla
     jsr layoutLibraries
     bcs ER
-    sta progBase
-    stx progBase+1
-    clc
-    adc codeLen
-    pha
-    txa
-    adc codeLen+1
-    tax
-    pla
-    clc
-    adc bssLen
-    pha
-    txa
-    adc bssLen+1
-    tax
-    pla
+    jsr layoutModules
+    jsr defineDeferred
+    lda modEnd
+    ldx modEnd+1
     jsr defineLinkerSymbols
     jsr checkImports
     bcs ER
@@ -219,7 +221,376 @@ ER: jmp finish
     jmp prgError
 :   jsr writeLibraries
 
-    ; The module's code. Read the first tagToFix (initializes toGo).
+    ; Each module's code and BSS
+    lda #0
+    sta curMod
+L2: jsr writeModule
+    lda curMod
+    cmp numUnits
+    beq :+
+    inc curMod
+    bra L2
+
+    ; The runtime's BSS
+:   ldx #PRG_FILENUM
+    jsr CHKOUT
+    jsr writeRuntimeBss
+
+    ; Close the output PRG file
+    lda #PRG_FILENUM
+    jsr CLOSE
+    ; Fall through
+.endproc
+
+; This routine finishes linking: it closes and deletes the object files
+; and frees what the linker allocated
+.proc finish
+    lda #OBJ_FILENUM
+    jsr CLOSE
+    jsr CLRCHN
+
+    jsr deleteObjFiles
+
+    lda #0
+    sta curMod
+L1: jsr modOffset4
+    lda modTags,x
+    ora modTags+1,x
+    ora modTags+2,x
+    ora modTags+3,x
+    beq :+
+    lda modTags,x
+    ldy modTags+2,x
+    ldz modTags+3,x
+    pha
+    lda modTags+1,x
+    tax
+    pla
+    jsr freeMemBuf
+:   jsr modOffset4
+    lda modMap,x
+    ora modMap+1,x
+    ora modMap+2,x
+    ora modMap+3,x
+    beq :+
+    lda modMap,x
+    ldy modMap+2,x
+    ldz modMap+3,x
+    pha
+    lda modMap+1,x
+    tax
+    pla
+    jsr heapFree
+:   inc curMod
+    lda curMod
+    cmp #MAX_MODULES
+    bne L1
+
+    jsr freeImports
+    jsr freeLibraries
+    jmp freeLinkerTags
+.endproc
+
+; This routine stops writing the PRG after an error and deletes it
+.proc prgError
+    lda #PRG_FILENUM
+    jsr CLOSE
+    jsr CLRCHN
+    jsr deletePrgFile
+    jmp finish
+.endproc
+
+; This routine reports a bad object file, then finishes
+.proc objFileInvalid
+    lda #OBJ_FILENUM
+    jsr CLOSE
+    jsr CLRCHN
+    lda #errObjFileInvalid
+    ldx #0
+    ldy #0
+    jsr compilerError
+    jmp finish
+.endproc
+
+; This routine returns in X curMod times 2
+.proc modOffset2
+    lda curMod
+    asl a
+    tax
+    rts
+.endproc
+
+; This routine returns in X curMod times 4
+.proc modOffset4
+    lda curMod
+    asl a
+    asl a
+    tax
+    rts
+.endproc
+
+; This routine puts the name of module curMod's object file in strbuf,
+; null-terminated: zztmp for the program, or the unit's name and ".obj".
+; Its length is returned in X.
+.proc modFilename
+    lda curMod
+    bne UN
+    ldx #0
+:   lda strProgObj,x
+    sta strbuf,x
+    beq DN
+    inx
+    bra :-
+
+    ; ptr1 = unitNames + (curMod - 1) * UNIT_NAME_SIZE
+UN: lda #<unitNames
+    sta ptr1
+    lda #>unitNames
+    sta ptr1+1
+    ldx curMod
+:   dex
+    beq :+
+    lda ptr1
+    clc
+    adc #UNIT_NAME_SIZE
+    sta ptr1
+    bcc :-
+    inc ptr1+1
+    bra :-
+:   ldy #0
+:   lda (ptr1),y
+    beq :+
+    sta strbuf,x
+    inx
+    iny
+    bra :-
+:   ldy #0
+:   lda strObjExt,y
+    sta strbuf,x
+    beq DN
+    inx
+    iny
+    bra :-
+DN: rts
+.endproc
+
+; This routine opens module curMod's object file to read, on OBJ_FILENUM,
+; from its first byte
+.proc openModule
+    jsr modFilename
+    ldy #0
+:   lda strRead,y
+    sta strbuf,x
+    beq :+
+    inx
+    iny
+    bra :-
+:   phx
+    ldx DEVNUM
+    lda #OBJ_FILENUM
+    tay
+    jsr SETLFS
+    pla
+    ldx #<strbuf
+    ldy #>strbuf
+    jsr SETNAM
+    jsr OPEN
+    lda #0
+    sta readStatus
+    sta filePos
+    sta filePos+1
+    rts
+.endproc
+
+; This routine reads module curMod's object file up to its code, which
+; writeModule reads, and closes it. The carry is set if it is bad.
+.proc readModule
+    jsr openModule
+    jsr readObjHeader
+    bcs BD
+    jsr readImports             ; its map in Q
+    bcs BD
+    stq qTmp
+    jsr modOffset4
+    ldy #0
+:   lda qTmp,y
+    sta modMap,x
+    inx
+    iny
+    cpy #4
+    bne :-
+
+    ; The libraries, the frames and the units are the program's
+    lda curMod
+    bne UN
+    jsr readLibraryList
+    bcs BD
+    jsr readFrames
+    bcs BD
+    jsr readUnits
+    bcs BD
+    bra RL
+UN: jsr readByte
+    jsr checkZero
+    bcs BD
+    jsr readByte
+    jsr checkZero
+    bcs BD
+    jsr readByte
+    jsr checkZero
+    bcs BD
+
+    ; The relocations, sorted, then the code, which starts here
+RL: jsr sortLinkerTags
+    stq qTmp
+    jsr modOffset4
+    ldy #0
+:   lda qTmp,y
+    sta modTags,x
+    inx
+    iny
+    cpy #4
+    bne :-
+    lda readStatus
+    bne BD
+    jsr modOffset2
+    lda filePos
+    sta modStart,x
+    lda filePos+1
+    sta modStart+1,x
+    lda #OBJ_FILENUM
+    jsr CLOSE
+    clc
+    rts
+
+BD: sec
+    rts
+.endproc
+
+; This routine checks that the byte in A, a count a unit's object file
+; must have as 0 (libraries, frames, units), is 0. The carry is set if it
+; isn't.
+.proc checkZero
+    cmp #1
+    rts
+.endproc
+
+; This routine reads the program's units: their count, then each one's
+; name, into unitNames. The carry is set if there are too many or a name
+; is too long.
+.proc readUnits
+    jsr readByte
+    cmp #MAX_UNITS + 1
+    bcs DN
+    sta numUnits
+    lda #<unitNames
+    sta ptr1
+    lda #>unitNames
+    sta ptr1+1
+    lda numUnits
+    sta skipCount
+L1: lda skipCount
+    bne :+
+    clc
+    rts
+:   dec skipCount
+    jsr readByte
+    cmp #UNIT_NAME_SIZE
+    bcs DN
+    sta skipCount+1
+    ldy #0
+:   cpy skipCount+1
+    beq :+
+    phy
+    jsr readByte
+    ply
+    sta (ptr1),y
+    iny
+    bra :-
+:   lda #0
+    sta (ptr1),y
+    lda ptr1
+    clc
+    adc #UNIT_NAME_SIZE
+    sta ptr1
+    bcc L1
+    inc ptr1+1
+    bra L1
+DN: sec
+    rts
+.endproc
+
+; This routine lays out the modules from the address in A/X: each one's
+; code, then its BSS, the program first. Their addresses go in modBase and
+; the address after them in modEnd.
+.proc layoutModules
+    sta modEnd
+    stx modEnd+1
+    sta progBase
+    stx progBase+1
+    lda #0
+    sta curMod
+L1: jsr modOffset2
+    lda modEnd
+    sta modBase,x
+    clc
+    adc modCode,x
+    sta modEnd
+    lda modEnd+1
+    sta modBase+1,x
+    adc modCode+1,x
+    sta modEnd+1
+    lda modEnd
+    clc
+    adc modBss,x
+    sta modEnd
+    lda modEnd+1
+    adc modBss+1,x
+    sta modEnd+1
+    lda curMod
+    cmp numUnits
+    beq :+
+    inc curMod
+    bra L1
+:   rts
+.endproc
+
+; This routine writes module curMod's code to the PRG, patching each
+; relocation with its address, then its BSS. It opens the module's object
+; file and skips to the code.
+.proc writeModule
+    jsr openModule
+L0: jsr modOffset2
+    lda filePos
+    cmp modStart,x
+    bne :+
+    lda filePos+1
+    cmp modStart+1,x
+    beq :++
+:   jsr readByte
+    bra L0
+
+    ; Its relocations and its imports' map
+:   jsr modOffset4
+    lda modMap,x
+    ldy modMap+2,x
+    ldz modMap+3,x
+    pha
+    lda modMap+1,x
+    tax
+    pla
+    jsr setImportMap
+    jsr modOffset4
+    lda modTags,x
+    sta tagsMemBuf
+    lda modTags+1,x
+    sta tagsMemBuf+1
+    lda modTags+2,x
+    sta tagsMemBuf+2
+    lda modTags+3,x
+    sta tagsMemBuf+3
+
+    ; Read the first tagToFix (initializes toGo)
     ldq tagsMemBuf
     stq ptr1
     lda #0
@@ -283,68 +654,34 @@ L3: jsr readByte
     sta codePos+1
     bra L1
 
-    ; The module's BSS, then the runtime's
-DN: ldx #PRG_FILENUM
+    ; The module's BSS
+DN: lda #OBJ_FILENUM
+    jsr CLOSE
+    ldx #PRG_FILENUM
     jsr CHKOUT
-B1: lda bssLen
-    ora bssLen+1
+    jsr modOffset2
+    lda modBss,x
+    sta bssLeft
+    lda modBss+1,x
+    sta bssLeft+1
+B1: lda bssLeft
+    ora bssLeft+1
     beq B2
     lda #0
     jsr CHROUT
-    lda bssLen
+    lda bssLeft
     bne :+
-    dec bssLen+1
-:   dec bssLen
+    dec bssLeft+1
+:   dec bssLeft
     bra B1
-B2: jsr writeRuntimeBss
-
-    ; Close the output PRG file
-    lda #PRG_FILENUM
-    jsr CLOSE
-    ; Fall through
-.endproc
-
-; This routine finishes linking: it closes and deletes the object file and
-; frees what the linker allocated
-.proc finish
-    lda #OBJ_FILENUM
-    jsr CLOSE
-    jsr CLRCHN
-
-    jsr deleteObjFile
-
-    ldq tagsMemBuf
-    jsr isQZero
-    beq :+
-    jsr freeMemBuf
-:   jsr freeImports
-    jsr freeLibraries
-    jmp freeLinkerTags
-.endproc
-
-; This routine stops writing the PRG after an error and deletes it
-.proc prgError
-    lda #PRG_FILENUM
-    jsr CLOSE
-    jsr CLRCHN
-    jsr deletePrgFile
-    jmp finish
-.endproc
-
-; This routine reports a bad object file, then finishes
-.proc objFileInvalid
-    jsr CLRCHN
-    lda #errObjFileInvalid
-    ldx #0
-    ldy #0
-    jsr compilerError
-    jmp finish
+B2: rts
 .endproc
 
 ; This routine reads the object file's header, up to its imports. The
 ; carry is set if it is bad: not an object file, another format version, a
-; runtime other than RT_ABI_VERSION or a unit. The symbols are skipped,
-; since nothing imports them.
+; runtime other than RT_ABI_VERSION, or a kind other than the module's
+; (the program first, then units). The exports are kept, to define once
+; the module is placed (deferSymbol).
 .proc readObjHeader
     ; The magic number and the versions
     ldx #0
@@ -360,43 +697,66 @@ B2: jsr writeRuntimeBss
 BD2: jmp BD
 
     ; The kind and the flags, which aren't used yet
-:
-    jsr readByte
-    cmp #OBJ_KIND_PROGRAM
-    bne BD
-    jsr readByte
+:   jsr readByte
+    ldx curMod
+    beq :+
+    cmp #OBJ_KIND_UNIT
+    bne BD2
+    bra :++
+:   cmp #OBJ_KIND_PROGRAM
+    bne BD2
+:   jsr readByte
 
-    ; The features, the runtime mode and the stack size
+    ; The features, which add to the program's, then the runtime mode
+    ; and the stack size, which are the program's
     jsr readByte
+    ora objFeatures
     sta objFeatures
     jsr readByte
+    ldx curMod
+    bne :+
     sta objMode
-    jsr readByte
+:   jsr readByte
+    ldx curMod
+    bne :+
     sta stackSize
-    jsr readByte
+:   jsr readByte
+    ldx curMod
+    bne :+
     sta stackSize+1
 
     ; The name and the global slots, where the frames start (frames.s)
-    jsr readName
-    bcs BD
+:   jsr readName
+    bcs BD2
     jsr readByte
     pha
     jsr readByte
     tax
     pla
+    ldy curMod
+    bne :+
     jsr setGlobalSlots
 
     ; The code length and the BSS length
+:   jsr modOffset2
+    phx
     jsr readByte
-    sta codeLen
+    plx
+    sta modCode,x
+    phx
     jsr readByte
-    sta codeLen+1
+    plx
+    sta modCode+1,x
+    phx
     jsr readByte
-    sta bssLen
+    plx
+    sta modBss,x
+    phx
     jsr readByte
-    sta bssLen+1
+    plx
+    sta modBss+1,x
 
-    ; The symbols
+    ; The symbols: each export is defined once the module is placed
     jsr readByte
     sta skipCount
     jsr readByte
@@ -406,11 +766,24 @@ L1: lda skipCount
     beq OK
     lda readStatus
     bne BD
+    lda skipCount               ; readName uses skipCount
+    pha
+    lda skipCount+1
+    pha
     jsr readName
+    pla
+    sta skipCount+1
+    pla
+    sta skipCount
     bcs BD
-    jsr readByte                ; The offset and the flags
+    jsr readByte                ; The offset
+    pha
     jsr readByte
-    jsr readByte
+    tax
+    pla
+    ldy curMod
+    jsr deferSymbol
+    jsr readByte                ; The flags
     lda skipCount
     bne :+
     dec skipCount+1
@@ -425,7 +798,6 @@ OK: lda readStatus
 BD: sec
     rts
 .endproc
-
 ; This routine reads a name from the object file into symName, with a null
 ; after it. The carry is set if it's longer than OBJ_NAME_MAX.
 .proc readName
@@ -456,27 +828,17 @@ DN: rts
 ; a line saying how many bytes too large the program is, and the carry is
 ; set. Otherwise the carry is clear.
 .proc checkCodeSize
-    ; intOp1/intOp2 (32 bits) = the module's end + the runtime's BSS +
+    ; intOp1/intOp2 (32 bits) = the modules' end + the runtime's BSS +
     ; the stack + 4 + MIN_HEAP_SIZE
     lda #0
+    sta intOp2
     sta intOp2+1
     sta intOp32+2
     sta intOp32+3
-    lda progBase
-    clc
-    adc codeLen
+    lda modEnd
     sta intOp1
-    lda progBase+1
-    adc codeLen+1
+    lda modEnd+1
     sta intOp1+1
-    lda #0
-    adc #0
-    sta intOp2
-    lda bssLen
-    sta intOp32
-    lda bssLen+1
-    sta intOp32+1
-    jsr addOp32
     lda stackSize
     sta intOp32
     lda stackSize+1
@@ -562,8 +924,8 @@ ER: ldq intOp1
 .endproc
 
 ; This routine reads a byte from file #2 (the object file).
-; It updated readStatus with the latest I/O status.
-; The byte is returned in A.
+; It updated readStatus with the latest I/O status and counts the bytes
+; read in filePos. The byte is returned in A.
 .proc readByte
     ldx #OBJ_FILENUM
     jsr CHKIN
@@ -571,25 +933,19 @@ ER: ldq intOp1
     pha
     lda STATUS
     sta readStatus
-    pla
+    inc filePos
+    bne :+
+    inc filePos+1
+:   pla
     rts
 .endproc
 
-; This routine deletes the input object file
-.proc deleteObjFile
-    ; Copy strObjFile to strbuf (leaving off the ",p,r")
-    ldx #0
-L1: lda strObjFile,x
-    cmp #','
-    beq L2
-    sta strbuf,x
-    inx
-    bne L1
-
-L2: lda #0
-    sta strbuf,x
-
-    ; Delete the file
+; This routine deletes the object files: the program's, then each unit's
+; it names
+.proc deleteObjFiles
+    lda #0
+    sta curMod
+L1: jsr modFilename
     lda #<strbuf
     sta ptr1
     lda #>strbuf
@@ -598,8 +954,12 @@ L2: lda #0
     sta ptr1+2
     sta ptr1+3
     jsr scratchFile
-
-    rts
+    lda curMod
+    cmp numUnits
+    beq :+
+    inc curMod
+    bra L1
+:   rts
 .endproc
 
 ; This routine formats the output PRG filename.
@@ -815,8 +1175,9 @@ L4: phx                 ; X contains length of filename (including ",p,w")
     rts
 .endproc
 
-; This routine turns tagToFix's target into an address: an import's, or
-; an offset in the module from progBase
+; This routine turns tagToFix's target into an address: an import's,
+; through the module's map (mapImport), or an offset in the module from
+; its address
 .proc resolveTag
     ldx #TAGTOFIX::type
     lda tagToFix,x
@@ -830,16 +1191,19 @@ L4: phx                 ; X contains length of filename (including ",p,w")
     lda tagToFix+1,x
     tax
     pla
-    jsr importAddress
+    jsr mapImport
     bra ST
 
-LC: ldx #TAGTOFIX::address
+LC: jsr modOffset2
+    txa
+    tay
+    ldx #TAGTOFIX::address
     lda tagToFix,x
     clc
-    adc progBase
+    adc modBase,y
     pha
     lda tagToFix+1,x
-    adc progBase+1
+    adc modBase+1,y
     tax
     pla
 ST: ldy #TAGTOFIX::address

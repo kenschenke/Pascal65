@@ -18,23 +18,26 @@ LINKADDR_IMPORT = $80
 
 ; The linker lays out the PRG (see rtlayout.inc).
 
-; The object file (zztmp), which code generation writes and the linker reads
-; (see plans/objcode.md). All words are low byte first. A name is its length
-; in a byte, then that many characters, with no terminator, at most
-; OBJ_NAME_MAX of them.
+; The object files, which code generation writes and the linker reads (see
+; plans/objcode.md): one for each module, the program's (zztmp), then each
+; Pascal unit's (<unit>.obj), which the program's lists. All words are low
+; byte first. A name is its length in a byte, then that many characters,
+; with no terminator, at most OBJ_NAME_MAX of them.
 ;
 ;    .byte OBJ_MAGIC0, OBJ_MAGIC1, OBJ_VERSION
 ;    .byte RT_ABI_VERSION       the runtime the code calls
-;    .byte kind                 OBJ_KIND_*
+;    .byte kind                 OBJ_KIND_*: the program's is the first
 ;    .byte flags                OBJ_FLAG_*
 ;    .byte features             RTF_* (asm.inc), ORed into the program's
-;    .byte runtime mode         RT_MODE_* (asm.inc)
-;    .word stack size           the runtime stack's size in bytes
+;    .byte runtime mode         RT_MODE_* (asm.inc), the program's
+;    .word stack size           the runtime stack's size in bytes, the
+;                               program's
 ;    name                       the module's name
-;    .word global slots         the module's own level 1 slots
+;    .word global slots         the program's own level 1 slots
 ;    .word code length          the code's size in memory
 ;    .word BSS length           zero bytes the linker reserves after it
-;    .word symbol count         then each: name, .word offset, .byte flags
+;    .word symbol count         then each: name, .word offset, .byte flags:
+;                               the module's exports
 ;    .word import count         then each: name
 ;    .byte library count        then each library, in the order to place
 ;                               them: its name (the file is name.lib),
@@ -43,14 +46,21 @@ LINKADDR_IMPORT = $80
 ;    .byte frame count          then each unit or library with level 1
 ;                               slots, in the order the startup pushes
 ;                               them: its name, .word its slot count
+;    .byte unit count           then each unit module, in the order to
+;                               place them after the program: its name
+;                               (its file is name.obj)
 ;    .word relocation count     then each: OBJRELOC
 ;    the code, to the end of the file
+;
+; A unit's object file has no libraries, frames or units: those counts
+; are 0. The linker ORs every module's features.
 ;
 ; A relocation's target is an offset in the module's code, so a label that
 ; isn't exported needs no symbol. A label the module uses but doesn't set
 ; is an import, and a relocation for it has LINKADDR_IMPORT in its kind and
-; the import's number (from 0, in the file's order) as its target. The
-; program module exports nothing yet.
+; the import's number (from 0, in the file's order) as its target. A
+; module exports each entry it sets ("name.N", below), and another module
+; imports it by name. The program module exports nothing.
 ;
 ; The linker resolves an import to a library slot or a linker symbol:
 ;
@@ -63,7 +73,8 @@ LINKADDR_IMPORT = $80
 ;                            or LOADER_ADDR for a dynamic program
 ;
 ;    name.N                  slot N of the library, in decimal: the
-;                            linker defines one at each slot
+;                            linker defines one at each slot. Or a unit's
+;                            entry N, which its module exports.
 ;    name.frame              the first level 1 slot of a frame: the
 ;                            module's global slots, then each frame's
 ;                            count, in order
@@ -71,7 +82,7 @@ LINKADDR_IMPORT = $80
 ; An import that resolves to neither is errUndefinedLabel, with its name.
 OBJ_MAGIC0 = 'O'
 OBJ_MAGIC1 = 'B'
-OBJ_VERSION = 4
+OBJ_VERSION = 5
 OBJ_NAME_MAX = 23           ; the longest name, TAGTOFIND's label less one
 
 OBJ_KIND_PROGRAM = 0

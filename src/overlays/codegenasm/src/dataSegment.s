@@ -18,7 +18,7 @@
 
 .export initDataSegment, freeDataSegment, saveDataSegment, writeDataSegment
 
-.import strbuf, operand1, incCodeOffset, labelScope, scopeLabel
+.import strbuf, operand1, incCodeOffset, setLabel
 
 .bss
 
@@ -28,7 +28,6 @@ buffer: .res 8
 segmentMemBuf: .res 4
 segmentType: .res 1
 segmentLabel: .res OBJ_NAME_MAX+1
-segmentScope: .res 1        ; labelScope when the segment was read
 
 .code
 
@@ -68,20 +67,6 @@ L1: ldq dataSegment
     lda #<buffer
     sta ptr2
     lda #>buffer
-    sta ptr2+1
-    lda #0
-    sta ptr2+2
-    sta ptr2+3
-    lda #1
-    ldx #0
-    jsr readFromMemBuf
-
-    ; The scope of the labels in it
-    ldq dataSegment
-    stq ptr1
-    lda #<segmentScope
-    sta ptr2
-    lda #>segmentScope
     sta ptr2+1
     lda #0
     sta ptr2+2
@@ -154,20 +139,6 @@ L2: ldq dataSegment
     jsr writeToMemBuf
 
     ; Write the data segment label (null-terminated)
-    ; Write the scope of the labels in it (labelScope)
-    ldq dataSegment
-    stq ptr1
-    lda #<labelScope
-    sta ptr2
-    lda #>labelScope
-    sta ptr2+1
-    lda #0
-    sta ptr2+2
-    sta ptr2+3
-    lda #1
-    ldx #0
-    jsr writeToMemBuf
-
     ldq dataSegment
     stq ptr1
     lda #<strbuf
@@ -243,21 +214,7 @@ L2: ldq dataSegment
     ldx #0
     jsr readFromMemBuf
 
-    ; The scope of the labels in it
-    ldq dataSegment
-    stq ptr1
-    lda #<segmentScope
-    sta ptr2
-    lda #>segmentScope
-    sta ptr2+1
-    lda #0
-    sta ptr2+2
-    sta ptr2+3
-    lda #1
-    ldx #0
-    jsr readFromMemBuf
-
-    ; Read the segment label, which has its scope (readOperand.s)
+    ; Read the segment label
     lda #0
     sta buffer+1            ; use buffer+1 as an index into segmentLabel
 L3: ldq dataSegment
@@ -305,10 +262,11 @@ L4: lda #0
     tax
     jsr setMemBufPos
 
-    ; Record the location of this data segment with its label.
+    ; Record the location of this data segment with its label. A unit's
+    ; entry (name.N) is exported (setLabel).
     lda #<segmentLabel
     ldx #>segmentLabel
-    jsr linkAddressSet
+    jsr setLabel
 
     ; Is the segment type an array?
     lda segmentType
@@ -350,7 +308,6 @@ L4: lda #0
 
     ; Element declaration block
     jsr readSegmentLabel
-    jsr scopeSegmentLabel
     lda segmentLabel
     beq :+
     lda #<segmentLabel
@@ -361,7 +318,6 @@ L4: lda #0
 
     ; Literals
 :   jsr readSegmentLabel
-    jsr scopeSegmentLabel
     lda segmentLabel
     beq :+
     lda #<segmentLabel
@@ -447,7 +403,6 @@ L1: lda #1
 
     ; Declaration label
     jsr readSegmentLabel
-    jsr scopeSegmentLabel
     lda segmentLabel
     beq L2
     lda #<segmentLabel
@@ -544,13 +499,4 @@ L1: lda #1
 L2: ldx buffer+1
     sta segmentLabel,x
     rts
-.endproc
-
-; This routine gives a label read from inside a data segment the scope of
-; the file the segment came from (scopeLabel in readOperand.s)
-.proc scopeSegmentLabel
-    lda #<segmentLabel
-    ldx #>segmentLabel
-    ldy segmentScope
-    jmp scopeLabel
 .endproc

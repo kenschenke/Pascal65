@@ -21,7 +21,7 @@
 .import pshOper, outOper, inpOper, strbuf
 .import genOneInstruction, genTwoInstruction, genThreeAddr, operand1
 .import genDeclInit, addStringLiteral
-.import pendingAsf, addRuntimeFeatures
+.import pendingAsf, addRuntimeFeatures, setLabel
 
 .data
 
@@ -58,7 +58,7 @@ label: .res 16
     bne :+
     lda #<strbuf
     ldx #>strbuf
-    jsr linkAddressSet
+    jsr setLabel
     rts
 
 :   cmp #IC_BRA

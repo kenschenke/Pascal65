@@ -13,8 +13,9 @@
 ; then each unit's and library's, in the order the startup pushes them.
 ; Code reaches a unit's slot by its offset in the unit's frame, with a
 ; LINKADDR_FRAME relocation against the import "name.frame" (linker.inc).
-; readFrames defines each one as the frame's first slot: the module's
-; global slots, then the slot counts of the frames before it.
+; readFrames defines each one, once the modules are read (deferSymbol), as
+; the frame's first slot: the program's global slots, then the slot
+; counts of the frames before it.
 
 .include "asmlib.inc"
 .include "linker.inc"
@@ -23,7 +24,7 @@
 
 .export readFrames, setGlobalSlots, checkSlots
 
-.import readByte, readName, symName, defineSymbol
+.import readByte, readName, symName, deferSymbol
 
 .data
 
@@ -70,7 +71,8 @@ L1: lda left
     bra :-
 :   lda base
     ldx base+1
-    jsr defineSymbol
+    ldy #$ff                    ; an address, defined with the rest
+    jsr deferSymbol
 
     ; The next frame starts after this one's slots
     jsr readByte

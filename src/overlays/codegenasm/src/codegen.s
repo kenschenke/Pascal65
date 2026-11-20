@@ -17,7 +17,7 @@
 .include "error.inc"
 .include "icode.inc"
 
-.export genObjCode
+.export genObjCode, deleteIfExists
 .export genThreeAddr, runtimeStackSize
 .export genOneInstruction, genTwoInstruction, incCodeOffset, calcNamePtr
 
@@ -29,8 +29,9 @@
 .import tagBSS_EXITHANDLER
 .import writeObjFile, objFilename, codeFilename, readIcodeHeader
 .import readUnitHeader, skipIcodeImports, unitCount, getImportUnit
-.import beginUnitFrames, endUnitFrames, setRuntimeFeatures, labelScope
-.import isImportTpu, readIcodeByte
+.import beginUnitFrames, endUnitFrames, setRuntimeFeatures
+.import isImportTpu, readIcodeByte, initExports, freeExports, setObjModule
+.import modName, nameBuf, nameLen
 
 .data
 
@@ -38,6 +39,7 @@ icodeFn: .asciiz "zztmpicode"
 unitPrefix: .asciiz ICODE_UNIT_PREFIX
 strSeqRead: .asciiz ",s,r"
 strTpuSuffix: .asciiz ".tpu"
+strObjSuffix: .asciiz ".obj"
 
 tempFn: .byte "zztmpicode,s,r"
 tempFn2:
@@ -57,30 +59,21 @@ unitFnLen: .res 1           ; the name's length, without ",s,r"
 unitFnTotal: .res 1
 skipLeft: .res 2            ; for skipToIcode
 skipCount: .res 1
+objName: .res 17           ; a unit's object file: its name, then ".obj"
 
 .code
 
 ; The icode files hold everything code generation needs: each module's
-; header, imports and frames tables and code (icode.inc). It reads the
-; program's, then each Pascal unit's (genUnits). It doesn't use the AST.
+; header, imports and frames tables and code (icode.inc). It doesn't use
+; the AST. Each module gets its own object file (linker.inc): the
+; program's (zztmp), then each Pascal unit's (<unit>.obj), in the order
+; the program's imports list them (genUnits). The linker links them.
 .proc genObjCode
     jsr initImports
     jsr initFrames
+    jsr initExports
     lda #0
-    jsr setRuntimeFeatures      ; each module's EOM adds its own
-    lda #0
-    sta labelScope              ; the program's labels are unchanged
-
-    ; Initialize the linkerTags and tagsToFind containers.
-    jsr initLinkerTags
-
-    jsr initStringLiterals
-
-    jsr initDataSegment
-
-    lda #0
-    sta codeOffset
-    sta codeOffset+1
+    sta unitCount               ; for badIcode, until the imports are read
 
     ; Delete the object file and the code file if they exist
     lda #<objFilename
@@ -90,22 +83,7 @@ skipCount: .res 1
     ldx #>codeFilename
     jsr deleteIfExists
 
-    ; Open the code file
-    ; Call SETLFS
-    ldx DEVNUM
-    lda #1
-    tay
-    iny
-    jsr SETLFS
-    ; Call SETNAM
-    ldx #<codeFn
-    ldy #>codeFn
-    lda #codeFn2-codeFn
-    jsr SETNAM
-    ; Open the file and set output channel
-    jsr OPEN
-    ldx #1
-    jsr CHKOUT
+    jsr startModule
 
     ; Open the icode file and read its header: the runtime mode and
     ; stack size and the module's name (icode.inc)
@@ -146,14 +124,63 @@ skipCount: .res 1
     ; Add some code to clean up the runtime and return to BASIC.
     jsr prgCleanup
 
-    ; The program's icode is done. Each Pascal unit's code, in its own
-    ; icode file, follows the cleanup, which never falls through.
+    ; The program's object file
     lda #2
     jsr CLOSE
+    lda #<objFilename
+    ldx #>objFilename
+    ldy #$ff
+    jsr finishModule
+
+    ; Each Pascal unit's, from its own icode file
     jsr genUnits
     bcc :+
     jmp badIcode
-:
+
+:   jsr freeImports
+
+    ; Delete the icode files. Not before: deleting a file closes every
+    ; open file (it closes the drive's command channel).
+    jmp deleteIcode
+.endproc
+
+; This routine starts a module's object code: no linker tags, literals,
+; data segments or exports, code offset 0 and the runtime features its EOM
+; adds. It opens the code file, zzcode, as the output.
+.proc startModule
+    lda #0
+    jsr setRuntimeFeatures      ; the module's EOM adds its own
+    jsr initLinkerTags
+    jsr initStringLiterals
+    jsr initDataSegment
+    lda #0
+    sta codeOffset
+    sta codeOffset+1
+
+    ; Open the code file
+    ; Call SETLFS
+    ldx DEVNUM
+    lda #1
+    tay
+    iny
+    jsr SETLFS
+    ; Call SETNAM
+    ldx #<codeFn
+    ldy #>codeFn
+    lda #codeFn2-codeFn
+    jsr SETNAM
+    ; Open the file and set output channel
+    jsr OPEN
+    ldx #1
+    jmp CHKOUT
+.endproc
+
+; This routine finishes a module's object code and writes its object file,
+; named at A/X (null-terminated). Y is $FF for the program or the unit's
+; number from 0 (setObjModule). The string literals and the data segments
+; follow the code. The linker puts the runtime's BSS after the modules.
+.proc finishModule
+    jsr setObjModule
 
     jsr writeStringLiterals
 
@@ -163,29 +190,13 @@ skipCount: .res 1
 
     jsr freeDataSegment
 
-    ; The linker puts the runtime's BSS after the program
-
-    ldx #0
-    jsr CHKIN
-
     ; Close the code file
     lda #1
     jsr CLOSE
-    ldx #0
-    jsr CHKOUT
-
-    lda #1
-    jsr CLOSE
-    lda #2
-    jsr CLOSE
     jsr CLRCHN
 
-    ; Delete the icode files. Not before: deleting a file closes every
-    ; open file (it closes the drive's command channel).
-    jsr deleteIcode
-
-    ; Write the object file. It frees the linker tags. The linker lays
-    ; out the program and checks that it fits in memory.
+    ; Write the object file. It deletes the code file and frees the linker
+    ; tags and the exports.
     jmp writeObjFile
 .endproc
 
@@ -267,10 +278,11 @@ TP: lda unitIdx
 .endproc
 
 ; This routine generates the code of each Pascal unit the program's
-; imports table lists (ICODE_IMPORT_UNIT), from the unit's own icode file
-; (icode.inc), in the table's order. A unit's imports are the program's
-; too, so they're skipped, and its frames are read in place of the
-; program's while its code is generated. deleteIcode deletes the files.
+; imports table lists, from the unit's own icode file or its TPU's icode
+; section (icode.inc), in the table's order, and writes its object file,
+; <unit>.obj. Code names other modules' entries and libraries' slots by
+; name, so a unit's imports table is skipped. Its frames table numbers the
+; frames its operands name. deleteIcode deletes the icode files.
 ; The carry is set if a file can't be read: the file is left open on 2.
 .proc genUnits
     lda #0
@@ -281,7 +293,8 @@ L1: lda unitIdx
     clc
     rts
 
-:   jsr unitFileName
+:   jsr startModule
+    jsr unitFileName
 
     ; Open it with ",s,r"
     ldx unitFnLen
@@ -310,22 +323,33 @@ L1: lda unitIdx
 
 :   jsr readUnitHeader
     bcs BD
+
+    ; The module's name, for the object file
+    ldx #0
+:   lda modName,x
+    beq :+
+    sta nameBuf,x
+    inx
+    bra :-
+:   stx nameLen
+
     jsr skipIcodeImports
     bcs BD
     jsr beginUnitFrames
     jsr readIcodeFrames
     bcs BF
 
-    ; Its labels are its own (readOperand.s): its number from 1
-    ldx unitIdx
-    inx
-    stx labelScope
     jsr processIcodeInstructions
-    lda #0
-    sta labelScope
     jsr endUnitFrames
     lda #2
     jsr CLOSE
+
+    ; Its object file
+    jsr unitObjName
+    lda #<objName
+    ldx #>objName
+    ldy unitIdx
+    jsr finishModule
 
     inc unitIdx
     jmp L1
@@ -333,6 +357,29 @@ L1: lda unitIdx
 BF: jsr endUnitFrames
 BD: sec
     rts
+.endproc
+
+; This routine puts the name of the object file of the unit numbered
+; unitIdx in objName: the unit's name, then ".obj"
+.proc unitObjName
+    lda unitIdx
+    jsr getImportUnit
+    sta ptr1
+    stx ptr1+1
+    ldy #0
+:   lda (ptr1),y
+    beq :+
+    sta objName,y
+    iny
+    bra :-
+:   ldx #0
+:   lda strObjSuffix,x
+    sta objName,y
+    beq :+
+    iny
+    inx
+    bra :-
+:   rts
 .endproc
 
 ; This routine reads a TPU (tpu.inc), open on 2, to its icode section's
@@ -394,7 +441,7 @@ CD: jsr readIcodeByte           ; the icode section's length
 
 ; This routine reports an icode file code generation can't read: not icode,
 ; another version, or not a program. It closes the files, deletes the code
-; file and frees what genObjCode set up. No object file is written.
+; file and every object file written, and frees what genObjCode set up.
 .proc badIcode
     lda #2
     jsr CLOSE
@@ -404,11 +451,26 @@ CD: jsr readIcodeByte           ; the icode section's length
     lda #<codeFilename
     ldx #>codeFilename
     jsr deleteIfExists
-    jsr freeStringLiterals
+    lda #<objFilename
+    ldx #>objFilename
+    jsr deleteIfExists
+    lda #0
+    sta unitIdx
+L1: lda unitIdx
+    cmp unitCount
+    beq :+
+    jsr unitObjName
+    lda #<objName
+    ldx #>objName
+    jsr deleteIfExists
+    inc unitIdx
+    bra L1
+:   jsr freeStringLiterals
     jsr freeDataSegment
     jsr freeLinkerTags
     jsr freeImports
     jsr freeFrames
+    jsr freeExports
     lda #errIcodeFileInvalid
     ldx #0
     ldy #0
