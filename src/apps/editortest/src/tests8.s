@@ -32,6 +32,7 @@ F11 = CH_F11
 tests:
     .addr errorLine, warningLine, cursorLeaves, scrolledOff, scrolledBack
     .addr typing, noFile, otherFile, rows50, cursorRight, cursorBack
+    .addr lineAdded, lineDeleted, lineCountBack, staleThenNext
     .addr 0
 
 ; The key scripts
@@ -101,6 +102,26 @@ keysRight:
 keysRightBack:
     OPENFILE 3
     .byte F11, RIGHT, LEFT, 0
+
+; A line is added after line 10
+keysAdd:
+    OPENFILE 3
+    .byte F11, DOWN, CR, 0
+
+; Line 11 is joined to line 10
+keysDelete:
+    OPENFILE 3
+    .byte F11, DOWN, BS, 0
+
+; A line is added and deleted again
+keysAddDelete:
+    OPENFILE 3
+    .byte F11, DOWN, CR, BS, 0
+
+; A line is added, then F11 goes to line 12
+keysAddNext:
+    OPENFILE 3
+    .byte F11, DOWN, CR, F11, 0
 
 ; The tests
 
@@ -207,6 +228,46 @@ cursorBack:
     TEST "cursor back", keysRightBack, F_SKIPLINES, 0, 9, 200, 0, buildLines
     CHKATTR 9, 0, 1, 1, COLOR_CURSOR
     CHKATTR 9, 1, 79, 1, COLOR_ERROR
+    ENDTEST
+
+; Adding or deleting a line may move the entry's line, so the highlight
+; goes, even when the change is after the line
+lineAdded:
+    TEST "line added", keysAdd, F_SKIPLINES, 0, 11, 201, 0, buildLines
+    CHKLINE 10, ""
+    CHKBUILD BUILDRESULT::hlState, BUILD_HL_STALE
+    CHKATTR 9, 0, 80, 0, COLOR_UI
+    CHKATTR 11, 0, 1, 1, COLOR_CURSOR
+    CHKATTR 11, 1, 79, 0, COLOR_UI
+    ENDTEST
+
+lineDeleted:
+    TEST "line deleted", keysDelete, F_SKIPLINES, 2, 9, 199, 0, buildLines
+    CHKLINE 9, "1011"
+    CHKBUILD BUILDRESULT::hlState, BUILD_HL_STALE
+    CHKATTR 9, 0, 2, 0, COLOR_UI
+    CHKATTR 9, 2, 1, 1, COLOR_CURSOR
+    CHKATTR 9, 3, 77, 0, COLOR_UI
+    ENDTEST
+
+; The count is back, but the highlight stays gone
+lineCountBack:
+    TEST "line count back", keysAddDelete, F_SKIPLINES, 0, 10, 200, 0, buildLines
+    CHKBUILD BUILDRESULT::hlState, BUILD_HL_STALE
+    CHKATTR 9, 0, 80, 0, COLOR_UI
+    CHKATTR 10, 0, 1, 1, COLOR_CURSOR
+    CHKATTR 10, 1, 79, 0, COLOR_UI
+    ENDTEST
+
+; Going to an entry highlights again
+staleThenNext:
+    TEST "stale, then next", keysAddNext, F_SKIPLINES, 0, 11, 201, 0, buildLines
+    CHKBUILD BUILDRESULT::hlState, BUILD_HL_KEPT
+    CHKWORD EDITFILE::rowOff, 0
+    CHKSCREEN 11, 0, "11 "
+    CHKATTR 11, 0, 1, 1, COLOR_CURSOR
+    CHKATTR 11, 1, 79, 1, COLOR_WARNING
+    CHKATTR 9, 0, 80, 0, COLOR_UI
     ENDTEST
 
 ; The build results

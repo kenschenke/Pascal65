@@ -20,7 +20,7 @@
 .import initSoundLibrary, cleanupSoundLibrary
 .import setSidMode, setVolume, setWaveform, setEnvelope, setFrequency
 .import setPulseWidth, setGate, setRingMod, setSync, setFilter
-.import filterVoice, getOsc3, getEnv3
+.import filterVoice, setVoice3Off, getOsc3, getEnv3
 
 .segment "JMPTBL"
 
@@ -37,6 +37,7 @@ jmp setRingMod
 jmp setSync
 jmp setFilter
 jmp filterVoice
+jmp setVoice3Off
 jmp getOsc3
 jmp getEnv3
 jmp noteFreq

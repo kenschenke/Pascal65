@@ -31,6 +31,7 @@ SID_CUTLO = $15             ; Cutoff bits 0-2
 SID_CUTHI = $16             ; Cutoff bits 3-10
 SID_RESFILT = $17           ; Resonance (bits 4-7), filtered voices (0-2)
 SID_MODEVOL = $18           ; Filter mode (bits 4-6), volume (bits 0-3)
+MODE_3OFF = $80             ; SID_MODEVOL: voice 3 off (SetVoice3Off)
 SID_OSC3 = $1b              ; Voice 3's oscillator (readable)
 SID_ENV3 = $1c              ; Voice 3's envelope (readable)
 

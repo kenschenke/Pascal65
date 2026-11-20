@@ -37,6 +37,15 @@ BUILD_WARNING = 1
 ; BUILDRESULT::current when the summary is shown
 BUILD_SUMMARY = $ff
 
+; BUILDRESULT::hlState. Going to an entry sets BUILD_HL_NEW. The first time
+; its file is current, hlLines gets the file's numLines (BUILD_HL_KEPT).
+; When numLines changes, a line was added or deleted, so the entry's line
+; may have moved: the highlight is stale and isn't drawn (BUILD_HL_STALE)
+; until another entry is gone to.
+BUILD_HL_NEW = 0
+BUILD_HL_KEPT = 1
+BUILD_HL_STALE = 2
+
 .struct BUILDENTRY
     msg      .dword     ; pointer to the message in the error buffer
     line     .word      ; source line, 0 if the error has no line
@@ -54,6 +63,8 @@ BUILD_ENTRIES_SIZE = MAX_BUILD_ENTRIES * .sizeof(BUILDENTRY)
     numEntries .byte    ; entries kept, at most MAX_BUILD_ENTRIES
     numFiles   .byte    ; file slots used, at most MAX_BUILD_FILES
     current    .byte    ; entry the status line shows, BUILD_SUMMARY
+    hlState    .byte    ; BUILD_HL_NEW, BUILD_HL_KEPT or BUILD_HL_STALE
+    hlLines    .word    ; the file's numLines, if BUILD_HL_KEPT
     ; Null-terminated names, the last BUILD_FILE_UNKNOWN (always empty)
     files      .res ::BUILD_FILES_SIZE
     entries    .res ::BUILD_ENTRIES_SIZE

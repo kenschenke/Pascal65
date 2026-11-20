@@ -65,6 +65,7 @@ Procedure SetRingMod(voice : Byte; on : Boolean);
 Procedure SetSync(voice : Byte; on : Boolean);
 Procedure SetFilter(sid : Byte; cutoff : Word; resonance : Byte; mode : Word);
 Procedure FilterVoice(voice : Byte; on : Boolean);
+Procedure SetVoice3Off(sid : Byte; off : Boolean);
 Function GetOsc3(sid : Byte) : Byte;
 Function GetEnv3(sid : Byte) : Byte;
 

@@ -79,6 +79,8 @@ Begin
     SetRingMod(0, True);
     SetSync(13, True);
     FilterVoice(0, True);
+    SetVoice3Off(0, True);
+    SetVoice3Off(5, True);
     SetFrequency(0, 1000);
     SetPulseWidth(13, 1000);
     SetEnvelope(0, 15, 15, 0, 15);

@@ -1,4 +1,4 @@
-0.37-beta
+0.37-beta Nov 20 2026
     NEW: The IDE keeps a build's errors and warnings instead of printing
          them, and goes straight back to the editor after a build. A
          line above the key help shows the result of the last build

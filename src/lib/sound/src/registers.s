@@ -14,7 +14,7 @@
 
 .export setSidMode, setVolume, setWaveform, setEnvelope, setFrequency
 .export setPulseWidth, setGate, setRingMod, setSync, setFilter
-.export filterVoice, getOsc3, getEnv3
+.export filterVoice, setVoice3Off, getOsc3, getEnv3
 
 .import loadVoice, loadSid, loadByteParam
 .import ctrlShadow, resShadow, modeShadow
@@ -296,6 +296,24 @@ DN: rts
     bne :+                  ; Branch if on
     eor mask
 :   jmp writeResFilt
+DN: rts
+.endproc
+
+; Procedure SetVoice3Off(sid : Byte; off : Boolean);
+; Sets or clears bit 7 (3OFF) of SID_MODEVOL. SetVolume and SetFilter
+; change only their own bits of modeShadow, so they keep it.
+.proc setVoice3Off
+    jsr loadSid
+    bcs DN
+    lda #1
+    jsr loadByteParam
+    ldx sidIdx
+    lda modeShadow,x
+    ora #MODE_3OFF
+    ldy arg
+    bne :+                  ; Branch if off
+    eor #MODE_3OFF
+:   jmp writeModeVol
 DN: rts
 .endproc
 

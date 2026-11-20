@@ -23,7 +23,9 @@
 ;
 ; The entry's line is highlighted in its file: calcBuildHighlight finds it
 ; and editorDrawRows draws it reversed in the theme's error or warning
-; color.
+; color. Once a line is added to or deleted from the file, the entry's line
+; may have moved, so the highlight is erased until F9 or F11 is pressed
+; again (BUILDRESULT::hlState).
 
 .include "editor.inc"
 .include "buildresult.inc"
@@ -96,9 +98,12 @@ DN: rts
 .proc gotoEntry
     ldy #BUILDRESULT::current
     sta (ptr3),y
-    ldx #1
-    stx buildDirty
     jsr entryPtr
+    lda #BUILD_HL_NEW
+    ldy #BUILDRESULT::hlState
+    sta (ptr3),y
+    lda #1
+    sta buildDirty
 
     ; The old highlight is erased, even if the editor doesn't move
     jsr editorSetAllRowsDirty
@@ -322,18 +327,19 @@ DN: rts
 ; the build line shows, if it is in this file. Sets hlLine to it (from 0)
 ; and hlColor to the theme's error or warning color. hlLine is $FFFF if
 ; there is none: no file is open, the build line shows the summary, the
-; entry has line 0 or no filename, or its line is in another file or past
-; the end of this one. editorRefreshScreen calls it first.
+; entry has line 0 or no filename, its line is in another file or past
+; the end of this one, or the highlight is stale (BUILD_HL_STALE: a line
+; was added or deleted in the file). editorRefreshScreen calls it first.
 .proc calcBuildHighlight
     lda #$ff
     sta hlLine
     sta hlLine+1
     ldq currentFile
     jsr isQZero
-    beq DN
+    lbeq DN
     jsr loadResult
     cmp tmp1
-    bcs DN                  ; The summary
+    lbcs DN                 ; The summary
     jsr entryPtr
 
     ; intOp1 = line - 1, but not for line 0
@@ -344,7 +350,7 @@ DN: rts
     lda (ptr4),y
     sta intOp1+1
     ora intOp1
-    beq DN
+    lbeq DN
     lda intOp1
     bne :+
     dec intOp1+1
@@ -364,7 +370,6 @@ L1: nop
     cmp #0
     bne L1
 
-    ; Is the line in the file?
     ldz #EDITFILE::numLines
     nop
     lda (currentFile),z
@@ -373,7 +378,38 @@ L1: nop
     nop
     lda (currentFile),z
     sta intOp2+1
-    lda intOp1
+
+    ; Has a line been added or deleted since the entry was gone to?
+    ldy #BUILDRESULT::hlState
+    lda (ptr3),y
+    cmp #BUILD_HL_STALE
+    beq DN                  ; Yes, before
+    cmp #BUILD_HL_KEPT
+    beq :+
+    lda #BUILD_HL_KEPT      ; The first time: keep numLines
+    sta (ptr3),y
+    ldy #BUILDRESULT::hlLines
+    lda intOp2
+    sta (ptr3),y
+    iny
+    lda intOp2+1
+    sta (ptr3),y
+    bra RG
+:   ldy #BUILDRESULT::hlLines
+    lda (ptr3),y
+    cmp intOp2
+    bne ST
+    iny
+    lda (ptr3),y
+    cmp intOp2+1
+    beq RG
+ST: lda #BUILD_HL_STALE     ; Yes: the highlight is erased
+    ldy #BUILDRESULT::hlState
+    sta (ptr3),y
+    jmp editorSetAllRowsDirty
+
+    ; Is the line in the file?
+RG: lda intOp1
     cmp intOp2
     lda intOp1+1
     sbc intOp2+1
