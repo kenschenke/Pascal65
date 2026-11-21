@@ -41,7 +41,7 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has eleven test suites, located in `src/apps`:
+The project has twelve test suites, located in `src/apps`:
 
   - tokenizertest
   - parsertest
@@ -54,8 +54,9 @@ The project has eleven test suites, located in `src/apps`:
   - compilertestasm
   - editortest (editor buffer management)
   - themestest (themes overlay: theme files, palette, theme screen)
+  - workdisktest (workdisk overlay, see "Workdisk Tests")
 
-Each suite's `make test` goes through `src/apps/testcommon/runtest.sh`, which looks for a `RESULT: PASS` or `RESULT: FAIL` line in an emulator screen dump. New suites should reuse it and `testresult.s`.
+Each suite's `make test` goes through `src/apps/testcommon/runtest.sh`, which looks for a `RESULT: PASS` or `RESULT: FAIL` line in an emulator screen dump. New suites should reuse it and `testresult.s`. A fourth argument to `runtest.sh` is an image mounted as unit 9.
 
 ### Running the Tests
 
@@ -205,6 +206,17 @@ version 0). `CHK_FILE` compares `themes.dat` with a fixture, so the bytes
 expected after a save are `.txt` files too. Keep them ASCII and out of the
 `petcat` rule. A CBM disk can't hold an empty file, so the one-byte
 `onlysel` fixture stands in for one. A new fixture goes in `FIXTURES`.
+
+### Workdisk Tests
+
+`workdisktest` runs from a system disk on unit 8 (the program, asmlib, the
+`workdisk` overlay, `runtimeN` and `themes.dat`) with `work.d81`, a blank
+disk, on unit 9. Both images are made fresh for each run. The tests in
+`tests` (`main.s`) run in order, each leaving unit 9 as the next expects:
+it is made a work disk, then its marker and `runtimeN` are replaced and
+scratched. A test that needs the system disk without a file renames it
+there and back. Unit 11 (`NODEV`) is one nothing answers on. Every test
+starts in single-disk mode (`workDevice` = `sysDevice`).
 
 ### Parser Tests
 
@@ -841,6 +853,24 @@ old blob in format 0 and the blob plus the copied colors in format 1,
 the bytes of `mkthemes-tests/good.txt`, and the bad inputs in
 `mkthemes-tests`, each of which names its expected line and message on
 its first line.
+
+## Work disks
+
+`plans/workdisks.md` describes the system disk (the distribution, read
+only) and the work disk (the user's files). asmlib keeps `sysDevice` and
+`workDevice`; single-disk mode is the two equal. The `workdisk` overlay
+(`src/overlays/workdisk`, `workdisk.inc`) has `wdCheck` (is a unit a work
+disk, blank, or neither), `wdCreate` (fill a blank disk: `runtimeN`, the
+system disk's `themes.dat` if it has one, then the marker `p65work`, and
+scratch them if one fails) and `wdRefresh` (copy `runtimeN` to the work
+disk if no file of that name is there). Each returns a `WD_*` code. No
+DOS command copies between units, so `copyFile` reads a block from one
+and writes it to the other. The overlay opens its own command channels
+(logical files 14 and 15) before a unit's files and closes them after,
+since a command channel's close closes the unit's files, and clears
+`STATUS` before each read, so an earlier file's EOF isn't taken for this
+one's.
+It never writes to `sysDevice`: `wdCheck` refuses it (`WD_SYSDISK`).
 
 ## Library object files
 

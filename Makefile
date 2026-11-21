@@ -34,6 +34,7 @@ COMPILERDIR := src/apps/compilerasm
 EDITORAPPDIR := src/apps/editor
 MEMINFODIR := src/overlays/meminfo
 THEMESDIR := src/overlays/themes
+WORKDISKDIR := src/overlays/workdisk
 THEMESTXT := src/shared/themes.txt
 MKTHEMES := src/shared/mkthemes.py
 MKHDRDIR := src/apps/mkhdr
@@ -64,6 +65,7 @@ COMPILER = $(COMPILERDIR)/bin/$(TARGET)/compiler
 EDITORAPP = $(EDITORAPPDIR)/bin/$(TARGET)/editor
 MEMINFO = $(MEMINFODIR)/bin/$(TARGET)/meminfo
 THEMES = $(THEMESDIR)/bin/$(TARGET)/themes
+WORKDISK = $(WORKDISKDIR)/bin/$(TARGET)/workdisk
 MKHDR = $(MKHDRDIR)/bin/$(TARGET)/mkhdr
 # The shipped themes, written to the disk as themes.dat and themes.def
 THEMESDEF = $(BINTARGETDIR)/themes.def
@@ -89,6 +91,7 @@ BINFILES += $(LINKER)
 BINFILES += $(EDITOROVLY)
 BINFILES += $(MEMINFO)
 BINFILES += $(THEMES)
+BINFILES += $(WORKDISK)
 BINFILES += $(MKHDR)
 
 TXTFILES := help.petscii title.petscii abortmsgs.petscii errormsgs.petscii runtimemsgs.petscii system.petscii screen.petscii time.petscii screendemo.petscii fivedice.petscii license.petscii bubbles.petscii sprites.petscii spritemove.petscii sound.petscii sfxdemo.petscii tunedemo.petscii stereodemo.petscii
@@ -224,6 +227,9 @@ $(MEMINFO): FORCE
 $(THEMES): FORCE
 	cd $(THEMESDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(WORKDISK): FORCE
+	cd $(WORKDISKDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(MKHDR): FORCE
 	cd $(MKHDRDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -254,6 +260,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(THEMESDEF) $(HDRFILES)
 	-write $(MEMINFO) meminfo,prg \
 	-write $(EDITOROVLY) editor,prg \
 	-write $(THEMES) themes,prg \
+	-write $(WORKDISK) workdisk,prg \
 	-write $(MKHDR) mkhdr,prg \
 	$(RTWRITE) \
 	-write $(SCREENLIB) screen.lib,prg \
@@ -343,7 +350,8 @@ load: $(D81FILE)
 # PASS or FAIL (see src/apps/testcommon/runtest.sh). Set TEST_TIMEOUT to change
 # the per-suite time limit in seconds.
 TESTDIRS := tokenizertest parsertest resolvertest typechecktest icodetest tputest \
-	compilertestasm memtest membuftest editortest themestest
+	compilertestasm memtest membuftest editortest themestest \
+	workdisktest
 
 test: mkthemes-test
 	@for t in $(TESTDIRS); do \

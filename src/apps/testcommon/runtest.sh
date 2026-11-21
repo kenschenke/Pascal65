@@ -2,7 +2,7 @@
 #
 # Runs one test program in the xmega65 emulator and reports PASS/FAIL.
 #
-# usage: runtest.sh <name> <prg-file> <d81-file>
+# usage: runtest.sh <name> <prg-file> <d81-file> [<unit-9-d81-file>]
 #
 # The emulator runs headless and at full speed. -prgexit makes it exit as soon
 # as the program returns to the BASIC READY prompt, and -dumpscreen saves the
@@ -11,6 +11,9 @@
 # looks for that line. A run that hangs, crashes, or exits without printing a
 # result is a failure.
 #
+# A fourth image is mounted as unit 9, for the tests of a work disk (see
+# plans/workdisks.md).
+#
 # Environment:
 #   XMEGA65      emulator command            (default: xmega65)
 #   TEST_TIMEOUT seconds before giving up    (default: 900)
@@ -18,11 +21,12 @@
 NAME=$1
 PRG=$2
 D81=$3
+D81B=$4
 EMU=${XMEGA65:-xmega65}
 LIMIT=${TEST_TIMEOUT:-900}
 
 if [ -z "$NAME" ] || [ -z "$PRG" ] || [ -z "$D81" ]; then
-    echo "usage: $0 <name> <prg-file> <d81-file>" >&2
+    echo "usage: $0 <name> <prg-file> <d81-file> [<unit-9-d81-file>]" >&2
     exit 2
 fi
 
@@ -34,8 +38,13 @@ trap 'rm -f "$SCREEN"' EXIT
 
 echo "=== Running $NAME"
 
+UNIT9=
+if [ -n "$D81B" ]; then
+    UNIT9="-9 $D81B"
+fi
+
 timeout "$LIMIT" "$EMU" -besure -headless -sleepless -testing \
-    -prg "$PRG" -prgexit -8 "$D81" -dumpscreen "$SCREEN" >/dev/null 2>&1
+    -prg "$PRG" -prgexit -8 "$D81" $UNIT9 -dumpscreen "$SCREEN" >/dev/null 2>&1
 STATUS=$?
 
 # The screen dump marks shifted letters as {X}, so strip the braces and
