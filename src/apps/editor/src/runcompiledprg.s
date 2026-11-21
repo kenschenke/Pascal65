@@ -12,18 +12,20 @@
 .include "asm.inc"
 .include "editor.inc"
 .include "cbm_kernal.inc"
+.include "asmlib.inc"
 
 .export runCompiledPrg
 
 .data
 
 CHAIN_CODE_LENGTH = 42
+CHAIN_CODE_DEVICE = 8
 prgChainCall:
     .byte OC_LDA_IMMEDIATE, CH_CLRSCR
     .byte OC_JSR, .lobyte(CHROUT), .hibyte(CHROUT)
 
     .byte OC_LDA_IMMEDIATE, 0
-    .byte OC_LDX_IMMEDIATE, 8   ; device
+    .byte OC_LDX_IMMEDIATE, 8   ; device (the work device, runCompiledPrg)
     .byte OC_LDY_IMMEDIATE, $ff
     .byte OC_JSR, .lobyte(SETLFS), .hibyte(SETLFS)
 
@@ -44,7 +46,11 @@ prgChainCall:
 .code
 
 ; This routine copies the prgChainCall code to $9000 then jmps to it.
+; zzprg.prg is loaded from the work disk. The device is read before the
+; copy, which overwrites asmlib.
 .proc runCompiledPrg
+    lda workDevice
+    sta prgChainCall+CHAIN_CODE_DEVICE
     ldx #0
 :   lda prgChainCall,x
     sta $9000,x

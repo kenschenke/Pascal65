@@ -139,6 +139,16 @@ RTF_FILES = $02             ; a file variable is declared
 RTF_TRIG = $04              ; Sin, Cos or Tan is called
 RTF_ALL = $07
 
+; The chain loader's hand-off to the editor. A program run from the IDE
+; chains back to pascal65 on the system disk, so DEVNUM then names the
+; system device. Its loader writes the magic and the work device here
+; before loading pascal65 (prgChain.s), and the editor's main takes the
+; device and clears the magic. $1600 - $1EFF is free for program use, and
+; the chain loader and its filename end below $1F00 - 3.
+CHAIN_HANDOFF = $1EFD       ; 2 bytes magic, then the work device
+CHAIN_MAGIC1 = $57          ; "W"
+CHAIN_MAGIC2 = $44          ; "D"
+
 ; Runtime modes, chosen by the $StaticRuntime and $DynamicRuntime
 ; directives
 RT_MODE_DYNAMIC = 0         ; the default: the program loads runtimeN

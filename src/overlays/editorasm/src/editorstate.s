@@ -19,7 +19,7 @@
 .export editorHasState, editorSaveState, editorRestoreState
 
 .import helpTitle, firstFile
-.import initFile, fnBuf, openFile, openHelpFile
+.import initFile, fnBuf, openFileDev, openFileRODev, openHelpFile
 .import updateStatusBarFilename
 
 .data
@@ -53,10 +53,14 @@ theCurrentFile: .res 4
 ;          a. Filename
 ;                i. If the file is "help.txt", it is loaded as the
 ;                   help file, read-only.
-;          b. Cursor X position
-;          c. Cursor Y position
-;          d. Row offset
-;          e. Column offset
+;          b. Device the file was read from
+;          c. Cursor X position
+;          d. Cursor Y position
+;          e. Row offset
+;          f. Column offset
+;
+; The state file is on the work disk. A file read from another device (the
+; system disk) is opened read-only from it again.
 ;
 ; State File Layout:
 ;    <1 byte> Number of open files
@@ -65,6 +69,7 @@ theCurrentFile: .res 4
 ;       <1 byte>  1 if this was the file current file, 0 otherwise
 ;       <1 byte>  Length of filename
 ;       <n bytes> Filename
+;       <1 byte>  Device (EDITFILE::device)
 ;       <1 byte>  Cursor X position
 ;       <2 bytes> Cursor Y position
 ;       <1 byte>  Column offset
@@ -274,11 +279,22 @@ L3: rts
     lda #0
     sta fnBuf,x
 
+    ; Read the device
+    jsr setUpMemBufPtrs
+    lda #1
+    ldx #0
+    jsr readFromMemBuf
+
     jsr isHelpFile
     bne L1
     jsr openHelpFile
     bra L2
-L1: jsr openFile
+L1: lda chBuf
+    cmp workDevice
+    bne L3
+    jsr openFileDev
+    bra L2
+L3: jsr openFileRODev
 
     ; Read cursorX
 L2: jsr setUpMemBufPtrs
@@ -426,8 +442,14 @@ L4: jsr CHROUT
     inz
     bra :-
 
+    ; Write the device
+:   ldz #EDITFILE::device
+    nop
+    lda (ptr1),z
+    jsr CHROUT
+
     ; Write the cursor X position
-:   ldz #EDITFILE::cx
+    ldz #EDITFILE::cx
     nop
     lda (ptr1),z
     jsr CHROUT
@@ -465,6 +487,6 @@ L4: jsr CHROUT
     nop
     lda (ptr1),z
     stq ptr1
-    bra L1
+    jmp L1
 .endproc
 

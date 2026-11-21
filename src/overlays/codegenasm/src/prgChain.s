@@ -22,14 +22,16 @@
 
 .bss
 
-; These two variables are used when the generated program is to
+; These variables are used when the generated program is to
 ; chain-load another PRG when it finishes. If chainPrg is non-null,
-; the next PRG is loaded. If chainPrompt is non-zero, the user is
-; prompted to press a key before the PRG is loaded.
+; the next PRG is loaded from chainDevice. chainFlags holds the
+; CHAIN_FLAG_* bits (codegen.inc): prompt the user to press a key before
+; the PRG is loaded, and hand the work device to the editor.
 
 chainPrg: .res 2                ; 16-bit pointer to filename to call next
 chainPrgLength: .res 1          ; length of filename (calculated by setChainProg)
-chainPrompt: .res 1             ; non-zero if user is prompted to press a key
+chainFlags: .res 1              ; CHAIN_FLAG_* bits
+chainDevice: .res 1             ; device the next PRG is loaded from
 
 .data
 
@@ -46,10 +48,11 @@ tagPromptMsg: .asciiz "promptmsg"
 CHAIN_LOADER = $1600
 
 ; This block of code is what is copied to CHAIN_LOADER
+CHAINCALL_DEVICE = 3
 CHAINCALL_STRLEN = 10
 CHAINCALL_LENGTH = 28
 CHAIN_FILENAME = CHAIN_LOADER + CHAINCALL_LENGTH
-.assert CHAIN_FILENAME + 255 <= $1F00, error, "Chain loader does not fit"
+.assert CHAIN_FILENAME + 255 <= CHAIN_HANDOFF, error, "Chain loader does not fit"
 prgChainCall:
     .byte OC_LDA_IMMEDIATE, 0
     .byte OC_LDX_IMMEDIATE, 8   ; device
@@ -90,6 +93,19 @@ prgChainCode:
     .byte OC_JMP, .lobyte(CHAIN_LOADER), .hibyte(CHAIN_LOADER)
     ; filename to load
 
+; This block of code is placed before prgChainCode when the work device is
+; handed to the editor (CHAIN_FLAG_HANDOFF). It writes the magic and the
+; work device to CHAIN_HANDOFF (asm.inc).
+CHAINHANDOFF_DEVICE = 11
+CHAINHANDOFF_LENGTH = 15
+prgChainHandoff:
+    .byte OC_LDA_IMMEDIATE, CHAIN_MAGIC1
+    .byte OC_STA_ABSOLUTE, .lobyte(CHAIN_HANDOFF), .hibyte(CHAIN_HANDOFF)
+    .byte OC_LDA_IMMEDIATE, CHAIN_MAGIC2
+    .byte OC_STA_ABSOLUTE, .lobyte(CHAIN_HANDOFF+1), .hibyte(CHAIN_HANDOFF+1)
+    .byte OC_LDA_IMMEDIATE, 0           ; the work device
+    .byte OC_STA_ABSOLUTE, .lobyte(CHAIN_HANDOFF+2), .hibyte(CHAIN_HANDOFF+2)
+
 ; This block of code is placed at the end of the clean up code in the PRG.
 ; It prompts the user to press a key then waits for that keypress.
 CHAINPROMPT_MSGLO = 8
@@ -110,15 +126,18 @@ promptMsg: .asciiz "Press a key."
 
 .code
 
-; This routine is called to set chainPrg and chainPrompt.
+; This routine is called to set chainPrg, chainFlags and chainDevice.
 ; A/X contains the 16-pointer to the filename of the PRG.
-; Y is non-zero if the user is prompted before the next PRG is loaded.
+; Y holds the CHAIN_FLAG_* bits (codegen.inc).
+; Z is the device the next PRG is loaded from.
 .proc setChainProg
     sta chainPrg
     sta ptr1
     stx chainPrg+1
     stx ptr1+1
-    sty chainPrompt
+    sty chainFlags
+    tza
+    sta chainDevice
 
     lda #0
     sta chainPrgLength
@@ -143,6 +162,7 @@ DN: rts
 ; 
 ; ... object code for PRG ...
 ; If the user is to be prompted, a JSR to the prompt code is put here.
+; prgChainHandoff: if the work device is handed to the editor
 ; prgChainCode: copies the loader to CHAIN_LOADER
 ; JMP CHAIN_LOADER
 ; prgChainCall: this is the loader that is copied to CHAIN_LOADER
@@ -150,7 +170,8 @@ DN: rts
 ; prgChainPrompt: If the user is to be prompted, the prompt routine is put here.
 
 .proc writeChainCode
-    lda chainPrompt
+    lda chainFlags
+    and #CHAIN_FLAG_PROMPT
     beq :+
     ; JSR to the chain prompt code
     lda #<tagChainPrompt
@@ -159,6 +180,22 @@ DN: rts
     ldz #1
     jsr linkAddressLookup
     genThree OC_JSR, 0
+
+    ; Write the code that hands the work device to the editor
+:   lda chainFlags
+    and #CHAIN_FLAG_HANDOFF
+    beq :++
+    lda workDevice
+    ldx #CHAINHANDOFF_DEVICE
+    sta prgChainHandoff,x
+    ldx #0
+:   lda prgChainHandoff,x
+    jsr CHROUT
+    inx
+    cpx #CHAINHANDOFF_LENGTH
+    bne :-
+    txa
+    jsr incCodeOffset
 
     ; Write the code that copies the loader to CHAIN_LOADER
 :   lda #<tagChainCode
@@ -198,6 +235,9 @@ DN: rts
     lda chainPrgLength
     ldx #CHAINCALL_STRLEN
     sta prgChainCall,x
+    lda chainDevice
+    ldx #CHAINCALL_DEVICE
+    sta prgChainCall,x
     ldx #0
 :   lda prgChainCall,x
     jsr CHROUT
@@ -226,7 +266,8 @@ DN: rts
     jsr incCodeOffset
 
     ; If the user is prompted, write the chain prompt code
-    lda chainPrompt
+    lda chainFlags
+    and #CHAIN_FLAG_PROMPT
     beq DN
 
     jsr writeChainPrompt

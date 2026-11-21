@@ -337,9 +337,11 @@ RE: jsr scopeExit
     jsr initCodeGen
     lda nextTestPrg
     beq L1
+    ; The next test is on the work disk
     lda #<nextTestPrg
     ldx #>nextTestPrg
     ldy #0
+    ldz workDevice
     bra L2
 L1: lda #0
     tax

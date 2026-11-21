@@ -19,7 +19,7 @@ CH_UPPERCASE = 142
 .segment "ENTRY"
 
 .import initLib, backupZeroPage, restoreZeroPage, editorLoop, logError, logWarning
-.import runCompiledPrg, deleteZzprg, initBuildResult
+.import runCompiledPrg, deleteZzprg, initBuildResult, takeHandoff
 
 main:
     ; Save the stack pointer
@@ -47,6 +47,9 @@ main:
 
     ; Load the library
     jsr initLib
+
+    ; Take the work device from the chain loader (asm.inc)
+    jsr takeHandoff
 
     ; Initialize the memory heap
     jsr initMemHeap

@@ -1514,6 +1514,11 @@ DN: rts
     sta (currentFile),z
     dez
     bpl :-
+    ; A new file is on the work disk (openFileDev sets a read file's)
+    lda workDevice
+    ldz #EDITFILE::device
+    nop
+    sta (currentFile),z
     rts
 .endproc
 

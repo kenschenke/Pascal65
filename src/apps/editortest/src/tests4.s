@@ -172,6 +172,7 @@ help:
     CHKNAME "Help File"
     CHKBYTE EDITFILE::readOnly, 1
     CHKBYTE EDITFILE::dirty, 0
+    CHKBYTE EDITFILE::device, 8
     CHKLINE 0, "Welcome to Pascal65"
     ENDTEST
 
@@ -194,6 +195,8 @@ restoreRun:
     .asciiz "two"
     CHKNAME "save.txt"
     CHKFILES 1
+    CHKBYTE EDITFILE::device, 8
+    CHKBYTE EDITFILE::readOnly, 0
     CHKNOTONDISK "zzstate"
     ENDTEST
 

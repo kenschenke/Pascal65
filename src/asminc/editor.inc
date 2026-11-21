@@ -156,6 +156,7 @@ THEME_SIZE_V0 = THEME_NAME_SIZE + THEME_COLORS_V0 * THEME_COLOR_SIZE
     selectionY .word        ; anchor point Y for selection
     startHY .word           ; start of selection for highlighting
     endHY .word             ; end of selection for highlighting
+    device .byte            ; device the file was read from (work by default)
 .endstruct
 
 .struct EDITLINE

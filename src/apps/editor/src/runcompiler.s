@@ -341,9 +341,11 @@ NR: clc
     lda loopCode
     cmp #3 ; EDITOR_LOOP_RUN
     bne L1
+    ; Chain back to pascal65 on the system disk, handing it the work device
     lda #<strEditorFn
     ldx #>strEditorFn
-    ldy #1
+    ldy #CHAIN_FLAG_PROMPT | CHAIN_FLAG_HANDOFF
+    ldz sysDevice
     bra L2
 L1: lda #0
     tax

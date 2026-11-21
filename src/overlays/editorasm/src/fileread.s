@@ -16,7 +16,8 @@
 .include "4510macros.inc"
 .include "asmlib.inc"
 
-.export readTitleFile, openFile, openFileRO, openHelpFile, fnBuf
+.export readTitleFile, openFile, openFileDev, openFileRO, openFileRODev
+.export openHelpFile, fnBuf
 .export helpTitle, setIsPascal
 
 .import titleScreen, anyDirtyRows, editorAllocLine
@@ -59,8 +60,12 @@ pasExtension: .asciiz "pas"
     jsr initFile
     ; See if the file is Pascal
     jsr setIsPascal
-    ; Call SETLFS
+    ; Keep the device in the file and call SETLFS
     plx
+    txa
+    ldz #EDITFILE::device
+    nop
+    sta (currentFile),z
     lda #1
     tay
     iny
@@ -114,6 +119,12 @@ pasExtension: .asciiz "pas"
 ; read-only flag.
 .proc openFileRO
     lda sysDevice
+    ; Fall through
+.endproc
+
+; This routine opens a file on the device in A, as openFileDev does, then
+; sets the read-only flag.
+.proc openFileRODev
     jsr openFileDev
     ldz #EDITFILE::readOnly
     lda #1
