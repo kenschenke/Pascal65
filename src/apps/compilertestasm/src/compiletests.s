@@ -98,6 +98,7 @@ strTooManyVars: .asciiz "toomanyvars"
 strTooManyImpl: .asciiz "toomanyimpl"
 strMkCycle: .asciiz "mkcycle"
 strMkBad: .asciiz "mkbad"
+strWdSearch: .asciiz "wdsearch"
 strRun1: .asciiz "Run "
 strRun2: .asciiz " to begin tests"
 
@@ -105,6 +106,9 @@ strRun2: .asciiz " to begin tests"
 ; When the TESTSET symbol is defined (see the Makefile test target) the list
 ; is split in three. Each set ends by chaining to "done", which reports the
 ; overall PASS to the test harness. Without TESTSET the whole list is built.
+; Set 4 runs some of set 1 and 2's tests again with a work disk on unit 9
+; (WORKUNIT, see initlib.s): the units, a library only a unit uses, the
+; file tests, the make tests and a unit found on the work disk first.
 .ifndef TESTSET
 TESTSET = 0
 .endif
@@ -196,6 +200,15 @@ tests:
     ; The System and Sprites libraries' IRQ callbacks
     .byte .lobyte(strIrqCb), .hibyte(strIrqCb)
 .endif
+.if TESTSET = 4
+    .byte .lobyte(strUnitObjs), .hibyte(strUnitObjs)
+    .byte .lobyte(strUnitUses), .hibyte(strUnitUses)
+    .byte .lobyte(strUnitLib), .hibyte(strUnitLib)
+    .byte .lobyte(strLibTest), .hibyte(strLibTest)
+    .byte .lobyte(strWdSearch), .hibyte(strWdSearch)
+    .byte .lobyte(strFileTestA), .hibyte(strFileTestA)
+    .byte .lobyte(strFileTestB), .hibyte(strFileTestB)
+.endif
 .if TESTSET <> 0
     .byte .lobyte(strDone), .hibyte(strDone)
 .endif
@@ -233,7 +246,7 @@ MK_REBUILD = 3              ; the same, rebuilding every unit (tpuClean)
 .endmacro
 
 makeTests:
-.if TESTSET = 0 || TESTSET = 1
+.if TESTSET = 0 || TESTSET = 1 || TESTSET = 4
     MKDOS strMkScratchTpus
     MKDOS strMkScratchA
     MKDOS strMkCopyA1
@@ -317,6 +330,14 @@ errorTests:
 .if TESTSET = 2
     .byte .lobyte(strTooLarge), .hibyte(strTooLarge)
     .byte errCodeSegmentOverflow
+.endif
+.if TESTSET = 4
+    ; The make walk and a unit's failed compile, with the sources, TPUs
+    ; and temporary files on the work disk
+    .byte .lobyte(strMkCycle), .hibyte(strMkCycle)
+    .byte errCircularUnitReference
+    .byte .lobyte(strMkBad), .hibyte(strMkBad)
+    .byte errIncompatibleAssignment
 .endif
     .byte $00, $00
 

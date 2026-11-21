@@ -57,6 +57,11 @@ WORKHELLO := $(FILEDIR)/workhello.txt
 MKWORK = W=; if [ $$n = $(TWODISKPROG) ]; then $(RM) $(WORKD81) && \
 	c1541 -format work,9a d81 $(WORKD81) \
 	-write $(WORKHELLO) hello.txt,seq && W=$(WORKD81); fi
+# With a work disk, the editor must not write to the system disk $(1):
+# SYSSUM keeps its SHA-256 in S and CHECKSYS fails unless it is the same
+SYSSUM = S=$$(sha256sum $(1))
+CHECKSYS = { [ -z "$$W" ] || [ "$$(sha256sum $(1))" = "$$S" ] || \
+	{ echo "$(1): FAIL (the system disk changed)"; false; }; }
 
 COMMONSRC := $(filter-out $(SRCDIR)/tests%.s $(SRCDIR)/buildtest.s,\
 	$(wildcard $(SRCDIR)/*.s))
@@ -257,9 +262,10 @@ test:
 	$(MAKE) TARGET=$(TARGET) DEBUG=1 all
 	../testcommon/runtest.sh $(BUILDTEST) $(BUILDPRG) $(BUILDD81)
 	for n in $(TESTPROGS); do \
-	$(MKWORK) && \
+	$(MKWORK) && $(call SYSSUM,$(BINTARGETDIR)/$(PROGRAM)$$n.d81) && \
 	../testcommon/runtest.sh $(PROGRAM)$$n $(BINTARGETDIR)/$(PROGRAM)$$n.prg \
-	$(BINTARGETDIR)/$(PROGRAM)$$n.d81 $$W || exit 1; \
+	$(BINTARGETDIR)/$(PROGRAM)$$n.d81 $$W && \
+	$(call CHECKSYS,$(BINTARGETDIR)/$(PROGRAM)$$n.d81) || exit 1; \
 	done
 
 run: all

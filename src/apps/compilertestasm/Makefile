@@ -30,10 +30,22 @@ TARGET := mega65
 # compiletests.s) because the programs produced by the whole list do not fit
 # on one disk image. A set's disk also needs room for the files its tests
 # write (filetesta and filetestb in set 2).
-TESTSETS := 1 2 3
+TESTSETS := 1 2 3 4
 FIRSTTEST1 := unitobjs
 FIRSTTEST2 := subtract
 FIRSTTEST3 := dynarraya
+FIRSTTEST4 := unitobjs
+# Set 4 runs with a work disk on unit 9 (plans/workdisks.md): the
+# compiler, overlays, libraries and runtime are on the system disk (unit
+# 8), and the sources, the marker and runtimeN on the work disk, where
+# everything the compiles and the programs write goes. The system disk
+# must be unchanged after the compile step and the run step (its
+# SHA-256), and the run step starts the chain from unit 9 (mkboot.py).
+WORKSETS := 4
+WORKUNIT := 9
+ifneq ($(filter $(TESTSET),$(WORKSETS)),)
+WORKSET := 1
+endif
 # Programs are built for the dynamic runtime unless they say
 # $StaticRuntime. Set 2 builds every program with the static runtime
 # (FORCESTATIC in runcompiler.s), so static mode is tested as widely.
@@ -51,6 +63,18 @@ else
 OBJTARGETDIR = $(OBJDIR)/$(TARGET)
 endif
 D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
+# A work set's work disk, the disk its programs are compiled to (OUTD81),
+# the runtest.sh argument that mounts it and the system disk's SHA-256
+ifdef WORKSET
+WORKD81 = $(BINTARGETDIR)/$(PROGRAM)work.d81
+OUTD81 = $(WORKD81)
+UNIT9 = $(WORKD81)
+SYSSUM = $(BINTARGETDIR)/$(PROGRAM)-sys.sha256
+BOOTPRG = $(BINTARGETDIR)/$(PROGRAM)-boot.prg
+WORKMARKER = $(OBJTARGETDIR)/p65work
+else
+OUTD81 = $(D81FILE)
+endif
 # The PRGs on the disk before the compile step, and the checksums the
 # compiled ones must have (prgsums.sh)
 PRGSBEFORE = $(BINTARGETDIR)/$(PROGRAM)-before.txt
@@ -80,7 +104,7 @@ endif
 SET3PAS = libtest2 soundtest soundfx soundseq irqcb soundcalls dynarraya \
 	dynarrayb dynarrayc \
 	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb rterrexit
-ifeq ($(filter $(TESTSET),1 2),)
+ifeq ($(filter $(TESTSET),1 2 4),)
 SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
 	-write bubbles.petscii bubbles.pas$(comma)seq \
 	-write sfxdemo.petscii sfxdemo.pas$(comma)seq \
@@ -88,6 +112,25 @@ SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
 	-write stereodemo.petscii stereodemo.pas$(comma)seq \
 	-write hangman.petscii hangman.pas$(comma)seq \
 	$(foreach t,$(SET3PAS),-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq)
+endif
+# The sources every set's disk has
+COMMONPAS = add assign varinit bitwisea bitwiseb ifthen loops stdroutines \
+	incdec strroutines strleak writewidth strtests recarray scopetest \
+	casetest procfunc multiply forord declordr negate subrange unitinit \
+	uinita uinitb subtract divint trig vartest filetesta filetestb \
+	pointers unit unit1 libtest rtnarray rtnrecord rtnptrs strrecord \
+	strarray constants typecast chararray exprclone namedidx done toolarge
+SRCWRITE = $(foreach t,$(COMMONPAS), \
+	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq) \
+	$(SET1WRITE) $(SET3WRITE)
+# A work set's sources are on the work disk, with wdsearch's unit, and
+# the system disk has the other wdunit.pas, which must not be found
+ifdef WORKSET
+SYSSRC = -write $(PETSCIIDIR)/wdunitsys.pas wdunit.pas,seq
+WORKSRC = $(SRCWRITE) -write $(PETSCIIDIR)/wdsearch.pas wdsearch.pas,seq \
+	-write $(PETSCIIDIR)/wdunit.pas wdunit.pas,seq
+else
+SYSSRC = $(SRCWRITE)
 endif
 
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
@@ -147,6 +190,9 @@ ASFLAGS += -D TESTSET=$(TESTSET)
 ifneq ($(filter $(TESTSET),$(STATICSETS)),)
 ASFLAGS += -D FORCESTATIC
 endif
+ifdef WORKSET
+ASFLAGS += -D WORKUNIT=$(WORKUNIT)
+endif
 endif
 
 HDRSHAREDDIR := ../../shared/hdr
@@ -179,7 +225,8 @@ ERRORTESTS := $(wildcard $(ERRORTESTSDIR)/*.pas)
 TXTFILES += $(patsubst $(TESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(TESTS))
 TXTFILES += $(patsubst $(ERRORTESTSDIR)/%.pas, $(PETSCIIDIR)/%.pas, $(ERRORTESTS))
 
-all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE) $(D81FILE)
+all: $(BINTARGETDIR) $(OBJTARGETDIR) $(PRGFILE) $(D81FILE) $(WORKD81) \
+	$(BOOTPRG)
 
 errormsgs.petscii: ../../shared/errormsgs.txt
 	dos2unix < ../../shared/errormsgs.txt | petcat -w2 -text -o errormsgs.petscii
@@ -333,60 +380,35 @@ $(D81FILE): $(BINFILES) $(TXTFILES) $(SET1FILES)
 	-write demolib.petscii demolib.pas,seq \
 	-write demolib2.petscii demolib2.pas,seq \
 	-write sound.petscii sound.pas,seq \
-	-write $(PETSCIIDIR)/add.pas add.pas,seq \
-	-write $(PETSCIIDIR)/assign.pas assign.pas,seq \
-	-write $(PETSCIIDIR)/varinit.pas varinit.pas,seq \
-	-write $(PETSCIIDIR)/bitwisea.pas bitwisea.pas,seq \
-	-write $(PETSCIIDIR)/bitwiseb.pas bitwiseb.pas,seq \
-	-write $(PETSCIIDIR)/ifthen.pas ifthen.pas,seq \
-	-write $(PETSCIIDIR)/loops.pas loops.pas,seq \
-	-write $(PETSCIIDIR)/stdroutines.pas stdroutines.pas,seq \
-	-write $(PETSCIIDIR)/incdec.pas incdec.pas,seq \
-	-write $(PETSCIIDIR)/strroutines.pas strroutines.pas,seq \
-	-write $(PETSCIIDIR)/strleak.pas strleak.pas,seq \
-	-write $(PETSCIIDIR)/writewidth.pas writewidth.pas,seq \
-	-write $(PETSCIIDIR)/strtests.pas strtests.pas,seq \
-	-write $(PETSCIIDIR)/recarray.pas recarray.pas,seq \
-	-write $(PETSCIIDIR)/scopetest.pas scopetest.pas,seq \
-	-write $(PETSCIIDIR)/casetest.pas casetest.pas,seq \
-	-write $(PETSCIIDIR)/procfunc.pas procfunc.pas,seq \
-	-write $(PETSCIIDIR)/multiply.pas multiply.pas,seq \
-	-write $(PETSCIIDIR)/forord.pas forord.pas,seq \
-	-write $(PETSCIIDIR)/declordr.pas declordr.pas,seq \
-	-write $(PETSCIIDIR)/negate.pas negate.pas,seq \
-	-write $(PETSCIIDIR)/subrange.pas subrange.pas,seq \
-	-write $(PETSCIIDIR)/unitinit.pas unitinit.pas,seq \
-	-write $(PETSCIIDIR)/uinita.pas uinita.pas,seq \
-	-write $(PETSCIIDIR)/uinitb.pas uinitb.pas,seq \
-	-write $(PETSCIIDIR)/subtract.pas subtract.pas,seq \
-	-write $(PETSCIIDIR)/divint.pas divint.pas,seq \
-	-write $(PETSCIIDIR)/trig.pas trig.pas,seq \
-	-write $(PETSCIIDIR)/vartest.pas vartest.pas,seq \
-	-write $(PETSCIIDIR)/filetesta.pas filetesta.pas,seq \
-	-write $(PETSCIIDIR)/filetestb.pas filetestb.pas,seq \
-	-write $(PETSCIIDIR)/pointers.pas pointers.pas,seq \
-	-write $(PETSCIIDIR)/unit.pas unit.pas,seq \
-	-write $(PETSCIIDIR)/unit1.pas unit1.pas,seq \
-	-write $(PETSCIIDIR)/libtest.pas libtest.pas,seq \
-	-write $(PETSCIIDIR)/rtnarray.pas rtnarray.pas,seq \
-	-write $(PETSCIIDIR)/rtnrecord.pas rtnrecord.pas,seq \
-	-write $(PETSCIIDIR)/rtnptrs.pas rtnptrs.pas,seq \
-	-write $(PETSCIIDIR)/strrecord.pas strrecord.pas,seq \
-	-write $(PETSCIIDIR)/strarray.pas strarray.pas,seq \
-	-write $(PETSCIIDIR)/constants.pas constants.pas,seq \
-	-write $(PETSCIIDIR)/typecast.pas typecast.pas,seq \
-	-write $(PETSCIIDIR)/chararray.pas chararray.pas,seq \
-	-write $(PETSCIIDIR)/exprclone.pas exprclone.pas,seq \
-	-write $(PETSCIIDIR)/namedidx.pas namedidx.pas,seq \
-	-write $(PETSCIIDIR)/done.pas done.pas,seq \
-	-write $(PETSCIIDIR)/toolarge.pas toolarge.pas,seq \
-	$(SET1WRITE) \
-	$(SET3WRITE) \
+	$(SYSSRC) \
 	$(foreach h,$(HDRFILES),-write $(h) $(notdir $(h)),prg)
+
+ifdef WORKSET
+$(WORKMARKER): ../../shared/mkmarker.py ../../asminc/workdisk.inc \
+	| $(OBJTARGETDIR)
+	python3 ../../shared/mkmarker.py ../../asminc/workdisk.inc $@
+
+# A work disk as wdCreate makes one (the marker and runtimeN), with the
+# sources. It has no themes.dat, which the compiler doesn't read.
+$(WORKD81): $(WORKMARKER) $(RUNTIME) $(TXTFILES) $(SET1FILES)
+	$(RM) $@
+	c1541 -format work,9a d81 $@ \
+	-write $(RUNTIMEDIR)/bin/$(TARGET)/runtime$(RTABI) runtime$(RTABI),prg \
+	-write $(WORKMARKER) p65work,seq \
+	$(WORKSRC)
+
+# The run step's PRG: RUN "first",U9
+$(BOOTPRG): mkboot.py | $(BINTARGETDIR)
+	python3 mkboot.py $(FIRSTTEST$(TESTSET)) $(WORKUNIT) $@
+
+# Fails unless the system disk is the same as before the compile step
+CHECKSYS = sha256sum -c --quiet $(SYSSUM) || \
+	{ echo "$(PROGRAM): FAIL (the system disk changed)"; exit 1; }
+endif
 
 clean:
 	$(RM) $(TXTFILES)
-	$(RM) $(D81FILE)
+	$(RM) $(D81FILE) $(WORKD81) $(BOOTPRG) $(SYSSUM) $(WORKMARKER)
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 ifndef TESTSET
@@ -402,12 +424,19 @@ run: $(D81FILE)
 # copies them to a MEGA65 to run the tests on real hardware. On each disk,
 # RUN "COMPILER" compiles the set, then RUN the set's first program
 # (FIRSTTESTn) to start the chain. The loader checks in rtdyntest.sh only
-# run in the emulator.
+# run in the emulator. A work set's work disk goes on unit 9 and its first
+# program is run from there.
 load: hwimages
 	mega65_ftp -e $(foreach s,$(TESTSETS), \
-		-c 'put $(BINTARGETDIR)/compilertest$(s).d81') -c 'exit'
-	@$(foreach s,$(TESTSETS),echo "compilertest$(s).d81: \
+		-c 'put $(BINTARGETDIR)/compilertest$(s).d81') \
+		$(foreach s,$(WORKSETS), \
+		-c 'put $(BINTARGETDIR)/compilertest$(s)work.d81') -c 'exit'
+	@$(foreach s,$(filter-out $(WORKSETS),$(TESTSETS)), \
+		echo "compilertest$(s).d81: \
 		RUN \"COMPILER\", then RUN \"$(FIRSTTEST$(s))\"";)
+	@$(foreach s,$(WORKSETS),echo "compilertest$(s).d81 on unit 8 and \
+		compilertest$(s)work.d81 on unit $(WORKUNIT): RUN \"COMPILER\", \
+		then RUN \"$(FIRSTTEST$(s))\",U$(WORKUNIT)";)
 
 # Builds a fresh debug disk image for each set with asmlib's memory checks,
 # then rebuilds asmlib without them, whether or not the images were built.
@@ -423,7 +452,7 @@ hwimages:
 # Builds one set's (TESTSET) disk image. It is rebuilt so it doesn't hold
 # programs or a testfailed file from an earlier run.
 hwimage:
-	$(RM) $(D81FILE)
+	$(RM) $(D81FILE) $(WORKD81)
 	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
 
 # Compiles the first set of tests, runs the chain of programs it produced, then
@@ -445,15 +474,28 @@ test:
 # After the compile step, each compiled program must match the checksum in
 # prgsums/setN.txt (prgsums.sh), so a change that must not change the
 # programs (plans/objcode.md) is checked.
+#
+# A work set (WORKSETS) compiles to its work disk, which runtest.sh mounts
+# on unit 9, and its checksums are of the programs there. The system
+# disk's SHA-256 must be the same after each step as before the first.
+# The run step's PRG is BOOTPRG, which runs the first program from the
+# work disk.
 testset:
-	$(RM) $(D81FILE)
+	$(RM) $(D81FILE) $(WORKD81)
 	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
-	sh prgsums.sh list $(D81FILE) > $(PRGSBEFORE)
-	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE)
-	sh prgsums.sh check $(D81FILE) $(PRGSBEFORE) $(PRGSUMS)
+	sh prgsums.sh list $(OUTD81) > $(PRGSBEFORE)
+	$(if $(WORKSET),sha256sum $(D81FILE) > $(SYSSUM))
+	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE) $(UNIT9)
+	$(if $(WORKSET),$(CHECKSYS))
+	sh prgsums.sh check $(OUTD81) $(PRGSBEFORE) $(PRGSUMS)
 	$(if $(filter $(TESTSET),$(RTDYNSET)),sh rtdyntest.sh $(D81FILE) $(RTABI))
+ifdef WORKSET
+	../testcommon/runtest.sh $(PROGRAM)-run $(BOOTPRG) $(D81FILE) $(UNIT9)
+	$(CHECKSYS)
+else
 	c1541 $(D81FILE) -read $(FIRSTTEST$(TESTSET)) $(BINTARGETDIR)/$(PROGRAM)-first.prg
 	../testcommon/runtest.sh $(PROGRAM)-run $(BINTARGETDIR)/$(PROGRAM)-first.prg $(D81FILE)
+endif
 
 # Compiles each set and records its programs' checksums in prgsums/setN.txt,
 # for a change that is meant to change the programs. Check that it does only
@@ -464,11 +506,11 @@ savesums:
 	done
 
 savesumsset:
-	$(RM) $(D81FILE)
+	$(RM) $(D81FILE) $(WORKD81)
 	$(MAKE) TARGET=$(TARGET) TESTSET=$(TESTSET) DEBUG=1 all
-	sh prgsums.sh list $(D81FILE) > $(PRGSBEFORE)
-	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE)
-	sh prgsums.sh save $(D81FILE) $(PRGSBEFORE) $(PRGSUMS)
+	sh prgsums.sh list $(OUTD81) > $(PRGSBEFORE)
+	../testcommon/runtest.sh $(PROGRAM)-compile $(PRGFILE) $(D81FILE) $(UNIT9)
+	sh prgsums.sh save $(OUTD81) $(PRGSBEFORE) $(PRGSUMS)
 
 .PHONY: test testset load hwimages hwimage savesums savesumsset
 

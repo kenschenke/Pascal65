@@ -38,6 +38,11 @@ fnLib2:
     pla
     sta sysDevice
     sta workDevice
+.ifdef WORKUNIT
+    ; This set has a work disk (see the Makefile)
+    lda #WORKUNIT
+    sta workDevice
+.endif
 
     rts
 .endproc

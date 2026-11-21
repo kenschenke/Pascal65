@@ -21,6 +21,10 @@ RUN
 
 The compiler can be run inside the IDE and this is the normal workflow during development.
 
+When the IDE starts, it looks for a work disk, a disk of your own for your files, apart
+from the Pascal65 disk. It may show the work disk dialog first. See
+[Work Disks](workdisks.md).
+
 ## Compiling in the IDE
 
 **F7** compiles the current file and **F5** compiles and runs it. Both save every open
@@ -72,7 +76,9 @@ on the command line like this:
 
 ```
 DLOAD"COMPILER"
-RUN:REM src.pas
+RUN
 ```
 
-Where **src.pas** is the source filename.
+The compiler works on its own disk unless the filename starts with a device number and
+a colon, such as **9:src.pas**, which uses the work disk on unit 9 (see
+[Work Disks](workdisks.md#the-command-line-compiler)).
