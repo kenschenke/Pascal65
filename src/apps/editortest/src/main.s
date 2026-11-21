@@ -216,7 +216,13 @@ L2:
 
     jsr setupBuild
     jsr loadRec
-    ldy #REC_KEYS+1
+    ldy #REC_FLAGS          ; The work disk on its own unit
+    lda (ptr3),y
+    and #F_TWODISK
+    beq :+
+    lda #WORK_UNIT
+    sta workDevice
+:   ldy #REC_KEYS+1
     lda (ptr3),y
     tax
     dey
@@ -248,6 +254,8 @@ L2:
     sta phase
     lda loopCode
     jsr editorTestCleanup
+    lda sysDevice           ; Single-disk mode again
+    sta workDevice
     lda #0
     sta brkCatch
     sta brkCatch+1

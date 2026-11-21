@@ -14,7 +14,9 @@ ASMLIBDIR := ../../lib/asmlib
 WORKDISKDIR := ../../overlays/workdisk
 RUNTIMEDIR := ../../lib/runtime
 ASMLIB = $(ASMLIBDIR)/bin/$(TARGET)/asmlib
-WORKDISK = $(WORKDISKDIR)/bin/$(TARGET)/workdisk
+# The test build of the overlay (make WORKDISKTEST=1), with the startup
+# dialog's hooks. It goes on the disk as "workdisk".
+WORKDISK = $(WORKDISKDIR)/bin/$(TARGET)/workdisk-test
 MKTHEMES := ../../shared/mkthemes.py
 THEMESTXT := ../../shared/themes.txt
 
@@ -58,7 +60,7 @@ $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
 $(WORKDISK): FORCE
-	cd $(WORKDISKDIR) && $(MAKE) TARGET=$(TARGET)
+	cd $(WORKDISKDIR) && $(MAKE) TARGET=$(TARGET) WORKDISKTEST=1
 
 $(RUNTIME): FORCE
 	cd $(RUNTIMEDIR) && $(MAKE) TARGET=$(TARGET)

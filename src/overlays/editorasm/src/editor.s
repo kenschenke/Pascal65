@@ -22,6 +22,7 @@
 .export colorPtrs, editorAllocLine, editorFreeLine, editorSetStatusMsg
 .export editorNewFile, firstFile, addCurrentFile, editorHandleFileSave
 .export editorHandleFileSaveAs, themeColors, checkCursorEOL, buildResultPtr
+.export editorHandleWorkDisk
 
 .import readTitleFile, editorRefreshScreen, openHelpFile, clearKeyBuf
 .import renderCursor, currentEditorRow, editBufKey, initEditBuf, closeEditBuf
@@ -30,7 +31,7 @@
 .import startTextSelection, editorCalcSelection, editorClearSelection, editorCopySelection
 .import editorDeleteSelection, editorPasteClipboard, initScreen, setupScreen
 .import editorSaveState, editorRestoreState, editorHasState, fnBuf
-.import editorBuildNext, editorBuildPrev, hlLine
+.import editorBuildNext, editorBuildPrev, hlLine, isHelpBuffer
 
 .ifdef __DEBUG__
 .import editorCloseAllFiles
@@ -46,9 +47,14 @@ defaultStatusMsg: .byte "F1:open F3:save F5:run F7:compile F8:rebuild ", $5f, ":
     .byte "F9/11:errors Ctrl-X:quit", $0
 .assert * - defaultStatusMsg <= DEFAULT_COLS, error, "statusmsg holds 79"
 promptUnsavedFiles: .asciiz "Unsaved files. Exit anyway? Y/N"
+promptUnsavedSwitch: .asciiz "Unsaved files. Change the work disk anyway? Y/N"
 welcomeMsg: .asciiz "Welcome"
 nofilename: .asciiz "[No Name]"
 readonlymsg: .asciiz "R/O"
+; The disk a file is from (updateStatusBarFilename): nothing in
+; single-disk mode, then the work disk and the system disk
+DISKLABEL_LEN = 6
+diskLabels: .byte "      ", "Work  ", "System"
 colLabel: .asciiz "C:"
 rowLabel: .asciiz "R:"
 fivediceFilename: .asciiz "fivedice.pas"
@@ -1242,10 +1248,34 @@ DN: sec
     lda #0
     nop
     sta (currentFile),z
+    ; The file is now the one on the work disk, even if it was read-only
+    jsr makeWorkFile
     jsr updateStatusBarFilename
     jsr editorSetDefaultStatusMessage
 DN: sec
     rts
+.endproc
+
+; Makes the current file the work disk's and writable
+.proc makeWorkFile
+    lda #0
+    ldz #EDITFILE::readOnly
+    nop
+    sta (currentFile),z
+    lda workDevice
+    ldz #EDITFILE::device
+    nop
+    sta (currentFile),z
+    rts
+.endproc
+
+; Writes the current file, read-only from the system disk, to the work
+; disk under its own name, over any file of that name there. It is then
+; the work disk's file and writable.
+.proc copyToWorkDisk
+    jsr makeWorkFile
+    jsr saveToExisting
+    jmp updateStatusBarFilename
 .endproc
 
 .proc editorHandleRunAndCompile
@@ -1258,13 +1288,17 @@ DN: sec
     pla
     rts
 
-L1: ; See if the file is read-only (the help file)
+L1: ; See if the file is read-only. The help file isn't built. A file
+    ; from the system disk is copied to the work disk and built there.
     ldz #EDITFILE::readOnly
     nop
     lda (currentFile),z
     beq L2
+    jsr isHelpBuffer
+    bne :+
     pla
     rts
+:   jsr copyToWorkDisk
 
 L2: jsr closeEditBuf
     jsr editorSaveAllFiles
@@ -1300,6 +1334,40 @@ L5: stx loopCode
     inz
     bne :-
 :   sta compileFn,x
+    rts
+.endproc
+
+; W in the file screen: the work disk dialog, to change the work disk.
+; The open files are the old disk's, so they are closed, not kept in the
+; state: the files with names are saved, and changes to the rest are
+; dropped if the user says so.
+.proc editorHandleWorkDisk
+    jsr editorSaveAllFiles
+    jsr editorAnyUnsavedFiles
+    beq L1                  ; Every file is saved
+    lda #<promptUnsavedSwitch
+    ldx #>promptUnsavedSwitch
+    jsr editorPromptUnsavedMsg
+    beq :+
+    rts
+    ; Drop the changes, so closing the files doesn't ask about them
+:   ldq firstFile
+L2: stq ptr1
+    jsr isQZero
+    beq L1
+    lda #0
+    ldz #EDITFILE::dirty
+    nop
+    sta (ptr1),z
+    ldz #EDITFILE::nextFile
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    bra L2
+L1: jsr editorCloseAllFiles
+    lda #EDITOR_LOOP_WORKDISK
+    sta loopCode
     rts
 .endproc
 
@@ -1373,6 +1441,11 @@ NO: lda tmp1
 .proc editorPromptUnsavedFiles
     lda #<promptUnsavedFiles
     ldx #>promptUnsavedFiles
+    ; Fall through
+.endproc
+
+; The same, with the question in A/X
+.proc editorPromptUnsavedMsg
     jsr editorSetStatusMsg
     jsr editorRefreshScreen
 L1: jsr editorReadKey
@@ -1641,7 +1714,27 @@ L5: ; File is read-only
     inx
     iny
     bne :-
-L6: ldx #STATUSCOL_X_LABEL
+L6: ; With a work disk, the disk the file is from
+    ldy #0
+    lda workDevice
+    cmp sysDevice
+    beq L8
+    ldy #DISKLABEL_LEN
+    ldz #EDITFILE::device
+    nop
+    lda (currentFile),z
+    cmp workDevice
+    beq L8
+    ldy #DISKLABEL_LEN*2
+L8: ldx #STATUSCOL_DISK
+    ldz #DISKLABEL_LEN
+:   lda diskLabels,y
+    sta statusbar,x
+    inx
+    iny
+    dez
+    bne :-
+    ldx #STATUSCOL_X_LABEL
     ldy #0
 :   lda colLabel,y
     beq L7

@@ -36,7 +36,7 @@ in C have been replaced by assembly language.
 
   1. `make TARGET=mega65` from the project root builds the entire project.
   2. `make TARGET=mega65` from a program or overlay directory such as `src/apps/compilerasm` or `src/overlays/parserasm` builds just that component.
-  3. `make TARGET=mega65 run` from the root directory runs the compiler and IDE in the emulator. The same command from a program directory runs a test environment for that program such as `src/programs/parsertest`. Not all programs have a `run` target.
+  3. `make TARGET=mega65 run` from the root directory runs the compiler and IDE in the emulator. The same command from a program directory runs a test environment for that program such as `src/programs/parsertest`. Not all programs have a `run` target. The root's `run` mounts a blank disk, made fresh each time, on unit 9; `runwork` mounts a work disk there instead (`bin/mega65/work.d81`: the marker from `src/shared/mkmarker.py`, `runtimeN` and `themes.dat`), made once and kept until `make clean`.
   4. `make TARGET=mega65 test` from the root runs all tests against all components. This MUST be run after any code changes. asmlib MUST be rebuilt with its memory checks first and without them afterwards (see "Running the Tests").
 
 ## Testing Methodology
@@ -169,6 +169,12 @@ change it. Each disk has the files in `files/`, in the order `FIXNAMES` in
 the Makefile gives, which is their order in the directory screen. Saving a
 file that is on the disk moves it to the end of the directory.
 
+Program 9 (`TWODISKPROG`) also gets a work disk on unit 9, `work.d81`,
+with `files/workhello.txt` as its `hello.txt`. Its tests have `F_TWODISK`,
+which sets `workDevice` to 9 for the test; `CHK_DISK` and `CHK_NOTONDISK`
+then look at the work disk. `SYSFILE` opens a file from the system disk's
+directory (F1, then D).
+
 `buildtest` (`src/buildtest.s`), run first, doesn't use the overlay. It
 links the editor app's `builderrors.s`, which keeps the IDE's build
 result (`buildresult.inc`), calls `logError` and `logWarning` as the
@@ -217,6 +223,19 @@ it is made a work disk, then its marker and `runtimeN` are replaced and
 scratched. A test that needs the system disk without a file renames it
 there and back. Unit 11 (`NODEV`) is one nothing answers on. Every test
 starts in single-disk mode (`workDevice` = `sysDevice`).
+
+The disk has the overlay's test build (`make WORKDISKTEST=1` in
+`src/overlays/workdisk` builds `workdisk-test`), with the hooks in
+`wdtest.s`, an `.ifdef` in the dialog's `getKey`, and three more jump
+table entries. The startup tests (`tDlg*` for the dialog, then `tStart*`
+for `wdStartup`, last) give `wdTestSetup` a key script (ASCII, as the
+keyboard sends it) and run `wdTestRun` (A 0 for the dialog, else `wdStartup`), which returns
+with the carry set if the script runs out before the dialog returns. A
+`wdStartup` test that must not show the dialog gives it no keys. Each
+code the dialog shows is logged (`wdTestState`), and a test checks the
+log and `workDevice`. Units 10 and 11 answer nothing, so only unit 9 can
+be found; `tStartNone` makes unit 9 the system device for a moment, so
+nothing answers.
 
 ### Parser Tests
 
@@ -871,6 +890,26 @@ since a command channel's close closes the unit's files, and clears
 `STATUS` before each read, so an earlier file's EOF isn't taken for this
 one's.
 It never writes to `sysDevice`: `wdCheck` refuses it (`WD_SYSDISK`).
+
+At a cold start (no chain hand-off, `handedOff` clear) the editor's
+`main` calls `wdStartup`, which sets `workDevice` without asking when it
+can: it checks units 9 to 11 (`WD_FIRST_PROBE` to `WD_LAST_PROBE`, not
+`sysDevice`) and uses the one work disk it finds, refreshed, or
+single-disk mode if nothing answers. Otherwise, or if the refresh fails,
+it shows `wdDialog`, the startup dialog: single-disk mode, a work disk
+(checked and refreshed) or a blank disk made one. W in the IDE's file
+screen or directory screen shows the dialog too (`editorHandleWorkDisk`, then
+`EDITOR_LOOP_WORKDISK` in the editor app's loop): it saves the files with
+names, asks before dropping other changes and closes every file first,
+since they are the old disk's. (A key held at startup can't ask for the
+dialog: BASIC's RUN and DLOAD don't take Return with a modifier held.)
+The dialog sets the KERNAL's 80 by 25 screen and prints with `CHROUT` in
+40 columns. In the IDE, the directory screen's D
+lists the system disk (`dirDevice`); a file opened from it is read-only,
+and R and S do nothing there. The status bar shows `Work` or `System`.
+Building such a file (F5, F7, F8) first writes it to the work disk and
+makes the buffer that file (`copyToWorkDisk`); Save As does the same under
+the new name. The help file is never built.
 
 ## Library object files
 

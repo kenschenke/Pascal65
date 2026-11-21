@@ -13,10 +13,12 @@
 .include "editor.inc"
 .include "themes.inc"
 .include "editoroverlay.inc"
+.include "workdisk.inc"
 
 .export editorLoop
 
 .import initEditor, initThemes, runCompiler, buildResult
+.import initWorkdisk, initBuildResult
 
 .ifdef __DEBUG__
 .import editorDebug
@@ -57,6 +59,8 @@ L1: jsr initEditor      ; load the editor overlay from disk
 .endif
     cmp #EDITOR_LOOP_THEME
     beq TH
+    cmp #EDITOR_LOOP_WORKDISK
+    beq WD
     cmp #EDITOR_LOOP_RUN
     bne L1
 
@@ -84,6 +88,12 @@ TH: jsr initThemes
     lda #<(ctx+EDITORCTX::themeColors)
     ldx #>(ctx+EDITORCTX::themeColors)
     jsr loadDefaultTheme
+    bra L1
+
+    ; The work disk dialog. The last build was on the old disk.
+WD: jsr initWorkdisk
+    jsr wdDialog
+    jsr initBuildResult
     bra L1
 
 QT: clc

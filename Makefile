@@ -13,6 +13,12 @@ D81FILE := $(BINTARGETDIR)/$(PROGRAM).d81
 # The Hangman game's own disk (see the hangman target)
 HANGMAND81 := $(BINTARGETDIR)/hangman.d81
 HANGMANPRG := examples/hangman.prg
+# The disks the run and runwork targets mount on unit 9: a blank one, and
+# a work disk with its marker (see mkmarker.py)
+BLANKD81 := $(BINTARGETDIR)/blank.d81
+WORKD81 := $(BINTARGETDIR)/work.d81
+WORKMARKER := $(BINTARGETDIR)/p65work
+MKMARKER := src/shared/mkmarker.py
 RUNTIMEDIR := src/lib/runtime
 SCREENLIBDIR := src/lib/screen
 SPRITESDIR := src/lib/sprites
@@ -336,10 +342,36 @@ clean:
 	$(RM) $(TXTFILES)
 	$(RM) $(THEMESDEF)
 	$(RM) $(D81FILE)
+	$(RM) $(BLANKD81) $(WORKD81) $(WORKMARKER)
 	$(RM) $(HANGMAND81) hangman-autoboot.prg hangman.petscii words.petscii
 
-run: $(RUNTIME) editorapp compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
-	$(EMUCMD) $(D81FILE)
+RUNDEPS = $(RUNTIME) editorapp compiler $(SYSTEMLIB) $(SCREENLIB) $(ASMLIB) $(SPRITESLIB) $(SPRITEMOVELIB) $(BINTARGETDIR) $(D81FILE)
+
+# Runs the IDE with a blank disk on unit 9, made fresh each time, which
+# the startup dialog can make a work disk of (plans/workdisks.md)
+run: $(RUNDEPS)
+	$(RM) $(BLANKD81)
+	c1541 -format blank,9a d81 $(BLANKD81)
+	$(EMUCMD) $(D81FILE) -9 $(BLANKD81)
+
+# Runs the IDE with a work disk on unit 9, which it finds and uses without
+# the startup dialog. The disk is made once, as wdCreate makes one (the
+# marker, runtimeN and themes.dat), and kept, so work on it lasts between
+# runs; make clean removes it.
+runwork: $(RUNDEPS) $(WORKD81)
+	$(EMUCMD) $(D81FILE) -9 $(WORKD81)
+
+$(WORKMARKER): $(MKMARKER) src/asminc/workdisk.inc | $(BINTARGETDIR)
+	python3 $(MKMARKER) src/asminc/workdisk.inc $@
+
+$(WORKD81): $(WORKMARKER) $(RUNTIME) $(THEMESDEF)
+	$(RM) $@
+	c1541 -format work,9a d81 $@ \
+	-write $(RUNTIMEDIR)/bin/$(TARGET)/runtime$(RTABI) runtime$(RTABI),prg \
+	-write $(THEMESDEF) themes.dat,seq \
+	-write $(WORKMARKER) p65work,seq
+
+.PHONY: run runwork
 
 load: $(D81FILE)
 	mega65_ftp -e -c 'put $(D81FILE)' -c 'exit'

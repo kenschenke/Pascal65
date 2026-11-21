@@ -14,6 +14,10 @@
 ; leaves the disk as the next one expects. NODEV is a unit nothing
 ; answers on.
 ;
+; The overlay is its test build (make WORKDISKTEST=1), so the startup
+; dialog's tests can type a key script into it and read the codes it
+; showed (wdtest.s in the overlay).
+;
 ; When a check fails the test's name and what differed are printed, then
 ; RESULT: FAIL.
 
@@ -96,6 +100,27 @@ str2:
 
 .define RTNAME .sprintf("runtime%d", ::RT_ABI_VERSION)
 
+; Runs the startup dialog with a key script and fails unless it returns
+; and shows the codes in the log given (see expectLog)
+.macro DIALOG keys, log
+    lda #<keys
+    ldx #>keys
+    jsr runDialog
+    FAILRTS
+    lda #<log
+    ldx #>log
+    jsr expectLog
+    FAILRTS
+.endmacro
+
+; Fails unless workDevice is the unit
+.macro EXPECTDEV unitNum
+    lda workDevice
+    ldx #unitNum
+    jsr expectDevice
+    FAILRTS
+.endmacro
+
 .bss
 
 testNum: .res 1
@@ -115,6 +140,9 @@ lenA: .res 1
 lenB: .res 1
 bufA: .res CHUNK
 bufB: .res CHUNK
+ranOut: .res 1              ; Set if the dialog's keys ran out
+runMode: .res 1             ; wdTestRun's A: 0 the dialog, 1 wdStartup
+logLen: .res 1
 
 .data
 
@@ -130,6 +158,11 @@ msgFileLen: .asciiz "file length"
 msgFileByte: .asciiz "file byte"
 msgDiffer: .asciiz "the copy differs"
 msgOpen: .asciiz "a file didn't open"
+msgRanOut: .asciiz "the dialog's keys ran out"
+msgNoEnd: .asciiz "the dialog returned"
+msgLogCount: .asciiz "codes shown"
+msgLogCode: .asciiz "code shown"
+msgDevice: .asciiz "work device"
 
 ; The marker wdCreate must write
 goodMarker: .byte WD_MAGIC0, WD_MAGIC1, WD_VERSION, WD_RELEASE, 0
@@ -167,6 +200,18 @@ tests:
     .addr nmPrgMarker, tPrgMarker
     .addr nmNoMarker, tNoMarker
     .addr nmNoThemes, tNoThemes
+    .addr nmDlgSingle, tDlgSingle
+    .addr nmDlgUse, tDlgUse
+    .addr nmDlgUnits, tDlgUnits
+    .addr nmDlgNoRuntime, tDlgNoRuntime
+    .addr nmDlgNotWork, tDlgNotWork
+    .addr nmDlgMake, tDlgMake
+    .addr nmDlgEnd, tDlgEnd
+    .addr nmStartWork, tStartWork
+    .addr nmStartRefresh, tStartRefresh
+    .addr nmStartNone, tStartNone
+    .addr nmStartBlank, tStartBlank
+    .addr nmDlgCurrent, tDlgCurrent
     .addr 0
 
 nmSysDisk: .asciiz "system disk"
@@ -186,6 +231,57 @@ nmLater: .asciiz "later version"
 nmPrgMarker: .asciiz "prg marker"
 nmNoMarker: .asciiz "no marker"
 nmNoThemes: .asciiz "no themes"
+nmDlgSingle: .asciiz "dialog single disk"
+nmDlgUse: .asciiz "dialog use"
+nmDlgUnits: .asciiz "dialog units"
+nmDlgNoRuntime: .asciiz "dialog no runtime"
+nmDlgNotWork: .asciiz "dialog not a work disk"
+nmDlgMake: .asciiz "dialog make"
+nmDlgEnd: .asciiz "dialog script ends"
+nmStartWork: .asciiz "startup finds a work disk"
+nmStartRefresh: .asciiz "startup refresh fails"
+nmStartNone: .asciiz "startup finds nothing"
+nmStartBlank: .asciiz "startup finds a blank disk"
+nmDlgCurrent: .asciiz "dialog offers the work disk"
+
+; The dialog's key scripts (wdtest.s in the overlay), as the keyboard
+; sends them: ASCII
+K_CR = $0d
+K_ESC = $1b
+K_DEL = $14
+K_D = $64                   ; d
+K_SHIFT_D = $44             ; D
+K_X = $78                   ; x, which the dialog ignores
+
+; Keys the dialog ignores, then 1
+keysSingle: .byte K_X, '4', '0', K_CR, '1', 0
+keysUse: .byte '2', 0
+; Unit 11 answers nothing, 8 is the system disk, 7 and 31 aren't units,
+; Esc and Return alone leave the unit, Del takes a digit back, and unit 9
+; is a work disk already
+keysUnits:
+    .byte K_D, '1', '1', K_CR, '2'
+    .byte K_SHIFT_D, '8', K_CR, '3'
+    .byte K_D, '7', K_CR, K_D, '3', '1', K_CR
+    .byte K_D, '1', K_ESC, K_D, K_CR
+    .byte K_D, '1', '2', K_DEL, K_DEL, '9', K_CR, '3', '2', 0
+keysUseSingle: .byte '2', '1', 0
+keysUseThenSingle: .byte '2', '3', '1', 0
+keysMake: .byte '2', '3', 0
+keysNone: .byte K_X, 0
+; wdStartup's: none (it must not show the dialog), or an answer to it
+keysEmpty: .byte 0
+keysOne: .byte '1', 0
+keysThree: .byte '3', 0
+
+; The codes the dialog must show: the count, then the codes
+logNone: .byte 0
+logUnits: .byte 5, WD_NODEVICE, WD_SYSDISK, WD_BADUNIT, WD_BADUNIT
+    .byte WD_NOTBLANK
+logNoRuntime: .byte 1, WD_NORUNTIME
+logNotWork: .byte 2, WD_NOTBLANK, WD_NOTBLANK
+logMake: .byte 1, WD_BLANK
+logNoDevice: .byte 1, WD_NODEVICE
 
 .segment "ENTRY"
 
@@ -855,6 +951,273 @@ DF: jsr closeCompare
     FAILRTS
     EXPECT wdCheck, WORKUNIT, WD_OK
     rts
+.endproc
+
+; The startup dialog's tests. Unit 9 starts as tNoThemes left it, a work
+; disk.
+
+; Runs the dialog with the key script in A/X. ranOut and the carry are
+; set if the keys ran out before it returned.
+.proc startDialog
+    ldy #0
+    sty runMode
+    ; Fall through
+.endproc
+
+; Runs the dialog (runMode 0) or wdStartup (runMode 1) with the key
+; script in A/X. ranOut and the carry are set if the keys ran out before
+; it returned.
+.proc startRun
+    jsr wdTestSetup
+    lda runMode
+    jsr wdTestRun
+    lda #0
+    rol a
+    sta ranOut
+    lsr a
+    rts
+.endproc
+
+; Fails if ranOut is set
+.proc checkRanOut
+    lda ranOut
+    bne :+
+    clc
+    rts
+:   lda #<msgRanOut
+    ldx #>msgRanOut
+    jmp failZero
+.endproc
+
+; Runs wdStartup with the key script in A/X. ranOut and the carry are
+; set if the keys ran out before it returned.
+.proc startStartup
+    pha
+    lda #1
+    sta runMode
+    pla
+    jmp startRun
+.endproc
+
+; Runs wdStartup with the key script in A/X and fails if the keys ran out
+.proc runStartup
+    jsr startStartup
+    jmp checkRanOut
+.endproc
+
+; Runs the dialog with the key script in A/X and fails if the keys ran out
+.proc runDialog
+    jsr startDialog
+    jmp checkRanOut
+.endproc
+
+; Fails unless the codes the dialog showed are the ones at A/X: the
+; count, then the codes
+.proc expectLog
+    sta ptr3
+    stx ptr3+1
+    jsr wdTestState
+    sta ptr4
+    stx ptr4+1
+    ldy #0
+    lda (ptr3),y
+    sta logLen
+    sta failExp
+    lda (ptr4),y
+    sta failAct
+    cmp logLen
+    bne LN
+L1: cpy logLen
+    beq OK
+    iny
+    lda (ptr3),y
+    sta failExp
+    lda (ptr4),y
+    sta failAct
+    cmp failExp
+    beq L1
+    lda #<msgLogCode
+    ldx #>msgLogCode
+    jmp failValue
+OK: clc
+    rts
+LN: lda #<msgLogCount
+    ldx #>msgLogCount
+    jmp failValue
+.endproc
+
+; Fails unless the device in A is the one in X
+.proc expectDevice
+    sta failAct
+    stx failExp
+    cpx failAct
+    beq OK
+    lda #<msgDevice
+    ldx #>msgDevice
+    jmp failValue
+OK: clc
+    rts
+.endproc
+
+.proc tDlgSingle
+    DIALOG keysSingle, logNone
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; Using a work disk refreshes its runtimeN
+.proc tDlgUse
+    DOSCMD WORKUNIT, {"s0:", RTNAME}, $01
+    DIALOG keysUse, logNone
+    EXPECTDEV WORKUNIT
+    NAME {RTNAME, ",p,r"}
+    jmp compareFiles
+.endproc
+
+.proc tDlgUnits
+    DIALOG keysUnits, logUnits
+    EXPECTDEV WORKUNIT
+    rts
+.endproc
+
+; A work disk whose runtimeN can't be refreshed isn't used
+.proc tDlgNoRuntime
+    DOSCMD WORKUNIT, {"s0:", RTNAME}, $01
+    DOSCMD SYSUNIT, {"r0:x", RTNAME, "=", RTNAME}, $00
+    lda #<keysUseSingle
+    ldx #>keysUseSingle
+    jsr startDialog
+    DOSCMD SYSUNIT, {"r0:", RTNAME, "=x", RTNAME}, $00
+    jsr checkRanOut
+    FAILRTS
+    lda #<logNoRuntime
+    ldx #>logNoRuntime
+    jsr expectLog
+    FAILRTS
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; A disk with files and no marker can't be used or made a work disk
+.proc tDlgNotWork
+    DOSCMD WORKUNIT, "s0:*", $01
+    lda #<abc
+    sta dataPtr
+    lda #>abc
+    sta dataPtr+1
+    lda #abc2-abc
+    sta dataLen
+    lda #WORKUNIT
+    sta tUnit
+    NAME "abc,s,w"
+    jsr writeFile
+    ldx #0
+    jsr expectStatus
+    FAILRTS
+    DIALOG keysUseThenSingle, logNotWork
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; A blank disk can't be used, but can be made a work disk
+.proc tDlgMake
+    DOSCMD WORKUNIT, "s0:*", $01
+    DIALOG keysMake, logMake
+    EXPECTDEV WORKUNIT
+    EXPECT wdCheck, WORKUNIT, WD_OK
+    NAME {RTNAME, ",p,r"}
+    jmp compareFiles
+.endproc
+
+; wdStartup's tests. Units 10 and 11 answer nothing, so only unit 9 can
+; be found. A test that must not see the dialog gives it no keys.
+
+; Starts wdStartup with the key script given, and fails if the keys run
+; out, or the codes shown or the work device differ
+.macro STARTUP keys, log, unitNum
+    lda #<keys
+    ldx #>keys
+    jsr runStartup
+    FAILRTS
+    lda #<log
+    ldx #>log
+    jsr expectLog
+    FAILRTS
+    EXPECTDEV unitNum
+.endmacro
+
+; The one work disk is used with no dialog, and its runtimeN refreshed
+.proc tStartWork
+    DOSCMD WORKUNIT, {"s0:", RTNAME}, $01
+    STARTUP keysEmpty, logNone, WORKUNIT
+    NAME {RTNAME, ",p,r"}
+    jmp compareFiles
+.endproc
+
+; A work disk whose runtimeN can't be refreshed shows the dialog, saying
+; why
+.proc tStartRefresh
+    DOSCMD WORKUNIT, {"s0:", RTNAME}, $01
+    DOSCMD SYSUNIT, {"r0:x", RTNAME, "=", RTNAME}, $00
+    lda #<keysOne
+    ldx #>keysOne
+    jsr startStartup
+    DOSCMD SYSUNIT, {"r0:", RTNAME, "=x", RTNAME}, $00
+    jsr checkRanOut
+    FAILRTS
+    lda #<logNoRuntime
+    ldx #>logNoRuntime
+    jsr expectLog
+    FAILRTS
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; Nothing answers but the system disk: single-disk mode with no dialog.
+; Unit 9 is made blank and taken for the system disk, so it isn't
+; checked: if it were, the dialog would show.
+.proc tStartNone
+    DOSCMD WORKUNIT, "s0:*", $01
+    lda #WORKUNIT
+    sta sysDevice
+    lda #<keysEmpty
+    ldx #>keysEmpty
+    jsr startStartup
+    lda #SYSUNIT
+    sta sysDevice
+    jsr checkRanOut
+    FAILRTS
+    EXPECTDEV WORKUNIT      ; The system device it was given
+    rts
+.endproc
+
+; A blank disk shows the dialog, offering its unit
+.proc tStartBlank
+    STARTUP keysThree, logNone, WORKUNIT
+    EXPECT wdCheck, WORKUNIT, WD_OK
+    rts
+.endproc
+
+; Opened from the IDE with a work disk, the dialog offers its unit
+.proc tDlgCurrent
+    lda #NODEV
+    sta workDevice
+    DIALOG keysUseSingle, logNoDevice
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; The dialog doesn't return until a disk is picked
+.proc tDlgEnd
+    lda #<keysNone
+    ldx #>keysNone
+    jsr startDialog
+    bcc :+
+    clc
+    rts
+:   lda #<msgNoEnd
+    ldx #>msgNoEnd
+    jmp failZero
 .endproc
 
 .proc printFailure

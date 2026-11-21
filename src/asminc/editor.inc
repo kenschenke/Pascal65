@@ -17,6 +17,7 @@ EDITOR_LOOP_RUN = 3
 EDITOR_LOOP_DEBUG = 4
 EDITOR_LOOP_THEME = 5
 EDITOR_LOOP_REBUILD = 6         ; compile, every unit too (Rebuild all)
+EDITOR_LOOP_WORKDISK = 7        ; the work disk dialog (wdDialog)
 
 DEFAULT_COLS = 80
 DEFAULT_ROWS = 25
@@ -24,6 +25,7 @@ STATUSCOL_X = 71
 STATUSCOL_X_LABEL = 69
 STATUSCOL_Y = 77
 STATUSCOL_Y_LABEL = 75
+STATUSCOL_DISK = 50         ; "Work" or "System", with a work disk
 STATUSCOL_RO = 57
 STATUSCOL_MEM = 62
 

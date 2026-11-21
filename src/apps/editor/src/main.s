@@ -13,13 +13,15 @@
 .include "zeropage.inc"
 .include "editor.inc"
 .include "asmlib.inc"
+.include "workdisk.inc"
 
 CH_UPPERCASE = 142
 
 .segment "ENTRY"
 
 .import initLib, backupZeroPage, restoreZeroPage, editorLoop, logError, logWarning
-.import runCompiledPrg, deleteZzprg, initBuildResult, takeHandoff
+.import runCompiledPrg, deleteZzprg, initBuildResult, takeHandoff, handedOff
+.import initWorkdisk
 
 main:
     ; Save the stack pointer
@@ -48,8 +50,15 @@ main:
     ; Load the library
     jsr initLib
 
-    ; Take the work device from the chain loader (asm.inc)
+    ; Take the work device from the chain loader (asm.inc). At a cold
+    ; start there is none: wdStartup (the workdisk overlay) looks for a
+    ; work disk, and asks with the startup dialog only when it can't tell.
     jsr takeHandoff
+    lda handedOff
+    bne :+
+    jsr initWorkdisk
+    jsr wdStartup
+:
 
     ; Initialize the memory heap
     jsr initMemHeap

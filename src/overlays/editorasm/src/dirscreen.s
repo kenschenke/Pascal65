@@ -15,15 +15,15 @@
 .include "4510macros.inc"
 .include "asmlib.inc"
 
-.export showDirScreen, showAllFiles, drawHorizLine
+.export showDirScreen, showAllFiles, drawHorizLine, dirDevice
 
 .import renderCursor, clearScreen, rowPtrs, petsciiToScreenCode, screencols
 .import editorReadKey, readDiskDir
-.import freeDirEnts, fnBuf, openFile
+.import freeDirEnts, fnBuf, openFileDev, openFileRODev
 .import editorDrawMessageBar, statusmsg, statusmsg_dirty
 .import inputBufUsed, pagerows, calcScreenPtr, setScreenColorToForeground
 .import editorSetAllRowsDirty, editorSetDefaultStatusMessage, anyDirtyRows
-.import closeEditBuf
+.import closeEditBuf, editorHandleWorkDisk
 
 PROMPT_ROW = 22
 
@@ -35,18 +35,27 @@ dirPtr: .res 4              ; temporary pointer
 allFiles: .res 4            ; pointer to linked list of DIRENTs
 fileInTopRow: .res 2        ; index of file in top left row
 selectedFile: .res 2        ; index of selected file
-statusRow: .res 20          ; contents of status row
+statusRow: .res 40          ; contents of status row
 inRightCol: .res 1          ; non-zero if the selection is in the second column
 showAllFiles: .res 1        ; non-zero if all files are being shown
 dirRows: .res 1             ; number of rows to show on directory screen
+; The disk listed: the work disk, or the system disk (D). A file opened
+; from the system disk is read-only, and its files can't be renamed or
+; scratched. In single-disk mode the two are the same and D does nothing.
+dirDevice: .res 1
+wantWorkDisk: .res 1        ; Set by W: the work disk dialog after the screen
 
 .data
 
 prompt1: .asciiz "RETURN: Open  R: Rename  S: Scratch (delete)"
 prompt2: .asciiz "Q: Hide non-SEQ files  *: Show all files"
-prompt3: .byte $5f, ": Return to editor", $0
+prompt2Sys: .asciiz "  D: Switch to System disk"
+prompt2Work: .asciiz "  D: Switch to Work disk"
+prompt3: .byte $5f, ": Return to editor  W: Work disk setup", $0
 fileStr: .asciiz " file"
 foundStr: .asciiz " found"
+onWorkStr: .asciiz " on the work disk"
+onSysStr: .asciiz " on the system disk"
 deletePrompt1: .asciiz "    Delete "
 deletePrompt2: .asciiz ". Are you sure Y/N?"
 renamePrompt: .asciiz "    New filename: "
@@ -312,8 +321,20 @@ L1: lda #' '
     lda #<prompt2
     ldx #>prompt2
     jsr drawPromptRow
+    ; With a work disk, D switches to the other disk
+    lda workDevice
+    cmp sysDevice
+    beq :+
+    lda #<prompt2Sys
+    ldx #>prompt2Sys
+    ldy dirDevice
+    cpy workDevice
+    beq P2
+    lda #<prompt2Work
+    ldx #>prompt2Work
+P2: jsr drawPromptText
 
-    ldy pagerows
+:   ldy pagerows
     iny
     jsr calcScreenPtr
     sta ptr1+1
@@ -327,11 +348,12 @@ L1: lda #' '
 ; This routine draws a row in the prompt area
 ;    ptr4 - points to row in screen RAM
 ;    A/X - points to NULL-terminated PETSCII string to draw
+; ptr4 is left at the 4th column and Z after the text, for drawPromptText.
 .proc drawPromptRow
-    sta ptr2
-    stx ptr2+1
+    pha
+    phx
 
-    ; Add 4 to ptr1 (start in the 4th column)
+    ; Add 4 to ptr4 (start in the 4th column)
     lda #4
     sta intOp32
     lda #0
@@ -343,13 +365,25 @@ L1: lda #' '
     adcq intOp32
     stq ptr4
 
+    plx
+    pla
     ldz #0
-:   lda (ptr2),z
+    ; Fall through
+.endproc
+
+; This routine draws the NULL-terminated PETSCII string in A/X at (ptr4),z
+; and leaves Z after it.
+.proc drawPromptText
+    sta ptr2
+    stx ptr2+1
+    ldy #0
+:   lda (ptr2),y
     beq :+
     jsr petsciiToScreenCode
     nop
     sta (ptr4),z
     inz
+    iny
     bne :-
 :   rts
 .endproc
@@ -429,14 +463,28 @@ L1: jsr editorReadKey
     sta showAllFiles
     jsr fillDirEnts
     jmp L1
+:   cmp #'d'
+    bne :+
+    jsr switchDisk
+    jmp L1
+    ; The system disk's files can't be scratched or renamed
 :   cmp #'s'
     bne :+
+    jsr onWorkDisk
+    lbne L1
     jsr processScratchFile
     jmp L1
 :   cmp #'r'
     bne :+
+    jsr onWorkDisk
+    lbne L1
     jsr processRenameFile
     jmp L1
+:   cmp #'w'
+    bne :+
+    lda #1                  ; Leave as back arrow does, then the dialog
+    sta wantWorkDisk
+    rts
 :   cmp #CH_BACKARROW
     bne :+
     rts
@@ -698,8 +746,13 @@ L6: lda selectedFile
 :   lda #0
     inx
     sta fnBuf,x
-    ; Open the file
-    jsr openFile
+    ; Open the file: read-only if it is on the system disk
+    lda dirDevice
+    cmp workDevice
+    bne :+
+    jsr openFileDev
+    bra :++
+:   jsr openFileRODev
     ; Clear the keyboard buffer
 :   jsr GETIN
     bne :-
@@ -848,6 +901,30 @@ DN: jsr drawPromptArea
     rts
 .endproc
 
+; The Z flag is set if the work disk is listed (in single-disk mode, the
+; system disk is). A is kept.
+.proc onWorkDisk
+    ldx dirDevice
+    cpx workDevice
+    rts
+.endproc
+
+; D: lists the other disk, if there is a work disk
+.proc switchDisk
+    lda workDevice
+    cmp sysDevice
+    beq DN
+    cmp dirDevice
+    beq :+
+    sta dirDevice
+    bra :++
+:   lda sysDevice
+    sta dirDevice
+:   jsr drawPromptArea
+    jmp fillDirEnts
+DN: rts
+.endproc
+
 .proc resetSelection
     lda #0
     sta fileInTopRow
@@ -921,6 +998,10 @@ DN: rts
     sec
     sbc #6
     sta dirRows
+
+    ; The work disk is listed first
+    lda workDevice
+    sta dirDevice
 
     ; Draw the first row
     ldq rowPtrs
@@ -1031,6 +1112,8 @@ DN: rts
 
     jsr fillDirEnts
 
+    lda #0
+    sta wantWorkDisk
     jsr processKeypress
 
     ldq allFiles
@@ -1042,6 +1125,29 @@ DN: rts
     sta anyDirtyRows
     jsr clearScreen
 
+    ; W: the work disk dialog, as the file screen's W
+    lda wantWorkDisk
+    beq :+
+    jmp editorHandleWorkDisk
+:   rts
+.endproc
+
+; Copies the NULL-terminated string in A/X to statusRow at Y and leaves Y
+; after it
+.proc addStatusText
+    sta ptr2
+    stx ptr2+1
+    tya
+    tax
+    ldy #0
+:   lda (ptr2),y
+    beq :+
+    sta statusRow,x
+    inx
+    iny
+    bne :-
+:   txa
+    tay
     rts
 .endproc
 
@@ -1092,13 +1198,23 @@ AS: lda #'s'
     iny
 
     ; Add " found"
-L3: ldx #0
-:   lda foundStr,x
+L3: lda #<foundStr
+    ldx #>foundStr
+    jsr addStatusText
+
+    ; With a work disk, say which disk is listed
+    lda workDevice
+    cmp sysDevice
     beq L4
-    sta statusRow,y
-    inx
-    iny
-    bne :-
+    jsr onWorkDisk
+    php
+    lda #<onWorkStr
+    ldx #>onWorkStr
+    plp
+    beq :+
+    lda #<onSysStr
+    ldx #>onSysStr
+:   jsr addStatusText
 
     ; Add a null terminator
 L4: lda #0

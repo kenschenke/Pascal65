@@ -11,6 +11,18 @@ LIBFILE := $(BINTARGETDIR)/workdisk
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__ -D WORKDISK_OVERLAY
 LDFLAGS =
 
+# make WORKDISKTEST=1 builds the overlay for the workdisk tests
+# (src/apps/workdisktest) as workdisk-test. It has the hooks in wdtest.s
+# and three more jump table entries. Its objects are kept apart so the
+# normal overlay never picks them up.
+WORKDISKTEST ?= 0
+ifeq ($(WORKDISKTEST),1)
+ASFLAGS += -D __WORKDISKTEST__
+LDFLAGS += -D __JMPTBLSIZE__=24
+OBJTARGETDIR = $(OBJDIR)/$(TARGET)-test
+LIBFILE := $(BINTARGETDIR)/workdisk-test
+endif
+
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 DEPENDS := $(OBJECTS:.o=.d)

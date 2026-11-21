@@ -18,7 +18,7 @@
 
 .export readTitleFile, openFile, openFileDev, openFileRO, openFileRODev
 .export openHelpFile, fnBuf
-.export helpTitle, setIsPascal
+.export helpTitle, setIsPascal, isHelpBuffer
 
 .import titleScreen, anyDirtyRows, editorAllocLine
 .import updateStatusBarFilename, editorSetDefaultStatusMessage, initFile
@@ -130,7 +130,7 @@ pasExtension: .asciiz "pas"
     lda #1
     nop
     sta (currentFile),z
-    rts
+    jmp updateStatusBarFilename ; It shows R/O
 .endproc
 
 .proc openHelpFile
@@ -159,6 +159,23 @@ pasExtension: .asciiz "pas"
     bne :-
 :   jsr updateStatusBarFilename
     rts
+.endproc
+
+; The Z flag is set if the current file is the help file: its name is
+; helpTitle (openHelpFile)
+.proc isHelpBuffer
+    ldx #0
+    ldz #EDITFILE::filename
+L1: nop
+    lda (currentFile),z
+    cmp helpTitle,x
+    bne DN
+    cmp #0
+    beq DN
+    inx
+    inz
+    bra L1
+DN: rts
 .endproc
 
 ; This routine looks at the filename in fnBuf and determines if it ends in ".pas"

@@ -10,7 +10,11 @@ OBJTARGETDIR := $(OBJDIR)/$(TARGET)
 
 # The tests don't fit in one program. Program N runs the tests in
 # src/testsN.s, from its own disk: bin/$(TARGET)/editortestN.prg and .d81.
-TESTPROGS := 1 2 3 4 5 6 7 8
+TESTPROGS := 1 2 3 4 5 6 7 8 9
+# Program 9's tests have a work disk on unit 9 (F_TWODISK in
+# src/tests.inc). It is made fresh for each run, with workhello.txt as
+# hello.txt, so the two disks each have a hello.txt.
+TWODISKPROG := 9
 
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
@@ -46,6 +50,13 @@ DISKWRITES := -write $(ASMLIB) asm.lib,prg \
 # $(call MKDISK,d81,program,editor overlay)
 MKDISK = c1541 -format $(PROGRAM),8a d81 $(1) -write $(2) $(PROGRAM),prg \
 	-write $(3) editor,prg $(DISKWRITES)
+# The work disk on unit 9 for TWODISKPROG
+WORKD81 := $(BINTARGETDIR)/work.d81
+WORKHELLO := $(FILEDIR)/workhello.txt
+# Sets W to the work disk image for program $$n, made fresh, or to nothing
+MKWORK = W=; if [ $$n = $(TWODISKPROG) ]; then $(RM) $(WORKD81) && \
+	c1541 -format work,9a d81 $(WORKD81) \
+	-write $(WORKHELLO) hello.txt,seq && W=$(WORKD81); fi
 
 COMMONSRC := $(filter-out $(SRCDIR)/tests%.s $(SRCDIR)/buildtest.s,\
 	$(wildcard $(SRCDIR)/*.s))
@@ -118,7 +129,7 @@ COVARGS = $(foreach s,$(COVSETS),-m $(OBJTARGETDIR)/cov$(s)/editor.map \
 	$(foreach n,$(TESTPROGS),$(BINTARGETDIR)/editor$(s)-$(n).cov))
 
 all: $(OBJTARGETDIR) $(BINTARGETDIR) $(PRGFILES) $(D81FILES) \
-	$(BUILDPRG) $(BUILDD81)
+	$(BUILDPRG) $(BUILDD81) $(WORKHELLO)
 
 $(OBJDIR):
 	mkdir -p $@
@@ -212,12 +223,13 @@ $(COVPRGDIR)/$(PROGRAM)%.prg: $(COVPRGOBJS) $(OBJTARGETDIR)/tests%.o
 
 # Runs every test program against one set. The disk is made fresh for each
 # run because the tests change it, and the test saves the map to it.
-covrun: $(COVEDITOR) $(COVPRGS) $(DISKFILES) | $(BINTARGETDIR)
+covrun: $(COVEDITOR) $(COVPRGS) $(DISKFILES) $(WORKHELLO) | $(BINTARGETDIR)
 	for n in $(TESTPROGS); do \
 	$(RM) $(COVD81) && \
 	$(call MKDISK,$(COVD81),$(COVPRGDIR)/$(PROGRAM)$$n.prg,$(COVEDITOR)) && \
+	$(MKWORK) && \
 	../testcommon/runtest.sh editortestcov$(COVSET)-$$n \
-	$(COVPRGDIR)/$(PROGRAM)$$n.prg $(COVD81) && \
+	$(COVPRGDIR)/$(PROGRAM)$$n.prg $(COVD81) $$W && \
 	c1541 -attach $(COVD81) \
 	-read editor.cov $(BINTARGETDIR)/editor$(COVSET)-$$n.cov || exit 1; \
 	done
@@ -237,7 +249,7 @@ clean:
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) -r $(FILEDIR)
 	$(RM) -r $(COVPRGDIR) $(addprefix $(OBJTARGETDIR)/cov,$(COVSETS))
-	$(RM) $(COVD81) $(COVLIST) $(BINTARGETDIR)/editor*.cov
+	$(RM) $(COVD81) $(COVLIST) $(BINTARGETDIR)/editor*.cov $(WORKD81)
 
 # The disks are made fresh, since the tests change them
 test:
@@ -245,8 +257,9 @@ test:
 	$(MAKE) TARGET=$(TARGET) DEBUG=1 all
 	../testcommon/runtest.sh $(BUILDTEST) $(BUILDPRG) $(BUILDD81)
 	for n in $(TESTPROGS); do \
+	$(MKWORK) && \
 	../testcommon/runtest.sh $(PROGRAM)$$n $(BINTARGETDIR)/$(PROGRAM)$$n.prg \
-	$(BINTARGETDIR)/$(PROGRAM)$$n.d81 || exit 1; \
+	$(BINTARGETDIR)/$(PROGRAM)$$n.d81 $$W || exit 1; \
 	done
 
 run: all

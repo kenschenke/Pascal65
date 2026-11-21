@@ -11,8 +11,17 @@
 
 .segment "JMPTBL"
 
-.import wdCheck, wdCreate, wdRefresh
+.import wdCheck, wdCreate, wdRefresh, wdDialog, wdStartup
 
 jmp wdCheck
 jmp wdCreate
 jmp wdRefresh
+jmp wdDialog
+jmp wdStartup
+
+.ifdef __WORKDISKTEST__
+.import wdTestSetup, wdTestRun, wdTestState
+jmp wdTestSetup
+jmp wdTestRun
+jmp wdTestState
+.endif

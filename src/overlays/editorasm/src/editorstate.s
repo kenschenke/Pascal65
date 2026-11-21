@@ -59,8 +59,8 @@ theCurrentFile: .res 4
 ;          e. Row offset
 ;          f. Column offset
 ;
-; The state file is on the work disk. A file read from another device (the
-; system disk) is opened read-only from it again.
+; The state file is on the work disk. A file read from the system disk is
+; opened read-only from it again (openFileFromState).
 ;
 ; State File Layout:
 ;    <1 byte> Number of open files
@@ -289,12 +289,18 @@ L3: rts
     bne L1
     jsr openHelpFile
     bra L2
-L1: lda chBuf
+    ; A file from the system disk is opened read-only from it again. Any
+    ; other is the work disk's, whatever unit it was on when the state was
+    ; saved: the work disk may be on another unit now.
+L1: lda sysDevice
     cmp workDevice
-    bne L3
-    jsr openFileDev
+    beq L4                  ; Single-disk mode
+    cmp chBuf
+    bne L4
+    jsr openFileRODev
     bra L2
-L3: jsr openFileRODev
+L4: lda workDevice
+    jsr openFileDev
 
     ; Read cursorX
 L2: jsr setUpMemBufPtrs

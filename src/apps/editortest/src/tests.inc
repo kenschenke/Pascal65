@@ -55,6 +55,12 @@ REC_LINES = 13
 F_PASCAL = 1                ; New files are Pascal files
 F_NOFILE = 2                ; No file is open at the end
 F_SKIPLINES = 4             ; Only the lines CHK_LINE names are checked
+F_TWODISK = 8               ; The work disk is on WORK_UNIT (program 9)
+
+; The work disk's unit in a test with F_TWODISK. The system disk, the
+; one the program runs from, is unit 8. CHK_DISK and CHK_NOTONDISK look
+; at the work disk.
+WORK_UNIT = 9
 
 ; The checks after the lines
 CHK_END = 0
@@ -202,6 +208,16 @@ nm: .asciiz name
 ; writes, in its order (FIXNAMES, then m01.txt to m40.txt).
 .macro OPENFILE n
     .byte F1
+    .repeat n
+        .byte DOWN
+    .endrep
+    .byte CR
+.endmacro
+
+; Opens the file in row n of the system disk's directory (F1, then D),
+; read-only. The work disk must be on another unit (F_TWODISK).
+.macro SYSFILE n
+    .byte F1, $64
     .repeat n
         .byte DOWN
     .endrep

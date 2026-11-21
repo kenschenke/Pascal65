@@ -23,7 +23,7 @@ FILES_PER_PAGE = 9
 .import petsciiToScreenCode, firstFile, editorSetAllRowsDirty, setScreenColorToForeground
 .import updateStatusBarFilename, anyDirtyRows, fileClose, editorHandleFileSave
 .import editorHandleFileSaveAs, calcScreenPtr, pagerows, clearRowColor
-.import closeEditBuf
+.import closeEditBuf, editorHandleWorkDisk
 
 .bss
 
@@ -34,7 +34,9 @@ intBuf: .res 7
 
 .data
 
-fileScreenPrompt: .byte "O=Open, S=Save, A=Save As N=New, C=Close, M=Active Files, $=Dir, ", $5f, "=Back", $0
+fileScreenPrompt: .byte "O=Open, S=Save, A=Save As, N=New, C=Close, M=Active, $=Dir, "
+    .byte "W=Work disk, ", $5f, "=Back", $0
+.assert * - fileScreenPrompt <= DEFAULT_COLS, error, "statusmsg holds 79"
 fileScreenHeader: .asciiz "Open Files (* = Current File)"
 footerPrompt1: .asciiz "Type number to switch to file"
 footerPrompt2: .byte $5f, "  Return to Editor", $0
@@ -87,6 +89,9 @@ L1: jsr editorReadKey
     jsr editorHandleFileSaveAs
     jsr editorSetDefaultStatusMessage
     jmp editorRefreshScreen
+:   cmp #'w'
+    bne :+
+    jmp editorHandleWorkDisk
 :   jmp L1
 .endproc
 

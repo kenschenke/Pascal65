@@ -18,13 +18,14 @@
 
 .export freeDirEnts, readDiskDir
 
-.import showAllFiles
+.import showAllFiles, dirDevice
 
 .bss
 
 dirPtr: .res 4
 lastPtr: .res 4
-buffer: .res 40
+BUFFER_SIZE = 40
+buffer: .res BUFFER_SIZE
 first: .res 1
 intBuf: .res 7
 
@@ -95,8 +96,8 @@ YES:
     stq dirPtr
     stq lastPtr
 
-    ; Call SETLFS
-    ldx workDevice
+    ; Call SETLFS, on the disk the directory screen lists
+    ldx dirDevice
     lda #1
     ldy #0
     ; tay
@@ -107,11 +108,17 @@ YES:
     ldx #<dirFilename
     ldy #>dirFilename
     jsr SETNAM
-    ; Call OPEN
+    ; Call OPEN. If the directory can't be read (nothing answers on the
+    ; unit), the list is what was read so far: CHRIN would read the
+    ; keyboard instead.
     jsr OPEN
+    lbcs DN
     ; Set the input channel
     ldx #1
     jsr CHKIN
+    lbcs DN
+    lda #0
+    sta STATUS
     ; Skip the first two bytes
     jsr CHRIN
     jsr CHRIN
@@ -120,17 +127,18 @@ YES:
     lda #1
     sta first
 
-    ; Loop until two zeros are read
+    ; Loop until two zeros are read, or a read fails
 L1: jsr CHRIN
     sta tmp1
     jsr CHRIN
     ora tmp1
-    ; lda STATUS
     bne :+
     jmp DN
+:   lda STATUS
+    lbne DN
 
     ; Read the block size for this entry
-:   jsr CHRIN
+    jsr CHRIN
     sta intOp1
     jsr CHRIN
     sta intOp1+1
@@ -139,14 +147,19 @@ L1: jsr CHRIN
     jsr writeInt16
 
     ; Read the directory entry into a buffer
-    ; until we see a 0.
+    ; until we see a 0. A longer line than the buffer holds keeps
+    ; its last byte for the rest, so the 0 still ends it.
     ldy #0
 :   jsr CHRIN
     sta buffer,y
     cmp #0
     beq :+
+    ldx STATUS
+    lbne DN
+    cpy #BUFFER_SIZE-1
+    bcs :-
     iny
-    bne :-
+    bra :-
 
         ; If this is the first entry, skip it
 :   lda first
