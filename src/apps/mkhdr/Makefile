@@ -8,6 +8,7 @@ HDRSHAREDDIR := ../../shared/hdr
 TOKENIZERDIR := ../../overlays/tokenizerasm
 PARSERDIR := ../../overlays/parserasm
 ASMLIBDIR := ../../lib/asmlib
+WORKDISKDIR := ../../overlays/workdisk
 
 PROGRAM := mkhdr
 TARGET := mega65
@@ -19,6 +20,8 @@ D81FILE = $(BINTARGETDIR)/$(PROGRAM).d81
 ASMLIB = ../../lib/asmlib/bin/$(TARGET)/asmlib
 TOKENIZER = ../../overlays/tokenizerasm/bin/$(TARGET)/tokenizer
 PARSER = ../../overlays/parserasm/bin/$(TARGET)/parser
+# For a work disk prefix on the source name (9:name, sourcefn.s)
+WORKDISK = ../../overlays/workdisk/bin/$(TARGET)/workdisk
 PRGFILE = $(BINTARGETDIR)/$(PROGRAM)
 
 # Library units to convert. Each one needs a <unit>.pas on the mkhdr disk.
@@ -34,13 +37,14 @@ LIBPETSCII = system.petscii screen.petscii sprites.petscii spritemove.petscii ti
 BINFILES += $(TOKENIZER)
 BINFILES += $(PARSER)
 BINFILES += $(ASMLIB)
+BINFILES += $(WORKDISK)
 BINFILES += $(PRGFILE)
 
 ASFLAGS = -I ../../asminc -t c64 --cpu 4510 -D __MEGA65__
 
 # mkhdr shares the compiler's startup, loader, and error logging code
 SHAREDSRC := backupZeroPage initlib loadfile inittokenizer initparser keybuf \
-	logerror m65hdr loadaddr sourcefn
+	logerror m65hdr loadaddr sourcefn initworkdisk
 SOURCES := $(wildcard $(SRCDIR)/*.s)
 OBJECTS := $(addsuffix .o,$(basename $(addprefix $(OBJTARGETDIR)/,$(notdir $(SOURCES)))))
 OBJECTS += $(addprefix $(OBJTARGETDIR)/,$(addsuffix .o,$(SHAREDSRC) hdrtables hdrwrite))
@@ -98,6 +102,9 @@ $(TOKENIZER): FORCE
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
+$(WORKDISK): FORCE
+	cd $(WORKDISKDIR) && $(MAKE) TARGET=$(TARGET)
+
 include ../debug.mk
 
 vpath %.s $(SRCDIR) $(COMPILERDIR)/src $(HDRSHAREDDIR)
@@ -119,6 +126,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(TOKENIZER) tokenizer,prg \
 	-write $(PARSER) parser,prg \
 	-write $(ASMLIB) asm.lib,prg \
+	-write $(WORKDISK) workdisk,prg \
 	-write errormsgs.petscii errormsgs.txt,seq \
 	-write system.petscii system.pas,seq \
 	-write screen.petscii screen.pas,seq \

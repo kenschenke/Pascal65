@@ -12,18 +12,22 @@
 .include "cbm_kernal.inc"
 .include "asmlib.inc"
 .include "c64.inc"
+.include "workdisk.inc"
 
 .export getSourceFn
 
+.import initWorkdisk
+
 .data
 
-prompt: .asciiz "Source file: "
+prompt: .asciiz "Source file (9:name for a work disk on unit 9): "
 autosrc: .asciiz "autosrc"
 existMsg: .asciiz " does not exist."
 
 .bss
 
-filename: .res 20
+filename: .res 21           ; getline's 20 and the terminator
+unit: .res 1                ; The unit prefix's value
 
 .code
 
@@ -113,19 +117,21 @@ filename: .res 20
     ; Fall through to checkFn
 .endproc
 
-; This routine checks if the file exists. If it does not, it
-; prints an error message then clears the carry bit and returns.
+; This routine takes the unit prefix off the name, then checks if the
+; file exists, on the work disk or the system disk, as the tokenizer
+; looks for it. If it does not, it prints an error message then clears
+; the carry bit and returns.
 .proc checkFn
-    ; Check if the file exists.
+    jsr takeUnit
+    bcs NO              ; Branch if the prefix's work disk can't be used
     lda #<filename
     ldx #>filename
     ldy #0
     ldz #0
-    jsr doesFileExist
-    cmp #0
+    jsr locateFile
     bne L1              ; Branch if the file exists
 
-    ; The file does not exist. Show a message then set the carry flag
+    ; The file does not exist. Show a message then clear the carry flag
     ; and return.
 
     lda #13
@@ -145,11 +151,64 @@ filename: .res 20
     bne :-
 :   lda #13
     jsr CHROUT
-    clc
+NO: clc
     rts
 
 L1: lda #<filename
     ldx #>filename
     sec
+    rts
+.endproc
+
+; This routine takes a unit prefix, one or two digits and a colon (9:name),
+; off the front of the filename. Without one the compiler runs in
+; single-disk mode. With one, the workdisk overlay's wdUse makes the unit
+; the work disk (the system disk's unit is single-disk mode). The carry
+; is set if it can't, once wdUse has printed why.
+.proc takeUnit
+    ldx #0
+    stx unit
+L1: lda filename,x
+    cmp #'0'
+    bcc NU
+    cmp #'9'+1
+    bcs NU
+    and #$0f
+    pha
+    lda unit            ; unit * 10 + the digit
+    asl a
+    asl a
+    adc unit
+    asl a
+    sta unit
+    pla
+    clc
+    adc unit
+    sta unit
+    inx
+    cpx #3
+    bne L1
+    bra NO              ; Three digits: not a prefix
+NU: cpx #0
+    beq NO              ; No digits
+    cmp #':'
+    bne NO
+
+    ; Move the name after the colon to the front
+    ldy #0
+:   inx
+    lda filename,x
+    sta filename,y
+    iny
+    cmp #0
+    bne :-
+
+    jsr initWorkdisk
+    lda unit
+    jsr wdUse
+    bne ER
+NO: clc
+    rts
+ER: sec
     rts
 .endproc

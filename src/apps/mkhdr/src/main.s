@@ -70,14 +70,11 @@ main:
     jsr initCompilerWarnings
 
     jsr getSourceFn
-    bcs :+                      ; Branch if we have a filename
-    jsr restoreZeroPage
-    rts
-
-:   jsr makeHeader
+    bcc :+                      ; Branch if there is no filename
+    jsr makeHeader
 
     ; Restore page zero
-    jsr restoreZeroPage
+:   jsr restoreZeroPage
 
     ; Re-enable BASIC ROM
     lda $01

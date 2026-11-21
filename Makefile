@@ -383,7 +383,7 @@ load: $(D81FILE)
 # the per-suite time limit in seconds.
 TESTDIRS := tokenizertest parsertest resolvertest typechecktest icodetest tputest \
 	compilertestasm memtest membuftest editortest themestest \
-	workdisktest
+	workdisktest compilerasm
 
 test: mkthemes-test
 	@for t in $(TESTDIRS); do \

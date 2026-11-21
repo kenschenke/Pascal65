@@ -41,7 +41,8 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has twelve test suites, located in `src/apps`:
+The project has twelve test suites, located in `src/apps`, and the
+command-line compiler's `prefixtest.sh` (see "Work disks"):
 
   - tokenizertest
   - parsertest
@@ -910,6 +911,17 @@ and R and S do nothing there. The status bar shows `Work` or `System`.
 Building such a file (F5, F7, F8) first writes it to the work disk and
 makes the buffer that file (`copyToWorkDisk`); Save As does the same under
 the new name. The help file is never built.
+
+The command-line compiler (`compilerasm`) runs in single-disk mode unless
+the source name, typed or in `autosrc`, starts with a unit and a colon
+(`9:name`, `getSourceFn` in `sourcefn.s`). It then loads the overlay and
+calls `wdUse`: the system disk's unit is single-disk mode, any other must
+be 8 to 30 and a work disk (`wdCheck`, then `wdRefresh`), or it prints the
+dialog's message for the code and the compiler stops. `make TARGET=mega65
+test` in `src/apps/compilerasm` (`prefixtest.sh`) runs the compiler
+headless with a unit 9 disk. A successful command-line compile doesn't
+return to READY as `-prgexit` sees it, so the emulator would run to the
+timeout and be orphaned; each case's source has a parse error instead.
 
 ## Library object files
 

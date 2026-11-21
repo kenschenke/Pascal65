@@ -212,6 +212,12 @@ tests:
     .addr nmStartNone, tStartNone
     .addr nmStartBlank, tStartBlank
     .addr nmDlgCurrent, tDlgCurrent
+    .addr nmUseSys, tUseSys
+    .addr nmUseBadUnit, tUseBadUnit
+    .addr nmUseNoDev, tUseNoDev
+    .addr nmUseWork, tUseWork
+    .addr nmUseNoRuntime, tUseNoRuntime
+    .addr nmUseNotWork, tUseNotWork
     .addr 0
 
 nmSysDisk: .asciiz "system disk"
@@ -243,6 +249,12 @@ nmStartRefresh: .asciiz "startup refresh fails"
 nmStartNone: .asciiz "startup finds nothing"
 nmStartBlank: .asciiz "startup finds a blank disk"
 nmDlgCurrent: .asciiz "dialog offers the work disk"
+nmUseSys: .asciiz "use the system disk"
+nmUseBadUnit: .asciiz "use a bad unit"
+nmUseNoDev: .asciiz "use no device"
+nmUseWork: .asciiz "use a work disk"
+nmUseNoRuntime: .asciiz "use no runtime"
+nmUseNotWork: .asciiz "use not a work disk"
 
 ; The dialog's key scripts (wdtest.s in the overlay), as the keyboard
 ; sends them: ASCII
@@ -1218,6 +1230,77 @@ OK: clc
 :   lda #<msgNoEnd
     ldx #>msgNoEnd
     jmp failZero
+.endproc
+
+; wdUse's tests: the command-line compiler's unit prefix. Each starts
+; with workDevice the work disk's unit, to see wdUse put it back. Unit 9
+; is a work disk.
+
+; The system disk's unit is single-disk mode
+.proc tUseSys
+    lda #WORKUNIT
+    sta workDevice
+    EXPECT wdUse, SYSUNIT, WD_OK
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+.proc tUseBadUnit
+    lda #WORKUNIT
+    sta workDevice
+    EXPECT wdUse, 7, WD_BADUNIT
+    EXPECTDEV SYSUNIT
+    EXPECT wdUse, 31, WD_BADUNIT
+    EXPECT wdUse, 0, WD_BADUNIT
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+.proc tUseNoDev
+    lda #WORKUNIT
+    sta workDevice
+    EXPECT wdUse, NODEV, WD_NODEVICE
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; The work disk is used and its runtimeN refreshed
+.proc tUseWork
+    DOSCMD WORKUNIT, {"s0:", RTNAME}, $01
+    EXPECT wdUse, WORKUNIT, WD_OK
+    EXPECTDEV WORKUNIT
+    NAME {RTNAME, ",p,r"}
+    jmp compareFiles
+.endproc
+
+; A work disk whose runtimeN can't be refreshed isn't used
+.proc tUseNoRuntime
+    DOSCMD WORKUNIT, {"s0:", RTNAME}, $01
+    DOSCMD SYSUNIT, {"r0:x", RTNAME, "=", RTNAME}, $00
+    lda #WORKUNIT
+    sta workDevice
+    jsr wdUse
+    pha
+    DOSCMD SYSUNIT, {"r0:", RTNAME, "=x", RTNAME}, $00
+    pla
+    ldx #WD_NORUNTIME
+    jsr expectCode
+    FAILRTS
+    EXPECTDEV SYSUNIT
+    rts
+.endproc
+
+; A disk with files and no marker, and a blank disk, aren't work disks
+.proc tUseNotWork
+    DOSCMD WORKUNIT, "s0:p65work", $01
+    lda #WORKUNIT
+    sta workDevice
+    EXPECT wdUse, WORKUNIT, WD_NOTBLANK
+    EXPECTDEV SYSUNIT
+    DOSCMD WORKUNIT, "s0:*", $01
+    EXPECT wdUse, WORKUNIT, WD_BLANK
+    EXPECTDEV SYSUNIT
+    rts
 .endproc
 
 .proc printFailure

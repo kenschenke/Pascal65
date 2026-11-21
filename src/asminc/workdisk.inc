@@ -23,12 +23,13 @@ wdCreate = WORKDISK_BASE + 3    ; A: unit. Makes a blank disk a work disk
 wdRefresh = WORKDISK_BASE + 6   ; Copies runtimeN to workDevice if missing
 wdDialog = WORKDISK_BASE + 9    ; The startup dialog: sets workDevice
 wdStartup = WORKDISK_BASE + 12  ; Finds the work disk, or shows the dialog
+wdUse = WORKDISK_BASE + 15      ; A: unit. Check, refresh, print an error
 
 ; Only in the test build of the overlay (make WORKDISKTEST=1). See
 ; wdtest.s in the overlay.
-wdTestSetup = WORKDISK_BASE + 15    ; A/X: the key script
-wdTestRun = WORKDISK_BASE + 18      ; A 0: wdDialog, else wdStartup
-wdTestState = WORKDISK_BASE + 21    ; A/X: the dialog's log (wdtest.s)
+wdTestSetup = WORKDISK_BASE + 18    ; A/X: the key script
+wdTestRun = WORKDISK_BASE + 21      ; A 0: wdDialog, else wdStartup
+wdTestState = WORKDISK_BASE + 24    ; A/X: the dialog's log (wdtest.s)
 .endif
 
 ; The units wdStartup looks for a work disk on
@@ -50,7 +51,7 @@ WD_NOTREADY = 5     ; No disk in the drive (DOS 74)
 WD_SYSDISK = 6      ; The unit is the system disk's
 WD_IOERROR = 7      ; A read or write failed (the disk full, protected)
 WD_NORUNTIME = 8    ; runtimeN isn't on the system disk
-WD_BADUNIT = 9      ; wdDialog only: a unit typed isn't 8 to 30
+WD_BADUNIT = 9      ; wdDialog, wdUse: a unit given isn't 8 to 30
 
 ; The marker, p65work (SEQ):
 ;    WD_MAGIC0, WD_MAGIC1, WD_VERSION

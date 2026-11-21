@@ -23,7 +23,7 @@
 .include "asmlib.inc"
 .include "workdisk.inc"
 
-.export wdDialog, wdStartup
+.export wdDialog, wdStartup, wdUse
 
 .import wdCheck, wdCreate, wdRefresh
 .ifdef __WORKDISKTEST__
@@ -161,6 +161,57 @@ RF: pha                     ; No work disk after all: say why
     bra dialogAt
 DA: lda answered
     bra dialogAt
+.endproc
+
+; The command-line compiler's unit prefix (9:name): uses the work disk on
+; the unit in A, as the dialog's 2 does, with no dialog. The system
+; disk's unit is single-disk mode. Sets workDevice and returns WD_OK with
+; Z set, or, with workDevice the system device, the code (WD_BADUNIT for
+; a unit that isn't 8 to 30) after printing its message on a line of its
+; own. A disk with files and no marker is "not a work disk", as in the
+; dialog.
+.proc wdUse
+    sta dlgUnit
+    lda sysDevice
+    sta workDevice
+    cmp dlgUnit
+    beq OK                  ; Single-disk mode
+    lda dlgUnit
+    cmp #WD_FIRST_UNIT
+    bcc BU
+    cmp #WD_LAST_UNIT+1
+    bcs BU
+    jsr wdCheck
+    bne ER
+    lda dlgUnit
+    sta workDevice
+    jsr wdRefresh
+    beq OK
+    tax                     ; No work disk after all
+    lda sysDevice
+    sta workDevice
+    txa
+    bra ER
+BU: lda #WD_BADUNIT
+ER: pha
+    lda #13
+    jsr CHROUT
+    pla
+    pha
+    cmp #WD_NOTBLANK
+    bne :+
+    lda #WD_BLANK
+:   asl a
+    tay
+    lda msgTable,y
+    ldx msgTable+1,y
+    jsr printStr
+    lda #13
+    jsr CHROUT
+    pla                     ; Not WD_OK, so Z is clear
+    rts
+OK: lda #WD_OK
+    rts
 .endproc
 
 ; Shows the dialog until the user picks a disk. Sets workDevice: the

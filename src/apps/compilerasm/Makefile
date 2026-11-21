@@ -12,6 +12,7 @@ TYPECHECKDIR := ../../overlays/typecheckasm
 LINKERDIR := ../../overlays/linkerasm
 CODEGENDIR := ../../overlays/codegenasm
 MEMINFODIR := ../../overlays/meminfo
+WORKDISKDIR := ../../overlays/workdisk
 ASMLIBDIR := ../../lib/asmlib
 SYSTEMLIBDIR := ../../lib/system
 RUNTIMEDIR := ../../lib/runtime
@@ -31,6 +32,7 @@ TPU = ../../overlays/tpuasm/bin/$(TARGET)/tpu
 RESOLVER = ../../overlays/resolverasm/bin/$(TARGET)/resolver
 TYPECHECK = ../../overlays/typecheckasm/bin/$(TARGET)/typecheck
 MEMINFO = ../../overlays/meminfo/bin/$(TARGET)/meminfo
+WORKDISK = ../../overlays/workdisk/bin/$(TARGET)/workdisk
 CODEGEN = ../../overlays/codegenasm/bin/$(TARGET)/codegen
 LINKER = ../../overlays/linkerasm/bin/$(TARGET)/linker
 SYSTEMLIB = ../../lib/system/bin/$(TARGET)/system
@@ -46,6 +48,7 @@ BINFILES += $(TPU)
 BINFILES += $(RESOLVER)
 BINFILES += $(TYPECHECK)
 BINFILES += $(MEMINFO)
+BINFILES += $(WORKDISK)
 BINFILES += $(ASMLIB)
 BINFILES += $(PRGFILE)
 BINFILES += $(CODEGEN)
@@ -120,6 +123,9 @@ $(LINKER): FORCE
 $(MEMINFO): FORCE
 	cd $(MEMINFODIR) && $(MAKE) TARGET=$(TARGET)
 
+$(WORKDISK): FORCE
+	cd $(WORKDISKDIR) && $(MAKE) TARGET=$(TARGET)
+
 $(ASMLIB): FORCE
 	cd $(ASMLIBDIR) && $(MAKE) TARGET=$(TARGET)
 
@@ -151,6 +157,7 @@ $(D81FILE): $(BINFILES) $(TXTFILES)
 	-write $(CODEGEN) codegen,prg \
 	-write $(LINKER) linker,prg \
 	-write $(MEMINFO) meminfo,prg \
+	-write $(WORKDISK) workdisk,prg \
 	-write $(ASMLIB) asm.lib,prg \
 	-write $(SYSTEMLIB) system.lib,prg \
 	$(RTWRITE) \
@@ -163,6 +170,12 @@ clean:
 	$(RM) $(OBJECTS)
 	$(RM) $(DEPENDS) $(DEPENDS:.d=.dep)
 	$(RM) $(D81FILE)
+
+# The unit prefix (9:name) with a work disk on unit 9 (prefixtest.sh)
+test: all
+	sh prefixtest.sh
+
+.PHONY: test
 
 run: $(D81FILE)
 	xmega65 -besure -8 $(D81FILE)

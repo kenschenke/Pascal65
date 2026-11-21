@@ -79,13 +79,11 @@ main:
     jsr initCompilerWarnings
 
     jsr getSourceFn
-    bcs :+                      ; Branch if we have a filename
-    jsr restoreZeroPage
-    rts
-
-:   jsr runCompiler
+    bcc :+                      ; Branch if there is no filename
+    jsr runCompiler
 
     ; Restore page zero
+:
     jsr restoreZeroPage
 
     ; Re-enable BASIC ROM
