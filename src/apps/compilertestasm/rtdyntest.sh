@@ -13,7 +13,8 @@
 #      rtLow is too low for the program. Each time the loader must print
 #      its message and return to BASIC.
 #   3. rterrexit, which ends with a runtime error, must print the error
-#      and return to BASIC.
+#      and return to BASIC. So must strovf, whose error is a string
+#      overflow (an array of 256 Chars compared as a string).
 #
 # Environment:
 #   XMEGA65      emulator command            (default: xmega65)
@@ -101,16 +102,19 @@ run toolow rtlow.prg "PROGRAM TOO LARGE FOR DYNAMIC RUNTIME; TRY \$STATICRUNTIME
 
 # A runtime error must print its message and return to BASIC, after the
 # libraries' cleanup (rterrexit uses the Sound library)
-rm -f rterrexit.prg rtgood.prg
+rm -f rterrexit.prg strovf.prg rtgood.prg
 c1541 "$D81" -read rterrexit rterrexit.prg >/dev/null 2>&1
+c1541 "$D81" -read strovf strovf.prg >/dev/null 2>&1
 c1541 "$D81" -read "$RT" rtgood.prg >/dev/null 2>&1
-if [ ! -s rterrexit.prg ] || [ ! -s rtgood.prg ]; then
-    fail "rterrexit or $RT is not on $D81"
+if [ ! -s rterrexit.prg ] || [ ! -s strovf.prg ] || [ ! -s rtgood.prg ]; then
+    fail "rterrexit, strovf or $RT is not on $D81"
 else
     run rterror rtgood.prg "DIVIDE BY ZERO" rterrexit.prg
+    run strovf rtgood.prg "STRING OVERFLOW" strovf.prg
 fi
 
-rm -f rtbad.prg rtlow.prg rtold.prg rtdyna.prg rtdynb.prg rterrexit.prg rtgood.prg
+rm -f rtbad.prg rtlow.prg rtold.prg rtdyna.prg rtdynb.prg rterrexit.prg strovf.prg \
+    rtgood.prg
 if [ "$FAILED" -eq 0 ]; then
     echo "rtdyn: PASS"
     exit 0

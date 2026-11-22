@@ -1,7 +1,8 @@
 Program DynArrayA;
 
 // Tests dynamic arrays: SetLength on arrays of scalars, strings and
-// reals, and Length, Low and High. dynarrayb and dynarrayc have the rest.
+// reals, Length, Low and High, and an array of Char as a string.
+// dynarrayb and dynarrayc have the rest.
 
 Type
     TIntArr = Array Of Integer;
@@ -16,6 +17,8 @@ Var
     strs : TStrArr;
     reals : Array Of Real;
     stat : Array[5..9] Of Integer;
+    chars : Array Of Char;
+    s : String;
 
 Procedure Error(num : Integer);
 Begin
@@ -130,6 +133,28 @@ Begin
     If reals[0] <> 1.5 Then Error(74);
 End;
 
+// An array of Char as a string: compared, concatenated and assigned. An
+// empty one (0..-1) is the empty string.
+Procedure TestChars;
+Begin
+    If Not (chars = '') Then Error(80);
+    If chars <> '' Then Error(81);
+    If Not (chars < 'a') Then Error(82);
+    If Length(chars + 'q') <> 1 Then Error(83);
+    s := chars;
+    If Length(s) <> 0 Then Error(84);
+    SetLength(chars, 3);
+    chars[0] := 'a';
+    chars[1] := 'b';
+    chars[2] := 'c';
+    If chars <> 'abc' Then Error(85);
+    If Not ('abd' > chars) Then Error(86);
+    If chars + 'd' <> 'abcd' Then Error(87);
+    SetLength(chars, 0);
+    If chars <> '' Then Error(88);
+    If 'x' + chars <> 'x' Then Error(89);
+End;
+
 Procedure ReportFailure;
 Var
     f : Text;
@@ -159,6 +184,7 @@ Begin
     TestInts;
     TestStrings;
     TestReals;
+    TestChars;
 
     If anyErrors Then ReportFailure;
 End.

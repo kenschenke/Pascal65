@@ -27,6 +27,7 @@ Var
     a3 : Array[1..3] Of Char = ('a', 'b', 'c');
     a4 : Array[1..4] Of Char = ('a', 'b', 'c', 'd');
     b3 : Array[0..2] Of Char = ('a', 'b', 'd');
+    big : Array[1..255] Of Char;
     c, d : Char;
     l : Letter;
     ps : ^String;
@@ -315,6 +316,22 @@ Begin
     Expect(812, Make(s) >= a3, true);
 End;
 
+// An array of 255 Chars, the longest that is a string, compared and
+// concatenated
+Procedure TestBig;
+Begin
+    For i := 1 To 255 Do big[i] := 'x';
+    If big <> long1 Then Error(900);
+    If Not (long1 = big) Then Error(901);
+    If Not (big > long3) Then Error(902);
+    If Not (big < long2) Then Error(903);
+    If Length(big + '') <> 255 Then Error(904);
+    If big + '' <> long1 Then Error(905);
+    big[255] := 'y';
+    If big <> long2 Then Error(906);
+    If Not (big > long1) Then Error(907);
+End;
+
 Begin
     anyErrors := false;
     errList := '';
@@ -335,6 +352,7 @@ Begin
     TestForms;
     TestChars;
     TestContexts;
+    TestBig;
 
     If anyErrors Then ReportFailure;
 End.

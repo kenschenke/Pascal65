@@ -662,6 +662,11 @@ compares them unsigned, in PETSCII order, and `freeObj` frees each
 This raised `RT_ABI_VERSION` to 4. compilertestasm's `strcomp` (sets 1
 and 2) and `strleak` test it.
 
+`arrayLength` gives an array of Char's length as `convertString`
+(`strconvert.s`) does: an empty dynamic array (0..-1) is 0, and 256 or
+more is `rteStringOverflow`. It once wrapped 256 to 0. `dynarraya` and
+`strovf` (run by `rtdyntest.sh`) check this.
+
 ### Source line length
 
 Source lines are limited to 80 characters. This limitation includes comments.

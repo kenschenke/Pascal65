@@ -232,14 +232,23 @@ DN: ldy tmp2
     rts
 .endproc
 
+; An array of Char's elements. ptr1 is moved past its header, so an index
+; from 0 reaches all 255 of them, and an empty dynamic array copies none.
 .proc concatArray
     sty tmp2
-    lda #6
-    sta tmp1
     lda ptr1
     ldx ptr1 + 1
-    jsr arrayLength
+    jsr arrayLength         ; Leaves ptr1 at the block
+    beq DN                  ; An empty dynamic array
     tax
+    lda ptr1
+    clc
+    adc #6                  ; Past the header
+    sta ptr1
+    bcc :+
+    inc ptr1 + 1
+:   lda #0
+    sta tmp1
 LP: ldy tmp1
     lda (ptr1),y
     ldy tmp2
@@ -248,6 +257,6 @@ LP: ldy tmp1
     inc tmp2
     dex
     bne LP
-    ldy tmp2
+DN: ldy tmp2
     rts
 .endproc

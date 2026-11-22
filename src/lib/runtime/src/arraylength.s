@@ -21,8 +21,10 @@
 ; concatenation (strconcat.s) and comparison (comp.s) treat as a string of
 ; that length. The array's heap block is in A/X. It starts with the 6-byte
 ; header (array.s): the low bound, the high bound and the element size, a
-; word each. The length (upper - lower + 1) is returned in A. One over 255
-; is rteStringOverflow. ptr1 is left pointing at the block.
+; word each. The length (upper - lower + 1) is returned in A, with Z set
+; if it is 0. An empty dynamic array (0..-1) is 0, and one over 255 is
+; rteStringOverflow, as in convertString (strconvert.s). ptr1 is left
+; pointing at the block.
 .proc arrayLength
     sta ptr1
     stx ptr1 + 1
@@ -38,12 +40,22 @@
     iny
     lda (ptr1),y
     sta intOp1 + 1
-    jsr subInt16
-    lda intOp1 + 1          ; Look at high byte of array length
-    beq :+                  ; Branch if array <= 255
-    lda #rteStringOverflow
-    jsr runtimeError
-:   inc intOp1              ; Length is actually upper - lower + 1
+    jsr subInt16            ; upper - lower
     lda intOp1
+    ldx intOp1 + 1
+    inx
+    bne :+                  ; Branch unless the high byte is $FF
+    cmp #$ff
+    bne OV                  ; Negative, but not -1
+    lda #0                  ; An empty dynamic array
     rts
+:   dex
+    bne OV                  ; 257 or more
+    cmp #$ff
+    beq OV                  ; 256
+    clc
+    adc #1                  ; Length is actually upper - lower + 1
+    rts
+OV: lda #rteStringOverflow
+    jmp runtimeError
 .endproc

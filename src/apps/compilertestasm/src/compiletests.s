@@ -87,6 +87,7 @@ strRtDyn: .asciiz "rtdyn"
 strRtDynA: .asciiz "rtdyna"
 strRtDynB: .asciiz "rtdynb"
 strRtErrExit: .asciiz "rterrexit"
+strStrOvf: .asciiz "strovf"
 strFiveDice: .asciiz "fivedice"
 strBubbles: .asciiz "bubbles"
 strSfxDemo: .asciiz "sfxdemo"
@@ -364,6 +365,9 @@ compileOnlyTests:
     .byte .lobyte(strRtDynB), .hibyte(strRtDynB)
     ; Ends with a runtime error. rtdyntest.sh runs it.
     .byte .lobyte(strRtErrExit), .hibyte(strRtErrExit)
+    ; Ends with a string overflow (an array of 256 Chars compared).
+    ; rtdyntest.sh runs it.
+    .byte .lobyte(strStrOvf), .hibyte(strStrOvf)
     ; Calls every routine in the Sound library
     .byte .lobyte(strSoundCalls), .hibyte(strSoundCalls)
     ; The Sound library's effects demo

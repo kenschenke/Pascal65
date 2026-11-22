@@ -103,7 +103,8 @@ SET1FILES = $(MKSTALE)
 endif
 SET3PAS = libtest2 soundtest soundfx soundseq irqcb soundcalls dynarraya \
 	dynarrayb dynarrayc \
-	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb rterrexit
+	rtpkgnone rtpkga rtpkgb rtpkgc rtdyn rtdyna rtdynb rterrexit \
+	strovf
 ifeq ($(filter $(TESTSET),1 2 4),)
 SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
 	-write bubbles.petscii bubbles.pas$(comma)seq \
