@@ -36,6 +36,7 @@ strStrRoutines: .asciiz "strroutines"
 strStrLeak: .asciiz "strleak"
 strWriteWidth: .asciiz "writewidth"
 strStrTests: .asciiz "strtests"
+strStrComp: .asciiz "strcomp"
 strRecArray: .asciiz "recarray"
 strScopeTest: .asciiz "scopetest"
 strCaseTest: .asciiz "casetest"
@@ -115,6 +116,9 @@ TESTSET = 0
 
 tests:
 .if TESTSET = 0 || TESTSET = 1
+    ; String comparisons, with the dynamic runtime. First, so adding it
+    ; changed no other program's chain target.
+    .byte .lobyte(strStrComp), .hibyte(strStrComp)
     ; Modules linked from their own object files, a unit used by two
     ; others. First, so adding it changed no other program's chain target.
     .byte .lobyte(strUnitObjs), .hibyte(strUnitObjs)
@@ -156,6 +160,11 @@ tests:
     ; Units' init blocks (UIC/UIR), with the dynamic runtime. unit is in
     ; set 2, with the static one.
     .byte .lobyte(strUnitInit), .hibyte(strUnitInit)
+.endif
+.if TESTSET = 2
+    ; String comparisons again, with the static runtime. First, so adding
+    ; it changed no other program's chain target.
+    .byte .lobyte(strStrComp), .hibyte(strStrComp)
 .endif
 .if TESTSET = 0 || TESTSET = 2
     .byte .lobyte(strSubtract), .hibyte(strSubtract)

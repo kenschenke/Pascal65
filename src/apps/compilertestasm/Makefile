@@ -31,8 +31,8 @@ TARGET := mega65
 # on one disk image. A set's disk also needs room for the files its tests
 # write (filetesta and filetestb in set 2).
 TESTSETS := 1 2 3 4
-FIRSTTEST1 := unitobjs
-FIRSTTEST2 := subtract
+FIRSTTEST1 := strcomp
+FIRSTTEST2 := strcomp
 FIRSTTEST3 := dynarraya
 FIRSTTEST4 := unitobjs
 # Set 4 runs with a work disk on unit 9 (plans/workdisks.md): the
@@ -115,7 +115,7 @@ SET3WRITE = -write fivedice.petscii fivedice.pas$(comma)seq \
 endif
 # The sources every set's disk has
 COMMONPAS = add assign varinit bitwisea bitwiseb ifthen loops stdroutines \
-	incdec strroutines strleak writewidth strtests recarray scopetest \
+	incdec strroutines strleak writewidth strtests strcomp recarray scopetest \
 	casetest procfunc multiply forord declordr negate subrange unitinit \
 	uinita uinitb subtract divint trig vartest filetesta filetestb \
 	pointers unit unit1 libtest rtnarray rtnrecord rtnptrs strrecord \

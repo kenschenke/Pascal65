@@ -8,8 +8,10 @@
 #   1. rtdyna ($DynamicRuntime) and rtdynb (no directive) must be the same
 #      PRG.
 #   2. rtdynb is run from a disk without runtimeN, with a runtimeN whose
-#      header is bad, and with one whose rtLow is too low for the program.
-#      Each time the loader must print its message and return to BASIC.
+#      header is bad, with one whose header has the ABI version before
+#      this one (an older runtime under the new name), and with one whose
+#      rtLow is too low for the program. Each time the loader must print
+#      its message and return to BASIC.
 #   3. rterrexit, which ends with a runtime error, must print the error
 #      and return to BASIC.
 #
@@ -58,6 +60,9 @@ VER=$(printf '\\%03o' "$ABI")
 PAD='\114\000\000\114\000\000\114\000\000'
 printf '\000\173BAD!'"$VER"'\000\173\000\000\000\000'"$PAD" > rtbad.prg
 printf '\000\041P65R'"$VER"'\000\041\000\000\000\000'"$PAD" > rtlow.prg
+# A good header but the ABI version before this one
+OLD=$(printf '\\%03o' $((ABI - 1)))
+printf '\000\173P65R'"$OLD"'\000\173\000\000\000\000'"$PAD" > rtold.prg
 
 # usage: run <case> <runtime file, or ""> <text it must print> [prg]
 # The program is rtdynb.prg unless the fourth argument names another.
@@ -91,6 +96,7 @@ run() {
 
 run missing "" "RUNTIME FILE RUNTIME$ABI NOT FOUND"
 run invalid rtbad.prg "RUNTIME FILE RUNTIME$ABI IS INVALID"
+run old rtold.prg "RUNTIME FILE RUNTIME$ABI IS INVALID"
 run toolow rtlow.prg "PROGRAM TOO LARGE FOR DYNAMIC RUNTIME; TRY \$STATICRUNTIME"
 
 # A runtime error must print its message and return to BASIC, after the
@@ -104,7 +110,7 @@ else
     run rterror rtgood.prg "DIVIDE BY ZERO" rterrexit.prg
 fi
 
-rm -f rtbad.prg rtlow.prg rtdyna.prg rtdynb.prg rterrexit.prg rtgood.prg
+rm -f rtbad.prg rtlow.prg rtold.prg rtdyna.prg rtdynb.prg rterrexit.prg rtgood.prg
 if [ "$FAILED" -eq 0 ]; then
     echo "rtdyn: PASS"
     exit 0

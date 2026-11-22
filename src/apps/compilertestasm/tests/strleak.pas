@@ -13,7 +13,7 @@ Var
     anyErrors : Boolean;
     errList : String;
     s : String;
-    i : Integer;
+    i, k : Integer;
     n : Byte;
 
 Procedure Error(num : Integer);
@@ -81,6 +81,19 @@ Begin
         If CompareStr(UpCase(s), 'PEAR') <> 0 Then Error(5);
         If Length(Twice(s) + LowerCase(s)) <> 12 Then Error(6);
     End;
+
+    // A comparison frees a concatenation or a function's result, on
+    // either side
+    k := 0;
+    For i := 1 To Loops Do Begin
+        If s + 'S' = 'PEARS' Then k := k + 1;
+        If 'PEARS' <> s + 'S' Then Error(7);
+        If Same(s) = s Then k := k + 1;
+        If s <> Same(s) Then Error(8);
+        If Not (Twice(s) < Same(s) + 'Z') Then Error(9);
+        If Not (UpCase('pears') > s + 'R') Then Error(10);
+    End;
+    If k <> 2 * Loops Then Error(11);
 
     If anyErrors Then ReportFailure;
 End.
