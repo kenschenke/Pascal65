@@ -3,7 +3,7 @@
 ; Ken Schenke (kenschenke@gmail.com)
 ;
 ; Compare two strings
-; 
+;
 ; Copyright (c) 2024
 ; Use of this source code is governed by an MIT-style
 ; license that can be found in the LICENSE file or at
@@ -12,52 +12,57 @@
 
 .include "runtime.inc"
 
-.export strCompare
+.export strCompare, strCompareN
 
+; This routine compares two length-prefixed strings (rtStrCompare).
 ; First string in ptr3
 ; Second string in ptr4
 ; A contains results
-;    < 0 is s1 < s2
-;    = 0 if s1 = s2
-;    > 0 if s1 > s2
-; tmp1 - remaining length of s1
-; tmp2 - remaining length of s2
+;    $ff if s1 < s2
+;    0 if s1 = s2
+;    1 if s1 > s2
+; ptr3 and ptr4 are left past the length bytes.
 .proc strCompare
     ldy #0
     lda (ptr3),y
     sta tmp1            ; length of s1 in tmp1
     lda (ptr4),y
     sta tmp2            ; length of s2 in tmp2
-    ora tmp1            ; Are both strings empty?
-    beq EQ              ; If so, they're equal and we're done
-L1:
-    iny                 ; increment index to compare at
-    ; If no more characters in s1, done
-    lda tmp1
-    beq S1L
-    ; If no more characters in s2, done
+    inc ptr3            ; The first characters
+    bne :+
+    inc ptr3 + 1
+:   inc ptr4
+    bne :+
+    inc ptr4 + 1
+:   ; Fall through to strCompareN
+.endproc
+
+; This routine compares two strings, each given by a pointer to its first
+; character and its length. The characters are compared unsigned (PETSCII
+; order), and a string that is a prefix of the other sorts first.
+; First string's characters in ptr3, its length in tmp1
+; Second string's characters in ptr4, its length in tmp2
+; A contains the results, as strCompare's
+.proc strCompareN
+    ldy #0
+LP: lda tmp1
+    beq E1              ; No more characters in s1
     lda tmp2
-    beq S2L
+    beq GT              ; No more in s2, but more in s1
     lda (ptr3),y
     cmp (ptr4),y
-    beq LP
-    ; The characters are different
-    bcc S1L
-    bcs S2L
-LP:
-    ; Move to the next character
+    bcc LT
+    bne GT
+    iny                 ; The same: on to the next characters
     dec tmp1
     dec tmp2
-    ; Are we done with both strings?
-    lda tmp1
-    ora tmp2
-    bne L1
-EQ: lda #0
+    jmp LP
+E1: lda tmp2
+    bne LT              ; More characters in s2
+    lda #0              ; Equal
     rts
-S1L:
-    lda #$ff
+LT: lda #$ff
     rts
-S2L:
-    lda #$1
+GT: lda #1
     rts
 .endproc

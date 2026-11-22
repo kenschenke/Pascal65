@@ -32,12 +32,20 @@
 .import prepOperands32, prepOperandsReal, pusheax, geUint32, gtUint32, leUint32, ltUint32
 .import leUint32, ltUint32, eqInt32, leInt32, ltInt32, geInt32, gtInt32
 .import floatEq, floatGt, floatGte, floatLt, floatLte
-.import compOper    ; irqcall.s
+.import compOper, cmpVals, cmpKinds     ; irqcall.s
+.import popeax, heapFree, strCompareN, arrayLength
 
 .code
 
 .proc comp
     sty compOper
+    pha
+    jsr isStringKind        ; Is <operand-1> a string?
+    beq @String
+    txa
+    jsr isStringKind        ; Is <operand-2> a string?
+    beq @String
+    pla
     cmp #TYPE_REAL          ; Is <operand-1> real?
     beq @Real
     cpx #TYPE_REAL          ; Is <operand-2> real?
@@ -62,6 +70,188 @@
     ldy #TYPE_REAL
     jsr prepOperandsReal
     jmp compReal
+
+@String:
+    pla
+    jmp compString
+.endproc
+
+; This routine sets the Z flag if the type in A is a string kind: a string
+; literal, a String variable, a string object or an array of Char. A Char
+; isn't one: two Chars compare as numbers. The type checker only lets a
+; Char be compared with a string as a one-character string.
+.proc isStringKind
+    cmp #TYPE_STRING_LITERAL
+    beq @Done
+    cmp #TYPE_STRING_VAR
+    beq @Done
+    cmp #TYPE_STRING_OBJ
+    beq @Done
+    cmp #TYPE_ARRAY
+@Done:
+    rts
+.endproc
+
+; This routine compares two strings. The types of <operand-1> and
+; <operand-2> are in A and X, and each operand is a string kind or a Char.
+; Each becomes a pointer to its first character and a length (strOperand),
+; so nothing is copied, and strCompareN compares them. A string object is
+; freed after the comparison. The Boolean result is pushed.
+.proc compString
+    sta cmpKinds
+    stx cmpKinds + 1
+    jsr popeax              ; <operand-2>
+    sta cmpVals + 2
+    stx cmpVals + 3
+    jsr popeax              ; <operand-1>
+    sta cmpVals
+    stx cmpVals + 1
+
+    ldx #1
+    jsr strOperand          ; <operand-2>
+    sta tmp2
+    lda ptr1
+    sta ptr4
+    lda ptr1 + 1
+    sta ptr4 + 1
+    ldx #0
+    jsr strOperand          ; <operand-1>
+    sta tmp1
+    lda ptr1
+    sta ptr3
+    lda ptr1 + 1
+    sta ptr3 + 1
+    jsr strCompareN
+
+    ; The result is $ff, 0 or 1. Each operator is true for one result or
+    ; false for one: LT ($ff), LTE (not 1), GT (1), GTE (not $ff), EQ (0)
+    ; and NE (not 0).
+    sta tmp2                ; The result
+    lda compOper
+    ldy #$ff
+    cmp #EXPR_LT
+    beq @Is
+    cmp #EXPR_GTE
+    beq @Not
+    ldy #1
+    cmp #EXPR_GT
+    beq @Is
+    cmp #EXPR_LTE
+    beq @Not
+    ldy #0
+    cmp #EXPR_EQ
+    beq @Is
+@Not:                       ; EXPR_NE falls through, with 0
+    cpy tmp2
+    beq @False
+    bne @True
+@Is:
+    cpy tmp2
+    bne @False
+@True:
+    lda #1
+    bne @Free
+@False:
+    lda #0
+
+@Free:
+    pha
+    ldx #0
+    jsr freeObj             ; <operand-1>
+    ldx #1
+    jsr freeObj             ; <operand-2>
+    pla
+    ldx #0
+    stx sreg
+    stx sreg + 1
+    jmp pusheax
+.endproc
+
+; This routine frees operand X (0 or 1) of a string comparison if it is a
+; string object, a temporary nothing else holds.
+.proc freeObj
+    lda cmpKinds,x
+    cmp #TYPE_STRING_OBJ
+    bne @Done
+    txa
+    asl a
+    tax
+    lda cmpVals,x
+    pha
+    lda cmpVals + 1,x
+    tax
+    pla
+    jmp heapFree
+@Done:
+    rts
+.endproc
+
+; This routine makes operand X (0 or 1) of a string comparison a pointer
+; to its first character, in ptr1, and its length, in A:
+;    String variable or object: the block after its length byte
+;    String literal: its characters, up to the zero (at most 255)
+;    Array of Char: the block after its 6-byte header (arrayLength)
+;    Char: the value's own low byte in cmpVals, length 1
+.proc strOperand
+    ldy cmpKinds,x
+    txa
+    asl a
+    tax                     ; The operand's offset in cmpVals
+    lda cmpVals,x
+    sta ptr1
+    lda cmpVals + 1,x
+    sta ptr1 + 1
+    cpy #TYPE_STRING_VAR
+    beq @Var
+    cpy #TYPE_STRING_OBJ
+    beq @Var
+    cpy #TYPE_STRING_LITERAL
+    beq @Lit
+    cpy #TYPE_ARRAY
+    beq @Arr
+
+    ; A Char
+    txa
+    clc
+    adc #<cmpVals
+    sta ptr1
+    lda #>cmpVals
+    adc #0
+    sta ptr1 + 1
+    lda #1
+    rts
+
+@Var:
+    ldy #0
+    lda (ptr1),y            ; The length
+    inc ptr1                ; Past the length byte
+    bne :+
+    inc ptr1 + 1
+:   rts
+
+@Lit:
+    ldy #0
+:   lda (ptr1),y
+    beq :+
+    iny
+    bne :-
+:   tya
+    rts
+
+@Arr:
+    lda ptr1
+    ldx ptr1 + 1
+    jsr arrayLength         ; Leaves ptr1 at the block
+    pha
+    lda ptr1
+    clc
+    adc #6                  ; Past the header
+    sta ptr1
+    lda ptr1 + 1
+    adc #0
+    sta ptr1 + 1
+    pla
+    rts
 .endproc
 
 .proc compUnsigned

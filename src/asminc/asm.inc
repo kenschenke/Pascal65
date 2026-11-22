@@ -119,9 +119,11 @@ RT_BASE = $2028
 
 ; The runtime ABI version. Every runtime file name ends with it, such as
 ; core1 (see mkruntime.py), so a program is never linked with a runtime
-; built for a different jump table. Raise it whenever the jump table or the
-; zero-page contract changes. mkruntime.py reads it from here.
-RT_ABI_VERSION = 3
+; built for a different jump table. Raise it whenever the jump table, the
+; zero-page contract or what an entry does with its inputs changes, as
+; version 4 did when comp took string kinds (it compared them as numbers
+; before). mkruntime.py reads it from here.
+RT_ABI_VERSION = 4
 
 ; The size of the jump table at RT_BASE, 3 bytes an entry
 RT_JMPTBL_SIZE = $1ad

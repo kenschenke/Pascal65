@@ -37,6 +37,7 @@
 
 .export irqCallBegin, irqCallEnd, programFrame
 .export oper1Type, oper2Type, resultType, compOper, rightType, leftPtr
+.export cmpVals, cmpKinds
 .export heapAddr, declAddr, declType
 .export initPtr, isRealNeg, numElems, ndxElems, numLiterals, charPtr
 .export charCount, dividend, divisor, ADDR1, ADDR2, ADDR3
@@ -65,6 +66,8 @@ oper2Type: .res 1
 resultType: .res 1
 ; comp.s
 compOper: .res 1
+cmpVals: .res 4                 ; A string comparison's operands' values
+cmpKinds: .res 2                ; and their kinds
 ; assign.s
 rightType: .res 1
 leftPtr: .res 2                 ; Preserve pointer to variable

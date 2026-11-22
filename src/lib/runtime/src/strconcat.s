@@ -16,7 +16,7 @@
 
 .export concatString
 
-.import subInt16, addInt16, heapFree, runtimeError
+.import addInt16, heapFree, runtimeError, arrayLength
 
 .bss
 
@@ -152,32 +152,6 @@ SA: jmp arrayLength
     iny
     bne :-
 DN: tya
-    rts
-.endproc
-
-; Array in A/X, returned in A.
-.proc arrayLength
-    sta ptr1
-    stx ptr1 + 1
-    ldy #0
-    lda (ptr1),y
-    sta intOp2
-    iny
-    lda (ptr1),y
-    sta intOp2 + 1
-    iny
-    lda (ptr1),y
-    sta intOp1
-    iny
-    lda (ptr1),y
-    sta intOp1 + 1
-    jsr subInt16
-    lda intOp1 + 1          ; Look at high byte of array length
-    beq :+                  ; Branch if array <= 255
-    lda #rteStringOverflow
-    jsr runtimeError
-:   inc intOp1              ; Length is actually upper - lower + 1
-    lda intOp1
     rts
 .endproc
 
