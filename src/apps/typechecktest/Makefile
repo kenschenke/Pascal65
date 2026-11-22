@@ -177,7 +177,7 @@ COVMAP := 14848
 COVSIZE := 1536
 # A set fits about 240 probes (mkcov prints the count), fewer if its
 # files' long branches need more room.
-COVSETS := 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+COVSETS := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 COVSET ?= 1
 # Expressions
 COVFILES1 := exprTypeCheck.s:-saveEvalType
@@ -189,7 +189,9 @@ COVFILES14 := checkFuncProcCall.s:checkDynamicParam- \
 # Standard routines
 COVFILES4 := checkWriteWritelnCall.s checkStdRoutine.s
 # Operators
-COVFILES5 := checkRelOpOperands.s evalConstInt.s
+COVFILES5 := checkRelOpOperands.s
+# Constant expressions
+COVFILES15 := evalConstInt.s
 # Statements and compatibility
 COVFILES6 := stmtTypeCheck.s isAssignmentCompatible.s
 # Literals, arrays and the other standard routines

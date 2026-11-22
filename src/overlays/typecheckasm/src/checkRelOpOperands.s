@@ -20,6 +20,10 @@ leftExprOffset = rightExprOffset + 4
 rightTypePtrOffset = leftExprOffset + 4
 leftTypePtrOffset = rightTypePtrOffset + 4
 
+; What getStringKind returns for a string operand
+STRKIND_CHAR = 1
+STRKIND_STRING = 2
+
 .export checkRelOpOperands
 
 .import typeCheckError, loadStackValue, isTypeNumeric, isTypeInteger, isSigned
@@ -61,21 +65,14 @@ leftIsSigned: .res 1
     ldz #leftTypePtrOffset
     jsr getTypeKind
     cmp #TYPE_BOOLEAN
-    bne L1
+    bne L2
     ldz #rightTypePtrOffset
     jsr getTypeKind
     cmp #TYPE_BOOLEAN
     beq DN
 
-L1: ldz #leftTypePtrOffset
-    jsr getTypeKind
-    cmp #TYPE_CHARACTER
-    bne L2
-    ldz #rightTypePtrOffset
-    jsr getTypeKind
-    cmp #TYPE_CHARACTER
-    beq DN
-
+    ; Two Chars, or a Char and a Char subrange, are left to the checks
+    ; below: checkStringOperands sees their base types and leaves them.
 L2: lda #leftTypeOffset
     jsr calcTypePtr
     jsr getBaseType
@@ -87,6 +84,8 @@ L2: lda #leftTypeOffset
     ldz #rightTypeOffset
     jsr copyToType
 
+    jsr checkStringOperands
+    bcs DN
     jsr checkEnumOperands
     bcs DN
     jsr checkPointerOperands
@@ -105,17 +104,8 @@ L2: lda #leftTypeOffset
     nop
     lda (ptr1),z
     cmp #TYPE_CHARACTER
-    bne :+
-    lda #rightTypeOffset
-    jsr calcTypePtr
-    stq ptr1
-    ldz #type::kind
-    nop
-    lda (ptr1),z
-    cmp #TYPE_CHARACTER
-    beq DN
-    bra L3
-:   jsr isTypeNumeric
+    beq DN                  ; The right is Char too (checkStringOperands)
+    jsr isTypeNumeric
     bne L3
     lda #rightTypeOffset
     jsr calcTypePtr
@@ -137,6 +127,79 @@ DN: lda #.sizeof(type)
     jsr popQ
     jsr popQ
     jsr popQ
+    rts
+.endproc
+
+; This checks the operands of a comparison if either one is a string
+; operand: a String, a string literal, a string object, an array of Char
+; or a Char. Two string operands compare as strings, unless both are Char,
+; which compare as ordinals. A string operand with anything else is an
+; error. The types on the stack are the base types.
+; The carry flag is set if the comparison is a string comparison or an
+; error was reported, and clear if neither operand is a string operand or
+; both are Char.
+.proc checkStringOperands
+    lda #leftTypeOffset
+    jsr getStringKind
+    pha
+    lda #rightTypeOffset
+    jsr getStringKind
+    plx                     ; X: the left's, A: the right's
+    cpx #0
+    beq LN                  ; Branch if the left isn't a string operand
+    cmp #0
+    beq ER                  ; Branch if the right isn't
+    cmp #STRKIND_CHAR
+    bne SC
+    cpx #STRKIND_CHAR
+    bne SC
+NO: clc                     ; Neither, or both Char
+    rts
+LN: cmp #0
+    beq NO
+ER: lda #errIncompatibleTypes
+    jsr typeCheckError
+SC: sec
+    rts
+.endproc
+
+; This routine returns in A what the type at the stack offset in A is as a
+; string operand: 0 if it isn't one, STRKIND_CHAR for a Char, or
+; STRKIND_STRING for a String, a string literal, a string object or an
+; array of Char.
+.proc getStringKind
+    jsr calcTypePtr
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_CHARACTER
+    beq CH
+    cmp #TYPE_STRING_VAR
+    beq ST
+    cmp #TYPE_STRING_LITERAL
+    beq ST
+    cmp #TYPE_STRING_OBJ
+    beq ST
+    cmp #TYPE_ARRAY
+    bne NO
+    ldz #type::subtype
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr getBaseType
+    stq ptr1
+    ldz #type::kind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_CHARACTER
+    beq ST
+NO: lda #0
+    rts
+CH: lda #STRKIND_CHAR
+    rts
+ST: lda #STRKIND_STRING
     rts
 .endproc
 

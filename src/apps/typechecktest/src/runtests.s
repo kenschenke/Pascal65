@@ -28,6 +28,8 @@
 ;   16. Enumerations
 ;   17. Forward declarations
 ;   18. Type Casts
+;   19. Arithmetic between two constants
+;   20. String comparisons
 
 .include "asmlib.inc"
 .include "cbm_kernal.inc"
@@ -36,7 +38,7 @@
 
 .import runTest, logError, printLine
 
-NUM_TESTS = 19
+NUM_TESTS = 20
 
 ; Only some of the tests can be run:
 ; make test TESTSEL="-D FIRST_TEST=n -D LAST_TEST=m"
