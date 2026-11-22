@@ -973,6 +973,7 @@ L1: pla
     jsr icodeExprRead
     lda #IC_SSR
     jsr icodeWriteInstruction
+    lda #TYPE_CHARACTER         ; A character of the string
     rts
 :   ldz #expr::left
     jsr getChildExpr
@@ -982,6 +983,7 @@ L1: pla
     jsr icodeExprRead
     lda #IC_SSW
     jsr icodeWriteInstruction
+    lda #TYPE_CHARACTER
     rts
 
 L1: ldz #expr::kind

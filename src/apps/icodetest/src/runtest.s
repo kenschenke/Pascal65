@@ -112,6 +112,7 @@ expectedFeatures:
     .byte 0                                         ; 45
     .byte 0                                         ; 46
     .byte 0                                         ; 47
+    .byte 0                                         ; 48
 
 .code
 

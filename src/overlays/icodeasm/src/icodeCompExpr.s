@@ -68,28 +68,14 @@ L1: ldz #instructionOffset
     nop
     sta (stackPointer),z
 
-    ldz #exprOffset
-    jsr loadStackValue
-    stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr icodeExprRead
+    jsr readOperand
     ldz #leftKindOffset
     nop
     sta (stackPointer),z
 
-    ldz #exprOffset
-    jsr loadStackValue
-    stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    jsr icodeExprRead
+    jsr readOperand
     ldz #rightKindOffset
     nop
     sta (stackPointer),z
@@ -135,5 +121,37 @@ DN: jsr popA
     jsr popA
     jsr popA
     jsr popQ
+    rts
+.endproc
+
+; This routine reads the operand (expr::left or expr::right, in Z) of the
+; comparison and returns its type kind in A. A function's String result is
+; a string object (the type checker's evalTypeKind), which the runtime
+; frees after comparing it, as concatenation does.
+.proc readOperand
+    phz
+    ldz #exprOffset
+    jsr loadStackValue
+    stq ptr1
+    plz
+    neg
+    neg
+    nop
+    lda (ptr1),z
+    jsr pushQ               ; The operand
+    ldz #0
+    jsr loadStackValue      ; pushQ doesn't keep Q
+    jsr icodeExprRead
+    pha
+    jsr popQ
+    stq ptr1
+    ldz #expr::evalTypeKind
+    nop
+    lda (ptr1),z
+    cmp #TYPE_STRING_OBJ
+    bne :+
+    plx                     ; A string object
+    rts
+:   pla
     rts
 .endproc
