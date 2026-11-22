@@ -25,6 +25,7 @@ The Div operator can only operate on two integers and the result is always an in
 
 | Operator | Description           |
 | -------- | --------------------- |
+| =        | Equal                 |
 | <        | Less than             |
 | <=       | Less than or equal    |
 | >        | Greater than          |
@@ -47,6 +48,18 @@ If (i < 5) Or (i > 15) Then Do ...
 ```
 
 Note that expressions on either side of **And** or **Or** must be surrounded by parenthesis.
+
+### Comparing Strings
+
+The comparison operators also compare strings, string literals, characters
+and arrays of characters, in PETSCII order. See
+[Comparing Strings](strings.md#comparing-strings).
+
+```
+If name = 'Bob' Then Writeln('Hello Bob');
+
+While s < 'xxxx' Do s := s + 'x';
+```
 
 ## Bitwise Operators
 

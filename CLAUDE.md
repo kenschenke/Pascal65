@@ -632,6 +632,36 @@ enumeration subrange keeps the parser's subtype, a declared type named
 after its low limit (see `getBaseType`). It runs before the declaration's
 symbol copies the type.
 
+### String comparisons
+
+`=`, `<>`, `<`, `<=`, `>` and `>=` compare strings
+(`plans/stringopers.md`). The type checker's `checkStringOperands`
+(`checkRelOpOperands.s`), after `getBaseType`, classifies each side with
+`getStringKind`: a Char (a Char subrange too), a string (a String, a
+literal, a string object, or an array whose element's base type is Char)
+or neither. Two Chars, or two of neither, go on to the other checks, so
+Char with Char stays an ordinal comparison. A string with a string or a
+Char is Boolean, and a string operand against anything else is one
+`errIncompatibleTypes`.
+
+icode gives each operand's kind as `icodeExprRead` returns it, except a
+string object (a String function's result, `readOperand` in
+`icodeCompExpr.s`), and `exprSubscript` returns `TYPE_CHARACTER` for
+`s[i]` (it returned `SSR`'s opcode, $0A, a literal's kind). `EQU` to `GTE`
+carry string kinds as they carry numeric ones; codegen didn't change.
+
+`comp` (`comp.s` in the runtime) sends a comparison to `compString` if
+either kind is a literal, a String, a string object or an array.
+`strOperand` makes each operand a pointer to its first character and a
+length: a String after its length byte, a literal up to its zero, an array
+after its 6-byte header (`arrayLength`, `arraylength.s`), a Char its own
+value's byte. `strCompareN` (`strcompare.s`; `strCompare` falls into it)
+compares them unsigned, in PETSCII order, and `freeObj` frees each
+`TYPE_STRING_OBJ` operand before the Boolean is pushed. Its variables,
+`cmpVals` and `cmpKinds`, are in `irqcall.s`'s block with `compOper`.
+This raised `RT_ABI_VERSION` to 4. compilertestasm's `strcomp` (sets 1
+and 2) and `strleak` test it.
+
 ### Source line length
 
 Source lines are limited to 80 characters. This limitation includes comments.

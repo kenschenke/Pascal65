@@ -16,6 +16,11 @@ Compares two strings.
 |> 0         |The first string falls after the second string in sort order |
 |< 0         |The first string falls before the second string in sort order|
 
+The comparison operators compare strings the same way, so
+`CompareStr(s1, s2) < 0` is the same as `s1 < s2`, and so on for the other
+operators. See [Comparing Strings](../langref/strings.md#comparing-strings)
+for the sort order.
+
 ## Example ##
 
 ```

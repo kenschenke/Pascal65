@@ -18,6 +18,15 @@ operand-1 < operand-2.
 
 The operands are the data type of the values.
 
+### String Operands
+
+If either operand is a string kind (`TYPE_STRING_LITERAL`, `TYPE_STRING_VAR`,
+`TYPE_STRING_OBJ` or `TYPE_ARRAY`, an array of characters), the values are
+compared as strings, character by character in PETSCII order. The other
+operand is a string kind or a `TYPE_CHARACTER`, which is compared as a string
+one character long. A `TYPE_STRING_OBJ` operand is freed after the
+comparison. Two `TYPE_CHARACTER` operands are compared by their codes.
+
 ## See Also
 
 [GRT](../grt), [GTE](../gte), [LSE](../lse),
