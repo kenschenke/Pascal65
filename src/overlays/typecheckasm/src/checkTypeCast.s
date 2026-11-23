@@ -19,6 +19,7 @@ exprOffset = 4
 .export checkTypeCast, isTypeCastable
 
 .import loadStackValue, typeCheckError, isTypeOrdinal
+.import followPtr1, loadQPtr1, loadQPtr2, loadQPtr3, typeErrParamCount
 
 .bss
 
@@ -44,24 +45,15 @@ argExprPtr: .res 4         ; the single argument expression being cast
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2                    ; ptr2 = callee EXPR_NAME
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr4
     jsr scopeLookup
     stq ptr2                    ; ptr2 = symbol (already known non-null)
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq targetSymType
 
     ; Validate the argument count: must be exactly one argument
@@ -69,19 +61,13 @@ argExprPtr: .res 4         ; the single argument expression being cast
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3                    ; ptr3 = first (and should be only) EXPR_ARG
     jsr isQZero
     bne :+                      ; no arguments
     jmp BadArity
 :   ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     jsr isQZero
     beq :+                      ; more than one argument
     jmp BadArity
@@ -89,10 +75,7 @@ argExprPtr: .res 4         ; the single argument expression being cast
 
     ; Get the argument expression (ptr3.left)
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq argExprPtr
 
     ; Validate the target type's category
@@ -140,10 +123,7 @@ argExprPtr: .res 4         ; the single argument expression being cast
     sta (ptr2),z
 
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldz #type::subtype
     ldx #0
@@ -156,10 +136,7 @@ argExprPtr: .res 4         ; the single argument expression being cast
     bne :-
 
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldz #type::paramFields
     ldx #0
@@ -185,10 +162,7 @@ argExprPtr: .res 4         ; the single argument expression being cast
     ; Clone the name, if any, so the result type isn't aliased to the
     ; declaration's own type block.
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq RewriteNode
     jsr nameClone
@@ -210,17 +184,10 @@ RewriteNode:
     stq ptr1
     ; First, free the former left node (EXPR_NAME for the routine call)
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     jsr pushQ
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr heapFree
     jsr popQ
     jsr heapFree
@@ -228,10 +195,7 @@ RewriteNode:
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr heapFree
 
     ldz #exprOffset
@@ -289,8 +253,7 @@ RewriteNode:
     jmp DN
 
 BadArity:
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     jmp VoidResult
 
 BadType:

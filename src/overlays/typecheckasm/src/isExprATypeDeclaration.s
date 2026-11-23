@@ -11,6 +11,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.import loadQPtr1
 
 .export isExprATypeDeclaration
 
@@ -25,20 +26,14 @@
     bne DN
 
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr4
     jsr scopeLookup
     stq ptr1
     jsr isQZero
     beq NO
     ldz #symbol::decl
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq NO
     stq ptr1

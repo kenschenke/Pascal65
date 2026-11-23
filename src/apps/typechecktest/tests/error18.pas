@@ -1,9 +1,9 @@
 // Error Test 18 - Read, Readln, Write, Writeln and WriteStr
 //
 // The variables Read can read into and the values Write can write, with
-// and without a file. A record needs a file. A file that isn't first is
-// reported, and so is its type, which the arguments after it are
-// checked against.
+// and without a file. A record needs a file of its type. A file that
+// isn't first is reported, and so is its type, which the arguments after
+// it are checked against. An array of a Char subrange is a string.
 
 Program ReadWrite;
 
@@ -13,6 +13,7 @@ Type
     TOther = Record a : Integer; End;
     TArr = Array[1..3] Of Byte;
     TStr = String;
+    TLetter = 'a'..'z';
 
 Var
     b : Byte;
@@ -30,6 +31,7 @@ Var
     other : TOther;
     arr : TArr;
     chars : Array[1..5] Of Char;
+    letters : Array[1..5] Of TLetter;
     nums : Array[1..5] Of Integer;
     pi : ^Integer;
     ps : ^TStr;
@@ -42,6 +44,7 @@ Begin
     // Read
     Read(b, sh, w, i, c, l, r, ch, bool, str);
     Read(chars);
+    Read(letters);
     Read(nums);                     (* $ExpectError 35 *)
     Read(arr[1]);
     Read(pi^);
@@ -51,6 +54,9 @@ Begin
     Read(fi, i);
     Read(fi, str);                  (* $ExpectError 35 *)
     Read(fr, rec);
+    Read(fr, other);                (* $ExpectError 35 *)
+    Read(fr, i);                    (* $ExpectError 35 *)
+    Read(fi, rec);                  (* $ExpectError 35 *)
     Read(fa, arr);
     Read(i, fi);        (* $ExpectError 35 *) (* $ExpectError 35 *)
     Readln(fi, i);                  (* $ExpectError 35 *)
@@ -62,6 +68,7 @@ Begin
     // Write
     Write(b, r, ch, bool, 'abc', str, str + str, i);
     Write(chars);
+    Write(letters);
     Write(nums);                    (* $ExpectError 35 *)
     Write(pi);                      (* $ExpectError 35 *)
     Write(rec);                     (* $ExpectError 35 *)
@@ -69,6 +76,8 @@ Begin
     Write(fi, 'abc');               (* $ExpectError 35 *)
     Write(fr, rec);
     Write(fr, other);               (* $ExpectError 35 *)
+    Write(fr, i);                   (* $ExpectError 35 *)
+    Write(fi, rec);                 (* $ExpectError 35 *)
     Write(fa, arr);
     Write(i, fi);       (* $ExpectError 35 *) (* $ExpectError 35 *)
     Writeln(fi, i);                 (* $ExpectError 35 *)

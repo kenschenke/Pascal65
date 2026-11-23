@@ -20,6 +20,7 @@ exprOffset = allowedParmsOffset + 1
 .export checkStdParms
 
 .import loadStackValue, typeCheckError, isTypeInteger, exprTypeCheck
+.import loadQPtr1, typeErrIncompatible, typeErrParamCount
 
 .bss
 
@@ -34,30 +35,22 @@ exprType: .res .sizeof(type)
     stq ptr1
     jsr isQZero
     bne :+
-    lda #errWrongNumberOfParams ; no parameters
-    jsr typeCheckError
+    jsr typeErrParamCount   ; no parameters
     jmp DN
 :
     ; There should be one parameter
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     ldz #exprOffset             ; typeCheckError changes ptr1
     jsr loadStackValue
     stq ptr1
 
     ; Call exprTypeCheck
 :   ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     jsr pushQZero
     lda #<exprType
@@ -113,8 +106,7 @@ exprType: .res .sizeof(type)
     lda exprType
     cmp #TYPE_REAL
     beq DN
-:   lda #errIncompatibleTypes
-    jsr typeCheckError
+:   jsr typeErrIncompatible
 
 DN: jsr popA
     jsr popQ

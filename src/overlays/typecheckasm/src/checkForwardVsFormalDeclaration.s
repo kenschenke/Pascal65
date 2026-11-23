@@ -19,6 +19,7 @@ fwdParamsOffset = formalParamsOffset + 4
 .export checkForwardVsFormalDeclaration
 
 .import loadStackValue, typeCheckError
+.import loadQPtr1, loadQPtr3, loadQPtr4, typeErrIncompatible, typeErrParamCount
 
 .bss
 
@@ -46,17 +47,11 @@ L1: ldz #fwdParamsOffset
     jmp DN
 
 :   ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     jsr pushQ
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     jsr getBaseType
     stq ptr4
     jsr popQ
@@ -69,8 +64,7 @@ L1: ldz #fwdParamsOffset
     nop
     cmp (ptr4),z
     beq L2
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
     jmp NX
 
     ; If fwdType.kind == TYPE_ENUMERATION
@@ -88,8 +82,7 @@ L2: ldz #type::kind
     cpx #4
     bne :-
     bra NX
-:   lda #errIncompatibleTypes
-    jsr typeCheckError
+:   jsr typeErrIncompatible
     bra NX
 
     ; If fwdType.kind == TYPE_ARRAY
@@ -111,8 +104,7 @@ DN: ldz #fwdParamsOffset
     jsr loadStackValue
     jsr isQZero
     beq RT
-ER: lda #errWrongNumberOfParams
-    jsr typeCheckError
+ER: jsr typeErrParamCount
 RT: jsr popQ
     jsr popQ
     rts
@@ -125,10 +117,7 @@ RT: jsr popQ
     jsr loadStackValue
     stq ptr1
     ldz #param_list::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2
     plz
     ldx #0
@@ -164,8 +153,7 @@ RT: jsr popQ
     nop
     cmp (ptr4),z
     beq :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
 
     ; Check the array index types. A dynamic array has none.
 :   ldz #fwdParamsOffset
@@ -178,10 +166,7 @@ RT: jsr popQ
     lda (ptr3),z
     sta elemKind
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq indexSub
     ldz #formalParamsOffset
     jsr getIndexType
@@ -196,10 +181,7 @@ RT: jsr popQ
     cmp #TYPE_ENUMERATION
     bne L1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     stq ptr4
     ldx #0
 :   lda indexSub,x
@@ -209,8 +191,7 @@ RT: jsr popQ
     cpx #4
     bne :-
     bra L1
-ER: lda #errIncompatibleTypes
-    jsr typeCheckError
+ER: jsr typeErrIncompatible
 L1: lda #type::min
     jsr compareArrayLimit
     lda #type::max
@@ -225,10 +206,7 @@ L1: lda #type::min
     jsr getBaseType
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jmp getBaseType
 .endproc
 
@@ -239,10 +217,7 @@ L1: lda #type::min
     jsr getBaseType
     stq ptr1
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jmp getBaseType
@@ -290,8 +265,7 @@ L1: lda #type::min
     cpx #4
     bne :-
 RT: rts
-ER: lda #errIncompatibleTypes
-    jsr typeCheckError
+ER: jsr typeErrIncompatible
     rts
 .endproc
 
@@ -306,18 +280,12 @@ ER: lda #errIncompatibleTypes
     jsr getBaseType
     stq ptr1
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq DN
     stq ptr1
     ldz limitOffset
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
 DN: rts
 .endproc
 
@@ -328,9 +296,6 @@ DN: rts
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     rts
 .endproc

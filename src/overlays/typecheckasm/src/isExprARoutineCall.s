@@ -11,6 +11,7 @@
 .include "asmlib.inc"
 .include "zeropage.inc"
 .include "4510macros.inc"
+.import followPtr1, loadQPtr1
 
 .export isExprARoutineCall
 
@@ -28,16 +29,9 @@
 .proc isExprARoutineCall
     stq ptr1
     ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
     ldz #type::kind
@@ -46,11 +40,7 @@
     cmp #TYPE_ROUTINE_POINTER
     bne :+
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::kind
     nop
     lda (ptr1),z

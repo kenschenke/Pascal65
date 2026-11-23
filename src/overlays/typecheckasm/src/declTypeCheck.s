@@ -19,6 +19,7 @@ declOffset = 0
 
 .import currentLineNumber, declTypeCheckValue, stmtTypeCheck, declTypeCheckType
 .import loadStackValue
+.import loadQPtr1
 
 ; Address of decl in Q
 .proc declTypeCheck
@@ -115,9 +116,6 @@ L5: jsr popQ
 ; This routine loads a decl member from the structure into Q.
 ; The offset in passed in Z.
 .proc getDeclMember
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     rts
 .endproc

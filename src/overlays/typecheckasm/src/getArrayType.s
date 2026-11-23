@@ -19,6 +19,7 @@ exprOffset = pTypeOffset + 4
 .export getArrayType
 
 .import loadStackValue, typeCheckError, exprTypeCheck
+.import loadQPtr1
 
 .proc getArrayType
     ldz #exprOffset
@@ -36,10 +37,7 @@ L1: ldz #pTypeOffset
     jsr loadStackValue
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldq ptr2
     jsr pushQ
@@ -48,10 +46,7 @@ L1: ldz #pTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2
     ldz #0
 :   nop
@@ -70,10 +65,7 @@ L2: cmp #EXPR_NAME
     jsr loadStackValue
     stq ptr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr4
     jsr scopeLookup
     jsr isQZero
@@ -90,10 +82,7 @@ L2: cmp #EXPR_NAME
     bra DN
 :   stq ptr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2
     ldz #pTypeOffset
     jsr loadStackValue

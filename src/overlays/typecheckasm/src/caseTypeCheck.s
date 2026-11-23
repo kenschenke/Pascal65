@@ -23,6 +23,7 @@ exprKindOffset = paramFieldsOffset + 4
 
 .import loadStackValue, currentLineNumber, exprTypeCheck, typeCheckError
 .import getTypeConversion, stmtTypeCheck
+.import followPtr1, loadQPtr1, typeErrIncompatible
 
 ; Parameters passed on stack, bottom to top:
 ;    Expression type kind (kind of expression in "Case Of ...")
@@ -51,11 +52,7 @@ L1: ldz #labelStmtOffset
     sta currentLineNumber+1
 
     ldz #stmt::expr
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ; Copy it on the expr spot on the stack
     ldz #exprOffset
     ldx #0
@@ -80,11 +77,7 @@ NE: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #exprOffset
     ldx #0
 :   lda ptr1,x
@@ -101,10 +94,7 @@ NL: ldz #labelStmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::body
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr stmtTypeCheck
 
     ; Move to the next label
@@ -112,11 +102,7 @@ NL: ldz #labelStmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #labelStmtOffset
     ldx #0
 :   lda ptr1,x
@@ -175,17 +161,9 @@ L1: ldq stackPointer
     jsr getBaseType
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #paramFieldsOffset
     jsr loadStackValue
     stq ptr2
@@ -198,8 +176,7 @@ L1: ldq stackPointer
     bne :-
     rts
 
-L2: lda #errIncompatibleTypes
-    jsr typeCheckError
+L2: jsr typeErrIncompatible
     rts
 
 L3: ldz #type::kind
@@ -226,7 +203,6 @@ L4: ldz #type::kind
     jsr getTypeConversion
     cmp #TYPE_VOID
     bne :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
 :   rts
 .endproc

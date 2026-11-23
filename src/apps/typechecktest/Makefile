@@ -187,7 +187,7 @@ COVFILES3 := checkFuncProcCall.s:-checkDynamicParam
 COVFILES14 := checkFuncProcCall.s:checkDynamicParam- \
 	checkForwardVsFormalDeclaration.s
 # Standard routines
-COVFILES4 := checkWriteWritelnCall.s checkStdRoutine.s
+COVFILES4 := checkStdRoutine.s
 # Operators
 COVFILES5 := checkRelOpOperands.s
 # Constant expressions
@@ -200,7 +200,7 @@ COVFILES7 := exprLiteral.s checkArrayLiteral.s getArrayType.s \
 # Case, casts and the small helpers
 COVFILES8 := caseTypeCheck.s checkTypeCast.s checkBoolOperand.s \
 	isTypeNumeric.s isTypeOrdinal.s isTypeInteger.s checkArray.s \
-	checkIntegerBaseType.s realOperands.s integerOperands.s \
+	checkIntegerBaseType.s \
 	checkArraysSameType.s
 # Declarations, ReadStr and the expression helpers
 COVFILES9 := declTypeCheck.s declTypeCheckType.s isExprAFuncCall.s \
@@ -215,7 +215,7 @@ COVFILES11 := exprTypeCheck.s:evalField- hoistFuncCall.s
 COVFILES12 := checkAssignment.s declTypeCheckValue.s evalArrayLiteral.s \
 	checkAbsSqrCall.s
 # Binary expression types and Read
-COVFILES13 := getBinaryExpressionType.s checkReadReadlnCall.s
+COVFILES13 := getBinaryExpressionType.s checkReadWriteCall.s
 
 TYPECHECKSRCDIR := $(TYPECHECKDIR)/src
 TYPECHECKSOURCES := $(wildcard $(TYPECHECKSRCDIR)/*.s)

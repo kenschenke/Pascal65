@@ -19,6 +19,7 @@ exprOffset = typeOffset + .sizeof(type)
 .export checkIntegerBaseType
 
 .import loadStackValue, exprTypeCheck, typeCheckError, isTypeInteger
+.import typeErrIncompatible
 
 ; This routine type checks an expression and reports an error if its type
 ; is not one of the integer types (any size, signed or unsigned). A null
@@ -62,8 +63,7 @@ exprOffset = typeOffset + .sizeof(type)
     lda (ptr1),z
     jsr isTypeInteger
     beq DN
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
 
 DN: lda #.sizeof(type)
     jsr popBlock

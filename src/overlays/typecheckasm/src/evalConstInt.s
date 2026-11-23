@@ -20,6 +20,7 @@
 .export evalConstInt, constIntFits, constSign, constMag
 
 .import isSigned
+.import followPtr1, loadQPtr1
 
 ; Deep enough for a chain of constants, such as a + b + c + d + e, and
 ; shallow enough for the CPU stack (each level is two JSRs)
@@ -161,10 +162,7 @@ NG: ldz #expr::left
     ; the operation and the right operand while the left is evaluated.
 BI: jsr pushA
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldz #expr::left
     jsr loadPtr1
@@ -204,11 +202,7 @@ DN: rts
 ; Loads the pointer at offset Z of the structure in ptr1 into ptr1. Clears
 ; the Z flag unless it's null.
 .proc loadPtr1
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     jmp isQZero
 .endproc
 

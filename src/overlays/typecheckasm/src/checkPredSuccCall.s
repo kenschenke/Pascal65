@@ -19,6 +19,7 @@ argOffset = retnTypeOffset + 4
 .export checkPredSuccCall
 
 .import loadStackValue, typeCheckError, isTypeInteger
+.import followPtr1, loadQPtr1, typeErrIncompatible, typeErrInvalidType, typeErrParamCount
 
 .proc checkPredSuccCall
     ; Needs to have the first parameter
@@ -26,32 +27,23 @@ argOffset = retnTypeOffset + 4
     jsr loadStackValue
     jsr isQZero
     bne :+
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     lda #TYPE_VOID
     jmp DN
 
     ; It can't have more than one parameter.
 :   stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     lda #TYPE_VOID
     jmp DN
 
     ; Look at the argument.
 :   ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::kind
     nop
     lda (ptr1),z
@@ -73,15 +65,11 @@ argOffset = retnTypeOffset + 4
     jmp DN
 :   cmp #EXPR_NAME
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     lda #TYPE_VOID
     jmp DN
 :   ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr4
     jsr scopeLookup
     jsr isQZero
@@ -92,10 +80,7 @@ argOffset = retnTypeOffset + 4
     jmp DN
 :   stq ptr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
     ldz #type::kind
@@ -116,8 +101,7 @@ L2: ldz #type::kind
     beq L3
     cmp #TYPE_ENUMERATION_VALUE
     beq L3
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
     lda #TYPE_VOID
     jmp DN
 L3: ldz #retnTypeOffset
@@ -132,10 +116,7 @@ L3: ldz #retnTypeOffset
     nop
     sta (ptr2),z
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldz #type::subtype
     ldx #0

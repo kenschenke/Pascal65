@@ -19,6 +19,7 @@ indexTypeOffset = 4
 .export checkArray
 
 .import loadStackValue, isTypeOrdinal, typeCheckError
+.import followPtr1, loadQPtr1
 
 .proc checkArray
     ; If the index type is a subrange, get the subtype
@@ -32,11 +33,7 @@ indexTypeOffset = 4
     bne L1
     ; Get the subtype
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ; Update the indexType pointer
     ldz #indexTypeOffset
     ldx #0
@@ -79,16 +76,10 @@ L2: ldz #elemTypeOffset
     bne L3
     ; Check the embedded array too
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     jsr checkArray
 

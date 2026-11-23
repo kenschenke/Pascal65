@@ -19,6 +19,7 @@ type1Offset = type2Offset + 4
 .export checkArraysSameType
 
 .import typeCheckError, loadStackValue
+.import followPtr1, loadQPtr1, loadQPtr2, typeErrInvalidType
 
 .proc checkArraysSameType
     ; Check the element kinds are the same. Either type can be a type name
@@ -29,10 +30,7 @@ type1Offset = type2Offset + 4
     jsr getBaseType
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
     ldz #type::kind
@@ -45,10 +43,7 @@ type1Offset = type2Offset + 4
     jsr getBaseType
     stq ptr2
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     jsr getBaseType
     stq ptr2
 
@@ -57,8 +52,7 @@ type1Offset = type2Offset + 4
     nop
     cmp (ptr2),z
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 
     ; Compare the indexes
 :   ldz #type2Offset
@@ -66,21 +60,14 @@ type1Offset = type2Offset + 4
     jsr getBaseType
     stq ptr2
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
 
     ldz #type1Offset
     jsr loadStackValue
     stq ptr1
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
 
     ; Compare the min and max expressions
     ldz #type::min
@@ -95,8 +82,7 @@ type1Offset = type2Offset + 4
     nop
     cmp (ptr2),z
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 :   jsr popQ
     jsr popQ
     rts
@@ -107,16 +93,10 @@ type1Offset = type2Offset + 4
 ; type::min or type::max is passed in Z.
 .proc compareSubrangeLimits
     phz
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     plz
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr4
     ldz #expr::kind
     nop
@@ -132,8 +112,7 @@ type1Offset = type2Offset + 4
     jsr pushQ
     ldq ptr4
     jsr pushQ
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     jsr popQ
     stq ptr4
     jsr popQ
@@ -159,8 +138,7 @@ L2: ldq ptr1
     jsr pushQ
     ldq ptr2
     jsr pushQ
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     jsr popQ
     stq ptr2
     jsr popQ

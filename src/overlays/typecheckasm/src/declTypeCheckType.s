@@ -27,6 +27,7 @@ fwdReturn: .res 4               ; its return type
 
 .import checkArray, checkForwardVsFormalDeclaration, loadStackValue, calcNamePtr
 .import typeCheckError
+.import loadQPtr1, loadQPtr2, loadQPtr3, typeErrIncompatible
 
 .proc declTypeCheckType
     ; If this is an array make sure the index type is
@@ -48,10 +49,7 @@ fwdReturn: .res 4               ; its return type
     cmp #DECL_VARIABLE
     bne L1
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     bne L3
 L1: ; if (decl.kind == DECL_TYPE)
@@ -67,16 +65,10 @@ L1: ; if (decl.kind == DECL_TYPE)
 
     ; check the array
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     jsr checkArray
 
@@ -97,10 +89,7 @@ L3: ldz #typeOffset
     and #TYPE_FLAG_ISCLONED
     bne L6
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq L6
     jsr getBaseType
@@ -128,10 +117,7 @@ L6: ldz #typeOffset
     cmp #TYPE_FUNCTION
     bne L5
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq L5
     jsr getBaseType
@@ -175,10 +161,7 @@ L5: ldz #typeOffset
     ; but symbol::type is a clone of the first (forward) declaration's
     ; type and shares its parameter list.
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     jsr isQZero
     beq L4
     stq ptr2                ; forward declaration's type in ptr2
@@ -187,16 +170,10 @@ L5: ldz #typeOffset
     jsr loadStackValue
     stq ptr1                ; type in ptr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     jsr pushQ
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     jsr checkForwardVsFormalDeclaration
 
@@ -254,16 +231,10 @@ L4: jsr popQ
     cmp #TYPE_RECORD
     bne DN
 :   ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq fwdReturn
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldx #0
 :   lda fwdReturn,x
@@ -274,16 +245,12 @@ L4: jsr popQ
     bne :-
 DN: rts
 
-ER: lda #errIncompatibleTypes
-    jmp typeCheckError
+ER: jmp typeErrIncompatible
 .endproc
 
 ; This routine returns the subtype of the type in ptr1 in Q.
 .proc getSubtype
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     rts
 .endproc

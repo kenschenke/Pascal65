@@ -18,6 +18,7 @@
 
 .import typeCheckError, exprTypeCheck, checkReadReadlnCall
 .import isAssignableToString
+.import loadQPtr1, loadStackValue, typeErrIncompatible, typeErrParamCount
 
 .bss
 
@@ -32,8 +33,7 @@ argPtr: .res 4
 .proc checkReadStrCall
     jsr isQZero
     bne :+
-    lda #errWrongNumberOfParams
-    jmp typeCheckError
+    jmp typeErrParamCount
 :   stq argPtr
 
     ; Evaluate the first argument's type into a zeroed type block
@@ -71,10 +71,7 @@ argPtr: .res 4
     cmp #TYPE_ARRAY
     bne L1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
 L1:
@@ -84,16 +81,12 @@ L1:
     jsr pushQ
     jsr isAssignableToString
     beq :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
 
     ; Evaluating the argument can put a copy of a type name in the
     ; type block. Free it.
 :   ldz #type::name
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     jsr isQZero
     beq :+
     jsr heapFree
@@ -104,10 +97,7 @@ L1:
     ldq argPtr
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq DN
     jsr pushQ

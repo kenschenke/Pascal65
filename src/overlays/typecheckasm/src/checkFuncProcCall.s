@@ -27,6 +27,7 @@ exprOffset = rtnTypePtrOffset + 4
 .import checkIntegerPrecisionWarning
 .import checkForwardVsFormalDeclaration, isAssignableToString
 .import isDynamicArray
+.import followPtr1, loadQPtr1, loadQPtr2, loadQPtr3, loadQPtr4, typeErrIncompatible, typeErrInvalidType, typeErrParamCount
 
 .bss
 
@@ -88,16 +89,9 @@ strArrayLength: .asciiz "#length"
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr4
     stq namePtr
     jsr scopeLookup
@@ -118,11 +112,7 @@ strArrayLength: .asciiz "#length"
     ; sumbol in the parent scope because the function's symbol is needed.
 :   stq ptr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #symTypeOffset
     jsr storePtr
     ldq ptr1
@@ -149,11 +139,7 @@ strArrayLength: .asciiz "#length"
     bra L1
 :   stq ptr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #symTypeOffset
     jsr storePtr
 
@@ -165,11 +151,7 @@ L1: ldz #type::kind
     bne :+
     ; It is - so get the subtype
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #symTypeOffset
     jsr storePtr
     
@@ -203,11 +185,7 @@ L1: ldz #type::kind
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #rtnTypePtrOffset
     jsr loadStackValue
     stq ptr2
@@ -239,10 +217,7 @@ L1: ldz #type::kind
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq DN
     stq ptr1
@@ -255,10 +230,7 @@ L1: ldz #type::kind
     nop
     sta (ptr2),z
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldx #0
     ldz #type::subtype
@@ -272,10 +244,7 @@ L1: ldz #type::kind
     ldq ptr2
     jsr pushQ
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jsr nameClone
@@ -307,20 +276,14 @@ DN: lda #.sizeof(type)
     jsr loadStackValue
     stq ptr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     ldz #paramPtrOffset
     jsr storePtr
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     ldz #argPtrOffset
     jsr storePtr
 
@@ -386,10 +349,7 @@ L1: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
 
@@ -411,10 +371,7 @@ L1: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
 
@@ -454,10 +411,7 @@ AR: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
     ldq stackPointer
@@ -482,11 +436,7 @@ AR: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::flags
     nop
     lda (ptr1),z
@@ -537,22 +487,14 @@ AR: ldz #paramPtrOffset
 :   lda paramKind
     cmp argKind
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 
 :
 BR: ldz #paramPtrOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::flags
     nop
     lda (ptr1),z
@@ -564,20 +506,14 @@ NX: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     ldz #paramPtrOffset
     jsr storePtr
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     ldz #argPtrOffset
     jsr storePtr
     ; If a subtype was allocated for the rightType of TYPE_ADDRESS, free it.
@@ -589,20 +525,14 @@ NX: ldz #paramPtrOffset
     cmp #TYPE_ROUTINE_ADDRESS
     bne :+
 FR: ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     jsr isQZero
     beq :+
     jsr freeType
     ; Free the copy of a type name the argument may have put in rightType
     ; (a dereferenced pointer to a named type does). L1 clears rightType.
 :   ldz #type::name
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     jsr isQZero
     beq :+
     jsr heapFree
@@ -619,10 +549,7 @@ DN: rts
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isDynamicArray
     php
     ldq stackPointer
@@ -650,23 +577,14 @@ OK: clc
     jsr loadStackValue
     stq ptr3
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     jsr getBaseType
     stq ptr3
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
     ldq stackPointer
     stq ptr4
@@ -676,16 +594,10 @@ OK: clc
     jsr getBaseType
     stq ptr4
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     stq ptr4
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     stq ptr4
     jsr popQ                        ; Pop ptr3 back off stack
     stq ptr3
@@ -697,8 +609,7 @@ OK: clc
     cpx #4
     bne :-
     rts
-:   lda #errInvalidType
-    jsr typeCheckError
+:   jsr typeErrInvalidType
     rts
 .endproc
 
@@ -707,10 +618,7 @@ OK: clc
 .proc checkRecordParam
     ; Compare paramType.symtab with argType's
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq paramSub
     ldq stackPointer
     jsr getRecordSymtab
@@ -723,8 +631,7 @@ OK: clc
     cpx #4
     bne :-
     rts
-:   lda #errInvalidType
-    jsr typeCheckError
+:   jsr typeErrInvalidType
     rts
 .endproc
 
@@ -738,29 +645,20 @@ OK: clc
     jsr getBaseType
     stq ptr4
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     jsr isQZero
     bne DN
     ldz #0
     jsr loadStackValue          ; the type again
     stq ptr4
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     jsr isQZero
     beq DN
     jsr getBaseType
     stq ptr4
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
 DN: stq ptr4
     jsr popQ
     ldq ptr4
@@ -772,11 +670,7 @@ DN: stq ptr4
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     lda paramKind
     ldx argKind
     jsr checkIntegerPrecisionWarning
@@ -789,11 +683,7 @@ DN: stq ptr4
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::flags
     nop
     lda (ptr1),z
@@ -802,14 +692,10 @@ DN: stq ptr4
     lda argKind
     cmp #TYPE_STRING_VAR
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     jmp DN
 :   ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     stq ptr2
     lda argKind
     jsr pushA
@@ -817,8 +703,7 @@ DN: stq ptr4
     jsr pushQ
     jsr isAssignableToString
     beq DN
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 DN: rts
 .endproc
 
@@ -831,10 +716,7 @@ DN: rts
     cmp #TYPE_FILE
     bne L1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq L2                      ; an untyped file takes any file
     jsr getBaseType
@@ -848,10 +730,7 @@ DN: rts
     jsr getBaseType
     stq ptr4
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     jsr isQZero
     beq L1                      ; an untyped file
     jsr getBaseType
@@ -861,25 +740,19 @@ DN: rts
     nop
     cmp (ptr4),z
     beq L2
-L1: lda #errInvalidType
-    jsr typeCheckError
+L1: jsr typeErrInvalidType
     ; if (!(paramType.flags & TYPE_FLAG_ISBYREF))
 L2: ldz #paramPtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::flags
     nop
     lda (ptr1),z
     and #TYPE_FLAG_ISBYREF
     bne L3
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 L3: rts
 .endproc
 
@@ -891,17 +764,11 @@ L3: rts
 ; stack and its table in paramSub.
 .proc checkPointerParam
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr3
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq paramSub
     ldz #type::kind
     nop
@@ -911,10 +778,7 @@ L3: rts
     jsr getBaseType
     stq ptr4
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     jsr getBaseType
     stq ptr4
     pla
@@ -930,10 +794,7 @@ L3: rts
     jsr getBaseType
     stq ptr4
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     jsr getRecordSymtab
     stq ptr4
     ldx #0
@@ -944,8 +805,7 @@ L3: rts
     cpx #4
     bne :-
 DN: rts
-ER: lda #errIncompatibleTypes
-    jsr typeCheckError
+ER: jsr typeErrIncompatible
     rts
 .endproc
 
@@ -954,57 +814,31 @@ ER: lda #errIncompatibleTypes
     jsr loadStackValue
     stq ptr1
     ldz #param_list::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
 
     ldz #argPtrOffset
     jsr loadStackValue
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldq ptr1
     jsr pushQ
@@ -1016,16 +850,10 @@ ER: lda #errIncompatibleTypes
 
 .proc checkParamByRef
     ldz #argPtrOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
 
     ; if (argType.kind == TYPE_TEXT && paramType.kind == TYPE_FILE)
@@ -1100,10 +928,7 @@ L3: ldz #type::flags
     beq NO
     stq ptr1
     ldz #symbol::decl
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq NO
     stq ptr1
@@ -1119,22 +944,15 @@ L3: ldz #type::flags
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq WN
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq NO
-WN: lda #errWrongNumberOfParams
-    jsr typeCheckError
+WN: jsr typeErrParamCount
     lda #0
     sta isLibLength
     ; Return its declared type so the caller doesn't report another error
@@ -1191,11 +1009,7 @@ NO: clc
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::node
     ldx #0
 :   lda ptr3,x

@@ -373,13 +373,21 @@ once, so the files are instrumented in sets (`COVFILESn`). A new file
 must go in a set, and a set that no longer fits fails to link and must be
 split. `exprTypeCheck.s` and `checkFuncProcCall.s` are too big for one
 set, so they're split at procs across sets (`exprTypeCheck.s:-saveEvalType`).
-A set fits only about 240 probes, since the overlay itself is near 19k.
+A set fits only about 240 probes, since the overlay itself is near 18k.
 `mkcov` prints each set's count. Changing the sets needs a fresh
 `obj/mega65/cov*`, because a set's stamp doesn't depend on the Makefile. Like `test`,
 it needs asmlib built with `MEMCHECK=1`. The lines left are ones no
 program can reach, such as checks for undefined names that the resolver
-reports first, and `integerOperands.s` and `realOperands.s`, which
-nothing calls.
+reports first.
+
+The overlay keeps its common sequences in `typecheck.s`: `loadQPtr1` to
+`loadQPtr4` load Q from a pointer plus Z (`loadStackValue` from the
+stack), `followPtr1` loads it and stores it in ptr1, `calcTypeBlockAddr`
+gives the stack's address plus A, and `typeErrIncompatible`,
+`typeErrInvalidType` and `typeErrParamCount` report those errors. Use
+them, not the inline code: the overlay is near its 20k limit. Read and
+Write (`checkReadWriteCall.s`) share one stack frame and its checks of
+arrays, records, files and the file's type.
 
 `getBaseType` changes ptr1, ptr2 and ptr4, and `pushQ` doesn't keep Q.
 Several bugs were a pointer used after one of them.

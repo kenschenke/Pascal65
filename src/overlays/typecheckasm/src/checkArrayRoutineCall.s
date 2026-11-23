@@ -21,6 +21,7 @@ argOffset = typeOffset + .sizeof(type)
 .export checkSetLengthCall, checkArrayFuncCall, isDynamicArray
 
 .import typeCheckError, loadStackValue, exprTypeCheck, isTypeInteger
+.import followPtr1, loadQPtr1, typeErrInvalidType, typeErrParamCount
 
 .code
 
@@ -40,14 +41,10 @@ argOffset = typeOffset + .sizeof(type)
     beq WN
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
-WN: lda #errWrongNumberOfParams
-    jsr typeCheckError
+WN: jsr typeErrParamCount
     bra DN
 
     ; Evaluate the argument
@@ -61,8 +58,7 @@ WN: lda #errWrongNumberOfParams
     lda (ptr1),z
     cmp #TYPE_ARRAY
     beq DN
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 
 DN: jsr freeArgTypeName
     lda #.sizeof(type)
@@ -86,22 +82,15 @@ DN: jsr freeArgTypeName
     beq WN
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq WN
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
-WN: lda #errWrongNumberOfParams
-    jsr typeCheckError
+WN: jsr typeErrParamCount
     jmp DN
 
     ; The first argument must be a dynamic array variable, named (not a
@@ -118,11 +107,7 @@ WN: lda #errWrongNumberOfParams
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::kind
     nop
     lda (ptr1),z
@@ -131,8 +116,7 @@ WN: lda #errWrongNumberOfParams
     ldq stackPointer
     jsr isDynamicArray
     beq L1
-BA: lda #errInvalidType
-    jsr typeCheckError
+BA: jsr typeErrInvalidType
 
     ; The second argument must be an integer
 L1: jsr freeArgTypeName
@@ -147,11 +131,7 @@ L1: jsr freeArgTypeName
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     jsr checkExprArg
     ldq stackPointer
     jsr getBaseType
@@ -161,8 +141,7 @@ L1: jsr freeArgTypeName
     lda (ptr1),z
     jsr isTypeInteger
     beq DN
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 
 DN: jsr freeArgTypeName
     lda #.sizeof(type)
@@ -186,10 +165,7 @@ DN: jsr freeArgTypeName
     ldq stackPointer
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     jsr pushQZero
     ldq ptr2
@@ -203,10 +179,7 @@ DN: jsr freeArgTypeName
 ; (a dereferenced pointer to a named type does). This routine frees it.
 .proc freeArgTypeName
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     jsr isQZero
     beq DN
     jsr heapFree

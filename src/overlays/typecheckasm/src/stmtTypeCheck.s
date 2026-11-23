@@ -20,6 +20,7 @@ stmtOffset = typeOffset + .sizeof(type)
 
 .import loadStackValue, currentLineNumber, exprTypeCheck
 .import typeCheckError, isTypeInteger, caseTypeCheck, declTypeCheck
+.import followPtr1, loadQPtr1, loadQPtr2, loadQPtr4, typeErrIncompatible, typeErrInvalidType
 
 .bss
 
@@ -87,11 +88,7 @@ NX: ldz #stmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #stmtOffset
     ldx #0
 :   lda ptr1,x
@@ -113,11 +110,7 @@ DN: lda #.sizeof(type)
 ; The offset of the expression in the stmt is passed in Z.
 ; Ptr1 already contains stmt
 .proc callExprTypeCheck
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldq stackPointer
     stq ptr2
     ldq ptr1
@@ -145,17 +138,13 @@ DN: lda #.sizeof(type)
     lda (stackPointer),z
     cmp #TYPE_BOOLEAN
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 
 :   ldz #stmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::body
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jsr stmtTypeCheck
@@ -163,10 +152,7 @@ DN: lda #.sizeof(type)
     jsr loadStackValue
     stq ptr1
 :   ldz #stmt::else_body
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jsr stmtTypeCheck
@@ -192,8 +178,7 @@ DN: lda #.sizeof(type)
     jsr getForKind
     sta forKind
     bne :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 :   ldz #stmtOffset
     jsr loadStackValue
     stq ptr1
@@ -209,31 +194,23 @@ DN: lda #.sizeof(type)
     beq :++                 ; the control variable was already reported
     tax
     bne :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     bra :++
 :   cmp forKind
     beq :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
 :   ldz #stmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::body
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr stmtTypeCheck
     rts
 .endproc
 
 ; Loads the pointer at offset Z of ptr1 into Q
 .proc loadExprPtr
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     rts
 .endproc
 
@@ -270,16 +247,12 @@ L1: ora #0                  ; set the flags from A for the caller
     lda (stackPointer),z
     cmp #TYPE_BOOLEAN
     beq :+
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
 :   ldz #stmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::body
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr stmtTypeCheck
     rts
 .endproc
@@ -312,31 +285,21 @@ L1: ora #0                  ; set the flags from A for the caller
     beq L1
     cmp #TYPE_ENUMERATION_VALUE
     beq L1
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
     bra L2
 L1: lda #TYPE_ENUMERATION
     sta caseKind
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     stq ptr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq caseFields
 L2: ldz #stmtOffset
     jsr loadStackValue
     stq ptr2
     ldz #stmt::body
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     lda caseKind
     jsr pushA
@@ -350,19 +313,13 @@ L2: ldz #stmtOffset
 
 .proc checkBlock
     ldz #stmt::body
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr stmtTypeCheck
     ldz #stmtOffset
     jsr loadStackValue
     stq ptr1
     ldz #stmt::decl
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr declTypeCheck
     rts
 .endproc

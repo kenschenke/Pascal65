@@ -28,6 +28,8 @@ STRKIND_STRING = 2
 
 .import typeCheckError, loadStackValue, isTypeNumeric, isTypeInteger, isSigned
 .import typeCheckWarning, evalConstInt, constSign
+.import calcTypeBlockAddr
+.import loadQPtr1, loadQPtr2, loadQPtr3, loadQPtr4, typeErrIncompatible
 
 .bss
 
@@ -74,12 +76,12 @@ leftIsSigned: .res 1
     ; Two Chars, or a Char and a Char subrange, are left to the checks
     ; below: checkStringOperands sees their base types and leaves them.
 L2: lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     jsr getBaseType
     ldz #leftTypeOffset
     jsr copyToType
     lda #rightTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     jsr getBaseType
     ldz #rightTypeOffset
     jsr copyToType
@@ -98,7 +100,7 @@ L2: lda #leftTypeOffset
     ; Check the base types, so that an operand of a subrange type is its
     ; subrange's integer or character type
     lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -108,7 +110,7 @@ L2: lda #leftTypeOffset
     jsr isTypeNumeric
     bne L3
     lda #rightTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -116,8 +118,7 @@ L2: lda #leftTypeOffset
     jsr isTypeNumeric
     beq DN
 
-L3: lda #errIncompatibleTypes
-    jsr typeCheckError
+L3: jsr typeErrIncompatible
 
 DN: lda #.sizeof(type)
     jsr popBlock
@@ -157,8 +158,7 @@ NO: clc                     ; Neither, or both Char
     rts
 LN: cmp #0
     beq NO
-ER: lda #errIncompatibleTypes
-    jsr typeCheckError
+ER: jsr typeErrIncompatible
 SC: sec
     rts
 .endproc
@@ -168,7 +168,7 @@ SC: sec
 ; STRKIND_STRING for a String, a string literal, a string object or an
 ; array of Char.
 .proc getStringKind
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -184,10 +184,7 @@ SC: sec
     cmp #TYPE_ARRAY
     bne NO
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
     ldz #type::kind
@@ -208,7 +205,7 @@ ST: lda #STRKIND_STRING
 ; The carry flag is set if left and right are enumerations.
 .proc checkEnumOperands
     lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -221,7 +218,7 @@ ST: lda #STRKIND_STRING
     rts
 
 L1: lda #rightTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr2
     ldz #type::kind
     nop
@@ -234,28 +231,16 @@ L1: lda #rightTypeOffset
     rts
 
 L2: ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr4
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     stq ptr4
     ldx #0
 :   lda ptr3,x
@@ -265,8 +250,7 @@ L2: ldz #type::subtype
     cpx #4
     bne :-
     bra L4
-L3: lda #errIncompatibleTypes
-    jsr typeCheckError
+L3: jsr typeErrIncompatible
 L4: sec
     rts
 .endproc
@@ -298,7 +282,7 @@ L1: lda #leftTypeOffset
     jsr isPointerOperand
     beq L3
     lda #rightTypeOffset
-L2: jsr calcTypePtr
+L2: jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -310,8 +294,7 @@ L2: jsr calcTypePtr
     lda (ptr1),z
     and #TYPE_FLAG_ISCONST
     bne DN
-ER: lda #errIncompatibleTypes
-    jsr typeCheckError
+ER: jsr typeErrIncompatible
     bra DN
 
     ; Both are pointers. Replace each with the type it points to.
@@ -323,7 +306,7 @@ L3: lda #leftTypeOffset
     ; Compare the kinds of the base types. getBaseType changes ptr1 and
     ; ptr2, so keep the left one's kind on the stack.
     lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     jsr getBaseType
     stq ptr3
     ldz #type::kind
@@ -331,7 +314,7 @@ L3: lda #leftTypeOffset
     lda (ptr3),z
     pha
     lda #rightTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     jsr getBaseType
     stq ptr3
     pla
@@ -346,7 +329,7 @@ DN: sec
 ; This routine sets the Z flag if the type at the stack offset in A is a
 ; pointer or an address.
 .proc isPointerOperand
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -360,13 +343,10 @@ DN: sec
 ; This routine replaces the pointer or address type at the stack offset in
 ; A with a copy of the type it points to.
 .proc copySubtype
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldz #0
 :   nop
@@ -385,7 +365,7 @@ DN: sec
 ; if the other side is an unsigned variable.
 .proc checkIntegerOperands
     lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -397,7 +377,7 @@ DN: sec
     bcs :+
     jmp DN                  ; Branch if a side has a constant value
 :   lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ; Check if the left operand is a constant
     ldz #type::flags
@@ -414,7 +394,7 @@ DN: sec
     lda (ptr1),z
     beq DN
     lda #rightTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -434,7 +414,7 @@ StoreLeftSigned:
     sta leftIsSigned
 
     lda #rightTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -457,7 +437,7 @@ StoreLeftSigned:
     beq DN
     ; If the left is an unsigned variable, issue a warning.
     lda #leftTypeOffset
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::kind
     nop
@@ -500,7 +480,7 @@ DN: rts
     jsr evalConstInt
     bcs DN                  ; Branch if neither is a constant
     lda #leftTypeOffset
-CK: jsr calcTypePtr         ; The other side
+CK: jsr calcTypeBlockAddr         ; The other side
     stq ptr1
     ldz #type::kind
     nop
@@ -529,22 +509,10 @@ DN: rts
 
 ; This routine calculates the pointer of the type stored on the stack.
 ; The stack offset is passed in A and the pointer is returned in Q.
-.proc calcTypePtr
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq stackPointer
-    clc
-    adcq intOp32
-    rts
-.endproc
-
 ; This routine copies a type structure from the offset in X to A.
 .proc copyType
     phx
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1                ; dest
     plz
     jsr loadStackValue
@@ -568,7 +536,7 @@ DN: rts
     ldz #0
     stq ptr2                ; source in ptr2
     pla
-    jsr calcTypePtr
+    jsr calcTypeBlockAddr
     stq ptr1                ; dest in ptr1
     ldz #0
 :   nop

@@ -15,6 +15,7 @@
 .export typeCheckUnits
 
 .import declTypeCheck
+.import loadQPtr1
 
 .bss
 
@@ -36,19 +37,13 @@ L1: ldq thisUnit
     ldq thisUnit
     stq ptr1
     ldz #unit::astRoot
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr declTypeCheck
 
     ldq thisUnit
     stq ptr1
     ldz #unit::next
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq thisUnit
     bra L1
 .endproc

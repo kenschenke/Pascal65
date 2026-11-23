@@ -23,6 +23,7 @@ exprRightOffset = 0
 .import loadStackValue, isTypeInteger, isAssignableToString
 .import getTypeSize, typeCheckError, checkForwardVsFormalDeclaration
 .import isAssignmentCompatible
+.import followPtr1, loadQPtr1, loadQPtr2, loadQPtr3
 
 .bss
 
@@ -92,10 +93,7 @@ SV: ldz #leftTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2
     ldz #rightTypeOffset
     jsr typeKind
@@ -170,31 +168,17 @@ EN: ldz #leftTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #rightTypeOffset
     jsr loadStackValue
     stq ptr2
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldx #0
 :   lda ptr1,x
@@ -318,19 +302,12 @@ DN: jsr popQ
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1            ; ptr1 is left subtype
+    jsr followPtr1          ; ptr1 is left subtype
     ldz #exprRightOffset
     jsr loadStackValue
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2            ; ptr2 is right expression's left child
     ldz #expr::kind
     nop
@@ -338,24 +315,15 @@ DN: jsr popQ
     cmp #EXPR_SUBSCRIPT
     bne :+
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     lda #1
     sta isSubscript
 :   ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr3            ; ptr3 is the symbol type
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
     ldq ptr1
     jsr getBaseType
@@ -368,10 +336,7 @@ DN: jsr popQ
     cmp #TYPE_ROUTINE_POINTER
     bne L2
 L1: ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
 L2: ldz #type::kind
     nop
@@ -381,10 +346,7 @@ L2: ldz #type::kind
     lda isSubscript
     beq :+
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
 :   ldz #type::kind
     nop
@@ -401,10 +363,7 @@ L2: ldz #type::kind
     lda (ptr1),z
     sta ptrKind
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptrSymtab
     ldq ptr3
     jsr getBaseType
@@ -417,10 +376,7 @@ L2: ldz #type::kind
     cmp #TYPE_RECORD
     bne DN
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr3
     ldx #0
 :   lda ptrSymtab,x
@@ -449,10 +405,7 @@ DN: rts
     lda (ptr1),z
     sta ptrKind
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptrSymtab
     ldz #rightTypeOffset
     jsr loadPointerTarget
@@ -465,11 +418,7 @@ DN: rts
     cmp #TYPE_RECORD
     bne OK
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldx #0
 :   lda ptrSymtab,x
     cmp ptr1,x
@@ -494,10 +443,7 @@ ER: lda #errIncompatibleAssignment
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jmp getBaseType
 .endproc
 
@@ -513,25 +459,15 @@ ER: lda #errIncompatibleAssignment
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr4
     jsr scopeLookup
     stq ptr2
     jsr pushQ
     ldz #symbol::decl
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr1
     ldz #decl::isLibrary
     nop
@@ -545,29 +481,16 @@ ER: lda #errIncompatibleAssignment
     jsr loadStackValue
     stq ptr1                ; ptr1 is the left type
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ; Make sure the routine pointer is the same type as the routine it points to
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     jsr pushQ
     jsr checkForwardVsFormalDeclaration
     rts

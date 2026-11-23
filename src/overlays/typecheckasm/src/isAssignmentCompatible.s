@@ -21,6 +21,7 @@ leftKindOffset = rightTypeOffset + 4
 
 .import isTypeInteger, loadStackValue, typeCheckWarning
 .import evalConstInt, constIntFits
+.import loadQPtr1
 
 .bss
 
@@ -298,10 +299,7 @@ SignedYes:
 :   ldq maxCardinal
 L1: stq intOp32
     ldz #expr::value
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq intOp1
 
     ; If they are equal it fits

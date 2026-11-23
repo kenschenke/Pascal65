@@ -19,6 +19,7 @@ argOffset = typeOffset + .sizeof(type)
 .export checkDecIncCall
 
 .import typeCheckError, loadStackValue, exprTypeCheck, isTypeInteger
+.import followPtr1, loadQPtr1, typeErrInvalidType, typeErrParamCount
 
 .proc checkDecIncCall
     ; Push an empty type onto the stack
@@ -30,8 +31,7 @@ argOffset = typeOffset + .sizeof(type)
     jsr loadStackValue
     jsr isQZero
     bne :+
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     jmp DN
 
     ; Look at the first argument.
@@ -42,10 +42,7 @@ argOffset = typeOffset + .sizeof(type)
     ldq stackPointer
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     jsr pushQZero
     ldq ptr2
@@ -67,8 +64,7 @@ argOffset = typeOffset + .sizeof(type)
     beq L1
     jsr isTypeInteger
     beq L1
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     jmp DN
 
     ; The argument must be a variable and not constant
@@ -77,8 +73,7 @@ L1: ldz #type::flags
     lda (stackPointer),z
     and #TYPE_FLAG_ISCONST
     beq L2
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     jmp DN
 
     ; If there is a second argument, it must be an integer.
@@ -86,21 +81,14 @@ L2: ldz #argOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq DN
     stq ptr1
 
     ; Get the type of the second argument's expression
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldq stackPointer
     stq ptr2
     ldq ptr1
@@ -116,8 +104,7 @@ L2: ldz #argOffset
     lda (stackPointer),z
     jsr isTypeInteger
     beq L3
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     jmp DN
 
     ; Check for a third argument (can't have one).
@@ -125,20 +112,12 @@ L3: ldz #argOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq DN
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
 
 DN: lda #.sizeof(type)
     jsr popBlock

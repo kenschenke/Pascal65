@@ -21,6 +21,7 @@ argPtrOffset = routineCodeOffset + 1
 .export checkAbsSqrCall
 
 .import typeCheckError, loadStackValue, exprTypeCheck, isTypeInteger
+.import loadQPtr1, loadQPtr2, typeErrInvalidType, typeErrParamCount
 
 .proc checkAbsSqrCall
     ; Push a type onto the stack
@@ -32,22 +33,17 @@ argPtrOffset = routineCodeOffset + 1
     jsr loadStackValue
     jsr isQZero
     bne :+
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     lda #TYPE_VOID
     jmp DN
 
     ; It can't have more than one parameter
 :   stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
-    lda #errWrongNumberOfParams
-    jsr typeCheckError
+    jsr typeErrParamCount
     lda #TYPE_VOID
     bra DN
 
@@ -58,10 +54,7 @@ argPtrOffset = routineCodeOffset + 1
     jsr loadStackValue
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     jsr pushQ
     jsr pushQZero
     ldq ptr1
@@ -78,8 +71,7 @@ argPtrOffset = routineCodeOffset + 1
     beq L1
     jsr isTypeInteger
     beq L1
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     lda #TYPE_VOID
     bra DN
 

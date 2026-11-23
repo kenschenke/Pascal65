@@ -23,11 +23,12 @@ exprOffset = recordSymtabOffset + 4
 .export exprTypeCheck
 
 .import loadStackValue, evalArrayLiteral, exprLiteral, typeCheckError
-.import isTypeInteger, realOperands, checkRelOpOperands
+.import isTypeInteger, checkRelOpOperands, calcTypeBlockAddr
 .import checkBoolOperand, getTypeConversion, getTypeSize, isExprATypeDeclaration
 .import isExprAFuncCall, checkAssignment, checkFuncProcCall, getArrayType, hoistFuncCall
 .import checkTypeCast, isExprARoutineCall, getBinaryExpressionType
 .import isTypeCastable, getRecordSymtab
+.import followPtr1, loadQPtr1, loadQPtr2, loadQPtr3, loadQPtr4, typeErrIncompatible, typeErrInvalidType
 
 .bss
 
@@ -85,21 +86,14 @@ rebaseName: .res 4         ; and its name before
     cmp #EXPR_ARRAY_LITERAL
     bne :+
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr evalArrayLiteral
     jmp DN
 
     ; Evaluate the left expression
 :   pha                         ; save the expr kind
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #recordSymtabOffset
     jsr loadStackValue
     stq ptr2
@@ -169,10 +163,7 @@ LP: jsr pushA
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ                   ; the next argument
 NA: ldz #0
     jsr loadStackValue
@@ -194,11 +185,7 @@ NA: ldz #0
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #0
     ldx #0
 :   lda ptr1,x
@@ -223,11 +210,7 @@ L1: ldz #exprOffset
     lda (ptr1),z
     pha                         ; save the expr kind
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #recordSymtabOffset
     jsr loadStackValue
     stq ptr2
@@ -428,8 +411,7 @@ RC: jsr pushA
     bne :+
     jsr evalNegate
     jmp DN
-:   lda #errInvalidType
-    jsr typeCheckError
+:   jsr typeErrInvalidType
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -485,20 +467,14 @@ DN:
     stq ptr1
     jsr pushQ
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jsr heapFree
 :   jsr popQ
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     stq ptr1
@@ -515,18 +491,6 @@ DN:
 ; This routine calculates the address of the type block on the
 ; runtime stack. The offset of the block is passed in A.
 ; The address of the type block is returned in Q.
-.proc calcTypeBlockAddr
-    sta intOp32
-    lda #0
-    sta intOp32+1
-    sta intOp32+2
-    sta intOp32+3
-    ldq stackPointer
-    clc
-    adcq intOp32
-    rts
-.endproc
-
 .proc evalLiteral
     ldz #exprOffset
     jsr loadStackValue
@@ -709,10 +673,7 @@ L1: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jsr freeEvalType
@@ -754,10 +715,7 @@ L1: ldz #exprOffset
     cmp #TYPE_ARRAY
     bne :+
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq ptr1
 
@@ -789,16 +747,10 @@ DN: php
     jsr loadStackValue
     stq ptr2
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     ldq ptr2
     jsr pushQ
@@ -831,10 +783,7 @@ DN: php
 
     ldq ptr1
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     jsr isQZero
     beq DN
     stq ptr2
@@ -869,20 +818,14 @@ DN: jsr popQ
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isConcatOperand
     bne L1
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isConcatOperand
     bne L1
     ; The result is a string object
@@ -919,8 +862,7 @@ L1: lda #leftTypeOffset
     lda (ptr1),z
     jsr isTypeInteger
     beq :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -987,8 +929,7 @@ L2: jsr loadBinaryExpressionArgs
     rts
 
     ; Incompatible type
-L1: lda #errIncompatibleTypes
-    jsr typeCheckError
+L1: jsr typeErrIncompatible
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -1008,16 +949,10 @@ L5: jsr loadBinaryExpressionArgs
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr4
     lda #leftTypeOffset
     jsr calcTypeBlockAddr
@@ -1124,8 +1059,7 @@ L5: jsr loadBinaryExpressionArgs
     sta (ptr1),z
     rts
 
-L1: lda #errInvalidType
-    jsr typeCheckError
+L1: jsr typeErrInvalidType
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -1146,11 +1080,7 @@ L1: lda #errInvalidType
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
@@ -1194,8 +1124,7 @@ ST: pha
     sta (ptr1),z
     rts
 
-ER: lda #errIncompatibleTypes
-    jsr typeCheckError
+ER: jsr typeErrIncompatible
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -1259,8 +1188,7 @@ L1: jsr isTypeInteger
     sta (ptr1),z
     rts
 
-L2: lda #errIncompatibleTypes
-    jsr typeCheckError
+L2: jsr typeErrIncompatible
     rts
 .endproc
 
@@ -1357,10 +1285,7 @@ L5: lda #leftTypeOffset
     jsr loadStackValue
     stq ptr4
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr4),z
+    jsr loadQPtr4
     stq ptr4
     ldq ptr1
     jsr pushQ
@@ -1386,10 +1311,7 @@ L5: lda #leftTypeOffset
     jsr calcTypeBlockAddr
     stq ptr1
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq rebaseName
     lda rebaseOff
     jsr calcTypeBlockAddr
@@ -1424,10 +1346,7 @@ L5: lda #leftTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     rts
 .endproc
 
@@ -1444,11 +1363,7 @@ L5: lda #leftTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ; Only a pointer or an address can be dereferenced. A left with no
     ; type reported its own error.
     ldz #expr::evalTypeKind
@@ -1462,19 +1377,13 @@ L5: lda #leftTypeOffset
     lbeq VD
     jmp ER
 :   ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     lbeq VD                     ; The left has no type
     jsr getBaseType
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     lbeq ER                     ; It doesn't point to anything (nil)
     stq ptrPointee
@@ -1506,10 +1415,7 @@ L5: lda #leftTypeOffset
     ldz #type::indextype
     jsr copyField
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     jsr isQZero
     bne :+
     ldq ptr3
@@ -1527,10 +1433,7 @@ L5: lda #leftTypeOffset
     ldq ptrPointee
     stq ptr3
     ldz #type::name
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     jsr isQZero
     beq DN
     jsr nameClone
@@ -1549,8 +1452,7 @@ L5: lda #leftTypeOffset
     bne :-
 DN: rts
 
-ER: lda #errInvalidType
-    jsr typeCheckError
+ER: jsr typeErrInvalidType
 VD: ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -1563,10 +1465,7 @@ VD: ldz #typePtrOffset
 ; Copies the pointer at offset Z in the type in ptr3 to the type in ptr1
 copyField:
     phz
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr4
     plz
     ldx #0
@@ -1661,10 +1560,7 @@ L2: ldz #type::kind
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isExprATypeDeclaration
     bne L1
     lda #errInvalidIdentifierUsage
@@ -1683,20 +1579,13 @@ L1: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     beq :+
     jmp L8
 
 :   ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
 L2: ldz #expr::kind
     nop
     lda (ptr1),z
@@ -1706,18 +1595,11 @@ L2: ldz #expr::kind
     bne L4
 
 L3: ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     bra L2
 
 L4: ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     bne L5
     ldz #expr::kind
@@ -1726,17 +1608,10 @@ L4: ldz #expr::node
     cmp #EXPR_POINTER
     bne L5
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
 
 L5: ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     bne :+
     ; Not a name, such as pp^^ or ptrs[2]^. The record's table comes from
@@ -1760,10 +1635,7 @@ LS: lda ptr2,x
     bra CK
 :   stq ptr2
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     ldz #rightTypeOffset
     jsr copyToType
     ; Call exprTypeCheck
@@ -1771,19 +1643,12 @@ CK: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     lda #rightTypeOffset
     jsr calcTypeBlockAddr
     stq ptr2
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1801,10 +1666,7 @@ CK: ldz #exprOffset
     jsr calcTypeBlockAddr
     stq ptr2
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1822,25 +1684,15 @@ CK: ldz #exprOffset
 
 L8: stq ptr2
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1858,10 +1710,7 @@ L8: stq ptr2
     jsr calcTypeBlockAddr
     stq ptr2
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #typePtrOffset
     jsr loadStackValue
@@ -1884,10 +1733,7 @@ L8: stq ptr2
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr pushQ
     lda #<arrayType
     ldx #>arrayType
@@ -1921,8 +1767,7 @@ L8: stq ptr2
     beq L1
     cmp #TYPE_ARRAY
     beq L2
-    lda #errInvalidType
-    jsr typeCheckError
+    jsr typeErrInvalidType
     ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
@@ -1937,11 +1782,7 @@ L1: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #expr::evalTypeKind
     nop
     lda (ptr1),z
@@ -1970,10 +1811,7 @@ L2: lda #<arrayType
     sta ptr1+2
     sta ptr1+3
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq elemType
     lda #<arrayType
@@ -1984,10 +1822,7 @@ L2: lda #<arrayType
     sta ptr1+2
     sta ptr1+3
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr getBaseType
     stq indexType
     stq ptr1
@@ -2003,31 +1838,17 @@ L4: lda #rightTypeOffset
     jsr getBaseType
     stq ptr2
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldq indexType
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldx #0
 :   lda ptr1,x
     cmp ptr2,x
@@ -2091,10 +1912,7 @@ L5: ldz #typePtrOffset
     nop
     sta (ptr1),z
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr3
     ldx #0
     ldz #type::subtype
@@ -2106,10 +1924,7 @@ L5: ldz #typePtrOffset
     cpx #4
     bne :-
     ldz #type::symtab
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr3
     ldx #0
     ldz #type::symtab
@@ -2132,10 +1947,7 @@ L5: ldz #typePtrOffset
     ; this is an explicit type-cast expression (TypeName(expr)) and not
     ; a function/procedure call.
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isExprARoutineCall
     beq L1
 
@@ -2144,10 +1956,7 @@ L5: ldz #typePtrOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isExprATypeDeclaration
     bne L1
 
@@ -2186,10 +1995,7 @@ L1: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::node
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     bne :+
     lda #errUndefinedIdentifier
@@ -2197,19 +2003,13 @@ L1: ldz #exprOffset
     rts
 :   stq ptr1
     ldz #symbol::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr3                    ; symbol type in ptr3
 
     ldz #leftTypeOffset
     jsr copyToType
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     jsr isQZero
     bne L1
     ldz #type::subtype
@@ -2238,10 +2038,7 @@ L1: lda #leftTypeOffset
     nop
     sta (ptr1),z
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr4
     ldz #type::subtype
     ldx #0
@@ -2253,10 +2050,7 @@ L1: lda #leftTypeOffset
     cpx #4
     bne :-
     ldz #type::paramFields
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr4
     ldz #type::paramFields
     ldx #0
@@ -2283,10 +2077,7 @@ L1: lda #leftTypeOffset
     cmp #TYPE_ARRAY
     bne L2
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr3),z
+    jsr loadQPtr3
     stq ptr4
     ldz #type::indextype
     ldx #0

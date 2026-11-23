@@ -17,6 +17,7 @@ exprOffset = 0
 .export evalArrayLiteral
 
 .import loadStackValue, exprTypeCheck, exprLiteral
+.import followPtr1
 
 .bss
 
@@ -96,11 +97,7 @@ L3: ldz #exprOffset
     jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #exprOffset
     ldx #0
 :   lda ptr1,x

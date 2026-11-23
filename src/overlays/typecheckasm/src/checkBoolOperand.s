@@ -15,6 +15,7 @@
 .export checkBoolOperand
 
 .import typeCheckError
+.import typeErrIncompatible
 
 .proc checkBoolOperand
     stq ptr1
@@ -23,7 +24,6 @@
     lda (ptr1),z
     cmp #TYPE_BOOLEAN
     beq :+
-    lda #errIncompatibleTypes
-    jsr typeCheckError
+    jsr typeErrIncompatible
 :   rts
 .endproc

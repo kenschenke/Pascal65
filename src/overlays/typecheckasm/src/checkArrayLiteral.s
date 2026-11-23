@@ -22,6 +22,7 @@ arrayTypeOffset = valueOffset + 4
 .export checkArrayLiteral
 
 .import loadStackValue, typeCheckError, checkAssignment, isDynamicArray
+.import followPtr1, loadQPtr1, loadQPtr2
 
 .bss
 
@@ -41,11 +42,7 @@ resultTypeDummy: .res .sizeof(type)
     jsr loadStackValue
     stq ptr1
     ldz #type::subtype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #elemTypeOffset
     jsr storeStackValue
 
@@ -54,11 +51,7 @@ resultTypeDummy: .res .sizeof(type)
     jsr loadStackValue
     stq ptr1
     ldz #expr::left
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #exprOffset
     jsr storeStackValue
 
@@ -113,16 +106,10 @@ L3: ldz #elemTypeOffset
     jsr loadStackValue
     stq ptr2
     ldz #expr::evalType
-    neg
-    neg
-    nop
-    lda (ptr2),z
+    jsr loadQPtr2
     stq ptr2
     ldz #exprOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     stq ptr3
     ldq ptr1
     jsr pushQ
@@ -154,17 +141,10 @@ L4: ldz #elemsOffset
 
     ; Move to the next expression
     ldz #exprOffset
-    neg
-    neg
-    nop
-    lda (stackPointer),z
+    jsr loadStackValue
     stq ptr1
     ldz #expr::right
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #exprOffset
     ldx #0
 :   lda ptr1,x
@@ -187,16 +167,9 @@ L5: ldz #arrayTypeOffset
     jsr loadStackValue
     stq ptr1
     ldz #type::indextype
-    neg
-    neg
-    nop
-    lda (ptr1),z
-    stq ptr1
+    jsr followPtr1
     ldz #type::min
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2
     ; Put the min in intOp2
     ldz #expr::value
@@ -209,10 +182,7 @@ L5: ldz #arrayTypeOffset
     sta intOp2+1
     ; Put the max in intOp1
     ldz #type::max
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2
     ldz #expr::value
     nop

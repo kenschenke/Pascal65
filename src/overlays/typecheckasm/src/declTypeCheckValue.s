@@ -20,6 +20,7 @@ declOffset = valueOffset + 4
 .export declTypeCheckValue
 
 .import exprTypeCheck, typeCheckError, checkArrayLiteral, checkAssignment, loadStackValue
+.import loadQPtr1
 
 .bss
 
@@ -58,10 +59,7 @@ varType: .res 4
 
     ; Get the decl's type
 :   ldz #decl::type
-    neg
-    neg
-    nop
-    lda (ptr1),z
+    jsr loadQPtr1
     stq ptr2                    ; type in ptr2
     stq varType
     
