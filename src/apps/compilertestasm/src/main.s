@@ -12,6 +12,7 @@
 .include "cbm_kernal.inc"
 .include "zeropage.inc"
 .include "asmlib.inc"
+.include "asm.inc"
 
 CH_LOWERCASE = 14
 
@@ -31,6 +32,11 @@ main:
 
     ; Remember the stack pointer so a failure can return straight to BASIC
     jsr testInit
+
+    ; Clear any runtime error an earlier run recorded, so "done" only sees
+    ; this run's tests' (RTERR_RECORD in asm.inc)
+    lda #0
+    sta RTERR_RECORD
 
     ; Save the stack pointer
     tsx

@@ -28,7 +28,7 @@ Var
 Procedure Error(num : Integer);
 Begin
     Writeln('RtPkgB (', num, ') failed');
-    // A runtime error ends the chain, which fails the tests
+    // The runtime records a runtime error, and done fails on it
     zero := 0;
     zero := 1 Div zero;
 End;

@@ -529,7 +529,21 @@ takes two passes: paste the dump in, save again and paste once more,
 since the first paste moves the lines. `TESTSEL` works as in icodetest.
 
 In icode, `isRead` 0 asks an expression for the address of what it
-names, to write to or pass by reference, and 1 for its value. The
+names, to write to or pass by reference, and 1 for its value. A
+function's result in its own body is `PSH RET`, the result's address, so
+reading it adds `MEM` as a Var parameter's does (icodetest 48, `strcomp`'s
+`Own`); without it `Length(F)` read the pointer's low byte. An array in a
+record, like a record in one, is at its field's address, so reading it
+adds no `MEM` (unless dynamic): its low bound was taken for its address.
+
+Each expression routine in icode returns its result's kind in A, which a
+comparison or operation over it writes as its operand's kind. A routine
+that returns without setting A hands its caller garbage: comparisons
+(`icodeCompExpr`) and `And`/`Or` (`exprAndOr`) returned the low byte of a
+heap address, so `(a < b) <> (c < d)` got kinds that changed with the
+compile's heap layout. One came out `$0A` (a literal's), and the runtime
+compared the Booleans as strings in zero page, which differs between the
+emulator and a MEGA65. icodetest 48 checks both. The
 address of `p^` is p's value. A record variable holds its heap address,
 `@rec` is that address, and a record in an array or record is inline, so
 reading a whole record never reads memory (`MEM`).
@@ -564,7 +578,7 @@ built with `MEMCHECK=1`.
 
 ### Compiler Tests
 
-`compilertestasm` runs as four sets. Sets 1 to 3 split the tests because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from every set. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile). The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to `COMMONPAS` or a set's list in the Makefile.
+`compilertestasm` runs as four sets. Sets 1 to 3 split the tests because all the compiled programs don't fit on one D81. A set's D81 also needs free space for the files its tests write (set 2's file tests hang on a full disk, which leaves no screen dump). Every D81 holds the compiler and its overlays, so an overlay that grows takes room from every set. The sources only set 3 compiles go on set 3's disk alone (`SET3PAS` and `SET3WRITE` in the Makefile), and set 2's disk leaves off the sources only set 1 compiles (`SET1ONLYPAS`): set 2's programs are static, so the runtime growing by a page filled it. The `test` target runs a compile step, then a run step. Any compiler error or warning fails the compile step. Any test failure leaves a `testfailed` file that makes the last program, `done`, print FAIL. When you add a test, add it to `compiletests.s` (in one of the sets, `TESTSETS` and `FIRSTTESTn` in the Makefile) and to `COMMONPAS` or a set's list in the Makefile.
 
 Set 4 (`WORKSETS`) runs some of the others' tests again with a work disk on unit 9 (see "Work disks"): the units, `unitlib`, `libtest`, the file tests, the make tests and `mkcycle` and `mkbad`. `initlib.s` sets `workDevice` to `WORKUNIT`. The system disk (`compilertest4.d81`) has the compiler, overlays, libraries and runtime; the work disk (`compilertest4work.d81`) has the marker, `runtimeN` and the sources (`SYSSRC`, `WORKSRC`), and gets the PRGs, TPUs, objects and the programs' files. `wdsearch` uses WdUnit, whose source is on both disks (the system disk's is `wdunitsys.pas`), and must get the work disk's. The system disk's SHA-256 must be the same after the compile step and after the run step. The run step's PRG is `compilertest4-boot.prg` (`mkboot.py`), a BASIC `RUN "unitobjs",U9`, since a program the emulator starts with `-prg` doesn't have `DEVNUM` 9 and would read `runtimeN` and write `testfailed` on the system disk. Set 4's PRGs differ from the other sets' only in the chain loader's device byte and the next program's name.
 
@@ -575,6 +589,12 @@ The Pascal units the tests use aren't listed. `runCompiler` makes them as `compi
 The make tests (`makeTests` in `compiletests.s`, sets 1 and 4, run after `compileOnlyTests`) are steps: a DOS command (`MKDOS`, to scratch a file or copy one over another with `C:`) or a compile that must compile exactly the units named, in order (`MKCOMPILE`). `runCompiler` lists the units it compiled in `madeUnits`, and a mismatch prints both lists and fails the compile step. `mkprog` uses MkB and MkC, MkB uses MkA in its interface and MkC uses MkB in its implementation. The harness copies `mka1.pas`, `mka2.pas` (a new implementation) and `mka3.pas` (a new interface) to `mka.pas`, and `mkstale.tpu`, which the Makefile writes (`TP`, TPU version 1, icode version 0), over `mkc.tpu`. A compile step also names the units whose code must be generated (`genUnits`, from `getCodeGenUnits` right after `objCodeGen`): a TPU compiled again from the same source and units has the key its object has, so the stale and missing TPU steps generate nothing, and a step that scratches `mkb.obj` generates MkB alone. The last step rebuilds (`MKREBUILD`: `makeRebuild` makes `runCompiler` call `tpuClean` first) and must compile all three. `mkcycle` is an error test: CycA and CycB use each other. A TPU unit's routine symbols name the interface's declarations, which have no code and no level (no body sets them); `@` of one was read as a constant and given level 0 until `unitrefs` differed (tputest 10).
 
 A program that only has to compile and link, without an error or warning, goes in `compileOnlyTests`. It isn't run. `examples/fivedice.pas` is there, with the Screen library on the D81, to check the runtime leaves it room.
+
+`make TARGET=mega65 load` builds every set's images and copies them to a
+real MEGA65 with `mega65_ftp`, as `CTn.D81` (and `CTnW.D81` for a work
+disk): the MEGA65 mounts by 8.3 name, and long names that share a prefix
+got `~n` aliases, so `compilertest1` once mounted an old
+`compilertest.d81`.
 
 After a set's compile step, `prgsums.sh` checks every PRG it compiled against its SHA-256 in `prgsums/setN.txt`, so a change that mustn't change the programs (`plans/objcode.md`) is checked. A new test, or a change meant to change the code, needs new checksums: check the programs, then `make TARGET=mega65 savesums` in `src/apps/compilertestasm` (asmlib built with `MEMCHECK=1`) records them.
 
@@ -601,6 +621,13 @@ Name its failure maker `testfailed`, call `ReportFailure` and make sure the prog
 ### Orphaned emulators
 
 `timeout` in `runtest.sh` kills the WSL wrapper, not the Windows `xmega65.exe`. A timed-out run leaves an emulator running that locks its D81 image, and the next run then fails with "Permission Denied" until the process is killed.
+
+`-prgexit` doesn't always see a program return: one whose output fills
+the screen can sit at `READY.` until the timeout, which looks like a
+hang and leaves no screen dump. To see such a screen, run the emulator
+from Windows with `-uartmon :4510` (it exits with a WSL shell started in
+the background) and read the 80-column screen at $0800 with the
+monitor's `M` command over TCP.
 
 ## Language and compiler quirks
 
@@ -816,8 +843,14 @@ pointer (`PPF`, `JRP`) still uses `pushFrame` with the return address.
 A new jump table entry grows `RT_JMPTBL_SIZE` and needs a new
 `RT_ABI_VERSION` once the old one has been released.
 
-A test without a file variable can't write `testfailed`. The `rtpkg*` tests
-end with a runtime error instead (division by zero), which stops the chain.
+A runtime error doesn't stop a chain: `exit` runs the program's cleanup,
+which chains to the next PRG. So `runtimeError` (`rterror.s`) records the
+error at `RTERR_RECORD` (`asm.inc`, $1EFA: "ER" and the code), and `done`
+fails if it finds one, prints the code and clears it; the compile step
+clears it first. Before this, a test that crashed before writing
+`testfailed` passed (dynarraya's `'x' + chars` overflowed unnoticed). A
+test without a file variable can't write `testfailed`, so the `rtpkg*`
+tests fail with a runtime error (division by zero) instead.
 
 ### Runtime tests
 
@@ -831,14 +864,36 @@ and runs `rtdynb` with a missing, a bad and a too-low `runtimeN`. It also
 runs `rterrexit`, which ends with a runtime error: `exit` (runtime) puts the
 KERNAL's IRQ handler back and jumps to the program's exit handler, the
 start of the libraries' cleanup, so the program must print the error and
-return to BASIC. The chained tests can't check that: an error stops the
-chain.
+return to BASIC. The chained tests can't check that, since there the
+cleanup chains to the next program.
 
 A function's String result is a string object (the type checker sets
 `evalTypeKind` of a call returning String to `TYPE_STRING_OBJ`), so the
 assignment, the parameter copy (`SCV`) or the concatenation that uses it
 frees it. `strleak` calls such functions thousands of times and runs out
 of memory if one leaks.
+
+The runtime's heap (`memheap.s`, not asmlib's) is a best fit over a MAT
+whose entries are in address order with contiguous blocks. `heapFree`
+merges a freed block with the free blocks on either side
+(`mergeFreeBlock`; a merged size stays below $8000, the allocated bit)
+and trims free entries from the end. `heapAlloc` splits a reused block
+that is larger than the request (`splitEntry`), leaving the rest free in
+a new entry after it, unless the MAT has no room for one. Without the
+split a small request took a whole merged block, and `s := UpCase(s)`
+grew `s` by its length each time (the value parameter's copy merged with
+`s`). Without the merge, a string built a character at a time
+left two holes per step, each too small for the next, and a dynamic
+program's 8K heap ran out (`strcomp`'s 255-character strings). `strleak`
+builds such strings in both orders.
+
+A string's block is its length plus 1, so a 255-character string's is
+256: a routine that makes one passes the size in A/X with the carry of
+that add in X. Computed in A alone it was 0, the heap put the next block
+on top of it, and `strcomp` failed on the MEGA65 and passed in the
+emulator by the luck of its layout. `strroutines` (`TestLong`) makes a
+255-character string with each routine that makes one and checks it after
+the next allocations.
 
 The header switches the BASIC ROM out of $A000-$BFFF. A large program's
 cleanup is under it, so the cleanup switches it back in from a stub it
