@@ -73,11 +73,57 @@ Begin
     If i <> 99 Then Error(56);
 End;
 
+// v must still be 255 copies of c once other strings have been made. A
+// 255-character string's block is 256 bytes; a size of length + 1 in one
+// byte made it 0, so the next block was put on top of it.
+Procedure CheckLong(num : Integer; Var v : String; c : Char);
+Var
+    w, x : String;
+    i : Integer;
+    bad : Boolean;
+Begin
+    w := StringOfChar('q', 200);
+    x := w + 'abc';
+    If Length(v) <> 255 Then Error(num)
+    Else Begin
+        bad := false;
+        For i := 1 To 255 Do
+            If v[i] <> c Then bad := true;
+        If bad Then Error(num + 1);
+    End;
+End;
+
+// A 255-character string made by each runtime routine that makes one
+Procedure TestLong;
+Var
+    s254, v, t : String;
+    i : Integer;
+Begin
+    s254 := '';
+    For i := 1 To 254 Do s254 := s254 + 'x';
+
+    v := s254 + 'x';                // A concatenation
+    CheckLong(100, v, 'x');
+    t := v;                         // A copy
+    CheckLong(102, t, 'x');
+    v := UpCase(t);                 // UpCase
+    CheckLong(104, v, 'X');
+    v := LowerCase(v);              // LowerCase
+    CheckLong(106, v, 'x');
+    v := Trim(t);                   // Trim
+    CheckLong(108, v, 'x');
+    v := StringOfChar('z', 255);    // StringOfChar
+    CheckLong(110, v, 'z');
+    v := WriteStr(t);               // WriteStr
+    CheckLong(112, v, 'x');
+End;
+
 Begin
     anyErrors := false;
     errList := '';
 
     Writeln('Running string routine tests');
+    TestLong;
 
     TestReadStr;
 

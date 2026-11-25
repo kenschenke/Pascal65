@@ -26,6 +26,8 @@ count = tmp2
     clc
     adc #1
     ldx #0
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc
     sta ptr1
     stx ptr1 + 1

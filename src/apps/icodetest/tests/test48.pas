@@ -21,6 +21,7 @@ PSH CHR f
 PSH RET 
 SET IBS 15 IBS 9
 PSH RET 
+MEM IBS 15
 PSH CHR g
 LST IBS 15 IBS 9
 PSH VDW 8 1 7
@@ -133,7 +134,6 @@ SET IBS 8 IBS 8
 PSH VDR 14 1 2
 PSH IBS 2
 ADD IBS 3 IBS 3 IBS 3
-MEM IBS b
 PSH VDR b 1 5
 NEQ IBS b IBS b
 PSH VDW 8 1 7
@@ -165,6 +165,26 @@ SET IBS 8 IBS 8
 PSH VDR 9 1 6
 PSH CHR y
 EQU IBS 9 IBS 9
+PSH VDW 8 1 7
+SET IBS 8 IBS 8
+PSH VDR 15 1 0
+PSH VDR 15 1 1
+LST IBS 15 IBS 15
+PSH VDR 15 1 0
+PSH VDR 15 1 1
+GRT IBS 15 IBS 15
+NEQ IBS 8 IBS 8
+PSH VDW 8 1 7
+SET IBS 8 IBS 8
+PSH VDR 15 1 0
+PSH VDR 15 1 1
+EQU IBS 15 IBS 15
+PSH VDR 15 1 0
+PSH VDR 15 1 1
+NEQ IBS 15 IBS 15
+AND
+PSH VDR 8 1 7
+EQU IBS 8 IBS 8
 PSH VDW 8 1 7
 SET IBS 8 IBS 8
 DAT IBU 5 LBL xxxxx
@@ -217,6 +237,10 @@ EOM IBU 0
 // literal (10), array (11) or Char (9). A function's String result is a
 // string object, which the runtime frees, as a concatenation is. A
 // character of a String (SSR) is a Char, so s[1] = 'x' stays ordinal.
+// A function's result in its body (RET) is its address, read with MEM.
+// An array in a record (r.a) is at its address, so it isn't read with
+// MEM. A comparison's or And's result is a Boolean (8) as another
+// comparison's operand; it was the expression's address's low byte.
 
 Program Test;
 
@@ -268,4 +292,6 @@ Begin
   b := s[1] = 'x';
   b := s[1] <> s;
   b := c = 'y';
+  b := (s < t) <> (s > t);
+  b := (s = t) And (s <> t) = b;
 End.

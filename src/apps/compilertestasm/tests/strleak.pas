@@ -4,7 +4,8 @@ Program StrLeak;
 
 // A function's String result is a new string. Assigning it, passing it
 // as a parameter or using it in an expression must free it, or these
-// loops run out of memory and the chain stops.
+// loops run out of memory and the chain stops. A string built a character
+// at a time must reuse the blocks its earlier steps freed.
 
 Const
     Loops = 3000;
@@ -12,7 +13,7 @@ Const
 Var
     anyErrors : Boolean;
     errList : String;
-    s : String;
+    s, t, u : String;
     i, k : Integer;
     n : Byte;
 
@@ -94,6 +95,28 @@ Begin
         If Not (UpCase('pears') > s + 'R') Then Error(10);
     End;
     If k <> 2 * Loops Then Error(11);
+
+    // Strings built a character at a time. Each step frees two blocks a
+    // little smaller than the next one it asks for, so the heap must
+    // merge free blocks next to each other or it runs out.
+    For k := 1 To 20 Do Begin
+        s := '';
+        For i := 1 To 255 Do s := s + 'x';
+    End;
+    If Length(s) <> 255 Then Error(12);
+    If (s[1] <> 'x') Or (s[255] <> 'x') Then Error(13);
+
+    // Two at once, so blocks are freed between and after others
+    For k := 1 To 10 Do Begin
+        t := '';
+        u := '';
+        For i := 1 To 200 Do Begin
+            t := t + 'a';
+            u := 'b' + u;
+        End;
+    End;
+    If (Length(t) <> 200) Or (Length(u) <> 200) Then Error(14);
+    If (t[200] <> 'a') Or (u[1] <> 'b') Then Error(15);
 
     If anyErrors Then ReportFailure;
 End.

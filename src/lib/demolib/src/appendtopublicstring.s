@@ -75,6 +75,8 @@ DN: rts
     pha                 ; Store the combined length
     adc #1              ; Add 1 to the combined length (for the string length byte)
     ldx #0
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc     ; Allocate a buffer for the combined string
     sta newStr          ; Store the pointer to the new buffer
     sta ptr2            ; Put it in ptr2 as well (for copyStr)

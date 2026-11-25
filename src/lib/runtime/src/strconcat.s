@@ -71,16 +71,17 @@ tmpOffset: .res 1
     ldx concat1 + 1
     ldy type1
     jsr getLength
-    sta intOp1
-    lda #0
-    sta intOp1 + 1
-    lda concat2
-    ldx concat2 + 1
+    pha                 ; arrayLength uses intOp1, so the first length
+    lda concat2         ; waits on the CPU stack (an array second gave
+    ldx concat2 + 1     ; 'x' + a its own upper - lower as the first's)
     ldy type2
     jsr getLength
     sta intOp2
     lda #0
     sta intOp2 + 1
+    sta intOp1 + 1
+    pla
+    sta intOp1
     jsr addInt16
     lda intOp1 + 1
     beq :+
@@ -91,6 +92,8 @@ tmpOffset: .res 1
     clc
     adc #1
     ldx #0
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc
     sta strPtr
     sta ptr2

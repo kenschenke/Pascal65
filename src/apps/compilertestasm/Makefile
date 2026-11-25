@@ -121,6 +121,16 @@ COMMONPAS = add assign varinit bitwisea bitwiseb ifthen loops stdroutines \
 	uinita uinitb subtract divint trig vartest filetesta filetestb \
 	pointers unit unit1 libtest rtnarray rtnrecord rtnptrs strrecord \
 	strarray constants typecast chararray exprclone namedidx done toolarge
+# Set 2's disk leaves off the sources only set 1 compiles. Its programs
+# are static, each with the runtime in it, and its file tests hang on a
+# full disk.
+SET1ONLYPAS = add assign varinit bitwisea bitwiseb ifthen loops \
+	stdroutines incdec strroutines strleak writewidth strtests recarray \
+	scopetest casetest procfunc multiply forord declordr negate subrange \
+	unitinit uinita uinitb constants
+ifeq ($(TESTSET),2)
+COMMONPAS := $(filter-out $(SET1ONLYPAS),$(COMMONPAS))
+endif
 SRCWRITE = $(foreach t,$(COMMONPAS), \
 	-write $(PETSCIIDIR)/$(t).pas $(t).pas$(comma)seq) \
 	$(SET1WRITE) $(SET3WRITE)
@@ -427,16 +437,22 @@ run: $(D81FILE)
 # (FIRSTTESTn) to start the chain. The loader checks in rtdyntest.sh only
 # run in the emulator. A work set's work disk goes on unit 9 and its first
 # program is run from there.
+#
+# The images go on the SD card under 8.3 names (CTn.D81, CTnW.D81 for a
+# work disk). The MEGA65 mounts an image by its short name, and long names
+# that share a prefix get ~n aliases in the order they were created, so
+# compilertest1.d81 could mount an old compilertest.d81.
 load: hwimages
 	mega65_ftp -e $(foreach s,$(TESTSETS), \
-		-c 'put $(BINTARGETDIR)/compilertest$(s).d81') \
+		-c 'put $(BINTARGETDIR)/compilertest$(s).d81 CT$(s).D81') \
 		$(foreach s,$(WORKSETS), \
-		-c 'put $(BINTARGETDIR)/compilertest$(s)work.d81') -c 'exit'
+		-c 'put $(BINTARGETDIR)/compilertest$(s)work.d81 CT$(s)W.D81') \
+		-c 'exit'
 	@$(foreach s,$(filter-out $(WORKSETS),$(TESTSETS)), \
-		echo "compilertest$(s).d81: \
+		echo "CT$(s).D81: \
 		RUN \"COMPILER\", then RUN \"$(FIRSTTEST$(s))\"";)
-	@$(foreach s,$(WORKSETS),echo "compilertest$(s).d81 on unit 8 and \
-		compilertest$(s)work.d81 on unit $(WORKUNIT): RUN \"COMPILER\", \
+	@$(foreach s,$(WORKSETS),echo "CT$(s).D81 on unit 8 and \
+		CT$(s)W.D81 on unit $(WORKUNIT): RUN \"COMPILER\", \
 		then RUN \"$(FIRSTTEST$(s))\",U$(WORKUNIT)";)
 
 # Builds a fresh debug disk image for each set with asmlib's memory checks,

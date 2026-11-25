@@ -172,6 +172,8 @@ OV: lda #rteStringOverflow
     ldx #0
     clc
     adc #1
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc ; Allocate memory for the destination
     sta ptr4        ; Save it in ptr4
     stx ptr4 + 1

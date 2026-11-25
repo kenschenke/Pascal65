@@ -68,6 +68,8 @@ RT: rts
     ldx #0
     clc
     adc #1
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc
     sta ptr2
     stx ptr2 + 1

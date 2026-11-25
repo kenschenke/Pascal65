@@ -62,6 +62,8 @@ destIndex: .res 1
     clc
     adc #1                  ; Add 1 for string length
     ldx #0
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc
     sta ptr2
     stx ptr2 + 1

@@ -61,8 +61,10 @@ NotEmpty:
     pha
     lda ptr1 + 1
     pha
-    tya
     ldx #0
+    tya
+    bne *+3             ; 255 + 1 is 256
+    inx
     jsr heapAlloc
     sta ptr2
     stx ptr2 + 1

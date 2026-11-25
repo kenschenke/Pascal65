@@ -40,6 +40,8 @@ upper = tmp2
     clc
     adc #1              ; Add one to it
     ldx #0
+    bcc *+3             ; 255 + 1 is 256
+    inx
     jsr rtHeapAlloc     ; Allocate a new string
     sta ptr2
     stx ptr2 + 1        ; Save new string in ptr2
