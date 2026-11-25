@@ -146,10 +146,20 @@ RTF_ALL = $07
 ; system device. Its loader writes the magic and the work device here
 ; before loading pascal65 (prgChain.s), and the editor's main takes the
 ; device and clears the magic. $1600 - $1EFF is free for program use, and
-; the chain loader and its filename end below $1F00 - 3.
+; the chain loader and its filename end below RTERR_RECORD.
 CHAIN_HANDOFF = $1EFD       ; 2 bytes magic, then the work device
 CHAIN_MAGIC1 = $57          ; "W"
 CHAIN_MAGIC2 = $44          ; "D"
+
+; The record of a runtime error (runtimeError, rterror.s): 2 bytes magic,
+; then the error code. A program that gets one still runs its cleanup,
+; which chains to the next PRG, so compilertestasm's "done" looks here
+; for a test that ended with one, then clears it. The compile step clears
+; it before the tests run.
+RTERR_RECORD = $1EFA
+RTERR_MAGIC1 = $45          ; "E"
+RTERR_MAGIC2 = $52          ; "R"
+.assert RTERR_RECORD + 3 <= CHAIN_HANDOFF, error, "RTERR_RECORD overlaps"
 
 ; Runtime modes, chosen by the $StaticRuntime and $DynamicRuntime
 ; directives

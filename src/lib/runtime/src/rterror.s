@@ -13,6 +13,7 @@
 .include "cbm_kernal.inc"
 .include "runtime.inc"
 .include "error.inc"
+.include "asm.inc"
 
 .export runtimeError, runtimeErrorInit
 .export noDynArrays, noFiles, noTrig
@@ -78,6 +79,14 @@ DN: rts
 ; Prints runtime error message to console and exits
 ; Runtime error code in A
 .proc runtimeError
+    ; Record the error (RTERR_RECORD in asm.inc)
+    tax
+    lda #RTERR_MAGIC1
+    sta RTERR_RECORD
+    lda #RTERR_MAGIC2
+    sta RTERR_RECORD + 1
+    stx RTERR_RECORD + 2
+    txa
     jsr printRuntimeMsg
     jmp exit            ; exit back to BASIC
 .endproc

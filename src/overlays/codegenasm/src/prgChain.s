@@ -52,7 +52,7 @@ CHAINCALL_DEVICE = 3
 CHAINCALL_STRLEN = 10
 CHAINCALL_LENGTH = 28
 CHAIN_FILENAME = CHAIN_LOADER + CHAINCALL_LENGTH
-.assert CHAIN_FILENAME + 255 <= CHAIN_HANDOFF, error, "Chain loader does not fit"
+.assert CHAIN_FILENAME + 255 <= RTERR_RECORD, error, "Chain loader does not fit"
 prgChainCall:
     .byte OC_LDA_IMMEDIATE, 0
     .byte OC_LDX_IMMEDIATE, 8   ; device
