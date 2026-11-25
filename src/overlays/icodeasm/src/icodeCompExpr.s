@@ -121,6 +121,10 @@ DN: jsr popA
     jsr popA
     jsr popA
     jsr popQ
+    ; The result is a Boolean. A was the popped expression's address,
+    ; which a comparison of comparisons ((a < b) <> (c < d)) took as its
+    ; operands' kinds: $0A, a literal's, read a Boolean as a string at 0.
+    lda #TYPE_BOOLEAN
     rts
 .endproc
 

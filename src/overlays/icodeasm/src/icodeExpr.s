@@ -361,7 +361,11 @@ DN: lda castTargetKind
 
     pla
     jsr icodeWriteInstruction
-    rts
+    ; The result's kind, the type checker's. A was whatever
+    ; icodeWriteInstruction left, and a comparison takes its operands'.
+    ldz #exprOffset
+    jsr loadStackValue
+    jmp getExprTypeKind
 .endproc
 
 .proc exprAssign
@@ -564,7 +568,23 @@ L1: ldz #symPtrOffset
     pha
     cmp #TYPE_RECORD
     beq :+                      ; An embedded record is at its address
-    jsr icodeOper1Short
+    cmp #TYPE_ARRAY
+    bne MM
+    ; So is an embedded array. Its header is at its address: read as a
+    ; pointer (MEM), its low bound sent a comparison to address 1.
+    ldz #expr::right
+    jsr getChildExpr
+    jsr getExprType
+    jsr getBaseType
+    stq ptr1
+    ldz #type::flags
+    nop
+    lda (ptr1),z
+    and #TYPE_FLAG_ISDYNAMIC
+    beq :+
+    pla
+    pha
+MM: jsr icodeOper1Short
     lda #IC_MEM
     jsr icodeWriteInstruction
 :   pla
@@ -689,11 +709,21 @@ L3: lda rightType
 LS: lda rightType+type::flags
     and #TYPE_FLAG_ISRETVAL
     beq :+
+    ; A function's result in its own body. RET is the result's address,
+    ; so reading it (isRead) reads the memory there, as a Var parameter's.
     lda #IC_PSH
     jsr CHROUT
     lda #IC_RET
     jsr CHROUT
-    jmp DN
+    ldz #isReadOffset
+    nop
+    lda (stackPointer),z
+    beq RD
+    lda rightType
+    jsr icodeOper1Short
+    lda #IC_MEM
+    jsr icodeWriteInstruction
+RD: jmp DN
 :   ldq symPtr
     stq ptr1
     ldz #symbol::decl
