@@ -15,7 +15,7 @@
 
 .export heapAlloc, heapFree, heapInit
 
-.import runtimeError, geInt16, ltInt16, geUint32, addInt16
+.import runtimeError, geInt16, ltInt16
 
 ; The memory heap starts at the end of program code going to the top of the
 ; runtime stack (the runtime stack grows downward). Assuming a 2K stack
@@ -58,9 +58,11 @@ L1: sta (ptr1),y
 ;    ptr1 - current location in MAT
 ;    ptr2 - location in MAT of smallest available block
 ;           that satisfies requested buffer size.
-;    ptr3 - location in MAT of last allocated block.
+;    ptr3 - location in MAT of the last entry, free or not.
 ;           This is used when a new block is to be added
 ;           to the end of heap.
+;
+; A request of $8000 bytes or more is out of memory.
 ;
 ; Note: intOp1 and intOp2 are destroyed.
 ;
@@ -87,6 +89,13 @@ L1: sta (ptr1),y
     lda heapTop         ; Return the bottom of the heap in A/X.
     ldx heapTop+1
     rts
+
+    ; A size's high bit is the allocated bit, so no block can be $8000
+    ; bytes or more. (The sizes are compared as signed numbers, so such a
+    ; request fit any free block.)
+:   cpx #$80
+    bcc :+
+    jmp outOfMemory
 
     ; Initialization
 :   sta tmp1
@@ -405,96 +414,67 @@ L1:
     rts
 .endproc
 
-; This routine calculates the address of the end of the last allocated block
-; and returns it in A/X
-; ptr4 is used to walk through the MAT
-; tmp3/tmp4 points to the end of the last allocated block
-.proc getEndOfLastBlock
-    lda heapBottom
-    sta tmp3
-    lda heapBottom + 1
-    sta tmp4
-    lda heapTop
-    sta ptr4
-    lda heapTop+1
-    sta ptr4 + 1
-L1: ldy #3                  ; Is the current entry all zeros?
-:   lda (ptr4),y
-    bne :+
-    dey
-    bpl :-
-    bmi L3                  ; Entry is all zeros (end of MAT)
-    ; Is the current entry allocated?
-:   ldy #1
-    lda (ptr4),y
-    and #$80
-    beq L2                  ; Skip this entry if not allocated
-    ; Update tmp3/tmp4 and add size
-    ldy #0
-    lda (ptr4),y
-    sta tmp3
-    iny
-    lda (ptr4),y
-    and #$7f                ; Clear the allocated bit
-    sta tmp4
-    iny
-    lda tmp3
-    adc (ptr4),y
-    sta tmp3
-    iny
-    lda tmp4
-    adc (ptr4),y
-    sta tmp4
-    ; Move to the next MAT entry
-L2: lda ptr4
-    sec
-    sbc #4
-    sta ptr4
-    lda ptr4 + 1
-    sbc #0
-    sta ptr4 + 1
-    jmp L1
-L3: lda tmp3
-    ldx tmp4
-    rts
-
-.endproc
-
-; This routine checks the amount of free space in the heap to see if
-; there's enough left for the requested block. If not, a runtime error is triggered.
+; heapAlloc is adding a block of tmp1/tmp2 bytes after the last block: its
+; MAT entry goes at ptr1 (the MAT's zero entry) and the new zero entry at
+; ptr1 - 4, so the block must end at or below ptr1 - 4. The block starts
+; where the last entry's block ends (ptr3), free or not, or at the heap's
+; bottom if the MAT is empty. If the block doesn't fit, this ends with
+; rteOutOfMemory. Uses intOp1.
+;
+; This once measured from the end of the last allocated block, but the
+; last entry can be free, and the block was given memory in the MAT. It
+; also added in 16 bits, so a large request near the top of memory
+; wrapped around and fit.
 .proc checkFreeSpace
-    jsr getEndOfLastBlock
+    lda ptr3
+    ora ptr3 + 1
+    bne :+
+    lda heapBottom          ; The MAT is empty
     sta intOp1
-    stx intOp1 + 1
-    lda tmp1
-    sta intOp2
-    lda tmp2
-    sta intOp2 + 1
-    jsr addInt16
-    ; The new MAT entry goes at ptr4 and a new terminating entry at
-    ; ptr4 - 4, so the block must end at or below ptr4 - 4.
-    lda intOp1
+    lda heapBottom + 1
+    sta intOp1 + 1
+    jmp L1
+:   ldy #0                  ; intOp1 = the end of the last entry's block
+    lda (ptr3),y
+    ldy #2
     clc
+    adc (ptr3),y
+    sta intOp1
+    ldy #1
+    lda (ptr3),y
+    and #$7f
+    ldy #3
+    adc (ptr3),y
+    sta intOp1 + 1
+    ; intOp1 += the size + 4. Past $FFFF is out of memory.
+L1: clc
+    lda intOp1
+    adc tmp1
+    sta intOp1
+    lda intOp1 + 1
+    adc tmp2
+    sta intOp1 + 1
+    bcs outOfMemory
+    lda intOp1
     adc #4
     sta intOp1
     bcc :+
     inc intOp1 + 1
-:   lda ptr4
-    sta intOp32
-    lda ptr4 + 1
-    sta intOp32 + 1
-    lda #0
-    sta intOp2
-    sta intOp2 + 1
-    sta intOp32 + 2
-    sta intOp32 + 3
-    jsr geUint32
-    cmp #0
-    beq L3                  ; Branch if not
-    ; The block won't fit. Abort with a runtime error
+    beq outOfMemory
+    ; Out of memory if ptr1 < intOp1
+:   lda ptr1 + 1
+    cmp intOp1 + 1
+    bcc outOfMemory
+    bne :+
+    lda ptr1
+    cmp intOp1
+    bcc outOfMemory
+:   rts
+.endproc
+
+.proc outOfMemory
     lda #rteOutOfMemory
-    jsr runtimeError
-L3: rts
+    jmp runtimeError
 .endproc
 
 ; Free a block of memory from the heap.
@@ -653,7 +633,9 @@ TB: pla
 ; This routine trims free blocks from the end of the MAT.
 ; It starts by going to the last entry in the MAT and writing
 ; zeros to each free entry until it reaches an allocated entry
-; or the start of the MAT.
+; or the start of the MAT. The first entry is trimmed too if it is
+; free, so a heap whose blocks are all free is empty. (It once kept a
+; free first entry, and a new block larger than it went after it.)
 ;
 ; This is called after each free to help reduce fragmentation.
 .proc trimFreeBlocks
@@ -683,8 +665,9 @@ L3:
     sta ptr1 + 1
     jmp L1
 L4:
-    ; Found the last entry.  Work backwards setting entries to zero until
-    ; (1) We're at the first entry.
+    ; ptr1 is the zero entry. Work backwards setting the entries before it
+    ; to zero until
+    ; (1) The zero entry is the first entry.
     ;   -or-
     ; (2) We reach an allocated entry.
     lda ptr1
@@ -692,21 +675,9 @@ L4:
     bne L5
     lda ptr1 + 1
     cmp heapTop + 1
-    beq L9              ; Branch if this is the first MAT entry
+    beq L9              ; Branch if the MAT is empty
 L5:
-    ; Is the entry allocated
-    ldy #1
-    lda (ptr1),y
-    and #$80
-    bne L9              ; Branch if the entry is allocated
-    ; Zero out this entry
-    ldy #3
-    lda #0
-L6:
-    sta (ptr1),y
-    dey
-    bpl L6
-    ; Go to the next entry
+    ; Go to the entry before
     lda ptr1
     clc
     adc #4
@@ -714,6 +685,17 @@ L6:
     lda ptr1 + 1
     adc #0
     sta ptr1 + 1
+    ; Is the entry allocated
+    ldy #1
+    lda (ptr1),y
+    bmi L9              ; Branch if the entry is allocated
+    ; Zero out this entry
+    ldy #3
+    lda #0
+L6:
+    sta (ptr1),y
+    dey
+    bpl L6
     jmp L4
 L9:
     rts

@@ -4,6 +4,10 @@
          programs to use the unit.
     NEW: Work disks introduced
     NEW: The comparison operators compare strings, in PETSCII order
+    FIX: A program's heap could hand out memory it uses for its own
+         records, after the first block was freed or for a very large
+         request, instead of reporting out of memory
+    FIX: Freeing every block on the heap now frees all of its memory
 
 0.37-beta Nov 20 2026
     NEW: The IDE keeps a build's errors and warnings instead of printing

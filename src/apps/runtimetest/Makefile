@@ -34,9 +34,7 @@ LIBCOMMON := ../../lib/common
 SUITES := heap
 
 # The runtime heap (memheap.s) and the routines it calls
-heap_RT := $(RTSRC)/memheap.s $(LIBCOMMON)/int16comp.s \
-	$(LIBCOMMON)/uint32comp.s $(LIBCOMMON)/int16add.s \
-	$(LIBCOMMON)/int32comp.s
+heap_RT := $(RTSRC)/memheap.s $(LIBCOMMON)/int16comp.s
 heap_COV := $(RTSRC)/memheap.s
 
 BUGS ?= 0

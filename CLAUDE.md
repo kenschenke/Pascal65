@@ -605,7 +605,7 @@ language in `heap.inc`) that checks every address and the exact MAT, and
 that `heapAlloc` changes only ptr1 to intOp32 in zero page and `heapFree`
 only ptr1 and ptr2. The `STRESS` tests allocate and free at random, tag
 each block and check the MAT after each step. `make TARGET=mega65 test
-BUGS=1` adds the tests of known bugs (`KNOWN_BUGS`), which fail; `TESTSEL`
+BUGS=1` adds the tests of known bugs (`KNOWN_BUGS`, none now); `TESTSEL`
 works as in membuftest. `make TARGET=mega65 coverage` runs each suite with
 a `<suite>_COV` list against instrumented copies of those files and lists
 the lines that never ran in `bin/mega65/coverage-<suite>.txt`. Every line
@@ -921,6 +921,15 @@ grew `s` by its length each time (the value parameter's copy merged with
 left two holes per step, each too small for the next, and a dynamic
 program's 8K heap ran out (`strcomp`'s 255-character strings). `strleak`
 builds such strings in both orders.
+
+`trimFreeBlocks` trims the first entry too, so a heap whose blocks are
+all free is empty. A new block goes after the last entry's block, free or
+not, and `checkFreeSpace` measures from there, in 17 bits: it once
+measured from the last allocated block, so a block after a free first
+entry was given memory in the MAT, and added in 16 bits, so a large
+request near $FFFF wrapped and fit. A request of $8000 or more is out of
+memory: the sizes are compared as signed numbers, and such a request fit
+any free block. runtimetest's heap suite checks these (tests 29 to 32).
 
 A string's block is its length plus 1, so a 255-character string's is
 256: a routine that makes one passes the size in A/X with the carry of

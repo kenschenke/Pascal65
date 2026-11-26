@@ -588,26 +588,13 @@ FA: lda liveCount
     jsr freeLive
     bra FA
 
-    ; The heap must be empty, or one free block at the bottom
+    ; The heap must be empty
 EM: jsr matStart
     jsr readEntry
     lda actAddr
     ora actAddr+1
-    beq DN                  ; No entries
-    lda actSize+1
-    bmi NE
-    lda actAddr
-    cmp heapBot
     bne NE
-    lda actAddr+1
-    cmp heapBot+1
-    bne NE
-    jsr matNext
-    jsr readEntry
-    lda actAddr
-    ora actAddr+1
-    bne NE
-DN: rts
+    rts
 NE: LDAX strNotEmpty
     jmp rttFail
 .endproc

@@ -52,12 +52,10 @@ tests:
     .addr tStress           ; 26
     .addr tStressSmall      ; 27
     .addr tStressTiny       ; 28
-.ifdef KNOWN_BUGS
-    .addr tBugFreeFirst     ; 29
-    .addr tBugSplitLast     ; 30
-    .addr tBugWrap          ; 31
-    .addr tBugHuge          ; 32
-.endif
+    .addr tOomFreed         ; 29
+    .addr tOomLastFree      ; 30
+    .addr tOomWrap          ; 31
+    .addr tOomHuge          ; 32
     .addr 0
 
 ; heapInit makes an empty MAT, and the special call returns its top
@@ -106,13 +104,12 @@ tTrimLast:
     USED 10, $7000
     TEND
 
-; The first entry stays when its block is freed, and is reused
+; Freeing the only block empties the MAT
 tFreeOnly:
     INIT HB, HT
     ALLOC 10, $7000
     FREE $7000
-    MAT 1
-    AVAIL 10, $7000
+    MAT 0
     ALLOC 10, $7000
     MAT 1
     USED 10, $7000
@@ -247,8 +244,8 @@ tMergeTrim:
     USED 10, $7000
     TEND
 
-; Freeing every block leaves one free block at the bottom. A larger
-; block goes after it, and one its size reuses it.
+; Freeing every block, first to last, empties the MAT: the first block,
+; free, is trimmed too, and the next block starts at the bottom again
 tFreeAll:
     INIT HB, HT
     ALLOC 10, $7000
@@ -264,16 +261,10 @@ tFreeAll:
     AVAIL 30, $7000
     USED 30, $701e
     FREE $701e
+    MAT 0
+    ALLOC 70, $7000
     MAT 1
-    AVAIL 60, $7000
-    ALLOC 70, $703c
-    MAT 2
-    AVAIL 60, $7000
-    USED 70, $703c
-    ALLOC 60, $7000
-    MAT 2
-    USED 60, $7000
-    USED 70, $703c
+    USED 70, $7000
     TEND
 
 ; heapAlloc reuses the smallest free block that's big enough, the first
@@ -417,20 +408,20 @@ tTrimTwo:
     USED $10, $1000
     TEND
 
-; With the MAT at $7040, a first block that reaches the zero entry at
-; $703C doesn't fit
+; With the MAT at $7040, the first block's entry goes there and the zero
+; entry at $703C, so a block can end at $703C but not past it
 tOomFirst:
     INIT HB, $7040
     OOM $3d
     MAT 0
-    ALLOC $3b, $7000
+    ALLOC $3c, $7000
     MAT 1
-    USED $3b, $7000
+    USED $3c, $7000
     TEND
 
 ; A new block must end at or below the new zero entry. After the first
 ; block the zero entry is at $703C: a block at $7010 can't reach the next
-; zero entry, $7038.
+; zero entry, $7038, and one at $7030 can end just at $7034.
 tOomNext:
     INIT HB, $7040
     ALLOC $10, $7000
@@ -439,11 +430,11 @@ tOomNext:
     USED $10, $7000
     ALLOC $20, $7010
     OOM 5
-    ALLOC 2, $7030
+    ALLOC 4, $7030
     MAT 3
     USED $10, $7000
     USED $20, $7010
-    USED 2, $7030
+    USED 4, $7030
     TEND
 
 ; A free block too small for the request isn't used, and there's no room
@@ -481,52 +472,54 @@ tStressTiny:
     STRESS $5a5a, 3000, $07, 1
     TEND
 
-.ifdef KNOWN_BUGS
-
-; The out of memory check (checkFreeSpace) finds the end of the heap's
-; blocks from the last allocated block, but a new block goes after the
-; last block, free or not. The first block, freed, stays in the MAT, and
-; a block after it reaches past the MAT.
-tBugFreeFirst:
+; A freed first block leaves the heap empty, so the whole heap can be
+; used again. (Its entry once stayed, the next block went after it, and
+; the out of memory check, which measured from the last allocated block,
+; gave that block memory in the MAT.)
+tOomFreed:
     INIT HB, $7040
     ALLOC $20, $7000
     FREE $7000
-    OOM $30
+    MAT 0
+    ALLOC $3c, $7000
     MAT 1
-    AVAIL $20, $7000
+    USED $3c, $7000
     TEND
 
-; The same with the free rest of a split block last
-tBugSplitLast:
+; The out of memory check measures from the end of the last entry's
+; block, even if it's free. The new block's entry goes at $7038 and the
+; zero entry at $7034, so a block at $7008 can end at $7034.
+tOomLastFree:
     INIT HB, $7040
-    ALLOC $20, $7000
-    FREE $7000
-    ALLOC 4, $7000
-    MAT 2
+    SETMAT 2
     USED 4, $7000
-    AVAIL $1c, $7004
-    OOM $28
+    AVAIL 4, $7004
+    OOM $2d
+    ALLOC $2c, $7008
+    MAT 3
+    USED 4, $7000
+    AVAIL 4, $7004
+    USED $2c, $7008
     TEND
 
-; The out of memory check adds the end of the heap and the size in 16
-; bits, so a large request near the top of memory wraps around and fits
-tBugWrap:
+; The end of a large request near the top of memory is past $FFFF. (The
+; check once added in 16 bits, and it wrapped around and fit.)
+tOomWrap:
     INIT $8e00, $8f00
     OOM $7300
     MAT 0
     TEND
 
-; heapAlloc compares sizes as signed numbers, so a request of $8000 or
-; more fits in any free block
-tBugHuge:
+; No block can be $8000 bytes or more. (The sizes are compared as signed
+; numbers, and such a request once fit in any free block.)
+tOomHuge:
     INIT HB, $7040
     ALLOC $10, $7000
     ALLOC 4, $7010
     FREE $7000
     OOM $8000
+    OOM $fffe
     MAT 2
     AVAIL $10, $7000
     USED 4, $7010
     TEND
-
-.endif
