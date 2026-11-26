@@ -382,7 +382,7 @@ load: $(D81FILE)
 # PASS or FAIL (see src/apps/testcommon/runtest.sh). Set TEST_TIMEOUT to change
 # the per-suite time limit in seconds.
 TESTDIRS := tokenizertest parsertest resolvertest typechecktest icodetest tputest \
-	compilertestasm memtest membuftest editortest themestest \
+	compilertestasm memtest membuftest runtimetest editortest themestest \
 	workdisktest compilerasm
 
 test: mkthemes-test

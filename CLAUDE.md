@@ -41,7 +41,7 @@ in C have been replaced by assembly language.
 
 ## Testing Methodology
 
-The project has twelve test suites, located in `src/apps`, and the
+The project has thirteen test suites, located in `src/apps`, and the
 command-line compiler's `prefixtest.sh` (see "Work disks"):
 
   - tokenizertest
@@ -52,6 +52,7 @@ command-line compiler's `prefixtest.sh` (see "Work disks"):
   - tputest (compiled units, see "TPU Tests")
   - memtest (memory heap allocator in asmlib)
   - membuftest (membuf routines in asmlib)
+  - runtimetest (the runtime library, see "Runtime Tests")
   - compilertestasm
   - editortest (editor buffer management)
   - themestest (themes overlay: theme files, palette, theme screen)
@@ -575,6 +576,40 @@ against instrumented copies of the membuf files (editortest's
 pointing asmlib's jump table at them, and lists the lines that never ran in
 `bin/mega65/coverage.txt`. Every line runs. Like `test`, it needs asmlib
 built with `MEMCHECK=1`.
+
+### Runtime Tests
+
+`runtimetest` tests the runtime library (`src/lib/runtime`) directly, not
+through compiled programs. It is a chain of suites, one PRG each
+(`SUITES` in its Makefile, in the order they run), so the tests never have
+to fit in one program. A suite is `src/<suite>` with a `suiteMain` that
+returns when its tests pass, linked with the harness in `src/common` and
+the runtime files in `<suite>_RT`, assembled from the runtime's sources
+with the runtime's flags. `start.s` runs the suite and, if it passes,
+copies a loader to $1600 that loads the next and jumps to $2011; the last
+prints `RESULT: PASS`. A failed check stops the chain on its screen. The
+PRGs share a block at $1D00 (`rtt.inc`): the loader's flag, the count of
+suites passed and BASIC's zero page $04-$65, which the first PRG saves and
+the chain puts back. The Makefile writes each suite's name and the next's
+(`suiteinfo.s`). Nothing loads asmlib, so `testMemCheck` and
+`testLeakCheck` don't apply.
+
+`rterror.s` stands in for the runtime's `runtimeError`. A test arms a
+catch (`CATCH_RTE` in `rterror.inc`); the error jumps to it with the stack
+pointer restored and the code in `rteCode`. An error without one fails.
+A suite has $7000-$8FFF (`TESTMEM`) to itself. `runtime.inc` can't be
+included in a suite: under `--cpu 4510`, `sp` is a register.
+
+The `heap` suite tests `memheap.s`. Each test is a script (`tests.s`,
+language in `heap.inc`) that checks every address and the exact MAT, and
+that `heapAlloc` changes only ptr1 to intOp32 in zero page and `heapFree`
+only ptr1 and ptr2. The `STRESS` tests allocate and free at random, tag
+each block and check the MAT after each step. `make TARGET=mega65 test
+BUGS=1` adds the tests of known bugs (`KNOWN_BUGS`), which fail; `TESTSEL`
+works as in membuftest. `make TARGET=mega65 coverage` runs each suite with
+a `<suite>_COV` list against instrumented copies of those files and lists
+the lines that never ran in `bin/mega65/coverage-<suite>.txt`. Every line
+of `memheap.s` runs.
 
 ### Compiler Tests
 
